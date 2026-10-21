@@ -38,6 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.platinum20.dashboard.media.Accounts
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
+import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.media.AdBlocker
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
@@ -78,7 +81,11 @@ fun MediaScreen(
     onOpenSettings: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    val loggedIn by Accounts.loggedIn.collectAsState()
+    val context = LocalContext.current
+    YouTubeAuth.init(context)
+    SpotifyAuth.init(context)
+    val youTubeLinked by YouTubeAuth.connected.collectAsState()
+    val spotifyLinked by SpotifyAuth.connected.collectAsState()
     val open by MediaWebViews.open.collectAsState()
     val adBlock by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
@@ -142,11 +149,15 @@ fun MediaScreen(
                             MediaService.SPOTIFY -> Icons.Outlined.GraphicEq
                         },
                         title = service.label,
-                        subtitle = if (service in loggedIn) "Account collegato" else "Senza account · accedi da Impostazioni",
+                        subtitle = when (service) {
+                            MediaService.YOUTUBE ->
+                                if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega il tuo account per il feed"
+                            MediaService.SPOTIFY ->
+                                if (spotifyLinked) "Per te, playlist, libreria e ricerca" else "Collega il tuo account per il feed"
+                        },
                         onClick = { onOpenService(service) },
                         playing = service in open,
                         onStop = { MediaWebViews.release(service) },
-                        onLogin = if (service in loggedIn) null else onOpenSettings,
                     )
                 }
             }

@@ -310,7 +310,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
-                    onOpenService = { navController.navigate(Routes.webPlayer(it)) },
+                    onOpenService = {
+                        navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.SPOTIFY_FEED)
+                    },
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                 )
