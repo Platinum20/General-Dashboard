@@ -59,6 +59,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import coil3.compose.AsyncImage
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material3.FilterChip
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import com.platinum20.dashboard.settings.AppSettings
 
 /** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
@@ -76,6 +83,7 @@ fun MediaScreen(
     val adBlock by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
     val tracks by NowPlaying.tracks.collectAsState()
+    val sleepAt by NowPlaying.sleepAt.collectAsState()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -103,6 +111,9 @@ fun MediaScreen(
                         onCommand = { NowPlaying.command(track.service, it) },
                     )
                 }
+            }
+            if (tracks.isNotEmpty()) {
+                item(key = "sleep") { SleepTimerRow(sleepAt = sleepAt, onSet = NowPlaying::setSleepTimer) }
             }
             item {
                 AdBlockCard(
@@ -270,6 +281,37 @@ private fun NowPlayingCard(track: Track, onOpen: () -> Unit, onCommand: (PlayerC
             }
             IconButton(onClick = { onCommand(PlayerCommand.NEXT) }) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
+            }
+        }
+    }
+}
+
+private val sleepOptions = listOf(15 to "15 min", 30 to "30 min", 60 to "1 ora", 90 to "1 ora e mezza")
+private val clock = DateTimeFormatter.ofPattern("HH:mm")
+
+/** Timer di spegnimento: mette in pausa la musica dopo il tempo scelto. */
+@Composable
+private fun SleepTimerRow(sleepAt: Long?, onSet: (Int?) -> Unit) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
+            Icon(Icons.Outlined.Bedtime, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.size(8.dp))
+            Text(
+                sleepAt?.let { "Si ferma alle " + clock.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())) }
+                    ?: "Timer di spegnimento",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+        ) {
+            sleepOptions.forEach { (minutes, label) ->
+                FilterChip(selected = false, onClick = { onSet(minutes) }, label = { Text(label) })
+            }
+            if (sleepAt != null) {
+                FilterChip(selected = true, onClick = { onSet(null) }, label = { Text("Annulla") })
             }
         }
     }
