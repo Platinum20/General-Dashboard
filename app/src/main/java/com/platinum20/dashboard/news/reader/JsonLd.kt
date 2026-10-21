@@ -28,6 +28,29 @@ internal object JsonLd {
         return found
     }
 
+    /** Anche gli articoli senza articleBody possono dichiararsi a pagamento. */
+    fun declaresPaid(json: String): Boolean {
+        val root = runCatching { JSONTokener(json.trim()).nextValue() }.getOrNull() ?: return false
+        var paid = false
+        fun visit(node: Any?) {
+            when (node) {
+                is JSONArray -> for (i in 0 until node.length()) visit(node.opt(i))
+                is JSONObject -> {
+                    if (isArticle(node)) {
+                        when (val flag = node.opt("isAccessibleForFree")) {
+                            is Boolean -> if (!flag) paid = true
+                            is String -> if (flag.equals("false", ignoreCase = true)) paid = true
+                        }
+                    }
+                    visit(node.opt("@graph"))
+                    visit(node.opt("mainEntity"))
+                }
+            }
+        }
+        visit(root)
+        return paid
+    }
+
     private fun collect(node: Any?, out: MutableList<JsonLdArticle>) {
         when (node) {
             is JSONArray -> for (i in 0 until node.length()) collect(node.opt(i), out)

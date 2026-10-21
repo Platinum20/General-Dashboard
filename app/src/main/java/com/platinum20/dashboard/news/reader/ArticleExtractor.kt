@@ -136,6 +136,18 @@ object ArticleExtractor {
             }
     }
 
+    /**
+     * true se la pagina stessa dichiara l'articolo riservato agli abbonati (schema.org
+     * isAccessibleForFree = false, oppure article:content_tier = locked).
+     */
+    fun isPaid(page: FetchedPage): Boolean {
+        val doc = Jsoup.parse(page.html, page.url)
+        if (doc.metaContent("article:content_tier")?.equals("locked", ignoreCase = true) == true) return true
+        return doc.select("script[type=application/ld+json]").any { script ->
+            JsonLd.articles(script.data()).any { !it.free } || JsonLd.declaresPaid(script.data())
+        }
+    }
+
     /** Indirizzo della versione AMP dell'articolo: di solito è HTML semplice, senza JavaScript. */
     fun ampUrl(page: FetchedPage): String? {
         val doc = Jsoup.parse(page.html, page.url)

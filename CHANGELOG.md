@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.0
+- News solo da fonti gratuite: tolte la Repubblica e Il Sole 24 Ore, aggiunte Open e RaiNews
+- In lista compaiono solo gli articoli che il lettore riesce a pulire del tutto: quelli a pagamento o illeggibili vengono nascosti
+- Gli articoli vengono preparati in anticipo e si aprono subito nel lettore
+
 ## 1.5.0
 - Meteo nella Dashboard: temperatura e condizioni del posto in cui sei, con massima, minima e probabilità di pioggia
 - Toccando il meteo si apre il dettaglio: prossime 24 ore, 7 giorni, umidità, vento, pressione, indice UV, alba e tramonto
