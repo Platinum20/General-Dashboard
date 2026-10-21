@@ -2,12 +2,11 @@ package com.platinum20.dashboard
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
+import android.graphics.Canvas
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -91,7 +90,7 @@ class ScreenshotTour {
 
     /** Tocca il primo elemento cliccabile con quel testo; false se non c'è. */
     private fun tap(label: String): Boolean {
-        val nodes = compose.onAllNodes(hasText(label) and hasClickAction(), useUnmergedTree = false)
+        val nodes = compose.onAllNodes((hasText(label) or hasContentDescription(label)) and hasClickAction())
         if (nodes.fetchSemanticsNodes().isEmpty()) return false
         nodes.onFirst().performClick()
         return true
@@ -122,7 +121,12 @@ class ScreenshotTour {
     }
 
     private fun shot(name: String) {
-        val bitmap = compose.onAllNodes(isRoot()).onFirst().captureToImage().asAndroidBitmap()
-        File(outDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        // Disegniamo la finestra a mano: captureToImage aspetterebbe un frame che col clock fermo non arriva.
+        scenario?.onActivity { activity ->
+            val view = activity.window.decorView
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            File(outDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
     }
 }

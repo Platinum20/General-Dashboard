@@ -70,7 +70,7 @@ fun MediaScreen(
     onOpenService: (MediaService) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val loggedIn by Accounts.loggedIn.collectAsState()
     val open by MediaWebViews.open.collectAsState()
     val adBlock by AppSettings.adBlock.collectAsState()
@@ -83,10 +83,7 @@ fun MediaScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Media") },
-                scrollBehavior = scrollBehavior,
-            )
+            TopLevelBar(title = "Media", scrollBehavior = scrollBehavior)
         },
     ) { inner ->
         LazyColumn(

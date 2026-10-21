@@ -65,8 +65,8 @@ fun NewsScreen(
         contentWindowInsets = topLevelInsets,
         topBar = {
             Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
-                TopAppBar(
-                    title = { Text("News") },
+                TopLevelBar(
+                    title = "News",
                     actions = {
                         IconButton(onClick = viewModel::refresh, enabled = !state.loading && !state.refreshing) {
                             Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")

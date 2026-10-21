@@ -57,6 +57,20 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.BuildConfig
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.FilledTonalButton
@@ -71,7 +85,7 @@ import com.platinum20.dashboard.media.MediaWebViews
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    bottomPadding: PaddingValues,
+    onBack: () -> Unit,
     onOpenUpdates: () -> Unit,
     onCustomize: () -> Unit,
     onLogin: (MediaService) -> Unit,
@@ -81,14 +95,18 @@ fun SettingsScreen(
     val loggedIn by Accounts.loggedIn.collectAsState()
     val adBlock by AppSettings.adBlock.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentWindowInsets = topLevelInsets,
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = { Text("Impostazioni") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -98,78 +116,77 @@ fun SettingsScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = bottomPadding.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp,
             ),
         ) {
-            item { SectionHeader("Tema") }
+            item { SectionHeader("Aspetto") }
             item {
                 SettingsGroup {
-                    AppTheme.entries.forEach { option ->
-                        ListItem(
-                            modifier = Modifier.selectable(
-                                selected = theme == option,
-                                onClick = { AppSettings.setTheme(option) },
-                                role = Role.RadioButton,
-                            ),
-                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                            leadingContent = {
-                                Icon(
-                                    when (option) {
-                                        AppTheme.DYNAMIC -> Icons.Outlined.Palette
-                                        AppTheme.SYSTEM -> Icons.Outlined.BrightnessMedium
-                                        AppTheme.AMOLED -> Icons.Outlined.DarkMode
-                                    },
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            headlineContent = { Text(option.label) },
-                            supportingContent = { Text(option.description) },
-                            trailingContent = { RadioButton(selected = theme == option, onClick = null) },
+                    // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            AppTheme.entries.forEachIndexed { index, option ->
+                                SegmentedButton(
+                                    selected = theme == option,
+                                    onClick = { AppSettings.setTheme(option) },
+                                    shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
+                                    icon = {},
+                                ) {
+                                    Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+                                }
+                            }
+                        }
+                        Text(
+                            theme.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                         )
                     }
                 }
             }
 
-            item { SectionHeader("Account") }
+            item { SectionHeader("Dashboard") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.Tune,
+                        title = "Card della schermata Oggi",
+                        subtitle = "Quali mostrare e in che ordine",
+                        showChevron = true,
+                        onClick = onCustomize,
+                    )
+                    MorningSettings()
+                }
+            }
+
+            item { SectionHeader("Account e Media") }
             item {
                 SettingsGroup {
                     MediaService.entries.forEach { service ->
                         val connected = service in loggedIn
-                        ListItem(
-                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                            leadingContent = {
-                                Icon(Icons.Outlined.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            headlineContent = { Text(service.label) },
-                            supportingContent = {
-                                Text(if (connected) "Collegato: playlist, iscrizioni e preferiti" else "Non collegato")
-                            },
-                            trailingContent = {
+                        SettingsItem(
+                            icon = Icons.Outlined.AccountCircle,
+                            title = service.label,
+                            subtitle = if (connected) "Collegato" else "Non collegato",
+                            trailing = {
                                 if (connected) {
-                                    OutlinedButton(onClick = { Accounts.logout(service) }) { Text("Esci") }
+                                    TextButton(onClick = { Accounts.logout(service) }) { Text("Esci") }
                                 } else {
                                     FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
                                 }
                             },
                         )
                     }
-                }
-            }
-
-            item { SectionHeader("Media") }
-            item {
-                SettingsGroup {
-                    ListItem(
-                        modifier = Modifier.clickable {
+                    SettingsItem(
+                        icon = Icons.Outlined.Shield,
+                        title = "Blocco pubblicità",
+                        subtitle = "Annunci e tracciamento in YouTube e Spotify",
+                        onClick = {
                             AppSettings.setAdBlock(!adBlock)
                             MediaWebViews.releaseAll()
                         },
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                        leadingContent = { Icon(Icons.Outlined.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                        headlineContent = { Text("Blocco pubblicità") },
-                        supportingContent = { Text("Annunci e tracciamento in YouTube e Spotify") },
-                        trailingContent = {
+                        trailing = {
                             Switch(
                                 checked = adBlock,
                                 onCheckedChange = {
@@ -182,53 +199,25 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Dashboard") }
-            item {
-                SettingsGroup {
-                    SettingsRow(
-                        icon = Icons.Outlined.Tune,
-                        title = "Card della Dashboard",
-                        subtitle = "Scegli quali mostrare e in che ordine",
-                        showChevron = true,
-                        onClick = onCustomize,
-                    )
-                }
-            }
-
-            item { SectionHeader("Notifica del mattino") }
-            item { MorningSettings() }
-
             item { SectionHeader("Informazioni") }
             item {
                 SettingsGroup {
                     SettingsRow(
-                        icon = Icons.Outlined.Info,
-                        title = "Versione",
-                        subtitle = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+                        icon = Icons.Outlined.SystemUpdate,
+                        title = "Aggiornamenti",
+                        subtitle = "Versione ${BuildConfig.VERSION_NAME} · novità e aggiornamento",
+                        showChevron = true,
+                        onClick = onOpenUpdates,
                     )
                     SettingsRow(
                         icon = Icons.Outlined.Code,
-                        title = "Repository GitHub",
+                        title = "Codice sorgente",
                         subtitle = BuildConfig.GITHUB_REPO,
                         onClick = {
                             context.startActivity(
                                 Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.GITHUB_REPO}"))
                             )
                         },
-                    )
-                }
-            }
-
-            // In fondo: il sottomenu degli aggiornamenti.
-            item { SectionHeader("Sistema") }
-            item {
-                SettingsGroup {
-                    SettingsRow(
-                        icon = Icons.Outlined.SystemUpdate,
-                        title = "Aggiornamenti",
-                        subtitle = "Changelog e aggiornamento da GitHub",
-                        showChevron = true,
-                        onClick = onOpenUpdates,
                     )
                 }
             }
@@ -242,14 +231,14 @@ private fun SectionHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+        modifier = Modifier.padding(start = 12.dp, top = 18.dp, bottom = 6.dp),
     )
 }
 
 @Composable
 private fun SettingsGroup(content: @Composable () -> Unit) {
     Surface(
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column { content() }
@@ -264,16 +253,53 @@ private fun SettingsRow(
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
-    ListItem(
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-        headlineContent = { Text(title) },
-        supportingContent = { Text(subtitle) },
-        trailingContent = if (showChevron) {
+    SettingsItem(
+        icon = icon,
+        title = title,
+        subtitle = subtitle,
+        onClick = onClick,
+        trailing = if (showChevron) {
             { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) }
         } else null,
     )
+}
+
+/** Riga compatta delle impostazioni: icona, titolo, una riga di descrizione e un comando a destra. */
+@Composable
+private fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String? = null,
+    onClick: (() -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .heightIn(min = 56.dp)
+            .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (trailing != null) {
+            Spacer(Modifier.width(8.dp))
+            trailing()
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -292,20 +318,20 @@ private fun MorningSettings() {
         if (granted) enable(true)
     }
 
-    SettingsGroup {
-        ListItem(
-            modifier = Modifier.clickable {
-                if (!morning.enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    enable(!morning.enabled)
-                }
-            },
-            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-            leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            headlineContent = { Text("Riepilogo ogni mattina") },
-            supportingContent = { Text("Meteo, impegni, cose da fare e temi del giorno") },
-            trailingContent = { Switch(checked = morning.enabled, onCheckedChange = null) },
+    Column {
+        val toggle = {
+            if (!morning.enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                enable(!morning.enabled)
+            }
+        }
+        SettingsItem(
+            icon = Icons.Outlined.NotificationsActive,
+            title = "Notifica del mattino",
+            subtitle = if (morning.enabled) "Ogni giorno alle ${morning.timeLabel}" else "Meteo, impegni, cose da fare e notizie",
+            onClick = toggle,
+            trailing = { Switch(checked = morning.enabled, onCheckedChange = { toggle() }) },
         )
         if (morning.enabled) {
             SettingsRow(
@@ -314,19 +340,19 @@ private fun MorningSettings() {
                 subtitle = morning.timeLabel,
                 onClick = { pickTime = true },
             )
+            SettingsRow(
+                icon = Icons.Outlined.Send,
+                title = "Invia una prova",
+                subtitle = "Ricevi subito la notifica di oggi",
+                onClick = {
+                    if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        MorningWorker.sendTest(context)
+                    }
+                },
+            )
         }
-        SettingsRow(
-            icon = Icons.Outlined.Send,
-            title = "Invia una prova",
-            subtitle = "Ricevi subito la notifica di oggi",
-            onClick = {
-                if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    MorningWorker.sendTest(context)
-                }
-            },
-        )
     }
 
     if (pickTime) {
