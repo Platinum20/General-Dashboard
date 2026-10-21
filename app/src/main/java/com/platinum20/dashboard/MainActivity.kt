@@ -59,6 +59,7 @@ import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.WebPlayerScreen
+import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
@@ -179,6 +180,7 @@ object Routes {
     const val NOTE_EDIT = "notes/edit?id={id}"
     const val MEDIA = "media"
     const val VIDEO = "media/video"
+    const val YOUTUBE_FEED = "media/youtube"
     const val WEB_PLAYER = "media/web/{service}?url={url}"
     const val LOGIN = "settings/login/{service}"
 
@@ -315,8 +317,17 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 MediaScreen(
                     bottomPadding = padding,
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
-                    onOpenService = { navController.navigate(Routes.webPlayer(it)) },
+                    onOpenService = {
+                        navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.webPlayer(it))
+                    },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                )
+            }
+            composable(Routes.YOUTUBE_FEED) {
+                YouTubeFeedScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlay = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
+                    onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
                 )
             }
             composable(Routes.VIDEO) {
