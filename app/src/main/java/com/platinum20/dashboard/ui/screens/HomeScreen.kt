@@ -197,7 +197,7 @@ fun HomeScreen(
                 ) {
                     Icon(Icons.Outlined.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text("Personalizza la Dashboard")
+                    Text("Personalizza questa schermata")
                 }
             }
         }
