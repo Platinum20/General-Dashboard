@@ -54,6 +54,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
+import com.platinum20.dashboard.media.youtubeWatchUrl
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
@@ -101,6 +102,8 @@ data class OpenRequest(
         const val ARTICLE = "article"
         const val NOTES = "notes"
         const val MEDIA = "media"
+        /** Video, audio o link condiviso da un'altra app (url = indirizzo o content://). */
+        const val PLAY = "play"
         const val UPDATES = "updates"
 
         private const val EXTRA_TARGET = "open_target"
@@ -181,6 +184,9 @@ object Routes {
     const val NOTE_EDIT = "notes/edit?id={id}"
     const val MEDIA = "media"
     const val VIDEO = "media/video"
+    const val VIDEO_PATTERN = "media/video?uri={uri}"
+
+    fun video(uri: String) = "media/video?uri=${Uri.encode(uri)}"
     const val YOUTUBE_FEED = "media/youtube"
     const val SPOTIFY_FEED = "media/spotify"
     const val WEB_PLAYER = "media/web/{service}?url={url}"
@@ -241,7 +247,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             navController.switchTab(
                 when (request.target) {
                     OpenRequest.NOTES -> Routes.NOTES
-                    OpenRequest.MEDIA -> Routes.MEDIA
+                    OpenRequest.MEDIA, OpenRequest.PLAY -> Routes.MEDIA
                     else -> Routes.HOME
                 }
             )
@@ -258,6 +264,15 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 }
                 OpenRequest.MEDIA -> MediaService.entries.firstOrNull { it.name == request.source }
                     ?.let { navController.navigate(Routes.webPlayer(it)) }
+                OpenRequest.PLAY -> if (request.url.isNotBlank()) {
+                    val youtube = youtubeWatchUrl(request.url)
+                    when {
+                        youtube != null -> navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, youtube))
+                        Uri.parse(request.url).host?.endsWith("spotify.com") == true ->
+                            navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, request.url))
+                        else -> navController.navigate(Routes.video(request.url))
+                    }
+                }
             }
         }
         onOpenHandled()
@@ -340,8 +355,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
                 )
             }
-            composable(Routes.VIDEO) {
+            composable(
+                Routes.VIDEO_PATTERN,
+                arguments = listOf(navArgument("uri") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
                 VideoPlayerScreen(
+                    startUri = entry.arguments?.getString("uri"),
                     onBack = { navController.popBackStack() },
                     onOpenYouTube = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
                 )

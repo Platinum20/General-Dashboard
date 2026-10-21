@@ -48,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -92,6 +93,7 @@ import com.platinum20.dashboard.media.youtubeWatchUrl
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VideoPlayerScreen(
+    startUri: String? = null,
     onBack: () -> Unit,
     onOpenYouTube: (String) -> Unit,
 ) {
@@ -148,6 +150,9 @@ fun VideoPlayerScreen(
         subtitleName = name.substringBeforeLast('.').ifBlank { "Sottotitoli" }
     }
 
+    // Video aperto da un'altra app ("Apri con" o condividi).
+    LaunchedEffect(startUri) { startUri?.let { play(Uri.parse(it)) } }
+
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onPlayerError(e: PlaybackException) {
@@ -175,12 +180,15 @@ fun VideoPlayerScreen(
         savePosition()
     }
 
-    FullscreenEffect(enabled = fullscreen)
+    val inPip = rememberPictureInPicture(enabled = current != null)
+    // Nel riquadro picture-in-picture si vede solo il video, come a schermo intero.
+    val immersive = fullscreen || inPip
+    FullscreenEffect(enabled = fullscreen && !inPip)
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
     Scaffold(
         topBar = {
-            if (!fullscreen) {
+            if (!immersive) {
                 TopAppBar(
                     title = {
                         Text(
@@ -201,13 +209,13 @@ fun VideoPlayerScreen(
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(if (fullscreen) PaddingValues() else inner)
+                .padding(if (immersive) PaddingValues() else inner)
         ) {
             if (current != null) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(if (fullscreen) Modifier.fillMaxSize() else Modifier.aspectRatio(16f / 9f))
+                        .then(if (immersive) Modifier.fillMaxSize() else Modifier.aspectRatio(16f / 9f))
                         .background(Color.Black),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -219,6 +227,7 @@ fun VideoPlayerScreen(
                                 setFullscreenButtonClickListener { fullscreen = it }
                             }
                         },
+                        update = { it.useController = !inPip },
                         modifier = Modifier.fillMaxSize(),
                     )
                     error?.let {
@@ -234,7 +243,7 @@ fun VideoPlayerScreen(
                 }
             }
 
-            if (!fullscreen) {
+            if (!immersive) {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
