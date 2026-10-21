@@ -96,5 +96,11 @@ dependencies {
     // Modalità lettura: estrae testo, immagini e video dalla pagina dell'articolo (algoritmo Readability)
     implementation("net.dankito.readability4j:readability4j:1.0.8")
 
+    // Player video (file del telefono, mp4/webm e streaming HLS) e anteprime dei video
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("io.coil-kt.coil3:coil-video:3.0.4")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

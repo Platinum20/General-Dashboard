@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+- Nuova sezione Media nella barra in basso, con YouTube, Spotify e un player video
+- YouTube e Spotify dentro l'app con il tuo account: accedi o esci da Impostazioni > Account
+- Blocco pubblicità integrato: niente banner né server pubblicitari, e su YouTube gli spot nei video vengono saltati da soli (si spegne da Impostazioni o dalla sezione Media)
+- La musica di Spotify e YouTube continua mentre usi il resto dell'app; "Chiudi player" la ferma
+- Player video per i file del telefono e i link (mp4, webm, streaming m3u8), con schermo intero, recenti con anteprima e ripresa dal punto in cui eri rimasto
+- I link di YouTube incollati nel player si aprono direttamente su YouTube
+
 ## 1.10.0
 - Nuova card "Conti alla rovescia": quanti giorni mancano a compleanni, viaggi e scadenze, anche ripetuti ogni anno
 - Promemoria con scadenza: tocca una cosa da fare per impostare giorno e ora, e ricevi un avviso con il tasto "Fatto"

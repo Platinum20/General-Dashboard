@@ -12,10 +12,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -37,7 +39,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.ui.screens.LoginScreen
+import com.platinum20.dashboard.ui.screens.MediaScreen
+import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
+import com.platinum20.dashboard.ui.screens.WebPlayerScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
@@ -133,6 +141,12 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         OpenRequest.from(intent)?.let { openRequest.value = it }
     }
+
+    override fun onDestroy() {
+        // Chiudendo l'app si fermano anche YouTube e Spotify lasciati in sottofondo.
+        if (isFinishing) MediaWebViews.releaseAll()
+        super.onDestroy()
+    }
 }
 
 object Routes {
@@ -146,6 +160,15 @@ object Routes {
     const val CUSTOMIZE = "home/customize"
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}"
+    const val MEDIA = "media"
+    const val VIDEO = "media/video"
+    const val WEB_PLAYER = "media/web/{service}?url={url}"
+    const val LOGIN = "settings/login/{service}"
+
+    fun webPlayer(service: MediaService, url: String? = null) =
+        "media/web/${service.name}" + (url?.let { "?url=${Uri.encode(it)}" } ?: "")
+
+    fun login(service: MediaService) = "settings/login/${service.name}"
 
     fun noteEdit(id: Long?) = "notes/edit?id=${id ?: -1L}"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
@@ -168,6 +191,7 @@ private val topDestinations = listOf(
     TopDestination(Routes.HOME, "Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
     TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
     TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
+    TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
     TopDestination(Routes.SETTINGS, "Impostazioni", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -227,8 +251,46 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
+                    onOpenMedia = { navController.switchTab(Routes.MEDIA) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                 )
+            }
+            composable(Routes.MEDIA) {
+                MediaScreen(
+                    bottomPadding = padding,
+                    onOpenVideo = { navController.navigate(Routes.VIDEO) },
+                    onOpenService = { navController.navigate(Routes.webPlayer(it)) },
+                    onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
+                )
+            }
+            composable(Routes.VIDEO) {
+                VideoPlayerScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenYouTube = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
+                )
+            }
+            composable(
+                Routes.WEB_PLAYER,
+                arguments = listOf(
+                    navArgument("service") { type = NavType.StringType },
+                    navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) { entry ->
+                val service = MediaService.entries.firstOrNull { it.name == entry.arguments?.getString("service") }
+                    ?: MediaService.YOUTUBE
+                WebPlayerScreen(
+                    service = service,
+                    startUrl = entry.arguments?.getString("url"),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                Routes.LOGIN,
+                arguments = listOf(navArgument("service") { type = NavType.StringType }),
+            ) { entry ->
+                val service = MediaService.entries.firstOrNull { it.name == entry.arguments?.getString("service") }
+                    ?: MediaService.YOUTUBE
+                LoginScreen(service = service, onDone = { navController.popBackStack() })
             }
             composable(Routes.CUSTOMIZE) {
                 CustomizeScreen(onBack = { navController.popBackStack() })
@@ -274,6 +336,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     bottomPadding = padding,
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                    onLogin = { navController.navigate(Routes.login(it)) },
                 )
             }
             composable(
