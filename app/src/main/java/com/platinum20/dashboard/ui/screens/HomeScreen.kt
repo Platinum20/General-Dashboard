@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.WbSunny
@@ -28,6 +31,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -57,6 +61,8 @@ import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.weather.LocationProvider
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherState
@@ -77,6 +83,8 @@ fun HomeScreen(
     onOpenWeather: () -> Unit,
     onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
+    onOpenNotes: () -> Unit,
+    onCustomize: () -> Unit,
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -105,6 +113,7 @@ fun HomeScreen(
     }
 
     val recap = rememberRecapState()
+    val layout by AppSettings.homeLayout.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -112,6 +121,11 @@ fun HomeScreen(
         topBar = {
             LargeTopAppBar(
                 title = { Text("Dashboard") },
+                actions = {
+                    IconButton(onClick = onCustomize) {
+                        Icon(Icons.Outlined.Tune, contentDescription = "Personalizza")
+                    }
+                },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -147,41 +161,57 @@ fun HomeScreen(
                     }
                 }
             }
-            item {
-                WeatherCard(
-                    state = weather,
-                    hasPermission = hasLocation,
-                    onRequestPermission = {
-                        permissionLauncher.launch(
-                            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+            items(layout.visible, key = { it.name }) { card ->
+                when (card) {
+                    HomeCard.WEATHER -> WeatherCard(
+                        state = weather,
+                        hasPermission = hasLocation,
+                        onRequestPermission = {
+                            permissionLauncher.launch(
+                                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+                            )
+                        },
+                        onRetry = { WeatherStore.refresh(context, force = true) },
+                        onClick = onOpenWeather,
+                    )
+                    HomeCard.CALENDAR -> CalendarCard()
+                    HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
+                    HomeCard.RECAP -> RecapCard(
+                        state = recap,
+                        onOpenTheme = { onOpenArticle(it.headline) },
+                        onOpenAll = onOpenRecap,
+                    )
+                    HomeCard.MODULES -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            "Moduli",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                         )
-                    },
-                    onRetry = { WeatherStore.refresh(context, force = true) },
-                    onClick = onOpenWeather,
-                )
+                        ModuleCard(
+                            icon = Icons.Outlined.Newspaper,
+                            title = "News",
+                            subtitle = "Le ultime notizie da ANSA, Il Post, Open e altre",
+                            onClick = onOpenNews,
+                        )
+                        ModuleCard(
+                            icon = Icons.Outlined.EditNote,
+                            title = "Note",
+                            subtitle = "Promemoria da spuntare e note veloci",
+                            onClick = onOpenNotes,
+                        )
+                    }
+                }
             }
             item {
-                RecapCard(
-                    state = recap,
-                    onOpenTheme = { onOpenArticle(it.headline) },
-                    onOpenAll = onOpenRecap,
-                )
-            }
-            item {
-                Text(
-                    "Moduli",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                )
-            }
-            item {
-                ModuleCard(
-                    icon = Icons.Outlined.Newspaper,
-                    title = "News",
-                    subtitle = "Le ultime notizie da ANSA, Il Post, Repubblica e altre",
-                    onClick = onOpenNews,
-                )
+                TextButton(
+                    onClick = onCustomize,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text("Personalizza la Dashboard")
+                }
             }
         }
     }

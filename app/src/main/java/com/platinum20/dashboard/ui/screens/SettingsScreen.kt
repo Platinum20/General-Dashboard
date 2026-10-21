@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
@@ -46,6 +47,7 @@ import com.platinum20.dashboard.BuildConfig
 fun SettingsScreen(
     bottomPadding: PaddingValues,
     onOpenUpdates: () -> Unit,
+    onCustomize: () -> Unit,
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
@@ -96,6 +98,19 @@ fun SettingsScreen(
                             trailingContent = { RadioButton(selected = theme == option, onClick = null) },
                         )
                     }
+                }
+            }
+
+            item { SectionHeader("Dashboard") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.Tune,
+                        title = "Card della Dashboard",
+                        subtitle = "Scegli quali mostrare e in che ordine",
+                        showChevron = true,
+                        onClick = onCustomize,
+                    )
                 }
             }
 

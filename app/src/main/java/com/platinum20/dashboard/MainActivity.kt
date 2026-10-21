@@ -9,9 +9,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -34,7 +36,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.ArticleScreen
+import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
+import com.platinum20.dashboard.ui.screens.NoteEditorScreen
+import com.platinum20.dashboard.ui.screens.NotesScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
@@ -78,6 +83,11 @@ object Routes {
     const val UPDATES = "settings/updates"
     const val WEATHER = "home/weather"
     const val RECAP = "home/recap"
+    const val CUSTOMIZE = "home/customize"
+    const val NOTES = "notes"
+    const val NOTE_EDIT = "notes/edit?id={id}"
+
+    fun noteEdit(id: Long?) = "notes/edit?id=${id ?: -1L}"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
     const val WEB_PAGE = "news/web?url={url}&source={source}"
 
@@ -97,6 +107,7 @@ private data class TopDestination(
 private val topDestinations = listOf(
     TopDestination(Routes.HOME, "Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
     TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
+    TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
     TopDestination(Routes.SETTINGS, "Impostazioni", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
@@ -141,6 +152,26 @@ private fun AppRoot() {
                     onOpenWeather = { navController.navigate(Routes.WEATHER) },
                     onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                    onOpenNotes = { navController.switchTab(Routes.NOTES) },
+                    onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                )
+            }
+            composable(Routes.CUSTOMIZE) {
+                CustomizeScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.NOTES) {
+                NotesScreen(
+                    bottomPadding = padding,
+                    onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
+                )
+            }
+            composable(
+                Routes.NOTE_EDIT,
+                arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L }),
+            ) { entry ->
+                NoteEditorScreen(
+                    noteId = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Routes.WEATHER) {
@@ -162,6 +193,7 @@ private fun AppRoot() {
                 SettingsScreen(
                     bottomPadding = padding,
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
+                    onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                 )
             }
             composable(
