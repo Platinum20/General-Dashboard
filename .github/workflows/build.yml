@@ -53,15 +53,13 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            if [ "${{ steps.version.outputs.release }}" = "true" ]; then
-              echo "::error::Mancano i secret di firma (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD). Senza, gli aggiornamenti non si installerebbero sopra la versione esistente."
-              exit 1
-            fi
-            echo "Nessuna chiave: build di controllo firmata con chiave di debug."
+            echo "Nessuna chiave: build di controllo firmata con chiave di debug, nessuna release."
+            echo "SIGNED=false" >> "$GITHUB_ENV"
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          echo "SIGNED=true" >> "$GITHUB_ENV"
 
       - name: Compila APK
         env:
@@ -86,6 +84,10 @@ jobs:
       - name: Pubblica release
         if: steps.version.outputs.release == 'true'
         run: |
+          if [ "$SIGNED" != "true" ]; then
+            echo "::error::Mancano i secret di firma (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD): release non pubblicata. Senza una chiave fissa gli aggiornamenti non si installerebbero."
+            exit 1
+          fi
           VERSION="${{ steps.version.outputs.name }}"
           # Prende le righe tra "## <versione>" e l'intestazione successiva.
           awk -v v="$VERSION" '
