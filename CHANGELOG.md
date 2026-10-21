@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.15.0
+- YouTube nativo: nuovi video dei canali che segui, le tue playlist, i video con il Mi piace e la ricerca, in schede dell'app (si collega con l'account Google, solo lettura)
+- Spotify nativo: ascoltati di recente, i tuoi brani e artisti preferiti, playlist, brani piaciuti, album, podcast e ricerca; con Premium si comanda la riproduzione sui tuoi dispositivi, altrimenti si apre l'app Spotify
+- Il login di Spotify ora si fa nel browser, sul sito di Spotify
+- Player video: velocità di riproduzione e sottotitoli esterni (.srt, .vtt)
+- Timer di spegnimento per la musica nella sezione Media
+- Prima di collegare gli account va registrata l'app su Google Cloud e su Spotify for Developers (guida nella schermata di collegamento)
+
 ## 1.14.0
 - Nuova icona minimal a tre riquadri, con la versione a tema per le icone Material You e una nuova icona per le notifiche
 - Barra in basso più ordinata: Oggi, News, Note e Media. Le Impostazioni si aprono dall'ingranaggio in alto in ogni sezione

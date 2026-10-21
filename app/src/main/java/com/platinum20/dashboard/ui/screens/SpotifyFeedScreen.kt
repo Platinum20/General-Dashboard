@@ -1,0 +1,433 @@
+package com.platinum20.dashboard.ui.screens
+
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import coil3.compose.AsyncImage
+import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.media.spotify.SpItem
+import com.platinum20.dashboard.media.spotify.SpKind
+import com.platinum20.dashboard.media.spotify.SpPlayback
+import com.platinum20.dashboard.media.spotify.SpotifyApi
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
+import com.platinum20.dashboard.media.spotify.SpotifyStore
+import kotlinx.coroutines.delay
+
+private val spotifyTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
+
+/** Il tuo Spotify in versione nativa, con le API ufficiali. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SpotifyFeedScreen(
+    onBack: () -> Unit,
+    onOpenWeb: () -> Unit,
+) {
+    val context = LocalContext.current
+    SpotifyAuth.init(context)
+    val connected by SpotifyAuth.connected.collectAsState()
+    val message by SpotifyStore.message.collectAsState()
+    val playback by SpotifyStore.playback.collectAsState()
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var opened by remember { mutableStateOf<SpItem?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+
+    BackHandler(enabled = opened != null) { opened = null }
+
+    LaunchedEffect(message) {
+        message?.let {
+            snackbar.showSnackbar(it)
+            SpotifyStore.consumeMessage()
+        }
+    }
+    // Stato della riproduzione aggiornato mentre la schermata è aperta.
+    var visible by remember { mutableStateOf(true) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { visible = true }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { visible = false }
+    LaunchedEffect(connected, visible) {
+        while (connected && visible) {
+            SpotifyStore.refreshPlayback()
+            delay(5_000)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
+        topBar = {
+            TopAppBar(
+                title = { Text(opened?.title ?: "Spotify", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = {
+                    IconButton(onClick = { if (opened != null) opened = null else onBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    if (connected) {
+                        IconButton(onClick = {
+                            val item = opened
+                            when {
+                                item != null -> SpotifyStore.loadChildren(item, force = true)
+                                tab == 0 -> SpotifyStore.refreshHome(force = true)
+                                tab == 1 -> SpotifyStore.refreshPlaylists(force = true)
+                                tab == 2 -> SpotifyStore.refreshLibrary(force = true)
+                            }
+                        }) { Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna") }
+                        IconButton(onClick = {
+                            SpotifyAuth.disconnect()
+                            SpotifyStore.clear()
+                        }) { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "Scollega Spotify") }
+                    }
+                },
+            )
+        },
+        bottomBar = {
+            val state = playback
+            if (connected && state?.item != null) NowPlayingBar(state)
+        },
+    ) { inner ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(inner)
+        ) {
+            if (!connected) {
+                ConnectSpotify(onOpenWeb)
+                return@Column
+            }
+            val parent = opened
+            if (parent != null) {
+                ChildrenList(parent, onOpen = { opened = it })
+                return@Column
+            }
+            TabRow(selectedTabIndex = tab) {
+                spotifyTabs.forEachIndexed { index, label ->
+                    Tab(selected = tab == index, onClick = { tab = index }, text = { Text(label, maxLines = 1) })
+                }
+            }
+            val onItem: (SpItem) -> Unit = { item ->
+                if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) SpotifyStore.play(context, item) else opened = item
+            }
+            when (tab) {
+                0 -> HomeTab(onItem)
+                1 -> PlaylistsTab(onItem)
+                2 -> LibraryTab(onItem)
+                else -> SearchTab(onItem)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectSpotify(onOpenWeb: () -> Unit) {
+    val context = LocalContext.current
+    val clientId by SpotifyAuth.clientId.collectAsState()
+    val error by SpotifyAuth.error.collectAsState()
+    var draft by rememberSaveable { mutableStateOf(clientId) }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp))
+        Spacer(Modifier.height(16.dp))
+        Text("Collega il tuo Spotify", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Ascoltati di recente, i tuoi preferiti, playlist, album e podcast. Il login si fa sul sito di Spotify " +
+                "nel browser: l'app riceve solo il permesso di lettura e dei comandi di riproduzione.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(20.dp))
+        OutlinedTextField(
+            value = draft,
+            onValueChange = { draft = it.trim() },
+            label = { Text("Client ID dell'app Spotify") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        TextButton(onClick = {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://claude.ai/artifact/MGivavbbvKjLz3kkKAMyHE")))
+        }) { Text("Dove lo trovo?") }
+        Spacer(Modifier.height(8.dp))
+        Button(
+            enabled = draft.length >= 20,
+            onClick = {
+                SpotifyAuth.setClientId(draft)
+                SpotifyAuth.startLogin(context)
+            },
+        ) { Text("Accedi con Spotify") }
+        error?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+        }
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = onOpenWeb) { Text("Apri il web player") }
+    }
+}
+
+@Composable
+private fun HomeTab(onItem: (SpItem) -> Unit) {
+    val state by SpotifyStore.home.collectAsState()
+    LaunchedEffect(Unit) { SpotifyStore.refreshHome() }
+    val home = state.data
+    FeedList(state, empty = "") {
+        home ?: return@FeedList
+        item {
+            Text(
+                "Ciao ${home.profile.name}" + if (home.profile.premium) " · Premium" else "",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        section("Ascoltati di recente", home.recent.take(15), onItem)
+        section("I tuoi brani del mese", home.topTracks.take(15), onItem)
+        section("Artisti che ascolti di più", home.topArtists, onItem)
+    }
+}
+
+@Composable
+private fun PlaylistsTab(onItem: (SpItem) -> Unit) {
+    val state by SpotifyStore.playlists.collectAsState()
+    LaunchedEffect(Unit) { SpotifyStore.refreshPlaylists() }
+    FeedList(state, empty = "Nessuna playlist") {
+        items(state.data.orEmpty(), key = { it.id }) { ItemRow(it, onClick = { onItem(it) }) }
+    }
+}
+
+@Composable
+private fun LibraryTab(onItem: (SpItem) -> Unit) {
+    val state by SpotifyStore.library.collectAsState()
+    LaunchedEffect(Unit) { SpotifyStore.refreshLibrary() }
+    val library = state.data
+    FeedList(state, empty = "") {
+        library ?: return@FeedList
+        section("Brani che ti piacciono", library.liked, onItem)
+        section("Album salvati", library.albums, onItem)
+        section("Podcast", library.shows, onItem)
+    }
+}
+
+@Composable
+private fun SearchTab(onItem: (SpItem) -> Unit) {
+    val state by SpotifyStore.search.collectAsState()
+    var query by rememberSaveable { mutableStateOf("") }
+    Column {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text("Artisti, brani, album, podcast") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { SpotifyStore.search(query) }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        )
+        if (state.data == null && !state.loading && state.error == null) return@Column
+        FeedList(state, empty = "Nessun risultato") {
+            items(state.data.orEmpty(), key = { it.uri }) { ItemRow(it, onClick = { onItem(it) }) }
+        }
+    }
+}
+
+@Composable
+private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit) {
+    val context = LocalContext.current
+    val all by SpotifyStore.children.collectAsState()
+    val state = all[parent.id] ?: Loadable(loading = true)
+    LaunchedEffect(parent.id) { SpotifyStore.loadChildren(parent) }
+    FeedList(state, empty = "Vuoto") {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96)
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(parent.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(parent.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (parent.kind != SpKind.ARTIST) {
+                            FilledTonalButton(onClick = { SpotifyStore.play(context, parent) }) { Text("Riproduci") }
+                        }
+                        IconButton(onClick = { SpotifyStore.openInSpotify(context, parent) }) {
+                            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = "Apri in Spotify")
+                        }
+                    }
+                }
+            }
+        }
+        items(state.data.orEmpty(), key = { it.uri + it.id }) { child ->
+            ItemRow(child, onClick = {
+                if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
+                    SpotifyStore.play(context, child, parent)
+                } else {
+                    onOpen(child)
+                }
+            })
+        }
+    }
+}
+
+private fun LazyListScope.section(title: String, list: List<SpItem>, onItem: (SpItem) -> Unit) {
+    if (list.isEmpty()) return
+    item(key = "header-$title") {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+    items(list, key = { "$title-${it.uri}" }) { ItemRow(it, onClick = { onItem(it) }) }
+}
+
+@Composable
+private fun ItemRow(item: SpItem, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    item.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Cover(url: String, shape: Shape, sizeDp: Int) {
+    Box(
+        Modifier
+            .size(sizeDp.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (url.isNotBlank()) {
+            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
+        }
+    }
+}
+
+@Composable
+private fun NowPlayingBar(state: SpPlayback) {
+    val item = state.item ?: return
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, tonalElevation = 3.dp) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Cover(item.image, MaterialTheme.shapes.small, 44)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOf(item.subtitle, state.device).filter { it.isNotBlank() }.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            IconButton(onClick = { SpotifyStore.control(SpotifyApi::previous) }) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro")
+            }
+            FilledIconButton(onClick = {
+                SpotifyStore.control(if (state.playing) SpotifyApi::pause else SpotifyApi::resume)
+            }) {
+                Icon(if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (state.playing) "Pausa" else "Riproduci")
+            }
+            IconButton(onClick = { SpotifyStore.control(SpotifyApi::next) }) {
+                Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
+            }
+        }
+    }
+}

@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -65,7 +66,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
+import androidx.compose.material.icons.outlined.ClosedCaption
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -94,6 +103,8 @@ fun VideoPlayerScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var showLinkDialog by remember { mutableStateOf(false) }
+    var speed by remember { mutableFloatStateOf(1f) }
+    var subtitleName by remember { mutableStateOf<String?>(null) }
 
     val player = remember { ExoPlayer.Builder(context).build() }
     val thumbnails = remember {
@@ -108,12 +119,33 @@ fun VideoPlayerScreen(
         val entry = VideoLibrary.open(context, uri)
         current = entry
         error = null
+        subtitleName = null
         player.setMediaItem(MediaItem.fromUri(uri), entry.positionMs)
         player.prepare()
         player.play()
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(play)
+    }
+    // Sottotitoli esterni (.srt, .vtt): il video riparte dallo stesso punto con la traccia aggiunta.
+    val subtitlePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val entry = current ?: return@rememberLauncherForActivityResult
+        uri ?: return@rememberLauncherForActivityResult
+        val name = context.contentResolver
+            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            ?: uri.lastPathSegment.orEmpty().substringAfterLast('/')
+        val subtitle = MediaItem.SubtitleConfiguration.Builder(uri)
+            .setMimeType(if (name.endsWith(".vtt", ignoreCase = true)) MimeTypes.TEXT_VTT else MimeTypes.APPLICATION_SUBRIP)
+            .setLanguage("und")
+            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            .build()
+        val item = MediaItem.Builder().setUri(entry.uri).setSubtitleConfigurations(listOf(subtitle)).build()
+        val position = player.currentPosition
+        player.setMediaItem(item, position)
+        player.prepare()
+        player.play()
+        subtitleName = name.substringBeforeLast('.').ifBlank { "Sottotitoli" }
     }
 
     DisposableEffect(player) {
@@ -209,6 +241,20 @@ fun VideoPlayerScreen(
                 ) {
                     if (current == null) {
                         item { EmptyPlayer() }
+                    } else {
+                        item {
+                            PlayerOptions(
+                                speed = speed,
+                                onSpeed = {
+                                    speed = it
+                                    player.setPlaybackSpeed(it)
+                                },
+                                subtitleName = subtitleName,
+                                onPickSubtitles = {
+                                    subtitlePicker.launch(arrayOf("application/x-subrip", "text/vtt", "text/*", "application/octet-stream"))
+                                },
+                            )
+                        }
                     }
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -267,6 +313,45 @@ fun VideoPlayerScreen(
                 val youtube = youtubeWatchUrl(link)
                 if (youtube != null) onOpenYouTube(youtube) else play(Uri.parse(link.trim()))
             },
+        )
+    }
+}
+
+private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
+
+private fun speedLabel(speed: Float) = (if (speed % 1f == 0f) speed.toInt().toString() else speed.toString().replace('.', ',')) + "×"
+
+@Composable
+private fun PlayerOptions(
+    speed: Float,
+    onSpeed: (Float) -> Unit,
+    subtitleName: String?,
+    onPickSubtitles: () -> Unit,
+) {
+    var speedMenu by remember { mutableStateOf(false) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box {
+            AssistChip(
+                onClick = { speedMenu = true },
+                label = { Text("Velocità ${speedLabel(speed)}") },
+                leadingIcon = { Icon(Icons.Outlined.Speed, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            )
+            DropdownMenu(expanded = speedMenu, onDismissRequest = { speedMenu = false }) {
+                speeds.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(speedLabel(option)) },
+                        onClick = {
+                            speedMenu = false
+                            onSpeed(option)
+                        },
+                    )
+                }
+            }
+        }
+        AssistChip(
+            onClick = onPickSubtitles,
+            label = { Text(subtitleName ?: "Sottotitoli", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            leadingIcon = { Icon(Icons.Outlined.ClosedCaption, contentDescription = null, modifier = Modifier.size(18.dp)) },
         )
     }
 }

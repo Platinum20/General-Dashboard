@@ -44,6 +44,23 @@ object NowPlaying {
     val current: Track?
         get() = _tracks.value.values.let { all -> all.firstOrNull { it.playing } ?: all.firstOrNull() }
 
+    private var sleepJob: Job? = null
+    private val _sleepAt = MutableStateFlow<Long?>(null)
+    /** Quando il timer di spegnimento metterà in pausa i player (millisecondi), o null. */
+    val sleepAt: StateFlow<Long?> = _sleepAt.asStateFlow()
+
+    fun setSleepTimer(minutes: Int?) {
+        sleepJob?.cancel()
+        _sleepAt.value = null
+        if (minutes == null) return
+        _sleepAt.value = System.currentTimeMillis() + minutes * 60_000L
+        sleepJob = scope.launch {
+            delay(minutes * 60_000L)
+            _tracks.value.values.filter { it.playing }.forEach { command(it.service, PlayerCommand.TOGGLE) }
+            _sleepAt.value = null
+        }
+    }
+
     fun start(context: Context) {
         appContext = context.applicationContext
         if (poller?.isActive == true) return
@@ -60,6 +77,7 @@ object NowPlaying {
         if (MediaWebViews.openServices().isEmpty()) {
             poller?.cancel()
             poller = null
+            setSleepTimer(null)
             stopService()
         }
     }
