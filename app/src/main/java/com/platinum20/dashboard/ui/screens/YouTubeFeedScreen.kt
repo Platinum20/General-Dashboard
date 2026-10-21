@@ -68,7 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.media.youtube.Loadable
+import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtPlaylist
@@ -330,8 +330,8 @@ private fun SearchTab(onPlay: (String) -> Unit) {
 
 /** Lista con caricamento, errore e messaggio per la lista vuota. */
 @Composable
-private fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() -> Unit) {
-    val isEmpty = (state.data as? List<*>)?.isEmpty() ?: true
+fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() -> Unit) {
+    val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
     when {
         state.data == null && state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()

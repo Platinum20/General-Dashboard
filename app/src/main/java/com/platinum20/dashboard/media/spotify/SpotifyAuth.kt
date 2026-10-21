@@ -1,0 +1,199 @@
+package com.platinum20.dashboard.media.spotify
+
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import android.net.Uri
+import android.os.Bundle
+import android.util.Base64
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.security.MessageDigest
+import java.security.SecureRandom
+
+/**
+ * Accesso alle API di Spotify con il flusso PKCE: il login si fa nel browser sul sito di Spotify,
+ * l'app riceve solo un codice e lo scambia con i token. Serve il Client ID dell'app creata su
+ * developer.spotify.com (pubblico, nessun segreto nell'app).
+ */
+object SpotifyAuth {
+    const val REDIRECT_URI = "com.platinum20.dashboard://spotify-callback"
+    private const val PREFS = "spotify_api"
+    private const val KEY_CLIENT_ID = "client_id"
+    private const val KEY_ACCESS = "access_token"
+    private const val KEY_REFRESH = "refresh_token"
+    private const val KEY_EXPIRES = "expires_at"
+    private const val KEY_VERIFIER = "pkce_verifier"
+    private const val KEY_STATE = "pkce_state"
+
+    private val SCOPES = listOf(
+        "user-read-private", "user-read-recently-played", "user-top-read",
+        "playlist-read-private", "playlist-read-collaborative", "user-library-read", "user-follow-read",
+        "user-read-playback-state", "user-modify-playback-state", "user-read-currently-playing",
+    )
+
+    private lateinit var prefs: SharedPreferences
+    private val refreshLock = Mutex()
+    private val scope = MainScope()
+
+    private val _clientId = MutableStateFlow("")
+    val clientId: StateFlow<String> = _clientId.asStateFlow()
+
+    private val _connected = MutableStateFlow(false)
+    val connected: StateFlow<Boolean> = _connected.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    /** Ultimo errore del collegamento, da mostrare nella schermata di Spotify. */
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    fun init(context: Context) {
+        if (::prefs.isInitialized) return
+        prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        _clientId.value = prefs.getString(KEY_CLIENT_ID, "").orEmpty()
+        _connected.value = prefs.getString(KEY_REFRESH, null) != null
+    }
+
+    fun setClientId(id: String) {
+        val clean = id.trim()
+        _clientId.value = clean
+        prefs.edit().putString(KEY_CLIENT_ID, clean).apply()
+    }
+
+    /** Apre il login di Spotify nel browser. */
+    fun startLogin(context: Context) {
+        _error.value = null
+        val verifier = randomString(64)
+        val state = randomString(16)
+        prefs.edit().putString(KEY_VERIFIER, verifier).putString(KEY_STATE, state).apply()
+        val challenge = Base64.encodeToString(
+            MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray()),
+            Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP,
+        )
+        val url = Uri.parse("https://accounts.spotify.com/authorize").buildUpon()
+            .appendQueryParameter("client_id", _clientId.value)
+            .appendQueryParameter("response_type", "code")
+            .appendQueryParameter("redirect_uri", REDIRECT_URI)
+            .appendQueryParameter("code_challenge_method", "S256")
+            .appendQueryParameter("code_challenge", challenge)
+            .appendQueryParameter("state", state)
+            .appendQueryParameter("scope", SCOPES.joinToString(" "))
+            .build()
+        context.startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+
+    /** Ritorno dal browser: scambia il codice con i token. */
+    fun handleRedirect(uri: Uri) {
+        val error = uri.getQueryParameter("error")
+        if (error != null) {
+            _error.value = if (error == "access_denied") "Accesso annullato" else "Spotify ha risposto: $error"
+            return
+        }
+        val code = uri.getQueryParameter("code") ?: return
+        if (uri.getQueryParameter("state") != prefs.getString(KEY_STATE, null)) {
+            _error.value = "Risposta di Spotify non valida, riprova"
+            return
+        }
+        val verifier = prefs.getString(KEY_VERIFIER, null) ?: return
+        scope.launch {
+            runCatching {
+                tokenRequest(
+                    mapOf(
+                        "grant_type" to "authorization_code",
+                        "code" to code,
+                        "redirect_uri" to REDIRECT_URI,
+                        "client_id" to _clientId.value,
+                        "code_verifier" to verifier,
+                    )
+                )
+            }.onFailure { _error.value = "Collegamento non riuscito: ${it.message}" }
+        }
+    }
+
+    /** Token valido per le chiamate, rinnovato quando scade. Null se non collegato. */
+    suspend fun token(forceRefresh: Boolean = false): String? = refreshLock.withLock {
+        val access = prefs.getString(KEY_ACCESS, null)
+        if (!forceRefresh && access != null && System.currentTimeMillis() < prefs.getLong(KEY_EXPIRES, 0)) {
+            return access
+        }
+        val refresh = prefs.getString(KEY_REFRESH, null) ?: return null
+        return try {
+            tokenRequest(mapOf("grant_type" to "refresh_token", "refresh_token" to refresh, "client_id" to _clientId.value))
+            prefs.getString(KEY_ACCESS, null)
+        } catch (e: SpotifyRevokedException) {
+            disconnect()
+            _error.value = "Il collegamento con Spotify è scaduto, ricollegati"
+            null
+        }
+    }
+
+    fun disconnect() {
+        prefs.edit().remove(KEY_ACCESS).remove(KEY_REFRESH).remove(KEY_EXPIRES).apply()
+        _connected.value = false
+    }
+
+    private class SpotifyRevokedException : IOException("invalid_grant")
+
+    private suspend fun tokenRequest(form: Map<String, String>) = withContext(Dispatchers.IO) {
+        val body = form.entries.joinToString("&") { (k, v) -> "$k=" + URLEncoder.encode(v, "UTF-8") }
+        val conn = (URL("https://accounts.spotify.com/api/token").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            doOutput = true
+            connectTimeout = 15_000
+            readTimeout = 20_000
+            setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+        }
+        try {
+            conn.outputStream.use { it.write(body.toByteArray()) }
+            val code = conn.responseCode
+            val text = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            val json = runCatching { JSONObject(text) }.getOrDefault(JSONObject())
+            if (code !in 200..299) {
+                if (json.optString("error") == "invalid_grant") throw SpotifyRevokedException()
+                throw IOException(json.optString("error_description").ifBlank { "HTTP $code" })
+            }
+            val editor = prefs.edit()
+                .putString(KEY_ACCESS, json.getString("access_token"))
+                .putLong(KEY_EXPIRES, System.currentTimeMillis() + (json.optLong("expires_in", 3600) - 120) * 1000)
+            // Al rinnovo Spotify a volte non manda un nuovo refresh token: si tiene quello vecchio.
+            json.optString("refresh_token").takeIf { it.isNotBlank() }?.let { editor.putString(KEY_REFRESH, it) }
+            editor.apply()
+            _connected.value = true
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    private fun randomString(length: Int): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+        val random = SecureRandom()
+        return String(CharArray(length) { chars[random.nextInt(chars.length)] })
+    }
+}
+
+/** Riceve il ritorno dal login di Spotify nel browser e riporta all'app. */
+class SpotifyAuthActivity : Activity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        SpotifyAuth.init(this)
+        intent?.data?.let { SpotifyAuth.handleRedirect(it) }
+        // Torna alla schermata da cui era partito il login, senza crearne una nuova.
+        packageManager.getLaunchIntentForPackage(packageName)?.let {
+            startActivity(it.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        }
+        finish()
+    }
+}

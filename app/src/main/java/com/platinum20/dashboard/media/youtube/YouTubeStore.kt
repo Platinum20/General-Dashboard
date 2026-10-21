@@ -1,20 +1,13 @@
 package com.platinum20.dashboard.media.youtube
 
 import android.content.Context
+import com.platinum20.dashboard.media.Loadable
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/** Una lista caricata dalle API, con stato di caricamento ed errore. */
-data class Loadable<T>(
-    val data: T? = null,
-    val loading: Boolean = false,
-    val error: String? = null,
-    val loadedAt: Long = 0,
-)
 
 /** Feed di YouTube dell'utente, tenuti in memoria finché l'app è aperta. */
 object YouTubeStore {

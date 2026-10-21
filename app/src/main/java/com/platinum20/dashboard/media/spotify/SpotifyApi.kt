@@ -1,0 +1,203 @@
+package com.platinum20.dashboard.media.spotify
+
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+
+enum class SpKind { TRACK, ALBUM, PLAYLIST, ARTIST, SHOW, EPISODE }
+
+/** Un elemento di Spotify da mostrare in lista: brano, album, playlist, artista o podcast. */
+data class SpItem(
+    val id: String,
+    val uri: String,
+    val kind: SpKind,
+    val title: String,
+    val subtitle: String,
+    val image: String,
+) {
+    val webUrl: String get() = "https://open.spotify.com/${kind.name.lowercase()}/$id"
+}
+
+data class SpProfile(val name: String, val premium: Boolean)
+
+data class SpPlayback(
+    val item: SpItem?,
+    val playing: Boolean,
+    val device: String,
+    val progressMs: Long,
+    val durationMs: Long,
+)
+
+class SpotifyApiException(message: String, val code: Int) : IOException(message)
+
+/** Web API di Spotify: libreria, ascolti e, con Premium, comandi della riproduzione. */
+object SpotifyApi {
+    private const val BASE = "https://api.spotify.com/v1/"
+
+    private suspend fun request(
+        token: String,
+        path: String,
+        method: String = "GET",
+        body: JSONObject? = null,
+    ): JSONObject? = withContext(Dispatchers.IO) {
+        val conn = (URL(BASE + path).openConnection() as HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = 15_000
+            readTimeout = 20_000
+            setRequestProperty("Authorization", "Bearer $token")
+            setRequestProperty("Accept-Language", "it-IT,it;q=0.9")
+            if (body != null || method != "GET") {
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+            }
+        }
+        try {
+            if (conn.doOutput) conn.outputStream.use { it.write((body ?: JSONObject()).toString().toByteArray()) }
+            val code = conn.responseCode
+            if (code == 204) return@withContext null
+            val text = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (code !in 200..299) {
+                val error = runCatching { JSONObject(text).getJSONObject("error") }.getOrNull()
+                val reason = error?.optString("reason").orEmpty()
+                throw SpotifyApiException(
+                    when {
+                        code == 401 -> "Accesso a Spotify scaduto"
+                        code == 403 && reason == "PREMIUM_REQUIRED" -> "Per comandare la riproduzione serve Spotify Premium"
+                        code == 403 -> "Spotify non permette questa richiesta (account non aggiunto in User Management?)"
+                        code == 404 && reason == "NO_ACTIVE_DEVICE" -> "Nessun dispositivo Spotify attivo"
+                        code == 429 -> "Troppe richieste a Spotify, riprova tra poco"
+                        else -> error?.optString("message")?.ifBlank { null } ?: "Spotify ha risposto HTTP $code"
+                    },
+                    code,
+                )
+            }
+            if (text.isBlank()) null else JSONObject(text)
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    suspend fun profile(token: String): SpProfile {
+        val me = request(token, "me") ?: JSONObject()
+        return SpProfile(me.optString("display_name").ifBlank { me.optString("id") }, me.optString("product") == "premium")
+    }
+
+    suspend fun recentlyPlayed(token: String): List<SpItem> =
+        request(token, "me/player/recently-played?limit=50")?.optJSONArray("items")
+            .objects().mapNotNull { it.optJSONObject("track")?.toItem() }
+            .distinctBy { it.id }
+
+    suspend fun topTracks(token: String): List<SpItem> =
+        request(token, "me/top/tracks?time_range=short_term&limit=30")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+
+    suspend fun topArtists(token: String): List<SpItem> =
+        request(token, "me/top/artists?time_range=medium_term&limit=20")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+
+    suspend fun playlists(token: String): List<SpItem> =
+        request(token, "me/playlists?limit=50")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+
+    suspend fun likedTracks(token: String): List<SpItem> =
+        request(token, "me/tracks?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("track")?.toItem() }
+
+    suspend fun savedAlbums(token: String): List<SpItem> =
+        request(token, "me/albums?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("album")?.toItem() }
+
+    suspend fun savedShows(token: String): List<SpItem> =
+        request(token, "me/shows?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("show")?.toItem() }
+
+    /** Contenuto di una playlist, di un album, di un artista (brani più ascoltati) o di un podcast. */
+    suspend fun children(token: String, parent: SpItem): List<SpItem> = when (parent.kind) {
+        SpKind.PLAYLIST -> request(token, "playlists/${parent.id}/tracks?limit=100")?.optJSONArray("items")
+            .objects().mapNotNull { it.optJSONObject("track")?.toItem() }
+        SpKind.ALBUM -> {
+            val album = request(token, "albums/${parent.id}") ?: JSONObject()
+            val image = album.image()
+            album.optJSONObject("tracks")?.optJSONArray("items").objects()
+                .mapNotNull { it.toItem()?.copy(image = image) }
+        }
+        SpKind.ARTIST -> request(token, "artists/${parent.id}/top-tracks?market=from_token")?.optJSONArray("tracks")
+            .objects().mapNotNull { it.toItem() }
+        SpKind.SHOW -> request(token, "shows/${parent.id}/episodes?limit=50&market=from_token")?.optJSONArray("items")
+            .objects().mapNotNull { it.toItem() }
+        else -> emptyList()
+    }
+
+    suspend fun search(token: String, query: String): List<SpItem> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val result = request(token, "search?q=$q&type=track,artist,album,playlist,show&limit=10&market=from_token") ?: return emptyList()
+        return listOf("artists", "tracks", "albums", "playlists", "shows").flatMap { key ->
+            result.optJSONObject(key)?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+        }
+    }
+
+    suspend fun playback(token: String): SpPlayback? {
+        val state = request(token, "me/player?additional_types=episode") ?: return null
+        return SpPlayback(
+            item = state.optJSONObject("item")?.toItem(),
+            playing = state.optBoolean("is_playing"),
+            device = state.optJSONObject("device")?.optString("name").orEmpty(),
+            progressMs = state.optLong("progress_ms"),
+            durationMs = state.optJSONObject("item")?.optLong("duration_ms") ?: 0,
+        )
+    }
+
+    /** Fa partire un brano o una raccolta sul dispositivo attivo (Premium). */
+    suspend fun play(token: String, item: SpItem, context: SpItem? = null) {
+        val body = JSONObject()
+        when {
+            context != null && item.kind in setOf(SpKind.TRACK, SpKind.EPISODE) && context.kind != SpKind.ARTIST ->
+                body.put("context_uri", context.uri).put("offset", JSONObject().put("uri", item.uri))
+            item.kind in setOf(SpKind.TRACK, SpKind.EPISODE) -> body.put("uris", JSONArray().put(item.uri))
+            else -> body.put("context_uri", item.uri)
+        }
+        request(token, "me/player/play", "PUT", body)
+    }
+
+    suspend fun pause(token: String) { request(token, "me/player/pause", "PUT") }
+    suspend fun resume(token: String) { request(token, "me/player/play", "PUT") }
+    suspend fun next(token: String) { request(token, "me/player/next", "POST") }
+    suspend fun previous(token: String) { request(token, "me/player/previous", "POST") }
+
+    private fun JSONArray?.objects(): List<JSONObject> =
+        if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
+
+    private fun JSONObject.image(): String {
+        val images = optJSONArray("images") ?: optJSONObject("album")?.optJSONArray("images") ?: return ""
+        // Le immagini arrivano dalla più grande: la media basta per le liste.
+        val list = images.objects()
+        return (list.getOrNull(1) ?: list.firstOrNull())?.optString("url").orEmpty()
+    }
+
+    private fun JSONObject.toItem(): SpItem? {
+        val id = optString("id")
+        if (id.isBlank()) return null
+        val kind = when (optString("type")) {
+            "track" -> SpKind.TRACK
+            "album" -> SpKind.ALBUM
+            "playlist" -> SpKind.PLAYLIST
+            "artist" -> SpKind.ARTIST
+            "show" -> SpKind.SHOW
+            "episode" -> SpKind.EPISODE
+            else -> return null
+        }
+        val artists = optJSONArray("artists").objects().joinToString(", ") { it.optString("name") }
+        val subtitle = when (kind) {
+            SpKind.TRACK -> artists
+            SpKind.ALBUM -> listOf(artists, optString("release_date").take(4)).filter { it.isNotBlank() }.joinToString(" · ")
+            SpKind.PLAYLIST -> optJSONObject("owner")?.optString("display_name").orEmpty().let { owner ->
+                val total = optJSONObject("tracks")?.optInt("total") ?: 0
+                listOf(owner, if (total > 0) "$total brani" else "").filter { it.isNotBlank() }.joinToString(" · ")
+            }
+            SpKind.ARTIST -> "Artista"
+            SpKind.SHOW -> optString("publisher")
+            SpKind.EPISODE -> optString("release_date")
+        }
+        return SpItem(id, optString("uri"), kind, optString("name"), subtitle, image())
+    }
+}

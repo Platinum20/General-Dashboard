@@ -60,6 +60,7 @@ import com.platinum20.dashboard.ui.screens.MediaScreen
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.WebPlayerScreen
 import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
+import com.platinum20.dashboard.ui.screens.SpotifyFeedScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
@@ -181,6 +182,7 @@ object Routes {
     const val MEDIA = "media"
     const val VIDEO = "media/video"
     const val YOUTUBE_FEED = "media/youtube"
+    const val SPOTIFY_FEED = "media/spotify"
     const val WEB_PLAYER = "media/web/{service}?url={url}"
     const val LOGIN = "settings/login/{service}"
 
@@ -318,7 +320,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     bottomPadding = padding,
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onOpenService = {
-                        navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.webPlayer(it))
+                        navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.SPOTIFY_FEED)
                     },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
@@ -328,6 +330,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
+                )
+            }
+            composable(Routes.SPOTIFY_FEED) {
+                SpotifyFeedScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
                 )
             }
             composable(Routes.VIDEO) {
