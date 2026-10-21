@@ -1,6 +1,22 @@
 package com.platinum20.dashboard.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.platinum20.dashboard.work.MorningWorker
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.selection.selectable
@@ -114,6 +130,9 @@ fun SettingsScreen(
                 }
             }
 
+            item { SectionHeader("Notifica del mattino") }
+            item { MorningSettings() }
+
             item { SectionHeader("Informazioni") }
             item {
                 SettingsGroup {
@@ -190,4 +209,77 @@ private fun SettingsRow(
             { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) }
         } else null,
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MorningSettings() {
+    val context = LocalContext.current
+    val morning by AppSettings.morning.collectAsState()
+    var pickTime by remember { mutableStateOf(false) }
+
+    fun enable(on: Boolean) {
+        AppSettings.setMorning(morning.copy(enabled = on))
+        MorningWorker.schedule(context)
+    }
+
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) enable(true)
+    }
+
+    SettingsGroup {
+        ListItem(
+            modifier = Modifier.clickable {
+                if (!morning.enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    enable(!morning.enabled)
+                }
+            },
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+            leadingContent = { Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            headlineContent = { Text("Riepilogo ogni mattina") },
+            supportingContent = { Text("Meteo, impegni, cose da fare e temi del giorno") },
+            trailingContent = { Switch(checked = morning.enabled, onCheckedChange = null) },
+        )
+        if (morning.enabled) {
+            SettingsRow(
+                icon = Icons.Outlined.Schedule,
+                title = "Orario",
+                subtitle = morning.timeLabel,
+                onClick = { pickTime = true },
+            )
+        }
+        SettingsRow(
+            icon = Icons.Outlined.Send,
+            title = "Invia una prova",
+            subtitle = "Ricevi subito la notifica di oggi",
+            onClick = {
+                if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    MorningWorker.sendTest(context)
+                }
+            },
+        )
+    }
+
+    if (pickTime) {
+        val state = rememberTimePickerState(initialHour = morning.hour, initialMinute = morning.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { pickTime = false },
+            title = { Text("Orario della notifica") },
+            text = { TimePicker(state = state) },
+            confirmButton = {
+                TextButton(onClick = {
+                    AppSettings.setMorning(morning.copy(hour = state.hour, minute = state.minute))
+                    MorningWorker.schedule(context)
+                    pickTime = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pickTime = false }) { Text("Annulla") }
+            },
+        )
+    }
 }

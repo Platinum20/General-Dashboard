@@ -68,6 +68,7 @@ import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherState
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
+import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -236,8 +237,11 @@ fun rememberRecapState(): RecapUiState {
         runCatching { NewsStore.load(force = attempt > 0) }
             .onFailure { error = it.message ?: "Notizie non disponibili." }
     }
+    val context = LocalContext.current
     val themes by produceState(emptyList<RecapTheme>(), result) {
         value = result?.let { r -> withContext(Dispatchers.Default) { NewsRecap.build(r.items) } } ?: emptyList()
+        // Il widget mostra gli stessi temi della Dashboard.
+        if (value.isNotEmpty()) DashboardWidget.saveRecap(context, value)
     }
     return RecapUiState(
         themes = themes,

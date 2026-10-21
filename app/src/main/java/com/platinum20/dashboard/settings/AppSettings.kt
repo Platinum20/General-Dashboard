@@ -25,18 +25,27 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
     val visible: List<HomeCard> get() = order.filter { it !in hidden }
 }
 
+data class MorningBrief(val enabled: Boolean = false, val hour: Int = 7, val minute: Int = 30) {
+    val timeLabel: String get() = "%02d:%02d".format(hour, minute)
+}
+
 /** Preferenze dell'app, salvate sul telefono e osservabili dalla UI. */
 object AppSettings {
     private const val PREFS = "settings"
     private const val KEY_THEME = "theme"
     private const val KEY_CARD_ORDER = "home_card_order"
     private const val KEY_CARD_HIDDEN = "home_card_hidden"
+    private const val KEY_MORNING_ENABLED = "morning_enabled"
+    private const val KEY_MORNING_HOUR = "morning_hour"
+    private const val KEY_MORNING_MINUTE = "morning_minute"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.DYNAMIC)
     val theme: StateFlow<AppTheme> = _theme.asStateFlow()
     private val _homeLayout = MutableStateFlow(HomeLayout(HomeCard.entries, emptySet()))
     val homeLayout: StateFlow<HomeLayout> = _homeLayout.asStateFlow()
+    private val _morning = MutableStateFlow(MorningBrief())
+    val morning: StateFlow<MorningBrief> = _morning.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -45,6 +54,20 @@ object AppSettings {
             ?.let { name -> AppTheme.entries.firstOrNull { it.name == name } }
             ?: AppTheme.DYNAMIC
         _homeLayout.value = readLayout()
+        _morning.value = MorningBrief(
+            enabled = prefs.getBoolean(KEY_MORNING_ENABLED, false),
+            hour = prefs.getInt(KEY_MORNING_HOUR, 7),
+            minute = prefs.getInt(KEY_MORNING_MINUTE, 30),
+        )
+    }
+
+    fun setMorning(brief: MorningBrief) {
+        _morning.value = brief
+        prefs.edit()
+            .putBoolean(KEY_MORNING_ENABLED, brief.enabled)
+            .putInt(KEY_MORNING_HOUR, brief.hour)
+            .putInt(KEY_MORNING_MINUTE, brief.minute)
+            .apply()
     }
 
     private fun readLayout(): HomeLayout {
