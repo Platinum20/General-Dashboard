@@ -1,0 +1,149 @@
+package com.platinum20.dashboard.ui.screens
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.platinum20.dashboard.BuildConfig
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    bottomPadding: PaddingValues,
+    onOpenUpdates: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = topLevelInsets,
+        topBar = {
+            LargeTopAppBar(
+                title = { Text("Impostazioni") },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { inner ->
+        LazyColumn(
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = inner.calculateTopPadding(),
+                bottom = bottomPadding.calculateBottomPadding() + 16.dp,
+            ),
+        ) {
+            item { SectionHeader("Aspetto") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.Palette,
+                        title = "Material You",
+                        subtitle = "I colori seguono lo sfondo del telefono",
+                    )
+                }
+            }
+
+            item { SectionHeader("Informazioni") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.Info,
+                        title = "Versione",
+                        subtitle = "${BuildConfig.VERSION_NAME} (build ${BuildConfig.VERSION_CODE})",
+                    )
+                    SettingsRow(
+                        icon = Icons.Outlined.Code,
+                        title = "Repository GitHub",
+                        subtitle = BuildConfig.GITHUB_REPO,
+                        onClick = {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.GITHUB_REPO}"))
+                            )
+                        },
+                    )
+                }
+            }
+
+            // In fondo: il sottomenu degli aggiornamenti.
+            item { SectionHeader("Sistema") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.SystemUpdate,
+                        title = "Aggiornamenti",
+                        subtitle = "Changelog e aggiornamento da GitHub",
+                        showChevron = true,
+                        onClick = onOpenUpdates,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun SettingsGroup(content: @Composable () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column { content() }
+    }
+}
+
+@Composable
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    showChevron: Boolean = false,
+    onClick: (() -> Unit)? = null,
+) {
+    ListItem(
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        headlineContent = { Text(title) },
+        supportingContent = { Text(subtitle) },
+        trailingContent = if (showChevron) {
+            { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null) }
+        } else null,
+    )
+}
