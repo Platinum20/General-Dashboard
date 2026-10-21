@@ -63,6 +63,7 @@ import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 import com.platinum20.dashboard.widget.DashboardWidget
 import com.platinum20.dashboard.work.MorningWorker
 import com.platinum20.dashboard.work.RefreshWorker
+import com.platinum20.dashboard.work.UpdateCheckWorker
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -85,6 +86,7 @@ data class OpenRequest(
         const val ARTICLE = "article"
         const val NOTES = "notes"
         const val MEDIA = "media"
+        const val UPDATES = "updates"
 
         private const val EXTRA_TARGET = "open_target"
         private const val EXTRA_URL = "open_url"
@@ -110,9 +112,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
-        // Lavori in background: widget (solo se presente) e notifica del mattino.
+        // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
         MorningWorker.schedule(this)
+        UpdateCheckWorker.schedule(this)
         enableEdgeToEdge()
         setContent {
             val theme by AppSettings.theme.collectAsState()
@@ -215,10 +218,12 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                 when (request.target) {
                     OpenRequest.NOTES -> Routes.NOTES
                     OpenRequest.MEDIA -> Routes.MEDIA
+                    OpenRequest.UPDATES -> Routes.SETTINGS
                     else -> Routes.HOME
                 }
             )
             when (request.target) {
+                OpenRequest.UPDATES -> navController.navigate(Routes.UPDATES)
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
                 OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {

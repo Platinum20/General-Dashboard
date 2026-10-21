@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.0
+- Notifica quando esce una nuova versione dell'app: il controllo avviene da solo ogni qualche ora, e toccandola si apre la schermata Aggiornamenti
+- Un solo avviso per versione, e la notifica sparisce quando apri Aggiornamenti
+- Si spegne dall'interruttore "Avvisami delle nuove versioni" in Impostazioni > Aggiornamenti
+
 ## 1.12.0
 - YouTube e Spotify suonano anche a schermo spento e con l'app in sottofondo
 - Notifica con copertina, titolo e comandi (indietro, play/pausa, avanti, chiudi), anche sulla schermata di blocco e con i tasti delle cuffie

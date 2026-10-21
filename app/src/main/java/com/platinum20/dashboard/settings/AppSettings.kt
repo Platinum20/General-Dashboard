@@ -40,6 +40,7 @@ object AppSettings {
     private const val KEY_MORNING_HOUR = "morning_hour"
     private const val KEY_MORNING_MINUTE = "morning_minute"
     private const val KEY_AD_BLOCK = "ad_block"
+    private const val KEY_UPDATE_NOTIFY = "update_notify"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.DYNAMIC)
@@ -51,6 +52,9 @@ object AppSettings {
     private val _adBlock = MutableStateFlow(true)
     /** Blocco pubblicità nei player di YouTube e Spotify. */
     val adBlock: StateFlow<Boolean> = _adBlock.asStateFlow()
+    private val _updateNotify = MutableStateFlow(true)
+    /** Notifica quando su GitHub esce una nuova versione dell'app. */
+    val updateNotify: StateFlow<Boolean> = _updateNotify.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -65,6 +69,7 @@ object AppSettings {
             minute = prefs.getInt(KEY_MORNING_MINUTE, 30),
         )
         _adBlock.value = prefs.getBoolean(KEY_AD_BLOCK, true)
+        _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -79,6 +84,11 @@ object AppSettings {
     fun setAdBlock(enabled: Boolean) {
         _adBlock.value = enabled
         prefs.edit().putBoolean(KEY_AD_BLOCK, enabled).apply()
+    }
+
+    fun setUpdateNotify(enabled: Boolean) {
+        _updateNotify.value = enabled
+        prefs.edit().putBoolean(KEY_UPDATE_NOTIFY, enabled).apply()
     }
 
     private fun readLayout(): HomeLayout {
