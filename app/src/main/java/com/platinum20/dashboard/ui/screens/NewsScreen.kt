@@ -1,10 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.browser.customtabs.CustomTabColorSchemeParams
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -44,10 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,12 +58,11 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun NewsScreen(
     bottomPadding: PaddingValues,
+    onOpenArticle: (NewsItem) -> Unit,
     viewModel: NewsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -115,10 +107,10 @@ fun NewsScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (state.failedSources.isNotEmpty()) {
+                    if (state.failures.isNotEmpty()) {
                         item {
                             Text(
-                                "Non raggiungibili: " + state.failedSources.joinToString { it.name },
+                                "Non raggiungibili: " + state.failures.joinToString { "${it.source.name} (${it.reason})" },
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 4.dp),
@@ -126,7 +118,7 @@ fun NewsScreen(
                         }
                     }
                     items(state.visibleItems, key = { it.link }) { item ->
-                        NewsCard(item, onClick = { openArticle(context, item.link, toolbarColor) })
+                        NewsCard(item, onClick = { onOpenArticle(item) })
                     }
                     if (state.visibleItems.isEmpty()) {
                         item {
@@ -251,21 +243,5 @@ private fun relativeTime(instant: Instant): String {
         minutes < 60 -> "$minutes min fa"
         minutes < 24 * 60 -> "${minutes / 60} h fa"
         else -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()))
-    }
-}
-
-/** Apre l'articolo in una scheda del browser integrata, con i colori dell'app. */
-private fun openArticle(context: Context, url: String, toolbarColor: Int) {
-    val uri = Uri.parse(url)
-    runCatching {
-        CustomTabsIntent.Builder()
-            .setShowTitle(true)
-            .setDefaultColorSchemeParams(
-                CustomTabColorSchemeParams.Builder().setToolbarColor(toolbarColor).build()
-            )
-            .build()
-            .launchUrl(context, uri)
-    }.onFailure {
-        context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

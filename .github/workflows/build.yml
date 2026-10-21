@@ -80,7 +80,8 @@ jobs:
           retention-days: 14
 
       - name: Pubblica release
-        if: steps.version.outputs.release == 'true'
+        # Le release partono solo da main: le build lanciate a mano su altri rami servono solo da prova.
+        if: steps.version.outputs.release == 'true' && github.ref == 'refs/heads/main'
         run: |
           if [ "$SIGNED" != "true" ]; then
             echo "::error::Mancano i secret di firma (KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD): release non pubblicata. Senza una chiave fissa gli aggiornamenti non si installerebbero."
