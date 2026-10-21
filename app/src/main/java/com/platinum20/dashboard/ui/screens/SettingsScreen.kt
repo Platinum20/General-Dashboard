@@ -3,6 +3,15 @@ package com.platinum20.dashboard.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.outlined.BrightnessMedium
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material3.RadioButton
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.semantics.Role
+import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.settings.AppTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -39,6 +48,7 @@ fun SettingsScreen(
     onOpenUpdates: () -> Unit,
 ) {
     val context = LocalContext.current
+    val theme by AppSettings.theme.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -59,14 +69,33 @@ fun SettingsScreen(
                 bottom = bottomPadding.calculateBottomPadding() + 16.dp,
             ),
         ) {
-            item { SectionHeader("Aspetto") }
+            item { SectionHeader("Tema") }
             item {
                 SettingsGroup {
-                    SettingsRow(
-                        icon = Icons.Outlined.Palette,
-                        title = "Material You",
-                        subtitle = "I colori seguono lo sfondo del telefono",
-                    )
+                    AppTheme.entries.forEach { option ->
+                        ListItem(
+                            modifier = Modifier.selectable(
+                                selected = theme == option,
+                                onClick = { AppSettings.setTheme(option) },
+                                role = Role.RadioButton,
+                            ),
+                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                            leadingContent = {
+                                Icon(
+                                    when (option) {
+                                        AppTheme.DYNAMIC -> Icons.Outlined.Palette
+                                        AppTheme.SYSTEM -> Icons.Outlined.BrightnessMedium
+                                        AppTheme.AMOLED -> Icons.Outlined.DarkMode
+                                    },
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            },
+                            headlineContent = { Text(option.label) },
+                            supportingContent = { Text(option.description) },
+                            trailingContent = { RadioButton(selected = theme == option, onClick = null) },
+                        )
+                    }
                 }
             }
 

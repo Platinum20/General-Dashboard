@@ -1,20 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Quattro riquadri arrotondati: una dashboard. Contenuto nella safe zone centrale. -->
+<!-- Lavagnetta: cornice in legno, lavagna verde, un grafico e due righe scritte col gesso. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Ombra morbida sotto la lavagna -->
     <path
-        android:fillColor="#D8E2FF"
-        android:pathData="M38,34h12a4,4 0,0 1,4 4v18a4,4 0,0 1,-4 4h-12a4,4 0,0 1,-4 -4v-18a4,4 0,0 1,4 -4z" />
+        android:fillColor="#26000000"
+        android:pathData="M28,31h56a4,4 0,0 1,4 4v38a4,4 0,0 1,-4 4h-56a4,4 0,0 1,-4 -4v-38a4,4 0,0 1,4 -4z" />
+
+    <!-- Cornice in legno -->
     <path
-        android:fillColor="#D8E2FF"
-        android:pathData="M62,34h8a4,4 0,0 1,4 4v6a4,4 0,0 1,-4 4h-8a4,4 0,0 1,-4 -4v-6a4,4 0,0 1,4 -4z" />
+        android:fillColor="#9A6235"
+        android:pathData="M26,28h56a4,4 0,0 1,4 4v38a4,4 0,0 1,-4 4h-56a4,4 0,0 1,-4 -4v-38a4,4 0,0 1,4 -4z" />
+
+    <!-- Lavagna -->
     <path
-        android:fillColor="#D8E2FF"
-        android:pathData="M62,52h8a4,4 0,0 1,4 4v14a4,4 0,0 1,-4 4h-8a4,4 0,0 1,-4 -4v-14a4,4 0,0 1,4 -4z" />
+        android:fillColor="#2E5A4C"
+        android:pathData="M29,32h50a1.5,1.5 0,0 1,1.5 1.5v33a1.5,1.5 0,0 1,-1.5 1.5h-50a1.5,1.5 0,0 1,-1.5 -1.5v-33a1.5,1.5 0,0 1,1.5 -1.5z" />
+
+    <!-- Grafico a gesso -->
     <path
-        android:fillColor="#D8E2FF"
-        android:pathData="M38,64h12a4,4 0,0 1,4 4v2a4,4 0,0 1,-4 4h-12a4,4 0,0 1,-4 -4v-2a4,4 0,0 1,4 -4z" />
+        android:strokeColor="#F4F1E8"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,58L42,51L48,55L57,43" />
+    <path
+        android:fillColor="#F4F1E8"
+        android:pathData="M57,43m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0" />
+
+    <!-- Righe di testo a gesso -->
+    <path
+        android:strokeColor="#CCF4F1E8"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M63,45h12M63,51h9M34,63h20" />
+
+    <!-- Mensola e gessetto -->
+    <path
+        android:fillColor="#7E4D27"
+        android:pathData="M31,74h46a1.5,1.5 0,0 1,1.5 1.5v0a1.5,1.5 0,0 1,-1.5 1.5h-46a1.5,1.5 0,0 1,-1.5 -1.5v0a1.5,1.5 0,0 1,1.5 -1.5z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M64,71.2h8a1.2,1.2 0,0 1,1.2 1.2v0.6a1.2,1.2 0,0 1,-1.2 1.2h-8a1.2,1.2 0,0 1,-1.2 -1.2v-0.6a1.2,1.2 0,0 1,1.2 -1.2z" />
 </vector>

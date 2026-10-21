@@ -1,13 +1,17 @@
 package com.platinum20.dashboard
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -15,33 +19,54 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.HomeScreen
+import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
+import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppSettings.init(this)
         enableEdgeToEdge()
         setContent {
-            GeneralDashboardTheme {
+            val theme by AppSettings.theme.collectAsState()
+            val dark = isAppInDarkTheme(theme)
+
+            // Icone della barra di stato chiare o scure in base al tema scelto, non solo al sistema.
+            DisposableEffect(dark) {
+                val style = if (dark) {
+                    SystemBarStyle.dark(Color.TRANSPARENT)
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                }
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                onDispose {}
+            }
+
+            GeneralDashboardTheme(theme = theme) {
                 AppRoot()
             }
         }
     }
 }
 
-private object Routes {
+object Routes {
     const val HOME = "home"
+    const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
 }
@@ -55,8 +80,18 @@ private data class TopDestination(
 
 private val topDestinations = listOf(
     TopDestination(Routes.HOME, "Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
+    TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
     TopDestination(Routes.SETTINGS, "Impostazioni", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
+
+/** Passa a una sezione della barra in basso mantenendo lo stato delle altre. */
+private fun NavController.switchTab(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
 
 @Composable
 private fun AppRoot() {
@@ -73,13 +108,7 @@ private fun AppRoot() {
                         val selected = currentRoute == dest.route
                         NavigationBarItem(
                             selected = selected,
-                            onClick = {
-                                navController.navigate(dest.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { navController.switchTab(dest.route) },
                             icon = { Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null) },
                             label = { Text(dest.label) },
                         )
@@ -88,13 +117,15 @@ private fun AppRoot() {
             }
         },
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.HOME,
-            modifier = Modifier,
-        ) {
+        NavHost(navController = navController, startDestination = Routes.HOME) {
             composable(Routes.HOME) {
-                HomeScreen(bottomPadding = padding)
+                HomeScreen(
+                    bottomPadding = padding,
+                    onOpenNews = { navController.switchTab(Routes.NEWS) },
+                )
+            }
+            composable(Routes.NEWS) {
+                NewsScreen(bottomPadding = padding)
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
