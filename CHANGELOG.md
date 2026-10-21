@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+- Nuovo lettore: gli articoli si aprono in modalità lettura, solo titolo, testo, immagini e video, senza menu, pubblicità o banner del giornale
+- Testo con caratteri da lettura, dimensione regolabile con il tasto "Aa", link agli altri articoli aperti sempre nel lettore
+- Se il testo non è disponibile (per esempio articoli per abbonati) si può aprire la pagina originale dentro l'app
+
 ## 1.2.0
 - Lettore interno: gli articoli si aprono dentro l'app, senza browser esterno
 - Nel lettore: condividi, apri nel browser, tasto indietro tra le pagine e tema scuro anche sulle pagine

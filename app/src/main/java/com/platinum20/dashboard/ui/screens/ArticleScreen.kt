@@ -54,7 +54,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 
-/** Lettore interno: apre l'articolo dentro l'app, senza passare dal browser. */
+/** Pagina originale del giornale dentro l'app, per quando il lettore non riesce a ricavare il testo. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleScreen(
