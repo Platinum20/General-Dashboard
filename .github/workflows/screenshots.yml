@@ -1,0 +1,58 @@
+name: Screenshot
+
+# Giro automatico dell'app (Robolectric): fotografa ogni schermata e le pubblica
+# nel ramo "screenshots", cartella <ramo>/<run>. Si lancia a mano su qualsiasi ramo.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tour:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Test e giro fotografico
+        run: gradle :app:testDebugUnitTest -Ptour=true --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-${{ github.run_number }}
+          path: |
+            app/build/tour
+            app/build/reports/tests
+          retention-days: 7
+
+      - name: Pubblica le foto nel ramo screenshots
+        if: always()
+        run: |
+          [ -d app/build/tour ] || exit 0
+          DEST="${GITHUB_REF_NAME//\//_}/${{ github.run_number }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/shots"
+          cp -r app/build/tour "$RUNNER_TEMP/shots/tour"
+          cp -r app/build/reports/tests "$RUNNER_TEMP/shots/report" 2>/dev/null || true
+          if git fetch origin screenshots; then
+            git checkout -B screenshots origin/screenshots
+          else
+            git checkout --orphan screenshots
+            git rm -rf . >/dev/null
+          fi
+          mkdir -p "$DEST"
+          cp -r "$RUNNER_TEMP/shots/." "$DEST/"
+          git add "$DEST"
+          git commit -m "Foto $DEST" >/dev/null
+          git push origin screenshots
