@@ -35,19 +35,27 @@ object ArticleVerifier {
     private val _state = MutableStateFlow(VerificationState())
     val state: StateFlow<VerificationState> = _state.asStateFlow()
 
+    private enum class Outcome { READABLE, REJECTED, RETRY_LATER }
+
+    /** Articoli in fase di controllo, per non controllarli due volte se si aggiorna la lista nel frattempo. */
+    private val inFlight = mutableSetOf<String>()
+
     suspend fun verify(urls: List<String>, cookies: (String) -> String? = { null }) = coroutineScope {
         val known = _state.value.let { it.readable + it.rejected }
-        val todo = urls.distinct().filter { it !in known }
+        val todo = synchronized(inFlight) {
+            urls.distinct().filter { it !in known && it !in inFlight }.also { inFlight += it }
+        }
         if (todo.isEmpty()) return@coroutineScope
         _state.update { it.copy(pending = it.pending + todo.size) }
         val permits = Semaphore(PARALLEL)
         todo.map { url ->
             async(Dispatchers.IO) {
-                val ok = permits.withPermit { check(url, cookies) }
+                val outcome = permits.withPermit { check(url, cookies) }
+                synchronized(inFlight) { inFlight -= url }
                 _state.update {
                     it.copy(
-                        readable = if (ok) it.readable + url else it.readable,
-                        rejected = if (ok) it.rejected else it.rejected + url,
+                        readable = if (outcome == Outcome.READABLE) it.readable + url else it.readable,
+                        rejected = if (outcome == Outcome.REJECTED) it.rejected + url else it.rejected,
                         pending = (it.pending - 1).coerceAtLeast(0),
                     )
                 }
@@ -55,13 +63,15 @@ object ArticleVerifier {
         }.awaitAll()
     }
 
-    private suspend fun check(url: String, cookies: (String) -> String?): Boolean = withContext(Dispatchers.IO) {
-        ArticleCache.get(url)?.let { return@withContext true }
-        val page = runCatching { ArticleExtractor.download(url, cookies) }.getOrNull() ?: return@withContext false
-        if (ArticleExtractor.isPaid(page)) return@withContext false
-        val article = runCatching { ArticleExtractor.extractBest(page) }.getOrNull() ?: return@withContext false
-        if (article.textLength < MIN_TEXT_LENGTH) return@withContext false
+    private suspend fun check(url: String, cookies: (String) -> String?): Outcome = withContext(Dispatchers.IO) {
+        if (ArticleCache.get(url) != null) return@withContext Outcome.READABLE
+        // Un errore di rete non è un giudizio sull'articolo: riproviamo al prossimo aggiornamento.
+        val page = runCatching { ArticleExtractor.download(url, cookies) }.getOrNull()
+            ?: return@withContext Outcome.RETRY_LATER
+        if (ArticleExtractor.isPaid(page)) return@withContext Outcome.REJECTED
+        val article = runCatching { ArticleExtractor.extractBest(page) }.getOrNull()
+        if (article == null || article.textLength < MIN_TEXT_LENGTH) return@withContext Outcome.REJECTED
         ArticleCache.put(url, article)
-        true
+        Outcome.READABLE
     }
 }

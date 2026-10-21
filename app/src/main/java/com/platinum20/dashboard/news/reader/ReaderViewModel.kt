@@ -44,6 +44,11 @@ class ReaderViewModel(application: Application, savedStateHandle: SavedStateHand
     fun load() {
         job?.cancel()
         job = viewModelScope.launch {
+            // Già controllato e pulito dalla lista notizie: si apre subito.
+            ArticleCache.get(url)?.let {
+                _state.value = ReaderUiState.Loaded(it)
+                return@launch
+            }
             _state.value = ReaderUiState.Loading("Scarico l'articolo…")
             val results = mutableListOf<ReaderArticle>()
             var error: Throwable? = null
@@ -73,6 +78,7 @@ class ReaderViewModel(application: Application, savedStateHandle: SavedStateHand
             }
 
             val best = results.best()
+            best?.takeIf { it.textLength >= MIN_TEXT_LENGTH }?.let { ArticleCache.put(url, it) }
             _state.value = when {
                 best != null && best.textLength >= MIN_TEXT_LENGTH -> ReaderUiState.Loaded(best)
                 page != null || best != null -> ReaderUiState.NoText
