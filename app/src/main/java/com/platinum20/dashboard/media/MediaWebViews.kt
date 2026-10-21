@@ -58,8 +58,13 @@ object MediaWebViews {
         webView.loadUrl(startUrl ?: service.homeUrl)
         views[service] = webView
         _open.update { it + service }
+        NowPlaying.start(context)
         return webView
     }
+
+    fun webViewFor(service: MediaService): WebView? = views[service]
+
+    fun openServices(): Set<MediaService> = views.keys.toSet()
 
     fun setListener(service: MediaService, listener: MediaPageListener?) {
         if (listener == null) listeners.remove(service) else listeners[service] = listener
@@ -80,6 +85,7 @@ object MediaWebViews {
         webView.loadUrl("about:blank")
         webView.destroy()
         _open.update { it - service }
+        NowPlaying.forget(service)
     }
 
     fun releaseAll() = MediaService.entries.forEach { release(it) }

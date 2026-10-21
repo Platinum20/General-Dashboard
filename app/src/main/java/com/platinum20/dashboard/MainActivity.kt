@@ -84,6 +84,7 @@ data class OpenRequest(
         const val RECAP = "recap"
         const val ARTICLE = "article"
         const val NOTES = "notes"
+        const val MEDIA = "media"
 
         private const val EXTRA_TARGET = "open_target"
         private const val EXTRA_URL = "open_url"
@@ -210,13 +211,21 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
-            navController.switchTab(if (request.target == OpenRequest.NOTES) Routes.NOTES else Routes.HOME)
+            navController.switchTab(
+                when (request.target) {
+                    OpenRequest.NOTES -> Routes.NOTES
+                    OpenRequest.MEDIA -> Routes.MEDIA
+                    else -> Routes.HOME
+                }
+            )
             when (request.target) {
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
                 OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
                 }
+                OpenRequest.MEDIA -> MediaService.entries.firstOrNull { it.name == request.source }
+                    ?.let { navController.navigate(Routes.webPlayer(it)) }
             }
         }
         onOpenHandled()
