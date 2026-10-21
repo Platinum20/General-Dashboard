@@ -136,7 +136,7 @@ fun ReaderScreen(
                 .padding(top = inner.calculateTopPadding())
         ) {
             when (val s = state) {
-                ReaderUiState.Loading -> Column(
+                is ReaderUiState.Loading -> Column(
                     Modifier.fillMaxSize().padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -151,6 +151,12 @@ fun ReaderScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        s.step,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 is ReaderUiState.Loaded -> ArticleContent(
                     article = s.article,
@@ -160,7 +166,7 @@ fun ReaderScreen(
                     onOpenLink = onOpenLink,
                 )
                 ReaderUiState.NoText -> ReaderMessage(
-                    message = "Non riesco a ricavare il testo di questo articolo: forse è riservato agli abbonati o è solo un video.",
+                    message = "Non riesco a ricavare il testo di questo articolo: forse è riservato agli abbonati o è solo un video. Se il sito chiede il consenso ai cookie, accettalo nella pagina originale e riprova.",
                     onRetry = viewModel::load,
                     onOpenOriginal = { onOpenOriginal(viewModel.url) },
                 )

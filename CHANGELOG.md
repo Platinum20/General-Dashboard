@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.0
+- Lettore più affidabile: se il testo non si trova al primo colpo prova i dati strutturati della pagina, la versione AMP e infine carica la pagina come un browser (per i siti fatti in JavaScript)
+- Download degli articoli con intestazioni da browser, codifica corretta e secondo tentativo in caso di errore
+- I cookie accettati nella pagina originale valgono anche per il lettore
+- Durante il caricamento il lettore dice cosa sta facendo
+
 ## 1.3.0
 - Nuovo lettore: gli articoli si aprono in modalità lettura, solo titolo, testo, immagini e video, senza menu, pubblicità o banner del giornale
 - Testo con caratteri da lettura, dimensione regolabile con il tasto "Aa", link agli altri articoli aperti sempre nel lettore
