@@ -41,6 +41,24 @@ import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.AdBlocker
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
+import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.PlayerCommand
+import com.platinum20.dashboard.media.Track
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import coil3.compose.AsyncImage
 import com.platinum20.dashboard.settings.AppSettings
 
 /** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
@@ -57,6 +75,7 @@ fun MediaScreen(
     val open by MediaWebViews.open.collectAsState()
     val adBlock by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
+    val tracks by NowPlaying.tracks.collectAsState()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -79,6 +98,15 @@ fun MediaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            tracks.values.forEach { track ->
+                item(key = "playing-${track.service.name}") {
+                    NowPlayingCard(
+                        track = track,
+                        onOpen = { onOpenService(track.service) },
+                        onCommand = { NowPlaying.command(track.service, it) },
+                    )
+                }
+            }
             item {
                 AdBlockCard(
                     enabled = adBlock,
@@ -186,6 +214,66 @@ private fun MediaCard(
                 }
             }
             Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+/** Mini player: cosa sta suonando, con i comandi, anche quando la pagina non è a schermo. */
+@Composable
+private fun NowPlayingCard(track: Track, onOpen: () -> Unit, onCommand: (PlayerCommand) -> Unit) {
+    Card(
+        onClick = onOpen,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(64.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (track.artworkUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = track.artworkUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(64.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (track.playing) "In riproduzione su ${track.service.label}" else "In pausa su ${track.service.label}",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Text(track.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (track.artist.isNotBlank()) {
+                    Text(track.artist, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            IconButton(onClick = { onCommand(PlayerCommand.PREVIOUS) }) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro")
+            }
+            FilledIconButton(onClick = { onCommand(PlayerCommand.TOGGLE) }) {
+                Icon(
+                    if (track.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (track.playing) "Pausa" else "Riproduci",
+                )
+            }
+            IconButton(onClick = { onCommand(PlayerCommand.NEXT) }) {
+                Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
+            }
         }
     }
 }

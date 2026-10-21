@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:allowBackup="true"
@@ -43,6 +45,11 @@
         <receiver
             android:name=".notes.TaskDoneReceiver"
             android:exported="false" />
+
+        <service
+            android:name=".media.MediaPlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

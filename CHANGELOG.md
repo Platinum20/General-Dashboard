@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.12.0
+- YouTube e Spotify suonano anche a schermo spento e con l'app in sottofondo
+- Notifica con copertina, titolo e comandi (indietro, play/pausa, avanti, chiudi), anche sulla schermata di blocco e con i tasti delle cuffie
+- Mini player nella sezione Media: vedi cosa sta suonando e lo comandi senza aprire la pagina
+- Toccando la notifica si torna direttamente al player
+
 ## 1.11.0
 - Nuova sezione Media nella barra in basso, con YouTube, Spotify e un player video
 - YouTube e Spotify dentro l'app con il tuo account: accedi o esci da Impostazioni > Account
