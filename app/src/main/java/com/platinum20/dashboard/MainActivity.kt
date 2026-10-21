@@ -36,6 +36,7 @@ import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
+import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
@@ -73,9 +74,13 @@ object Routes {
     const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
-    const val ARTICLE = "news/article?url={url}&source={source}"
+    const val READER = "news/reader?url={url}&source={source}&title={title}"
+    const val WEB_PAGE = "news/web?url={url}&source={source}"
 
-    fun article(url: String, source: String) = "news/article?url=${Uri.encode(url)}&source=${Uri.encode(source)}"
+    fun reader(url: String, source: String, title: String = "") =
+        "news/reader?url=${Uri.encode(url)}&source=${Uri.encode(source)}&title=${Uri.encode(title)}"
+
+    fun webPage(url: String, source: String) = "news/web?url=${Uri.encode(url)}&source=${Uri.encode(source)}"
 }
 
 private data class TopDestination(
@@ -134,7 +139,7 @@ private fun AppRoot() {
             composable(Routes.NEWS) {
                 NewsScreen(
                     bottomPadding = padding,
-                    onOpenArticle = { navController.navigate(Routes.article(it.link, it.source.name)) },
+                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                 )
             }
             composable(Routes.SETTINGS) {
@@ -144,7 +149,24 @@ private fun AppRoot() {
                 )
             }
             composable(
-                Routes.ARTICLE,
+                Routes.READER,
+                arguments = listOf(
+                    navArgument("url") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("source") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                val source = entry.arguments?.getString("source").orEmpty()
+                ReaderScreen(
+                    sourceName = source,
+                    fallbackTitle = entry.arguments?.getString("title").orEmpty(),
+                    onBack = { navController.popBackStack() },
+                    onOpenLink = { navController.navigate(Routes.reader(it, source)) },
+                    onOpenOriginal = { navController.navigate(Routes.webPage(it, source)) },
+                )
+            }
+            composable(
+                Routes.WEB_PAGE,
                 arguments = listOf(
                     navArgument("url") { type = NavType.StringType; defaultValue = "" },
                     navArgument("source") { type = NavType.StringType; defaultValue = "" },

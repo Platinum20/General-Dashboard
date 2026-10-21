@@ -91,6 +91,8 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
     implementation("androidx.webkit:webkit:1.12.1")
+    // Modalità lettura: estrae testo, immagini e video dalla pagina dell'articolo (algoritmo Readability)
+    implementation("net.dankito.readability4j:readability4j:1.0.8")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
