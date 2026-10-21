@@ -93,6 +93,9 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             lines += "✅ " + if (tasks.size == 1) "1 cosa da fare" else "${tasks.size} cose da fare"
             tasks.take(3).forEach { lines += "• ${it.text}" }
         }
+        NotesStore.data.value.upcoming.filter { it.daysLeft() <= 1 }.forEach {
+            lines += if (it.daysLeft() == 0L) "🎉 Oggi: ${it.title}" else "⏳ Domani: ${it.title}"
+        }
         if (themes.isNotEmpty()) {
             lines += ""
             lines += "📰 Il punto del giorno"

@@ -193,6 +193,7 @@ fun HomeScreen(
                     )
                     HomeCard.CALENDAR -> CalendarCard(refreshKey = calendarRefresh)
                     HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
+                    HomeCard.COUNTDOWN -> CountdownCard()
                     HomeCard.RECAP -> RecapCard(
                         state = recap,
                         onOpenTheme = { onOpenArticle(it.headline) },

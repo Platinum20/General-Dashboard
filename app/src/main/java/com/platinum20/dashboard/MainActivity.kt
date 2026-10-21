@@ -75,6 +75,7 @@ data class OpenRequest(
         const val WEATHER = "weather"
         const val RECAP = "recap"
         const val ARTICLE = "article"
+        const val NOTES = "notes"
 
         private const val EXTRA_TARGET = "open_target"
         private const val EXTRA_URL = "open_url"
@@ -185,7 +186,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
-            navController.switchTab(Routes.HOME)
+            navController.switchTab(if (request.target == OpenRequest.NOTES) Routes.NOTES else Routes.HOME)
             when (request.target) {
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
                 OpenRequest.RECAP -> navController.navigate(Routes.RECAP)

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
@@ -30,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +53,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
+import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.NotesStore
 import java.time.Instant
 import java.time.ZoneId
@@ -221,7 +224,10 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
-                    Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Column {
+                        Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        task.dueAt?.let { DueText(it) }
+                    }
                 }
             }
             if (open.size > 5) {
@@ -257,4 +263,84 @@ fun TasksCard(onOpenNotes: () -> Unit) {
             )
         }
     }
+}
+
+/** Scadenza di un promemoria, in rosso se già passata. */
+@Composable
+fun DueText(dueAt: Long) {
+    val overdue = dueAt < System.currentTimeMillis()
+    Text(
+        (if (overdue) "Scaduto · " else "⏰ ") + dueLabel(dueAt),
+        style = MaterialTheme.typography.labelMedium,
+        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+    )
+}
+
+@Composable
+fun CountdownCard() {
+    val context = LocalContext.current
+    NotesStore.init(context)
+    val data by NotesStore.data.collectAsStateWithLifecycle()
+    var editing by remember { mutableStateOf<Countdown?>(null) }
+    var adding by remember { mutableStateOf(false) }
+    var showAll by remember { mutableStateOf(false) }
+    val upcoming = data.upcoming
+
+    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
+        Column(Modifier.padding(vertical = 8.dp)) {
+            CardHeader(
+                icon = Icons.Outlined.HourglassTop,
+                title = "Conti alla rovescia",
+                trailing = {
+                    IconButton(onClick = { adding = true }) {
+                        Icon(Icons.Outlined.Add, contentDescription = "Aggiungi")
+                    }
+                },
+            )
+            if (upcoming.isEmpty()) {
+                Text(
+                    "Aggiungi un compleanno, un viaggio o una scadenza per vedere quanti giorni mancano.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp),
+                )
+            }
+            (if (showAll) upcoming else upcoming.take(4)).forEach { item ->
+                val days = item.daysLeft()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { editing = item }
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            longDate(item.nextDate()) + if (item.yearly) " · ogni anno" else "",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        when (days) {
+                            0L -> "Oggi! 🎉"
+                            1L -> "Domani"
+                            else -> "$days giorni"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            if (upcoming.size > 4) {
+                TextButton(onClick = { showAll = !showAll }, modifier = Modifier.padding(start = 8.dp)) {
+                    Text(if (showAll) "Mostra meno" else "Mostra tutti (${upcoming.size})")
+                }
+            }
+        }
+    }
+
+    if (adding) CountdownDialog(countdown = null, onDismiss = { adding = false })
+    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
 }

@@ -17,6 +17,7 @@ enum class HomeCard(val label: String, val description: String) {
     WEATHER("Meteo", "Il tempo dove sei, tocca per il dettaglio"),
     CALENDAR("Agenda di oggi", "Gli eventi di oggi dal calendario del telefono"),
     TASKS("Da fare", "I promemoria ancora aperti"),
+    COUNTDOWN("Conti alla rovescia", "Quanto manca a compleanni, viaggi e scadenze"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
     MODULES("Moduli", "Scorciatoie alle sezioni dell'app"),
 }
