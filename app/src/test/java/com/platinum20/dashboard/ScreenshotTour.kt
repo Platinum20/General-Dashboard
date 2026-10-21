@@ -5,14 +5,12 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeDown
-import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -71,19 +69,25 @@ class ScreenshotTour {
     }
 
     @Test
-    fun tour() {
+    @Config(qualifiers = "+night")
+    fun tourDark() = tour(prefix = "scuro_")
+
+    @Test
+    fun tour() = tour(prefix = "")
+
+    private fun tour(prefix: String) {
         compose.mainClock.autoAdvance = false
         scenario = ActivityScenario.launch(MainActivity::class.java)
         settle(until = { WeatherStore.state.value.let { it.forecast != null || it.error != null } && NewsStore.result.value != null })
-        shot("01_home")
+        shot(prefix + "01_home")
         scroll(down = true)
-        shot("02_home_fondo")
+        shot(prefix + "02_home_fondo")
 
         val tabs = listOf("News", "Note", "Media", "Impostazioni")
         tabs.forEachIndexed { i, label ->
             if (tap(label)) {
                 settle(3_000)
-                shot("%02d_%s".format(10 + i, label.lowercase()))
+                shot(prefix + "%02d_%s".format(10 + i, label.lowercase()))
             }
         }
     }
@@ -96,11 +100,14 @@ class ScreenshotTour {
         return true
     }
 
-    /** Scorre il primo contenitore scorrevole (la lista della schermata). */
+    /** Scorre la lista della schermata verso il fondo (azione semantica: col clock fermo gli swipe non arrivano). */
     private fun scroll(down: Boolean) {
-        runCatching {
-            compose.onAllNodes(hasScrollAction()).onFirst().performTouchInput {
-                if (down) swipeUp(durationMillis = 300) else swipeDown(durationMillis = 300)
+        val list = compose.onAllNodes(hasScrollToIndexAction()).onFirst()
+        if (!down) {
+            runCatching { list.performScrollToIndex(0) }
+        } else {
+            for (index in 12 downTo 1) {
+                if (runCatching { list.performScrollToIndex(index) }.isSuccess) break
             }
         }
         settle(1_500)
