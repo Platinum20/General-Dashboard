@@ -39,10 +39,11 @@ data class NewsResult(val items: List<NewsItem>, val failures: List<SourceFailur
 
 object NewsSources {
     val all = listOf(
+        // Solo fonti gratuite: niente testate con abbonamento (la Repubblica, Il Sole 24 Ore, ...).
         NewsSource("ansa", "ANSA", "https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml"),
         NewsSource("ilpost", "Il Post", "https://www.ilpost.it/feed/"),
-        NewsSource("repubblica", "la Repubblica", "https://www.repubblica.it/rss/homepage/rss2.0.xml"),
-        NewsSource("sole24ore", "Il Sole 24 Ore", "https://www.ilsole24ore.com/rss/italia.xml"),
+        NewsSource("open", "Open", "https://www.open.online/feed/"),
+        NewsSource("rainews", "RaiNews", "https://www.rainews.it/rss/tutti"),
         NewsSource("fanpage", "Fanpage", "https://www.fanpage.it/feed/"),
     )
 }
