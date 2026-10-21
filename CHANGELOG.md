@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0
+- Nuovo widget per la schermata Home del telefono: meteo del posto e i primi tre temi del giorno, con i colori del tuo sfondo; tocca un titolo per leggerlo
+- Il widget si aggiorna da solo ogni ora
+- Notifica del mattino (Impostazioni > Notifica del mattino): meteo, impegni di oggi, cose da fare e temi del giorno all'orario che scegli
+- Tasto "Invia una prova" per vedere subito com'è la notifica
+
 ## 1.7.0
 - Agenda di oggi nella Dashboard: gli impegni dei calendari del telefono, con orario e luogo; tocca un evento per aprirlo o + per crearne uno
 - Nuova sezione Note nella barra in basso: promemoria da spuntare e note libere che si salvano da sole
