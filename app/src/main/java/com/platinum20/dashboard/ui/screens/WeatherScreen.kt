@@ -190,8 +190,8 @@ private fun CurrentSection(forecast: Forecast) {
                 Text(" " + forecast.place, style = MaterialTheme.typography.titleSmall)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(c.temperature.asTemp(), style = MaterialTheme.typography.displayLarge, modifier = Modifier.weight(1f))
-                Icon(weatherIcon(c.code, c.isDay), contentDescription = null, modifier = Modifier.size(72.dp))
+                Text(c.temperature.asTemp(), style = MaterialTheme.typography.displayMedium, modifier = Modifier.weight(1f))
+                Icon(weatherIcon(c.code, c.isDay), contentDescription = null, modifier = Modifier.size(56.dp))
             }
             Text(WeatherCodes.description(c.code), style = MaterialTheme.typography.titleLarge)
             forecast.today?.let {
