@@ -238,12 +238,15 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 when (request.target) {
                     OpenRequest.NOTES -> Routes.NOTES
                     OpenRequest.MEDIA -> Routes.MEDIA
-                    OpenRequest.UPDATES -> Routes.SETTINGS
                     else -> Routes.HOME
                 }
             )
             when (request.target) {
-                OpenRequest.UPDATES -> navController.navigate(Routes.UPDATES)
+                OpenRequest.UPDATES -> {
+                    // Le Impostazioni non sono più una scheda: Oggi → Impostazioni → Aggiornamenti.
+                    navController.navigate(Routes.SETTINGS)
+                    navController.navigate(Routes.UPDATES)
+                }
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
                 OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
