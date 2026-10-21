@@ -37,8 +37,10 @@ import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
+import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
+import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 
@@ -74,6 +76,8 @@ object Routes {
     const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
+    const val WEATHER = "home/weather"
+    const val RECAP = "home/recap"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
     const val WEB_PAGE = "news/web?url={url}&source={source}"
 
@@ -134,6 +138,18 @@ private fun AppRoot() {
                 HomeScreen(
                     bottomPadding = padding,
                     onOpenNews = { navController.switchTab(Routes.NEWS) },
+                    onOpenWeather = { navController.navigate(Routes.WEATHER) },
+                    onOpenRecap = { navController.navigate(Routes.RECAP) },
+                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                )
+            }
+            composable(Routes.WEATHER) {
+                WeatherScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.RECAP) {
+                RecapScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                 )
             }
             composable(Routes.NEWS) {

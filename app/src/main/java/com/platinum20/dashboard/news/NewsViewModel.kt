@@ -23,7 +23,6 @@ data class NewsUiState(
 
 class NewsViewModel : ViewModel() {
 
-    private val repository = NewsRepository()
     private val _state = MutableStateFlow(NewsUiState())
     val state: StateFlow<NewsUiState> = _state.asStateFlow()
 
@@ -40,7 +39,7 @@ class NewsViewModel : ViewModel() {
         if (s.loading || s.refreshing) return
         viewModelScope.launch {
             _state.update { it.copy(loading = initial, refreshing = !initial, error = null) }
-            runCatching { repository.fetchAll() }
+            runCatching { NewsStore.load(force = !initial) }
                 .onSuccess { result ->
                     _state.update {
                         it.copy(
