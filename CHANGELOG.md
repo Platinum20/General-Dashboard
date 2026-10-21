@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+- Lettore interno: gli articoli si aprono dentro l'app, senza browser esterno
+- Nel lettore: condividi, apri nel browser, tasto indietro tra le pagine e tema scuro anche sulle pagine
+- News: corretto Il Post che risultava non raggiungibile
+- News: le fonti non raggiungibili mostrano anche il motivo (es. HTTP 403, timeout)
+
 ## 1.1.0
 - Scelta del tema nelle impostazioni: Material You, Sistema e AMOLED (nero puro)
 - Nuova icona a lavagnetta, anche in versione a tema

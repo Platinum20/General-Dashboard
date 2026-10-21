@@ -13,7 +13,7 @@ data class NewsUiState(
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val error: String? = null,
-    val failedSources: List<NewsSource> = emptyList(),
+    val failures: List<SourceFailure> = emptyList(),
     /** null = tutte le fonti. */
     val selectedSource: String? = null,
 ) {
@@ -45,7 +45,7 @@ class NewsViewModel : ViewModel() {
                     _state.update {
                         it.copy(
                             items = result.items,
-                            failedSources = result.failedSources,
+                            failures = result.failures,
                             loading = false,
                             refreshing = false,
                         )

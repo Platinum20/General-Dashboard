@@ -1,6 +1,7 @@
 package com.platinum20.dashboard
 
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -25,11 +26,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
@@ -69,6 +73,9 @@ object Routes {
     const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
+    const val ARTICLE = "news/article?url={url}&source={source}"
+
+    fun article(url: String, source: String) = "news/article?url=${Uri.encode(url)}&source=${Uri.encode(source)}"
 }
 
 private data class TopDestination(
@@ -125,12 +132,28 @@ private fun AppRoot() {
                 )
             }
             composable(Routes.NEWS) {
-                NewsScreen(bottomPadding = padding)
+                NewsScreen(
+                    bottomPadding = padding,
+                    onOpenArticle = { navController.navigate(Routes.article(it.link, it.source.name)) },
+                )
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     bottomPadding = padding,
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
+                )
+            }
+            composable(
+                Routes.ARTICLE,
+                arguments = listOf(
+                    navArgument("url") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("source") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                ArticleScreen(
+                    url = entry.arguments?.getString("url").orEmpty(),
+                    sourceName = entry.arguments?.getString("source").orEmpty(),
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(Routes.UPDATES) {
