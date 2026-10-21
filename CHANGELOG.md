@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.16.0
+- Picture-in-picture: uscendo dall'app durante un video (player o YouTube) il video continua in un riquadro sopra le altre app
+- "Guarda in Dashboard" nel menu Condividi: i link di YouTube si aprono nel player senza pubblicità, video e audio nel player video
+- L'app compare anche tra quelle per aprire video e musica dal file manager o dalla galleria
+
 ## 1.15.0
 - YouTube nativo: nuovi video dei canali che segui, le tue playlist, i video con il Mi piace e la ricerca, in schede dell'app (si collega con l'account Google, solo lettura)
 - Spotify nativo: ascoltati di recente, i tuoi brani e artisti preferiti, playlist, brani piaciuti, album, podcast e ricerca; con Premium si comanda la riproduzione sui tuoi dispositivi, altrimenti si apre l'app Spotify

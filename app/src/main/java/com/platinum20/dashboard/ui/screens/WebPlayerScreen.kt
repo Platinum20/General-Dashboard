@@ -102,7 +102,9 @@ fun WebPlayerScreen(
         fullscreenView = null
         fullscreenCallback = null
     }
-    FullscreenEffect(enabled = fullscreenView != null)
+    // YouTube resta visibile in un riquadro uscendo dall'app (picture-in-picture).
+    val inPip = rememberPictureInPicture(enabled = service == MediaService.YOUTUBE)
+    FullscreenEffect(enabled = fullscreenView != null && !inPip)
 
     // Indietro: prima esce dallo schermo intero, poi torna alle pagine precedenti, infine chiude.
     BackHandler(enabled = fullscreenView != null) { exitFullscreen() }
@@ -110,7 +112,7 @@ fun WebPlayerScreen(
 
     Scaffold(
         topBar = {
-            if (fullscreenView == null) {
+            if (fullscreenView == null && !inPip) {
                 Column {
                     TopAppBar(
                         title = {
@@ -150,7 +152,7 @@ fun WebPlayerScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(if (fullscreenView == null) inner else PaddingValues())
+                .padding(if (fullscreenView == null && !inPip) inner else PaddingValues())
         ) {
             AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
             fullscreenView?.let { view ->
