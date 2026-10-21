@@ -12,8 +12,20 @@ import androidx.compose.material.icons.outlined.Thunderstorm
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.weather.WeatherCodes
 import java.time.Duration
@@ -28,6 +40,49 @@ import java.time.format.DateTimeFormatter
 val topLevelInsets: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets
         .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
+/** Apre le Impostazioni: le sezioni principali la usano per l'icona in alto a destra. */
+val LocalOpenSettings = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/**
+ * Barra in alto delle sezioni principali (Oggi, News, Note, Media): stessa altezza e stile ovunque,
+ * con le azioni della sezione e, per ultima, l'ingranaggio delle Impostazioni.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopLevelBar(
+    title: String,
+    subtitle: String? = null,
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    val openSettings = LocalOpenSettings.current
+    TopAppBar(
+        title = {
+            Column {
+                Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        },
+        actions = {
+            actions()
+            if (openSettings != null) {
+                IconButton(onClick = openSettings) {
+                    Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni")
+                }
+            }
+        },
+        scrollBehavior = scrollBehavior,
+    )
+}
 
 private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
 

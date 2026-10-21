@@ -3,7 +3,13 @@ package com.platinum20.dashboard.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -83,7 +89,7 @@ fun GeneralDashboardTheme(
         }
     }
 
-    MaterialTheme(colorScheme = colorScheme, content = content)
+    MaterialTheme(colorScheme = colorScheme, typography = AppTypography, shapes = AppShapes, content = content)
 }
 
 private fun ColorScheme.toAmoled(): ColorScheme = copy(
@@ -97,4 +103,33 @@ private fun ColorScheme.toAmoled(): ColorScheme = copy(
     surfaceContainerHighest = Color(0xFF222222),
     surfaceBright = Color(0xFF262626),
     surfaceVariant = Color(0xFF1A1A1A),
+)
+
+/**
+ * Caratteri un filo più compatti di quelli standard di Material 3:
+ * con i caratteri grandi del telefono le schermate restano leggibili senza diventare enormi.
+ */
+private val AppTypography = Typography().let { base ->
+    base.copy(
+        headlineLarge = base.headlineLarge.copy(fontSize = 28.sp, lineHeight = 34.sp),
+        headlineMedium = base.headlineMedium.copy(fontSize = 24.sp, lineHeight = 30.sp),
+        headlineSmall = base.headlineSmall.copy(fontSize = 22.sp, lineHeight = 28.sp),
+        titleLarge = base.titleLarge.copy(fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium),
+        titleMedium = base.titleMedium.copy(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold),
+        titleSmall = base.titleSmall.copy(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Medium),
+        bodyLarge = base.bodyLarge.copy(fontSize = 15.sp, lineHeight = 21.sp, letterSpacing = 0.2.sp),
+        bodyMedium = base.bodyMedium.copy(fontSize = 13.5.sp, lineHeight = 19.sp),
+        bodySmall = base.bodySmall.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        labelLarge = base.labelLarge.copy(fontSize = 13.sp, lineHeight = 18.sp),
+        labelMedium = base.labelMedium.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        labelSmall = base.labelSmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+    )
+}
+
+/** Angoli arrotondati ma non "a bolla": card e gruppi usano large. */
+private val AppShapes = Shapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )

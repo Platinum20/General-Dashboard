@@ -71,12 +71,12 @@ fun CardHeader(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(start = 20.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.size(12.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(vertical = 10.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(vertical = 8.dp))
         trailing()
     }
 }
@@ -115,7 +115,7 @@ fun CalendarCard(refreshKey: Int = 0) {
             )
             val list = events
             when {
-                !granted -> Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
+                !granted -> Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Text(
                         "Consenti l'accesso al calendario per vedere qui gli impegni di oggi.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -131,7 +131,7 @@ fun CalendarCard(refreshKey: Int = 0) {
                     "Nessun impegno oggi.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                 )
                 else -> {
                     val now = System.currentTimeMillis()
@@ -142,7 +142,7 @@ fun CalendarCard(refreshKey: Int = 0) {
                             "e altri ${list.size - 6}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         )
                     }
                 }
@@ -164,7 +164,7 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -220,7 +220,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { NotesStore.toggleTask(task.id) }
-                        .padding(start = 8.dp, end = 20.dp),
+                        .padding(start = 8.dp, end = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
@@ -235,7 +235,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     "e altri ${open.size - 5}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
             }
             OutlinedTextField(
@@ -302,7 +302,7 @@ fun CountdownCard() {
                     "Aggiungi un compleanno, un viaggio o una scadenza per vedere quanti giorni mancano.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                 )
             }
             (if (showAll) upcoming else upcoming.take(4)).forEach { item ->
@@ -311,7 +311,7 @@ fun CountdownCard() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { editing = item }
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {

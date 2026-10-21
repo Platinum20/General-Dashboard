@@ -83,8 +83,8 @@ fun NotesScreen(
         contentWindowInsets = topLevelInsets,
         topBar = {
             Column {
-                TopAppBar(
-                    title = { Text("Note") },
+                TopLevelBar(
+                    title = "Note",
                     actions = {
                         if (tab == 0 && data.tasks.any { it.done }) {
                             IconButton(onClick = NotesStore::clearDone) {

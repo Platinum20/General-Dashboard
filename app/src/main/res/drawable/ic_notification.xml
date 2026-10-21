@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icona piccola delle notifiche: la lavagnetta dell'app, in un solo colore. -->
+<!-- Icona piccola delle notifiche: i tre riquadri dell'icona dell'app. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="7"
-        android:strokeLineJoin="round"
-        android:pathData="M18,24h72a4,4 0,0 1,4 4v48a4,4 0,0 1,-4 4h-72a4,4 0,0 1,-4 -4v-48a4,4 0,0 1,4 -4z" />
-    <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M28,62L40,52L49,58L62,40M70,44h12M70,54h8M14,92h80" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M19,14h26a5,5 0,0 1,5,5v70a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-70a5,5 0,0 1,5,-5z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M63,14h26a5,5 0,0 1,5,5v26a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-26a5,5 0,0 1,5,-5z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M63,58h26a5,5 0,0 1,5,5v26a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-26a5,5 0,0 1,5,-5z" />
 </vector>

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.14.0
+- Nuova icona minimal a tre riquadri, con la versione a tema per le icone Material You e una nuova icona per le notifiche
+- Barra in basso più ordinata: Oggi, News, Note e Media. Le Impostazioni si aprono dall'ingranaggio in alto in ogni sezione
+- Schermata Oggi: il saluto e la data fanno da titolo (di notte "Buonanotte"), al posto della grande card col sole
+- Dimensioni più compatte in tutta l'app: titoli in alto bassi e uguali in ogni sezione, caratteri e card un filo più piccoli
+- Meteo nella schermata Oggi più leggibile: massima e minima sotto la temperatura, niente più testo che va a capo
+- Nuove scorciatoie in alto: meteo, punto del giorno, video, YouTube e Spotify a un tocco
+- "Il punto del giorno" più snello, con titoli su due righe
+- News: la prima notizia in grande, le altre come righe compatte con la miniatura
+- Impostazioni riordinate: tema con tre pulsanti in una riga, notifica del mattino insieme alle card, account e blocco pubblicità insieme, aggiornamenti con la versione installata
+- Pallino sulla scheda Note quando ci sono promemoria scaduti o in scadenza oggi
+
 ## 1.13.0
 - Notifica quando esce una nuova versione dell'app: il controllo avviene da solo ogni qualche ora, e toccandola si apre la schermata Aggiornamenti
 - Un solo avviso per versione, e la notifica sparisce quando apri Aggiornamenti

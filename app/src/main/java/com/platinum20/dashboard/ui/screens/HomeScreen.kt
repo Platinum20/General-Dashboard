@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,16 +18,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.LocationOn
-import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.WbSunny
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +32,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -52,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -60,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
@@ -89,16 +88,18 @@ fun HomeScreen(
     onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
-    onOpenMedia: () -> Unit,
+    onOpenVideo: () -> Unit,
+    onOpenService: (MediaService) -> Unit,
     onCustomize: () -> Unit,
 ) {
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val greeting = remember {
         when (LocalTime.now().hour) {
             in 5..12 -> "Buongiorno"
             in 13..17 -> "Buon pomeriggio"
-            else -> "Buonasera"
+            in 18..23 -> "Buonasera"
+            else -> "Buonanotte"
         }
     }
     val today = remember {
@@ -126,14 +127,16 @@ fun HomeScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            LargeTopAppBar(
-                title = { Text("Dashboard") },
+            // Il saluto e la data fanno da titolo: niente card in più che ripete il meteo.
+            TopLevelBar(
+                title = greeting,
+                subtitle = today,
+                scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = onCustomize) {
                         Icon(Icons.Outlined.Tune, contentDescription = "Personalizza")
                     }
                 },
-                scrollBehavior = scrollBehavior,
             )
         },
     ) { inner ->
@@ -153,33 +156,11 @@ fun HomeScreen(
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = 0.dp,
+                top = 4.dp,
                 bottom = bottomPadding.calculateBottomPadding() + 16.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                    shape = MaterialTheme.shapes.extraLarge,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.WbSunny, contentDescription = null, modifier = Modifier.size(32.dp))
-                        Spacer(Modifier.size(16.dp))
-                        Column {
-                            Text(greeting, style = MaterialTheme.typography.headlineSmall)
-                            Text(today, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-            }
             items(layout.visible, key = { it.name }) { card ->
                 when (card) {
                     HomeCard.WEATHER -> WeatherCard(
@@ -201,32 +182,12 @@ fun HomeScreen(
                         onOpenTheme = { onOpenArticle(it.headline) },
                         onOpenAll = onOpenRecap,
                     )
-                    HomeCard.MODULES -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            "Moduli",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                        )
-                        ModuleCard(
-                            icon = Icons.Outlined.Newspaper,
-                            title = "News",
-                            subtitle = "Le ultime notizie da ANSA, Il Post, Open e altre",
-                            onClick = onOpenNews,
-                        )
-                        ModuleCard(
-                            icon = Icons.Outlined.EditNote,
-                            title = "Note",
-                            subtitle = "Promemoria da spuntare e note veloci",
-                            onClick = onOpenNotes,
-                        )
-                        ModuleCard(
-                            icon = Icons.Outlined.PlayCircle,
-                            title = "Media",
-                            subtitle = "Video, YouTube e Spotify senza pubblicità",
-                            onClick = onOpenMedia,
-                        )
-                    }
+                    HomeCard.MODULES -> Shortcuts(
+                        onOpenWeather = onOpenWeather,
+                        onOpenRecap = onOpenRecap,
+                        onOpenVideo = onOpenVideo,
+                        onOpenService = onOpenService,
+                    )
                 }
             }
             item {
@@ -236,7 +197,7 @@ fun HomeScreen(
                 ) {
                     Icon(Icons.Outlined.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text("Personalizza la Dashboard")
+                    Text("Personalizza questa schermata")
                 }
             }
         }
@@ -299,56 +260,68 @@ private fun WeatherCard(
     ) {
         when {
             forecast != null -> Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     weatherIcon(forecast.current.code, forecast.current.isDay),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(40.dp),
                 )
-                Spacer(Modifier.size(16.dp))
+                Spacer(Modifier.size(14.dp))
                 Column(Modifier.weight(1f)) {
+                    Text(
+                        WeatherCodes.description(forecast.current.code),
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Outlined.LocationOn,
                             contentDescription = null,
-                            modifier = Modifier.size(14.dp),
+                            modifier = Modifier.size(13.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             " " + forecast.place,
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Text(WeatherCodes.description(forecast.current.code), style = MaterialTheme.typography.titleMedium)
                     val today = forecast.today
-                    Text(
-                        buildString {
-                            append("Percepita ${forecast.current.apparent.asTemp()}")
-                            if (today != null) append("  ·  Max ${today.max.asTemp()} Min ${today.min.asTemp()}")
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     val alert = forecast.rainAlert
-                    if (alert != null || (today != null && today.precipitationProbability >= 30)) {
+                    val rain = alert ?: today?.precipitationProbability?.takeIf { it >= 30 }?.let { "Pioggia $it%" }
+                    if (rain != null) {
                         Text(
-                            alert ?: "Pioggia ${today?.precipitationProbability}%",
-                            style = MaterialTheme.typography.bodyMedium,
+                            rain,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
+                Spacer(Modifier.size(8.dp))
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(forecast.current.temperature.asTemp(), style = MaterialTheme.typography.displaySmall)
-                    if (state.loading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (state.loading) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                            Spacer(Modifier.size(6.dp))
+                        }
+                        Text(forecast.current.temperature.asTemp(), style = MaterialTheme.typography.headlineLarge)
                     }
+                    val today = forecast.today
+                    // Massima e minima su una riga sola, sotto la temperatura: non vanno più a capo.
+                    Text(
+                        if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "Percepita ${forecast.current.apparent.asTemp()}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
                 }
             }
             !hasPermission -> CardMessage(
@@ -359,7 +332,7 @@ private fun WeatherCard(
                 onAction = onRequestPermission,
             )
             state.loading || state.error == null -> Row(
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
@@ -387,9 +360,9 @@ private fun RecapCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
-        Column(Modifier.padding(vertical = 16.dp)) {
+        Column(Modifier.padding(top = 6.dp, bottom = 8.dp)) {
             Row(
-                modifier = Modifier.padding(start = 20.dp, end = 8.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -402,16 +375,16 @@ private fun RecapCard(
             when {
                 state.themes.isNotEmpty() -> {
                     Spacer(Modifier.height(4.dp))
-                    state.themes.take(5).forEachIndexed { index, theme ->
-                        if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                    state.themes.take(4).forEachIndexed { index, theme ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         RecapRow(theme, onClick = { onOpenTheme(theme) })
                     }
                 }
-                state.error != null -> Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                state.error != null -> Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
                 }
-                else -> Row(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                else -> Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.size(12.dp))
                     Text("Raccolgo le notizie di oggi…", style = MaterialTheme.typography.bodyMedium)
@@ -427,12 +400,12 @@ fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         if (theme.keywords.isNotEmpty()) {
             Text(
                 theme.keywords.joinToString(" · "),
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -441,13 +414,13 @@ fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
         Text(
             theme.headline.title,
             style = MaterialTheme.typography.bodyLarge,
-            maxLines = 3,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             if (theme.items.size > 1) "${theme.items.size} articoli · ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
             else theme.headline.source.name,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -462,10 +435,10 @@ private fun CardMessage(
     onAction: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.padding(20.dp),
+        modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
         Spacer(Modifier.size(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -476,39 +449,49 @@ private fun CardMessage(
     }
 }
 
+/** Scorciatoie a ciò che non sta nella barra in basso: dettaglio meteo, punto del giorno e player. */
 @Composable
-private fun ModuleCard(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
+private fun Shortcuts(
+    onOpenWeather: () -> Unit,
+    onOpenRecap: () -> Unit,
+    onOpenVideo: () -> Unit,
+    onOpenService: (MediaService) -> Unit,
 ) {
-    ElevatedCard(
-        onClick = onClick,
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        ShortcutTile(Icons.Outlined.WbSunny, "Meteo", onOpenWeather)
+        ShortcutTile(Icons.Outlined.AutoAwesome, "Il punto", onOpenRecap)
+        ShortcutTile(Icons.Outlined.PlayCircle, "Video", onOpenVideo)
+        ShortcutTile(Icons.Outlined.OndemandVideo, "YouTube") { onOpenService(MediaService.YOUTUBE) }
+        ShortcutTile(Icons.Outlined.GraphicEq, "Spotify") { onOpenService(MediaService.SPOTIFY) }
+    }
+}
+
+@Composable
+private fun RowScope.ShortcutTile(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .clip(MaterialTheme.shapes.large)
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
         ) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(28.dp))
-            }
-            Spacer(Modifier.size(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
+            Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(22.dp))
         }
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp),
+        )
     }
 }

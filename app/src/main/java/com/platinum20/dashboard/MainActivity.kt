@@ -13,12 +13,17 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -26,12 +31,20 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import java.time.LocalDate
+import java.time.ZoneId
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -192,12 +205,12 @@ private data class TopDestination(
 )
 
 private val topDestinations = listOf(
-    TopDestination(Routes.HOME, "Dashboard", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
+    TopDestination(Routes.HOME, "Oggi", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
     TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
     TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
     TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
-    TopDestination(Routes.SETTINGS, "Impostazioni", Icons.Filled.Settings, Icons.Outlined.Settings),
 )
+// Le Impostazioni non stanno nella barra: si aprono dall'ingranaggio in alto in ogni sezione.
 
 /** Passa a una sezione della barra in basso mantenendo lo stato delle altre. */
 private fun NavController.switchTab(route: String) {
@@ -211,6 +224,13 @@ private fun NavController.switchTab(route: String) {
 @Composable
 private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    CompositionLocalProvider(LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }) {
+        AppContent(navController, openRequest, onOpenHandled)
+    }
+}
+
+@Composable
+private fun AppContent(navController: NavHostController, openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
@@ -218,12 +238,15 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                 when (request.target) {
                     OpenRequest.NOTES -> Routes.NOTES
                     OpenRequest.MEDIA -> Routes.MEDIA
-                    OpenRequest.UPDATES -> Routes.SETTINGS
                     else -> Routes.HOME
                 }
             )
             when (request.target) {
-                OpenRequest.UPDATES -> navController.navigate(Routes.UPDATES)
+                OpenRequest.UPDATES -> {
+                    // Le Impostazioni non sono più una scheda: Oggi → Impostazioni → Aggiornamenti.
+                    navController.navigate(Routes.SETTINGS)
+                    navController.navigate(Routes.UPDATES)
+                }
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
                 OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
@@ -238,18 +261,36 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showBottomBar = topDestinations.any { it.route == currentRoute }
+    // Pallino sulla scheda Note: promemoria scaduti o in scadenza oggi.
+    val context = LocalContext.current
+    NotesStore.init(context)
+    val notes by NotesStore.data.collectAsState()
+    val dueToday = remember(notes) {
+        val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        notes.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay }
+    }
 
     Scaffold(
         bottomBar = {
-            if (showBottomBar) {
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
+            ) {
                 NavigationBar {
                     topDestinations.forEach { dest ->
                         val selected = currentRoute == dest.route
                         NavigationBarItem(
                             selected = selected,
                             onClick = { navController.switchTab(dest.route) },
-                            icon = { Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null) },
-                            label = { Text(dest.label) },
+                            icon = {
+                                BadgedBox(badge = {
+                                    if (dest.route == Routes.NOTES && dueToday > 0) Badge { Text("$dueToday") }
+                                }) {
+                                    Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null)
+                                }
+                            },
+                            label = { Text(dest.label, maxLines = 1) },
                         )
                     }
                 }
@@ -265,7 +306,8 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
-                    onOpenMedia = { navController.switchTab(Routes.MEDIA) },
+                    onOpenService = { navController.navigate(Routes.webPlayer(it)) },
+                    onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                 )
             }
@@ -274,7 +316,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     bottomPadding = padding,
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onOpenService = { navController.navigate(Routes.webPlayer(it)) },
-                    onOpenSettings = { navController.switchTab(Routes.SETTINGS) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
             composable(Routes.VIDEO) {
@@ -347,7 +389,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    bottomPadding = padding,
+                    onBack = { navController.popBackStack() },
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
