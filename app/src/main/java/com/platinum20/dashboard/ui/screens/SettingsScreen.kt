@@ -146,7 +146,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Dashboard") }
+            item { SectionHeader("Oggi") }
             item {
                 SettingsGroup {
                     SettingsRow(
