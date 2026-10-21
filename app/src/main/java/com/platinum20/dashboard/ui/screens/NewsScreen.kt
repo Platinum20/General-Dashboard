@@ -92,6 +92,19 @@ fun NewsScreen(
                 state.loading && state.items.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
+                state.visibleItems.isEmpty() && state.verification.pending > 0 -> Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Preparo gli articoli…",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 state.error != null && state.items.isEmpty() -> ErrorState(state.error!!, onRetry = viewModel::refresh)
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -103,6 +116,16 @@ fun NewsScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (state.verification.pending > 0) {
+                        item {
+                            Text(
+                                "Preparo altri ${state.verification.pending} articoli…",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
+                    }
                     if (state.failures.isNotEmpty()) {
                         item {
                             Text(
@@ -119,7 +142,8 @@ fun NewsScreen(
                     if (state.visibleItems.isEmpty()) {
                         item {
                             Text(
-                                "Nessuna notizia da questa fonte.",
+                                if (state.verification.pending > 0) "Preparo gli articoli di questa fonte…"
+                                else "Nessun articolo leggibile da questa fonte in questo momento.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp),
                             )

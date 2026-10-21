@@ -1,11 +1,16 @@
 # Changelog
 
-## 1.6.0
+## 1.7.0
 - Agenda di oggi nella Dashboard: gli impegni dei calendari del telefono, con orario e luogo; tocca un evento per aprirlo o + per crearne uno
 - Nuova sezione Note nella barra in basso: promemoria da spuntare e note libere che si salvano da sole
 - Card "Da fare" nella Dashboard per spuntare o aggiungere promemoria al volo
 - Dashboard personalizzabile: scegli quali card mostrare e in che ordine (icona in alto o Impostazioni > Dashboard)
 - Note fissabili in alto tenendole premute, e condivisibili
+
+## 1.6.0
+- News solo da fonti gratuite: tolte la Repubblica e Il Sole 24 Ore, aggiunte Open e RaiNews
+- In lista compaiono solo gli articoli che il lettore riesce a pulire del tutto: quelli a pagamento o illeggibili vengono nascosti
+- Gli articoli vengono preparati in anticipo e si aprono subito nel lettore
 
 ## 1.5.0
 - Meteo nella Dashboard: temperatura e condizioni del posto in cui sei, con massima, minima e probabilità di pioggia
