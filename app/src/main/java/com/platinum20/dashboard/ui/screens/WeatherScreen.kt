@@ -22,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.Compress
+import androidx.compose.material.icons.outlined.EditLocationAlt
+import androidx.compose.material.icons.outlined.Masks
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Opacity
 import androidx.compose.material.icons.outlined.Refresh
@@ -63,7 +65,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WeatherScreen(onBack: () -> Unit) {
+fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val context = LocalContext.current
     WeatherStore.init(context)
     val state by WeatherStore.state.collectAsStateWithLifecycle()
@@ -79,6 +81,9 @@ fun WeatherScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = onPickPlace) {
+                        Icon(Icons.Outlined.EditLocationAlt, contentDescription = "Cambia località")
+                    }
                     if (state.loading) {
                         CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
                     } else {
@@ -115,6 +120,22 @@ fun WeatherScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { CurrentSection(forecast) }
+            forecast.rainAlert?.let { alert ->
+                item {
+                    Surface(
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Umbrella, contentDescription = null)
+                            Spacer(Modifier.size(12.dp))
+                            Text(alert, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            }
             if (state.error != null) {
                 item {
                     Text(
@@ -192,6 +213,7 @@ private fun DetailsGrid(forecast: Forecast) {
         Triple(Icons.Outlined.Opacity, "Umidità", "${c.humidity}%"),
         Triple(Icons.Outlined.Air, "Vento", "${c.windSpeed.roundToInt()} km/h ${WeatherCodes.windDirection(c.windDirection)}"),
         today?.let { Triple(Icons.Outlined.Umbrella, "Pioggia oggi", "${it.precipitationProbability}% · ${"%.1f".format(Locale.ITALIAN, it.precipitationSum)} mm") },
+        forecast.air?.let { Triple(Icons.Outlined.Masks, "Qualità dell'aria", "${it.label} (${it.europeanAqi})") },
         Triple(Icons.Outlined.Compress, "Pressione", if (c.pressure.isNaN()) "–" else "${c.pressure.roundToInt()} hPa"),
         today?.let { Triple(Icons.Outlined.WbSunny, "Indice UV", if (it.uvMax.isNaN()) "–" else "%.0f".format(Locale.ITALIAN, it.uvMax)) },
         today?.let {

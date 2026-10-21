@@ -44,6 +44,7 @@ import com.platinum20.dashboard.ui.screens.HomeScreen
 import com.platinum20.dashboard.ui.screens.NoteEditorScreen
 import com.platinum20.dashboard.ui.screens.NotesScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
+import com.platinum20.dashboard.ui.screens.PlacePickerScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
@@ -139,6 +140,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
     const val WEATHER = "home/weather"
+    const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
     const val NOTES = "notes"
@@ -246,7 +248,13 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                 )
             }
             composable(Routes.WEATHER) {
-                WeatherScreen(onBack = { navController.popBackStack() })
+                WeatherScreen(
+                    onBack = { navController.popBackStack() },
+                    onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
+                )
+            }
+            composable(Routes.WEATHER_PLACE) {
+                PlacePickerScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.RECAP) {
                 RecapScreen(

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.0
+- Meteo: avviso di pioggia in arrivo (o quando smette) grazie alle previsioni ogni 15 minuti, nella Dashboard, nel dettaglio e nella notifica del mattino
+- Meteo: qualità dell'aria (indice europeo) nel dettaglio
+- Meteo: puoi scegliere una città a mano dall'icona in alto nel dettaglio, oppure tornare alla tua posizione
+- Dashboard: trascina in basso per aggiornare meteo, notizie e agenda
+
 ## 1.8.0
 - Nuovo widget per la schermata Home del telefono: meteo del posto e i primi tre temi del giorno, con i colori del tuo sfondo; tocca un titolo per leggerlo
 - Il widget si aggiorna da solo ogni ora

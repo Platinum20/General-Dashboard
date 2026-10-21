@@ -79,7 +79,7 @@ fun CardHeader(
 }
 
 @Composable
-fun CalendarCard() {
+fun CalendarCard(refreshKey: Int = 0) {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
     var events by remember { mutableStateOf<List<CalendarEvent>?>(null) }
@@ -92,7 +92,7 @@ fun CalendarCard() {
         granted = CalendarRepository.hasPermission(context)
         reload++
     }
-    LaunchedEffect(granted, reload) {
+    LaunchedEffect(granted, reload, refreshKey) {
         if (granted) events = CalendarRepository.eventsOn(context)
     }
 

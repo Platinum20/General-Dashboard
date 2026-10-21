@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,6 +40,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,6 +71,7 @@ import com.platinum20.dashboard.weather.WeatherState
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.widget.DashboardWidget
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -115,6 +118,7 @@ fun HomeScreen(
 
     val recap = rememberRecapState()
     val layout by AppSettings.homeLayout.collectAsStateWithLifecycle()
+    var calendarRefresh by remember { mutableStateOf(0) }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -131,11 +135,23 @@ fun HomeScreen(
             )
         },
     ) { inner ->
+        PullToRefreshBox(
+            isRefreshing = weather.loading || recap.refreshing,
+            onRefresh = {
+                if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context, force = true)
+                recap.retry()
+                calendarRefresh++
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = inner.calculateTopPadding()),
+        ) {
         LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = inner.calculateTopPadding(),
+                top = 0.dp,
                 bottom = bottomPadding.calculateBottomPadding() + 16.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -175,7 +191,7 @@ fun HomeScreen(
                         onRetry = { WeatherStore.refresh(context, force = true) },
                         onClick = onOpenWeather,
                     )
-                    HomeCard.CALENDAR -> CalendarCard()
+                    HomeCard.CALENDAR -> CalendarCard(refreshKey = calendarRefresh)
                     HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
                     HomeCard.RECAP -> RecapCard(
                         state = recap,
@@ -215,6 +231,7 @@ fun HomeScreen(
                 }
             }
         }
+        }
     }
 }
 
@@ -222,6 +239,7 @@ data class RecapUiState(
     val themes: List<RecapTheme> = emptyList(),
     val loading: Boolean = true,
     val error: String? = null,
+    val refreshing: Boolean = false,
     val retry: () -> Unit = {},
 )
 
@@ -232,10 +250,14 @@ fun rememberRecapState(): RecapUiState {
     var error by remember { mutableStateOf<String?>(null) }
     var attempt by remember { mutableStateOf(0) }
 
+    var refreshing by remember { mutableStateOf(false) }
+
     LaunchedEffect(attempt) {
         error = null
+        refreshing = attempt > 0
         runCatching { NewsStore.load(force = attempt > 0) }
-            .onFailure { error = it.message ?: "Notizie non disponibili." }
+            .onFailure { if (it !is CancellationException) error = it.message ?: "Notizie non disponibili." }
+        refreshing = false
     }
     val context = LocalContext.current
     val themes by produceState(emptyList<RecapTheme>(), result) {
@@ -247,6 +269,7 @@ fun rememberRecapState(): RecapUiState {
         themes = themes,
         loading = result == null && error == null,
         error = error,
+        refreshing = refreshing,
         retry = { attempt++ },
     )
 }
@@ -303,9 +326,10 @@ private fun WeatherCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    if (today != null && today.precipitationProbability >= 30) {
+                    val alert = forecast.rainAlert
+                    if (alert != null || (today != null && today.precipitationProbability >= 30)) {
                         Text(
-                            "Pioggia ${today.precipitationProbability}%",
+                            alert ?: "Pioggia ${today?.precipitationProbability}%",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )

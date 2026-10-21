@@ -39,6 +39,23 @@ data class DailyPoint(
     val uvMax: Double,
 )
 
+data class AirQuality(
+    /** Indice europeo (EAQI): 0 ottima, oltre 100 pessima. */
+    val europeanAqi: Int,
+    val pm25: Double,
+    val pm10: Double,
+    val ozone: Double,
+) {
+    val label: String get() = when {
+        europeanAqi < 20 -> "Buona"
+        europeanAqi < 40 -> "Discreta"
+        europeanAqi < 60 -> "Moderata"
+        europeanAqi < 80 -> "Scadente"
+        europeanAqi < 100 -> "Molto scadente"
+        else -> "Pessima"
+    }
+}
+
 data class Forecast(
     val place: String,
     val latitude: Double,
@@ -48,8 +65,30 @@ data class Forecast(
     /** Le prossime 24 ore a partire da quella attuale. */
     val hourly: List<HourlyPoint>,
     val daily: List<DailyPoint>,
+    /** Pioggia prevista ogni 15 minuti nelle prossime ore (mm). */
+    val nowcast: List<Pair<LocalDateTime, Double>> = emptyList(),
+    val air: AirQuality? = null,
 ) {
     val today: DailyPoint? get() = daily.firstOrNull()
+
+    /** Avviso breve sulla pioggia delle prossime ore, se c'è qualcosa da dire. */
+    val rainAlert: String?
+        get() {
+            val fmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+            val upcoming = nowcast.filter { !it.first.isBefore(current.time.minusMinutes(15)) }
+            val rainingNow = current.precipitation >= 0.1 || (upcoming.firstOrNull()?.second ?: 0.0) >= 0.1
+            if (upcoming.isNotEmpty()) {
+                if (rainingNow) {
+                    val stop = upcoming.firstOrNull { it.second < 0.1 }
+                    return if (stop != null) "Pioggia fino alle ${stop.first.format(fmt)} circa" else "Pioggia nelle prossime ore"
+                }
+                val start = upcoming.firstOrNull { it.second >= 0.1 }
+                if (start != null) return "Pioggia in arrivo verso le ${start.first.format(fmt)}"
+            }
+            // Oltre l'orizzonte dei 15 minuti: le probabilità orarie delle prossime 6 ore.
+            val likely = hourly.drop(1).take(6).firstOrNull { it.precipitationProbability >= 60 }
+            return likely?.let { "Probabile pioggia verso le ${it.time.format(fmt)}" }
+        }
 }
 
 /** Legge la risposta di Open-Meteo (orari già nel fuso orario del posto, `timezone=auto`). */
@@ -62,9 +101,34 @@ object ForecastParser {
             "&hourly=temperature_2m,weather_code,precipitation_probability,is_day" +
             "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max," +
             "precipitation_sum,sunrise,sunset,wind_speed_10m_max,uv_index_max" +
+            "&minutely_15=precipitation&forecast_minutely_15=16" +
             "&timezone=auto&forecast_days=7"
 
-    fun parse(raw: String, place: String, latitude: Double, longitude: Double, fetchedAt: Long): Forecast {
+    fun airUrl(lat: Double, lon: Double): String =
+        "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=$lat&longitude=$lon" +
+            "&current=european_aqi,pm2_5,pm10,ozone&timezone=auto"
+
+    fun parseAir(raw: String?): AirQuality? = raw?.let {
+        runCatching {
+            val c = JSONObject(it).getJSONObject("current")
+            if (c.isNull("european_aqi")) return@runCatching null
+            AirQuality(
+                europeanAqi = c.optInt("european_aqi"),
+                pm25 = c.optDouble("pm2_5"),
+                pm10 = c.optDouble("pm10"),
+                ozone = c.optDouble("ozone"),
+            )
+        }.getOrNull()
+    }
+
+    fun parse(
+        raw: String,
+        place: String,
+        latitude: Double,
+        longitude: Double,
+        fetchedAt: Long,
+        airRaw: String? = null,
+    ): Forecast {
         val json = JSONObject(raw)
         val c = json.getJSONObject("current")
         val current = CurrentWeather(
@@ -112,7 +176,15 @@ object ForecastParser {
                 uvMax = d.getJSONArray("uv_index_max").optDouble(i),
             )
         }
-        return Forecast(place, latitude, longitude, fetchedAt, current, hourly, daily)
+        val nowcast = json.optJSONObject("minutely_15")?.let { m ->
+            val times = m.optJSONArray("time") ?: return@let emptyList<Pair<LocalDateTime, Double>>()
+            val values = m.optJSONArray("precipitation") ?: return@let emptyList<Pair<LocalDateTime, Double>>()
+            (0 until times.length()).mapNotNull { i ->
+                val t = runCatching { LocalDateTime.parse(times.getString(i)) }.getOrNull() ?: return@mapNotNull null
+                t to values.optDouble(i, 0.0).let { v -> if (v.isNaN()) 0.0 else v }
+            }
+        } ?: emptyList()
+        return Forecast(place, latitude, longitude, fetchedAt, current, hourly, daily, nowcast, parseAir(airRaw))
     }
 
     private fun JSONArray.dateTimeAt(i: Int): LocalDateTime? =
