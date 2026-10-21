@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,30 +158,39 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
             items(done, key = { it.id }) { TaskRow(it) }
         }
         if (tasks.isEmpty()) {
-            item { EmptyHint("Nessun promemoria. Scrivi qui sopra e premi invio.") }
+            item { EmptyHint("Nessun promemoria. Scrivi qui sopra e premi invio; toccane uno per aggiungere un avviso.") }
         }
     }
 }
 
 @Composable
 private fun TaskRow(task: TaskItem) {
+    var editing by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
-        Text(
-            task.text,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                textDecoration = if (task.done) TextDecoration.LineThrough else null,
-            ),
-            color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
+        Column(
+            Modifier
+                .weight(1f)
+                .clickable { editing = true }
+                .padding(vertical = 6.dp)
+        ) {
+            Text(
+                task.text,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDecoration = if (task.done) TextDecoration.LineThrough else null,
+                ),
+                color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            )
+            if (!task.done) task.dueAt?.let { DueText(it) }
+        }
         IconButton(onClick = { NotesStore.deleteTask(task.id) }) {
             Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+    if (editing) TaskEditDialog(task, onDismiss = { editing = false })
 }
 
 @OptIn(ExperimentalFoundationApi::class)
