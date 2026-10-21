@@ -86,6 +86,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+    // Aggiornamenti in background per widget e notifica del mattino
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Immagini delle notizie e lettore interno degli articoli
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")

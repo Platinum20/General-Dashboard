@@ -28,9 +28,12 @@ object LocationProvider {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
 
-    /** Ultima posizione nota se recente, altrimenti ne chiede una nuova (al massimo 20 secondi). */
+    /**
+     * Ultima posizione nota se recente, altrimenti ne chiede una nuova (al massimo 20 secondi).
+     * In background ([fresh] = false) ci si accontenta dell'ultima nota: Android non dà la posizione alle app chiuse.
+     */
     @SuppressLint("MissingPermission")
-    suspend fun current(context: Context): Location? {
+    suspend fun current(context: Context, fresh: Boolean = true): Location? {
         if (!hasPermission(context)) return null
         val lm = context.getSystemService(LocationManager::class.java) ?: return null
         val providers = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER, LocationManager.PASSIVE_PROVIDER)
@@ -39,7 +42,7 @@ object LocationProvider {
         val last = providers
             .mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
-        if (last != null && System.currentTimeMillis() - last.time < FRESH_MS) return last
+        if (!fresh || (last != null && System.currentTimeMillis() - last.time < FRESH_MS)) return last
 
         val provider = providers.firstOrNull { it != LocationManager.PASSIVE_PROVIDER } ?: return last
         val fresh = withTimeoutOrNull(20_000) {

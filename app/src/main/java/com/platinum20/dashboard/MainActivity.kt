@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -23,6 +24,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -48,11 +51,57 @@ import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
+import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.work.MorningWorker
+import com.platinum20.dashboard.work.RefreshWorker
+
+/** Cosa aprire quando l'app parte da widget o notifica. */
+data class OpenRequest(
+    val target: String,
+    val url: String = "",
+    val source: String = "",
+    val title: String = "",
+) {
+    fun writeTo(intent: Intent) {
+        intent.putExtra(EXTRA_TARGET, target)
+            .putExtra(EXTRA_URL, url)
+            .putExtra(EXTRA_SOURCE, source)
+            .putExtra(EXTRA_TITLE, title)
+    }
+
+    companion object {
+        const val HOME = "home"
+        const val WEATHER = "weather"
+        const val RECAP = "recap"
+        const val ARTICLE = "article"
+
+        private const val EXTRA_TARGET = "open_target"
+        private const val EXTRA_URL = "open_url"
+        private const val EXTRA_SOURCE = "open_source"
+        private const val EXTRA_TITLE = "open_title"
+
+        fun from(intent: Intent?): OpenRequest? {
+            val target = intent?.getStringExtra(EXTRA_TARGET) ?: return null
+            return OpenRequest(
+                target,
+                intent.getStringExtra(EXTRA_URL).orEmpty(),
+                intent.getStringExtra(EXTRA_SOURCE).orEmpty(),
+                intent.getStringExtra(EXTRA_TITLE).orEmpty(),
+            )
+        }
+    }
+}
 
 class MainActivity : ComponentActivity() {
+    private val openRequest = mutableStateOf<OpenRequest?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
+        if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
+        // Lavori in background: widget (solo se presente) e notifica del mattino.
+        if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
+        MorningWorker.schedule(this)
         enableEdgeToEdge()
         setContent {
             val theme by AppSettings.theme.collectAsState()
@@ -70,9 +119,17 @@ class MainActivity : ComponentActivity() {
             }
 
             GeneralDashboardTheme(theme = theme) {
-                AppRoot()
+                AppRoot(
+                    openRequest = openRequest.value,
+                    onOpenHandled = { openRequest.value = null },
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        OpenRequest.from(intent)?.let { openRequest.value = it }
     }
 }
 
@@ -121,8 +178,22 @@ private fun NavController.switchTab(route: String) {
 }
 
 @Composable
-private fun AppRoot() {
+private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    LaunchedEffect(openRequest) {
+        val request = openRequest ?: return@LaunchedEffect
+        runCatching {
+            navController.switchTab(Routes.HOME)
+            when (request.target) {
+                OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
+                OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
+                OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
+                    navController.navigate(Routes.reader(request.url, request.source, request.title))
+                }
+            }
+        }
+        onOpenHandled()
+    }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showBottomBar = topDestinations.any { it.route == currentRoute }

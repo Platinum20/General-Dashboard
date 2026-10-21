@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colori del widget: su Android 12+ vengono sostituiti da quelli dinamici (values-v31). -->
+    <color name="widget_background">#F2F9F9FF</color>
+    <color name="widget_text">#FF1A1B20</color>
+    <color name="widget_text_secondary">#FF44474F</color>
+    <color name="widget_accent">#FF465D91</color>
+</resources>

@@ -2,6 +2,7 @@ package com.platinum20.dashboard.weather
 
 import android.content.Context
 import com.platinum20.dashboard.net.Http
+import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -63,10 +64,10 @@ object WeatherStore {
     }
 
     /** Scarica la previsione per la posizione attuale (o l'ultima nota) e la salva. */
-    suspend fun fetch(context: Context): Forecast {
+    suspend fun fetch(context: Context, freshLocation: Boolean = true): Forecast {
         val app = context.applicationContext
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val location = LocationProvider.current(app)
+        val location = LocationProvider.current(app, freshLocation)
         val lat: Double
         val lon: Double
         if (location != null) {
@@ -100,6 +101,7 @@ object WeatherStore {
             .putLong(KEY_TIME, now)
             .apply()
         _state.value = WeatherState(forecast = forecast)
+        DashboardWidget.updateAll(app)
         return forecast
     }
 
