@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
@@ -114,7 +115,7 @@ fun NewsScreen(
                         top = 8.dp,
                         bottom = bottomPadding.calculateBottomPadding() + 16.dp,
                     ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (state.verification.pending > 0) {
                         item {
@@ -136,8 +137,10 @@ fun NewsScreen(
                             )
                         }
                     }
-                    items(state.visibleItems, key = { it.link }) { item ->
-                        NewsCard(item, onClick = { onOpenArticle(item) })
+                    // La prima notizia in grande, le altre come righe compatte con la miniatura.
+                    itemsIndexed(state.visibleItems, key = { _, it -> it.link }) { index, item ->
+                        if (index == 0) NewsCard(item, onClick = { onOpenArticle(item) })
+                        else NewsRow(item, onClick = { onOpenArticle(item) })
                     }
                     if (state.visibleItems.isEmpty()) {
                         item {
@@ -213,7 +216,7 @@ private fun NewsCard(item: NewsItem, onClick: () -> Unit) {
             Text(
                 item.title,
                 style = MaterialTheme.typography.titleMedium,
-                maxLines = 4,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
             if (item.summary.isNotBlank() && item.summary != item.title) {
@@ -222,8 +225,55 @@ private fun NewsCard(item: NewsItem, onClick: () -> Unit) {
                     item.summary,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NewsRow(item: NewsItem, onClick: () -> Unit) {
+    ElevatedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        item.source.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    item.publishedAt?.let {
+                        Text(
+                            "  ·  " + relativeTime(it),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    item.title,
+                    style = MaterialTheme.typography.titleSmall,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (item.imageUrl != null) {
+                Spacer(Modifier.size(12.dp))
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(84.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 )
             }
         }
