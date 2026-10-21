@@ -57,6 +57,16 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.BuildConfig
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.platinum20.dashboard.media.Accounts
+import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.MediaWebViews
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +74,13 @@ fun SettingsScreen(
     bottomPadding: PaddingValues,
     onOpenUpdates: () -> Unit,
     onCustomize: () -> Unit,
+    onLogin: (MediaService) -> Unit,
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    val adBlock by AppSettings.adBlock.collectAsState()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -114,6 +128,57 @@ fun SettingsScreen(
                             trailingContent = { RadioButton(selected = theme == option, onClick = null) },
                         )
                     }
+                }
+            }
+
+            item { SectionHeader("Account") }
+            item {
+                SettingsGroup {
+                    MediaService.entries.forEach { service ->
+                        val connected = service in loggedIn
+                        ListItem(
+                            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                            leadingContent = {
+                                Icon(Icons.Outlined.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            headlineContent = { Text(service.label) },
+                            supportingContent = {
+                                Text(if (connected) "Collegato: playlist, iscrizioni e preferiti" else "Non collegato")
+                            },
+                            trailingContent = {
+                                if (connected) {
+                                    OutlinedButton(onClick = { Accounts.logout(service) }) { Text("Esci") }
+                                } else {
+                                    FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            item { SectionHeader("Media") }
+            item {
+                SettingsGroup {
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            AppSettings.setAdBlock(!adBlock)
+                            MediaWebViews.releaseAll()
+                        },
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        leadingContent = { Icon(Icons.Outlined.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        headlineContent = { Text("Blocco pubblicità") },
+                        supportingContent = { Text("Annunci e tracciamento in YouTube e Spotify") },
+                        trailingContent = {
+                            Switch(
+                                checked = adBlock,
+                                onCheckedChange = {
+                                    AppSettings.setAdBlock(it)
+                                    MediaWebViews.releaseAll()
+                                },
+                            )
+                        },
+                    )
                 }
             }
 

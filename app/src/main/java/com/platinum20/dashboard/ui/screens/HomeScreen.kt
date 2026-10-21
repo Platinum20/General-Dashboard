@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -88,6 +89,7 @@ fun HomeScreen(
     onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
+    onOpenMedia: () -> Unit,
     onCustomize: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -217,6 +219,12 @@ fun HomeScreen(
                             title = "Note",
                             subtitle = "Promemoria da spuntare e note veloci",
                             onClick = onOpenNotes,
+                        )
+                        ModuleCard(
+                            icon = Icons.Outlined.PlayCircle,
+                            title = "Media",
+                            subtitle = "Video, YouTube e Spotify senza pubblicità",
+                            onClick = onOpenMedia,
                         )
                     }
                 }
