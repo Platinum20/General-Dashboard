@@ -1,9 +1,11 @@
 package com.platinum20.dashboard.news.reader
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,36 +13,81 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 sealed interface ReaderUiState {
-    data object Loading : ReaderUiState
+    /** [step] descrive cosa sta facendo il lettore, per non lasciare l'utente davanti a una rotella muta. */
+    data class Loading(val step: String) : ReaderUiState
     data class Loaded(val article: ReaderArticle) : ReaderUiState
-    /** Pagina scaricata ma senza un testo leggibile (paywall, pagina solo video, ecc.). */
+    /** Pagina raggiunta ma senza un testo leggibile (articolo per abbonati, pagina solo video, ecc.). */
     data object NoText : ReaderUiState
     data class Failed(val message: String) : ReaderUiState
 }
 
-class ReaderViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
+class ReaderViewModel(application: Application, savedStateHandle: SavedStateHandle) : AndroidViewModel(application) {
 
     val url: String = savedStateHandle.get<String>("url").orEmpty()
 
-    private val _state = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading)
+    private val _state = MutableStateFlow<ReaderUiState>(ReaderUiState.Loading("Scarico l'articolo…"))
     val state: StateFlow<ReaderUiState> = _state.asStateFlow()
 
     init {
         load()
     }
 
+    /**
+     * Prova più strade, dalla più veloce alla più lenta, e si ferma appena ha un testo completo:
+     * 1. HTML scaricato direttamente (Readability + dati strutturati);
+     * 2. versione AMP dell'articolo;
+     * 3. pagina caricata in un WebView invisibile, per i siti che compongono il testo in JavaScript.
+     * Se nessuna strada dà un testo completo, mostra il risultato migliore trovato.
+     */
+    private var job: Job? = null
+
     fun load() {
-        _state.value = ReaderUiState.Loading
-        viewModelScope.launch {
-            _state.value = runCatching { withContext(Dispatchers.IO) { ArticleExtractor.fetch(url) } }
-                .fold(
-                    onSuccess = { article ->
-                        if (article.textLength < MIN_TEXT_LENGTH) ReaderUiState.NoText else ReaderUiState.Loaded(article)
-                    },
-                    onFailure = { ReaderUiState.Failed(it.message ?: "Errore di rete.") },
-                )
+        job?.cancel()
+        job = viewModelScope.launch {
+            _state.value = ReaderUiState.Loading("Scarico l'articolo…")
+            val results = mutableListOf<ReaderArticle>()
+            var error: Throwable? = null
+
+            val page = runCatching { withContext(Dispatchers.IO) { ArticleExtractor.download(url, WebPageRenderer::cookiesFor) } }
+                .onFailure { error = it }
+                .getOrNull()
+            page?.let { p -> extract(p)?.let { results += it } }
+
+            if (results.best()?.isComplete() != true && page != null) {
+                ArticleExtractor.ampUrl(page)?.let { amp ->
+                    _state.value = ReaderUiState.Loading("Provo la versione semplificata…")
+                    runCatching { withContext(Dispatchers.IO) { ArticleExtractor.download(amp, WebPageRenderer::cookiesFor) } }
+                        .getOrNull()
+                        // Il lettore mostra sempre l'indirizzo dell'articolo, non quello AMP.
+                        ?.let { extract(it)?.copy(url = page.url) }
+                        ?.let { results += it }
+                }
+            }
+
+            if (results.best()?.isComplete() != true) {
+                _state.value = ReaderUiState.Loading("Carico la pagina come un browser…")
+                runCatching { WebPageRenderer.render(getApplication<Application>(), url) }
+                    .getOrNull()
+                    ?.let { extract(it) }
+                    ?.let { results += it }
+            }
+
+            val best = results.best()
+            _state.value = when {
+                best != null && best.textLength >= MIN_TEXT_LENGTH -> ReaderUiState.Loaded(best)
+                page != null || best != null -> ReaderUiState.NoText
+                else -> ReaderUiState.Failed(error?.message?.let { "Impossibile scaricare l'articolo ($it)." }
+                    ?: "Impossibile scaricare l'articolo.")
+            }
         }
     }
+
+    private suspend fun extract(page: FetchedPage): ReaderArticle? =
+        withContext(Dispatchers.Default) { runCatching { ArticleExtractor.extractBest(page) }.getOrNull() }
+
+    private fun List<ReaderArticle>.best() = maxByOrNull { it.textLength }
+
+    private fun ReaderArticle.isComplete() = textLength >= ArticleExtractor.GOOD_TEXT_LENGTH
 
     private companion object {
         const val MIN_TEXT_LENGTH = 200

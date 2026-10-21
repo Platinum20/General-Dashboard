@@ -6,7 +6,11 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
+import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.Charset
 
 /** Un pezzo di testo con il suo stile: serve a ricostruire grassetti, corsivi e link nel lettore. */
 data class TextRun(
@@ -47,47 +51,175 @@ data class ReaderArticle(
         }
 }
 
+/** Una pagina scaricata: indirizzo finale (dopo i redirect) e HTML. */
+data class FetchedPage(val url: String, val html: String)
+
 /**
- * Scarica la pagina di un articolo e ne tiene solo il contenuto (testo, immagini, video),
- * come la modalità lettura dei browser. L'estrazione del corpo usa Readability (lo stesso
- * algoritmo di Firefox), poi il risultato viene convertito in blocchi da disegnare in Compose.
+ * Ricava il contenuto di un articolo (testo, immagini, video), come la modalità lettura dei browser.
+ * Prova più strade e tiene la migliore:
+ * - Readability (lo stesso algoritmo di Firefox) sull'HTML della pagina;
+ * - i dati strutturati schema.org (JSON-LD) che molti giornali inseriscono per i motori di ricerca,
+ *   usati solo se la pagina non dichiara l'articolo come riservato agli abbonati;
+ * - la versione AMP dell'articolo, se esiste (vedi [ampUrl]).
+ * Il caricamento nel WebView invisibile per i siti fatti in JavaScript sta in WebPageRenderer.
  */
 object ArticleExtractor {
 
-    fun fetch(url: String): ReaderArticle {
-        val doc = try {
-            Jsoup.connect(url)
-                .userAgent(USER_AGENT)
-                .header("Accept-Language", "it-IT,it;q=0.9,en;q=0.5")
-                .timeout(20_000)
-                .followRedirects(true)
-                .maxBodySize(0)
-                .get()
-        } catch (e: IOException) {
-            throw IOException("Impossibile scaricare l'articolo.", e)
+    /** Sotto questa lunghezza il testo è probabilmente solo un sommario o una pagina vuota. */
+    const val GOOD_TEXT_LENGTH = 700
+
+    /**
+     * Scarica la pagina come farebbe un browser. [cookies] permette di riusare i cookie del WebView
+     * (per esempio il consenso ai cookie dato aprendo la pagina originale).
+     */
+    fun download(url: String, cookies: (String) -> String? = { null }): FetchedPage {
+        var lastError: IOException? = null
+        for (userAgent in USER_AGENTS) {
+            try {
+                return downloadWith(url, userAgent, cookies)
+            } catch (e: IOException) {
+                lastError = e
+            }
         }
-        return extract(doc.location().ifBlank { url }, doc)
+        throw lastError ?: IOException("Impossibile scaricare l'articolo.")
     }
 
-    fun extract(url: String, doc: Document): ReaderArticle {
+    private fun downloadWith(start: String, userAgent: String, cookies: (String) -> String?): FetchedPage {
+        var url = URL(start)
+        repeat(MAX_REDIRECTS) {
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 15_000
+                readTimeout = 20_000
+                instanceFollowRedirects = false
+                setRequestProperty("User-Agent", userAgent)
+                setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                setRequestProperty("Accept-Language", "it-IT,it;q=0.9,en;q=0.6")
+                setRequestProperty("Upgrade-Insecure-Requests", "1")
+                cookies(url.toString())?.takeIf { it.isNotBlank() }?.let { setRequestProperty("Cookie", it) }
+            }
+            try {
+                val code = conn.responseCode
+                if (code in 300..399) {
+                    val location = conn.getHeaderField("Location") ?: throw IOException("HTTP $code")
+                    url = URL(url, location)
+                    return@repeat
+                }
+                if (code !in 200..299) throw IOException("HTTP $code")
+                val bytes = conn.inputStream.use { it.readBytes() }
+                val charset = conn.contentType?.let { Regex("charset=([^;\\s]+)", RegexOption.IGNORE_CASE).find(it) }
+                    ?.groupValues?.get(1)?.trim('"', '\'')
+                // Senza charset nell'intestazione jsoup lo cerca nel <meta> della pagina.
+                val doc = Jsoup.parse(ByteArrayInputStream(bytes), charset?.takeIf { isSupported(it) }, url.toString())
+                return FetchedPage(url.toString(), doc.outerHtml())
+            } finally {
+                conn.disconnect()
+            }
+        }
+        throw IOException("Troppi redirect.")
+    }
+
+    private fun isSupported(charset: String) = runCatching { Charset.isSupported(charset) }.getOrDefault(false)
+
+    /** Il risultato migliore tra Readability e dati strutturati, oppure null se non c'è nulla di leggibile. */
+    fun extractBest(page: FetchedPage): ReaderArticle? {
+        val doc = Jsoup.parse(page.html, page.url)
+        // Readability modifica il documento: prima leggiamo tutto il resto.
+        val meta = PageMeta.from(doc)
+        val fromJsonLd = runCatching { fromJsonLd(page.url, doc, meta) }.getOrNull()
+        val fromReadability = runCatching { fromReadability(page.url, doc, meta) }.getOrNull()
+        return listOfNotNull(fromReadability, fromJsonLd)
+            .filter { it.textLength > 0 }
+            // A parità circa di testo preferiamo Readability, che conserva immagini, link e video.
+            .maxByOrNull { if (it === fromReadability) it.textLength * 1.3 else it.textLength.toDouble() }
+            ?.let { best ->
+                if (best === fromJsonLd && fromReadability != null) withImagesFrom(best, fromReadability) else best
+            }
+    }
+
+    /** Indirizzo della versione AMP dell'articolo: di solito è HTML semplice, senza JavaScript. */
+    fun ampUrl(page: FetchedPage): String? {
+        val doc = Jsoup.parse(page.html, page.url)
+        return doc.selectFirst("link[rel=amphtml]")?.absUrl("href")?.takeIf { it.startsWith("http") && it != page.url }
+    }
+
+    private class PageMeta(val title: String?, val author: String?, val image: String?) {
+        companion object {
+            fun from(doc: Document) = PageMeta(
+                title = doc.metaContent("og:title") ?: doc.metaContent("twitter:title"),
+                author = doc.metaContent("author") ?: doc.metaContent("article:author")?.takeIf { !it.startsWith("http") },
+                image = (doc.metaContent("og:image") ?: doc.metaContent("twitter:image"))?.let { doc.absolute(it) },
+            )
+        }
+    }
+
+    private fun fromReadability(url: String, doc: Document, meta: PageMeta): ReaderArticle? {
         fixLazyMedia(doc)
-        val leadImage = doc.metaContent("og:image")?.let { doc.absolute(it) }
-        val metaTitle = doc.metaContent("og:title")
-        val metaAuthor = doc.metaContent("author")
-
         val article = Readability4JExtended(url, doc).parse()
-        val contentHtml = article.content ?: throw IOException("Articolo non trovato nella pagina.")
+        val contentHtml = article.content ?: return null
         val content = Jsoup.parseBodyFragment(contentHtml, url).body()
-
+        val blocks = BlockBuilder().apply { walk(content) }.build()
         // og:title di solito è pulito; il titolo della pagina spesso finisce con " | Nome del giornale".
-        var title = metaTitle?.cleanText()?.takeIf { it.isNotBlank() }
+        val title = meta.title?.cleanText()?.takeIf { it.isNotBlank() }
             ?: article.title?.cleanText()?.substringBeforeLast(" | ")?.takeIf { it.isNotBlank() }
             ?: ""
+        return assemble(url, title, article.byline ?: meta.author, meta.image, blocks)
+    }
+
+    /**
+     * Testo dai dati strutturati schema.org. Se la pagina dichiara l'articolo non gratuito
+     * (isAccessibleForFree = false) non lo usiamo: per quelli resta la pagina originale.
+     */
+    private fun fromJsonLd(url: String, doc: Document, meta: PageMeta): ReaderArticle? {
+        val article = doc.select("script[type=application/ld+json]")
+            .flatMap { script -> JsonLd.articles(script.data()) }
+            .filter { it.body.isNotBlank() && it.free }
+            .maxByOrNull { it.body.length }
+            ?: return null
+        val blocks = if (article.body.contains('<')) {
+            BlockBuilder().apply { walk(Jsoup.parseBodyFragment(article.body, url).body()) }.build()
+        } else {
+            plainTextBlocks(article.body)
+        }
+        val title = article.headline?.cleanText()?.takeIf { it.isNotBlank() } ?: meta.title?.cleanText().orEmpty()
+        return assemble(url, title, article.author ?: meta.author, article.image ?: meta.image, blocks)
+    }
+
+    /** Il testo dei dati strutturati è senza immagini: aggiungiamo quelle trovate da Readability. */
+    private fun withImagesFrom(text: ReaderArticle, other: ReaderArticle): ReaderArticle {
+        val firstMedia = other.blocks.firstOrNull { it is ReaderBlock.Image || it is ReaderBlock.Video }
+        val lead = text.leadImage ?: other.leadImage
+        return if (lead == null && firstMedia != null) text.copy(blocks = listOf(firstMedia) + text.blocks) else text.copy(leadImage = lead)
+    }
+
+    /** Divide un testo semplice in paragrafi: a capo se ci sono, altrimenti gruppi di frasi. */
+    private fun plainTextBlocks(body: String): List<ReaderBlock> {
+        val text = body.replace("\r", "")
+        val paragraphs = text.split(Regex("\n+")).map { it.cleanText() }.filter { it.isNotBlank() }
+        val pieces = if (paragraphs.size > 1) paragraphs else {
+            val sentences = text.cleanText().split(Regex("(?<=[.!?»])\\s+(?=[A-ZÀ-Ý«\"])"))
+            val grouped = mutableListOf<String>()
+            val current = StringBuilder()
+            for (sentence in sentences) {
+                if (current.isNotEmpty()) current.append(' ')
+                current.append(sentence)
+                if (current.length > 450) {
+                    grouped += current.toString()
+                    current.clear()
+                }
+            }
+            if (current.isNotBlank()) grouped += current.toString()
+            grouped
+        }
+        return pieces.map { ReaderBlock.Paragraph(listOf(TextRun(it))) }
+    }
+
+    private fun assemble(url: String, rawTitle: String, byline: String?, leadImage: String?, rawBlocks: List<ReaderBlock>): ReaderArticle {
+        var title = rawTitle
         // Il titolo lo mostriamo già sopra: se l'articolo inizia ripetendolo, lo togliamo
         // (tenendo la versione più completa delle due).
-        val blocks = BlockBuilder().apply { walk(content) }.build().let { list ->
+        val blocks = rawBlocks.let { list ->
             val first = list.firstOrNull()
-            if (first is ReaderBlock.Heading && sameTitle(first.text, title)) {
+            if (first is ReaderBlock.Heading && (title.isBlank() || sameTitle(first.text, title))) {
                 if (first.text.length > title.length) title = first.text
                 list.drop(1)
             } else {
@@ -97,11 +229,10 @@ object ArticleExtractor {
         // L'immagine di copertina serve solo se l'articolo non ne ha già una in apertura.
         val opensWithImage = blocks.take(3).any { it is ReaderBlock.Image || it is ReaderBlock.Video }
         val alreadyInside = blocks.any { it is ReaderBlock.Image && leadImage != null && sameImage(it.url, leadImage) }
-
         return ReaderArticle(
             url = url,
             title = title,
-            byline = (article.byline ?: metaAuthor)?.cleanText()?.takeIf { it.isNotBlank() && it.length < 120 },
+            byline = byline?.cleanText()?.takeIf { it.isNotBlank() && it.length < 120 },
             leadImage = leadImage?.takeIf { !opensWithImage && !alreadyInside },
             blocks = blocks,
         )
@@ -173,12 +304,17 @@ object ArticleExtractor {
         selectFirst("meta[property=$property], meta[name=$property]")?.attr("content")?.takeIf { it.isNotBlank() }
 
     private fun Document.absolute(u: String): String =
-        if (u.startsWith("//")) "https:$u" else runCatching { java.net.URL(java.net.URL(location()), u).toString() }.getOrDefault(u)
+        if (u.startsWith("//")) "https:$u" else runCatching { URL(URL(location()), u).toString() }.getOrDefault(u)
 
     private val LAZY_ATTRS = listOf("data-src", "data-lazy-src", "data-original", "data-lazy", "data-url", "data-hi-res-src")
 
-    private const val USER_AGENT =
-        "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36"
+    private const val MAX_REDIRECTS = 8
+
+    /** Prima da telefono, poi da computer: alcuni siti servono pagine diverse (o bloccano) a seconda del browser. */
+    private val USER_AGENTS = listOf(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    )
 }
 
 private fun String.cleanText(): String = replace(' ', ' ').replace(Regex("\\s+"), " ").trim()
