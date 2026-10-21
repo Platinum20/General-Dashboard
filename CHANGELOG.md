@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0
+- Nuova card "Conti alla rovescia": quanti giorni mancano a compleanni, viaggi e scadenze, anche ripetuti ogni anno
+- Promemoria con scadenza: tocca una cosa da fare per impostare giorno e ora, e ricevi un avviso con il tasto "Fatto"
+- I promemoria con scadenza vengono mostrati per primi, in rosso se scaduti
+- La notifica del mattino ricorda anche le ricorrenze di oggi e domani
+
 ## 1.9.0
 - Meteo: avviso di pioggia in arrivo (o quando smette) grazie alle previsioni ogni 15 minuti, nella Dashboard, nel dettaglio e nella notifica del mattino
 - Meteo: qualità dell'aria (indice europeo) nel dettaglio
