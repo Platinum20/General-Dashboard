@@ -1,37 +1,69 @@
 package com.platinum20.dashboard.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Newspaper
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.news.NewsItem
+import com.platinum20.dashboard.news.NewsRecap
+import com.platinum20.dashboard.news.NewsStore
+import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.weather.LocationProvider
+import com.platinum20.dashboard.weather.WeatherCodes
+import com.platinum20.dashboard.weather.WeatherState
+import com.platinum20.dashboard.weather.WeatherStore
+import com.platinum20.dashboard.weather.asTemp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -42,7 +74,11 @@ import java.util.Locale
 fun HomeScreen(
     bottomPadding: PaddingValues,
     onOpenNews: () -> Unit,
+    onOpenWeather: () -> Unit,
+    onOpenRecap: () -> Unit,
+    onOpenArticle: (NewsItem) -> Unit,
 ) {
+    val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val greeting = remember {
         when (LocalTime.now().hour) {
@@ -55,6 +91,20 @@ fun HomeScreen(
         LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
             .replaceFirstChar { it.uppercase() }
     }
+
+    WeatherStore.init(context)
+    val weather by WeatherStore.state.collectAsStateWithLifecycle()
+    var hasLocation by remember { mutableStateOf(LocationProvider.hasPermission(context)) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        hasLocation = result.values.any { it }
+        if (hasLocation) WeatherStore.refresh(context, force = true)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        hasLocation = LocationProvider.hasPermission(context)
+        if (hasLocation) WeatherStore.refresh(context)
+    }
+
+    val recap = rememberRecapState()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -98,6 +148,26 @@ fun HomeScreen(
                 }
             }
             item {
+                WeatherCard(
+                    state = weather,
+                    hasPermission = hasLocation,
+                    onRequestPermission = {
+                        permissionLauncher.launch(
+                            arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+                        )
+                    },
+                    onRetry = { WeatherStore.refresh(context, force = true) },
+                    onClick = onOpenWeather,
+                )
+            }
+            item {
+                RecapCard(
+                    state = recap,
+                    onOpenTheme = { onOpenArticle(it.headline) },
+                    onOpenAll = onOpenRecap,
+                )
+            }
+            item {
                 Text(
                     "Moduli",
                     style = MaterialTheme.typography.titleMedium,
@@ -114,6 +184,228 @@ fun HomeScreen(
                 )
             }
         }
+    }
+}
+
+data class RecapUiState(
+    val themes: List<RecapTheme> = emptyList(),
+    val loading: Boolean = true,
+    val error: String? = null,
+    val retry: () -> Unit = {},
+)
+
+/** Scarica le notizie (se non già in memoria) e ne ricava i temi del giorno. */
+@Composable
+fun rememberRecapState(): RecapUiState {
+    val result by NewsStore.result.collectAsStateWithLifecycle()
+    var error by remember { mutableStateOf<String?>(null) }
+    var attempt by remember { mutableStateOf(0) }
+
+    LaunchedEffect(attempt) {
+        error = null
+        runCatching { NewsStore.load(force = attempt > 0) }
+            .onFailure { error = it.message ?: "Notizie non disponibili." }
+    }
+    val themes by produceState(emptyList<RecapTheme>(), result) {
+        value = result?.let { r -> withContext(Dispatchers.Default) { NewsRecap.build(r.items) } } ?: emptyList()
+    }
+    return RecapUiState(
+        themes = themes,
+        loading = result == null && error == null,
+        error = error,
+        retry = { attempt++ },
+    )
+}
+
+@Composable
+private fun WeatherCard(
+    state: WeatherState,
+    hasPermission: Boolean,
+    onRequestPermission: () -> Unit,
+    onRetry: () -> Unit,
+    onClick: () -> Unit,
+) {
+    val forecast = state.forecast
+    ElevatedCard(
+        onClick = { if (forecast != null) onClick() else if (!hasPermission) onRequestPermission() else onRetry() },
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        when {
+            forecast != null -> Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    weatherIcon(forecast.current.code, forecast.current.isDay),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp),
+                )
+                Spacer(Modifier.size(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            " " + forecast.place,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(WeatherCodes.description(forecast.current.code), style = MaterialTheme.typography.titleMedium)
+                    val today = forecast.today
+                    Text(
+                        buildString {
+                            append("Percepita ${forecast.current.apparent.asTemp()}")
+                            if (today != null) append("  ·  Max ${today.max.asTemp()} Min ${today.min.asTemp()}")
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (today != null && today.precipitationProbability >= 30) {
+                        Text(
+                            "Pioggia ${today.precipitationProbability}%",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(forecast.current.temperature.asTemp(), style = MaterialTheme.typography.displaySmall)
+                    if (state.loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    }
+                }
+            }
+            !hasPermission -> CardMessage(
+                icon = Icons.Outlined.LocationOn,
+                title = "Meteo",
+                text = "Consenti la posizione per vedere il meteo del posto in cui sei.",
+                action = "Consenti",
+                onAction = onRequestPermission,
+            )
+            state.loading || state.error == null -> Row(
+                modifier = Modifier.padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+                Spacer(Modifier.size(16.dp))
+                Text("Cerco il meteo della tua zona…", style = MaterialTheme.typography.bodyLarge)
+            }
+            else -> CardMessage(
+                icon = Icons.Outlined.WbSunny,
+                title = "Meteo non disponibile",
+                text = state.error ?: "",
+                action = "Riprova",
+                onAction = onRetry,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecapCard(
+    state: RecapUiState,
+    onOpenTheme: (RecapTheme) -> Unit,
+    onOpenAll: () -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        Column(Modifier.padding(vertical = 16.dp)) {
+            Row(
+                modifier = Modifier.padding(start = 20.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.size(12.dp))
+                Text("Il punto del giorno", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (state.themes.isNotEmpty()) {
+                    TextButton(onClick = onOpenAll) { Text("Tutti") }
+                }
+            }
+            when {
+                state.themes.isNotEmpty() -> {
+                    Spacer(Modifier.height(4.dp))
+                    state.themes.take(5).forEachIndexed { index, theme ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                        RecapRow(theme, onClick = { onOpenTheme(theme) })
+                    }
+                }
+                state.error != null -> Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+                    Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
+                }
+                else -> Row(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.size(12.dp))
+                    Text("Raccolgo le notizie di oggi…", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 10.dp)
+    ) {
+        if (theme.keywords.isNotEmpty()) {
+            Text(
+                theme.keywords.joinToString(" · "),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            theme.headline.title,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            if (theme.items.size > 1) "${theme.items.size} articoli · ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
+            else theme.headline.source.name,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CardMessage(
+    icon: ImageVector,
+    title: String,
+    text: String,
+    action: String,
+    onAction: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.padding(20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+        Spacer(Modifier.size(16.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.size(8.dp))
+        FilledTonalButton(onClick = onAction) { Text(action) }
     }
 }
 

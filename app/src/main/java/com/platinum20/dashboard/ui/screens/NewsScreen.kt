@@ -49,10 +49,6 @@ import coil3.compose.AsyncImage
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.news.NewsSources
 import com.platinum20.dashboard.news.NewsViewModel
-import java.time.Duration
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,17 +227,5 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         Button(onClick = onRetry) {
             Text("Riprova")
         }
-    }
-}
-
-private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
-
-private fun relativeTime(instant: Instant): String {
-    val minutes = Duration.between(instant, Instant.now()).toMinutes()
-    return when {
-        minutes < 1 -> "adesso"
-        minutes < 60 -> "$minutes min fa"
-        minutes < 24 * 60 -> "${minutes / 60} h fa"
-        else -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()))
     }
 }
