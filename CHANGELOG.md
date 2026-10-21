@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+- Meteo nella Dashboard: temperatura e condizioni del posto in cui sei, con massima, minima e probabilità di pioggia
+- Toccando il meteo si apre il dettaglio: prossime 24 ore, 7 giorni, umidità, vento, pressione, indice UV, alba e tramonto
+- Nuovo "Il punto del giorno": le notizie simili delle varie testate vengono raggruppate in automatico nei temi principali delle ultime 24 ore, senza AI e gratis
+- Il recap si apre per intero con tutti gli articoli di ogni tema, che si leggono nel lettore interno
+- Le notizie vengono scaricate una volta sola e condivise tra Dashboard e News
+
 ## 1.4.0
 - Lettore più affidabile: se il testo non si trova al primo colpo prova i dati strutturati della pagina, la versione AMP e infine carica la pagina come un browser (per i siti fatti in JavaScript)
 - Download degli articoli con intestazioni da browser, codifica corretta e secondo tentativo in caso di errore
