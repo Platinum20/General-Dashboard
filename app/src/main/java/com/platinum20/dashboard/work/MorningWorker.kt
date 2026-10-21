@@ -76,6 +76,8 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             lines += "Oggi max ${d.max.asTemp()}, min ${d.min.asTemp()}" +
                 if (d.precipitationProbability >= 30) ", pioggia ${d.precipitationProbability}%" else ""
         }
+        forecast?.rainAlert?.let { lines += "☔ $it" }
+        forecast?.air?.let { lines += "Aria: ${it.label.lowercase()}" }
         if (events.isNotEmpty()) {
             val time = DateTimeFormatter.ofPattern("HH:mm")
             val zone = ZoneId.systemDefault()
