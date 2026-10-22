@@ -252,6 +252,10 @@ private fun centsOf(text: String): Long? =
 @Composable
 private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
     var text by remember { mutableStateOf(current?.let { (it / 100).toString() }.orEmpty()) }
+    val save = {
+        NotesStore.setBudget(centsOf(text))
+        onDismiss()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Budget mensile") },
@@ -262,14 +266,13 @@ private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
                 placeholder = { Text("Es. 600") },
                 suffix = { Text("€") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { save() }),
+                modifier = Modifier.autoFocus(enabled = current == null),
             )
         },
         confirmButton = {
-            TextButton(onClick = {
-                NotesStore.setBudget(centsOf(text))
-                onDismiss()
-            }) { Text("Salva") }
+            TextButton(onClick = save) { Text("Salva") }
         },
         dismissButton = {
             TextButton(onClick = {
@@ -458,7 +461,7 @@ fun ParcelDialog(
                     onValueChange = { title = it },
                     placeholder = { Text("Cosa arriva (es. Cuffie)") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth().autoFocus(enabled = parcel == null && initialTitle.isBlank()),
                 )
                 OutlinedTextField(
