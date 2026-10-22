@@ -13,7 +13,7 @@ dependencyResolutionManagement {
         mavenCentral()
         // NewPipe Extractor (player nativo di YouTube) si pubblica solo su JitPack.
         maven("https://jitpack.io") {
-            content { includeGroup("com.github.TeamNewPipe") }
+            content { includeGroupByRegex("com\\.github\\.TeamNewPipe.*") }
         }
     }
 }
