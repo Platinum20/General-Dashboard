@@ -8,6 +8,7 @@ import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
 import java.time.YearMonth
@@ -55,6 +56,7 @@ object Briefing {
         parcels: List<Parcel> = emptyList(),
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
+        fixedExpenses: List<FixedExpense> = emptyList(),
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
@@ -105,6 +107,14 @@ object Briefing {
         }
         if (evening) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
+        }
+
+        // Spese fisse: il giorno prima, per non trovarsi l'addebito a sorpresa.
+        fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+            lines += BriefLine(
+                BriefKind.MONEY,
+                "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
+            )
         }
 
         // Spese: se ne parla solo quando il tetto del mese è vicino.
@@ -178,6 +188,7 @@ object Briefing {
             parcels = notes.parcels,
             expenses = notes.expenses,
             budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
             max = max,
             relative = relative,
         )

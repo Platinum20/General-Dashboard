@@ -167,6 +167,7 @@ fun HomeScreen(
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -174,6 +175,7 @@ fun HomeScreen(
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
         val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
         )
         DashboardWidget.saveBriefing(context, lines)
     }

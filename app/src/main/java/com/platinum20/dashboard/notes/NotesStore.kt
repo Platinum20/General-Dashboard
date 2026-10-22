@@ -13,6 +13,7 @@ import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -169,6 +170,7 @@ data class NotesData(
     /** Tetto di spesa del mese in centesimi, null se non impostato. */
     val budgetCents: Long? = null,
     val parcels: List<Parcel> = emptyList(),
+    val fixedExpenses: List<FixedExpense> = emptyList(),
 ) {
     /** Pacchi ancora in viaggio, prima quelli attesi prima; quelli senza data in fondo. */
     val incoming: List<Parcel>
@@ -197,6 +199,36 @@ object NotesStore {
         appContext = context.applicationContext
         file = File(appContext.filesDir, FILE)
         _data.value = runCatching { parse(file.readText()) }.getOrDefault(NotesData())
+        applyFixedExpenses()
+    }
+
+    /** Aggiunge le spese fisse arrivate a scadenza (anche più mesi, se l'app non si apriva da tempo). */
+    fun applyFixedExpenses(today: LocalDate = LocalDate.now()) = update { d -> withFixedApplied(d, today, ::newId) }
+
+    internal fun withFixedApplied(d: NotesData, today: LocalDate, id: () -> Long): NotesData {
+        var expenses = d.expenses
+        val fixed = d.fixedExpenses.map { f ->
+            val months = f.dueMonths(today)
+            if (months.isEmpty()) return@map f
+            expenses = months.reversed().map { Expense(id(), f.cents, f.text, f.category, f.dateIn(it), fixedId = f.id) } + expenses
+            f.copy(lastMonth = months.last())
+        }
+        return if (fixed == d.fixedExpenses) d else d.copy(expenses = expenses, fixedExpenses = fixed)
+    }
+
+    /** "ogni mese il 5 affitto 650": salva la spesa fissa (e la aggiunge se oggi è il giorno). */
+    fun addFixedExpense(text: String, today: LocalDate = LocalDate.now()): FixedExpense? {
+        val parsed = Expenses.parseFixed(text, today) ?: return null
+        val item = parsed.copy(id = newId())
+        update { d -> withFixedApplied(d.copy(fixedExpenses = d.fixedExpenses + item), today, ::newId) }
+        return item
+    }
+
+    /** Smette di aggiungerla; quelle già aggiunte restano nei mesi passati. */
+    fun deleteFixedExpense(id: Long) = update { d -> d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }) }
+
+    fun restoreFixedExpense(item: FixedExpense) = update { d ->
+        if (d.fixedExpenses.any { it.id == item.id }) d else d.copy(fixedExpenses = d.fixedExpenses + item)
     }
 
     private fun newId(): Long = System.nanoTime()
@@ -481,6 +513,16 @@ object NotesStore {
                 put(
                     JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
                         .put("category", it.category.name).put("date", it.date.toString())
+                        .apply { it.fixedId?.let { f -> put("fixedId", f) } }
+                )
+            }
+        })
+        .put("fixedExpenses", JSONArray().apply {
+            d.fixedExpenses.forEach {
+                put(
+                    JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
+                        .put("category", it.category.name).put("day", it.day).put("from", it.from.toString())
+                        .apply { it.lastMonth?.let { m -> put("lastMonth", m.toString()) } }
                 )
             }
         })
@@ -506,6 +548,9 @@ object NotesStore {
         val habits = json.optJSONArray("habits") ?: JSONArray()
         val expenses = json.optJSONArray("expenses") ?: JSONArray()
         val parcels = json.optJSONArray("parcels") ?: JSONArray()
+        val fixedExpenses = json.optJSONArray("fixedExpenses") ?: JSONArray()
+        fun JSONObject.month(key: String): YearMonth? =
+            if (has(key)) runCatching { YearMonth.parse(optString(key)) }.getOrNull() else null
         fun JSONObject.date(key: String): LocalDate? =
             if (has(key)) runCatching { LocalDate.parse(optString(key)) }.getOrNull() else null
         return NotesData(
@@ -549,6 +594,19 @@ object NotesStore {
                     o.optString("text"),
                     runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
                     o.date("date") ?: return@mapNotNull null,
+                    fixedId = if (o.has("fixedId")) o.optLong("fixedId") else null,
+                )
+            },
+            fixedExpenses = (0 until fixedExpenses.length()).mapNotNull { i ->
+                val o = fixedExpenses.getJSONObject(i)
+                FixedExpense(
+                    o.getLong("id"),
+                    o.optLong("cents"),
+                    o.optString("text"),
+                    runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
+                    o.optInt("day", 1).coerceIn(1, 31),
+                    o.month("from") ?: return@mapNotNull null,
+                    o.month("lastMonth"),
                 )
             },
             budgetCents = if (json.has("budgetCents")) json.optLong("budgetCents") else null,
