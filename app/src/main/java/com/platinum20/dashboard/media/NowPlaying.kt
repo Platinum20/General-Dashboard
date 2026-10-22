@@ -116,10 +116,14 @@ object NowPlaying {
         }
     }
 
-    /** Mette in pausa tutto ciò che suona tranne [keep] (null = tutto), radio compresa. */
-    fun pauseOthers(keep: MediaService?) {
+    /**
+     * Un solo player alla volta: mette in pausa le pagine che suonano tranne [keep] (null = tutte),
+     * e se richiesto la radio e il player nativo di YouTube.
+     */
+    fun pauseOthers(keep: MediaService?, radio: Boolean = keep != null, nativeYouTube: Boolean = true) {
         _tracks.value.values.filter { it.playing && it.service != keep }.forEach { command(it.service, PlayerCommand.TOGGLE) }
-        if (keep != null) com.platinum20.dashboard.media.radio.RadioStore.pause()
+        if (radio) com.platinum20.dashboard.media.radio.RadioStore.pause()
+        if (nativeYouTube) com.platinum20.dashboard.media.youtube.player.YtPlayer.pause()
     }
 
     private fun ensureService() {
