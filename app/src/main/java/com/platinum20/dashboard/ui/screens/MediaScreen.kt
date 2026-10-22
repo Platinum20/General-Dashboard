@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ import com.platinum20.dashboard.media.AdBlocker
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.Track
 import androidx.compose.foundation.background
@@ -78,6 +80,7 @@ fun MediaScreen(
     bottomPadding: PaddingValues,
     onOpenVideo: () -> Unit,
     onOpenService: (MediaService) -> Unit,
+    onOpenRadio: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -91,6 +94,8 @@ fun MediaScreen(
     val blocked by AdBlocker.blocked.collectAsState()
     val tracks by NowPlaying.tracks.collectAsState()
     val sleepAt by NowPlaying.sleepAt.collectAsState()
+    RadioStore.init(context)
+    val radio by RadioStore.now.collectAsState()
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -123,17 +128,6 @@ fun MediaScreen(
                 item(key = "sleep") { SleepTimerRow(sleepAt = sleepAt, onSet = NowPlaying::setSleepTimer) }
             }
             item {
-                AdBlockCard(
-                    enabled = adBlock,
-                    blocked = blocked,
-                    onToggle = {
-                        AppSettings.setAdBlock(it)
-                        // Le pagine aperte ripartono con la nuova impostazione.
-                        MediaWebViews.releaseAll()
-                    },
-                )
-            }
-            item {
                 MediaCard(
                     icon = Icons.Outlined.PlayCircle,
                     title = "Video",
@@ -161,6 +155,27 @@ fun MediaScreen(
                     )
                 }
             }
+            item(key = "radio") {
+                MediaCard(
+                    icon = Icons.Outlined.Radio,
+                    title = "Radio",
+                    subtitle = radio?.let { "In ascolto: ${it.station.name}" } ?: "Le stazioni italiane e di tutto il mondo, in sottofondo",
+                    onClick = onOpenRadio,
+                    playing = radio != null,
+                    onStop = { RadioStore.stop() },
+                )
+            }
+            item(key = "adblock") {
+                AdBlockCard(
+                    enabled = adBlock,
+                    blocked = blocked,
+                    onToggle = {
+                        AppSettings.setAdBlock(it)
+                        // Le pagine aperte ripartono con la nuova impostazione.
+                        MediaWebViews.releaseAll()
+                    },
+                )
+            }
         }
     }
 }
@@ -168,22 +183,22 @@ fun MediaScreen(
 @Composable
 private fun AdBlockCard(enabled: Boolean, blocked: Int, onToggle: (Boolean) -> Unit) {
     Surface(
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = MaterialTheme.shapes.large,
         color = if (enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         contentColor = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Outlined.Shield, contentDescription = null, modifier = Modifier.size(32.dp))
-            Spacer(Modifier.size(16.dp))
+            Icon(Icons.Outlined.Shield, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Blocco pubblicità", style = MaterialTheme.typography.titleMedium)
+                Text("Blocco pubblicità", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    if (enabled) "Attivo · $blocked richieste bloccate da quando hai aperto l'app" else "Disattivato",
-                    style = MaterialTheme.typography.bodyMedium,
+                    if (enabled) "Attivo · $blocked richieste bloccate" else "Disattivato",
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
             Switch(checked = enabled, onCheckedChange = onToggle)

@@ -62,8 +62,11 @@ fun WebPlayerScreen(
     var fullscreenCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
 
     val webView = remember(service) { MediaWebViews.obtain(context, service, startUrl) }
+    // Il contenitore in cui questa schermata ha messo la pagina (non è stato: non deve ricomporre).
+    val hostParent = remember { arrayOfNulls<android.view.ViewParent>(1) }
 
     DisposableEffect(service) {
+        MediaWebViews.setMiniMode(service, false)
         historyBack = webView.canGoBack()
         pageTitle = webView.title
         MediaWebViews.setListener(service, object : MediaPageListener {
@@ -93,7 +96,7 @@ fun WebPlayerScreen(
         onDispose {
             fullscreenCallback?.onCustomViewHidden()
             MediaWebViews.setListener(service, null)
-            MediaWebViews.detach(service)
+            MediaWebViews.detach(service, hostParent[0])
         }
     }
 
@@ -154,7 +157,14 @@ fun WebPlayerScreen(
                 .fillMaxSize()
                 .padding(if (fullscreenView == null && !inPip) inner else PaddingValues())
         ) {
-            AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+            AndroidView(
+                factory = {
+                    (webView.parent as? android.view.ViewGroup)?.removeView(webView)
+                    webView
+                },
+                update = { hostParent[0] = it.parent },
+                modifier = Modifier.fillMaxSize(),
+            )
             fullscreenView?.let { view ->
                 key(view) {
                     AndroidView(
