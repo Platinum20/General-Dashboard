@@ -308,6 +308,7 @@ private fun ArticleImage(url: String, caption: String?) {
 @Composable
 private fun ArticleVideo(video: ReaderBlock.Video, baseUrl: String) {
     val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     val webView = remember(video.url) {
         WebView(context).apply {
             settings.javaScriptEnabled = true
@@ -320,12 +321,12 @@ private fun ArticleVideo(video: ReaderBlock.Video, baseUrl: String) {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                     adBlock.intercept(request)
 
-                // Come senza WebViewClient: un link che cambia pagina si apre fuori (app o browser).
+                // Un link che cambia pagina (il titolo del video, "Guarda su YouTube") si apre
+                // dentro l'app: nel player di YouTube o nella pagina web interna, mai fuori.
                 override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                     if (!request.isForMainFrame) return false
-                    runCatching {
-                        view.context.startActivity(Intent(Intent.ACTION_VIEW, request.url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    }
+                    val link = request.url.toString()
+                    (InAppLinks.intentFallback(link) ?: link).let { inApp?.openWeb(it, "Video") }
                     return true
                 }
             }

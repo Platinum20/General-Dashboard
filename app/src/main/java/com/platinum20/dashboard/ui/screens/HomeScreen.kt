@@ -68,7 +68,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.notes.NotesStore
@@ -118,6 +117,7 @@ fun HomeScreen(
     onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val greeting = remember {
         when (LocalTime.now().hour) {
@@ -200,7 +200,7 @@ fun HomeScreen(
                 briefing = briefing,
                 onOpenBrief = { kind ->
                     when (kind) {
-                        BriefKind.EVENT -> CalendarRepository.openCalendar(context)
+                        BriefKind.EVENT -> inApp?.openCalendar?.invoke()
                         BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
                         BriefKind.FREE -> Unit

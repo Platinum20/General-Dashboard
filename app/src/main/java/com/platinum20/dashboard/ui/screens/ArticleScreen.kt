@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,7 +33,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -133,9 +130,6 @@ fun ArticleScreen(
                         IconButton(onClick = { shareLink(context, currentUrl, pageTitle) }) {
                             Icon(Icons.Outlined.Share, contentDescription = "Condividi")
                         }
-                        IconButton(onClick = { openExternally(context, currentUrl) }) {
-                            Icon(Icons.Outlined.OpenInBrowser, contentDescription = "Apri nel browser")
-                        }
                     },
                 )
                 if (loading) {
@@ -154,17 +148,14 @@ fun ArticleScreen(
         ) {
             AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
             if (failed) {
-                ArticleError(
-                    onRetry = { failed = false; webView.reload() },
-                    onOpenExternally = { openExternally(context, currentUrl) },
-                )
+                ArticleError(onRetry = { failed = false; webView.reload() })
             }
         }
     }
 }
 
 @Composable
-private fun ArticleError(onRetry: () -> Unit, onOpenExternally: () -> Unit) {
+private fun ArticleError(onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -186,8 +177,6 @@ private fun ArticleError(onRetry: () -> Unit, onOpenExternally: () -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Button(onClick = onRetry) { Text("Riprova") }
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = onOpenExternally) { Text("Apri nel browser") }
     }
 }
 
@@ -223,9 +212,11 @@ private fun createWebView(
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val target = request.url
-            // Le pagine web restano nel lettore; mail, telefono, app esterne (intent://, whatsapp:, ...) escono.
+            // Tutto resta nell'app: le pagine web qui, gli inviti ad aprire un'altra app (intent://)
+            // con il loro indirizzo web di riserva; mail e telefono vanno al compositore e al tastierino.
             if (target.scheme == "http" || target.scheme == "https") return false
-            openExternalScheme(view.context, target)
+            InAppLinks.intentFallback(target.toString())?.let { view.loadUrl(it) }
+            if (target.scheme == "mailto" || target.scheme == "tel") openSystemAction(view.context, target)
             return true
         }
 
@@ -247,27 +238,9 @@ private fun createWebView(
     }
 }
 
-private fun openExternalScheme(context: Context, uri: Uri) {
-    runCatching {
-        val intent = if (uri.scheme == "intent") {
-            Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-                component = null
-                selector = null
-            }
-        } else {
-            Intent(Intent.ACTION_VIEW, uri)
-        }
-        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    }
-}
-
-private fun openExternally(context: Context, url: String) {
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (_: ActivityNotFoundException) {
-        // Nessun browser installato: restiamo nel lettore.
-    }
+/** Scrivere una mail o chiamare un numero: le uniche cose che passano al telefono. */
+private fun openSystemAction(context: Context, uri: Uri) {
+    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 private fun shareLink(context: Context, url: String, title: String?) {
