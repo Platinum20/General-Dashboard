@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.93.0, foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13). 1.94.0 in lavorazione nella PR #75 (vetro più morbido): non toccare barra e vetro._
+_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.94.0 (PR #75 uscita alle 22:42: solo vetro della barra e del + più morbido), foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13; valgono ancora, la 1.94 tocca solo la sfocatura). Nessuna PR aperta._
 
 ---
 
@@ -286,6 +286,7 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
 - 1.91.0 · Nuova icona; vetro liquido da Android 13; titoli grandi con freccia nelle pagine interne; schede delle Note a pillole; spese in card; Personalizza con icone
 - 1.90.0 · Accesso a Spotify con OAuth ufficiale; YouTube rifatto (anteprime grandi, Short in fila, "Stai guardando", comandi propri del player, velocità, descrizione)
