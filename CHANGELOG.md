@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.85.0
+- Vetro della barra in basso e del mini player davvero trasparente: velo più leggero e sfocatura meno forte, così la pagina sotto si vede scorrere
+- La sfocatura parte già da Android 12 (prima solo da Android 13); sui telefoni più vecchi resta un velo semitrasparente
+- Tolta l'ombra sotto barra e mini player, che dietro il vetro lo faceva sembrare grigio e pieno
+
 ## 1.83.0
 - YouTube con il player nativo di Android: il video arriva direttamente nell'app, senza pagina web né pubblicità
 - Ascolto in sottofondo con controlli nella notifica e nella schermata di blocco; la bolla mostra il video

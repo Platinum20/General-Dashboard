@@ -125,7 +125,6 @@ fun FloatingPlayer(
 
         Surface(
             shape = MaterialTheme.shapes.large,
-            shadowElevation = if (dragging) 14.dp else 8.dp,
             // Bolla di vetro: si sposta sopra le pagine e le lascia intravedere sfocate.
             color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),
