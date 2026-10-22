@@ -148,6 +148,7 @@ import androidx.compose.runtime.setValue
 import com.platinum20.dashboard.ui.screens.Backdrop
 import com.platinum20.dashboard.ui.screens.LocalBackdrop
 import com.platinum20.dashboard.ui.screens.glassSource
+import androidx.compose.foundation.BorderStroke
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -361,10 +362,11 @@ private fun CanvasNavBar(
         Surface(
             onClick = { haptic(Haptic.TICK); onPlus() },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
+            // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
+            color = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            shadowElevation = 8.dp,
-            modifier = Modifier.size(60.dp).bouncyPress(0.88f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+            modifier = Modifier.size(60.dp).bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Add, contentDescription = "Aggiungi", modifier = Modifier.size(28.dp))
