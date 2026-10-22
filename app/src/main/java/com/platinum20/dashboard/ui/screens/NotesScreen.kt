@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
@@ -468,9 +469,34 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Long?) -> Unit) {
-    val sorted = notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+    var query by rememberSaveable { mutableStateOf("") }
+    val sorted = notes
+        .filter { query.isBlank() || it.text.contains(query.trim(), ignoreCase = true) }
+        .sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
     val haptic = rememberHaptic()
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Con poche note la ricerca è solo ingombro: compare quando la lista si allunga.
+        if (notes.size >= SEARCH_FROM || query.isNotEmpty()) {
+            item(key = "search") {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Cerca nelle note") },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(Icons.Outlined.Close, contentDescription = "Cancella ricerca")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
         items(sorted, key = { it.id }) { note ->
             ElevatedCard(
                 shape = MaterialTheme.shapes.extraLarge,
@@ -520,9 +546,14 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
         }
         if (notes.isEmpty()) {
             item { EmptyHint("Nessuna nota. Tocca + per scriverne una; tieni premuto una nota per fissarla in alto.") }
+        } else if (sorted.isEmpty()) {
+            item { EmptyHint("Nessuna nota contiene \"${query.trim()}\".") }
         }
     }
 }
+
+/** Da quante note in su compare il campo di ricerca. */
+private const val SEARCH_FROM = 6
 
 @Composable
 private fun EmptyHint(text: String) {

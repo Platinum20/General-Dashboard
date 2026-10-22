@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.56.0
+- Note: quando le note sono tante, in cima alla lista c'è "Cerca nelle note" per trovare subito quella che ti serve (con la X per cancellare)
+
 ## 1.55.0
 - Tempi più leggibili in tutta l'app (note, notizie, video, meteo): oltre il giorno si legge "ieri 14:30", "lun 9:15" o "12 ott" invece di "21/10 14:30"
 
