@@ -205,7 +205,7 @@ fun SettingsScreen(
                     SettingsRow(
                         icon = Icons.Outlined.SystemUpdate,
                         title = "Aggiornamenti",
-                        subtitle = "Versione ${BuildConfig.VERSION_NAME} · novità e aggiornamento",
+                        subtitle = "Canvas ${BuildConfig.VERSION_NAME} · novità e aggiornamento",
                         showChevron = true,
                         onClick = onOpenUpdates,
                     )

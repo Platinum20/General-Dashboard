@@ -19,7 +19,12 @@ import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.NavBackStackEntry
@@ -239,6 +244,14 @@ private val topDestinations = listOf(
 )
 // Le Impostazioni non stanno nella barra: si aprono dall'ingranaggio in alto in ogni sezione.
 
+// Molle delle transizioni: le pagine arrivano con un leggero rimbalzo invece di una curva fissa.
+private val pageSpring = spring(
+    dampingRatio = 0.72f,
+    stiffness = Spring.StiffnessMediumLow,
+    visibilityThreshold = IntOffset.VisibilityThreshold,
+)
+private val scaleSpring = spring<Float>(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow)
+
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
     topDestinations.any { it.route == initialState.destination.route } &&
         topDestinations.any { it.route == targetState.destination.route }
@@ -318,8 +331,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
+                enter = slideInVertically(pageSpring) { it } + fadeIn(),
+                exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 NavigationBar {
                     topDestinations.forEach { dest ->
@@ -350,14 +363,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             startDestination = Routes.HOME,
             // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.
             enterTransition = {
-                if (isTabSwitch()) fadeIn(tween(180))
-                else slideInHorizontally(tween(260)) { it / 5 } + fadeIn(tween(260))
+                if (isTabSwitch()) fadeIn(tween(180)) + scaleIn(scaleSpring, initialScale = 0.98f)
+                else slideInHorizontally(pageSpring) { it / 4 } + fadeIn(tween(200)) + scaleIn(scaleSpring, initialScale = 0.97f)
             },
             exitTransition = { fadeOut(tween(160)) },
             popEnterTransition = { fadeIn(tween(220)) },
             popExitTransition = {
                 if (isTabSwitch()) fadeOut(tween(160))
-                else slideOutHorizontally(tween(220)) { it / 5 } + fadeOut(tween(220))
+                else slideOutHorizontally(pageSpring) { it / 4 } + fadeOut(tween(200))
             },
         ) {
             composable(Routes.HOME) {

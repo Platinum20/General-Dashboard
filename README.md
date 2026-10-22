@@ -1,6 +1,6 @@
-# General Dashboard
+# Canvas
 
-Dashboard personale per Android, in Kotlin con Jetpack Compose e design Material You.
+Canvas è la tua dashboard personale per Android, in Kotlin con Jetpack Compose e design Material You.
 
 ## Come si pubblica una nuova versione
 

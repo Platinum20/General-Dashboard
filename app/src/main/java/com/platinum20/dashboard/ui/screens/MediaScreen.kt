@@ -218,7 +218,7 @@ private fun MediaCard(
 ) {
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         Row(

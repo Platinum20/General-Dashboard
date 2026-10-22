@@ -108,7 +108,7 @@ fun NotesScreen(
             if (tab != 0) {
                 FloatingActionButton(
                     onClick = { if (tab == 1) onOpenNote(null) else addingDate = true },
-                    modifier = Modifier.padding(bottom = bottomPadding.calculateBottomPadding()),
+                    modifier = Modifier.padding(bottom = bottomPadding.calculateBottomPadding()).bouncyPress(0.9f),
                 ) { Icon(Icons.Outlined.Add, contentDescription = if (tab == 1) "Nuova nota" else "Nuova data") }
             }
         },
@@ -138,7 +138,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
             ElevatedCard(
                 onClick = { editing = item },
                 shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bouncyPress(),
             ) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -274,6 +274,7 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                 shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .bouncyPress()
                     .combinedClickable(
                         onClick = { onOpenNote(note.id) },
                         onLongClick = { NotesStore.togglePin(note.id) },
