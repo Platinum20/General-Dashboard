@@ -13,7 +13,61 @@ _Ultimo aggiornamento: 2026-10-22 ~10:35 UTC, su main 1.63.0, foto: branch `scre
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Per ora nessuna segnalazione aperta.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.81.0, giro fotografico `main/29`, 2026-10-22.)_
+
+### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
+- **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
+- **Cosa non va:** nessuna foto di Calendario (agenda di 60 giorni, "Vai a un giorno", scheda evento, "Nuovo evento"/"Modifica evento"), della pagina Impostazioni › Compila da solo, della card "Trovati per te" in Oggi con una proposta, della pagina Licenze e della pagina web interna (es. tracciamento pacco). Sono le parti più grandi delle ultime versioni e oggi nessuno le guarda dopo una release.
+- **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`
+- **Come riprodurre:** `main/29/tour/` non contiene nessuna di queste schermate.
+- **Cosa fare:** aggiungere al giro fotografico: `07_calendario` (con permesso calendario concesso in Robolectric via `ShadowApplication.grantPermissions` e 3-4 eventi finti nel provider, oppure con dati iniettati), `08_evento` e `09_nuovo_evento`; `43_compila_da_solo`; `05b_trovati` con una proposta finta in `AutoFill` (pacco + spesa); `44_licenze`. Anche al buio.
+- **Test che lo impedisce:** le schermate stesse nel giro; un controllo nel tour che fallisce se una schermata attesa non è stata salvata.
+
+### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
+- **Versione:** 1.81.0 (giro `main/29`)
+- **Cosa non va:** `06_aggiungi.png` è identica byte per byte a `05_oggi_fondo.png` (stesso md5): il tocco su "Aggiungi" non apre la cattura veloce (o la apre in un'altra Activity che Robolectric non fotografa), quindi il pannello del "+" non è mai stato controllato.
+- **Dove:** `ScreenshotTour.kt` righe ~105-108; "Aggiungi" è anche la contentDescription dei + di `HomeCards.kt:365`, `NotesScreen.kt:309` e del ✓ in `AutoFillUi.kt:163`, quindi `tap("Aggiungi")` può prendere il nodo sbagliato.
+- **Come riprodurre:** `md5sum main/29/tour/05_oggi_fondo.png main/29/tour/06_aggiungi.png`.
+- **Cosa fare:** dare al + della barra una contentDescription unica (es. "Aggiungi al volo") e toccare quella; se la cattura è un'Activity a parte, fotografarla con `Robolectric.buildActivity(QuickCaptureActivity::class.java)`.
+- **Test che lo impedisce:** nel tour, dopo il tocco, controllare che esista il nodo con il campo della cattura (es. testo "Promemoria") prima di salvare la foto.
+
+### V3. Pagina web interna: i link a YouTube e Spotify restano nella pagina · News › pagina web, Pacchi › Traccia · gravità bassa
+- **Versione:** 1.81.0
+- **Cosa non va:** il changelog dice che i link dei video negli articoli vanno nel player di YouTube dell'app. È vero nella modalità lettura (`ReaderScreen.ArticleVideo`), ma in `ArticleScreen` `shouldOverrideUrlLoading` restituisce `false` per ogni http/https: un link a youtube.com o open.spotify.com dentro la pagina di un giornale apre il sito mobile di YouTube/Spotify dentro la WebView (con login e pubblicità del sito) invece del player dell'app.
+- **Dove:** `app/src/main/java/com/platinum20/dashboard/ui/screens/ArticleScreen.kt`, `createWebView` › `shouldOverrideUrlLoading`
+- **Come riprodurre:** aprire un articolo in pagina web (non lettura) che contiene un link a un video YouTube e toccarlo.
+- **Cosa fare:** per i link del frame principale usare `InAppLinks.target(url)`: `YouTube`/`Spotify` → `LocalInAppNav.openWeb` (che li manda al player), `Web` → resta nella pagina.
+- **Test che lo impedisce:** in `InAppLinksTest` un caso per una funzione pura "resta nella pagina?" (`https://www.repubblica.it/...` → sì; `https://youtu.be/abc` e `https://open.spotify.com/track/...` → no).
+
+### V4. Calendario: eliminare o ottenere il permesso può fallire in silenzio · Calendario › scheda evento · gravità bassa
+- **Versione:** 1.81.0
+- **Cosa non va:** in `EventDetailScreen`, se `CalendarRepository.delete` restituisce `false` (calendario che rifiuta, evento sparito, errore del provider) non succede niente: niente messaggio, la scheda resta. Lo stesso se il permesso di scrittura viene negato da "Modifica" o "Elimina" (`withWrite` azzera l'azione senza dire perché). Con il permesso negato per sempre, "Consenti" in Calendario e in "Nuovo evento" non apre più nulla (Android non mostra più il dialog) e serve un rimando a Info app.
+- **Dove:** `ui/screens/CalendarScreen.kt` (dialog "Eliminare l'evento?", `withWrite`, `CalendarMessage` con "Consenti").
+- **Come riprodurre:** negare il permesso Calendario in scrittura, aprire un evento, toccare Elimina › Elimina.
+- **Cosa fare:** snackbar "Non è stato possibile eliminare l'evento" / "Serve il permesso di scrittura del calendario"; dopo un rifiuto definitivo il pulsante diventa "Apri impostazioni" (come in Compila da solo).
+- **Test che lo impedisce:** test della funzione che sceglie il messaggio/azione dallo stato del permesso (concesso, negato, negato per sempre).
+
+### V5. "Domani 9:00" dopo mezzanotte salta un giorno · notifica del promemoria · gravità bassa
+- **Versione:** 1.74.0
+- **Cosa non va:** `Snooze.TOMORROW.until(now)` è sempre `now + 1 giorno alle 9:00`. Se si rimanda alle 00:30 di venerdì, il promemoria torna sabato alle 9:00, mentre chi è sveglio a mezzanotte e mezza intende "domattina" (venerdì 9:00).
+- **Dove:** `app/src/main/java/com/platinum20/dashboard/notes/Snooze.kt`
+- **Come riprodurre:** `Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 0, 30))` → 2026-10-24T09:00.
+- **Cosa fare:** prima delle 5 del mattino usare le 9:00 dello stesso giorno (e magari chiamare il tasto "Stamattina 9:00" in quel caso).
+- **Test che lo impedisce:** in `SnoozeTest` i casi 00:30 → stesso giorno 9:00, 23:50 → giorno dopo 9:00, 08:59 e 09:01.
+
+### V6. Il punto del giorno al buio resta su "Raccolgo le notizie di oggi…" · giro fotografico · gravità bassa
+- **Versione:** 1.81.0 (anche in `main/26`)
+- **Cosa non va:** in `scuro_01_oggi` e `scuro_05_oggi_fondo` la card Il punto del giorno è ancora in caricamento, mentre in chiaro mostra i temi; manca anche `scuro_03_punto`. Il giro al buio quindi non controlla mai il punto del giorno (titoli dei temi della 1.74.0) al buio.
+- **Dove:** `ScreenshotTour.kt`, parte `+night` (il `settle` iniziale non aspetta `NewsRecap`; la visita "Tutti" non trova il link mentre carica).
+- **Cosa fare:** nel giro al buio aspettare che il recap sia pronto come in chiaro, poi fotografare anche `scuro_03_punto`.
+- **Test che lo impedisce:** il controllo "schermata attesa mancante" di V1.
+
+### V7. Vetro della barra in basso: da controllare sul telefono · tutte le schermate · gravità bassa
+- **Versione:** 1.80.0
+- **Cosa non va:** nel giro fotografico (dove la sfocatura non viene disegnata) il testo sotto la barra flottante si vede attraverso la tinta al 55-62% e si sovrappone alle icone (News `10_news`, Oggi `01_oggi`). Su Android 12+ la sfocatura vera dovrebbe coprirlo, ma se la sfocatura non parte (risparmio energetico, GPU, `hazeSource` mancante in qualche schermata) resta un testo leggibile male sotto le icone. Il `fallbackTint` al 96% vale solo sotto Android 12.
+- **Dove:** `ui/screens/Common.kt` ~righe 336-350, `MainActivity.kt` ~righe 496-520.
+- **Cosa fare:** Antonio lo guarda sul telefono; se si vede male, alzare la tinta al 75-80% o aggiungere un leggero bordo/ombra sotto la barra.
+- **Test che lo impedisce:** nessuno automatico possibile per la sfocatura; tenere le foto `01_oggi`/`10_news` come confronto.
 
 ---
 
