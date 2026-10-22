@@ -512,7 +512,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
-                    onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
             }
             composable(Routes.MEDIA) {

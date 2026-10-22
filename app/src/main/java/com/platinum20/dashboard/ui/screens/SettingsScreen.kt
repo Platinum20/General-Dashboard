@@ -76,7 +76,7 @@ import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.AppTheme
 import com.platinum20.dashboard.settings.HomeCard
-import com.platinum20.dashboard.update.UpdateCheckWorker
+import com.platinum20.dashboard.work.UpdateCheckWorker
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.work.MorningWorker
 import java.text.SimpleDateFormat
