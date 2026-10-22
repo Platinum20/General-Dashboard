@@ -200,7 +200,7 @@ fun NewsScreen(
     }
 }
 
-private const val READ_ALPHA = 0.55f
+const val READ_ALPHA = 0.55f
 
 @Composable
 private fun SectionLabel(text: String, modifier: Modifier = Modifier) {

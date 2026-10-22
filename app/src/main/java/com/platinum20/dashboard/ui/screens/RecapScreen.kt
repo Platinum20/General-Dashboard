@@ -24,10 +24,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 
 /** Tutti i temi del giorno, ciascuno con gli articoli delle varie testate. */
@@ -38,6 +43,14 @@ fun RecapScreen(
     onOpenArticle: (NewsItem) -> Unit,
 ) {
     val state = rememberRecapState()
+    val context = LocalContext.current
+    NewsHistory.init(context)
+    // Come in News: gli articoli già aperti restano attenuati.
+    val read by NewsHistory.read.collectAsStateWithLifecycle()
+    val open = { item: NewsItem ->
+        NewsHistory.markRead(item.link)
+        onOpenArticle(item)
+    }
 
     Scaffold(
         topBar = {
@@ -83,8 +96,9 @@ fun RecapScreen(
                                 Column(
                                     Modifier
                                         .fillMaxWidth()
-                                        .clickable { onOpenArticle(item) }
+                                        .clickable { open(item) }
                                         .padding(horizontal = 20.dp, vertical = 10.dp)
+                                        .alpha(if (item.link in read) READ_ALPHA else 1f)
                                 ) {
                                     Text(
                                         item.source.name + (item.publishedAt?.let { "  ·  " + relativeTime(it) } ?: ""),
