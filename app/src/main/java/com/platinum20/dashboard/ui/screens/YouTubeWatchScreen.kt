@@ -329,17 +329,30 @@ private fun VideoArea(
                     Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
                 }
                 Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
-                    TimeBar(live = now?.stream?.hlsUrl != null, onFullscreen = onToggleFullscreen, fullscreen = fullscreen, onInteract = { flashKey++ })
+                    TimeBar(live = now?.stream?.hlsUrl != null, knownSec = now?.stream?.durationSec ?: 0, onFullscreen = onToggleFullscreen, fullscreen = fullscreen, onInteract = { flashKey++ })
                 }
             }
         }
     }
 }
 
+/**
+ * "1:05 / 3:33": finché il player non conosce la durata usa quella già nota del video,
+ * e se non si sa nemmeno quella scrive "--:--" invece di un "0:00" che sembra un video rotto.
+ */
+internal fun timeLabel(positionMs: Long, playerDurationMs: Long, knownSec: Long): String {
+    val total = when {
+        playerDurationMs > 0 -> formatDuration(playerDurationMs)
+        knownSec > 0 -> formatDuration(knownSec * 1000)
+        else -> return "--:-- / --:--"
+    }
+    return "${formatDuration(positionMs.coerceAtLeast(0))} / $total"
+}
+
 /** Minutaggio sul video: tempo trascorso, durata, barra da trascinare e schermo intero. */
 @OptIn(UnstableApi::class)
 @Composable
-private fun TimeBar(live: Boolean, fullscreen: Boolean, onFullscreen: () -> Unit, onInteract: () -> Unit) {
+private fun TimeBar(live: Boolean, knownSec: Long, fullscreen: Boolean, onFullscreen: () -> Unit, onInteract: () -> Unit) {
     val context = LocalContext.current
     val player = remember { YtPlayer.player(context) }
     var position by remember { mutableLongStateOf(0L) }
@@ -360,7 +373,7 @@ private fun TimeBar(live: Boolean, fullscreen: Boolean, onFullscreen: () -> Unit
         } else {
             val shown = dragging?.let { (it * duration).toLong() } ?: position
             Text(
-                "${formatDuration(shown)} / ${formatDuration(duration)}",
+                timeLabel(shown, duration, knownSec),
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
             )
