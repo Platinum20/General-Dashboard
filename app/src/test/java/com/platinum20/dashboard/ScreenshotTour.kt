@@ -91,11 +91,14 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") }
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            // Seconda scheda interna (Note libere): l'ultimo "Note" cliccabile è la scheda in alto.
-            val inner = compose.onAllNodes(hasText("Note") and hasClickAction())
-            if (inner.fetchSemanticsNodes().size > 1) {
-                inner[inner.fetchSemanticsNodes().size - 1].performClick()
-                settle(1_000); shot(p + "21_note_libere")
+            for ((tab, name) in listOf("Note" to "21_note_libere", "Date" to "22_date")) {
+                // Il primo nodo è la scheda in alto; "Note" compare anche nella barra in basso.
+                val nodes = compose.onAllNodes(hasText(tab) and hasClickAction())
+                val count = nodes.fetchSemanticsNodes().size
+                if (count > 0) {
+                    nodes[0].performClick()
+                    settle(1_000); shot(p + name)
+                }
             }
         }
         if (tap("Media")) {

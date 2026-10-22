@@ -17,7 +17,13 @@ import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.navigation.NavBackStackEntry
+import com.platinum20.dashboard.ui.screens.TabReselect
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -231,6 +237,10 @@ private val topDestinations = listOf(
 )
 // Le Impostazioni non stanno nella barra: si aprono dall'ingranaggio in alto in ogni sezione.
 
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
+    topDestinations.any { it.route == initialState.destination.route } &&
+        topDestinations.any { it.route == targetState.destination.route }
+
 /** Passa a una sezione della barra in basso mantenendo lo stato delle altre. */
 private fun NavController.switchTab(route: String) {
     navigate(route) {
@@ -314,7 +324,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         val selected = currentRoute == dest.route
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { navController.switchTab(dest.route) },
+                            onClick = {
+                                // Toccare la scheda già aperta riporta la lista in cima.
+                                if (selected) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
+                            },
                             icon = {
                                 BadgedBox(badge = {
                                     if (dest.route == Routes.NOTES && dueToday > 0) Badge { Text("$dueToday") }
@@ -330,7 +343,21 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
-        NavHost(navController = navController, startDestination = Routes.HOME) {
+        NavHost(
+            navController = navController,
+            startDestination = Routes.HOME,
+            // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.
+            enterTransition = {
+                if (isTabSwitch()) fadeIn(tween(180))
+                else slideInHorizontally(tween(260)) { it / 5 } + fadeIn(tween(260))
+            },
+            exitTransition = { fadeOut(tween(160)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = {
+                if (isTabSwitch()) fadeOut(tween(160))
+                else slideOutHorizontally(tween(220)) { it / 5 } + fadeOut(tween(220))
+            },
+        ) {
             composable(Routes.HOME) {
                 HomeScreen(
                     bottomPadding = padding,

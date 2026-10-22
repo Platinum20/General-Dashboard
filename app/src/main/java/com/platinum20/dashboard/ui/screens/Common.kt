@@ -25,6 +25,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import kotlinx.coroutines.flow.MutableSharedFlow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.weather.WeatherCodes
@@ -40,6 +41,11 @@ import java.time.format.DateTimeFormatter
 val topLevelInsets: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets
         .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
+/** Tocco sulla scheda già aperta della barra in basso: le sezioni tornano in cima alla lista. */
+object TabReselect {
+    val events = MutableSharedFlow<String>(extraBufferCapacity = 1)
+}
 
 /** Apre le Impostazioni: le sezioni principali la usano per l'icona in alto a destra. */
 val LocalOpenSettings = staticCompositionLocalOf<(() -> Unit)?> { null }
