@@ -534,6 +534,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
+                    onPlayWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, it)) },
                 )
             }
             composable(

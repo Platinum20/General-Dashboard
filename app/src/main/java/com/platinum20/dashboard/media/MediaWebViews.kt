@@ -41,6 +41,10 @@ interface MediaPageListener {
 object MediaWebViews {
     private val views = mutableMapOf<MediaService, WebView>()
     private val listeners = mutableMapOf<MediaService, MediaPageListener>()
+    private val autoplay = mutableSetOf<MediaService>()
+
+    /** Chiamato a pagina caricata: true una volta sola dopo un'apertura con un brano da far partire. */
+    fun consumeAutoplay(service: MediaService): Boolean = autoplay.remove(service)
 
     private val _open = MutableStateFlow<Set<MediaService>>(emptySet())
     /** Player aperti, anche se non sono a schermo. */
@@ -48,6 +52,8 @@ object MediaWebViews {
 
     /** Restituisce la pagina del servizio, creandola se serve, pronta da mettere a schermo. */
     fun obtain(context: Context, service: MediaService, startUrl: String? = null): WebView {
+        // Su Spotify un brano, album o playlist aperto dal feed parte da solo, come nell'app ufficiale.
+        if (service == MediaService.SPOTIFY && startUrl != null) autoplay += service
         views[service]?.let { existing ->
             (existing.context as? MutableContextWrapper)?.baseContext = context
             (existing.parent as? ViewGroup)?.removeView(existing)
@@ -198,6 +204,9 @@ fun createMediaWebView(
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (service == MediaService.SPOTIFY && MediaWebViews.consumeAutoplay(service)) {
+                view.evaluateJavascript(SPOTIFY_AUTOPLAY, null)
+            }
             listener()?.onPageFinished(url)
         }
 
@@ -218,3 +227,22 @@ fun youtubeWatchUrl(link: String): String? {
         else -> null
     }
 }
+
+// Preme "Riproduci" nella pagina del brano/album/playlist appena il web player è pronto (al massimo 20 secondi).
+private const val SPOTIFY_AUTOPLAY = """
+(function () {
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries++;
+    var button = document.querySelector('[data-testid="action-bar-row"] [data-testid="play-button"]') ||
+                 document.querySelector('main [data-testid="play-button"]');
+    if (button) {
+      clearInterval(timer);
+      if (button.getAttribute('aria-label') && /pausa|pause/i.test(button.getAttribute('aria-label'))) return;
+      button.click();
+    } else if (tries > 40) {
+      clearInterval(timer);
+    }
+  }, 500);
+})();
+"""
