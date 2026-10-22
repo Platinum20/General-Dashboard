@@ -62,7 +62,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -197,7 +197,8 @@ fun SpotifyFeedScreen(
                 ChildrenList(parent, onOpen = { opened = it }, onPlay = { onPlayWeb(it.webUrl) })
                 return@Column
             }
-            TabRow(selectedTabIndex = tab) {
+            // Scorrevole: con cinque schede le etichette non vengono più tagliate.
+            ScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp) {
                 spotifyTabs.forEachIndexed { index, label ->
                     Tab(selected = tab == index, onClick = { tab = index }, text = { Text(label, maxLines = 1) })
                 }

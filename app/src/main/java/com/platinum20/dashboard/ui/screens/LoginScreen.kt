@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.browserUserAgent
+import android.webkit.WebSettings
 import android.net.Uri
 import android.webkit.CookieManager
 import androidx.activity.compose.BackHandler
@@ -77,6 +79,11 @@ fun LoginScreen(
                 if (Uri.parse(url).host == service.homeHost && Accounts.isLoggedIn(service)) finish()
             }
         }
+        // L'accesso si fa sempre con la versione per telefono del sito: con quella "desktop" che usa
+        // il web player di Spotify, la pagina di login di Spotify restava nera.
+        view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
+        view.settings.setSupportZoom(false)
+        view.settings.builtInZoomControls = false
         view.also { it.loadUrl(service.loginUrl) }
     }
 

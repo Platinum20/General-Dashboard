@@ -40,7 +40,8 @@ object YouTubeWeb {
         val fromFeed = feed?.videos.orEmpty()
             .filter { it.channelId.isNotBlank() }
             .map { YtChannel(it.channelId, it.channel, "") }
-        return (channels.channels + fromFeed).distinctBy { it.id }
+        // Prima i canali con video recenti nel feed, poi gli altri: al massimo 120 feed RSS da leggere.
+        return (fromFeed + channels.channels).distinctBy { it.id }.take(120)
     }
 
     suspend fun playlists(context: Context): List<YtPlaylist> =

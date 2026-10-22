@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Feed di YouTube dell'utente, tenuti in memoria finché l'app è aperta. */
 object YouTubeStore {
@@ -102,7 +103,11 @@ object YouTubeStore {
         return try {
             val token = if (api != null && YouTubeAuth.connected.value) YouTubeAuth.token(app) else null
             val data = when {
-                api == null || token == null -> web(app)
+                // Senza API ufficiale si legge il sito: mai più di un minuto, poi un errore chiaro.
+                api == null || token == null -> withTimeoutOrNull(60_000) { web(app) }
+                    ?: throw java.io.IOException(
+                        "YouTube non risponde. Tocca la chiave in alto e collega l'API ufficiale di Google: è più veloce e affidabile."
+                    )
                 else -> try {
                     api(token)
                 } catch (e: YouTubeAuthException) {

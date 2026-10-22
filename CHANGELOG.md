@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.82.0
+- YouTube con il player dell'app: toccando un video si apre una schermata dell'app con il video in alto e, sotto, titolo, canale, barra di avanzamento, ±10 secondi, schermo intero e i prossimi video dai canali che segui. Niente più pagina del sito
+- Anche i link di YouTube condivisi, la notifica e la bolla aprono il player dell'app
+- Accesso a Spotify: la pagina di login non resta più nera (si apre la versione per telefono del sito)
+- Feed di YouTube senza API ufficiale: niente più caricamento infinito, dopo un minuto compare un messaggio chiaro con cosa fare
+- YouTube e Spotify: le schede scorrono e i nomi non vengono più tagliati
+
 ## 1.81.0
 - Tutto dentro l'app: nessun link apre più il browser o un'altra app. Le pagine dei giornali, il tracciamento dei pacchi e il codice sorgente si aprono nella pagina web interna (con il blocco pubblicità); i link dei video negli articoli vanno nel player di YouTube dell'app
 - Le pagine che provano ad aprire l'app del sito (intent://) restano nella pagina interna usando il loro indirizzo web; mail e numeri di telefono continuano ad aprire il compositore e il tastierino

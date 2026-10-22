@@ -122,6 +122,7 @@ import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.WebPlayerScreen
 import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
+import com.platinum20.dashboard.ui.screens.YouTubeWatchScreen
 import com.platinum20.dashboard.ui.screens.SpotifyFeedScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
@@ -258,10 +259,18 @@ object Routes {
     const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
     const val WEB_PLAYER = "media/web/{service}?url={url}"
+    const val YOUTUBE_WATCH = "media/watch?url={url}"
     const val LOGIN = "settings/login/{service}"
 
     fun webPlayer(service: MediaService, url: String? = null) =
         "media/web/${service.name}" + (url?.let { "?url=${Uri.encode(it)}" } ?: "")
+
+    /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
+    fun youtubeWatch(url: String? = null) = "media/watch" + (url?.let { "?url=${Uri.encode(it)}" } ?: "")
+
+    /** YouTube va nel player dell'app, Spotify nel suo web player. */
+    fun mediaPlayer(service: MediaService, url: String? = null) =
+        if (service == MediaService.YOUTUBE) youtubeWatch(url) else webPlayer(service, url)
 
     fun login(service: MediaService) = "settings/login/${service.name}"
 
@@ -460,12 +469,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.RADIO) { launchSingleTop = true }
                 } else {
                     MediaService.entries.firstOrNull { it.name == request.source }
-                        ?.let { navController.navigate(Routes.webPlayer(it)) }
+                        ?.let { navController.navigate(Routes.mediaPlayer(it)) }
                 }
                 OpenRequest.PLAY -> if (request.url.isNotBlank()) {
                     val youtube = youtubeWatchUrl(request.url)
                     when {
-                        youtube != null -> navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, youtube))
+                        youtube != null -> navController.navigate(Routes.youtubeWatch(youtube))
                         Uri.parse(request.url).host?.endsWith("spotify.com") == true ->
                             navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, request.url))
                         else -> navController.navigate(Routes.video(request.url))
@@ -562,10 +571,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.RADIO) {
                 RadioScreen(onBack = { navController.popBackStack() })
             }
+            composable(
+                Routes.YOUTUBE_WATCH,
+                arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
+                YouTubeWatchScreen(
+                    url = entry.arguments?.getString("url"),
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(Routes.YOUTUBE_FEED) {
                 YouTubeFeedScreen(
                     onBack = { navController.popBackStack() },
-                    onPlay = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
+                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                 )
@@ -585,7 +603,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 VideoPlayerScreen(
                     startUri = entry.arguments?.getString("uri"),
                     onBack = { navController.popBackStack() },
-                    onOpenYouTube = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
+                    onOpenYouTube = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(
@@ -738,7 +756,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             currentRoute = currentRoute,
             onExpand = { target ->
                 when (target) {
-                    is FloatingTarget.Web -> navController.navigate(Routes.webPlayer(target.service))
+                    is FloatingTarget.Web -> navController.navigate(Routes.mediaPlayer(target.service))
                     FloatingTarget.Radio -> navController.navigate(Routes.RADIO) { launchSingleTop = true }
                 }
             },
