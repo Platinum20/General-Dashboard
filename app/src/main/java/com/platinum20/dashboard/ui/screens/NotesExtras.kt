@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.notes.Carrier
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
@@ -64,6 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
 private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
+private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
  * Spese: si scrivono come un messaggio ("12,50 pizza"), la categoria si indovina dalle parole.
@@ -75,10 +78,14 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
     var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Expense?>(null) }
-    val parsed = remember(draft) { Expenses.parse(draft) }
+    val fixedDraft = remember(draft) { Expenses.parseFixed(draft) }
+    val parsed = remember(draft) { if (fixedDraft != null) null else Expenses.parse(draft) }
+    var stopping by remember { mutableStateOf<FixedExpense?>(null) }
     val haptic = rememberHaptic()
     val add = {
-        if (NotesStore.addExpense(draft) != null) {
+        // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
+        val saved = if (fixedDraft != null) NotesStore.addFixedExpense(draft) else NotesStore.addExpense(draft)
+        if (saved != null) {
             haptic(Haptic.CONFIRM)
             draft = ""
         }
@@ -92,12 +99,12 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
-                placeholder = { Text("Es. 12,50 pizza · benzina 40€") },
+                placeholder = { Text("Es. 12,50 pizza · ogni mese il 5 affitto 650") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { add() }),
                 trailingIcon = {
-                    if (parsed != null) IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
+                    if (parsed != null || fixedDraft != null) IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
                 },
                 shape = MaterialTheme.shapes.large,
                 colors = canvasFieldColors(),
@@ -105,10 +112,11 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
             )
             if (draft.isNotBlank()) {
                 Text(
-                    parsed?.let { "${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
+                    fixedDraft?.let { "Ogni mese il ${it.day} · ${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
+                        ?: parsed?.let { "${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
                         ?: "Scrivi anche l'importo",
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (parsed != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (parsed != null || fixedDraft != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 12.dp, top = 4.dp),
                 )
             }
@@ -140,6 +148,14 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
+                    if (fixedCents > 0) {
+                        Text(
+                            "Fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     val budget = data.budgetCents
                     Row(
@@ -160,7 +176,8 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                                 Text(
                                     if (over) "Budget ${Expenses.format(budget)} superato di ${Expenses.format(total - budget)}"
                                     else "Budget ${Expenses.format(budget)} · restano ${Expenses.format(budget - total)}" +
-                                        if (month == YearMonth.now()) " (${dailyLeft(budget - total)} al giorno)" else "",
+                                        // Le fisse ancora da arrivare sono già impegnate: il "al giorno" conta solo il resto.
+                                        if (month == YearMonth.now()) " (${dailyLeft(budget - total - Expenses.fixedStillDue(data.fixedExpenses, LocalDate.now()))} al giorno)" else "",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -190,6 +207,34 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
             }
             Spacer(Modifier.height(8.dp))
         }
+        if (data.fixedExpenses.isNotEmpty()) {
+            item(key = "fixed") {
+                Column(Modifier.padding(bottom = 8.dp)) {
+                    SectionHeader("Spese fisse · ${Expenses.format(data.fixedExpenses.sumOf { it.cents })} al mese")
+                    CanvasCard(Modifier.fillMaxWidth()) {
+                        data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
+                            if (i > 0) RowDivider()
+                            Row(
+                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { stopping = f }.padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(
+                                        "Il ${f.day} di ogni mese · prossima ${f.nextDate(LocalDate.now()).format(fixedNext)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Text(Expenses.format(f.cents), style = MaterialTheme.typography.titleMedium)
+                            }
+                        }
+                    }
+                }
+            }
+        }
         var lastDay: LocalDate? = null
         inMonth.forEach { expense ->
             if (expense.date != lastDay) {
@@ -215,7 +260,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(expense.text.ifEmpty { expense.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(expense.category.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(expense.category.label + if (expense.fixedId != null) " · fissa" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Text(Expenses.format(expense.cents), style = MaterialTheme.typography.titleMedium)
                 }
@@ -235,6 +280,20 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
     }
 
     if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
+    stopping?.let { f ->
+        AlertDialog(
+            onDismissRequest = { stopping = null },
+            title = { Text(f.text.ifEmpty { "Spesa fissa" }) },
+            text = { Text("Smettere di aggiungerla ogni mese? Quelle già aggiunte restano nei mesi passati.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    NotesStore.deleteFixedExpense(f.id)
+                    stopping = null
+                }) { Text("Smetti") }
+            },
+            dismissButton = { TextButton(onClick = { stopping = null }) { Text("Annulla") } },
+        )
+    }
     editing?.let { ExpenseDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 

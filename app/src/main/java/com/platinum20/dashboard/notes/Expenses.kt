@@ -12,7 +12,45 @@ data class Expense(
     val text: String,
     val category: ExpenseCategory,
     val date: LocalDate = LocalDate.now(),
+    /** La spesa fissa che l'ha aggiunta da sola, null per quelle scritte a mano. */
+    val fixedId: Long? = null,
 )
+
+/**
+ * Una spesa fissa: affitto, bollette, abbonamenti. Ogni mese, il giorno [day]
+ * (o l'ultimo del mese se è più corto), si aggiunge da sola alle spese.
+ */
+data class FixedExpense(
+    val id: Long,
+    val cents: Long,
+    val text: String,
+    val category: ExpenseCategory,
+    val day: Int,
+    /** Il primo mese in cui va aggiunta. */
+    val from: YearMonth,
+    /** L'ultimo mese già aggiunto, null se mai. */
+    val lastMonth: YearMonth? = null,
+) {
+    fun dateIn(month: YearMonth): LocalDate = month.atDay(day.coerceAtMost(month.lengthOfMonth()))
+
+    /** I mesi da aggiungere fino a oggi compreso (più d'uno se l'app non si apriva da tempo). */
+    fun dueMonths(today: LocalDate): List<YearMonth> {
+        var month = lastMonth?.plusMonths(1) ?: from
+        val out = mutableListOf<YearMonth>()
+        while (!dateIn(month).isAfter(today)) {
+            out += month
+            month = month.plusMonths(1)
+        }
+        return out
+    }
+
+    /** La prossima volta che si aggiunge. */
+    fun nextDate(today: LocalDate): LocalDate {
+        var month = lastMonth?.plusMonths(1) ?: from
+        while (dateIn(month).isBefore(today)) month = month.plusMonths(1)
+        return dateIn(month)
+    }
+}
 
 enum class ExpenseCategory(val label: String, val words: List<String>) {
     FOOD("Spesa", listOf("spesa", "supermercato", "conad", "coop", "lidl", "esselunga", "eurospin", "carrefour", "pane", "frutta", "mercato", "md ", "despar", "pam")),
@@ -46,6 +84,39 @@ object Expenses {
             .replace(Regex("\\s+"), " ").trim().trim(',', '-', ':').trim()
             .replaceFirstChar { it.uppercase() }
         return Expense(0, cents, text, ExpenseCategory.guess(text), today)
+    }
+
+    private val everyMonth = Regex("""(?<![\p{L}\d])ogni mese(?: il| al)? (\d{1,2})(?![\p{L}\d])|(?<![\p{L}\d])il (\d{1,2}) (?:di )?ogni mese(?![\p{L}\d])""", RegexOption.IGNORE_CASE)
+
+    /**
+     * "ogni mese il 5 affitto 650" o "netflix 12,99 il 15 di ogni mese": una spesa fissa.
+     * Se il giorno di questo mese è già passato, si parte dal mese dopo. Null se non è fissa.
+     */
+    fun parseFixed(input: String, today: LocalDate = LocalDate.now()): FixedExpense? {
+        val m = everyMonth.find(input) ?: return null
+        val day = (m.groupValues[1].ifEmpty { m.groupValues[2] }).toInt()
+        if (day !in 1..31) return null
+        val rest = input.substring(0, m.range.first) + " " + input.substring(m.range.last + 1)
+        val e = parse(rest, today) ?: return null
+        val month = YearMonth.from(today)
+        val first = FixedExpense(0, e.cents, e.text, e.category, day, month)
+        return if (first.dateIn(month).isBefore(today)) first.copy(from = month.plusMonths(1)) else first
+    }
+
+    /** Del mese: quanto è fisso e quanto variabile. */
+    fun split(list: List<Expense>, month: YearMonth): Pair<Long, Long> {
+        val inMonth = list.filter { YearMonth.from(it.date) == month }
+        val fixed = inMonth.filter { it.fixedId != null }.sumOf { it.cents }
+        return fixed to inMonth.sumOf { it.cents } - fixed
+    }
+
+    /** Le fisse che devono ancora arrivare entro la fine del mese di [today]. */
+    fun fixedStillDue(fixed: List<FixedExpense>, today: LocalDate): Long {
+        val month = YearMonth.from(today)
+        return fixed.filter { f ->
+            val next = f.nextDate(today)
+            YearMonth.from(next) == month && next.isAfter(today)
+        }.sumOf { it.cents }
     }
 
     fun format(cents: Long): String = currency.format(cents / 100.0)

@@ -250,6 +250,9 @@ fun SettingsScreen(
                 }
             }
 
+            item { SettingsHeader("Dati") }
+            item { SettingsGroup { BackupSettings() } }
+
             item { SettingsHeader("Informazioni") }
             item {
                 SettingsGroup {

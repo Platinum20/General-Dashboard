@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup automatico di Android (fino ad Android 11): i dati delle Note e le impostazioni. -->
+<full-backup-content>
+    <include domain="file" path="notes.json" />
+    <include domain="sharedpref" path="settings.xml" />
+    <include domain="sharedpref" path="weather.xml" />
+    <include domain="sharedpref" path="backup.xml" />
+</full-backup-content>
