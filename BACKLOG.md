@@ -4,85 +4,113 @@ Tenuto dal "regista del prodotto" (ogni ora) e implementato dal "giro di svilupp
 Il giro prende le voci dall'alto di **In cima**; quando una voce esce in una versione la sposta in **Fatto** con il numero di versione.
 
 Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena, L = più sessioni).
-Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, ElevatedCard, bouncyPress, vibrazioni).
+Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
+Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~10:15 UTC, su main 1.55.0, foto: branch `screenshots`, cartella `main/22`._
+_Ultimo aggiornamento: 2026-10-22 ~10:35 UTC, su main 1.63.0, foto: branch `screenshots`, cartella `main/26`._
+
+---
+
+## Problemi trovati dal verificatore
+
+_(Le scrive il "verificatore": vanno fatte per prime. Per ora nessuna segnalazione aperta.)_
 
 ---
 
 ## In cima
 
+### 0. Test automatici in CI · robustezza · M
+**Perché:** oggi i test (`BriefingTest`, `QuickParseTest`, `ExpensesTest`, `CountdownTest`, `FilterEngineTest`) girano solo dentro il giro fotografico (`screenshots.yml`); `build.yml`, che costruisce e pubblica le versioni, non li esegue. Un giro di sviluppo può quindi rilasciare una versione che rompe il parser delle date o le serie delle abitudini senza che nessuno se ne accorga. L'app sta crescendo di una versione ogni pochi minuti: la rete di sicurezza deve crescere con lei.
+**Cosa fare:** (1) in `.github/workflows/build.yml` un passo `gradle :app:testDebugUnitTest` prima della build, che fa fallire la build e quindi blocca la release (escludere `ScreenshotTour` e `LiveChecks`, che vanno in rete, con la stessa proprietà `-Ptour` di `screenshots.yml`). (2) Test nuovi sulle parti principali: `NotesStore` serialize/parse andata e ritorno con tutti i tipi (promemoria ricorrenti, abitudini con serie, spese, pacchi, date) e con un JSON delle versioni vecchie senza i campi nuovi; `Habit.streak`; `Repeat` (prossima occorrenza a fine mese, 29 febbraio); `NewsRecap` (raggruppamento su un piccolo insieme fisso di titoli); `NewsHistory` (nuove/già viste); le righe del widget (`DashboardWidget`, la parte che costruisce i testi).
+**Fatto quando:** una PR che rompe un test ha la build rossa e non esce nessuna release; almeno 6 file di test nuovi.
+**Test:** sono la voce stessa; controllare che un test fallito volutamente su un branch di prova faccia fallire `build.yml`.
+
 ### 1. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
 **Perché:** lo scopo di Media è "riprendi o avvia in un tocco", ma oggi la schermata è solo un menu di quattro voci (Video, YouTube, Spotify, Radio): per riprendere il video di ieri servono 3 tocchi e bisogna ricordarsi dove era.
 **Cosa fare:** in cima a `MediaScreen.kt` una card "Riprendi" con l'ultima cosa ascoltata o vista: video locale/link con la posizione (`VideoLibrary.recent`, ha già `positionMs`/`durationMs`), ultima stazione radio (`RadioStore.recent`), ultimo video YouTube aperto nel player. Un tocco riparte dal punto giusto; barra di avanzamento per i video. Se c'è qualcosa in pausa da meno di 24 h, una riga anche in "Adesso" di Oggi (`BriefKind` nuovo o `FREE`).
 **Fatto quando:** aprendo Media la prima cosa è "Riprendi: <titolo> · 12:30 di 45:00" e un tocco riprende da lì; senza cronologia la card non c'è.
+**Test:** funzione pura che sceglie cosa riprendere (video con posizione, radio, YouTube) dalle cronologie, con i casi "niente cronologia" e "più vecchio di 24 h".
 
 ### 2. Backup ed esportazione dei dati · Impostazioni · M
 **Perché:** promemoria, abitudini (con le serie), spese, note, pacchi e date stanno in un solo file JSON dentro l'app. Cambiando telefono o reinstallando si perde tutto, e Antonio ci sta mettendo la sua vita quotidiana.
 **Cosa fare:** in Impostazioni una sezione "Dati" con "Esporta backup" (file `canvas-backup-AAAA-MM-GG.json` scelto con `ACTION_CREATE_DOCUMENT`, il JSON di `NotesStore.serialize` più le impostazioni utili di `AppSettings`) e "Ripristina da backup" (`ACTION_OPEN_DOCUMENT`, conferma con il riepilogo "142 promemoria, 3 abitudini…", poi sostituisce). Aggiungere `dataExtractionRules`/`fullBackupContent` nel manifest perché il file delle note sia sicuramente nel backup automatico di Android. Test unitario: serialize → parse dà gli stessi dati.
 **Fatto quando:** esporto, cancello i dati dell'app, ripristino e ritrovo tutto (anche serie delle abitudini e budget).
+**Test:** serialize → parse identico con tutti i tipi; ripristino da un file di una versione vecchia; file non valido rifiutato senza toccare i dati.
 
 ### 3. Punto del giorno: titoli che si leggono · Oggi / Punto del giorno · S
 **Perché:** nelle foto ogni tema ha per titolo tre parole chiave ("Tir · Sospesa · Protesta", "Bancarotta · Chiedono · Santanchè", "Russo · Morti · Kiev"): sembrano errori e non dicono niente in 5 secondi. Il titolo vero è subito sotto, ripetuto.
 **Cosa fare:** in `HomeScreen.kt` (`RecapRow`) e `RecapScreen.kt` usare `theme.headline.title` come titolo del tema e togliere la riga di parole chiave (o tenerla solo come piccola etichetta della fonte più citata). Valutare in `NewsRecap.kt` di scegliere come headline l'articolo più "centrale" (più parole chiave in comune) invece del primo.
 **Fatto quando:** nelle foto di Oggi e del Punto del giorno ogni tema si legge come un titolo di giornale, senza la terna di parole.
+**Test:** in `NewsRecap` la headline scelta è quella più centrale su un insieme fisso di titoli.
 
 ### 4. "Rimanda" nelle notifiche dei promemoria · Note / notifiche · S
 **Perché:** la notifica di un promemoria ha solo "Fatto". Se suona in un momento sbagliato l'unica scelta è ignorarla, e il promemoria diventa "scaduto" in rosso.
 **Cosa fare:** in `TaskReminderWorker.kt` due azioni in più: "Tra 1 ora" e "Domani 9:00" (BroadcastReceiver che chiama `NotesStore.setTaskDue`). Per i ricorrenti sposta solo questa occorrenza.
 **Fatto quando:** dalla notifica rimando di un'ora, la notifica sparisce e torna dopo un'ora; in Note la scadenza è aggiornata.
+**Test:** calcolo della nuova scadenza ("tra 1 ora", "domani 9:00") anche per i ricorrenti, che spostano solo l'occorrenza.
 
 ### 5. Spese fisse e abbonamenti · Note > Spese (+ Adesso) · M
 **Perché:** affitto, bollette, Netflix, Spotify sono la parte più grossa delle spese ma vanno riscritte ogni mese a mano, e il budget non le prevede. Il parser dei ricorrenti esiste già per i promemoria.
 **Cosa fare:** nelle Spese "ogni mese il 5 affitto 650" (riusare `Repeat` e `QuickParse`) crea una spesa fissa: si aggiunge da sola il giorno giusto (al primo avvio dopo la data), con un'icona di ripetizione. In cima al mese "Fisse: 720 € · Variabili: 115,90 €"; il budget giornaliero calcola solo sulle variabili. In Adesso, il giorno prima: "Domani addebito: Netflix 12,99 €".
 **Fatto quando:** creo una spesa fissa, cambio data del telefono al mese dopo, e la spesa compare da sola nel totale.
+**Test:** parse di "ogni mese il 5 affitto 650"; generazione delle spese fisse saltando mesi (anche il 31 in febbraio); totale fisse/variabili e budget.
 
 ### 6. Oggi: la card "Da fare" mostra solo quello che conta · Oggi · S
 **Perché:** nelle foto la card elenca tutti e 5 i promemoria, anche quelli senza scadenza, e ripete in piccolo la scheda Note. Oggi dovrebbe rispondere "cosa devo fare adesso?".
 **Cosa fare:** in `HomeCards.kt` mostrare scaduti, di oggi e (dalle 18) di domani; poi al massimo 2 senza scadenza; sotto "+ altri N in Note" che apre la scheda. Il campo "Aggiungi un promemoria" resta.
 **Fatto quando:** con 10 promemoria la card non supera 5 righe e i primi sono sempre quelli con scadenza più vicina.
+**Test:** funzione pura che sceglie le righe della card (scaduti, oggi, dalle 18 domani, massimo 2 senza scadenza, "altri N").
 
 ### 7. Abitudini con obiettivo settimanale · Note > Abitudini · M
 **Perché:** molte abitudini reali non sono quotidiane ("palestra 3 volte a settimana", "chiamare la nonna 1 volta"): oggi l'unica scelta è "ogni giorno", così la serie si rompe e l'app rimprovera alle 17 anche quando sei in pari.
 **Cosa fare:** nel `HabitDialog` scelta "Ogni giorno" / "N volte a settimana". Per le settimanali: card con "2 su 3 questa settimana", serie in settimane, e in Adesso (`Briefing.kt`) la riga solo se non si fa più in tempo a raggiungere l'obiettivo. Migrazione: le abitudini esistenti restano quotidiane (campo nuovo con default nel parse).
 **Fatto quando:** una abitudine "3 a settimana" spuntata lun-mer non compare più in Adesso fino a lunedì.
+**Test:** conteggio della settimana, serie in settimane, riga di Adesso solo quando l'obiettivo non è più raggiungibile; parse delle abitudini vecchie senza campo nuovo.
 
-### 8. Cerca in Note · Note · M
-**Perché:** le Note crescono (promemoria completati, spese, note libere, pacchi): oggi non c'è modo di trovare "quanto ho speso dal meccanico" o la nota con il codice del wifi.
-**Cosa fare:** icona lente nella barra di `NotesScreen.kt`; una pagina di ricerca che cerca mentre scrivi in promemoria (anche completati), note, spese (testo e importo), pacchi (titolo e codice) e date; risultati raggruppati per tipo, tocco apre la voce. Senza accenti e maiuscole ("perche" trova "perché").
+### 8. Cerca in tutte le Note · Note · M
+**Perché:** le Note crescono (promemoria completati, spese, note libere, pacchi). Dalla 1.56.0 si cercano solo le note libere, e solo quando sono tante: non c'è modo di trovare "quanto ho speso dal meccanico" o il promemoria completato di marzo.
+**Cosa fare:** riusare la ricerca della 1.56.0 come base; icona lente nella barra di `NotesScreen.kt`; una pagina di ricerca che cerca mentre scrivi in promemoria (anche completati), note, spese (testo e importo), pacchi (titolo e codice) e date; risultati raggruppati per tipo, tocco apre la voce. Senza accenti e maiuscole ("perche" trova "perché").
 **Fatto quando:** scrivo "mecc" e trovo la spesa "Tagliando meccanico" e il promemoria "Chiamare il meccanico".
+**Test:** ricerca senza accenti e maiuscole su tutti i tipi, anche importi ("12,5" trova 12,50 €).
 
 ### 9. Note libere con liste di spunta · Note > Note · M
 **Perché:** nelle foto la nota "Libri da leggere" è una lista scritta con le virgole. Liste della spesa, valigie, libri sono l'uso più comune di un'app di note.
 **Cosa fare:** nell'editor delle note (`NotesScreen.kt`/`NoteEditor`) le righe che iniziano con "- " o "[ ]" diventano caselle spuntabili; pulsante "Lista" nella barra dell'editor che trasforma le righe selezionate. Nella lista delle note si vede "3 di 7 fatti". Salvato come testo semplice (`[x] ` / `[ ] `) così resta compatibile.
 **Fatto quando:** creo una lista della spesa, spunto due voci, chiudo e riapro: le spunte ci sono e in lista leggo "2 di 5".
+**Test:** conversione testo ↔ righe spuntabili e conteggio "2 di 5".
 
-### 10. Oggi: niente cerchio di caricamento sopra il meteo · Oggi · S
-**Perché:** nella foto di Oggi all'apertura c'è un cerchio di caricamento appoggiato sopra la card del meteo, accanto a "Roma": sembra un difetto. È l'indicatore del "trascina per aggiornare" acceso dal caricamento automatico (`isRefreshing = weather.loading || recap.refreshing`, `HomeScreen.kt` ~199).
+### 10. Oggi: niente cerchio di caricamento sopra le card · Oggi · S
+**Perché:** nelle foto di Oggi (anche `main/26`, 1.63.0) c'è un cerchio di caricamento appoggiato sopra la card del meteo accanto a "Roma", e scorrendo in fondo lo stesso cerchio copre la riga "Pagare l'affitto": sembra un difetto. È l'indicatore del "trascina per aggiornare" acceso dal caricamento automatico (`isRefreshing = weather.loading || recap.refreshing`, `HomeScreen.kt` ~199).
 **Cosa fare:** accendere l'indicatore del pull solo quando il caricamento parte da un trascinamento; per il caricamento automatico basta il piccolo indicatore già presente dentro la card (`HomeScreen.kt` ~427). Stessa cosa da controllare in News e Meteo.
 **Fatto quando:** nelle foto di Oggi non c'è più il cerchio sopra la card; trascinando in basso l'indicatore compare come prima.
+**Test:** nessuno di logica; controllare nelle foto del giro fotografico.
 
 ### 11. Agenda: "Non ora" sulla richiesta del calendario · Oggi · S
 **Perché:** senza permesso del calendario la card "Agenda di oggi" con "Consenti" resta lì per sempre al secondo posto: occupa spazio in una schermata che deve mostrare solo cose utili.
 **Cosa fare:** in `HomeCards.kt` accanto a "Consenti" un "Non ora" che nasconde la card (aggiunge `HomeCard.CALENDAR` a `hidden`, riattivabile da Personalizza) con un messaggio "La riaccendi da Personalizza". Se il permesso viene negato due volte, idem automaticamente.
 **Fatto quando:** tocco "Non ora" e la card sparisce; in Personalizza l'interruttore dell'Agenda è spento.
+**Test:** logica "negato due volte → nascondi" in una funzione pura.
 
-### 12. Note > Da fare: meno X, scorri per eliminare · Note · S
-**Perché:** ogni riga ha una X grande a destra (foto 20_note): la lista sembra un elenco di cose da cancellare e la X sta dove il pollice tocca per sbaglio.
-**Cosa fare:** in `NotesScreen.kt` (`TasksTab`) togliere la X dalle righe e usare `SwipeToDismissBox` (verso sinistra elimina, con l'"Annulla" che c'è già); l'eliminazione resta anche nel dialog di modifica.
-**Fatto quando:** le righe dei promemoria non hanno più la X e uno scorrimento le elimina con Annulla.
+### 12. Blocco pubblicità fuori da Media · Media / Impostazioni · S
+**Perché:** nelle foto di Media l'ultima card è "Blocco pubblicità" con contatori, numero di regole e "Aggiorna": è un'impostazione da toccare una volta, non qualcosa da riprendere o avviare. In Media ruba spazio alla futura card "Riprendi" (voce 1) e confonde lo scopo della schermata.
+**Cosa fare:** spostare la card da `MediaScreen.kt` a una riga di `SettingsScreen.kt` (sezione "Account e Media": interruttore + "N richieste bloccate · aggiornate il 22 ott", tocco apre il dettaglio con "Aggiorna"). In Media, al massimo una piccola etichetta "Senza pubblicità" nei player.
+**Fatto quando:** nella foto di Media non c'è più la card; in Impostazioni si accende, spegne e aggiorna come prima.
+**Test:** nessuna logica nuova; aggiornare `ScreenshotTour` se fotografa la card.
 
 ---
 
 ## Dopo
 
+- **Note > Da fare: meno X, scorri per eliminare** · Note · S. Ogni riga ha una X grande a destra (foto `main/26`, 20_note) dove il pollice tocca per sbaglio: `SwipeToDismissBox` verso sinistra elimina con l'Annulla che c'è già; l'eliminazione resta nel dialog di modifica.
 - **Cattura a voce** · Cattura al volo · M. Microfono nel campo di `QuickCaptureActivity` e nei campi di Da fare/Spese (`RecognizerIntent`, italiano, funziona offline sui telefoni Google), il testo passa per `QuickParse`. Fatto quando: dico "domani alle 9 dentista" e il promemoria ha giorno e ora.
 - **Date: promemoria per il regalo** · Note > Date · S. Per i compleanni ("Compleanno di …") opzione "Avvisami 7 giorni prima" che crea il promemoria "Regalo per Marco". Fatto quando: la data a 7 giorni compare in Da fare.
 - **News: "Leggi dopo"** · News · M. Pressione lunga o icona segnalibro su un articolo lo salva (con il testo pulito di `ArticleCache` per leggerlo offline); filtro "Salvati" accanto alle fonti. Fatto quando: salvo un articolo, spengo la rete e lo leggo.
 - **Notifica del mattino: proporla** · Oggi · S. È spenta di default (foto Impostazioni) e pochi la scoprono. Dopo 3 giorni d'uso una riga in Adesso "Vuoi questo riepilogo ogni mattina alle 7:30? Attiva" che la accende in un tocco, una volta sola.
 - **Video: schermata vuota** · Media > Video · S. Senza recenti mezza schermata è vuota (foto 33_video): mostrare i video recenti del telefono (MediaStore, ultimi 6 con miniatura) oppure togliere il riquadro grande e tenere solo i due pulsanti.
 - **Spese: esporta CSV del mese** · Note > Spese · S. Dal menu del mese "Esporta CSV" (data;descrizione;categoria;importo) con condivisione. Utile per il commercialista e per fogli di calcolo.
-- **Giro fotografico più completo** · robustezza · S. `ScreenshotTour` non fotografa Meteo, Radio, Lettore, Cattura al volo, dialog di modifica promemoria e News senza rete: aggiungerli, così il regista vede tutta l'app.
+- **Giro fotografico più completo** · robustezza · S. `ScreenshotTour` non fotografa Meteo, Radio, Lettore, Cattura al volo, dialog di modifica promemoria, editor di una nota e News senza rete: aggiungerli, così il regista vede tutta l'app. Nelle foto i dati di prova non hanno l'anno di nascita del compleanno: aggiungerlo, così si vede anche "compie 30 anni" (1.61–1.63).
+- **Note: le sei schede non entrano** · Note · S. Nelle foto la fila Da fare / Abitudini / Spese / Note / Pacchi / Date è più larga dello schermo: "Date" o "Da fare" restano tagliate a metà. Valutare con il nuovo design icone + etichetta corta o un numero di scadenze sulla scheda ("Da fare 2"), così si vede dove c'è qualcosa da fare senza aprirle tutte.
+- **Pacchi: "arrivato" in un tocco e storico** · Note > Pacchi · S. Oggi il pacco si spunta e sparisce; tenere gli ultimi 10 arrivati in una sezione chiusa "Arrivati", e in Adesso "Pacco in arrivo: Cuffie" con l'azione "Arrivato".
 - **Test di non regressione dei dati** · robustezza · S. Test unitari su `NotesStore.parse` con un JSON delle versioni vecchie (senza abitudini/spese/pacchi) per garantire che un aggiornamento non perda mai i dati.
 - **Widget piccolo "Da fare"** · Widget · M. Secondo widget 2x2 con i promemoria di oggi spuntabili direttamente (RemoteViews con collezione o checkbox API 31+), senza aprire l'app.
 
@@ -111,6 +139,13 @@ _Ultimo aggiornamento: 2026-10-22 ~10:15 UTC, su main 1.55.0, foto: branch `scre
 2. (M) Worker settimanale che scrive lì il backup, tenendo gli ultimi 5; riga in Impostazioni "Ultimo backup: lun 9:15".
 3. (S) Al primo avvio dopo una reinstallazione, se l'app è vuota, proporre "Ripristina dall'ultimo backup".
 
+### E. Il mio anno in Date · Note > Date · L
+**Perché:** la scheda Date ha un solo compleanno nelle foto e si riempie a mano una data alla volta; ora che sa contare gli anni (1.61) può diventare l'agenda delle ricorrenze della vita di Antonio.
+**Passi:**
+1. (M) "Importa dai contatti": legge i compleanni da `ContactsContract` (permesso chiesto solo al tocco), mostra l'elenco con caselle e crea le date "ogni anno" con l'anno di nascita se c'è. Test: conversione riga contatto → data (anche senza anno, formato `--MM-DD`).
+2. (S) Vista "Prossimi 12 mesi" raggruppata per mese.
+3. (S) Con la voce "promemoria per il regalo" di Dopo: per ogni compleanno importato, opzione di avviso 7 giorni prima.
+
 ### D. Spese: andamento nel tempo · Note > Spese · L
 1. (M) Grafico degli ultimi 6 mesi (barre, Canvas Compose, senza librerie pesanti) con budget come linea.
 2. (S) Tocco su una categoria: l'elenco delle sue spese del mese e il confronto con il mese prima.
@@ -121,6 +156,10 @@ _Ultimo aggiornamento: 2026-10-22 ~10:15 UTC, su main 1.55.0, foto: branch `scre
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.64.0 (in uscita) · Da fare: numeri a lettere e "un'ora e mezza" nelle scadenze scritte
+- 1.63.0 · Adesso e widget: quanti anni compie chi festeggia oggi
+- 1.61.0 · Date: "compie 30 anni" per compleanni e anniversari
+- 1.56.0 · Note: "Cerca nelle note" quando sono tante (solo note libere: la ricerca completa resta in In cima, voce 8)
 - 1.55.0 · Tempi relativi leggibili in tutta l'app ("ieri 14:30", "lun 9:15")
 - 1.54.0 · Spese sopra i mille euro e validazione dell'importo
 - 1.53.0 · Note: "Modificata X fa" nell'editor
