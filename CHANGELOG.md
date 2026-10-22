@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.48.0
+- Meteo: si aggiorna anche trascinando la pagina verso il basso, con il piccolo scatto alla soglia come in Oggi e News
+
 ## 1.47.0
 - Note e Media: toccando di nuovo la scheda già aperta nella barra in basso la lista torna in cima, come già in Oggi e News
 
