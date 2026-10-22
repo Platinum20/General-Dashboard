@@ -566,6 +566,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val pinned = id?.let { current -> data.notes.firstOrNull { it.id == current }?.pinned } ?: false
     val haptic = rememberHaptic()
+    // Quando era stata toccata l'ultima volta, prima di aprirla adesso.
+    val lastEdited = remember { noteId?.let { NotesStore.note(it)?.updatedAt } }
 
     DisposableEffect(Unit) {
         onDispose { if (!deleted) NotesStore.saveNote(id, text) }
@@ -574,7 +576,18 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (noteId == null) "Nuova nota" else "Nota") },
+                title = {
+                    Column {
+                        Text(if (noteId == null) "Nuova nota" else "Nota")
+                        if (lastEdited != null) {
+                            Text(
+                                "Modificata " + relativeTime(Instant.ofEpochMilli(lastEdited)),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
