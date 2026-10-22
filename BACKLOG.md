@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~13:40 UTC, su main 1.86.0 (1.88.0 in uscita con quasi tutta la vecchia cima), foto: branch `screenshots`, cartella `main/41`._
+_Ultimo aggiornamento: 2026-10-22 ~13:35 UTC (UI prima di tutto), su main 1.86.0 (1.88.0 in uscita con quasi tutta la vecchia cima), foto: branch `screenshots`, cartella `main/41`._
 
 ---
 
@@ -91,81 +91,88 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 _Giro fotografico di main 1.86.0 (`main/41`, 2026-10-22 13:3x UTC). La 1.88.0 ha svuotato quasi tutta la cima: qui le prossime voci, con più funzioni nuove._
 
-### 1. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
+_**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 7 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. Attenzione a non sovrapporsi alla revisione UI in corso su `claude/project-thread-brclxp` (titoli grandi nelle pagine interne, schede delle Note a chip, spese in card, Personalizza)._
+
+### 1. News: intestazione e righe vuote · News · S
+**Perché:** nella foto 10_news (`main/41`) l'intestazione dice ancora "Niente di nuovo dall'ultima visita" sopra notizie di 2 minuti fa, e c'è una notizia di Internazionale con titolo "Dalla redazione di Internazionale" (una voce del feed che non è un articolo) con la miniatura vuota.
+**Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 2 min fa"; in `NewsRepository` scartare le voci senza articolo (titoli generici della fonte come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
+**Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche e la voce di Internazionale non c'è.
+**Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri.
+
+### 2. Test automatici: quello che manca · robustezza · S
+**Perché:** la 1.88 ha coperto i dati delle Note (NotesStore, abitudini, spese fisse, ricerca, backup). Restano senza test il widget, le news "dall'ultima visita" e il giro fotografico non si accorge quando una schermata manca (vedi V1, V2, V6: `06_aggiungi` è ancora identica a `05_oggi_fondo` in `main/41`, `scuro_03_punto` manca ancora).
+**Cosa fare:** estrarre in funzione pura le righe del widget (`DashboardWidget`) e testarle; `NewsHistoryTest` (nuove/già viste, prima visita); `RepeatTest` (31 del mese, 29 febbraio, ogni settimana) se non già coperto; nel `ScreenshotTour` un elenco delle foto attese che fa fallire il giro se una manca o è identica alla precedente.
+**Fatto quando:** i test nuovi girano in `build.yml`; un giro con una foto mancante o doppia fallisce.
+**Test:** sono la voce stessa.
+
+### 3. Date, Media e Video: niente mezze pagine vuote · Note › Date, Media · S
+**Perché:** nelle foto `main/41` Date (22_date) ha un compleanno e poi metà schermo vuoto, e lo stesso in Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
+**Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi (voce sotto). Stile `CanvasCard` con `IconTile`, testo breve.
+**Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto.
+**Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci).
+
+### 4. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
 **Perché:** lo scopo di Media è "riprendi o avvia in un tocco", ma ancora nella 1.86 (`main/41`, 30_media) la schermata è solo la griglia delle quattro fonti e sotto più di metà schermo vuoto. Quando nulla suona, per riprendere il video di ieri o la radio di stamattina servono 2-3 tocchi e bisogna ricordarsi dove era. La card "In riproduzione" c'è solo finché il player è vivo.
 **Cosa fare:** in cima a `MediaScreen.kt`, quando nulla suona, un blocco colorato "Riprendi" (lo stesso hero del brano in corso, `primaryContainer` dalla 1.86) con l'ultima cosa vista o ascoltata: video locale/link con posizione (`VideoLibrary.recent`, ha `positionMs`/`durationMs`) e barra di avanzamento, ultima stazione (`RadioStore.recent`), ultimo video YouTube del player nativo (`YtPlayer`/`YouTubeWatchScreen`: salvare id, titolo, canale, miniatura e secondo in un piccolo store `MediaHistory`). Sotto la griglia, "Recenti": le altre 3-4 voci in una riga ciascuna. Se c'è qualcosa lasciato a metà da meno di 24 h, una riga anche in Adesso di Oggi.
 **Fatto quando:** aprendo Media senza nulla in riproduzione la prima cosa è "Riprendi: <titolo> · 12:30 di 45:00" e un tocco riparte da lì; senza cronologia il blocco non c'è.
 **Test:** funzione pura che sceglie cosa riprendere dalle cronologie (video con posizione, radio, YouTube; più recente vince; video finito al 95% escluso; più vecchio di 24 h non va in Adesso).
 
-### 2. Avviso pioggia · Oggi / notifiche · M
+### 5. Video: la pagina vuota diventa la libreria · Media › Video · S
+**Perché:** foto 33_video: un riquadro "Scegli cosa guardare" e due pulsanti, poi due terzi di schermo vuoto. I video del telefono (registrazioni, download) sono lì e l'app non li mostra.
+**Cosa fare:** in `VideoPlayerScreen.kt` sotto i pulsanti "Sul telefono": gli ultimi 12 video da `MediaStore.Video` (miniatura, durata, data) con permesso `READ_MEDIA_VIDEO` chiesto al primo tocco su "Mostra i video del telefono"; con i recenti di `VideoLibrary` in cima con la barra di avanzamento. Togliere la voce gemella da "Dopo".
+**Fatto quando:** con il permesso concesso la pagina mostra la griglia dei video del telefono e un tocco li apre nel player.
+**Test:** ordinamento e unione recenti + MediaStore senza doppioni (stesso URI), durata "1:02:03".
+
+### 6. Da fare: via le X, scorri per eliminare · Note › Da fare · S
+**Perché:** foto 20_note (`main/41`): ogni riga ha una X grande a destra, cinque X in colonna che pesano più dei promemoria e dove il pollice tocca per sbaglio.
+**Cosa fare:** togliere la X dalle righe di `NotesScreen.kt`; `SwipeToDismissBox` verso sinistra elimina con l'Annulla che c'è già (sfondo arancio con cestino); l'eliminazione resta anche nel dialog di modifica.
+**Fatto quando:** nella foto le righe hanno solo casella e testo.
+**Test:** foto del giro; nessuna logica nuova.
+
+### 7. Rifiniture viste nelle foto · Meteo, Aggiornamenti, Oggi · S
+**Perché:** piccole cose che fanno sembrare l'app non finita (foto `main/41`).
+**Cosa fare:** Meteo (02_meteo): in alto a destra il cerchio di caricamento resta anche con i dati mostrati: tornare all'icona "aggiorna" a caricamento finito (se è solo un effetto del giro fotografico, scartare). Aggiornamenti (41): "Avviso nuove versioni" sta sia lì sia in Impostazioni: lasciarlo solo in Impostazioni. Adesso (01_oggi): accanto a "ADESSO · ROMA" c'è un simbolo "(" (luna?) che sembra un refuso: verificare in `HomeCards.kt` e usare un'icona vera o toglierlo.
+**Fatto quando:** nelle foto nessuno dei tre difetti.
+**Test:** foto del giro.
+
+### 8. Notifica del mattino: proporla · Oggi · S
+**Perché:** nella foto 40_impostazioni la notifica del mattino è ancora spenta: è il riepilogo più utile dell'app e si scopre solo frugando nelle Impostazioni.
+**Cosa fare:** dopo 3 giorni d'uso una riga in fondo a Oggi (dentro la riga "cose da attivare" della 1.88, `InvitesUi.kt`) "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (chiede il permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora".
+**Fatto quando:** al quarto giorno compare l'invito e con un tocco la notifica è attiva.
+**Test:** nel test degli inviti della 1.88: giorni d'uso, già attiva, due rifiuti.
+
+### 9. Avviso pioggia · Oggi / notifiche · M
 **Perché:** Canvas ha già il nowcast a 15 minuti di Open-Meteo (`Forecast.nowcast`, `Weather.kt`) e lo usa solo se apri l'app. Il momento in cui serve è prima di uscire: "tra 20 minuti piove" va detto da solo, come fanno le app meteo di riferimento.
 **Cosa fare:** in Impostazioni › Meteo l'interruttore "Avvisami se sta per piovere" (spento di default). Un `RainAlertWorker` periodico (15 min, solo tra le 7 e le 23, rete qualsiasi) legge `minutely_15` della località attuale e, se nei prossimi 45 minuti la pioggia passa da 0 a ≥ 0,3 mm, manda una notifica "Pioggia tra 20 minuti a Roma, debole per 40 minuti" che apre il Meteo. Al massimo un avviso ogni 3 ore, niente avvisi se sta già piovendo. Stessa frase anche come prima riga di Adesso.
 **Fatto quando:** con l'interruttore acceso e pioggia prevista tra mezz'ora arriva una sola notifica; spento, nessun worker attivo.
 **Test:** funzione pura `RainAlert.decide(nowcast, now, lastAlert)` (inizio pioggia tra 20 min → avviso con minuti e durata; già piove → niente; avviso 1 h fa → niente; soglia 0,3 mm; fuori orario → niente).
 
-### 3. Domani, dalle 18 · Oggi · M
+### 10. Domani, dalle 18 · Oggi · M
 _(primo passo dell'idea grande A)_
 **Perché:** dalle 18 Oggi già guarda a domani nella card Da fare, ma meteo, agenda e date restano su oggi: la sera, per sapere com'è domani, bisogna aprire tre schermate.
 **Cosa fare:** in `HomeScreen.kt`/`HomeCards.kt`, dalle 18 alle 3 una card "Domani" sotto Adesso: meteo di domani (icona, min/max, pioggia % e da che ora, da `daily`/`hourly` già scaricati), primo impegno e numero di impegni (`CalendarDays`), promemoria con scadenza domani, date e addebiti fissi di domani. Righe toccabili verso le rispettive schermate. Prima della card, in Adesso, la frase più importante ("Domani 8:30 dentista, pioggia dalle 10").
 **Fatto quando:** alle 19 la card Domani mostra meteo, impegni e cose da fare di domani; alle 10 non c'è.
 **Test:** funzione pura `Tomorrow.build(now, forecast, events, tasks, countdowns, fixed)` (orari 17:59/18:00/02:59/03:00, pioggia "dalle 10", nessun dato → card nascosta).
 
-### 4. Date: compleanni dai contatti · Note › Date · M
+### 11. Date: compleanni dai contatti · Note › Date · M
 _(primo passo dell'idea grande E)_
 **Perché:** nella foto 22_date (`main/41`) c'è un solo compleanno e metà schermo vuoto: la scheda si riempie a mano una data alla volta e quindi nessuno la usa. I compleanni sono già nella rubrica del telefono.
 **Cosa fare:** in `NotesScreen.kt` › Date, quando la lista è corta, una riga "Importa i compleanni dai contatti"; al tocco chiede `READ_CONTACTS` (solo lì), legge `ContactsContract.CommonDataKinds.Event` (TYPE_BIRTHDAY e TYPE_ANNIVERSARY), mostra un elenco con caselle (già spuntate quelle non presenti) e crea le date "ogni anno" con l'anno di nascita se c'è. Nessun doppione se riimporto.
 **Fatto quando:** importo da una rubrica con 5 compleanni e in Date ne compaiono 5 con "compie N anni" dove l'anno è noto; reimportando non si duplicano.
 **Test:** conversione riga contatto → data (`1990-03-12`, `--03-12` senza anno, formato non valido scartato), riconoscimento doppioni per nome + giorno.
 
-### 5. Abitudini: promemoria all'ora scelta · Note › Abitudini · M
-**Perché:** dalla 1.88 si vede cosa manca oggi, ma solo aprendo l'app; Adesso lo ricorda dopo le 17 per tutte insieme. Le abitudini si tengono quando il promemoria arriva al momento giusto ("Bere acqua" alle 11, "Camminare" alle 18) e si spuntano dalla notifica.
-**Cosa fare:** nel `HabitDialog` "Ricordamelo alle…" facoltativo (ora, giorni della settimana per le settimanali). Allarme come i promemoria (`TaskReminderWorker` o `AlarmManager` inesatto), notifica "Camminare 30 minuti · 5 giorni di fila, non perderla" con azioni "Fatto" e "Più tardi" (1 ora, riusa `Snooze`). Nessuna notifica se è già fatta.
-**Fatto quando:** imposto le 18:00, alle 18 arriva la notifica, "Fatto" spunta l'abitudine e la serie sale senza aprire l'app.
-**Test:** calcolo del prossimo avviso (oggi se non ancora passato e non fatta, altrimenti domani; settimanali: solo se l'obiettivo non è già raggiunto), parse delle abitudini vecchie senza orario.
-
-### 6. News: "Leggi dopo" · News · M
-**Perché:** la News serve a "cosa è successo dall'ultima volta", ma un articolo lungo visto alle 8 di mattina oggi si perde: sparisce con il feed e non si può leggere offline in metro.
-**Cosa fare:** icona segnalibro in `ReaderScreen` e pressione lunga sulle righe di `NewsScreen`; salva titolo, fonte, link e il testo pulito di `ArticleExtractor` in uno store `SavedArticles` (file JSON, max 100). Chip "Salvati (3)" accanto alle fonti; lettura offline dal testo salvato; "Letto" lo toglie con Annulla. Incluso nel backup della 1.88.
-**Fatto quando:** salvo un articolo, spengo la rete e lo leggo intero dai Salvati.
-**Test:** serialize/parse dello store, limite a 100 (toglie i più vecchi letti), doppioni per link.
-
-### 7. Test automatici: quello che manca · robustezza · S
-**Perché:** la 1.88 ha coperto i dati delle Note (NotesStore, abitudini, spese fisse, ricerca, backup). Restano senza test il widget, le news "dall'ultima visita" e il giro fotografico non si accorge quando una schermata manca (vedi V1, V2, V6: `06_aggiungi` è ancora identica a `05_oggi_fondo` in `main/41`, `scuro_03_punto` manca ancora).
-**Cosa fare:** estrarre in funzione pura le righe del widget (`DashboardWidget`) e testarle; `NewsHistoryTest` (nuove/già viste, prima visita); `RepeatTest` (31 del mese, 29 febbraio, ogni settimana) se non già coperto; nel `ScreenshotTour` un elenco delle foto attese che fa fallire il giro se una manca o è identica alla precedente.
-**Fatto quando:** i test nuovi girano in `build.yml`; un giro con una foto mancante o doppia fallisce.
-**Test:** sono la voce stessa.
-
-### 8. News: intestazione e righe vuote · News · S
-**Perché:** nella foto 10_news (`main/41`) l'intestazione dice ancora "Niente di nuovo dall'ultima visita" sopra notizie di 2 minuti fa, e c'è una notizia di Internazionale con titolo "Dalla redazione di Internazionale" (una voce del feed che non è un articolo) con la miniatura vuota.
-**Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 2 min fa"; in `NewsRepository` scartare le voci senza articolo (titoli generici della fonte come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
-**Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche e la voce di Internazionale non c'è.
-**Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri.
-
-### 9. Video: la pagina vuota diventa la libreria · Media › Video · S
-**Perché:** foto 33_video: un riquadro "Scegli cosa guardare" e due pulsanti, poi due terzi di schermo vuoto. I video del telefono (registrazioni, download) sono lì e l'app non li mostra.
-**Cosa fare:** in `VideoPlayerScreen.kt` sotto i pulsanti "Sul telefono": gli ultimi 12 video da `MediaStore.Video` (miniatura, durata, data) con permesso `READ_MEDIA_VIDEO` chiesto al primo tocco su "Mostra i video del telefono"; con i recenti di `VideoLibrary` in cima con la barra di avanzamento. Togliere la voce gemella da "Dopo".
-**Fatto quando:** con il permesso concesso la pagina mostra la griglia dei video del telefono e un tocco li apre nel player.
-**Test:** ordinamento e unione recenti + MediaStore senza doppioni (stesso URI), durata "1:02:03".
-
-### 10. Notifica del mattino: proporla · Oggi · S
-**Perché:** nella foto 40_impostazioni la notifica del mattino è ancora spenta: è il riepilogo più utile dell'app e si scopre solo frugando nelle Impostazioni.
-**Cosa fare:** dopo 3 giorni d'uso una riga in fondo a Oggi (dentro la riga "cose da attivare" della 1.88, `InvitesUi.kt`) "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (chiede il permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora".
-**Fatto quando:** al quarto giorno compare l'invito e con un tocco la notifica è attiva.
-**Test:** nel test degli inviti della 1.88: giorni d'uso, già attiva, due rifiuti.
-
 ---
 
 ## Dopo
 
-- **Note > Da fare: meno X, scorri per eliminare** · Note · S. Ogni riga ha ancora una X grande a destra (foto `main/41`, 20_note) dove il pollice tocca per sbaglio: `SwipeToDismissBox` verso sinistra elimina con l'Annulla che c'è già; l'eliminazione resta nel dialog di modifica.
+- **Abitudini: promemoria all'ora scelta** · Note › Abitudini · M. (era In cima) Nel `HabitDialog` "Ricordamelo alle…", notifica con "Fatto" e "Più tardi"; niente se già fatta. Test: prossimo avviso, settimanali, parse vecchie.
+- **News: "Leggi dopo"** · News · M. (era In cima) Segnalibro in `ReaderScreen` e pressione lunga in `NewsScreen`, store `SavedArticles` con testo pulito per leggere offline, chip "Salvati". Test: store, limite 100, doppioni.
 - **Cattura a voce** · Cattura al volo · M. Microfono nel campo del "+" (`CaptureDialog`) e nei campi di Da fare/Spese (`RecognizerIntent`, italiano, funziona offline sui telefoni Google), il testo passa per `QuickParse` (anche per gli eventi della 1.88). Fatto quando: dico "domani alle 9 dentista" e il promemoria ha giorno e ora.
 - **Date: promemoria per il regalo** · Note > Date · S. Per i compleanni opzione "Avvisami 7 giorni prima" che crea il promemoria "Regalo per Marco". Si sposa con l'import dai contatti (voce 4).
 - **Spese: esporta CSV del mese** · Note > Spese · S. Dal menu del mese "Esporta CSV" (data;descrizione;categoria;importo;fissa) con condivisione.
 - **Pacchi: "arrivato" in un tocco e storico** · Note > Pacchi · S. Oggi il pacco si spunta e sparisce; tenere gli ultimi 10 arrivati in una sezione chiusa "Arrivati", e in Adesso "Pacco in arrivo: Cuffie" (si vede in `main/41`) con l'azione "Arrivato".
-- **Aggiornamenti: un solo interruttore** · Impostazioni · S. "Avviso nuove versioni" sta sia in Impostazioni sia in cima alla pagina Aggiornamenti (foto 41): lasciarlo solo in Impostazioni.
 - **Calendario in Adesso: "Esci alle…"** · Oggi · M. Per il prossimo evento con un luogo, stimare il tempo di viaggio (distanza in linea d'aria dalla posizione del meteo, senza servizi a pagamento) e scrivere "Dentista alle 15 · esci verso le 14:35"; notifica facoltativa 10 minuti prima.
 - **Widget piccolo "Da fare"** · Widget · M. Secondo widget 2x2 con i promemoria di oggi spuntabili direttamente (RemoteViews con collezione o checkbox API 31+), senza aprire l'app.
-- **Meteo: cerchio che gira in alto** · Meteo · S. Nella foto 02_meteo (`main/41`) l'icona in alto a destra è un cerchio di caricamento anche con i dati già mostrati; verificare che dopo il caricamento torni l'icona "aggiorna" (forse è solo il tempo del giro fotografico: se sì, scartare).
 - **News: segui un tema** · News · M. "Segui" su un tema del punto del giorno o una parola ("sciopero", "Roma") e una notifica silenziosa quando esce un articolo nuovo che la contiene (dal `RefreshWorker`, senza server). Max 5 temi.
 
 ---
