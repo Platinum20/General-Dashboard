@@ -157,7 +157,10 @@ fun NewsScreen(
                     if (state.failures.isNotEmpty()) {
                         item {
                             Text(
-                                "Non raggiungibili: " + state.failures.joinToString { "${it.source.name} (${it.reason})" },
+                                // Solo i nomi: il codice d'errore non dice niente a chi legge.
+                                state.failures.joinToString { it.source.name } +
+                                    if (state.failures.size == 1) " non risponde, riprovo al prossimo aggiornamento"
+                                    else " non rispondono, riprovo al prossimo aggiornamento",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 4.dp),
