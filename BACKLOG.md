@@ -31,30 +31,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** dare al + della barra una contentDescription unica (es. "Aggiungi al volo") e toccare quella; se la cattura è un'Activity a parte, fotografarla con `Robolectric.buildActivity(QuickCaptureActivity::class.java)`.
 - **Test che lo impedisce:** nel tour, dopo il tocco, controllare che esista il nodo con il campo della cattura (es. testo "Promemoria") prima di salvare la foto.
 
-### V3. Pagina web interna: i link a YouTube e Spotify restano nella pagina · News › pagina web, Pacchi › Traccia · gravità bassa
-- **Versione:** 1.81.0
-- **Cosa non va:** il changelog dice che i link dei video negli articoli vanno nel player di YouTube dell'app. È vero nella modalità lettura (`ReaderScreen.ArticleVideo`), ma in `ArticleScreen` `shouldOverrideUrlLoading` restituisce `false` per ogni http/https: un link a youtube.com o open.spotify.com dentro la pagina di un giornale apre il sito mobile di YouTube/Spotify dentro la WebView (con login e pubblicità del sito) invece del player dell'app.
-- **Dove:** `app/src/main/java/com/platinum20/dashboard/ui/screens/ArticleScreen.kt`, `createWebView` › `shouldOverrideUrlLoading`
-- **Come riprodurre:** aprire un articolo in pagina web (non lettura) che contiene un link a un video YouTube e toccarlo.
-- **Cosa fare:** per i link del frame principale usare `InAppLinks.target(url)`: `YouTube`/`Spotify` → `LocalInAppNav.openWeb` (che li manda al player), `Web` → resta nella pagina.
-- **Test che lo impedisce:** in `InAppLinksTest` un caso per una funzione pura "resta nella pagina?" (`https://www.repubblica.it/...` → sì; `https://youtu.be/abc` e `https://open.spotify.com/track/...` → no).
-
-### V4. Calendario: eliminare o ottenere il permesso può fallire in silenzio · Calendario › scheda evento · gravità bassa
-- **Versione:** 1.81.0
-- **Cosa non va:** in `EventDetailScreen`, se `CalendarRepository.delete` restituisce `false` (calendario che rifiuta, evento sparito, errore del provider) non succede niente: niente messaggio, la scheda resta. Lo stesso se il permesso di scrittura viene negato da "Modifica" o "Elimina" (`withWrite` azzera l'azione senza dire perché). Con il permesso negato per sempre, "Consenti" in Calendario e in "Nuovo evento" non apre più nulla (Android non mostra più il dialog) e serve un rimando a Info app.
-- **Dove:** `ui/screens/CalendarScreen.kt` (dialog "Eliminare l'evento?", `withWrite`, `CalendarMessage` con "Consenti").
-- **Come riprodurre:** negare il permesso Calendario in scrittura, aprire un evento, toccare Elimina › Elimina.
-- **Cosa fare:** snackbar "Non è stato possibile eliminare l'evento" / "Serve il permesso di scrittura del calendario"; dopo un rifiuto definitivo il pulsante diventa "Apri impostazioni" (come in Compila da solo).
-- **Test che lo impedisce:** test della funzione che sceglie il messaggio/azione dallo stato del permesso (concesso, negato, negato per sempre).
-
-### V5. "Domani 9:00" dopo mezzanotte salta un giorno · notifica del promemoria · gravità bassa
-- **Versione:** 1.74.0
-- **Cosa non va:** `Snooze.TOMORROW.until(now)` è sempre `now + 1 giorno alle 9:00`. Se si rimanda alle 00:30 di venerdì, il promemoria torna sabato alle 9:00, mentre chi è sveglio a mezzanotte e mezza intende "domattina" (venerdì 9:00).
-- **Dove:** `app/src/main/java/com/platinum20/dashboard/notes/Snooze.kt`
-- **Come riprodurre:** `Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 0, 30))` → 2026-10-24T09:00.
-- **Cosa fare:** prima delle 5 del mattino usare le 9:00 dello stesso giorno (e magari chiamare il tasto "Stamattina 9:00" in quel caso).
-- **Test che lo impedisce:** in `SnoozeTest` i casi 00:30 → stesso giorno 9:00, 23:50 → giorno dopo 9:00, 08:59 e 09:01.
-
 ### V6. Il punto del giorno al buio resta su "Raccolgo le notizie di oggi…" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (anche in `main/26`)
 - **Cosa non va:** in `scuro_01_oggi` e `scuro_05_oggi_fondo` la card Il punto del giorno è ancora in caricamento, mentre in chiaro mostra i temi; manca anche `scuro_03_punto`. Il giro al buio quindi non controlla mai il punto del giorno (titoli dei temi della 1.74.0) al buio.
@@ -73,18 +49,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
-### 0. Test automatici: la rete sui dati · robustezza · M
-**Perché:** dalla 1.72 `build.yml` esegue i test e un test rosso blocca la release: bene. Ma i test coprono soprattutto parser e logica di Oggi; manca proprio la parte che, se si rompe, fa perdere la vita di Antonio: il file delle Note. Nessun test garantisce che un aggiornamento legga ancora i dati vecchi, e la voce Backup (2) ci si appoggia.
-**Cosa fare:** test nuovi in `app/src/test`: `NotesStore` serialize → parse andata e ritorno con tutti i tipi (promemoria ricorrenti e rimandati, abitudini con giorni, spese e budget, note fissate, pacchi, date ogni anno con anno di nascita); parse di un JSON "di una versione vecchia" senza abitudini/spese/pacchi (salvato come risorsa di test); `Habit.streak`/`isDone`/`lastDays`; `Repeat` (31 del mese, 29 febbraio, ogni settimana); `NewsHistory` (nuove/già viste); la parte del widget che costruisce le righe (`DashboardWidget`, estrarla in funzione pura se serve). Rendere `serialize`/`parse` `internal` per poterli chiamare.
-**Fatto quando:** almeno 5 file di test nuovi verdi in `build.yml`; il JSON vecchio si legge senza perdere nulla.
-**Test:** sono la voce stessa.
-
-### 2. Backup ed esportazione dei dati · Impostazioni · M
-**Perché:** promemoria, abitudini (con le serie), spese, note, pacchi e date stanno in un solo file JSON dentro l'app, e con "Compila da solo" (1.72) si riempie anche da solo. Cambiando telefono o reinstallando l'APK si perde tutto.
-**Cosa fare:** in Impostazioni un gruppo "Dati" (sopra Informazioni) con "Esporta backup" (`ACTION_CREATE_DOCUMENT`, file `canvas-backup-AAAA-MM-GG.json` con il JSON di `NotesStore` più le impostazioni utili di `AppSettings`: card di Oggi, località, tema, budget) e "Ripristina da backup" (`ACTION_OPEN_DOCUMENT`, conferma con il riepilogo "42 promemoria, 3 abitudini, 18 spese…", poi sostituisce). `dataExtractionRules`/`fullBackupContent` nel manifest perché il file sia nel backup automatico di Android. Riga a destra "Ultimo backup: mai / 12 ott".
-**Fatto quando:** esporto, cancello i dati dell'app, ripristino e ritrovo tutto (anche serie delle abitudini e budget).
-**Test:** serialize → parse identico; ripristino da un file di una versione vecchia; file non valido o di un'altra app rifiutato senza toccare i dati; riepilogo del conteggio.
-
 ### 1. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
 **Perché:** lo scopo di Media è "riprendi o avvia in un tocco", ma nelle foto (`main/29`, 30_media) la schermata è solo la griglia delle quattro fonti e sotto metà schermo vuoto. Quando nulla suona, per riprendere il video di ieri o la radio di stamattina servono 2-3 tocchi e bisogna ricordarsi dove era. La card "In riproduzione" c'è solo finché il player è vivo.
 **Cosa fare:** in cima a `MediaScreen.kt`, quando nulla suona, un blocco scuro "Riprendi" (lo stesso stile del brano in corso) con l'ultima cosa vista o ascoltata: video locale/link con posizione (`VideoLibrary.recent`, ha `positionMs`/`durationMs`) e barra di avanzamento, ultima stazione (`RadioStore.recent`), ultimo video YouTube del player nativo (dalla 1.82 `YouTubeWatchScreen`: salvare id, titolo e secondo). Sotto la griglia, "Recenti": le altre 3-4 voci in una riga ciascuna. Se c'è qualcosa lasciato a metà da meno di 24 h, una riga anche in Adesso di Oggi.
@@ -92,50 +56,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 **Test:** funzione pura che sceglie cosa riprendere dalle cronologie (video con posizione, radio, YouTube; più recente vince; video finito al 95% escluso; più vecchio di 24 h non va in Adesso).
 
 _Il giro fotografico completo (Calendario, scheda evento, player YouTube 1.82, Radio, editor nota, "+") è ora la segnalazione V1 del verificatore: aggiungere anche il player YouTube nativo e il compleanno con l'anno di nascita nei dati di prova._
-
-### 13. Abitudini: si capisce cosa è fatto · Note > Abitudini · S
-**Perché:** nelle foto (23_abitudini) l'intestazione dice "Oggi 0 su 2" ma entrambe le abitudini hanno a destra lo stesso cerchio grigio con la spunta: sembra già fatto. È `FilledIconToggleButton` con l'icona `Check` sia da spento sia da acceso (`NotesScreen.kt`, `HabitsTab`).
-**Cosa fare:** da non fatta un cerchio vuoto con bordo (`OutlinedIconToggleButton` o icona `RadioButtonUnchecked`), da fatta pieno con l'accento e la spunta bianca; il pallino di oggi nella fila dei giorni con un anello quando non è ancora fatto, così si vede "manca oggi". Dopo le 17, se manca, testo "Manca oggi" in arancio al posto di "5 giorni di fila".
-**Fatto quando:** nella foto si distingue a colpo d'occhio la fatta dalla non fatta.
-**Test:** nessuna logica nuova; la foto di `ScreenshotTour` con una fatta e una no.
-
-### 14. Oggi: gli inviti a impostare non stanno in cima · Oggi · S
-**Perché:** nelle foto (01_oggi) sotto Adesso ci sono due card che chiedono di impostare qualcosa: "Compila da solo · Attiva" e "Agenda · Consenti". Occupano lo spazio dove dovrebbe esserci cosa fare oggi, e "Da fare" scivola sotto la piega: va contro lo scopo di Oggi (5 secondi).
-**Cosa fare:** in `HomeScreen.kt`/`AutoFillUi.kt` unire gli inviti in una sola riga compatta in fondo a Oggi ("2 cose da attivare: agenda, compila da solo ›") che apre un piccolo foglio con i due pulsanti e "Non ora"; una volta concesso il permesso o detto due volte "Non ora" la riga sparisce (la logica dei rifiuti c'è già in `CalendarAsk`). Le card vere (agenda con eventi, "Trovati per te") restano dove sono.
-**Fatto quando:** nella foto di Oggi senza permessi, subito sotto Adesso c'è Da fare.
-**Test:** funzione pura che decide quali inviti mostrare (permesso, rifiuti, già attivo) sul modello di `CalendarAskTest`.
-
-### 15. Il "+" crea anche eventi del calendario · Cattura al volo / Calendario · M
-**Perché:** dalla 1.81 Canvas scrive nel calendario del telefono, ma il "+" e la cattura al volo creano solo promemoria: "venerdì alle 20 cena da Luca" finisce in Da fare invece che in agenda, dove lo vedrebbero anche Adesso, l'Agenda di Oggi e il widget. È il flusso più frequente di una giornata e oggi richiede di aprire Calendario e compilare il modulo.
-**Cosa fare:** in `CaptureDialog`/`QuickCaptureActivity` una scelta "Promemoria / Evento" accanto al campo (ricordando l'ultima usata); con Evento il testo passa per `QuickParse` (giorno, ora, "per 2 ore", "tutto il giorno") e crea l'evento con `CalendarRepository` nel calendario predefinito, con anteprima "Ven 24 ott 20:00–21:00 · Cena da Luca" prima di salvare. "Annulla" nella snackbar. Se manca il permesso di scrittura, lo chiede lì.
-**Fatto quando:** dal "+" scrivo "domani alle 15 dentista" con Evento e lo trovo nell'Agenda di Oggi e nel Calendario di Canvas.
-**Test:** conversione testo → evento (inizio, fine predefinita di 1 ora, tutto il giorno, "per 2 ore", "dalle 9 alle 11").
-
-### 5. Spese fisse e abbonamenti · Note > Spese (+ Adesso) · M
-**Perché:** affitto, bollette, Netflix, Spotify sono la parte più grossa delle spese ma vanno riscritte ogni mese a mano, e il budget non le prevede (nelle foto: "48,41 € al giorno" calcolato sul totale). Il parser dei ricorrenti esiste già per i promemoria ("Pagare l'affitto · ogni mese").
-**Cosa fare:** nelle Spese "ogni mese il 5 affitto 650" (riusare `Repeat` e `QuickParse`) crea una spesa fissa che si aggiunge da sola il giorno giusto (al primo avvio dopo la data), con un'icona di ripetizione. In cima al mese "Fisse: 720 € · Variabili: 115,90 €"; il budget giornaliero calcola solo sulle variabili. In Adesso, il giorno prima: "Domani addebito: Netflix 12,99 €". Con "Compila da solo" acceso, se la stessa spesa arriva dalla notifica non va contata due volte.
-**Fatto quando:** creo una spesa fissa, il mese dopo compare da sola nel totale e il budget giornaliero non la conta.
-**Test:** parse di "ogni mese il 5 affitto 650"; generazione saltando mesi (anche il 31 in febbraio); totale fisse/variabili e budget; nessun doppione con una spesa trovata da Compila da solo lo stesso giorno.
-
-### 7. Abitudini con obiettivo settimanale · Note > Abitudini · M
-**Perché:** molte abitudini reali non sono quotidiane ("palestra 3 volte a settimana"): oggi l'unica scelta è "ogni giorno", così la serie si rompe e Adesso rimprovera alle 17 anche quando sei in pari.
-**Cosa fare:** nel `HabitDialog` scelta "Ogni giorno" / "N volte a settimana". Per le settimanali: "2 su 3 questa settimana", serie in settimane, e in Adesso (`Briefing.kt`) la riga solo se non si fa più in tempo a raggiungere l'obiettivo. Le abitudini esistenti restano quotidiane (campo nuovo con default nel parse).
-**Fatto quando:** una abitudine "3 a settimana" spuntata lun-mer non compare più in Adesso fino a lunedì.
-**Test:** conteggio della settimana, serie in settimane, riga di Adesso solo quando l'obiettivo non è più raggiungibile; parse delle abitudini vecchie.
-
-### 8. Cerca in tutte le Note · Note · M
-**Perché:** le Note crescono (promemoria completati, spese anche automatiche, note, pacchi). Dalla 1.56 si cercano solo le note libere: non c'è modo di trovare "quanto ho speso dal meccanico" o il promemoria completato di marzo.
-**Cosa fare:** lente accanto all'ingranaggio nella barra di `NotesScreen.kt`; pagina di ricerca che cerca mentre scrivi in promemoria (anche completati), note, spese (testo e importo), pacchi (titolo e codice) e date; risultati raggruppati per tipo, tocco apre la voce. Senza accenti e maiuscole.
-**Fatto quando:** scrivo "mecc" e trovo la spesa "Tagliando meccanico" e il promemoria "Chiamare il meccanico".
-**Test:** ricerca senza accenti e maiuscole su tutti i tipi, anche importi ("12,5" trova 12,50 €).
-
-### 9. Note libere con liste di spunta · Note > Note · M
-**Perché:** nelle foto (21_note_libere) "Libri da leggere" e "Idee per le vacanze" sono liste scritte con le virgole. Liste della spesa, valigie, libri sono l'uso più comune di un'app di note.
-**Cosa fare:** nell'editor (`NoteEditor`) le righe che iniziano con "- " o "[ ]" diventano caselle spuntabili; pulsante "Lista" che trasforma le righe. In lista "3 di 7 fatti". Salvato come testo (`[x] ` / `[ ] `) per restare compatibile.
-**Fatto quando:** creo una lista della spesa, spunto due voci, chiudo e riapro: le spunte ci sono e in lista leggo "2 di 5".
-**Test:** conversione testo ↔ righe spuntabili e conteggio "2 di 5".
-
----
 
 ## Dopo
 
@@ -196,6 +116,7 @@ _Il giro fotografico completo (Calendario, scheda evento, player YouTube 1.82, R
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.88.0 · Liste di spunta nelle note (ex 9); Cerca in tutte le Note (ex 8); Spese fisse e abbonamenti con "Domani addebito" in Adesso (ex 5); Abitudini con obiettivo settimanale (ex 7) e fatte/non fatte a colpo d'occhio (ex 13); inviti di Oggi in una riga in fondo (ex 14); eventi del calendario dal "+" (ex 15); Backup ed esportazione in Impostazioni › Dati (ex 2); test dei dati delle Note con file di una versione vecchia (ex 0); V3, V4, V5 del verificatore
 - 1.82.0 (in lavorazione) · Player YouTube nativo, login Spotify mobile
 - 1.81.0 · Tutto dentro l'app: link nella pagina interna; Calendario nativo dentro Canvas con creazione e modifica degli eventi
 - 1.80.0 · Impostazioni riorganizzate a gruppi, vetro sfocato; Blocco pubblicità spostato da Media a Impostazioni › Media (ex 12)
