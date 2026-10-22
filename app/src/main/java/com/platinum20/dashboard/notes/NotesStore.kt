@@ -276,6 +276,11 @@ object NotesStore {
 
     fun deleteNote(id: Long) = update { d -> d.copy(notes = d.notes.filter { it.id != id }) }
 
+    /** Rimette una nota eliminata per sbaglio: serve ad "Annulla". */
+    fun restoreNote(note: Note) = update { d ->
+        if (d.notes.any { it.id == note.id }) d else d.copy(notes = listOf(note) + d.notes)
+    }
+
     fun note(id: Long): Note? = _data.value.notes.firstOrNull { it.id == id }
 
     private fun update(change: (NotesData) -> NotesData) {

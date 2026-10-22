@@ -135,13 +135,21 @@ fun NotesScreen(
     val scope = rememberCoroutineScope()
 
     // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
-    fun offerUndo(removed: List<TaskItem>, message: String) {
-        if (removed.isEmpty()) return
+    fun offerUndo(message: String, restore: () -> Unit) {
         scope.launch {
             snackbar.currentSnackbarData?.dismiss()
             val result = snackbar.showSnackbar(message, actionLabel = "Annulla", duration = SnackbarDuration.Short)
-            if (result == SnackbarResult.ActionPerformed) NotesStore.restoreTasks(removed)
+            if (result == SnackbarResult.ActionPerformed) restore()
         }
+    }
+
+    fun offerUndo(removed: List<TaskItem>, message: String) {
+        if (removed.isNotEmpty()) offerUndo(message) { NotesStore.restoreTasks(removed) }
+    }
+
+    // Una nota eliminata dal suo editor: l'"Annulla" compare qui, appena si torna alla lista.
+    LaunchedEffect(Unit) {
+        DeletedNote.take()?.let { note -> offerUndo("Nota eliminata") { NotesStore.restoreNote(note) } }
     }
 
     Scaffold(
@@ -516,6 +524,25 @@ private fun EmptyHint(text: String) {
     }
 }
 
+/** L'ultima nota eliminata dall'editor, finché la lista non offre "Annulla". */
+private object DeletedNote {
+    /** Oltre questo tempo non ha più senso proporre di recuperarla. */
+    private const val VALID_MS = 15_000L
+    private var note: Note? = null
+    private var at = 0L
+
+    fun put(removed: Note) {
+        note = removed
+        at = System.currentTimeMillis()
+    }
+
+    fun take(): Note? {
+        val removed = note?.takeIf { System.currentTimeMillis() - at < VALID_MS }
+        note = null
+        return removed
+    }
+}
+
 /** Editor di una nota: si salva da solo quando si esce. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -550,7 +577,10 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                     IconButton(onClick = {
                         deleted = true
-                        id?.let(NotesStore::deleteNote)
+                        id?.let { noteId ->
+                            NotesStore.note(noteId)?.let(DeletedNote::put)
+                            NotesStore.deleteNote(noteId)
+                        }
                         onBack()
                     }) {
                         Icon(Icons.Outlined.Delete, contentDescription = "Elimina")
