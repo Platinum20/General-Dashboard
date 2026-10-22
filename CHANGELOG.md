@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.86.0
+## 1.87.0
 - YouTube rifatto: anteprime grandi con foto del canale e durata, Short in una fila orizzontale, "Stai guardando" in cima per tornare al video
 - Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
 - Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
