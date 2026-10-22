@@ -1,6 +1,40 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.os.Build
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.OutlinedIconButton
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.foundation.layout.WindowInsets
@@ -191,8 +225,9 @@ fun rememberReselectListState(route: String): LazyListState {
 val LocalOpenSettings = staticCompositionLocalOf<(() -> Unit)?> { null }
 
 /**
- * Barra in alto delle sezioni principali (Oggi, News, Note, Media): stessa altezza e stile ovunque,
- * con le azioni della sezione e, per ultima, l'ingranaggio delle Impostazioni.
+ * Intestazione delle sezioni principali (Oggi, News, Note, Media): una riga piccola sopra
+ * (la data, "8 nuove dall'ultima visita") e il titolo grande. A destra le azioni della sezione
+ * e, per ultimo, l'ingranaggio delle Impostazioni in un cerchio.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -206,28 +241,189 @@ fun TopLevelBar(
     TopAppBar(
         title = {
             Column {
-                Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle != null) {
                     Text(
-                        subtitle,
-                        style = MaterialTheme.typography.labelMedium,
+                        subtitle.uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Text(title, style = MaterialTheme.typography.headlineLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         },
         actions = {
             actions()
             if (openSettings != null) {
-                IconButton(onClick = openSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni")
-                }
+                RoundIconButton(Icons.Outlined.Settings, "Impostazioni", onClick = openSettings)
             }
+            Spacer(Modifier.width(8.dp))
         },
+        expandedHeight = 76.dp,
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            scrolledContainerColor = MaterialTheme.colorScheme.background,
+        ),
         scrollBehavior = scrollBehavior,
     )
+}
+
+/** Pulsante icona tondo con il bordo sottile: azioni nelle intestazioni delle sezioni. */
+@Composable
+fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Boolean = true, onClick: () -> Unit) {
+    OutlinedIconButton(
+        onClick = onClick,
+        enabled = enabled,
+        border = cardBorder(),
+        colors = IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
+        modifier = Modifier.padding(horizontal = 2.dp).size(40.dp).bouncyPress(0.9f),
+    ) {
+        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
+    }
+}
+
+/** Il fondo delle card: bianco sulla carta, un grigio caldo appena più chiaro nel tema scuro. */
+val ColorScheme.card: Color
+    get() = if (background.luminance() < 0.5f) surfaceContainerLow else surfaceContainerLowest
+
+/** Il bordo sottile che separa le card dallo sfondo, al posto dell'ombra. */
+@Composable
+fun cardBorder(): BorderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+
+/**
+ * La card dell'app: fondo pieno, bordo sottile, nessuna ombra.
+ * Con [colors] colorati (avvisi, evidenze) il bordo sparisce.
+ */
+@Composable
+fun CanvasCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    shape: Shape = MaterialTheme.shapes.large,
+    colors: CardColors? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val cardColors = colors ?: CardDefaults.cardColors(
+        containerColor = MaterialTheme.colorScheme.card,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    )
+    val border = if (colors == null) cardBorder() else null
+    if (onClick != null) {
+        Card(onClick = onClick, modifier = modifier, shape = shape, colors = cardColors, border = border, content = content)
+    } else {
+        Card(modifier = modifier, shape = shape, colors = cardColors, border = border, content = content)
+    }
+}
+
+/** Etichetta di gruppo in maiuscoletto ("DA FARE · 3"), con un'azione testuale a destra. */
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    action: String? = null,
+    onAction: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().heightIn(min = 36.dp).padding(start = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        trailing()
+        if (action != null && onAction != null) {
+            Text(
+                action,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.small)
+                    .bouncyPress(0.92f)
+                    .clickable(onClick = onAction)
+                    .padding(horizontal = 6.dp, vertical = 6.dp),
+            )
+        }
+    }
+}
+
+/** Un blocco di Oggi: l'etichetta fuori, il contenuto in una card. */
+@Composable
+fun Section(
+    title: String,
+    modifier: Modifier = Modifier,
+    action: String? = null,
+    onAction: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier.fillMaxWidth()) {
+        SectionHeader(title, action = action, onAction = onAction, trailing = trailing)
+        Spacer(Modifier.height(4.dp))
+        CanvasCard(Modifier.fillMaxWidth(), content = content)
+    }
+}
+
+/** Campi di testo sulla carta: fondo della card e bordo sottile, l'accento solo quando si scrive. */
+@Composable
+fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
+    unfocusedContainerColor = MaterialTheme.colorScheme.card,
+    focusedContainerColor = MaterialTheme.colorScheme.card,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+)
+
+/** Separatore tra le righe di una card. */
+@Composable
+fun RowDivider(modifier: Modifier = Modifier) {
+    HorizontalDivider(modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+}
+
+/** Chip di filtro: inchiostro pieno quando è scelto, bordo sottile altrimenti. */
+@Composable
+fun CanvasChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, style = MaterialTheme.typography.labelLarge) },
+        shape = CircleShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.card,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.onSurface,
+            selectedLabelColor = MaterialTheme.colorScheme.surface,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = MaterialTheme.colorScheme.outlineVariant,
+            selectedBorderColor = Color.Transparent,
+        ),
+        modifier = modifier.bouncyPress(0.94f),
+    )
+}
+
+/**
+ * Il + della barra in basso apre la cattura veloce. Una sezione può sostituirlo con la sua azione
+ * (in Note: la scheda aperta decide cosa aggiungere) finché resta a schermo.
+ */
+object PlusAction {
+    val override = mutableStateOf<(() -> Unit)?>(null)
+}
+
+@Composable
+fun ProvidePlusAction(action: (() -> Unit)?) {
+    val current by rememberUpdatedState(action)
+    DisposableEffect(action != null) {
+        val handler: (() -> Unit)? = if (action != null) ({ current?.invoke() }) else null
+        PlusAction.override.value = handler
+        onDispose { if (PlusAction.override.value === handler) PlusAction.override.value = null }
+    }
 }
 
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")

@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class AppTheme(val label: String, val description: String) {
+    CANVAS("Canvas", "Carta chiara e inchiostro, chiaro o scuro come il telefono"),
     DYNAMIC("Material You", "I colori seguono lo sfondo del telefono"),
-    SYSTEM("Sistema", "Palette classica, chiaro o scuro come il telefono"),
     AMOLED("AMOLED", "Nero puro, ideale per gli schermi OLED"),
 }
 
@@ -39,6 +39,9 @@ data class MorningBrief(val enabled: Boolean = false, val hour: Int = 7, val min
 object AppSettings {
     private const val PREFS = "settings"
     private const val KEY_THEME = "theme"
+    private const val KEY_THEME_VERSION = "theme_version"
+    /** 2 = nuovo design 1.55: chi aveva Material You o Sistema passa una volta a Canvas. */
+    private const val THEME_VERSION = 2
     private const val KEY_CARD_ORDER = "home_card_order"
     private const val KEY_CARD_HIDDEN = "home_card_hidden"
     private const val KEY_LAYOUT_VERSION = "home_layout_version"
@@ -50,7 +53,7 @@ object AppSettings {
     private const val KEY_UPDATE_NOTIFY = "update_notify"
 
     private lateinit var prefs: SharedPreferences
-    private val _theme = MutableStateFlow(AppTheme.DYNAMIC)
+    private val _theme = MutableStateFlow(AppTheme.CANVAS)
     val theme: StateFlow<AppTheme> = _theme.asStateFlow()
     private val _homeLayout = MutableStateFlow(HomeLayout.DEFAULT)
     val homeLayout: StateFlow<HomeLayout> = _homeLayout.asStateFlow()
@@ -66,9 +69,15 @@ object AppSettings {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        _theme.value = prefs.getString(KEY_THEME, null)
+        val savedTheme = prefs.getString(KEY_THEME, null)
             ?.let { name -> AppTheme.entries.firstOrNull { it.name == name } }
-            ?: AppTheme.DYNAMIC
+        // Il nuovo design si vede una volta per tutti; chi vuole torna a Material You dalle Impostazioni.
+        _theme.value = if (prefs.getInt(KEY_THEME_VERSION, 1) < THEME_VERSION) {
+            prefs.edit().putInt(KEY_THEME_VERSION, THEME_VERSION).apply()
+            if (savedTheme == AppTheme.AMOLED) AppTheme.AMOLED else AppTheme.CANVAS.also { setTheme(it) }
+        } else {
+            savedTheme ?: AppTheme.CANVAS
+        }
         _homeLayout.value = readLayout()
         if (prefs.getInt(KEY_LAYOUT_VERSION, 1) < LAYOUT_VERSION) {
             // 1.19: Oggi diventa "cosa serve adesso", le scorciatoie si nascondono una volta sola.

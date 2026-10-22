@@ -120,7 +120,7 @@ fun SettingsScreen(
                 bottom = inner.calculateBottomPadding() + 16.dp,
             ),
         ) {
-            item { SectionHeader("Aspetto") }
+            item { SettingsHeader("Aspetto") }
             item {
                 SettingsGroup {
                     // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
@@ -147,7 +147,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Oggi") }
+            item { SettingsHeader("Oggi") }
             item {
                 SettingsGroup {
                     SettingsRow(
@@ -161,7 +161,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Account e Media") }
+            item { SettingsHeader("Account e Media") }
             item {
                 SettingsGroup {
                     // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
@@ -192,7 +192,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SectionHeader("Informazioni") }
+            item { SettingsHeader("Informazioni") }
             item {
                 SettingsGroup {
                     SettingsRow(
@@ -219,20 +219,16 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 12.dp, top = 18.dp, bottom = 6.dp),
-    )
+private fun SettingsHeader(text: String) {
+    SectionHeader(text, Modifier.padding(top = 14.dp, bottom = 2.dp))
 }
 
 @Composable
 private fun SettingsGroup(content: @Composable () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
     ) {
         Column { content() }
     }

@@ -98,7 +98,7 @@ class QuickCaptureActivity : ComponentActivity() {
     }
 }
 
-private enum class CaptureMode(val label: String, val title: String, val hint: String) {
+internal enum class CaptureMode(val label: String, val title: String, val hint: String) {
     TASK("Promemoria", "Promemoria al volo", "Es. domani alle 9 chiamare il dentista"),
     NOTE("Nota", "Nuova nota", "Scrivi… la prima riga fa da titolo"),
     EXPENSE("Spesa", "Nuova spesa", "Es. 12,50 pizza"),
@@ -106,7 +106,7 @@ private enum class CaptureMode(val label: String, val title: String, val hint: S
 }
 
 @Composable
-private fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: () -> Unit) {
+internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: () -> Unit) {
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf(initial) }
     var mode by rememberSaveable { mutableStateOf(initialMode) }

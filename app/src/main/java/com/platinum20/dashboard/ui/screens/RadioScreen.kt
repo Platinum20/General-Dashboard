@@ -146,7 +146,8 @@ private fun StationRow(station: RadioStation, now: RadioNow?) {
     Surface(
         onClick = { RadioStore.play(station) },
         shape = MaterialTheme.shapes.large,
-        color = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
+        border = if (playing) null else cardBorder(),
         modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

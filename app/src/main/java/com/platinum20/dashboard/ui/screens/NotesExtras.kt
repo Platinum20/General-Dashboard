@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -64,6 +63,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
 private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
@@ -103,6 +104,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                     if (parsed != null) IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
                 },
                 shape = MaterialTheme.shapes.large,
+                colors = canvasFieldColors(),
                 modifier = Modifier.fillMaxWidth(),
             )
             if (draft.isNotBlank()) {
@@ -117,7 +119,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
             Spacer(Modifier.height(8.dp))
         }
         item {
-            ElevatedCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+            CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { month = month.minusMonths(1) }) {
@@ -132,7 +134,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mese dopo")
                         }
                     }
-                    Text(Expenses.format(total), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(Expenses.format(total), style = MaterialTheme.typography.displaySmall)
                     if (previous > 0) {
                         val diff = total - previous
                         Text(
@@ -204,9 +206,9 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                             LocalDate.now().minusDays(1) -> "Ieri"
                             else -> day.format(dayHeader).replaceFirstChar { it.uppercase() }
                         },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 2.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 2.dp),
                     )
                 }
             }
@@ -366,7 +368,7 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
 fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         options.forEachIndexed { i, label ->
-            androidx.compose.material3.FilterChip(selected = i == selected, onClick = { onSelect(i) }, label = { Text(label) })
+            CanvasChip(selected = i == selected, onClick = { onSelect(i) }, label = label)
         }
     }
 }
@@ -383,7 +385,7 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(incoming + delivered, key = { it.id }) { parcel ->
-            ElevatedCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
+            CanvasCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
                 Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = parcel.delivered, onCheckedChange = {
                         haptic(if (it) Haptic.CONFIRM else Haptic.TICK)

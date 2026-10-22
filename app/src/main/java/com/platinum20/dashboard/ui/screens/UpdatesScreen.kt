@@ -31,7 +31,6 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -131,12 +130,7 @@ fun UpdatesScreen(
             item { NotifyCard() }
 
             item {
-                Text(
-                    "Changelog",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                )
+                SectionHeader("Changelog", Modifier.padding(top = 8.dp))
             }
 
             when {
@@ -199,10 +193,10 @@ private fun StatusCard(state: UpdateUiState) {
     val highlight = available != null || status is UpdateStatus.NeedsPermission
     val isError = status is UpdateStatus.Error
 
-    ElevatedCard(
+    CanvasCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.elevatedCardColors(
+        colors = CardDefaults.cardColors(
             containerColor = when {
                 isError -> MaterialTheme.colorScheme.errorContainer
                 highlight -> MaterialTheme.colorScheme.tertiaryContainer
@@ -260,7 +254,7 @@ private fun NotifyCard() {
     }
     val onSwitch = hapticToggle { toggle() }
 
-    ElevatedCard(
+    CanvasCard(
         onClick = { onSwitch(!(enabled && !blocked)) },
         modifier = Modifier.fillMaxWidth().bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
@@ -285,7 +279,7 @@ private fun NotifyCard() {
 @Composable
 private fun ReleaseCard(release: GitHubRelease, currentVersion: String) {
     val cmp = compareVersions(release.version, currentVersion)
-    ElevatedCard(
+    CanvasCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
@@ -360,7 +354,7 @@ private fun Badge(text: String, color: Color) {
 
 @Composable
 private fun MessageCard(icon: ImageVector, text: String) {
-    ElevatedCard(
+    CanvasCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {

@@ -254,7 +254,7 @@ private fun SubscriptionsTab(onPlay: (String) -> Unit) {
     FeedList(state, empty = "Nessun video nuovo dai canali che segui") {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = { Text("Nascondi Shorts") })
+                CanvasChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = "Nascondi Shorts")
             }
         }
         items(videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
@@ -272,7 +272,8 @@ private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit) {
             Surface(
                 onClick = { onOpen(playlist) },
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                color = MaterialTheme.colorScheme.card,
+                border = cardBorder(),
                 modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
             ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -381,7 +382,8 @@ private fun VideoCard(video: YtVideo, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
         modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Column {
