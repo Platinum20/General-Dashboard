@@ -38,7 +38,19 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateListOf
+import com.platinum20.dashboard.media.youtube.player.YtSubtitle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
+import org.json.JSONObject
+import org.schabi.newpipe.extractor.Page
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -107,12 +119,16 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
     LaunchedEffect(url) { url?.let { YtPlayer.play(context, it) } }
 
     val currentId = now?.stream?.id ?: url?.let { YtResolver.videoId(it) }
-    val upNext = feed.data.orEmpty().filter { !it.isShort && it.id != currentId }.take(30)
+    val related = now?.stream?.related.orEmpty().filter { !it.isShort && it.id != currentId }
+    val fromSubs = feed.data.orEmpty().filter { !it.isShort && it.id != currentId }.take(30)
+    // Come nell'app di YouTube: prima i correlati, se non ci sono i nuovi dai canali che segui.
+    val upNext = related.ifEmpty { fromSubs }
     // Finito un video parte il successivo della lista.
     LaunchedEffect(upNext.map { it.id }, currentId) {
         YtPlayer.queue = listOfNotNull(currentId?.let { "https://www.youtube.com/watch?v=$it" }) + upNext.map { it.watchUrl }
     }
-    val loadedComments = now?.stream?.id?.takeIf { showComments }?.let { commentsFor(it) }
+    val thread = now?.stream?.id?.takeIf { showComments }?.let { commentsFor(it) }
+    val scope = rememberCoroutineScope()
 
     val inPip = rememberPictureInPicture(enabled = now?.playing == true)
     FullscreenEffect(enabled = fullscreen && !inPip)
@@ -147,18 +163,22 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (showComments) {
                         item(key = "comments-h") { SectionHeader("Commenti") }
-                        val comments = loadedComments
                         when {
-                            comments == null -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
-                            comments.isEmpty() -> item(key = "comments-e") {
+                            thread == null || !thread.loaded -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
+                            thread.comments.isEmpty() -> item(key = "comments-e") {
                                 Text("Nessun commento (o commenti disattivati)", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            else -> items(comments.size, key = { "c$it" }) { CommentRow(comments[it]) }
+                            else -> {
+                                items(thread.comments.size, key = { "c$it" }) { CommentRow(stream.id, thread.comments[it]) }
+                                if (thread.next != null) item(key = "comments-more") {
+                                    MoreButton(thread.loading, "Altri commenti") { scope.launch { thread.loadMore(stream.id) } }
+                                }
+                            }
                         }
                     }
                 }
                 if (upNext.isNotEmpty()) {
-                    item(key = "next-h") { SectionHeader("Prossimi dai canali che segui") }
+                    item(key = "next-h") { SectionHeader(if (related.isNotEmpty()) "Video correlati" else "Prossimi dai canali che segui") }
                     items(upNext, key = { it.id }) { video -> VideoRow(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
                 }
             }
@@ -417,17 +437,29 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?) {
                         )
                     }
                 }
-                stream.likes.takeIf { it > 0 }?.let { likes ->
-                    Row(
-                        Modifier
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.card)
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Outlined.ThumbUp, contentDescription = null, modifier = Modifier.size(16.dp))
+                val dislikes = dislikesFor(stream.id)
+                Row(
+                    Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.card)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.ThumbUp, contentDescription = "Mi piace", modifier = Modifier.size(16.dp))
+                    stream.likes.takeIf { it > 0 }?.let {
                         Spacer(Modifier.width(6.dp))
-                        Text(compactCount(likes), style = MaterialTheme.typography.labelLarge)
+                        Text(compactCount(it), style = MaterialTheme.typography.labelLarge)
+                    }
+                    Box(
+                        Modifier
+                            .padding(horizontal = 10.dp)
+                            .size(width = 1.dp, height = 16.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                    Icon(Icons.Outlined.ThumbDown, contentDescription = "Non mi piace", modifier = Modifier.size(16.dp))
+                    dislikes?.takeIf { it > 0 }?.let {
+                        Spacer(Modifier.width(6.dp))
+                        Text(compactCount(it), style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -442,17 +474,63 @@ private fun Actions(stream: YtStream, showComments: Boolean, onToggleComments: (
     var qualityMenu by remember { mutableStateOf(false) }
     var speedMenu by remember { mutableStateOf(false) }
     var speed by remember { mutableFloatStateOf(YtPlayer.speed()) }
+    val now by YtPlayer.now.collectAsState()
+    var subtitleMenu by remember { mutableStateOf(false) }
+    var loop by remember { mutableStateOf(YtPlayer.loop()) }
+    val auto = YtPlayer.isAuto() && stream.dashManifest != null
+    val showing = now?.playingHeight?.takeIf { it > 0 } ?: stream.height
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (stream.qualities.isNotEmpty()) item {
             Box {
-                CanvasChip(selected = false, onClick = { qualityMenu = true }, label = "Qualità · ${stream.height}p")
+                CanvasChip(
+                    selected = false,
+                    onClick = { qualityMenu = true },
+                    label = if (auto) "Qualità · Auto (${showing}p)" else "Qualità · ${stream.height}p",
+                )
                 DropdownMenu(expanded = qualityMenu, onDismissRequest = { qualityMenu = false }) {
+                    if (stream.dashManifest != null) {
+                        DropdownMenuItem(
+                            text = { Text("Automatica (la migliore per la rete)" + if (auto) "  ✓" else "") },
+                            onClick = {
+                                qualityMenu = false
+                                YtPlayer.setQuality(context, 0)
+                            },
+                        )
+                    }
                     stream.qualities.forEach { q ->
                         DropdownMenuItem(
-                            text = { Text("${q.height}p" + if (q.height == stream.height) "  ✓" else "") },
+                            text = { Text("${q.height}p" + if (!auto && q.height == stream.height) "  ✓" else "") },
                             onClick = {
                                 qualityMenu = false
                                 YtPlayer.setQuality(context, q.height)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        if (stream.subtitles.isNotEmpty()) item {
+            val current = now?.subtitle
+            Box {
+                CanvasChip(
+                    selected = current != null,
+                    onClick = { subtitleMenu = true },
+                    label = "Sottotitoli" + (current?.let { " · " + it.substringBefore('-').uppercase() } ?: ""),
+                )
+                DropdownMenu(expanded = subtitleMenu, onDismissRequest = { subtitleMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Disattivati" + if (current == null) "  ✓" else "") },
+                        onClick = {
+                            subtitleMenu = false
+                            YtPlayer.setSubtitle(context, null)
+                        },
+                    )
+                    stream.subtitles.forEach { sub: YtSubtitle ->
+                        DropdownMenuItem(
+                            text = { Text(sub.label + if (sub.language == current) "  ✓" else "") },
+                            onClick = {
+                                subtitleMenu = false
+                                YtPlayer.setSubtitle(context, sub)
                             },
                         )
                     }
@@ -477,6 +555,29 @@ private fun Actions(stream: YtStream, showComments: Boolean, onToggleComments: (
             }
         }
         item { CanvasChip(selected = showComments, onClick = onToggleComments, label = "Commenti") }
+        item {
+            CanvasChip(
+                selected = loop,
+                onClick = {
+                    loop = !loop
+                    YtPlayer.setLoop(context, loop)
+                },
+                label = "Ripeti",
+            )
+        }
+        item {
+            CanvasChip(
+                selected = false,
+                onClick = {
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(android.content.Intent.EXTRA_SUBJECT, stream.title)
+                        .putExtra(android.content.Intent.EXTRA_TEXT, "https://youtu.be/${stream.id}")
+                    context.startActivity(android.content.Intent.createChooser(send, "Condividi il video"))
+                },
+                label = "Condividi",
+            )
+        }
     }
 }
 
@@ -528,44 +629,117 @@ private fun Chapters(chapters: List<YtChapter>) {
     }
 }
 
-private val commentCache = mutableStateMapOf<String, List<YtComment>>()
+/** Commenti (o risposte a un commento) caricati a pagine, come nell'app di YouTube. */
+private class CommentThread {
+    val comments = mutableStateListOf<YtComment>()
+    var next by mutableStateOf<Page?>(null)
+    var loading by mutableStateOf(false)
+    var loaded by mutableStateOf(false)
 
-/** Commenti del video, caricati la prima volta che si aprono (null mentre arrivano). */
-@Composable
-private fun commentsFor(id: String): List<YtComment>? {
-    LaunchedEffect(id) {
-        if (id !in commentCache) commentCache[id] = runCatching { YtResolver.comments(id) }.getOrDefault(emptyList())
+    suspend fun load(videoId: String, page: Page?) {
+        if (loading) return
+        loading = true
+        runCatching { YtResolver.comments(videoId, page) }
+            .onSuccess {
+                comments.addAll(it.comments)
+                next = it.next
+            }
+            .onFailure { next = null }
+        loading = false
+        loaded = true
     }
-    return commentCache[id]
+
+    suspend fun loadMore(videoId: String) {
+        next?.let { load(videoId, it) }
+    }
+}
+
+private val commentThreads = mutableMapOf<String, CommentThread>()
+
+/** Commenti del video, caricati la prima volta che si aprono. */
+@Composable
+private fun commentsFor(id: String): CommentThread {
+    val thread = remember(id) { commentThreads.getOrPut(id) { CommentThread() } }
+    LaunchedEffect(id) { if (!thread.loaded) thread.load(id, null) }
+    return thread
 }
 
 @Composable
-private fun CommentRow(comment: YtComment) {
+private fun MoreButton(loading: Boolean, label: String, onClick: () -> Unit) {
+    if (loading) CircularProgressIndicator(Modifier.size(20.dp)) else TextButton(onClick = onClick) { Text(label) }
+}
+
+@Composable
+private fun CommentRow(videoId: String, comment: YtComment, reply: Boolean = false) {
+    val scope = rememberCoroutineScope()
+    var open by rememberSaveable(comment.id) { mutableStateOf(false) }
     Row {
-        ChannelAvatar(comment.avatar, comment.author.removePrefix("@"), 32)
+        ChannelAvatar(comment.avatar, comment.author.removePrefix("@"), if (reply) 24 else 32)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
+            if (comment.pinned) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.PushPin, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Fissato", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             Text(
                 listOf(comment.author, comment.date).filter { it.isNotBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(comment.text, style = MaterialTheme.typography.bodyMedium)
-            val extra = listOfNotNull(
-                comment.likes.takeIf { it > 0 }?.let { "👍 ${compactCount(it.toLong())}" },
-                comment.replies.takeIf { it > 0 }?.let { "$it risposte" },
-            )
-            if (extra.isNotEmpty()) {
-                Text(extra.joinToString("   "), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.ThumbUp, contentDescription = "Mi piace", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (comment.likes > 0) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(compactCount(comment.likes.toLong()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.width(14.dp))
+                Icon(Icons.Outlined.ThumbDown, contentDescription = "Non mi piace", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (comment.hearted) {
+                    Spacer(Modifier.width(14.dp))
+                    Icon(Icons.Filled.Favorite, contentDescription = "Piace all'autore", modifier = Modifier.size(14.dp), tint = Color(0xFFFF0033))
+                }
+            }
+            if (!reply && comment.replies > 0 && comment.repliesPage != null) {
+                TextButton(onClick = { open = !open }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                    Text(
+                        if (open) "Nascondi risposte" else if (comment.replies == 1) "1 risposta" else "${comment.replies} risposte",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+                if (open) {
+                    val replies = remember(comment.id) { commentThreads.getOrPut("r:" + comment.id) { CommentThread() } }
+                    LaunchedEffect(comment.id) { if (!replies.loaded) replies.load(videoId, comment.repliesPage) }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        replies.comments.forEach { CommentRow(videoId, it, reply = true) }
+                        if (!replies.loaded || replies.next != null) {
+                            MoreButton(replies.loading, "Altre risposte") { scope.launch { replies.loadMore(videoId) } }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-/** 1234 → "1234", 15300 → "15,3K", 2100000 → "2,1 Mln", 1700000000 → "1,7 Mld". */
-private fun compactCount(n: Long): String = when {
-    n >= 1_000_000_000 -> "%.1f Mld".format(java.util.Locale.ITALY, n / 1_000_000_000.0).replace(",0 ", " ")
-    n >= 1_000_000 -> "%.1f Mln".format(java.util.Locale.ITALY, n / 1_000_000.0).replace(",0 ", " ")
-    n >= 10_000 -> "%.1fK".format(java.util.Locale.ITALY, n / 1000.0).replace(",0K", "K")
-    else -> n.toString()
+private val dislikeCache = mutableStateMapOf<String, Long>()
+
+/** I "Non mi piace" non li mostra più YouTube: stima pubblica di Return YouTube Dislike. */
+@Composable
+private fun dislikesFor(id: String): Long? {
+    LaunchedEffect(id) {
+        if (id in dislikeCache) return@LaunchedEffect
+        runCatching {
+            withContext(Dispatchers.IO) {
+                val connection = java.net.URL("https://returnyoutubedislikeapi.com/votes?videoId=$id").openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 8_000
+                connection.readTimeout = 8_000
+                connection.inputStream.bufferedReader().use { JSONObject(it.readText()).optLong("dislikes", -1) }
+            }
+        }.onSuccess { dislikeCache[id] = it }
+    }
+    return dislikeCache[id]
 }

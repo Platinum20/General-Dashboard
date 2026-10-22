@@ -13,12 +13,21 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.dash.DashMediaSource
+import androidx.media3.exoplayer.dash.manifest.DashManifestParser
+import androidx.media3.exoplayer.source.SingleSampleMediaSource
+import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.youtube.YtHistory
+import com.platinum20.dashboard.media.youtube.YtWatched
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +42,10 @@ data class YtNow(
     val playing: Boolean = false,
     val loading: Boolean = true,
     val error: String? = null,
+    /** Qualità che si sta vedendo davvero (in automatico cambia con la rete). */
+    val playingHeight: Int = 0,
+    /** Lingua dei sottotitoli accesi, null se spenti. */
+    val subtitle: String? = null,
 )
 
 /**
@@ -44,7 +57,13 @@ object YtPlayer {
     private val scope = MainScope()
     private var exo: ExoPlayer? = null
     private var job: Job? = null
-    private var usingMuxed = false
+    /** Come si sta riproducendo: in caso di errore si scende al modo successivo. */
+    private enum class Mode { AUTO, FIXED, MUXED }
+    private var mode = Mode.AUTO
+    /** Lingua dei sottotitoli scelta: resta accesa anche per i video successivi, se ce l'hanno. */
+    private var subtitleLanguage: String? = null
+    private var appContext: Context? = null
+    private var lastSaved = 0L
 
     private val _now = MutableStateFlow<YtNow?>(null)
     val now: StateFlow<YtNow?> = _now.asStateFlow()
@@ -52,20 +71,50 @@ object YtPlayer {
     private const val PREFS = "yt_player"
     private const val KEY_HEIGHT = "max_height"
 
-    /** Qualità scelta dall'utente (altezza massima, 0 = automatica fino a 1080p), ricordata. */
+    /** Qualità scelta dall'utente (altezza massima), ricordata; 0 = automatica, il valore iniziale. */
     fun preferredHeight(context: Context): Int =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_HEIGHT, 0)
 
-    /** Cambia qualità al volo, dal punto in cui si era. */
+    /** In automatico il player sceglie la qualità più alta che la rete regge, senza fermarsi a caricare. */
+    fun isAuto(): Boolean = mode == Mode.AUTO
+
+    /** Cambia qualità al volo, dal punto in cui si era; 0 = automatica. */
     fun setQuality(context: Context, height: Int) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_HEIGHT, height).apply()
         val stream = _now.value?.stream ?: return
+        if (height == 0) {
+            if (mode == Mode.AUTO || stream.dashManifest == null) return
+            restart(context, stream, Mode.AUTO)
+            return
+        }
         val quality = stream.qualities.firstOrNull { it.height == height } ?: return
-        if (quality.height == stream.height && !usingMuxed) return
+        if (quality.height == stream.height && mode == Mode.FIXED) return
+        restart(context, stream.copy(videoUrl = quality.url, height = quality.height), Mode.FIXED)
+    }
+
+    /** Accende i sottotitoli in quella lingua (null = spenti), dal punto in cui si era. */
+    fun setSubtitle(context: Context, subtitle: YtSubtitle?) {
+        subtitleLanguage = subtitle?.language
+        val stream = _now.value?.stream ?: return
+        restart(context, stream, mode, subtitle)
+    }
+
+    private fun restart(context: Context, stream: YtStream, newMode: Mode, subtitle: YtSubtitle? = pickSubtitle(stream)) {
         val position = exo?.currentPosition ?: 0L
         val wasPlaying = exo?.playWhenReady ?: true
-        usingMuxed = false
-        start(context, stream.copy(videoUrl = quality.url, height = quality.height), muxed = false, positionMs = position, play = wasPlaying)
+        start(context, stream, newMode, positionMs = position, play = wasPlaying, subtitle = subtitle)
+    }
+
+    /** I sottotitoli scelti, se il video li ha: prima quelli scritti a mano, poi gli automatici. */
+    private fun pickSubtitle(stream: YtStream): YtSubtitle? {
+        val language = subtitleLanguage ?: return null
+        return stream.subtitles.filter { it.language.substringBefore('-') == language.substringBefore('-') }.minByOrNull { it.auto }
+    }
+
+    fun loop(): Boolean = exo?.repeatMode == Player.REPEAT_MODE_ONE
+
+    fun setLoop(context: Context, on: Boolean) {
+        player(context).repeatMode = if (on) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
     }
 
     fun seekTo(context: Context, positionMs: Long) {
@@ -89,12 +138,26 @@ object YtPlayer {
     var queue: List<String> = emptyList()
 
     fun player(context: Context): ExoPlayer = exo ?: ExoPlayer.Builder(context.applicationContext)
+        // Si parte dalla qualità più alta e si scende solo se la rete non regge (stima iniziale alta).
+        .setBandwidthMeter(DefaultBandwidthMeter.Builder(context.applicationContext).setInitialBitrateEstimate(20_000_000).build())
+        .setTrackSelector(
+            DefaultTrackSelector(
+                context.applicationContext,
+                AdaptiveTrackSelection.Factory(
+                    5_000,
+                    AdaptiveTrackSelection.DEFAULT_MAX_DURATION_FOR_QUALITY_DECREASE_MS,
+                    AdaptiveTrackSelection.DEFAULT_MIN_DURATION_TO_RETAIN_AFTER_DISCARD_MS,
+                    0.85f,
+                ),
+            )
+        )
         .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
         .setHandleAudioBecomingNoisy(true)
         .setWakeMode(C.WAKE_MODE_NETWORK)
         .build()
         .also { player ->
             exo = player
+            appContext = context.applicationContext
             player.addListener(object : Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) = publish()
 
@@ -109,10 +172,12 @@ object YtPlayer {
 
                 override fun onPlayerError(error: PlaybackException) {
                     val stream = _now.value?.stream
-                    // Se l'unione video+audio non va, si riprova con il flusso unico.
-                    if (stream != null && !usingMuxed && stream.muxedUrl != null) {
-                        usingMuxed = true
-                        start(context, stream, muxed = true, positionMs = exo?.currentPosition ?: 0L)
+                    val position = exo?.currentPosition ?: 0L
+                    // Se l'automatico non va si passa alla qualità fissa, poi al flusso unico video+audio.
+                    if (stream != null && mode == Mode.AUTO && stream.videoUrl != null && stream.audioUrl != null) {
+                        start(context, stream, Mode.FIXED, positionMs = position, subtitle = pickSubtitle(stream))
+                    } else if (stream != null && mode != Mode.MUXED && stream.muxedUrl != null) {
+                        start(context, stream, Mode.MUXED, positionMs = position, subtitle = pickSubtitle(stream))
                     } else {
                         _now.value = _now.value?.copy(loading = false, playing = false, error = "Video non riproducibile, riprova più tardi")
                     }
@@ -133,8 +198,10 @@ object YtPlayer {
         job = scope.launch {
             runCatching { YtResolver.resolve(link, preferredHeight(context)) }
                 .onSuccess {
-                    usingMuxed = false
-                    start(context, it, muxed = false)
+                    val auto = preferredHeight(context) == 0 && it.dashManifest != null
+                    YtHistory.init(context)
+                    // Riparte da dove eri rimasto l'ultima volta.
+                    start(context, it, if (auto) Mode.AUTO else Mode.FIXED, positionMs = YtHistory.resumeMs(it.id), subtitle = pickSubtitle(it))
                 }
                 .onFailure { _now.value = YtNow(link, null, loading = false, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
@@ -175,15 +242,29 @@ object YtPlayer {
         _now.value = null
     }
 
-    private fun start(context: Context, stream: YtStream, muxed: Boolean, positionMs: Long = 0L, play: Boolean = true) {
+    private fun start(
+        context: Context,
+        stream: YtStream,
+        newMode: Mode,
+        positionMs: Long = 0L,
+        play: Boolean = true,
+        subtitle: YtSubtitle? = null,
+    ) {
+        mode = newMode
         val metadata = MediaMetadata.Builder()
             .setTitle(stream.title)
             .setArtist(stream.channel)
             .setArtworkUri(Uri.parse(stream.thumbnail))
             .build()
         val item = { url: String -> MediaItem.Builder().setUri(url).setMediaId(stream.id).setMediaMetadata(metadata).build() }
-        val source: MediaSource = when {
+        val muxed = newMode == Mode.MUXED
+        val video: MediaSource = when {
             stream.hlsUrl != null -> HlsMediaSource.Factory(factory(stream.hlsUrl)).createMediaSource(item(stream.hlsUrl))
+            newMode == Mode.AUTO && stream.dashManifest != null && stream.videoUrl != null -> {
+                val base = Uri.parse("https://www.youtube.com/watch?v=${stream.id}")
+                val manifest = DashManifestParser().parse(base, stream.dashManifest.byteInputStream())
+                DashMediaSource.Factory(factory(stream.videoUrl)).createMediaSource(manifest, item(base.toString()))
+            }
             !muxed && stream.videoUrl != null && stream.audioUrl != null -> MergingMediaSource(
                 true,
                 ProgressiveMediaSource.Factory(factory(stream.videoUrl)).createMediaSource(item(stream.videoUrl)),
@@ -192,8 +273,20 @@ object YtPlayer {
             stream.muxedUrl != null -> ProgressiveMediaSource.Factory(factory(stream.muxedUrl)).createMediaSource(item(stream.muxedUrl))
             else -> ProgressiveMediaSource.Factory(factory(stream.audioUrl!!)).createMediaSource(item(stream.audioUrl))
         }
-        _now.value = YtNow(link = _now.value?.link ?: stream.id, stream = stream, loading = true)
+        val source = if (subtitle == null) video else MergingMediaSource(
+            video,
+            SingleSampleMediaSource.Factory(factory(subtitle.url)).createMediaSource(
+                MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
+                    .setMimeType(MimeTypes.TEXT_VTT)
+                    .setLanguage(subtitle.language)
+                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+                    .build(),
+                C.TIME_UNSET,
+            ),
+        )
+        _now.value = YtNow(link = _now.value?.link ?: stream.id, stream = stream, loading = true, subtitle = subtitle?.language)
         player(context).apply {
+            trackSelectionParameters = trackSelectionParameters.buildUpon().setPreferredTextLanguage(subtitle?.language).build()
             setMediaSource(source, positionMs)
             prepare()
             playWhenReady = play
@@ -203,9 +296,24 @@ object YtPlayer {
     private fun publish() {
         val p = exo ?: return
         val current = _now.value ?: return
+        saveProgress(p, current.stream)
         _now.value = current.copy(
+            playingHeight = p.videoFormat?.height ?: current.playingHeight,
             playing = p.isPlaying,
             loading = p.playbackState == Player.STATE_BUFFERING || (current.stream == null && current.error == null),
+        )
+    }
+
+    /** Segna nella cronologia dove sei arrivato: ogni 5 secondi mentre guardi e a ogni pausa. */
+    private fun saveProgress(p: ExoPlayer, stream: YtStream?) {
+        val context = appContext ?: return
+        if (stream == null || stream.hlsUrl != null || p.duration <= 0 || p.currentPosition <= 0) return
+        val now = System.currentTimeMillis()
+        if (p.isPlaying && now - lastSaved < 5_000) return
+        lastSaved = now
+        YtHistory.save(
+            context,
+            YtWatched(stream.id, stream.title, stream.channel, stream.channelAvatar, p.currentPosition, p.duration, now),
         )
     }
 
