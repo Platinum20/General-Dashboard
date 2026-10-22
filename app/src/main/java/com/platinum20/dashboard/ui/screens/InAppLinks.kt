@@ -40,6 +40,12 @@ object InAppLinks {
     }
 
     /**
+     * Un link toccato dentro la pagina web interna resta lì? Sì per le pagine normali;
+     * YouTube e Spotify vanno invece nei loro player dell'app, non nel sito mobile.
+     */
+    fun staysInPage(link: String): Boolean = target(link) is LinkTarget.Web
+
+    /**
      * Gli inviti ad aprire un'altra app (intent://…) restano nell'app se hanno un indirizzo web
      * di riserva: restituisce quell'indirizzo, altrimenti null.
      */
