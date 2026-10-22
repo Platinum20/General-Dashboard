@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.platinum20.dashboard.ScreenshotTour</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.platinum20.dashboard.ScreenshotTour</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.platinum20.dashboard.html">com.platinum20.dashboard</a> &gt; ScreenshotTour</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">2</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">2</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">54.369s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">0%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Failed tests</a>
+</li>
+<li>
+<a href="#">Tests</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="tour"></a>
+<h3 class="failures">tour</h3>
+<span class="code">
+<pre>java.lang.IllegalArgumentException: Software rendering doesn't support drawRenderNode
+	at android.graphics.Canvas.drawRenderNode(Canvas.java:2399)
+	at androidx.compose.ui.graphics.layer.GraphicsLayerV29.draw(GraphicsLayerV29.android.kt:260)
+	at androidx.compose.ui.graphics.layer.GraphicsLayer.draw$ui_graphics_release(AndroidGraphicsLayer.android.kt:548)
+	at androidx.compose.ui.graphics.layer.GraphicsLayerKt.drawLayer(GraphicsLayer.kt:52)
+	at com.platinum20.dashboard.ui.screens.LiquidGlassKt$backdropSource$1.invoke$lambda$4$lambda$3(LiquidGlass.kt:55)
+	at androidx.compose.ui.draw.DrawWithContentModifier.draw(DrawModifier.kt:422)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawDirect-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:110)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.draw-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:89)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:450)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutModifierNodeCoordinator.performDraw(LayoutModifierNodeCoordinator.kt:280)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.access$drawContainedDrawModifiers(NodeCoordinator.kt:58)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:469)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.runtime.snapshots.Snapshot$Companion.observe(Snapshot.kt:503)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.observe(SnapshotStateObserver.kt:502)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver.observeReads(SnapshotStateObserver.kt:258)
+	at androidx.compose.ui.node.OwnerSnapshotObserver.observeReads$ui_release(OwnerSnapshotObserver.kt:133)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:466)
+	at androidx.compose.ui.platform.GraphicsLayerOwnerLayer.drawLayer(GraphicsLayerOwnerLayer.android.kt:271)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:434)
+	at androidx.compose.ui.node.LayoutModifierNodeCoordinator.performDraw(LayoutModifierNodeCoordinator.kt:280)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawContent(LayoutNodeDrawScope.kt:68)
+	at androidx.compose.foundation.BackgroundNode.draw(Background.kt:163)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawDirect-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:110)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.draw-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:89)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:450)
+	at androidx.compose.ui.node.NodeCoordinator.access$drawContainedDrawModifiers(NodeCoordinator.kt:58)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:469)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.runtime.snapshots.Snapshot$Companion.observe(Snapshot.kt:2441)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.observe(SnapshotStateObserver.kt:502)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver.observeReads(SnapshotStateObserver.kt:258)
+	at androidx.compose.ui.node.OwnerSnapshotObserver.observeReads$ui_release(OwnerSnapshotObserver.kt:133)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:466)
+	at androidx.compose.ui.platform.GraphicsLayerOwnerLayer.drawLayer(GraphicsLayerOwnerLayer.android.kt:271)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:434)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.platform.AndroidComposeView.dispatchDraw(AndroidComposeView.android.kt:1564)
+	at android.view.View.draw(View.java:24845)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.robolectric.shadows.ShadowView$_View_$$Reflector66.draw(Unknown Source)
+	at org.robolectric.shadows.ShadowView.draw(ShadowView.java:250)
+	at android.view.View.draw(View.java)
+	at android.view.View.draw(View.java:24715)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24845)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.robolectric.shadows.ShadowView$_View_$$Reflector66.draw(Unknown Source)
+	at org.robolectric.shadows.ShadowView.draw(ShadowView.java:250)
+	at android.view.View.draw(View.java)
+	at com.android.internal.policy.DecorView.draw(DecorView.java:778)
+	at com.platinum20.dashboard.ScreenshotTour.shot$lambda$12(ScreenshotTour.kt:190)
+	at androidx.test.core.app.ActivityScenario.lambda$onActivity$2(ActivityScenario.java:794)
+	at androidx.test.core.app.ActivityScenario.onActivity(ActivityScenario.java:804)
+	at com.platinum20.dashboard.ScreenshotTour.shot(ScreenshotTour.kt:187)
+	at com.platinum20.dashboard.ScreenshotTour.tour(ScreenshotTour.kt:95)
+	at com.platinum20.dashboard.ScreenshotTour.tour(ScreenshotTour.kt:88)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)
+	at androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)
+	at androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)
+	at androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:502)
+	at org.robolectric.internal.SandboxTestRunner$2.lambda$evaluate$2(SandboxTestRunner.java:285)
+	at org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:104)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="tourDark"></a>
+<h3 class="failures">tourDark</h3>
+<span class="code">
+<pre>java.lang.IllegalArgumentException: Software rendering doesn't support drawRenderNode
+	at android.graphics.Canvas.drawRenderNode(Canvas.java:2399)
+	at androidx.compose.ui.graphics.layer.GraphicsLayerV29.draw(GraphicsLayerV29.android.kt:260)
+	at androidx.compose.ui.graphics.layer.GraphicsLayer.draw$ui_graphics_release(AndroidGraphicsLayer.android.kt:548)
+	at androidx.compose.ui.graphics.layer.GraphicsLayerKt.drawLayer(GraphicsLayer.kt:52)
+	at com.platinum20.dashboard.ui.screens.LiquidGlassKt$backdropSource$1.invoke$lambda$4$lambda$3(LiquidGlass.kt:55)
+	at androidx.compose.ui.draw.DrawWithContentModifier.draw(DrawModifier.kt:422)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawDirect-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:110)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.draw-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:89)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:450)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutModifierNodeCoordinator.performDraw(LayoutModifierNodeCoordinator.kt:280)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.access$drawContainedDrawModifiers(NodeCoordinator.kt:58)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:469)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.runtime.snapshots.Snapshot$Companion.observe(Snapshot.kt:503)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.observe(SnapshotStateObserver.kt:502)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver.observeReads(SnapshotStateObserver.kt:258)
+	at androidx.compose.ui.node.OwnerSnapshotObserver.observeReads$ui_release(OwnerSnapshotObserver.kt:133)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:466)
+	at androidx.compose.ui.platform.GraphicsLayerOwnerLayer.drawLayer(GraphicsLayerOwnerLayer.android.kt:271)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:434)
+	at androidx.compose.ui.node.LayoutModifierNodeCoordinator.performDraw(LayoutModifierNodeCoordinator.kt:280)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawContent(LayoutNodeDrawScope.kt:68)
+	at androidx.compose.foundation.BackgroundNode.draw(Background.kt:163)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.drawDirect-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:110)
+	at androidx.compose.ui.node.LayoutNodeDrawScope.draw-eZhPAX0$ui_release(LayoutNodeDrawScope.kt:89)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:450)
+	at androidx.compose.ui.node.NodeCoordinator.access$drawContainedDrawModifiers(NodeCoordinator.kt:58)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:469)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.runtime.snapshots.Snapshot$Companion.observe(Snapshot.kt:2441)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver$ObservedScopeMap.observe(SnapshotStateObserver.kt:502)
+	at androidx.compose.runtime.snapshots.SnapshotStateObserver.observeReads(SnapshotStateObserver.kt:258)
+	at androidx.compose.ui.node.OwnerSnapshotObserver.observeReads$ui_release(OwnerSnapshotObserver.kt:133)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:468)
+	at androidx.compose.ui.node.NodeCoordinator$drawBlock$1.invoke(NodeCoordinator.kt:466)
+	at androidx.compose.ui.platform.GraphicsLayerOwnerLayer.drawLayer(GraphicsLayerOwnerLayer.android.kt:271)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:434)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.node.InnerNodeCoordinator.performDraw(InnerNodeCoordinator.kt:196)
+	at androidx.compose.ui.node.NodeCoordinator.drawContainedDrawModifiers(NodeCoordinator.kt:447)
+	at androidx.compose.ui.node.NodeCoordinator.draw(NodeCoordinator.kt:439)
+	at androidx.compose.ui.node.LayoutNode.draw$ui_release(LayoutNode.kt:1000)
+	at androidx.compose.ui.platform.AndroidComposeView.dispatchDraw(AndroidComposeView.android.kt:1564)
+	at android.view.View.draw(View.java:24845)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.robolectric.shadows.ShadowView$_View_$$Reflector66.draw(Unknown Source)
+	at org.robolectric.shadows.ShadowView.draw(ShadowView.java:250)
+	at android.view.View.draw(View.java)
+	at android.view.View.draw(View.java:24715)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24713)
+	at android.view.ViewGroup.drawChild(ViewGroup.java:4537)
+	at android.view.ViewGroup.dispatchDraw(ViewGroup.java:4298)
+	at android.view.View.draw(View.java:24845)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.robolectric.shadows.ShadowView$_View_$$Reflector66.draw(Unknown Source)
+	at org.robolectric.shadows.ShadowView.draw(ShadowView.java:250)
+	at android.view.View.draw(View.java)
+	at com.android.internal.policy.DecorView.draw(DecorView.java:778)
+	at com.platinum20.dashboard.ScreenshotTour.shot$lambda$12(ScreenshotTour.kt:190)
+	at androidx.test.core.app.ActivityScenario.lambda$onActivity$2(ActivityScenario.java:794)
+	at androidx.test.core.app.ActivityScenario.onActivity(ActivityScenario.java:804)
+	at com.platinum20.dashboard.ScreenshotTour.shot(ScreenshotTour.kt:187)
+	at com.platinum20.dashboard.ScreenshotTour.tour(ScreenshotTour.kt:95)
+	at com.platinum20.dashboard.ScreenshotTour.tourDark(ScreenshotTour.kt:85)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)
+	at androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)
+	at androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)
+	at androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:502)
+	at org.robolectric.internal.SandboxTestRunner$2.lambda$evaluate$2(SandboxTestRunner.java:285)
+	at org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:104)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</pre>
+</span>
+</div>
+</div>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="failures">tour</td>
+<td class="failures">25.202s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">tourDark</td>
+<td class="failures">29.167s</td>
+<td class="failures">failed</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 8.14.3</a> at Oct 22, 2026, 1:25:37 PM</p>
+</div>
+</div>
+</body>
+</html>
