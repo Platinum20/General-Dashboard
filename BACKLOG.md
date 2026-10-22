@@ -13,7 +13,7 @@ _Ultimo aggiornamento: 2026-10-22 ~13:40 UTC, su main 1.86.0 (1.88.0 in uscita c
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.81.0, giro fotografico `main/29`, 2026-10-22.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.86.0, giro fotografico `main/41`, 2026-10-22.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
@@ -23,11 +23,35 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** aggiungere al giro fotografico: `07_calendario` (con permesso calendario concesso in Robolectric via `ShadowApplication.grantPermissions` e 3-4 eventi finti nel provider, oppure con dati iniettati), `08_evento` e `09_nuovo_evento`; `43_compila_da_solo`; `05b_trovati` con una proposta finta in `AutoFill` (pacco + spesa); `44_licenze`. Anche al buio.
 - **Test che lo impedisce:** le schermate stesse nel giro; un controllo nel tour che fallisce se una schermata attesa non è stata salvata.
 
+### V8. Il giro fotografico non vede il nuovo player di YouTube né Spotify che suona · giro fotografico · gravità media
+- **Versione:** 1.82.0-1.86.0 (giro `main/41`)
+- **Cosa non va:** la parte più grande di queste versioni non ha nessuna foto: schermata del player YouTube (`YouTubeWatchScreen`: video, titolo, barra col minutaggio, menu qualità, capitoli, commenti, "Prossimi dai canali che segui", stato di errore con "Riprova"), scheda Home e filtro "Solo dirette" del feed, bollino IN DIRETTA, il blocco "brano in riproduzione" di Media col colore del tema (1.86), una riga urgente in arancio dentro "Adesso" (1.86). `31_youtube` e `32_spotify` mostrano solo "Collega il tuo...", `30_media` è senza brano in corso.
+- **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`
+- **Come riprodurre:** in `main/41/tour/` non c'è nessuna di queste schermate.
+- **Cosa fare:** aggiungere `34_youtube_player` aprendo `Routes.youtubeWatch(...)` con uno `YtNow` finto (stream con 3 capitoli, 3 qualità, durata) iniettato in `YtPlayer` (rendere `_now` impostabile da test, `@VisibleForTesting`), più `34b_youtube_errore` con `error` valorizzato; `35_youtube_feed` con video finti (uno IN DIRETTA, uno Short) e la scheda Home; `30b_media_in_corso` con un `Track` finto in `NowPlaying`; in `01_oggi` un pacco in ritardo o un promemoria scaduto per avere una riga urgente. Tutto anche al buio.
+- **Test che lo impedisce:** le schermate stesse nel giro, con il controllo "schermata attesa mancante" di V1.
+
+### V9. Le novità di YouTube e Spotify non hanno test veri · test · gravità media
+- **Versione:** 1.82.0-1.84.0
+- **Cosa non va:** l'unico test nuovo è `YouTubeNativeCheck`, che nel giro normale viene saltato (`assumeTrue`, "ignorato" nel report di `main/41`) e gira solo nel workflow `ytcheck.yml` quando si fa push su `claude/**` toccando il player. Non c'è nessun test per la logica pura nuova: `YtResolver.videoId` (watch?v=, youtu.be, shorts/, embed/, live/, link con `&t=`), `YtResolver.userAgentFor` (c=ANDROID, c=IOS, nessun c=), `SpotifyPlayer.spotifyUri` (`/intl-it/track/...`, `?si=...`, `spotify:album:...`, host non Spotify, `/user/...` → null), `Routes.mediaPlayer`/`youtubeWatch` (codifica dell'url). Inoltre, quando YouTube cambia qualcosa, il player nativo si rompe senza che nessuno se ne accorga finché Antonio non lo prova.
+- **Dove:** `media/youtube/player/YtResolver.kt`, `media/spotify/SpotifyPlayer.kt`, `MainActivity.kt` (`Routes`), `.github/workflows/ytcheck.yml`.
+- **Come riprodurre:** report `main/41/report`: 139 test, 2 ignorati (uno è `YouTubeNativeCheck.flussi`); nessuna classe di test per YtResolver o SpotifyPlayer.
+- **Cosa fare:** `YtLinksTest` e `SpotifyLinksTest` (Robolectric per `Uri`) con i casi sopra; aggiungere a `ytcheck.yml` un `schedule` (es. una volta al giorno, gratis sul repo pubblico) e anche il push su `main`, così un'estrazione rotta si vede nel giro del verificatore.
+- **Test che lo impedisce:** i due file di test; `ytcheck` programmato.
+
+### V10. Spotify nell'app: riproduttore non più pronto e messaggi grezzi · Spotify, link di Spotify · gravità media
+- **Versione:** 1.84.0
+- **Cosa non va:** (1) `SpotifyPlayer` ascolta `ready` ma non `not_ready`: se il riproduttore nascosto perde il collegamento (rete cambiata, telefono in standby a lungo) `ready` resta completato con il vecchio `device_id` e il tocco su un brano fa `PUT me/player/play?device_id=...` su un dispositivo che non esiste più; l'errore mostrato è il messaggio grezzo dell'API (`it.message`, spesso in inglese, es. "Device not found"). (2) Spotify dichiara che il Web Playback SDK non è supportato sui browser per telefono: va provato su un telefono vero che parta davvero dentro la WebView (Widevine, `RESOURCE_PROTECTED_MEDIA_ID`). Se non parte, il messaggio "Questo telefono non riesce ad avviare il riproduttore" deve dire cosa fare.
+- **Dove:** `media/spotify/SpotifyPlayer.kt` (`Bridge`, pagina `PAGE`, `play`).
+- **Come riprodurre:** con Spotify Premium collegato, far partire un brano, togliere la rete per un minuto, rimetterla e toccare un altro brano.
+- **Cosa fare:** listener `not_ready` → `deviceId = null` e nuovo `CompletableDeferred`; su 404 dal `playOn` riavviare la pagina (`MediaWebViews.release(SPOTIFY)` + `start`) e riprovare una volta; tradurre gli errori dell'API con una funzione `spotifyMessage(code, message)` in italiano. Antonio: provare sul telefono e dire se si sente.
+- **Test che lo impedisce:** test di `spotifyMessage` (401, 403 Premium, 404 dispositivo, 429, rete assente).
+
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
 - **Cosa non va:** `06_aggiungi.png` è identica byte per byte a `05_oggi_fondo.png` (stesso md5): il tocco su "Aggiungi" non apre la cattura veloce (o la apre in un'altra Activity che Robolectric non fotografa), quindi il pannello del "+" non è mai stato controllato.
 - **Dove:** `ScreenshotTour.kt` righe ~105-108; "Aggiungi" è anche la contentDescription dei + di `HomeCards.kt:365`, `NotesScreen.kt:309` e del ✓ in `AutoFillUi.kt:163`, quindi `tap("Aggiungi")` può prendere il nodo sbagliato.
-- **Come riprodurre:** `md5sum main/29/tour/05_oggi_fondo.png main/29/tour/06_aggiungi.png`.
+- **Come riprodurre:** `md5sum main/29/tour/05_oggi_fondo.png main/29/tour/06_aggiungi.png` (ancora uguali in `main/41`).
 - **Cosa fare:** dare al + della barra una contentDescription unica (es. "Aggiungi al volo") e toccare quella; se la cattura è un'Activity a parte, fotografarla con `Robolectric.buildActivity(QuickCaptureActivity::class.java)`.
 - **Test che lo impedisce:** nel tour, dopo il tocco, controllare che esista il nodo con il campo della cattura (es. testo "Promemoria") prima di salvare la foto.
 
@@ -39,11 +63,27 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Test che lo impedisce:** il controllo "schermata attesa mancante" di V1.
 
 ### V7. Vetro della barra in basso: da controllare sul telefono · tutte le schermate · gravità bassa
-- **Versione:** 1.80.0
+- **Versione:** 1.80.0, più evidente dalla 1.85.0 (velo più leggero, niente ombra)
 - **Cosa non va:** nel giro fotografico (dove la sfocatura non viene disegnata) il testo sotto la barra flottante si vede attraverso la tinta al 55-62% e si sovrappone alle icone (News `10_news`, Oggi `01_oggi`). Su Android 12+ la sfocatura vera dovrebbe coprirlo, ma se la sfocatura non parte (risparmio energetico, GPU, `hazeSource` mancante in qualche schermata) resta un testo leggibile male sotto le icone. Il `fallbackTint` al 96% vale solo sotto Android 12.
 - **Dove:** `ui/screens/Common.kt` ~righe 336-350, `MainActivity.kt` ~righe 496-520.
 - **Cosa fare:** Antonio lo guarda sul telefono; se si vede male, alzare la tinta al 75-80% o aggiungere un leggero bordo/ombra sotto la barra.
 - **Test che lo impedisce:** nessuno automatico possibile per la sfocatura; tenere le foto `01_oggi`/`10_news` come confronto.
+
+### V11. "Adesso": l'arancio urgente col tema chiaro si legge poco e con Material You non è arancio · Oggi › Adesso · gravità bassa
+- **Versione:** 1.86.0
+- **Cosa non va:** col tema chiaro la riga urgente usa `colorScheme.tertiary` sul fondo `primaryContainer`: con Canvas è #D9572B su #E3E8FF, contrasto circa 4,0:1 (sotto 4,5:1 per testo piccolo). Con Material You `tertiary` viene dallo sfondo del telefono e può essere verde, viola o rosa: il changelog dice "le cose urgenti restano in arancio" ma non è garantito.
+- **Dove:** `ui/screens/HomeScreen.kt`, `BriefRow` (`UrgentOnDark` / `tertiary`).
+- **Come riprodurre:** tema Canvas chiaro, un promemoria scaduto: la riga in "Adesso" è arancio chiaro su azzurro; tema Material You con sfondo verde: la riga urgente è verde.
+- **Cosa fare:** un arancio fisso più scuro col chiaro (es. #B8431A, contrasto ≥ 4,5:1 su #E3E8FF) oppure `colorScheme.error`, che resta "allarme" anche con Material You; tenere anche l'icona piena per non affidarsi solo al colore.
+- **Test che lo impedisce:** test di una funzione `contrast(fg, bg)` che verifica ≥ 4,5 per il colore urgente su `primaryContainer` in tutti e tre i temi chiari e scuri.
+
+### V12. Player YouTube: piccoli difetti dal codice · YouTube › player · gravità bassa
+- **Versione:** 1.83.0-1.84.0
+- **Cosa non va:** (1) `YtPlayer.player(context)` crea il listener con il primo `context` ricevuto (spesso l'Activity): quell'Activity resta in memoria per sempre e `next(context)` a fine video usa un'Activity forse già distrutta. (2) Se i commenti non si caricano (rete, errore di NewPipe) si vede "Nessun commento (o commenti disattivati)" invece di un errore con "Riprova" (`commentsFor` fa `getOrDefault(emptyList())`). (3) Tornando sulla schermata di un video messo in pausa, `LaunchedEffect(url)` chiama `YtPlayer.play` che fa ripartire il video da solo.
+- **Dove:** `media/youtube/player/YtPlayer.kt` (`player`, `play`), `ui/screens/YouTubeWatchScreen.kt` (righe ~81 e ~291).
+- **Come riprodurre:** (2) modalità aereo, aprire un video già in cache e toccare Commenti; (3) mettere in pausa, aprire Media e poi la bolla/il mini player.
+- **Cosa fare:** usare sempre `context.applicationContext` dentro `YtPlayer`; distinguere errore e lista vuota nei commenti; in `play` non chiamare `play()` se lo stesso video è già caricato e in pausa per scelta dell'utente.
+- **Test che lo impedisce:** test di una funzione pura per lo stato dei commenti (caricamento, errore, vuoti, lista) e del caso "stesso video già caricato".
 
 ---
 

@@ -5,6 +5,11 @@ I problemi trovati sono in BACKLOG.md, sezione "Problemi trovati dal verificator
 
 | Versione | Data | Giro fotografico | Esito |
 |---|---|---|---|
+| 1.86.0 | 2026-10-22 | `main/41` | Funziona: "Adesso" e meteo col colore del tema (azzurro con Canvas chiaro, blu al buio), leggibili. Problemi: V11 bassa; brano in corso e riga urgente non fotografati (V8) |
+| 1.85.0 | 2026-10-22 | `main/41` | Funziona: niente ombra sotto barra e "+", velo più leggero. Il testo sotto la barra ora si legge di più senza sfocatura (V7 bassa, da guardare sul telefono) |
+| 1.84.0 | 2026-10-22 | `main/41` | Solo dal codice: minutaggio, qualità, capitoli, commenti, Home, Solo dirette, Spotify nel riproduttore nascosto, link nei player. Spariti i pulsanti per il sito (foto 31, 32). Problemi: V8 V9 V10 media, V12 bassa |
+| 1.83.0 | 2026-10-22 | `main/41` | Solo dal codice: player nativo ExoPlayer + NewPipe, servizio in sottofondo, video successivo. Problemi: V9 media, V12 bassa |
+| 1.82.0 | 2026-10-22 | `main/41` | Solo dal codice: player dell'app per i link YouTube, notifica e bolla. Nessuna foto (V8) |
 | 1.81.0 | 2026-10-22 | `main/29` | Funziona: link nella pagina interna, calendario nativo (solo dal codice e dai test, non fotografato). Problemi: V1 media, V3 V4 bassa |
 | 1.80.0 | 2026-10-22 | `main/29` | Funziona: Impostazioni riorganizzate (foto 40 e 42), blocco pubblicità in Impostazioni › Media, Licenze. Problemi: V7 bassa |
 | 1.74.0 | 2026-10-22 | `main/29` | Funziona: Da fare mirato con "+ altri N in Note", titoli dei temi del punto del giorno, "Non ora" in Agenda. Problemi: V5 bassa |
@@ -12,3 +17,4 @@ I problemi trovati sono in BACKLOG.md, sezione "Problemi trovati dal verificator
 | 1.72.0 | 2026-10-22 | `main/29` | Funziona: card "Compila da solo" in Oggi e riga in Impostazioni; logica coperta da AutoFillExtractorTest/AutoFillRulesTest. Problemi: V1 media (proposte non fotografate) |
 
 Base della prima verifica: 1.71.0 (giro `main/26`). Test del giro `main/29`: 138, 0 falliti, 1 ignorato.
+Test del giro `main/41` (main 1.86.0): 139, 0 falliti, 2 ignorati (`YouTubeNativeCheck` gira solo con la rete in `ytcheck.yml`).
