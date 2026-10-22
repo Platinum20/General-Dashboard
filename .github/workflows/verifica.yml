@@ -1,0 +1,83 @@
+name: Verifica dal vivo
+
+# Prova il blocco pubblicità su YouTube e sui siti di notizie veri con Chromium (lo stesso motore
+# della WebView): stesse liste, stesso motore dei filtri e stesso script nella pagina dell'app.
+# Il resoconto e le foto finiscono nel ramo "screenshots", cartella verifica/<run>.
+on:
+  workflow_dispatch:
+  # Anche da sola sui rami di lavoro quando cambia il blocco pubblicità.
+  push:
+    branches: ["claude/**"]
+    paths:
+      - "tools/adblock-check/**"
+      - "app/src/main/assets/adblock/**"
+      - "app/src/main/java/com/platinum20/dashboard/adblock/**"
+
+permissions:
+  contents: write
+
+jobs:
+  adblock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Liste dei filtri pubblicità
+        run: python3 scripts/update_filter_lists.py
+
+      - name: Motore dei filtri come server locale
+        run: |
+          gradle -p tools/adblock-check installDist --no-daemon
+          tools/adblock-check/build/install/adblock-check/bin/adblock-check app/src/main/assets/adblock 8790 > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8790/ready && break; sleep 2; done
+          cat server.log
+
+      - name: Chromium
+        working-directory: tools/adblock-check
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+
+      - name: Prova sulle pagine vere
+        run: node tools/adblock-check/live.js http://127.0.0.1:8790 live-out
+
+      - name: Resoconto
+        if: always()
+        run: |
+          [ -f live-out/report.md ] && cat live-out/report.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Pubblica nel ramo screenshots
+        if: always()
+        run: |
+          [ -d live-out ] || exit 0
+          DEST="verifica/${{ github.run_number }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/live"
+          cp -r live-out/. "$RUNNER_TEMP/live/"
+          if git fetch origin screenshots; then
+            git checkout -B screenshots origin/screenshots
+          else
+            git checkout --orphan screenshots
+            git rm -rf . >/dev/null
+          fi
+          git clean -fdq -e live-out
+          mkdir -p "$DEST"
+          cp -r "$RUNNER_TEMP/live/." "$DEST/"
+          git add "$DEST"
+          git commit -m "Verifica $DEST" >/dev/null
+          git push origin screenshots
