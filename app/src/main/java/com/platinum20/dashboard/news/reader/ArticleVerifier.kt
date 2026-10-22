@@ -66,8 +66,7 @@ object ArticleVerifier {
     private suspend fun check(url: String, cookies: (String) -> String?): Outcome = withContext(Dispatchers.IO) {
         if (ArticleCache.get(url) != null) return@withContext Outcome.READABLE
         // Un errore di rete non è un giudizio sull'articolo: riproviamo al prossimo aggiornamento.
-        val page = runCatching { ArticleExtractor.download(url, cookies) }.getOrNull()
-            ?: return@withContext Outcome.RETRY_LATER
+        val page = PageLoader.load(url) ?: return@withContext Outcome.RETRY_LATER
         if (ArticleExtractor.isPaid(page)) return@withContext Outcome.REJECTED
         val article = runCatching { ArticleExtractor.extractBest(page) }.getOrNull()
         if (article == null || article.textLength < MIN_TEXT_LENGTH) return@withContext Outcome.REJECTED

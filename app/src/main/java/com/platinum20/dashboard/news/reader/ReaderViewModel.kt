@@ -53,7 +53,7 @@ class ReaderViewModel(application: Application, savedStateHandle: SavedStateHand
             val results = mutableListOf<ReaderArticle>()
             var error: Throwable? = null
 
-            val page = runCatching { withContext(Dispatchers.IO) { ArticleExtractor.download(url, WebPageRenderer::cookiesFor) } }
+            val page = runCatching { PageLoader.load(url) ?: throw java.io.IOException("pagina non raggiungibile") }
                 .onFailure { error = it }
                 .getOrNull()
             page?.let { p -> extract(p)?.let { results += it } }

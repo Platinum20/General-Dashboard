@@ -61,6 +61,7 @@ import androidx.navigation.navArgument
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.youtubeWatchUrl
+import com.platinum20.dashboard.net.WebFetcher
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
@@ -143,6 +144,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
+        WebFetcher.init(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
