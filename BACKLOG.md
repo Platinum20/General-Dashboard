@@ -43,14 +43,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** nei dati finti una nota "Spesa" con `[x] latte`, `[ ] pane`, `[ ] uova`; una spesa fissa ("ogni mese il 5 affitto 650") e una abitudine "Palestra 3 volte a settimana"; nuove foto `27_cerca` (lente, cerca "latte"), `28_lista` (editor della nota lista), `07_da_attivare` (riga aperta). Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
 
-### V14. Spese fisse aggiunte solo all'avvio dell'app · Note › Spese · gravità media
-- **Versione:** 1.88.0
-- **Cosa non va:** `NotesStore.applyFixedExpenses()` viene chiamata solo in `NotesStore.init`, cioè quando il processo parte. Android tiene l'app in memoria anche per giorni: se l'app resta aperta (o in sottofondo) a cavallo del giorno dell'addebito, l'affitto del 5 non compare nelle spese finché il processo non viene chiuso, e il budget al giorno è sbagliato. Anche `replaceAll` (ripristino da backup) non le applica: dopo un ripristino le fisse scadute da quando è stato fatto il backup restano fuori fino al prossimo avvio.
-- **Dove:** `notes/NotesStore.kt` (`init`, `replaceAll`, `applyFixedExpenses`).
-- **Come riprodurre:** il 4 sera aggiungere "ogni mese il 5 netflix 12,99", lasciare l'app in sottofondo, il 5 riaprirla dalla barra delle app recenti: in Spese non c'è Netflix.
-- **Cosa fare:** chiamare `applyFixedExpenses()` anche a ogni ritorno in primo piano (`ON_RESUME` in `MainActivity` o `ProcessLifecycleOwner`), nel `RefreshWorker`/`MorningWorker` e dopo `replaceAll`.
-- **Test che lo impedisce:** test in `NotesStoreTest`: dopo `replaceAll` con una fissa scaduta la spesa c'è; test che `applyFixedExpenses(today)` chiamata due volte lo stesso giorno non la duplica.
-
 ### V20. La sera "Adesso" e la card "Domani" dicono le stesse cose · Oggi · gravità media
 - **Versione:** 1.93.0 (foto `01_oggi`, `05_oggi_fondo`, `scuro_01_oggi`, `scuro_05_oggi_fondo` di `main/50`)
 - **Cosa non va:** dalle 18 "Adesso" continua ad aggiungere le sue righe su domani (`Briefing.kt` ~righe 100-160: "Domani 22° / 10°, pioggia 60%", "Domani alle …", "Domani: compleanno", "Domani arriva", "Domani addebito") e subito sotto la nuova card "Domani" ripete meteo, impegni, date e addebiti. Nel giro: "Domani 22° / 10°, pioggia 60%" in Adesso e "Rovesci · Pioggia 60% · 22° / 10°" nella card; "Chiamare il commercialista" compare tre volte (card Domani, Da fare con "Domani 09:00"). In più la riga meteo di Adesso usa l'icona del sole anche con pioggia al 60%.
@@ -66,22 +58,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** aprire un video, lasciarlo suonare due minuti senza pausa, aprire un altro video da "Prossimi"; tornare in Media: il primo non è in Riprendi (o è al punto 0).
 - **Cosa fare:** in `play()` chiamare `remember(context)` per il video corrente prima di cambiare `_now`; salvare anche ogni 30 s mentre suona e in `stop()`/`release()`.
 - **Test che lo impedisce:** test di `YtPlayer` (o di una funzione estratta) che, passando da A a 2:00 a B, lascia in `MediaHistory` A con posizione 120 000 ms.
-
-### V15. Backup: esportazione su Drive e notifica del mattino dopo il ripristino · Impostazioni › Dati · gravità bassa
-- **Versione:** 1.88.0
-- **Cosa non va:** (1) `Backup.export` apre il file con `openOutputStream(uri, "wt")`: alcuni fornitori di documenti (Google Drive in particolare) rifiutano la modalità "wt" e l'esportazione finisce con "non riuscita" senza dire perché. (2) Dopo "Ripristina da backup" le impostazioni della notifica del mattino cambiano ma `MorningWorker.schedule` non viene richiamato: la notifica parte (o smette) solo dal prossimo avvio dell'app. Anche il widget non si aggiorna. (3) "Rimanda" di notte: l'etichetta si calcola quando la notifica viene mostrata (`TaskReminderWorker.kt:70`), l'orario quando si tocca (riga 131). Notifica alle 4:50 con "Stamattina 9:00", toccata alle 5:10: rimanda a domani 9:00, non a stamattina.
-- **Aggiornamento 1.93.0:** lo stesso per l'avviso pioggia: dopo un ripristino che lo accende `RainAlertWorker.schedule` non parte finché l'app non si riavvia (lo chiama solo `MainActivity`). In `restore` richiamare anche quello.
-- **Dove:** `backup/Backup.kt` (`export`, `restore`), `ui/screens/BackupUi.kt`; per (3) `notes/TaskReminderWorker.kt`, `notes/Snooze.kt`.
-- **Come riprodurre:** (1) Esporta backup → scegliere una cartella di Google Drive; (2) ripristinare un backup con la notifica del mattino accesa su un telefono dove era spenta, non riaprire l'app: domattina niente notifica.
-- **Cosa fare:** provare "wt" e se fallisce ripiegare su "w"; in `restore` richiamare `MorningWorker.schedule(context)` e aggiornare il widget; un messaggio d'errore che dica "Questa cartella non accetta il file, prova Download".
-- **Test che lo impedisce:** test Robolectric di `restore` che controlla il lavoro programmato in `WorkManagerTestInitHelper`. Per (3): mettere nell'intent dell'azione l'istante in cui la notifica è stata mostrata e calcolare `until` da quello; `SnoozeTest` con etichetta e orario dallo stesso istante (4:50 mostrata, 5:10 toccata → stamattina 9:00).
-
-### V16. Editor di una nota: il titolo non si distingue dal testo · Note › nota · gravità bassa
-- **Versione:** 1.91.0 (foto `26_nota`, `scuro_26_nota`)
-- **Cosa non va:** nell'editor la prima riga (il titolo, "Libri da leggere") ha la stessa misura e lo stesso peso del testo sotto; nella lista delle Note invece il titolo è in grassetto. Sembra un blocco di testo unico e la pagina sotto è vuota.
-- **Dove:** `ui/screens/NotesScreen.kt` / `NotesExtras.kt` (editor della nota).
-- **Cosa fare:** prima riga in `titleLarge`/grassetto (campo titolo separato o stile sulla prima riga), come nella lista.
-- **Test che lo impedisce:** foto del giro `26_nota`.
 
 ### V21. Card "Domani": frase in cima quasi mai visibile, e dopo mezzanotte dice "Domani" per oggi · Oggi › Domani · gravità bassa
 - **Versione:** 1.93.0 (foto `01_oggi` di `main/50`)
@@ -115,29 +91,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** Antonio lo guarda sul telefono; se si vede male, alzare la tinta al 75-80% o aggiungere un leggero bordo/ombra sotto la barra.
 - **Test che lo impedisce:** nessuno automatico possibile per la sfocatura; tenere le foto `01_oggi`/`10_news` come confronto.
 
-### V17. Se il file delle Note non si legge, la prima modifica lo cancella · Note (tutti i dati) · gravità bassa
-- **Versione:** già prima, più pesante dalla 1.88.0 (nel file ora ci sono anche spese fisse, liste, abitudini settimanali)
-- **Cosa non va:** `NotesStore.init` fa `runCatching { parse(file.readText()) }.getOrDefault(NotesData())`: se `notes.json` è rovinato, o scritto da una versione più nuova con un valore che fa fallire `parse`, l'app parte con le Note vuote senza dirlo e il primo promemoria aggiunto riscrive il file, perdendo tutto.
-- **Dove:** `notes/NotesStore.kt` riga ~201 (`init`).
-- **Come riprodurre:** in un test scrivere `{"tasks": [` (troncato) in `files/notes.json`, chiamare `init` (dati vuoti), aggiungere un promemoria: il vecchio contenuto è sparito.
-- **Cosa fare:** se `parse` fallisce su un file che esiste e non è vuoto, copiarlo in `notes.json.bad-<data>` prima di continuare e mostrare una volta "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup".
-- **Test che lo impedisce:** in `NotesStoreTest` un file rovinato: dopo `init` e un'aggiunta esiste il file `.bad` con il contenuto originale.
-### V18. Player di YouTube: "0:00 / 0:00" finché il video non è caricato · YouTube › player · gravità bassa
-- **Versione:** 1.90.0 (foto `main/46/tour/youtube_player.png`)
-- **Cosa non va:** sopra il video si legge "0:00 / 0:00" con la barra vuota, anche se la durata del video è già nota dal feed (3:33 sull'anteprima). Sembra un video rotto o lungo zero secondi.
-- **Dove:** `ui/screens/YouTubeWatchScreen.kt`, barra del minutaggio.
-- **Come riprodurre:** aprire un video con rete lenta: prima che ExoPlayer conosca la durata si vede 0:00 / 0:00.
-- **Cosa fare:** finché la durata del player è sconosciuta usare quella del video già nota (stream/feed), oppure mostrare "--:--".
-- **Test che lo impedisce:** test di una funzione pura `timeLabel(position, playerDuration, knownSeconds)`.
-
-### V19. Note: la fila di pillole lascia un pezzetto tagliato a sinistra · Note · gravità bassa
-- **Versione:** 1.91.0 (foto `main/46/tour/23_abitudini.png`)
-- **Cosa non va:** aprendo Abitudini la fila scorre da sola, ma a sinistra resta una "e" tagliata (la fine di "Da fare"). Nelle altre schede la fila si ferma pulita su una pillola intera.
-- **Dove:** `ui/screens/NotesScreen.kt`, scorrimento automatico della fila di pillole.
-- **Come riprodurre:** Note › Abitudini.
-- **Cosa fare:** scorrere in modo che la pillola aperta stia intera con un margine (`animateScrollToItem(index, -padding)`), oppure scorrere solo se la pillola aperta è fuori dallo schermo.
-- **Test che lo impedisce:** la foto `23_abitudini` nel giro (nessun pezzo di pillola sul bordo).
-
 ---
 
 ## In cima
@@ -164,12 +117,6 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 **Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi è uscito in 1.93 ma compare solo se c'è qualcosa da riprendere: in `main/50/tour/30_media` (primo uso) la pagina ha 4 riquadri e poi due terzi vuoti. Al primo uso mostrare "Per iniziare": 3-4 stazioni radio italiane tappabili (Radio 2, RTL 102.5, Radio Deejay: partono in un tocco) e, se YouTube è collegato, gli ultimi 3 video dalle iscrizioni. Stile `CanvasCard` con `IconTile`, testo breve.
 **Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto (anche `30_media` senza cronologia).
 **Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci); funzione che sceglie le stazioni "Per iniziare" (niente doppioni con le recenti).
-
-### 5. Video: la pagina vuota diventa la libreria · Media › Video · S
-**Perché:** foto 33_video: un riquadro "Scegli cosa guardare" e due pulsanti, poi due terzi di schermo vuoto. I video del telefono (registrazioni, download) sono lì e l'app non li mostra.
-**Cosa fare:** in `VideoPlayerScreen.kt` sotto i pulsanti "Sul telefono": gli ultimi 12 video da `MediaStore.Video` (miniatura, durata, data) con permesso `READ_MEDIA_VIDEO` chiesto al primo tocco su "Mostra i video del telefono"; con i recenti di `VideoLibrary` in cima con la barra di avanzamento. Togliere la voce gemella da "Dopo".
-**Fatto quando:** con il permesso concesso la pagina mostra la griglia dei video del telefono e un tocco li apre nel player.
-**Test:** ordinamento e unione recenti + MediaStore senza doppioni (stesso URI), durata "1:02:03".
 
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
@@ -296,6 +243,7 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.96.0 · Video: libreria "Sul telefono" da MediaStore (ex 5); Date: idee tappabili con poche voci (parte del 3); V14, V15, V16, V17, V18, V19 del verificatore
 - 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
 - 1.91.0 · Nuova icona; vetro liquido da Android 13; titoli grandi con freccia nelle pagine interne; schede delle Note a pillole; spese in card; Personalizza con icone
