@@ -29,6 +29,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.settings.AppSettings
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.Newspaper
+import com.platinum20.dashboard.settings.HomeCard
 
 /** Ordine e visibilità delle card della Dashboard. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,13 +55,9 @@ fun CustomizeScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Personalizza Oggi") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Personalizza Oggi",
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = AppSettings::resetLayout) {
                         Icon(Icons.Outlined.RestartAlt, contentDescription = "Ripristina")
@@ -63,7 +76,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Usa le frecce per spostare le card; tocca una card per mostrarla o nasconderla.",
+                    "Le frecce cambiano l'ordine delle card in Oggi; l'interruttore le mostra o le nasconde.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
@@ -73,32 +86,56 @@ fun CustomizeScreen(onBack: () -> Unit) {
                 val visible = card !in layout.hidden
                 val haptic = rememberHaptic()
                 val toggle = hapticToggle { AppSettings.setCardVisible(card, it) }
-                ListItem(
-                    // Si mostra o nasconde toccando tutta la riga, non solo l'interruttore.
+                // Come le righe delle Impostazioni: icona, testo, frecce per l'ordine e interruttore a destra.
+                Row(
                     modifier = Modifier
                         .animateItem()
-                        .padding(vertical = 2.dp)
+                        .padding(vertical = 4.dp)
+                        .fillMaxWidth()
                         .bouncyPress(0.98f)
                         .clip(MaterialTheme.shapes.large)
-                        .clickable { toggle(!visible) },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.card),
-                    headlineContent = { Text(card.label) },
-                    supportingContent = { Text(card.description) },
-                    leadingContent = {
-                        Switch(checked = visible, onCheckedChange = toggle)
-                    },
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, -1) }, enabled = index > 0) {
-                                Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Sposta su")
-                            }
-                            IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, 1) }, enabled = index < layout.order.lastIndex) {
-                                Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Sposta giù")
-                            }
+                        .background(MaterialTheme.colorScheme.card)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                        .clickable { toggle(!visible) }
+                        .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.alpha(if (visible) 1f else 0.45f)) { IconTile(card.icon(), card.accent()) }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f).alpha(if (visible) 1f else 0.6f)) {
+                        Text(card.label, style = MaterialTheme.typography.titleMedium)
+                        Text(card.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Column {
+                        IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, -1) }, enabled = index > 0, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Sposta su")
                         }
-                    },
-                )
+                        IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, 1) }, enabled = index < layout.order.lastIndex, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Sposta giù")
+                        }
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    Switch(checked = visible, onCheckedChange = toggle)
+                }
             }
         }
     }
+}
+
+private fun HomeCard.icon(): ImageVector = when (this) {
+    HomeCard.WEATHER -> Icons.Outlined.WbSunny
+    HomeCard.MODULES -> Icons.Outlined.Apps
+    HomeCard.CALENDAR -> Icons.Outlined.Event
+    HomeCard.TASKS -> Icons.Outlined.TaskAlt
+    HomeCard.COUNTDOWN -> Icons.Outlined.Celebration
+    HomeCard.RECAP -> Icons.Outlined.Newspaper
+}
+
+private fun HomeCard.accent(): TileAccent = when (this) {
+    HomeCard.WEATHER -> TileAccent.BLUE
+    HomeCard.MODULES -> TileAccent.NEUTRAL
+    HomeCard.CALENDAR -> TileAccent.BLUE
+    HomeCard.TASKS -> TileAccent.ORANGE
+    HomeCard.COUNTDOWN -> TileAccent.PURPLE
+    HomeCard.RECAP -> TileAccent.GREEN
 }

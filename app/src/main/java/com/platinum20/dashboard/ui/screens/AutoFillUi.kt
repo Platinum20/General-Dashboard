@@ -217,13 +217,9 @@ fun AutoFillScreen(onBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Compila da solo") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Compila da solo",
+                onBack = onBack,
                 scrollBehavior = scrollBehavior,
             )
         },

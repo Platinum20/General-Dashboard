@@ -145,6 +145,9 @@ import com.platinum20.dashboard.work.MorningWorker
 import com.platinum20.dashboard.work.RefreshWorker
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import androidx.compose.runtime.setValue
+import com.platinum20.dashboard.ui.screens.Backdrop
+import com.platinum20.dashboard.ui.screens.LocalBackdrop
+import com.platinum20.dashboard.ui.screens.glassSource
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -514,7 +517,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
 
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
     val hazeState = remember { HazeState() }
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val backdrop = remember { Backdrop() }
+    CompositionLocalProvider(LocalHazeState provides hazeState, LocalBackdrop provides backdrop) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -537,7 +541,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
         NavHost(
-            modifier = Modifier.hazeSource(hazeState),
+            modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,
             startDestination = Routes.HOME,
             // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.

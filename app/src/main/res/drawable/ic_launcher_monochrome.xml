@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Versione a un colore per le icone a tema di Android 13+. -->
+<!-- Icona a tema (Android 13+): il launcher la colora con i colori dello sfondo. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:strokeColor="#66FFFFFF" android:strokeWidth="2.5" android:pathData="M38,29h32a9,9 0,0 1,9,9v32a9,9 0,0 1,-9,9h-32a9,9 0,0 1,-9,-9v-32a9,9 0,0 1,9,-9z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M42,37h5a5,5 0,0 1,5,5v24a5,5 0,0 1,-5,5h-5a5,5 0,0 1,-5,-5v-24a5,5 0,0 1,5,-5z" />
-    <path android:fillColor="#99FFFFFF" android:pathData="M61,37h5a5,5 0,0 1,5,5v5a5,5 0,0 1,-5,5h-5a5,5 0,0 1,-5,-5v-5a5,5 0,0 1,5,-5z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M61,56h5a5,5 0,0 1,5,5v5a5,5 0,0 1,-5,5h-5a5,5 0,0 1,-5,-5v-5a5,5 0,0 1,5,-5z" />
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="11" android:strokeLineCap="round" android:pathData="M33,70 C39,48 52,74 60,52 S72,34 76,33" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M74,65a7,7 0,1 1,0,14a7,7 0,1 1,0,-14z" />
 </vector>

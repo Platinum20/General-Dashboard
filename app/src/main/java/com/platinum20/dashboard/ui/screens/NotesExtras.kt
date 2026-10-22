@@ -235,34 +235,35 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                 }
             }
         }
-        var lastDay: LocalDate? = null
-        inMonth.forEach { expense ->
-            if (expense.date != lastDay) {
-                lastDay = expense.date
-                val day = expense.date
-                item(key = "day-$day") {
+        // Un giorno = un'etichetta e una card con le sue spese, come le altre liste dell'app.
+        inMonth.groupBy { it.date }.forEach { (day, spent) ->
+            item(key = "day-$day") {
+                Column {
                     Text(
                         when (day) {
                             LocalDate.now() -> "Oggi"
                             LocalDate.now().minusDays(1) -> "Ieri"
                             else -> day.format(dayHeader).replaceFirstChar { it.uppercase() }
-                        },
+                        }.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 2.dp),
+                        modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 8.dp),
                     )
-                }
-            }
-            item(key = expense.id) {
-                Row(
-                    Modifier.fillMaxWidth().bouncyPress(0.98f).clip(MaterialTheme.shapes.medium).clickable { editing = expense }.padding(horizontal = 8.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(expense.text.ifEmpty { expense.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(expense.category.label + if (expense.fixedId != null) " · fissa" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    CanvasCard(modifier = Modifier.fillMaxWidth()) {
+                        spent.forEachIndexed { i, expense ->
+                            if (i > 0) RowDivider()
+                            Row(
+                                Modifier.fillMaxWidth().clickable { editing = expense }.padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(expense.text.ifEmpty { expense.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(expense.category.label + if (expense.fixedId != null) " · fissa" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(Expenses.format(expense.cents), style = MaterialTheme.typography.titleMedium)
+                            }
+                        }
                     }
-                    Text(Expenses.format(expense.cents), style = MaterialTheme.typography.titleMedium)
                 }
             }
         }

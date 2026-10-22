@@ -76,13 +76,9 @@ fun PlacePickerScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Località del meteo") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Località del meteo",
+                onBack = onBack,
             )
         },
     ) { inner ->

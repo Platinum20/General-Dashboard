@@ -122,6 +122,12 @@ class ScreenshotTour {
                     settle(1_000); shot(p + name)
                 }
             }
+            // L'editor di una nota, dalla scheda Note.
+            compose.onAllNodes(hasText("Note") and hasClickAction()).fetchSemanticsNodes().takeIf { it.isNotEmpty() }?.let {
+                compose.onAllNodes(hasText("Note") and hasClickAction())[0].performClick()
+                settle(1_000)
+                visit("Libri da leggere", p + "26_nota", substring = true)
+            }
         }
         if (tap("Media")) {
             settle(2_000); shot(p + "30_media")
@@ -133,6 +139,8 @@ class ScreenshotTour {
             settle(1_500); shot(p + "40_impostazioni")
             scroll(down = true)
             shot(p + "42_impostazioni_fondo")
+            visit("Compila da solo", p + "43_compila_da_solo")
+            visit("Località", p + "44_localita")
             visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
         }
     }
