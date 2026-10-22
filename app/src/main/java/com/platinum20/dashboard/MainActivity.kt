@@ -142,6 +142,7 @@ import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 import com.platinum20.dashboard.widget.DashboardWidget
 import com.platinum20.dashboard.work.MorningWorker
+import com.platinum20.dashboard.work.RainAlertWorker
 import com.platinum20.dashboard.work.RefreshWorker
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import androidx.compose.runtime.setValue
@@ -205,6 +206,7 @@ class MainActivity : ComponentActivity() {
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
         MorningWorker.schedule(this)
+        RainAlertWorker.schedule(this)
         UpdateCheckWorker.schedule(this)
         enableEdgeToEdge()
         setContent {
@@ -446,6 +448,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             openCalendar = { navController.navigate(Routes.CALENDAR) { launchSingleTop = true } },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
+            openRoute = { navController.navigate(it) },
         )
     }
     CompositionLocalProvider(

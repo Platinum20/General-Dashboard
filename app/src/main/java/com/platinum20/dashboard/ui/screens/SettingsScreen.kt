@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SystemUpdate
+import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -77,6 +78,7 @@ import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.work.MorningWorker
+import com.platinum20.dashboard.work.RainAlertWorker
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -206,6 +208,8 @@ fun SettingsScreen(
                         showChevron = true,
                         onClick = onPickPlace,
                     )
+                    RowDivider()
+                    RainAlertSetting()
                 }
             }
 
@@ -487,6 +491,42 @@ private fun MorningSettings() {
             },
         )
     }
+}
+
+/** Avviso pioggia: una notifica quando sta per piovere dove sei. */
+@Composable
+private fun RainAlertSetting() {
+    val context = LocalContext.current
+    val enabled by AppSettings.rainAlert.collectAsState()
+
+    fun set(on: Boolean) {
+        AppSettings.setRainAlert(on)
+        RainAlertWorker.schedule(context)
+    }
+
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) set(true)
+    }
+    val blocked = enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
+    val toggle = {
+        if (!enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            set(!enabled)
+        }
+    }
+    SettingsItem(
+        icon = Icons.Outlined.Umbrella,
+        accent = TileAccent.BLUE,
+        title = "Avvisami se sta per piovere",
+        subtitle = when {
+            blocked -> "Notifiche bloccate: tocca per consentirle"
+            enabled -> "Una notifica circa mezz'ora prima, dalle 7 alle 23"
+            else -> "Una notifica quando la pioggia è in arrivo"
+        },
+        onClick = toggle,
+        trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
+    )
 }
 
 /** Avviso delle nuove versioni: prima stava solo dentro Aggiornamenti. */

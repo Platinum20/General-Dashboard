@@ -18,7 +18,10 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,7 +91,11 @@ object YtPlayer {
     /** Video da far partire uno dopo l'altro (link), impostati dalla schermata del player. */
     var queue: List<String> = emptyList()
 
-    fun player(context: Context): ExoPlayer = exo ?: ExoPlayer.Builder(context.applicationContext)
+    // Sempre il contesto dell'applicazione: il listener vive quanto il player e non deve tenere
+    // in memoria un'Activity (né usarla dopo che è stata chiusa, a fine video).
+    fun player(context: Context): ExoPlayer = exo ?: newPlayer(context.applicationContext)
+
+    private fun newPlayer(context: Context): ExoPlayer = ExoPlayer.Builder(context)
         .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
         .setHandleAudioBecomingNoisy(true)
         .setWakeMode(C.WAKE_MODE_NETWORK)
@@ -105,6 +112,8 @@ object YtPlayer {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     // Un solo player alla volta: se parte YouTube si fermano Spotify e la radio.
                     if (isPlaying) NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
+                    // In pausa (o finito) si ricorda il punto, per "Riprendi" in Media e in Adesso.
+                    else remember(context)
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
@@ -120,12 +129,12 @@ object YtPlayer {
             })
         }
 
+    /**
+     * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
+     * video messo in pausa resta in pausa (si riprende con il tasto play).
+     */
     fun play(context: Context, link: String) {
-        val id = YtResolver.videoId(link)
-        if (id != null && _now.value?.stream?.id == id && _now.value?.error == null) {
-            player(context).play()
-            return
-        }
+        if (isLoaded(_now.value, link)) return
         NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
         job?.cancel()
         _now.value = YtNow(link = link, stream = null)
@@ -134,7 +143,9 @@ object YtPlayer {
             runCatching { YtResolver.resolve(link, preferredHeight(context)) }
                 .onSuccess {
                     usingMuxed = false
-                    start(context, it, muxed = false)
+                    // Un link con t=... (anche quello di "Riprendi") parte da quel punto.
+                    start(context, it, muxed = false, positionMs = YtResolver.startSeconds(link) * 1000)
+                    remember(context)
                 }
                 .onFailure { _now.value = YtNow(link, null, loading = false, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
@@ -161,6 +172,13 @@ object YtPlayer {
         val current = _now.value?.stream?.id
         val index = queue.indexOfFirst { YtResolver.videoId(it) == current }
         queue.getOrNull(index + 1)?.let { play(context, it) }
+    }
+
+    /** Il video di [link] è già nel player e senza errori (anche se in pausa o ancora in caricamento). */
+    internal fun isLoaded(now: YtNow?, link: String): Boolean {
+        val id = YtResolver.videoId(link) ?: return false
+        if (now == null || now.error != null) return false
+        return now.stream?.id == id || (now.stream == null && YtResolver.videoId(now.link) == id)
     }
 
     /** Video finto per le foto automatiche delle schermate (solo test). */
@@ -198,6 +216,27 @@ object YtPlayer {
             prepare()
             playWhenReady = play
         }
+    }
+
+    private fun remember(context: Context) {
+        val stream = _now.value?.stream ?: return
+        MediaHistory.init(context)
+        val live = stream.hlsUrl != null
+        val duration = exo?.duration?.takeIf { it > 0 } ?: (stream.durationSec * 1000)
+        val position = if (live) 0 else exo?.currentPosition ?: 0
+        MediaHistory.record(
+            ResumeItem(
+                kind = ResumeKind.YOUTUBE,
+                key = stream.id,
+                title = stream.title,
+                subtitle = stream.channel,
+                image = stream.thumbnail,
+                // Arrivato quasi in fondo: la prossima volta riparte dall'inizio.
+                positionMs = if (duration > 0 && duration - position < 5_000) duration else position,
+                durationMs = if (live) 0 else duration,
+                at = System.currentTimeMillis(),
+            ),
+        )
     }
 
     private fun publish() {

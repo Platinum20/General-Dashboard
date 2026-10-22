@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.VideoLibrary
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.Resume
+import com.platinum20.dashboard.media.MediaHistory
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -74,6 +78,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.Tomorrow
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
@@ -163,11 +168,26 @@ fun HomeScreen(
             value = LocalDateTime.now()
         }
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
+    MediaHistory.init(context)
+    VideoLibrary.init(context)
+    val mediaHistory by MediaHistory.items.collectAsStateWithLifecycle()
+    val videos by VideoLibrary.recent.collectAsStateWithLifecycle()
+    val resume = remember(minute, mediaHistory, videos) {
+        Resume.forAdesso(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis())
+    }
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses,
+            fixedExpenses = notes.fixedExpenses, resume = resume,
+        )
+    }
+    // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
+    val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
+        Tomorrow.build(
+            minute, weather.forecast,
+            events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
+            tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -211,6 +231,7 @@ fun HomeScreen(
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
                         BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
+                        BriefKind.MEDIA -> resume?.let { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
                         BriefKind.FREE -> Unit
                     }
                 },
@@ -278,6 +299,16 @@ fun HomeScreen(
         ) {
             // La prima card (di solito Adesso), poi le cose trovate da sole in notifiche e SMS, poi le altre.
             items(cards.take(1), key = { it.name }) { cardContent(it) }
+            tomorrowPlan?.let { plan ->
+                item(key = "tomorrow") {
+                    TomorrowCard(
+                        plan = plan,
+                        onOpenWeather = onOpenWeather,
+                        onOpenCalendar = { inApp?.openCalendar?.invoke() },
+                        onOpenNotes = onOpenNotes,
+                    )
+                }
+            }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
             items(cards.drop(1), key = { it.name }) { cardContent(it) }
             item(key = "invites") {
@@ -367,8 +398,24 @@ private fun WeatherCard(
     }
 }
 
-/** L'arancio di ciò che è urgente in "Adesso" col tema scuro; col chiaro si usa il terziario, più carico. */
-private val UrgentOnDark = Color(0xFFFF9466)
+/**
+ * L'arancio di ciò che è urgente in "Adesso": fisso, non preso dal tema, così resta arancio anche
+ * con Material You (dove il terziario viene dallo sfondo del telefono). Scuro col tema chiaro e
+ * chiaro col tema scuro, sempre con contrasto almeno 4,5:1 sul blocco colorato.
+ */
+internal object Urgent {
+    val onLight = Color(0xFFA63C17)
+    val onDark = Color(0xFFFF9466)
+
+    fun color(darkTheme: Boolean): Color = if (darkTheme) onDark else onLight
+
+    /** Rapporto di contrasto WCAG tra due colori (1..21). */
+    fun contrast(a: Color, b: Color): Float {
+        val la = a.luminance()
+        val lb = b.luminance()
+        return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+    }
+}
 
 /** Una riga di "Adesso": icona, testo, in evidenza se è urgente. */
 @Composable
@@ -382,10 +429,11 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.HABIT -> Icons.Outlined.Autorenew
         BriefKind.PARCEL -> Icons.Outlined.LocalShipping
         BriefKind.MONEY -> Icons.Outlined.Euro
+        BriefKind.MEDIA -> Icons.Outlined.PlayCircle
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val content = LocalContentColor.current
-    val urgent = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) UrgentOnDark else MaterialTheme.colorScheme.tertiary
+    val urgent = Urgent.color(darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f)
     val color = if (line.urgent) urgent else content.copy(alpha = 0.7f)
     Row(
         modifier = Modifier
