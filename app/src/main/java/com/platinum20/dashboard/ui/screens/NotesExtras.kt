@@ -246,8 +246,12 @@ private fun dailyLeft(cents: Long): String {
     return Expenses.format((cents / days).coerceAtLeast(0))
 }
 
-private fun centsOf(text: String): Long? =
-    text.replace("€", "").trim().replace(',', '.').toBigDecimalOrNull()?.movePointRight(2)?.toLong()
+private fun centsOf(text: String): Long? {
+    val clean = text.replace("€", "").filterNot { it.isWhitespace() }
+    // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
+    val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean
+    return number.toBigDecimalOrNull()?.movePointRight(2)?.toLong()
+}
 
 @Composable
 private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
