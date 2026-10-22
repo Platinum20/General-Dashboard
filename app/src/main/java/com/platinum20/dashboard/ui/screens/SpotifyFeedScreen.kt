@@ -1,5 +1,16 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.browserUserAgent
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.viewinterop.AndroidView
+import android.webkit.WebViewClient
+import android.webkit.WebView
+import android.webkit.WebResourceRequest
+import android.webkit.CookieManager
+import android.annotation.SuppressLint
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.OutlinedButton
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.MediaService
@@ -95,6 +106,7 @@ fun SpotifyFeedScreen(
     onBack: () -> Unit,
     onOpenWeb: () -> Unit,
     onLogin: () -> Unit,
+    onPlayWeb: (String) -> Unit,
 ) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
@@ -103,6 +115,9 @@ fun SpotifyFeedScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     // Basta l'accesso fatto nell'app; il collegamento con un'app per sviluppatori resta un'alternativa.
     val connected = official || MediaService.SPOTIFY in loggedIn
+    // Collegamento ufficiale raggiungibile anche quando l'accesso nell'app c'è già ma il feed non si carica.
+    var setup by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = setup && !official) { setup = false }
     val message by SpotifyStore.message.collectAsState()
     val playback by SpotifyStore.playback.collectAsState()
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -139,6 +154,11 @@ fun SpotifyFeedScreen(
                     }
                 },
                 actions = {
+                    if (!official) {
+                        IconButton(onClick = { setup = !setup }) {
+                            Icon(Icons.Outlined.Key, contentDescription = "Collegamento ufficiale")
+                        }
+                    }
                     if (connected) {
                         IconButton(onClick = {
                             val item = opened
@@ -168,13 +188,13 @@ fun SpotifyFeedScreen(
                 .fillMaxSize()
                 .padding(inner)
         ) {
-            if (!connected) {
+            if (!connected || (setup && !official)) {
                 ConnectSpotify(onOpenWeb, onLogin)
                 return@Column
             }
             val parent = opened
             if (parent != null) {
-                ChildrenList(parent, onOpen = { opened = it })
+                ChildrenList(parent, onOpen = { opened = it }, onPlay = { onPlayWeb(it.webUrl) })
                 return@Column
             }
             TabRow(selectedTabIndex = tab) {
@@ -183,7 +203,7 @@ fun SpotifyFeedScreen(
                 }
             }
             val onItem: (SpItem) -> Unit = { item ->
-                if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) SpotifyStore.play(context, item) else opened = item
+                if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) onPlayWeb(item.webUrl) else opened = item
             }
             when (tab) {
                 0 -> HomeTab(onItem)
@@ -238,17 +258,16 @@ private fun ConnectSpotify(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextButton(onClick = {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://claude.ai/artifact/MGivavbbvKjLz3kkKAMyHE")))
-        }) { Text("Dove lo trovo?") }
         Spacer(Modifier.height(8.dp))
+        var authUrl by remember { mutableStateOf<String?>(null) }
         OutlinedButton(
             enabled = draft.length >= 20,
             onClick = {
                 SpotifyAuth.setClientId(draft)
-                SpotifyAuth.startLogin(context)
+                authUrl = SpotifyAuth.loginUrl().toString()
             },
         ) { Text("Collega con il Client ID") }
+        authUrl?.let { url -> SpotifyAuthDialog(url, onDone = { authUrl = null }) }
         error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
@@ -324,7 +343,7 @@ private fun SearchTab(onItem: (SpItem) -> Unit) {
 }
 
 @Composable
-private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit) {
+private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit) {
     val context = LocalContext.current
     val all by SpotifyStore.children.collectAsState()
     val state = all[parent.id] ?: Loadable(loading = true)
@@ -340,10 +359,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit) {
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (parent.kind != SpKind.ARTIST) {
-                            FilledTonalButton(onClick = { SpotifyStore.play(context, parent) }) { Text("Riproduci") }
-                        }
-                        IconButton(onClick = { SpotifyStore.openInSpotify(context, parent) }) {
-                            Icon(Icons.AutoMirrored.Outlined.OpenInNew, contentDescription = "Apri in Spotify")
+                            FilledTonalButton(onClick = { onPlay(parent) }) { Text("Riproduci") }
                         }
                     }
                 }
@@ -352,7 +368,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit) {
         items(state.data.orEmpty(), key = { it.uri + it.id }) { child ->
             ItemRow(child, onClick = {
                 if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
-                    SpotifyStore.play(context, child, parent)
+                    onPlay(child)
                 } else {
                     onOpen(child)
                 }
@@ -447,6 +463,46 @@ private fun NowPlayingBar(state: SpPlayback) {
             }
             IconButton(onClick = { SpotifyStore.control(SpotifyApi::next) }) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
+            }
+        }
+    }
+}
+
+/** Login di Spotify dentro l'app: la pagina di autorizzazione in una finestra, il ritorno lo intercettiamo noi. */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun SpotifyAuthDialog(url: String, onDone: () -> Unit) {
+    Dialog(onDismissRequest = onDone, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize()) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onDone) { Icon(Icons.Filled.Close, contentDescription = "Chiudi") }
+                    Text("Collega Spotify", style = MaterialTheme.typography.titleMedium)
+                }
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.userAgentString = browserUserAgent(settings.userAgentString)
+                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                                    val target = request.url
+                                    if (SpotifyAuth.isRedirect(target)) {
+                                        SpotifyAuth.handleRedirect(target)
+                                        onDone()
+                                        return true
+                                    }
+                                    return target.scheme != "http" && target.scheme != "https"
+                                }
+                            }
+                            loadUrl(url)
+                        }
+                    },
+                    onRelease = { it.destroy() },
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }

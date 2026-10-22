@@ -96,38 +96,12 @@ object SpotifyStore {
         }
     }
 
-    /**
-     * Fa partire un elemento: con Premium sul dispositivo Spotify attivo; se non ce n'è uno
-     * (o senza Premium) lo apre nell'app Spotify, che diventa il dispositivo.
-     */
-    fun play(context: Context, item: SpItem, parent: SpItem? = null) {
-        scope.launch {
-            val token = SpotifyAuth.token() ?: return@launch
-            val premium = _home.value.data?.profile?.premium ?: runCatching { SpotifyApi.profile(token).premium }.getOrDefault(false)
-            val started = premium && runCatching { SpotifyApi.play(token, item, parent) }
-                .onFailure { _message.value = it.message }
-                .isSuccess
-            if (!started) openInSpotify(context, item)
-            delay(800)
-            refreshPlayback()
-        }
-    }
-
     fun control(action: suspend (String) -> Unit) {
         scope.launch {
             val token = SpotifyAuth.token() ?: return@launch
             runCatching { action(token) }.onFailure { _message.value = it.message }
             delay(500)
             refreshPlayback()
-        }
-    }
-
-    fun openInSpotify(context: Context, item: SpItem) {
-        val app = Intent(Intent.ACTION_VIEW, Uri.parse(item.uri)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val opened = runCatching { context.startActivity(app) }.isSuccess
-        if (!opened) {
-            _message.value = "App Spotify non installata"
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.webUrl)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 

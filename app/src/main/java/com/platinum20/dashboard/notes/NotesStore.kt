@@ -270,6 +270,35 @@ object NotesStore {
         }
     }
 
+    /** Un pacco trovato da solo (notifiche, SMS): restituisce l'id per poterlo annullare. */
+    fun addParcel(title: String, code: String, expected: LocalDate?): Long {
+        val item = Parcel(newId(), title.trim().ifEmpty { code }, code.trim().uppercase(), expected)
+        update { d -> d.copy(parcels = d.parcels + item) }
+        return item.id
+    }
+
+    /** Segna consegnato il pacco con questo codice; true se ce n'era uno in viaggio. */
+    fun markDelivered(code: String): Boolean {
+        val target = _data.value.parcels.firstOrNull { !it.delivered && it.code.equals(code, ignoreCase = true) } ?: return false
+        update { d -> d.copy(parcels = d.parcels.map { if (it.id == target.id) it.copy(deliveredOn = LocalDate.now()) else it }) }
+        return true
+    }
+
+    /** Una spesa già pronta (es. letta da una notifica della banca): restituisce quella salvata. */
+    fun addExpense(item: Expense): Expense {
+        val saved = item.copy(id = newId())
+        update { d -> d.copy(expenses = listOf(saved) + d.expenses) }
+        return saved
+    }
+
+    /** Un promemoria con scadenza già nota, senza interpretare il testo. */
+    fun addTaskAt(text: String, dueAt: Long): TaskItem {
+        val task = TaskItem(newId(), text.trim(), dueAt = dueAt)
+        update { it.copy(tasks = listOf(task) + it.tasks) }
+        syncReminder(task.id)
+        return task
+    }
+
     fun toggleDelivered(id: Long) = update { d ->
         d.copy(parcels = d.parcels.map { if (it.id == id) it.copy(deliveredOn = if (it.delivered) null else LocalDate.now()) else it })
     }

@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Compila da solo: solo per rileggere gli SMS degli ultimi giorni, quando lo chiedi tu. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -86,6 +88,21 @@
 
         <receiver
             android:name=".notes.TaskSnoozeReceiver"
+            android:exported="false" />
+
+        <!-- Compila da solo: legge le notifiche di banche, corrieri e mail, solo con il permesso dato da Android. -->
+        <service
+            android:name=".autofill.AutoFillListener"
+            android:exported="true"
+            android:label="Canvas · Compila da solo"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".autofill.AutoFillReceiver"
             android:exported="false" />
 
         <activity

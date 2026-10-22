@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Key
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import com.platinum20.dashboard.media.MediaService
@@ -97,6 +98,9 @@ fun YouTubeFeedScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     // Basta l'accesso a YouTube fatto nell'app; l'API ufficiale di Google resta un'alternativa.
     val connected = official || MediaService.YOUTUBE in loggedIn
+    // Collegamento ufficiale raggiungibile anche quando l'accesso nell'app c'è già ma il feed non si carica.
+    var setup by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = setup && !official) { setup = false }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
 
@@ -112,6 +116,11 @@ fun YouTubeFeedScreen(
                     }
                 },
                 actions = {
+                    if (!official) {
+                        IconButton(onClick = { setup = !setup }) {
+                            Icon(Icons.Outlined.Key, contentDescription = "Collegamento ufficiale")
+                        }
+                    }
                     if (connected) {
                         IconButton(onClick = {
                             val playlist = openPlaylist
@@ -138,7 +147,7 @@ fun YouTubeFeedScreen(
                 .fillMaxSize()
                 .padding(inner)
         ) {
-            if (!connected) {
+            if (!connected || (setup && !official)) {
                 ConnectYouTube(onOpenWeb = onOpenWeb, onLogin = onLogin)
                 return@Column
             }
@@ -233,11 +242,6 @@ private fun ConnectYouTube(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
         problem?.let {
             Spacer(Modifier.height(16.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-            if (notConfigured) {
-                TextButton(onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(YouTubeAuth.GUIDE_URL)))
-                }) { Text("Apri la guida") }
-            }
         }
         Spacer(Modifier.height(8.dp))
         OutlinedButton(onClick = onOpenWeb) { Text("Apri YouTube completo") }
