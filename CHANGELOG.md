@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.30.0
+- Blocco pubblicità rifatto come uBlock Origin: usa le stesse liste di filtri (EasyList, EasyPrivacy e le liste di uBlock Origin), aggiornate da sole ogni 4 giorni o con "Aggiorna" in Media
+- Funziona in tutte le pagine web dell'app, non solo nel player: articoli delle news, lettore, video negli articoli e il browser invisibile che scarica feed e pagine
+- Oltre a bloccare le richieste nasconde i riquadri pubblicitari vuoti e ferma gli script che li rimettono; su YouTube toglie gli annunci dal video e salta quelli che passano
+- Agenda: non mostra più i calendari nascosti e gli inviti che hai rifiutato
+- Meteo: "oggi" è giusto anche quando la previsione salvata è di ieri
+- Notifica del mattino: "Invia una prova" parte subito dopo aver concesso il permesso
+
 ## 1.28.0
 - Feedback aptico leggero dove aiuta: spunta di un promemoria, bolla del player presa e agganciata al bordo, soglia del "trascina per aggiornare", interruttori, ordine delle card, scelta del tema e pressione lunga su una nota per fissarla
 - Usa le vibrazioni di sistema: se nel telefono sono spente, l'app non vibra
