@@ -69,6 +69,31 @@ object AppSettings {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        load()
+    }
+
+    /** Le impostazioni come stanno nel file, per il backup. */
+    fun snapshot(): Map<String, Any?> = if (::prefs.isInitialized) prefs.all else emptyMap()
+
+    /** Sostituisce le impostazioni con quelle di un backup e le rilegge subito. */
+    fun restore(values: Map<String, Any?>) {
+        if (!::prefs.isInitialized) return
+        prefs.edit().clear().apply {
+            values.forEach { (key, value) ->
+                when (value) {
+                    is String -> putString(key, value)
+                    is Int -> putInt(key, value)
+                    is Long -> putLong(key, value)
+                    is Float -> putFloat(key, value)
+                    is Boolean -> putBoolean(key, value)
+                    is Set<*> -> putStringSet(key, value.filterIsInstance<String>().toSet())
+                }
+            }
+        }.commit()
+        load()
+    }
+
+    private fun load() {
         val savedTheme = prefs.getString(KEY_THEME, null)
             ?.let { name -> AppTheme.entries.firstOrNull { it.name == name } }
         // Il nuovo design si vede una volta per tutti; chi vuole torna a Material You dalle Impostazioni.

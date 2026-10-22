@@ -344,6 +344,17 @@ object NotesStore {
 
     fun note(id: Long): Note? = _data.value.notes.firstOrNull { it.id == id }
 
+    /** Tutti i dati in JSON, per il backup. */
+    fun exportJson(): String = serialize(_data.value)
+
+    /** Ripristino da backup: sostituisce tutto e rimette i promemoria con la loro notifica. */
+    fun replaceAll(next: NotesData) {
+        val before = _data.value.tasks.map { it.id }
+        update { next }
+        before.forEach(::syncReminder)
+        next.tasks.forEach { syncReminder(it.id) }
+    }
+
     private fun update(change: (NotesData) -> NotesData) {
         val next = change(_data.value)
         if (next == _data.value) return
@@ -359,7 +370,7 @@ object NotesStore {
         if (::appContext.isInitialized) runCatching { DashboardWidget.updateAll(appContext) }
     }
 
-    private fun serialize(d: NotesData): String = JSONObject()
+    internal fun serialize(d: NotesData): String = JSONObject()
         .put("tasks", JSONArray().apply {
             d.tasks.forEach {
                 put(
@@ -412,7 +423,7 @@ object NotesStore {
         })
         .toString()
 
-    private fun parse(raw: String): NotesData {
+    internal fun parse(raw: String): NotesData {
         val json = JSONObject(raw)
         val tasks = json.optJSONArray("tasks") ?: JSONArray()
         val notes = json.optJSONArray("notes") ?: JSONArray()
