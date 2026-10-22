@@ -19,6 +19,7 @@ import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.work.MorningWorker
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
@@ -60,14 +61,17 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
                 PendingIntent.getBroadcast(context, notificationId(id), done, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
             )
             .apply {
+                // Etichetta e orario dallo stesso istante: quello in cui la notifica appare.
+                val shownAt = System.currentTimeMillis()
                 Snooze.entries.forEach { option ->
                     val snooze = Intent(context, TaskSnoozeReceiver::class.java)
                         .setAction("snooze_${option.name}")
                         .putExtra(KEY_ID, id)
                         .putExtra(KEY_SNOOZE, option.name)
+                        .putExtra(KEY_SHOWN_AT, shownAt)
                     addAction(
                         0,
-                        option.label(LocalDateTime.now()),
+                        option.label(LocalDateTime.ofInstant(Instant.ofEpochMilli(shownAt), ZoneId.systemDefault())),
                         PendingIntent.getBroadcast(context, notificationId(id), snooze, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
                     )
                 }
@@ -82,6 +86,7 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
     companion object {
         const val KEY_ID = "task_id"
         const val KEY_SNOOZE = "snooze"
+        const val KEY_SHOWN_AT = "shown_at"
         private const val CHANNEL = "tasks"
 
         fun notificationId(id: Long): Int = 1000 + (id and 0x3FFFFFFF).toInt()
@@ -128,7 +133,10 @@ class TaskSnoozeReceiver : BroadcastReceiver() {
         val option = runCatching { Snooze.valueOf(intent.getStringExtra(TaskReminderWorker.KEY_SNOOZE).orEmpty()) }.getOrNull()
         if (id < 0 || option == null) return
         NotesStore.init(context)
-        val until = option.until(LocalDateTime.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val now = LocalDateTime.now()
+        val shown = intent.getLongExtra(TaskReminderWorker.KEY_SHOWN_AT, 0L).takeIf { it > 0 }
+            ?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()) } ?: now
+        val until = option.until(shown, now).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         NotesStore.snoozeTask(id, until)
         NotificationManagerCompat.from(context).cancel(TaskReminderWorker.notificationId(id))
     }

@@ -22,6 +22,17 @@ enum class Snooze(private val baseLabel: String) {
         }
     }
 
+    /**
+     * L'orario per il tocco a [tapped] su una notifica mostrata a [shown]: "Domani" vale come
+     * diceva il pulsante quando è apparso (mostrata alle 4:50 con "Stamattina 9:00", toccata
+     * alle 5:10: stamattina). Se quell'orario è già passato, si conta dal tocco.
+     */
+    fun until(shown: LocalDateTime, tapped: LocalDateTime): LocalDateTime {
+        if (this == HOUR) return until(tapped)
+        val promised = until(shown)
+        return if (promised.isAfter(tapped)) promised else until(tapped)
+    }
+
     private companion object {
         val MORNING: LocalTime = LocalTime.of(9, 0)
         /** Prima di questa ora la notte appartiene ancora al giorno prima. */

@@ -60,4 +60,22 @@ class SnoozeTest {
         val task = TaskItem(1, "Affitto", dueAt = 1_000L, repeat = Repeat.MONTHLY)
         assertEquals(1_000L, task.snoozed(5_000L).snoozed(9_000L).snoozedFrom)
     }
+
+    @Test fun mostrataAlle450ToccataAlle510ResaStamattina() {
+        val shown = LocalDateTime.of(2026, 10, 23, 4, 50)
+        val tapped = LocalDateTime.of(2026, 10, 23, 5, 10)
+        assertEquals("Stamattina 9:00", Snooze.TOMORROW.label(shown))
+        assertEquals(LocalDateTime.of(2026, 10, 23, 9, 0), Snooze.TOMORROW.until(shown, tapped))
+    }
+
+    @Test fun stamattinaGiaPassataContaDalTocco() {
+        val shown = LocalDateTime.of(2026, 10, 23, 4, 50)
+        val tapped = LocalDateTime.of(2026, 10, 23, 10, 0)
+        assertEquals(LocalDateTime.of(2026, 10, 24, 9, 0), Snooze.TOMORROW.until(shown, tapped))
+    }
+
+    @Test fun traUnOraSempreDalTocco() {
+        val shown = LocalDateTime.of(2026, 10, 22, 18, 0)
+        assertEquals(LocalDateTime.of(2026, 10, 22, 19, 30), Snooze.HOUR.until(shown, now))
+    }
 }
