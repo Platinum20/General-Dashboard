@@ -29,7 +29,44 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Cattura al volo: finestrella sopra le altre app per promemoria e note. -->
+        <activity
+            android:name=".capture.QuickCaptureActivity"
+            android:exported="true"
+            android:label="@string/capture_share_label"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.GeneralDashboard.Capture"
+            android:windowSoftInputMode="stateVisible|adjustResize">
+            <intent-filter>
+                <action android:name="com.platinum20.dashboard.NEW_TASK" />
+                <action android:name="com.platinum20.dashboard.NEW_NOTE" />
+                <action android:name="com.platinum20.dashboard.NEW_EXPENSE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".capture.QuickCaptureTile"
+            android:exported="true"
+            android:icon="@drawable/ic_quick_add"
+            android:label="@string/capture_tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <receiver
             android:name=".widget.DashboardWidget"

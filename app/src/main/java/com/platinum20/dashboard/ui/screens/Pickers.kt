@@ -17,6 +17,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Alarm
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -42,6 +47,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.QuickParse
+import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.work.MorningWorker
@@ -130,6 +138,8 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
     val context = LocalContext.current
     var text by remember { mutableStateOf(task.text) }
     var due by remember { mutableStateOf(task.dueAt) }
+    var repeat by remember { mutableStateOf(task.repeat) }
+    var repeatMenu by remember { mutableStateOf(false) }
     var picking by remember { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
@@ -160,8 +170,36 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
                         modifier = Modifier.weight(1f),
                     )
                     if (due != null) {
-                        IconButton(onClick = { due = null }) {
+                        IconButton(onClick = { due = null; repeat = null }) {
                             Icon(Icons.Outlined.Close, contentDescription = "Togli scadenza")
+                        }
+                    }
+                }
+                // Ripetere ha senso solo con una scadenza da spostare.
+                if (due != null) {
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { repeatMenu = true }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.size(12.dp))
+                            Text(
+                                repeat?.let { "Si ripete " + it.label } ?: "Non si ripete",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                        }
+                        DropdownMenu(expanded = repeatMenu, onDismissRequest = { repeatMenu = false }) {
+                            DropdownMenuItem(text = { Text("Non si ripete") }, onClick = { repeat = null; repeatMenu = false })
+                            Repeat.entries.forEach { r ->
+                                DropdownMenuItem(
+                                    text = { Text(r.label.replaceFirstChar { it.uppercase() }) },
+                                    onClick = { repeat = r; repeatMenu = false },
+                                )
+                            }
                         }
                     }
                 }
@@ -171,6 +209,7 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
             TextButton(onClick = {
                 if (text.isBlank()) NotesStore.deleteTask(task.id) else {
                     NotesStore.editTask(task.id, text)
+                    NotesStore.setTaskRepeat(task.id, repeat.takeIf { due != null })
                     NotesStore.setTaskDue(task.id, due)
                 }
                 onDismiss()
@@ -197,6 +236,74 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
             },
         )
     }
+}
+
+/**
+ * Sotto il campo di un nuovo promemoria: mostra quando suonerà l'avviso
+ * mentre si scrive "domani alle 9…", così si vede subito se è stato capito.
+ */
+@Composable
+fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
+    val entry = remember(draft) { if (draft.isBlank()) null else QuickParse.parse(draft) }
+    val due = entry?.due ?: return
+    val ms = due.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.size(6.dp))
+        Text(
+            dueLabel(ms) + (entry.repeat?.let { " · ${it.label}" } ?: "") + " · \"${entry.text}\"",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Nuova abitudine o modifica (nome, eliminazione) di una esistente. */
+@Composable
+fun HabitDialog(habit: Habit?, onDismiss: () -> Unit) {
+    var title by remember { mutableStateOf(habit?.title.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (habit == null) "Nuova abitudine" else "Abitudine") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    placeholder = { Text("Es. Bere 2 litri d'acqua") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (habit != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Serie attuale: ${habit.streak()} giorni · in tutto ${habit.done.size} giorni",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                NotesStore.saveHabit(habit?.id, title)
+                onDismiss()
+            }, enabled = title.isNotBlank()) { Text("Salva") }
+        },
+        dismissButton = {
+            if (habit != null) {
+                TextButton(onClick = {
+                    NotesStore.deleteHabit(habit.id)
+                    onDismiss()
+                }) { Text("Elimina") }
+            } else {
+                TextButton(onClick = onDismiss) { Text("Annulla") }
+            }
+        },
+    )
 }
 
 /** Nuovo conto alla rovescia o modifica di uno esistente. */

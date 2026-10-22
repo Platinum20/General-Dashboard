@@ -60,6 +60,18 @@ class ScreenshotTour {
             NotesStore.saveNote(null, "Idee per le vacanze\nLisbona, Porto, oppure Sicilia in macchina.")
             NotesStore.saveNote(null, "Libri da leggere\nIl nome della rosa, Le città invisibili")
             NotesStore.saveCountdown(null, "Compleanno di Marco", LocalDate.now().plusDays(12), yearly = true)
+            NotesStore.addTask("ogni mese il 5 pagare l'affitto")
+            NotesStore.addTask("domani alle 9 chiamare il commercialista")
+            NotesStore.saveHabit(null, "Bere 2 litri d'acqua")
+            NotesStore.saveHabit(null, "Camminare 30 minuti")
+            NotesStore.data.value.habits.firstOrNull()?.let { h ->
+                (1L..5L).forEach { NotesStore.toggleHabit(h.id, LocalDate.now().minusDays(it)) }
+            }
+            NotesStore.addExpense("spesa conad 63,40")
+            NotesStore.addExpense("benzina 40€")
+            NotesStore.addExpense("12,50 pizza")
+            NotesStore.setBudget(60_000)
+            NotesStore.saveParcel(null, "Cuffie", "TBA123456789012", LocalDate.now())
         }
     }
 
@@ -91,7 +103,10 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") }
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            for ((tab, name) in listOf("Note" to "21_note_libere", "Date" to "22_date")) {
+            for ((tab, name) in listOf(
+                "Abitudini" to "23_abitudini", "Spese" to "24_spese", "Note" to "21_note_libere",
+                "Pacchi" to "25_pacchi", "Date" to "22_date",
+            )) {
                 // Il primo nodo è la scheda in alto; "Note" compare anche nella barra in basso.
                 val nodes = compose.onAllNodes(hasText(tab) and hasClickAction())
                 val count = nodes.fetchSemanticsNodes().size

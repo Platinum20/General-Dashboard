@@ -6,6 +6,11 @@ import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.Expense
+import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.Parcel
+import java.time.YearMonth
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.Forecast
 import com.platinum20.dashboard.weather.asTemp
@@ -17,7 +22,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /** Di che cosa parla una riga di "Adesso": decide l'icona. */
-enum class BriefKind { EVENT, RAIN, TASK, DATE, WEATHER, FREE }
+enum class BriefKind { EVENT, RAIN, TASK, DATE, WEATHER, HABIT, PARCEL, MONEY, FREE }
 
 data class BriefLine(val kind: BriefKind, val text: String, val urgent: Boolean = false)
 
@@ -32,6 +37,9 @@ object Briefing {
     /** Da quest'ora in poi "Adesso" guarda anche a domani. */
     const val EVENING_HOUR = 18
 
+    /** Da quest'ora "Adesso" ricorda le abitudini non ancora spuntate. */
+    const val HABIT_HOUR = 17
+
     fun build(
         now: LocalDateTime,
         forecast: Forecast?,
@@ -39,6 +47,10 @@ object Briefing {
         tomorrow: List<CalendarEvent>?,
         tasks: List<TaskItem>,
         countdowns: List<Countdown>,
+        habits: List<Habit> = emptyList(),
+        parcels: List<Parcel> = emptyList(),
+        expenses: List<Expense> = emptyList(),
+        budgetCents: Long? = null,
         zone: ZoneId = ZoneId.systemDefault(),
         max: Int = 4,
         /** false per il widget, che si aggiorna ogni ora: "alle 15:00" invece di "tra 25 min". */
@@ -84,6 +96,38 @@ object Briefing {
         countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.title}") }
         if (evening) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.title}") }
 
+        // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
+        val waiting = parcels.filter { !it.delivered && it.expected != null }
+        waiting.filter { !it.expected!!.isAfter(date) }.takeIf { it.isNotEmpty() }?.let { list ->
+            lines += BriefLine(BriefKind.PARCEL, "Pacco in arrivo: " + list.joinToString(", ") { it.title })
+        }
+        if (evening) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+            lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
+        }
+
+        // Spese: se ne parla solo quando il tetto del mese è vicino.
+        if (budgetCents != null && budgetCents > 0) {
+            val spent = Expenses.total(expenses, YearMonth.from(date))
+            if (spent >= budgetCents * 8 / 10) {
+                lines += BriefLine(
+                    BriefKind.MONEY,
+                    if (spent > budgetCents) "Budget del mese superato: ${Expenses.format(spent)} su ${Expenses.format(budgetCents)}"
+                    else "Spese del mese: ${Expenses.format(spent)} su ${Expenses.format(budgetCents)}",
+                    urgent = spent > budgetCents,
+                )
+            }
+        }
+
+        // Abitudini: dal tardo pomeriggio, quelle non ancora fatte oggi (prima c'è tempo).
+        if (now.hour >= HABIT_HOUR) {
+            val missing = habits.filter { !it.isDone(date) }
+            when {
+                missing.isEmpty() -> Unit
+                missing.size <= 2 -> lines += BriefLine(BriefKind.HABIT, "Ancora da fare oggi: " + missing.joinToString(", ") { it.title })
+                else -> lines += BriefLine(BriefKind.HABIT, "${missing.size} abitudini ancora da fare oggi")
+            }
+        }
+
         if (evening) {
             // La sera interessa com'è domani e a che ora si comincia.
             forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.let { d ->
@@ -127,6 +171,10 @@ object Briefing {
             tomorrow = if (calendar) CalendarRepository.eventsOn(context, day.plusDays(1)) else null,
             tasks = notes.openTasks,
             countdowns = notes.countdowns,
+            habits = notes.habits,
+            parcels = notes.parcels,
+            expenses = notes.expenses,
+            budgetCents = notes.budgetCents,
             max = max,
             relative = relative,
         )

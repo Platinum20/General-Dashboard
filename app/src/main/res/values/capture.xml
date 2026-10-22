@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="capture_share_label">Salva in Canvas</string>
+    <string name="capture_tile_label">Promemoria al volo</string>
+    <string name="shortcut_task_short">Promemoria</string>
+    <string name="shortcut_task_long">Nuovo promemoria</string>
+    <string name="shortcut_note_short">Nota</string>
+    <string name="shortcut_note_long">Nuova nota</string>
+    <string name="shortcut_expense_short">Spesa</string>
+    <string name="shortcut_expense_long">Nuova spesa</string>
+</resources>

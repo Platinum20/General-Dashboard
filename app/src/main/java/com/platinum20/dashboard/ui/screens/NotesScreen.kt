@@ -1,6 +1,12 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material3.FilledIconToggleButton
+import java.util.Locale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -63,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
@@ -70,7 +77,17 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** Sezione "Note": promemoria da spuntare e note libere. */
+/** Le schede della sezione Note, nell'ordine in cui si usano di più. */
+enum class NotesTabs(val label: String, val addLabel: String?) {
+    TASKS("Da fare", null),
+    HABITS("Abitudini", "Nuova abitudine"),
+    MONEY("Spese", null),
+    NOTES("Note", "Nuova nota"),
+    PARCELS("Pacchi", "Nuovo pacco"),
+    DATES("Date", "Nuova data"),
+}
+
+/** Sezione "Note": promemoria, abitudini, spese, note libere, pacchi e date. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
@@ -80,8 +97,8 @@ fun NotesScreen(
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableStateOf(0) }
-    var addingDate by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableStateOf(NotesTabs.TASKS) }
+    var adding by remember { mutableStateOf(false) }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
@@ -90,26 +107,28 @@ fun NotesScreen(
                 TopLevelBar(
                     title = "Note",
                     actions = {
-                        if (tab == 0 && data.tasks.any { it.done }) {
+                        if (tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
                             IconButton(onClick = NotesStore::clearDone) {
                                 Icon(Icons.Outlined.DeleteSweep, contentDescription = "Elimina completati")
                             }
                         }
                     },
                 )
-                PrimaryTabRow(selectedTabIndex = tab) {
-                    Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Da fare") })
-                    Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Note") })
-                    Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Date") })
+                PrimaryScrollableTabRow(selectedTabIndex = tab.ordinal, edgePadding = 8.dp) {
+                    NotesTabs.entries.forEach { t ->
+                        Tab(selected = tab == t, onClick = { tab = t }, text = { Text(t.label) })
+                    }
                 }
             }
         },
         floatingActionButton = {
-            if (tab != 0) {
+            // Promemoria e spese si scrivono nel campo in alto: il + serve alle altre schede.
+            val label = tab.addLabel
+            if (label != null) {
                 FloatingActionButton(
-                    onClick = { if (tab == 1) onOpenNote(null) else addingDate = true },
+                    onClick = { if (tab == NotesTabs.NOTES) onOpenNote(null) else adding = true },
                     modifier = Modifier.padding(bottom = bottomPadding.calculateBottomPadding()).bouncyPress(0.9f),
-                ) { Icon(Icons.Outlined.Add, contentDescription = if (tab == 1) "Nuova nota" else "Nuova data") }
+                ) { Icon(Icons.Outlined.Add, contentDescription = label) }
             }
         },
     ) { inner ->
@@ -120,12 +139,23 @@ fun NotesScreen(
             bottom = bottomPadding.calculateBottomPadding() + 88.dp,
         )
         when (tab) {
-            0 -> TasksTab(data.tasks, padding)
-            1 -> NotesTab(data.notes, padding, onOpenNote)
-            else -> DatesTab(data.upcoming, padding)
+            NotesTabs.TASKS -> TasksTab(data.tasks, padding)
+            NotesTabs.HABITS -> HabitsTab(data.habits, padding)
+            NotesTabs.MONEY -> ExpensesTab(data, padding)
+            NotesTabs.NOTES -> NotesTab(data.notes, padding, onOpenNote)
+            NotesTabs.PARCELS -> ParcelsTab(data.parcels, padding)
+            NotesTabs.DATES -> DatesTab(data.upcoming, padding)
         }
     }
-    if (addingDate) CountdownDialog(countdown = null, onDismiss = { addingDate = false })
+    if (adding) {
+        val close = { adding = false }
+        when (tab) {
+            NotesTabs.HABITS -> HabitDialog(habit = null, onDismiss = close)
+            NotesTabs.PARCELS -> ParcelDialog(parcel = null, onDismiss = close)
+            NotesTabs.DATES -> CountdownDialog(countdown = null, onDismiss = close)
+            else -> adding = false
+        }
+    }
 }
 
 /** Conti alla rovescia: compleanni, viaggi e scadenze, dal più vicino. */
@@ -185,7 +215,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
-                placeholder = { Text("Nuovo promemoria") },
+                placeholder = { Text("Es. domani alle 9 chiamare il dentista") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { add() }),
@@ -197,6 +227,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             )
+            QuickPreview(draft, Modifier.padding(start = 12.dp, bottom = 8.dp))
         }
         // Raggruppati per quando vanno fatti: prima ciò che è scaduto o in scadenza oggi.
         val now = System.currentTimeMillis()
@@ -219,9 +250,92 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
             items(done, key = { it.id }) { TaskRow(it) }
         }
         if (tasks.isEmpty()) {
-            item { EmptyHint("Nessun promemoria. Scrivi qui sopra e premi invio; toccane uno per aggiungere un avviso.") }
+            item { EmptyHint("Nessun promemoria. Scrivi come parli: \"venerdì alle 18 palestra\", \"ogni mese il 5 affitto\", \"tra 20 minuti forno\". Giorno, ora e ripetizione si impostano da soli.") }
         }
     }
+}
+
+/** Abitudini di ogni giorno: un tocco per spuntare oggi, la serie di giorni di fila, l'ultima settimana. */
+@Composable
+private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
+    var editing by remember { mutableStateOf<Habit?>(null) }
+    val today = LocalDate.now()
+    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (habits.isNotEmpty()) {
+            item {
+                val done = habits.count { it.isDone(today) }
+                Text(
+                    if (done == habits.size) "Tutte fatte oggi" else "Oggi $done su ${habits.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
+                )
+            }
+        }
+        items(habits, key = { it.id }) { habit ->
+            val doneToday = habit.isDone(today)
+            val streak = habit.streak(today)
+            ElevatedCard(
+                onClick = { editing = habit },
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(habit.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            when (streak) {
+                                0 -> "Inizia oggi"
+                                1 -> "1 giorno"
+                                else -> "$streak giorni di fila"
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            habit.lastDays(today).forEach { (day, done) ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        Modifier
+                                            .size(14.dp)
+                                            .clip(CircleShape)
+                                            .background(
+                                                if (done) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.surfaceVariant
+                                            )
+                                            .clickable { NotesStore.toggleHabit(habit.id, day) },
+                                    )
+                                    Text(
+                                        day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, Locale.ITALIAN),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    FilledIconToggleButton(
+                        checked = doneToday,
+                        onCheckedChange = { NotesStore.toggleHabit(habit.id) },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(Icons.Outlined.Check, contentDescription = if (doneToday) "Fatta oggi" else "Segna fatta oggi")
+                    }
+                }
+            }
+        }
+        if (habits.isEmpty()) {
+            item {
+                EmptyHint(
+                    "Nessuna abitudine. Aggiungi con + quello che vuoi fare ogni giorno (bere 2 litri d'acqua, " +
+                        "camminare, leggere): la spunti e vedi quanti giorni di fila tieni. La sera, in Oggi, " +
+                        "ti ricorda quelle che mancano."
+                )
+            }
+        }
+    }
+    editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }) }
 }
 
 @Composable
@@ -255,7 +369,7 @@ private fun TaskRow(task: TaskItem) {
                 ),
                 color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             )
-            if (!task.done) task.dueAt?.let { DueText(it) }
+            if (!task.done) task.dueAt?.let { DueText(it, task.repeat) }
         }
         IconButton(onClick = { NotesStore.deleteTask(task.id) }) {
             Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)

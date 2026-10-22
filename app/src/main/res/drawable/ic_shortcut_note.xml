@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icona della scorciatoia: cerchio colorato con il simbolo bianco. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#FF3D5AFE" />
+            <size android:width="48dp" android:height="48dp" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_shortcut_note_glyph" android:gravity="center" android:width="24dp" android:height="24dp" />
+</layer-list>
