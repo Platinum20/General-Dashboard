@@ -107,8 +107,8 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
         }
         runCatching { ApkInstaller.install(ctx, apk) }
             .onSuccess { _state.update { it.copy(status = UpdateStatus.Installing(release)) } }
-            .onFailure { e ->
-                _state.update { it.copy(status = UpdateStatus.Error(e.message ?: "Impossibile avviare l'installazione.")) }
+            .onFailure {
+                _state.update { it.copy(status = UpdateStatus.Error("Impossibile avviare l'installazione. Riprova tra poco.")) }
             }
     }
 }

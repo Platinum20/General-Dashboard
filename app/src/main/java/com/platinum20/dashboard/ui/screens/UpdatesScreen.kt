@@ -4,7 +4,6 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,19 +31,17 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -57,7 +54,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -203,10 +199,10 @@ private fun StatusCard(state: UpdateUiState) {
     val highlight = available != null || status is UpdateStatus.NeedsPermission
     val isError = status is UpdateStatus.Error
 
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
+        colors = CardDefaults.elevatedCardColors(
             containerColor = when {
                 isError -> MaterialTheme.colorScheme.errorContainer
                 highlight -> MaterialTheme.colorScheme.tertiaryContainer
@@ -255,38 +251,43 @@ private fun NotifyCard() {
     }
     val blocked = enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
 
-    ListItem(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.large)
-            .clickable {
-                if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    set(!enabled)
-                }
+    val toggle = {
+        if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            set(!enabled)
+        }
+    }
+    val onSwitch = hapticToggle { toggle() }
+
+    ElevatedCard(
+        onClick = { onSwitch(!(enabled && !blocked)) },
+        modifier = Modifier.fillMaxWidth().bouncyPress(),
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            leadingContent = {
+                Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        leadingContent = {
-            Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        },
-        headlineContent = { Text("Avvisami delle nuove versioni") },
-        supportingContent = {
-            Text(
-                if (blocked) "Le notifiche sono bloccate: tocca per consentirle"
-                else "Una notifica quando esce un aggiornamento, controllato ogni qualche ora"
-            )
-        },
-        trailingContent = { Switch(checked = enabled && !blocked, onCheckedChange = null) },
-    )
+            headlineContent = { Text("Avvisami delle nuove versioni") },
+            supportingContent = {
+                Text(
+                    if (blocked) "Le notifiche sono bloccate: tocca per consentirle"
+                    else "Una notifica quando esce un aggiornamento, controllato ogni qualche ora"
+                )
+            },
+            trailingContent = { Switch(checked = enabled && !blocked, onCheckedChange = onSwitch) },
+        )
+    }
 }
 
 @Composable
 private fun ReleaseCard(release: GitHubRelease, currentVersion: String) {
     val cmp = compareVersions(release.version, currentVersion)
-    OutlinedCard(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -359,10 +360,9 @@ private fun Badge(text: String, color: Color) {
 
 @Composable
 private fun MessageCard(icon: ImageVector, text: String) {
-    Card(
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

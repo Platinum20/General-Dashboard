@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.32.0
+- Aggiornamenti: le card hanno lo stesso stile del resto dell'app (angoli arrotondati e ombra leggera)
+- Aggiornamenti: l'interruttore "Avvisami delle nuove versioni" vibra come gli altri e si attiva toccando tutta la card
+- Aggiornamenti: se l'installazione non parte il messaggio è in italiano chiaro, senza codici tecnici
+
 ## 1.31.0
 - Blocco pubblicità rifatto come uBlock Origin: usa le stesse liste di filtri (EasyList, EasyPrivacy e le liste di uBlock Origin), aggiornate da sole ogni 4 giorni o con "Aggiorna" in Media
 - Funziona in tutte le pagine web dell'app, non solo nel player: articoli delle news, lettore, video negli articoli e il browser invisibile che scarica feed e pagine
