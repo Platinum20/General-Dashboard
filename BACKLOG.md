@@ -33,25 +33,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** aggiungere `34_youtube_player` aprendo `Routes.youtubeWatch(...)` con uno `YtNow` finto (stream con 3 capitoli, 3 qualità, durata) iniettato in `YtPlayer` (rendere `_now` impostabile da test, `@VisibleForTesting`), più `34b_youtube_errore` con `error` valorizzato; `35_youtube_feed` con video finti (uno IN DIRETTA, uno Short) e la scheda Home; `30b_media_in_corso` con un `Track` finto in `NowPlaying`; in `01_oggi` un pacco in ritardo o un promemoria scaduto per avere una riga urgente. Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse nel giro, con il controllo "schermata attesa mancante" di V1.
 
-<<<<<<< Updated upstream
-### V9. Le novità di YouTube e Spotify non hanno test veri · test · gravità media
-- **Versione:** 1.82.0-1.84.0
-- **Cosa non va:** l'unico test nuovo è `YouTubeNativeCheck`, che nel giro normale viene saltato (`assumeTrue`, "ignorato" nel report di `main/41`) e gira solo nel workflow `ytcheck.yml` quando si fa push su `claude/**` toccando il player. Non c'è nessun test per la logica pura nuova: `YtResolver.videoId` (watch?v=, youtu.be, shorts/, embed/, live/, link con `&t=`), `YtResolver.userAgentFor` (c=ANDROID, c=IOS, nessun c=), `SpotifyPlayer.spotifyUri` (`/intl-it/track/...`, `?si=...`, `spotify:album:...`, host non Spotify, `/user/...` → null), `Routes.mediaPlayer`/`youtubeWatch` (codifica dell'url). Inoltre, quando YouTube cambia qualcosa, il player nativo si rompe senza che nessuno se ne accorga finché Antonio non lo prova.
-- **Dove:** `media/youtube/player/YtResolver.kt`, `media/spotify/SpotifyPlayer.kt`, `MainActivity.kt` (`Routes`), `.github/workflows/ytcheck.yml`.
-- **Come riprodurre:** report `main/41/report`: 139 test, 2 ignorati (uno è `YouTubeNativeCheck.flussi`); nessuna classe di test per YtResolver o SpotifyPlayer.
-- **Cosa fare:** `YtLinksTest` e `SpotifyLinksTest` (Robolectric per `Uri`) con i casi sopra; aggiungere a `ytcheck.yml` un `schedule` (es. una volta al giorno, gratis sul repo pubblico) e anche il push su `main`, così un'estrazione rotta si vede nel giro del verificatore.
-- **Test che lo impedisce:** i due file di test; `ytcheck` programmato.
-- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
-
-### V10. Spotify nell'app: riproduttore non più pronto e messaggi grezzi · Spotify, link di Spotify · gravità media
-- **Versione:** 1.84.0
-- **Cosa non va:** (1) `SpotifyPlayer` ascolta `ready` ma non `not_ready`: se il riproduttore nascosto perde il collegamento (rete cambiata, telefono in standby a lungo) `ready` resta completato con il vecchio `device_id` e il tocco su un brano fa `PUT me/player/play?device_id=...` su un dispositivo che non esiste più; l'errore mostrato è il messaggio grezzo dell'API (`it.message`, spesso in inglese, es. "Device not found"). (2) Spotify dichiara che il Web Playback SDK non è supportato sui browser per telefono: va provato su un telefono vero che parta davvero dentro la WebView (Widevine, `RESOURCE_PROTECTED_MEDIA_ID`). Se non parte, il messaggio "Questo telefono non riesce ad avviare il riproduttore" deve dire cosa fare.
-- **Dove:** `media/spotify/SpotifyPlayer.kt` (`Bridge`, pagina `PAGE`, `play`).
-- **Come riprodurre:** con Spotify Premium collegato, far partire un brano, togliere la rete per un minuto, rimetterla e toccare un altro brano.
-- **Cosa fare:** listener `not_ready` → `deviceId = null` e nuovo `CompletableDeferred`; su 404 dal `playOn` riavviare la pagina (`MediaWebViews.release(SPOTIFY)` + `start`) e riprovare una volta; tradurre gli errori dell'API con una funzione `spotifyMessage(code, message)` in italiano. Antonio: provare sul telefono e dire se si sente.
-- **Test che lo impedisce:** test di `spotifyMessage` (401, 403 Premium, 404 dispositivo, 429, rete assente).
-- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
-
 ### V13. Le novità della 1.88 non si vedono nel giro fotografico · giro fotografico · gravità media
 - **Versione:** 1.88.0 (giro `main/46`)
 - **Cosa non va:** nessuna foto mostra le funzioni principali della 1.88: una nota con lista di spunta ("3 di 7 fatti" nella lista delle Note, caselle e "Aggiungi voce" nell'editor: `26_nota` mostra una nota di solo testo), la ricerca in tutte le Note con risultati, le spese fisse ("Fisse · variabili" in cima al mese, sezione "Spese fisse · … al mese"), un'abitudine settimanale ("2 su 3 questa settimana"), la riga "2 cose da attivare" aperta, l'anteprima di un evento dal "+", il dialogo "Ripristina da backup" con il riepilogo. I dati finti del tour non hanno né liste, né fisse, né abitudini settimanali, quindi un errore di layout lì non si vedrebbe.
@@ -83,8 +64,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** prima riga in `titleLarge`/grassetto (campo titolo separato o stile sulla prima riga), come nella lista.
 - **Test che lo impedisce:** foto del giro `26_nota`.
 
-=======
->>>>>>> Stashed changes
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
 - **Cosa non va:** `06_aggiungi.png` è identica byte per byte a `05_oggi_fondo.png` (stesso md5): il tocco su "Aggiungi" non apre la cattura veloce (o la apre in un'altra Activity che Robolectric non fotografa), quindi il pannello del "+" non è mai stato controllato.
@@ -107,25 +86,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Dove:** `ui/screens/Common.kt` ~righe 336-350, `MainActivity.kt` ~righe 496-520.
 - **Cosa fare:** Antonio lo guarda sul telefono; se si vede male, alzare la tinta al 75-80% o aggiungere un leggero bordo/ombra sotto la barra.
 - **Test che lo impedisce:** nessuno automatico possibile per la sfocatura; tenere le foto `01_oggi`/`10_news` come confronto.
-
-<<<<<<< Updated upstream
-### V11. "Adesso": l'arancio urgente col tema chiaro si legge poco e con Material You non è arancio · Oggi › Adesso · gravità bassa
-- **Versione:** 1.86.0
-- **Cosa non va:** col tema chiaro la riga urgente usa `colorScheme.tertiary` sul fondo `primaryContainer`: con Canvas è #D9572B su #E3E8FF, contrasto circa 4,0:1 (sotto 4,5:1 per testo piccolo). Con Material You `tertiary` viene dallo sfondo del telefono e può essere verde, viola o rosa: il changelog dice "le cose urgenti restano in arancio" ma non è garantito.
-- **Dove:** `ui/screens/HomeScreen.kt`, `BriefRow` (`UrgentOnDark` / `tertiary`).
-- **Come riprodurre:** tema Canvas chiaro, un promemoria scaduto: la riga in "Adesso" è arancio chiaro su azzurro; tema Material You con sfondo verde: la riga urgente è verde.
-- **Cosa fare:** un arancio fisso più scuro col chiaro (es. #B8431A, contrasto ≥ 4,5:1 su #E3E8FF) oppure `colorScheme.error`, che resta "allarme" anche con Material You; tenere anche l'icona piena per non affidarsi solo al colore.
-- **Test che lo impedisce:** test di una funzione `contrast(fg, bg)` che verifica ≥ 4,5 per il colore urgente su `primaryContainer` in tutti e tre i temi chiari e scuri.
-
-### V12. Player YouTube: piccoli difetti dal codice · YouTube › player · gravità bassa
-- **Versione:** 1.83.0-1.84.0
-- **Cosa non va:** (1) `YtPlayer.player(context)` crea il listener con il primo `context` ricevuto (spesso l'Activity): quell'Activity resta in memoria per sempre e `next(context)` a fine video usa un'Activity forse già distrutta. (2) Se i commenti non si caricano (rete, errore di NewPipe) si vede "Nessun commento (o commenti disattivati)" invece di un errore con "Riprova" (`commentsFor` fa `getOrDefault(emptyList())`). (3) Tornando sulla schermata di un video messo in pausa, `LaunchedEffect(url)` chiama `YtPlayer.play` che fa ripartire il video da solo.
-- **Dove:** `media/youtube/player/YtPlayer.kt` (`player`, `play`), `ui/screens/YouTubeWatchScreen.kt` (righe ~81 e ~291).
-- **Come riprodurre:** (2) modalità aereo, aprire un video già in cache e toccare Commenti; (3) mettere in pausa, aprire Media e poi la bolla/il mini player.
-- **Cosa fare:** usare sempre `context.applicationContext` dentro `YtPlayer`; distinguere errore e lista vuota nei commenti; in `play` non chiamare `play()` se lo stesso video è già caricato e in pausa per scelta dell'utente.
-- **Test che lo impedisce:** test di una funzione pura per lo stato dei commenti (caricamento, errore, vuoti, lista) e del caso "stesso video già caricato".
-- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
-
 
 ### V17. Se il file delle Note non si legge, la prima modifica lo cancella · Note (tutti i dati) · gravità bassa
 - **Versione:** già prima, più pesante dalla 1.88.0 (nel file ora ci sono anche spese fisse, liste, abitudini settimanali)
@@ -150,8 +110,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** scorrere in modo che la pillola aperta stia intera con un margine (`animateScrollToItem(index, -padding)`), oppure scorrere solo se la pillola aperta è fuori dallo schermo.
 - **Test che lo impedisce:** la foto `23_abitudini` nel giro (nessun pezzo di pillola sul bordo).
 
-=======
->>>>>>> Stashed changes
 ---
 
 ## In cima
@@ -160,15 +118,13 @@ _Giro fotografico della 1.91.0 (`claude_project-thread-brclxp/45`, 2026-10-22). 
 
 _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 8 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. La revisione UI di `brclxp` è uscita nella 1.91.0: si può lavorare su tutte le schermate._
 
-<<<<<<< Updated upstream
 ### 1. News: intestazione, foto mancanti e righe vuote · News · S
+_(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; restano foto mancanti, miniature vuote e la riga d'errore della fonte.)_
 **Perché:** ancora nella 1.91 (foto 10_news) l'intestazione dice "Niente di nuovo dall'ultima visita" sopra notizie di 8 minuti fa; la prima notizia grande ha un riquadro grigio vuoto alto un terzo di schermo al posto della foto (quando la foto manca o non si carica), e le miniature vuote restano quadrati grigi. In più "Fanpage non risponde, riprovo al prossimo aggiornamento" è una riga grezza in cima a tutto.
 **Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 8 min fa"; la card grande senza immagine (o con immagine in errore, `AsyncImage` `onError`) diventa una card solo testo con titolo grande, e la miniatura che non si carica sparisce invece di lasciare il quadrato; la fonte che non risponde va in un chip discreto ("1 fonte non risponde") accanto ai filtri, non in una riga in cima. In `NewsRepository` scartare le voci senza articolo (titoli generici come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
 **Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche, nessun riquadro grigio vuoto, nessuna riga d'errore in cima.
 **Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri; scelta del layout della card (con foto / solo testo).
 
-=======
->>>>>>> Stashed changes
 ### 2. Test automatici: quello che manca · robustezza · S
 **Perché:** la 1.88 ha coperto i dati delle Note (NotesStore, abitudini, spese fisse, ricerca, backup). Restano senza test il widget, le news "dall'ultima visita" e il giro fotografico non si accorge quando una schermata manca (vedi V1, V2, V6: `06_aggiungi` è ancora identica a `05_oggi_fondo` in `main/41`, `scuro_03_punto` manca ancora).
 **Cosa fare:** estrarre in funzione pura le righe del widget (`DashboardWidget`) e testarle; `NewsHistoryTest` (nuove/già viste, prima visita); `RepeatTest` (31 del mese, 29 febbraio, ogni settimana) se non già coperto; nel `ScreenshotTour` un elenco delle foto attese che fa fallire il giro se una manca o è identica alla precedente.
@@ -187,23 +143,10 @@ _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le 
 **Fatto quando:** con il permesso concesso la pagina mostra la griglia dei video del telefono e un tocco li apre nel player.
 **Test:** ordinamento e unione recenti + MediaStore senza doppioni (stesso URI), durata "1:02:03".
 
-<<<<<<< Updated upstream
-### 6. Da fare: via le X, scorri per eliminare · Note › Da fare · S
-**Perché:** foto 20_note (`main/41`): ogni riga ha una X grande a destra, cinque X in colonna che pesano più dei promemoria e dove il pollice tocca per sbaglio.
-**Cosa fare:** togliere la X dalle righe di `NotesScreen.kt`; `SwipeToDismissBox` verso sinistra elimina con l'Annulla che c'è già (sfondo arancio con cestino); l'eliminazione resta anche nel dialog di modifica.
-**Fatto quando:** nella foto le righe hanno solo casella e testo.
-**Test:** foto del giro; nessuna logica nuova.
-
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
-**Cosa fare:** Aggiornamenti (41): "Avvisami delle nuove versioni" sta sia lì sia in Impostazioni (40, "Avviso nuove versioni"): lasciarlo solo in Impostazioni. Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno.
+**Cosa fare:** ~~Aggiornamenti: avviso nuove versioni solo in Impostazioni~~ (fatto in 1.93.0). Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno.
 **Fatto quando:** nelle foto nessuno dei difetti.
-=======
-### 7. Rifiniture viste nelle foto · Meteo, Aggiornamenti, Oggi · S
-**Perché:** piccole cose che fanno sembrare l'app non finita (foto `main/41`).
-**Cosa fare:** Meteo (02_meteo): in alto a destra il cerchio di caricamento resta anche con i dati mostrati: tornare all'icona "aggiorna" a caricamento finito (se è solo un effetto del giro fotografico, scartare). Aggiornamenti (41): "Avviso nuove versioni" sta sia lì sia in Impostazioni: lasciarlo solo in Impostazioni. Adesso (01_oggi): accanto a "ADESSO · ROMA" c'è un simbolo "(" (luna?) che sembra un refuso: verificare in `HomeCards.kt` e usare un'icona vera o toglierlo.
-**Fatto quando:** nelle foto nessuno dei tre difetti.
->>>>>>> Stashed changes
 **Test:** foto del giro.
 
 ### 8. Spotify, Video e Radio come le altre pagine; via il Client ID · Media · S
@@ -212,23 +155,6 @@ _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le 
 **Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nella pagina di accesso di Spotify c'è solo il pulsante.
 **Test:** foto del giro (aggiungere `34_radio` se manca).
 
-<<<<<<< Updated upstream
-### 9. Avviso pioggia · Oggi / notifiche · M
-**Perché:** Canvas ha già il nowcast a 15 minuti di Open-Meteo (`Forecast.nowcast`, `Weather.kt`) e lo usa solo se apri l'app. Il momento in cui serve è prima di uscire: "tra 20 minuti piove" va detto da solo, come fanno le app meteo di riferimento.
-**Cosa fare:** in Impostazioni › Meteo l'interruttore "Avvisami se sta per piovere" (spento di default). Un `RainAlertWorker` periodico (15 min, solo tra le 7 e le 23, rete qualsiasi) legge `minutely_15` della località attuale e, se nei prossimi 45 minuti la pioggia passa da 0 a ≥ 0,3 mm, manda una notifica "Pioggia tra 20 minuti a Roma, debole per 40 minuti" che apre il Meteo. Al massimo un avviso ogni 3 ore, niente avvisi se sta già piovendo. Stessa frase anche come prima riga di Adesso.
-Nel Meteo, sopra "Prossime 24 ore", una striscia "Prossima ora" con le barre di `minutely_15` e la frase ("Pioggia debole dalle 18:15") quando c'è pioggia in arrivo: oggi la pagina dice solo "Pioggia oggi 13%".
-**Fatto quando:** con l'interruttore acceso e pioggia prevista tra mezz'ora arriva una sola notifica; spento, nessun worker attivo; nel Meteo la striscia compare solo con pioggia nelle prossime 2 ore.
-**Test:** funzione pura `RainAlert.decide(nowcast, now, lastAlert)` (inizio pioggia tra 20 min → avviso con minuti e durata; già piove → niente; avviso 1 h fa → niente; soglia 0,3 mm; fuori orario → niente).
-
-### 10. Domani, dalle 18 · Oggi · M
-_(primo passo dell'idea grande A)_
-**Perché:** dalle 18 Oggi già guarda a domani nella card Da fare, ma meteo, agenda e date restano su oggi: la sera, per sapere com'è domani, bisogna aprire tre schermate.
-**Cosa fare:** in `HomeScreen.kt`/`HomeCards.kt`, dalle 18 alle 3 una card "Domani" sotto Adesso: meteo di domani (icona, min/max, pioggia % e da che ora, da `daily`/`hourly` già scaricati), primo impegno e numero di impegni (`CalendarDays`), promemoria con scadenza domani, date e addebiti fissi di domani. Righe toccabili verso le rispettive schermate. Prima della card, in Adesso, la frase più importante ("Domani 8:30 dentista, pioggia dalle 10").
-**Fatto quando:** alle 19 la card Domani mostra meteo, impegni e cose da fare di domani; alle 10 non c'è.
-**Test:** funzione pura `Tomorrow.build(now, forecast, events, tasks, countdowns, fixed)` (orari 17:59/18:00/02:59/03:00, pioggia "dalle 10", nessun dato → card nascosta).
-
-=======
->>>>>>> Stashed changes
 ### 11. Date: compleanni dai contatti · Note › Date · M
 _(primo passo dell'idea grande E)_
 **Perché:** nella foto 22_date (`main/41`) c'è un solo compleanno e metà schermo vuoto: la scheda si riempie a mano una data alla volta e quindi nessuno la usa. I compleanni sono già nella rubrica del telefono.
@@ -329,12 +255,9 @@ _(primo passo dell'idea grande G)_
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
-<<<<<<< Updated upstream
+- 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
 - 1.91.0 · Nuova icona; vetro liquido da Android 13; titoli grandi con freccia nelle pagine interne; schede delle Note a pillole; spese in card; Personalizza con icone
 - 1.90.0 · Accesso a Spotify con OAuth ufficiale; YouTube rifatto (anteprime grandi, Short in fila, "Stai guardando", comandi propri del player, velocità, descrizione)
-=======
-- 1.93.0 · Card "Domani" dalle 18 (ex 10, primo passo dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); News "Aggiornate X min fa" e via le voci non-articolo (ex 1); Da fare: scorri per eliminare (ex 6); V9, V10, V11, V12 del verificatore
->>>>>>> Stashed changes
 - 1.88.0 · Liste di spunta nelle note (ex 9); Cerca in tutte le Note (ex 8); Spese fisse e abbonamenti con "Domani addebito" in Adesso (ex 5); Abitudini con obiettivo settimanale (ex 7) e fatte/non fatte a colpo d'occhio (ex 13); inviti di Oggi in una riga in fondo (ex 14); eventi del calendario dal "+" (ex 15); Backup ed esportazione in Impostazioni › Dati (ex 2); test dei dati delle Note con file di una versione vecchia (ex 0); V3, V4, V5 del verificatore
 - 1.86.0 · Adesso, meteo e brano in corso con il colore del tema (Material You)
 - 1.85.0 · Vetro della barra in basso e del mini player davvero trasparente
