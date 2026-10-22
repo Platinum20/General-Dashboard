@@ -2,6 +2,8 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Briefing
@@ -77,5 +79,17 @@ class BriefingTest {
     fun senzaCalendarioNessunaFraseInventata() {
         val lines = Briefing.build(morning, null, null, null, emptyList(), emptyList(), zone)
         assertTrue(lines.isEmpty())
+    }
+
+    @Test
+    fun seraAbitudiniEPacchi() {
+        val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
+        val lines = Briefing.build(
+            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone,
+            habits = listOf(Habit(1, "Acqua"), Habit(2, "Lettura", setOf(evening.toLocalDate()))),
+            parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate().plusDays(1))),
+        )
+        assertTrue(lines.any { it.kind == BriefKind.HABIT && it.text.endsWith("Acqua") })
+        assertTrue(lines.any { it.kind == BriefKind.PARCEL && it.text == "Domani arriva: Cuffie" })
     }
 }

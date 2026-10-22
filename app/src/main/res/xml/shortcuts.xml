@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tenendo premuta l'icona dell'app: promemoria o nota al volo. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_task"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_task"
+        android:shortcutShortLabel="@string/shortcut_task_short"
+        android:shortcutLongLabel="@string/shortcut_task_long">
+        <intent
+            android:action="com.platinum20.dashboard.NEW_TASK"
+            android:targetPackage="com.platinum20.dashboard"
+            android:targetClass="com.platinum20.dashboard.capture.QuickCaptureActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="new_note"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_note"
+        android:shortcutShortLabel="@string/shortcut_note_short"
+        android:shortcutLongLabel="@string/shortcut_note_long">
+        <intent
+            android:action="com.platinum20.dashboard.NEW_NOTE"
+            android:targetPackage="com.platinum20.dashboard"
+            android:targetClass="com.platinum20.dashboard.capture.QuickCaptureActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="new_expense"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_expense"
+        android:shortcutShortLabel="@string/shortcut_expense_short"
+        android:shortcutLongLabel="@string/shortcut_expense_long">
+        <intent
+            android:action="com.platinum20.dashboard.NEW_EXPENSE"
+            android:targetPackage="com.platinum20.dashboard"
+            android:targetClass="com.platinum20.dashboard.capture.QuickCaptureActivity" />
+    </shortcut>
+</shortcuts>

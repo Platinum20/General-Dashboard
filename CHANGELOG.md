@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.27.0
+- Promemoria scritti come parli: "domani alle 9 dentista", "venerdì 18:30 palestra", "tra 20 minuti forno", "il 15 novembre bollo auto". Giorno, ora e avviso si impostano da soli, e mentre scrivi vedi quando suonerà
+- Promemoria ricorrenti: "ogni mese il 5 affitto", "ogni lunedì spazzatura". Quando lo spunti passa alla volta successiva; la ripetizione si cambia anche dal promemoria
+- Note > Abitudini: le cose da fare ogni giorno, con la spunta di oggi, i giorni di fila e l'ultima settimana. Dalle 17 Oggi ricorda quelle che mancano
+- Note > Spese: si scrivono come un messaggio ("12,50 pizza", "benzina 40€"), la categoria si sceglie da sola. Totale del mese, confronto col mese prima, ripartizione per categoria e budget mensile con quanto resta al giorno; Oggi avvisa quando ti avvicini al limite
+- Note > Pacchi: cosa aspetti, quando arriva e il tracciamento del corriere a un tocco (Amazon, Poste, UPS, DHL, GLS, BRT). Il giorno della consegna compare in Oggi
+- Cattura al volo da ovunque: riquadro "Promemoria al volo" nelle impostazioni rapide, scorciatoie tenendo premuta l'icona (promemoria, nota, spesa) e "Salva in Canvas" nel menu Condividi. Una mail di spedizione condivisa diventa un pacco
+
 ## 1.26.0
 - YouTube e Spotify senza registrazioni: il feed nell'app usa l'accesso fatto in Impostazioni, niente Google Cloud né app per sviluppatori
 - YouTube: nuova scheda "Più tardi" con i video di Guarda più tardi

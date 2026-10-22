@@ -56,6 +56,7 @@ import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.today.Briefing
 import java.time.Instant
 import java.time.LocalDate
@@ -268,7 +269,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
                     Column {
                         Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        task.dueAt?.let { DueText(it) }
+                        task.dueAt?.let { DueText(it, task.repeat) }
                     }
                 }
             }
@@ -303,16 +304,17 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
+            QuickPreview(draft, Modifier.padding(start = 28.dp, bottom = 8.dp))
         }
     }
 }
 
 /** Scadenza di un promemoria, in rosso se già passata. */
 @Composable
-fun DueText(dueAt: Long) {
+fun DueText(dueAt: Long, repeat: Repeat? = null) {
     val overdue = dueAt < System.currentTimeMillis()
     Text(
-        (if (overdue) "Scaduto · " else "⏰ ") + dueLabel(dueAt),
+        (if (overdue) "Scaduto · " else "⏰ ") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
         style = MaterialTheme.typography.labelMedium,
         color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
     )

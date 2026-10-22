@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.Euro
+import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -151,12 +154,17 @@ fun HomeScreen(
         }
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
-        Briefing.build(minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns)
+        Briefing.build(
+            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+        )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
     LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
-        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false)
+        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+        )
         DashboardWidget.saveBriefing(context, lines)
     }
     // Una card compare solo se ha qualcosa da dire.
@@ -223,7 +231,7 @@ fun HomeScreen(
                         onOpenBrief = { kind ->
                             when (kind) {
                                 BriefKind.EVENT -> CalendarRepository.openCalendar(context)
-                                BriefKind.TASK, BriefKind.DATE -> onOpenNotes()
+                                BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                                 BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
                                 BriefKind.FREE -> Unit
                             }
@@ -324,6 +332,9 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.TASK -> Icons.Outlined.TaskAlt
         BriefKind.DATE -> Icons.Outlined.Celebration
         BriefKind.WEATHER -> Icons.Outlined.WbSunny
+        BriefKind.HABIT -> Icons.Outlined.Autorenew
+        BriefKind.PARCEL -> Icons.Outlined.LocalShipping
+        BriefKind.MONEY -> Icons.Outlined.Euro
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val color = if (line.urgent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
