@@ -63,6 +63,11 @@ jobs:
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           echo "SIGNED=true" >> "$GITHUB_ENV"
 
+      - name: Test
+        # Le prove di logica (date scritte, spese, Adesso, filtri...). Se una fallisce non esce nessuna versione.
+        # Il giro fotografico e i controlli con la rete vera restano spenti (-Ptour / -Plive).
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Compila APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

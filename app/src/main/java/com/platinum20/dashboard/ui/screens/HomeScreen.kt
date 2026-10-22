@@ -500,15 +500,7 @@ fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        if (theme.keywords.isNotEmpty()) {
-            Text(
-                theme.keywords.joinToString(" · "),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        // Il titolo vero si legge come in un giornale: niente terna di parole chiave sopra.
         Text(
             theme.headline.title,
             style = MaterialTheme.typography.titleSmall,
