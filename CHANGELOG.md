@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.93.0
+## 1.94.0
 - Vetro della barra e del +: sfocatura più morbida e velo un filo più presente, così sotto si vedono colori e forme ma non più il testo sbavato intorno alle icone
 
 ## 1.92.0
