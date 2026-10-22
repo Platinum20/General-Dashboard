@@ -95,11 +95,17 @@ class ScreenshotTour {
         shot(p + "01_oggi")
         // Dettagli raggiungibili da Oggi
         // Le scorciatoie sono nascoste: si entra dalle card (il testo del luogo è dentro la card del meteo).
-        visit("Roma", p + "02_meteo")
+        // "Adesso · Roma": il luogo è dentro la riga in maiuscoletto della card scura.
+        visit("Roma", p + "02_meteo", substring = true)
         visit("Tutti", p + "03_punto")
         visit("Personalizza", p + "04_personalizza")
         scroll(down = true)
         shot(p + "05_oggi_fondo")
+        // Il + della barra in basso: la cattura veloce.
+        if (tap("Aggiungi")) {
+            settle(1_000); shot(p + "06_aggiungi")
+            tap("Annulla"); settle(500)
+        }
 
         if (tap("News")) { settle(3_000); shot(p + "10_news") }
         if (tap("Note")) {
@@ -130,8 +136,8 @@ class ScreenshotTour {
     }
 
     /** Apre una schermata toccando [label], la fotografa e torna indietro. */
-    private fun visit(label: String, name: String, waitMs: Long = 3_000) {
-        if (!tap(label)) return
+    private fun visit(label: String, name: String, waitMs: Long = 3_000, substring: Boolean = false) {
+        if (!tap(label, substring)) return
         settle(waitMs)
         shot(name)
         scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
@@ -139,8 +145,9 @@ class ScreenshotTour {
     }
 
     /** Tocca il primo elemento cliccabile con quel testo; false se non c'è. */
-    private fun tap(label: String): Boolean {
-        val nodes = compose.onAllNodes((hasText(label) or hasContentDescription(label)) and hasClickAction())
+    private fun tap(label: String, substring: Boolean = false): Boolean {
+        val text = hasText(label, substring = substring, ignoreCase = substring)
+        val nodes = compose.onAllNodes((text or hasContentDescription(label)) and hasClickAction())
         if (nodes.fetchSemanticsNodes().isEmpty()) return false
         nodes.onFirst().performClick()
         return true
