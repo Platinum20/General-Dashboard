@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.37.0
+- Note > Da fare: quando elimini un promemoria con la X, o tutti i completati con il cestino in alto, compare "Annulla" per qualche secondo
+
 ## 1.36.0
 - Il punto del giorno: gli articoli già aperti sono attenuati come nella sezione News, così vedi subito cosa ti manca
 - Gli articoli aperti da Oggi o dal Punto del giorno contano come letti anche in News

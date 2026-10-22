@@ -191,6 +191,12 @@ object NotesStore {
         syncReminder(id)
     }
 
+    /** Rimette i promemoria eliminati per sbaglio: serve ad "Annulla". */
+    fun restoreTasks(removed: List<TaskItem>) {
+        update { d -> d.copy(tasks = d.tasks + removed.filter { r -> d.tasks.none { it.id == r.id } }) }
+        removed.forEach { syncReminder(it.id) }
+    }
+
     fun clearDone() = update { d -> d.copy(tasks = d.tasks.filter { !it.done }) }
 
     fun saveCountdown(id: Long?, title: String, date: LocalDate, yearly: Boolean) {
