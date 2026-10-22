@@ -40,6 +40,13 @@ data class Countdown(
     }
 
     fun daysLeft(today: LocalDate = LocalDate.now()): Long = ChronoUnit.DAYS.between(today, nextDate(today))
+
+    /**
+     * Quanti anni compie alla prossima ricorrenza (compleanni, anniversari). Solo se la data
+     * è stata scritta con l'anno vero: con l'anno corrente o il precedente non si sa, e non lo diciamo.
+     */
+    fun yearsAtNext(today: LocalDate = LocalDate.now()): Int? =
+        if (!yearly) null else (nextDate(today).year - date.year).takeIf { it >= 2 }
 }
 
 /** Un'abitudine da tenere ogni giorno: si spunta e conta i giorni di fila. */
