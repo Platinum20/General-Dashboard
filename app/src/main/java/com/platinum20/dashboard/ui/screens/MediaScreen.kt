@@ -252,12 +252,10 @@ private fun NowPlayingCard(track: Track, onOpen: () -> Unit, onCommand: (PlayerC
         onClick = onOpen,
         modifier = Modifier.fillMaxWidth().bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
-        // Come "Adesso" in Oggi: il blocco scuro è ciò che sta succedendo ora.
+        // Come "Adesso" in Oggi: il blocco colorato è ciò che sta succedendo ora.
         colors = CardDefaults.cardColors(
-            containerColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.primaryContainer
-            else MaterialTheme.colorScheme.inverseSurface,
-            contentColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.onPrimaryContainer
-            else MaterialTheme.colorScheme.inverseOnSurface,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
         Row(
