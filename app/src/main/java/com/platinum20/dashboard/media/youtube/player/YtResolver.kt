@@ -89,6 +89,18 @@ object YtResolver {
     fun videoId(link: String): String? =
         Regex("""(?:v=|youtu\.be/|shorts/|embed/|live/)([A-Za-z0-9_-]{11})""").find(link)?.groupValues?.get(1)
 
+    /** Secondo da cui partire scritto nel link (t=90, t=90s, t=1m30s, t=1h2m3s, start=90); 0 se non c'è. */
+    fun startSeconds(link: String): Long {
+        val raw = Regex("""[?&#](?:t|start)=([0-9hms]+)""").find(link)?.groupValues?.get(1) ?: return 0
+        raw.toLongOrNull()?.let { return it }
+        val parts = Regex("""(\d+)([hms])""").findAll(raw).toList()
+        if (parts.isEmpty()) return 0
+        return parts.sumOf { m ->
+            val n = m.groupValues[1].toLong()
+            when (m.groupValues[2]) { "h" -> n * 3600; "m" -> n * 60; else -> n }
+        }
+    }
+
     /** Ricerca dei video senza API e senza quota: stessi risultati della ricerca di YouTube. */
     suspend fun search(query: String): List<YtVideo> = withContext(Dispatchers.IO) {
         init()

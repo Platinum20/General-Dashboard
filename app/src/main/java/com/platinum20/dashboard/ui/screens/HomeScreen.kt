@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.VideoLibrary
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.Resume
+import com.platinum20.dashboard.media.MediaHistory
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -163,11 +167,18 @@ fun HomeScreen(
             value = LocalDateTime.now()
         }
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
+    MediaHistory.init(context)
+    VideoLibrary.init(context)
+    val mediaHistory by MediaHistory.items.collectAsStateWithLifecycle()
+    val videos by VideoLibrary.recent.collectAsStateWithLifecycle()
+    val resume = remember(minute, mediaHistory, videos) {
+        Resume.forAdesso(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis())
+    }
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses,
+            fixedExpenses = notes.fixedExpenses, resume = resume,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -211,6 +222,7 @@ fun HomeScreen(
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
                         BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
+                        BriefKind.MEDIA -> resume?.let { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
                         BriefKind.FREE -> Unit
                     }
                 },
@@ -398,6 +410,7 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.HABIT -> Icons.Outlined.Autorenew
         BriefKind.PARCEL -> Icons.Outlined.LocalShipping
         BriefKind.MONEY -> Icons.Outlined.Euro
+        BriefKind.MEDIA -> Icons.Outlined.PlayCircle
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val content = LocalContentColor.current

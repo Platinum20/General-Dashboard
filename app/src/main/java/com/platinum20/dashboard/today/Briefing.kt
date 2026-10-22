@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.today
 
+import com.platinum20.dashboard.media.Resume
+import com.platinum20.dashboard.media.ResumeItem
 import android.content.Context
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
@@ -23,7 +25,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /** Di che cosa parla una riga di "Adesso": decide l'icona. */
-enum class BriefKind { EVENT, RAIN, TASK, DATE, WEATHER, HABIT, PARCEL, MONEY, FREE }
+enum class BriefKind { EVENT, RAIN, TASK, DATE, WEATHER, HABIT, PARCEL, MONEY, MEDIA, FREE }
 
 data class BriefLine(val kind: BriefKind, val text: String, val urgent: Boolean = false)
 
@@ -57,6 +59,8 @@ object Briefing {
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
         fixedExpenses: List<FixedExpense> = emptyList(),
+        /** Video lasciato a metà nelle ultime 24 ore (vedi Resume.forAdesso). */
+        resume: ResumeItem? = null,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
@@ -162,6 +166,12 @@ object Briefing {
             forecast?.today?.takeIf { it.uvMax >= 6 && now.hour < 16 }?.let {
                 lines += BriefLine(BriefKind.WEATHER, "UV alto (${Math.round(it.uvMax)}): meglio la crema")
             }
+        }
+
+        // Ultima, così non scavalca impegni e scadenze.
+        resume?.let { item ->
+            val where = Resume.progressLabel(item).takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
+            lines += BriefLine(BriefKind.MEDIA, "Riprendi: ${item.title}$where")
         }
 
         if (lines.isEmpty() && today != null && (!evening || tomorrow != null)) {

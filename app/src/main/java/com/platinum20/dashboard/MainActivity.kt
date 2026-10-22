@@ -444,6 +444,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             openCalendar = { navController.navigate(Routes.CALENDAR) { launchSingleTop = true } },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
+            openRoute = { navController.navigate(it) },
         )
     }
     CompositionLocalProvider(

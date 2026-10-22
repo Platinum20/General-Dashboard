@@ -18,7 +18,10 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -109,6 +112,8 @@ object YtPlayer {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     // Un solo player alla volta: se parte YouTube si fermano Spotify e la radio.
                     if (isPlaying) NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
+                    // In pausa (o finito) si ricorda il punto, per "Riprendi" in Media e in Adesso.
+                    else remember(context)
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
@@ -138,7 +143,9 @@ object YtPlayer {
             runCatching { YtResolver.resolve(link, preferredHeight(context)) }
                 .onSuccess {
                     usingMuxed = false
-                    start(context, it, muxed = false)
+                    // Un link con t=... (anche quello di "Riprendi") parte da quel punto.
+                    start(context, it, muxed = false, positionMs = YtResolver.startSeconds(link) * 1000)
+                    remember(context)
                 }
                 .onFailure { _now.value = YtNow(link, null, loading = false, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
@@ -209,6 +216,27 @@ object YtPlayer {
             prepare()
             playWhenReady = play
         }
+    }
+
+    private fun remember(context: Context) {
+        val stream = _now.value?.stream ?: return
+        MediaHistory.init(context)
+        val live = stream.hlsUrl != null
+        val duration = exo?.duration?.takeIf { it > 0 } ?: (stream.durationSec * 1000)
+        val position = if (live) 0 else exo?.currentPosition ?: 0
+        MediaHistory.record(
+            ResumeItem(
+                kind = ResumeKind.YOUTUBE,
+                key = stream.id,
+                title = stream.title,
+                subtitle = stream.channel,
+                image = stream.thumbnail,
+                // Arrivato quasi in fondo: la prossima volta riparte dall'inizio.
+                positionMs = if (duration > 0 && duration - position < 5_000) duration else position,
+                durationMs = if (live) 0 else duration,
+                at = System.currentTimeMillis(),
+            ),
+        )
     }
 
     private fun publish() {

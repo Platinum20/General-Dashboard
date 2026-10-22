@@ -82,6 +82,15 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.runtime.remember
+import com.platinum20.dashboard.media.MediaHistory
+import com.platinum20.dashboard.media.Resume
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.media.VideoLibrary
+import com.platinum20.dashboard.media.youtube.player.YtPlayer
 
 /** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,6 +113,17 @@ fun MediaScreen(
     val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
     val radio by RadioStore.now.collectAsState()
+    val youTubeNow by YtPlayer.now.collectAsState()
+    MediaHistory.init(context)
+    VideoLibrary.init(context)
+    val history by MediaHistory.items.collectAsState()
+    val videos by VideoLibrary.recent.collectAsState()
+    val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
+    val inApp = LocalInAppNav.current
+    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
+    // Quando nulla suona, la prima cosa è l'ultima cosa vista o ascoltata.
+    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && youTubeNow == null }
+    val recents = resumable.filter { it != hero }.take(4)
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -145,6 +165,9 @@ fun MediaScreen(
             if (tracks.isNotEmpty()) {
                 item(key = "sleep") { SleepTimerRow(sleepAt = sleepAt, onSet = NowPlaying::setSleepTimer) }
             }
+            hero?.let { last ->
+                item(key = "resume") { ResumeCard(last, onClick = { openResume(last) }) }
+            }
             // Le quattro fonti in una griglia 2×2: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "grid") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -185,6 +208,16 @@ fun MediaScreen(
                             playing = radio != null,
                             onStop = { RadioStore.stop() },
                         )
+                    }
+                }
+            }
+            if (recents.isNotEmpty()) {
+                item(key = "recent") {
+                    Section("Recenti") {
+                        recents.forEachIndexed { index, recent ->
+                            if (index > 0) RowDivider()
+                            ResumeRow(recent, onClick = { openResume(recent) })
+                        }
                     }
                 }
             }
@@ -240,6 +273,114 @@ private fun RowScope.MediaTile(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/** Apre la cosa da riprendere: il video dal punto lasciato, la radio subito in ascolto. */
+internal fun openResumeItem(item: ResumeItem, openRoute: (String) -> Unit) {
+    when (item.kind) {
+        ResumeKind.VIDEO -> openRoute(Routes.video(item.key))
+        ResumeKind.YOUTUBE -> openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
+        ResumeKind.RADIO -> {
+            item.station?.let(RadioStore::play)
+            openRoute(Routes.RADIO)
+        }
+    }
+}
+
+private fun ResumeItem.icon(): ImageVector = when (kind) {
+    ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
+    ResumeKind.YOUTUBE -> Icons.Outlined.OndemandVideo
+    ResumeKind.RADIO -> Icons.Outlined.Radio
+}
+
+private fun ResumeItem.accent(): TileAccent = when (kind) {
+    ResumeKind.VIDEO -> TileAccent.BLUE
+    ResumeKind.YOUTUBE -> TileAccent.ORANGE
+    ResumeKind.RADIO -> TileAccent.PURPLE
+}
+
+/** "Riprendi": il blocco colorato di Media quando nulla suona, con il punto in cui eri rimasto. */
+@Composable
+private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
+    CanvasCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().bouncyPress(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            ResumeThumb(item, 64)
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (item.unfinished) "Riprendi" else if (item.kind == ResumeKind.RADIO) "Ascolta di nuovo" else "Guarda di nuovo",
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val detail = listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · ")
+                if (detail.isNotBlank()) {
+                    Text(detail, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                if (item.unfinished && item.durationMs > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { item.progress },
+                        modifier = Modifier.fillMaxWidth().height(3.dp).clip(MaterialTheme.shapes.small),
+                    )
+                }
+            }
+            Spacer(Modifier.size(8.dp))
+            FilledIconButton(onClick = onClick) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = "Riprendi")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResumeRow(item: ResumeItem, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ResumeThumb(item, 40)
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val detail = listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · ")
+            Text(
+                detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** Miniatura (YouTube, logo della radio) o, se manca, l'icona colorata della fonte. */
+@Composable
+private fun ResumeThumb(item: ResumeItem, size: Int) {
+    Box(Modifier.size(size.dp).clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center) {
+        IconTile(item.icon(), item.accent(), size = size.dp, iconSize = (size / 2).dp)
+        if (item.image.isNotBlank()) {
+            AsyncImage(
+                model = item.image,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(size.dp),
             )
         }
     }
