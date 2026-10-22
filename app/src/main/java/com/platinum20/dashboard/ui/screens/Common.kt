@@ -4,6 +4,8 @@ import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.LaunchedEffect
@@ -154,6 +156,16 @@ fun rememberHapticPullState(isRefreshing: Boolean): PullToRefreshState {
 /** Tocco sulla scheda già aperta della barra in basso: le sezioni tornano in cima alla lista. */
 object TabReselect {
     val events = MutableSharedFlow<String>(extraBufferCapacity = 1)
+}
+
+/** Lista di una sezione principale: toccando di nuovo la sua scheda torna in cima. */
+@Composable
+fun rememberReselectListState(route: String): LazyListState {
+    val state = rememberLazyListState()
+    LaunchedEffect(state, route) {
+        TabReselect.events.collect { if (it == route) state.animateScrollToItem(0) }
+    }
+    return state
 }
 
 /** Apre le Impostazioni: le sezioni principali la usano per l'icona in alto a destra. */

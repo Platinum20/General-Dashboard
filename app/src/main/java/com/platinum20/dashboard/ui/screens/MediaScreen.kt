@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -111,6 +112,7 @@ fun MediaScreen(
         },
     ) { inner ->
         LazyColumn(
+            state = rememberReselectListState(Routes.MEDIA),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
