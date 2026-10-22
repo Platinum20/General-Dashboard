@@ -243,10 +243,12 @@ fun HomeScreen(
             )
         },
     ) { inner ->
+        val pull = rememberPullRefresh(weather.loading || recap.refreshing)
         PullToRefreshBox(
-            isRefreshing = weather.loading || recap.refreshing,
-            state = rememberHapticPullState(weather.loading || recap.refreshing),
+            isRefreshing = pull.showing,
+            state = rememberHapticPullState(pull.showing),
             onRefresh = {
+                pull.start()
                 if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context, force = true)
                 recap.retry()
                 calendarRefresh++
@@ -505,15 +507,7 @@ fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
-        if (theme.keywords.isNotEmpty()) {
-            Text(
-                theme.keywords.joinToString(" · "),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        // Il titolo vero si legge come in un giornale: niente terna di parole chiave sopra.
         Text(
             theme.headline.title,
             style = MaterialTheme.typography.titleSmall,

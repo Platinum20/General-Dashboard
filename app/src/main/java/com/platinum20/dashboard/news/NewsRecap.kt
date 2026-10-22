@@ -76,8 +76,14 @@ object NewsRecap {
                     .maxByOrNull { it.value }!!.key
                     .replaceFirstChar { it.uppercase() }
             }
-        val sorted = items.sortedByDescending { it.publishedAt ?: Instant.EPOCH }
-        return RecapTheme(keywords = top, headline = items.first(), items = sorted)
+        // Titolo del tema: l'articolo più "centrale", quello che ha più parole in comune con gli altri.
+        val central = items.indices.maxWith(
+            compareBy<Int> { i -> keys.indices.sumOf { j -> if (j == i) 0 else (keys[i] intersect keys[j]).size } }
+                .thenByDescending { it }
+        )
+        val headline = items[central]
+        val sorted = listOf(headline) + (items - headline).sortedByDescending { it.publishedAt ?: Instant.EPOCH }
+        return RecapTheme(keywords = top, headline = headline, items = sorted)
     }
 
     /** Parole significative del titolo: radice -> parola originale. */

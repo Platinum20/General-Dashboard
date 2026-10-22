@@ -58,6 +58,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.material.icons.Icons
@@ -212,6 +214,26 @@ fun rememberHapticPullState(isRefreshing: Boolean): PullToRefreshState {
             .collect { past -> if (past && !refreshing) view.haptic(Haptic.THRESHOLD) }
     }
     return state
+}
+
+/**
+ * Il cerchio del "trascina per aggiornare" solo quando l'aggiornamento parte dal gesto:
+ * i caricamenti automatici hanno già il loro piccolo indicatore dentro le card.
+ */
+class PullRefresh(val showing: Boolean, val start: () -> Unit)
+
+@Composable
+fun rememberPullRefresh(busy: Boolean): PullRefresh {
+    var pulled by remember { mutableStateOf(false) }
+    val busyNow by rememberUpdatedState(busy)
+    LaunchedEffect(pulled) {
+        if (!pulled) return@LaunchedEffect
+        // Aspetta che il caricamento parta (se non parte, il cerchio non resta acceso) e che finisca.
+        withTimeoutOrNull(2_000) { snapshotFlow { busyNow }.first { it } }
+        snapshotFlow { busyNow }.first { !it }
+        pulled = false
+    }
+    return PullRefresh(showing = pulled, start = { pulled = true })
 }
 
 /** Tocco sulla scheda già aperta della barra in basso: le sezioni tornano in cima alla lista. */

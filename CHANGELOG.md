@@ -7,6 +7,13 @@
 - Nuova voce Licenze (caratteri Inter, liste del blocco pubblicità, Open-Meteo)
 - Vetro sfocato sugli elementi che galleggiano: la barra in basso e il mini player lasciano intravedere la pagina sotto (sfocatura vera da Android 12)
 
+## 1.74.0
+- Promemoria: nella notifica, oltre a "Fatto", ci sono "Tra 1 ora" e "Domani 9:00". Per quelli che si ripetono si sposta solo questa volta, la volta dopo resta quella di sempre
+- Oggi: la card "Da fare" mostra quello che conta adesso (scaduti, di oggi e dalle 18 anche di domani, più al massimo due senza scadenza) e sotto "+ altri N in Note"
+- Il punto del giorno: ogni tema ha per titolo il suo articolo più rappresentativo, come in un giornale, al posto delle tre parole chiave
+- Agenda: accanto a "Consenti" c'è "Non ora", che nasconde la card (si riaccende da Personalizza); dopo due rifiuti si nasconde da sola
+- Oggi e Meteo: il cerchio di aggiornamento compare solo quando trascini in basso, non più sopra le card durante il caricamento automatico
+
 ## 1.73.0
 - YouTube e Spotify: nuovo pulsante con la chiave in alto per usare il collegamento ufficiale (API di Google o Client ID di Spotify) anche se hai già fatto l'accesso nell'app
 - Spotify: il Client ID della tua app è già inserito, basta toccare "Collega con il Client ID"

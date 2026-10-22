@@ -86,6 +86,10 @@
             android:name=".notes.TaskDoneReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".notes.TaskSnoozeReceiver"
+            android:exported="false" />
+
         <!-- Compila da solo: legge le notifiche di banche, corrieri e mail, solo con il permesso dato da Android. -->
         <service
             android:name=".autofill.AutoFillListener"

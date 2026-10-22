@@ -72,6 +72,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val context = LocalContext.current
     WeatherStore.init(context)
     val state by WeatherStore.state.collectAsStateWithLifecycle()
+    val pull = rememberPullRefresh(state.loading)
     LaunchedEffect(Unit) { WeatherStore.refresh(context) }
 
     Scaffold(
@@ -129,9 +130,12 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                 }
             }
         } else PullToRefreshBox(
-            isRefreshing = state.loading,
-            state = rememberHapticPullState(state.loading),
-            onRefresh = { WeatherStore.refresh(context, force = true) },
+            isRefreshing = pull.showing,
+            state = rememberHapticPullState(pull.showing),
+            onRefresh = {
+                pull.start()
+                WeatherStore.refresh(context, force = true)
+            },
             modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding()),
         ) {
         LazyColumn(
