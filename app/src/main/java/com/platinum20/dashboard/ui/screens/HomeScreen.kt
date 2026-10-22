@@ -348,15 +348,14 @@ private fun WeatherCard(
     onOpenBrief: (BriefKind) -> Unit,
 ) {
     val forecast = state.forecast
-    // "Adesso" è l'unico blocco scuro della pagina: l'occhio parte da qui.
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
     CanvasCard(
         onClick = { if (forecast != null) onClick() else if (!hasPermission) onRequestPermission() else onRetry() },
         modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = if (dark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.inverseSurface,
-            contentColor = if (dark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.inverseOnSurface,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
@@ -368,7 +367,7 @@ private fun WeatherCard(
     }
 }
 
-/** L'arancio di ciò che è urgente in "Adesso": si legge bene sul fondo scuro. */
+/** L'arancio di ciò che è urgente in "Adesso" col tema scuro; col chiaro si usa il terziario, più carico. */
 private val UrgentOnDark = Color(0xFFFF9466)
 
 /** Una riga di "Adesso": icona, testo, in evidenza se è urgente. */
@@ -386,7 +385,8 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val content = LocalContentColor.current
-    val color = if (line.urgent) UrgentOnDark else content.copy(alpha = 0.7f)
+    val urgent = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) UrgentOnDark else MaterialTheme.colorScheme.tertiary
+    val color = if (line.urgent) urgent else content.copy(alpha = 0.7f)
     Row(
         modifier = Modifier
             .fillMaxWidth()

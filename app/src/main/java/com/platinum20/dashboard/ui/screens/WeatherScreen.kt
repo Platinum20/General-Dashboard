@@ -209,11 +209,9 @@ private fun CurrentSection(forecast: Forecast) {
     val c = forecast.current
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        // Il blocco scuro come "Adesso" in Oggi.
-        color = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.inverseSurface,
-        contentColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.onPrimaryContainer
-        else MaterialTheme.colorScheme.inverseOnSurface,
+        // Il blocco colorato come "Adesso" in Oggi.
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(24.dp)) {

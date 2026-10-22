@@ -3,6 +3,7 @@ package com.platinum20.dashboard.media.youtube
 import android.content.Context
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.userMessage
+import com.platinum20.dashboard.media.youtube.player.YtResolver
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,8 +39,15 @@ object YouTubeStore {
 
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
         load(context, _subscriptions, force, web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
-            YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300)
+            YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
         }
+
+    private val _home = MutableStateFlow(Loadable<List<YtVideo>>())
+    /** La Home di YouTube (video consigliati): c'è solo con l'accesso a YouTube fatto nell'app. */
+    val home: StateFlow<Loadable<List<YtVideo>>> = _home.asStateFlow()
+
+    fun refreshHome(context: Context, force: Boolean = false) =
+        load(context, _home, force, web = { YouTubeWeb.home(it) }, api = null)
 
     fun refreshPlaylists(context: Context, force: Boolean = false) =
         load(context, _playlists, force, web = { YouTubeWeb.playlists(it) }) { token -> YouTubeApi.playlists(token) }
@@ -66,7 +74,13 @@ object YouTubeStore {
         if (query.isBlank()) return
         _search.update { it.copy(loading = true, error = null) }
         scope.launch {
-            _search.value = call(context, web = { YouTubeWeb.search(it, query.trim()) }) { token -> YouTubeApi.search(token, query.trim()) }
+            // Prima la ricerca nativa (niente quota dell'API); se YouTube la blocca, la strada di prima.
+            val native = runCatching { YtResolver.search(query.trim()) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            _search.value = if (native != null) {
+                Loadable(data = native, loadedAt = System.currentTimeMillis())
+            } else {
+                call(context, web = { YouTubeWeb.search(it, query.trim()) }) { token -> YouTubeApi.search(token, query.trim()) }
+            }
         }
     }
 
@@ -77,6 +91,7 @@ object YouTubeStore {
         _watchLater.value = Loadable()
         _playlistItems.value = emptyMap()
         _search.value = Loadable()
+        _home.value = Loadable()
     }
 
     private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE

@@ -330,7 +330,8 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
 
 /**
  * Vetro sfocato: la pagina sotto si intravede, sfocata e velata del colore delle card.
- * Da Android 12 la sfocatura è vera; prima resta un velo quasi pieno, sempre leggibile.
+ * Velo leggero perché sotto si veda davvero la pagina. Da Android 12 la sfocatura è vera
+ * (Haze di suo la accende solo da Android 13); prima resta un velo semitrasparente senza sfocatura.
  */
 fun Modifier.glass(shape: Shape): Modifier = composed {
     val state = LocalHazeState.current
@@ -343,12 +344,12 @@ fun Modifier.glass(shape: Shape): Modifier = composed {
             state,
             HazeStyle(
                 backgroundColor = MaterialTheme.colorScheme.background,
-                tint = HazeTint(card.copy(alpha = if (dark) 0.55f else 0.62f)),
-                blurRadius = 22.dp,
-                noiseFactor = 0.06f,
-                fallbackTint = HazeTint(card.copy(alpha = 0.96f)),
+                tint = HazeTint(card.copy(alpha = if (dark) 0.42f else 0.38f)),
+                blurRadius = 14.dp,
+                noiseFactor = 0.04f,
+                fallbackTint = HazeTint(card.copy(alpha = 0.82f)),
             ),
-        )
+        ) { blurEnabled = Build.VERSION.SDK_INT >= 31 }
     }
 }
 

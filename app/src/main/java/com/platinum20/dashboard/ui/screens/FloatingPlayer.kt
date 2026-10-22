@@ -93,7 +93,9 @@ fun FloatingPlayer(
     val onWebPlayer = currentRoute?.startsWith("media/web") == true || currentRoute?.startsWith("media/watch") == true
     val onRadio = currentRoute?.startsWith("media/radio") == true
     val youTube = tracks[MediaService.YOUTUBE].takeIf { MediaService.YOUTUBE in open && !onWebPlayer }
-    val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer }
+    // Nella schermata di Spotify c'è già la barra con il brano in corso.
+    val onSpotify = currentRoute == "media/spotify"
+    val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer && !onSpotify }
     val radioNow = radio.takeIf { !onRadio }
     val ytNow = nativeYt.takeIf { !onWebPlayer }
 
@@ -125,7 +127,6 @@ fun FloatingPlayer(
 
         Surface(
             shape = MaterialTheme.shapes.large,
-            shadowElevation = if (dragging) 14.dp else 8.dp,
             // Bolla di vetro: si sposta sopra le pagine e le lascia intravedere sfocate.
             color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),

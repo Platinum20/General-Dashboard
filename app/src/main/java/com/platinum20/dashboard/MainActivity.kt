@@ -107,6 +107,7 @@ import androidx.navigation.navArgument
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.youtubeWatchUrl
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import com.platinum20.dashboard.net.WebFetcher
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
@@ -270,7 +271,11 @@ object Routes {
 
     /** YouTube va nel player dell'app, Spotify nel suo web player. */
     fun mediaPlayer(service: MediaService, url: String? = null) =
-        if (service == MediaService.YOUTUBE) youtubeWatch(url) else webPlayer(service, url)
+        when (service) {
+            MediaService.YOUTUBE -> youtubeWatch(url)
+            // Spotify suona nel riproduttore nascosto: si torna alla sua schermata dell'app, mai al sito.
+            MediaService.SPOTIFY -> SPOTIFY_FEED
+        }
 
     fun login(service: MediaService) = "settings/login/${service.name}"
 
@@ -332,7 +337,7 @@ private fun CanvasNavBar(
             shape = CircleShape,
             color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),
-            shadowElevation = 8.dp,
+            // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
             modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
         ) {
             Row(
@@ -418,13 +423,17 @@ private fun NavController.switchTab(route: String) {
 @Composable
 private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    val context = LocalContext.current
     // Link, pagine e calendario si aprono sempre dentro l'app.
     val inApp = remember(navController) {
         InAppNav(
             openWeb = { url, title ->
                 when (val target = InAppLinks.target(url)) {
-                    is LinkTarget.YouTube -> navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, target.watchUrl))
-                    is LinkTarget.Spotify -> navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, target.url))
+                    is LinkTarget.YouTube -> navController.navigate(Routes.youtubeWatch(target.watchUrl))
+                    is LinkTarget.Spotify -> {
+                        SpotifyPlayer.playLink(context, target.url)
+                        navController.navigate(Routes.SPOTIFY_FEED)
+                    }
                     is LinkTarget.Web -> navController.navigate(Routes.webPage(target.url, title))
                     LinkTarget.None -> Unit
                 }
@@ -444,6 +453,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
 
 @Composable
 private fun AppContent(navController: NavHostController, openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
+    val context = LocalContext.current
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
@@ -475,8 +485,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     val youtube = youtubeWatchUrl(request.url)
                     when {
                         youtube != null -> navController.navigate(Routes.youtubeWatch(youtube))
-                        Uri.parse(request.url).host?.endsWith("spotify.com") == true ->
-                            navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, request.url))
+                        SpotifyPlayer.spotifyUri(request.url) != null -> {
+                            SpotifyPlayer.playLink(context, request.url)
+                            navController.navigate(Routes.SPOTIFY_FEED)
+                        }
                         else -> navController.navigate(Routes.video(request.url))
                     }
                 }
@@ -488,7 +500,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val currentRoute = backStack?.destination?.route
     val showBottomBar = topDestinations.any { it.route == currentRoute }
     // Pallino sulla scheda Note: promemoria scaduti o in scadenza oggi.
-    val context = LocalContext.current
     NotesStore.init(context)
     val notes by NotesStore.data.collectAsState()
     val dueToday = remember(notes) {
@@ -584,16 +595,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 YouTubeFeedScreen(
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
-                    onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                 )
             }
             composable(Routes.SPOTIFY_FEED) {
                 SpotifyFeedScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
-                    onPlayWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, it)) },
                 )
             }
             composable(
