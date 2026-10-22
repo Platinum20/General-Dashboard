@@ -13,6 +13,16 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.browserUserAgent
 import com.platinum20.dashboard.media.createMediaWebView
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import com.platinum20.dashboard.settings.AppTheme
+import com.platinum20.dashboard.ui.screens.LoginScreen
+import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -35,6 +45,24 @@ class LoginPageCheck {
             "&redirect_uri=com.platinum20.dashboard%3A%2F%2Fspotify-callback&code_challenge_method=S256" +
             "&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&scope=streaming",
     )
+
+    /** La schermata vera dell'app ("Accedi a Spotify"), dentro il vetro come nella navigazione. */
+    @Test
+    fun spotifyInApp() {
+        val scenario = ActivityScenario.launch(ComponentActivity::class.java)
+        scenario.onActivity { activity ->
+            activity.setContent {
+                val haze = remember { HazeState() }
+                GeneralDashboardTheme(AppTheme.CANVAS) {
+                    Box(Modifier.fillMaxSize().hazeSource(haze)) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
+                }
+            }
+        }
+        Thread.sleep(25_000)
+        val shot: Bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        File(outDir, "spotify-in-app.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
+        scenario.close()
+    }
 
     private fun check(name: String, url: String) {
         val scenario = ActivityScenario.launch(ComponentActivity::class.java)
