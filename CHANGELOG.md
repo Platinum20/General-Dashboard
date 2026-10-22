@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.50.0
+- Note: nel dialog di una nuova abitudine e del budget mensile basta premere Invio sulla tastiera per salvare; nel nuovo pacco Invio passa al codice di tracciamento
+- Budget mensile: la prima volta la tastiera numerica si apre da sola
+- Date: toccando la riga "Ogni anno" si sente la stessa vibrazione dell'interruttore
+
 ## 1.49.0
 - Note: quando crei una nota, un'abitudine, una data o un pacco la tastiera si apre da sola sul campo da scrivere, senza un tocco in più (in modifica resta chiusa)
 
