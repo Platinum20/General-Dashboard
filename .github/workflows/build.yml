@@ -33,6 +33,10 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
+      - name: Liste dei filtri pubblicità
+        # EasyList, EasyPrivacy e uBlock Origin dentro l'APK; se il download fallisce l'app le scarica da sola.
+        run: python3 scripts/update_filter_lists.py
+
       - name: Leggi versione
         id: version
         run: |

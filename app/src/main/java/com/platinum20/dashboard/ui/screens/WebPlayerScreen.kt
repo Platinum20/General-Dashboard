@@ -36,7 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
-import com.platinum20.dashboard.media.AdBlocker
+import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.media.MediaPageListener
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews

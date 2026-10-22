@@ -16,6 +16,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.settings.AppSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,7 +143,8 @@ fun createMediaWebView(
         setAcceptCookie(true)
         setAcceptThirdPartyCookies(webView, true)
     }
-    val scriptAtStart = blockAds && AdBlocker.installScript(webView)
+    // Senza blocco (pagine di accesso) non serve nemmeno lo script nella pagina.
+    val adBlock = if (blockAds) AdBlocker.attach(webView) else null
 
     webChromeClient = object : WebChromeClient() {
         override fun onProgressChanged(view: WebView, newProgress: Int) {
@@ -169,10 +171,7 @@ fun createMediaWebView(
     }
     webViewClient = object : WebViewClient() {
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-            if (blockAds && !request.isForMainFrame && AdBlocker.shouldBlock(request.url)) {
-                return AdBlocker.emptyResponse()
-            }
-            return null
+            return adBlock?.intercept(request)
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -194,15 +193,16 @@ fun createMediaWebView(
         }
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+            adBlock?.onPage(view, url)
             listener()?.onPageStarted(url)
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            if (blockAds && !scriptAtStart) AdBlocker.injectScript(view, url)
             listener()?.onPageFinished(url)
         }
 
         override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+            adBlock?.onPage(view, url)
             listener()?.onHistoryChanged(view.canGoBack())
         }
     }

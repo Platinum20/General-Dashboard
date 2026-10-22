@@ -46,6 +46,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
 import java.time.LocalDate
@@ -150,6 +151,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
         WebFetcher.init(this)
+        // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
+        AdBlocker.init(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)

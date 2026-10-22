@@ -6,8 +6,11 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.platinum20.dashboard.adblock.AdBlocker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -33,9 +36,14 @@ object WebPageRenderer {
                 suspendCancellableCoroutine<FetchedPage?> { cont ->
                     val view = createWebView(context.applicationContext)
                     webView = view
+                    // Solo il blocco delle richieste: la pagina si carica prima e senza i testi degli annunci.
+                    val adBlock = AdBlocker.attach(view, inPage = false)
                     val handler = Handler(Looper.getMainLooper())
                     var done = false
                     view.webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                            adBlock.intercept(request)
+
                         override fun onPageFinished(view: WebView, finishedUrl: String) {
                             if (done) return
                             handler.postDelayed({
