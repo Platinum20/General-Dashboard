@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,9 +83,22 @@ class ReaderViewModel(application: Application, savedStateHandle: SavedStateHand
             _state.value = when {
                 best != null && best.textLength >= MIN_TEXT_LENGTH -> ReaderUiState.Loaded(best)
                 page != null || best != null -> ReaderUiState.NoText
-                else -> ReaderUiState.Failed(error?.message?.let { "Impossibile scaricare l'articolo ($it)." }
-                    ?: "Impossibile scaricare l'articolo.")
+                else -> ReaderUiState.Failed(failureMessage(error))
             }
+        }
+    }
+
+    /** Messaggio per chi legge: niente codici HTTP né testi tecnici in inglese. */
+    private fun failureMessage(e: Throwable?): String {
+        val fallback = "Impossibile scaricare l'articolo."
+        val text = e?.message.orEmpty()
+        return when {
+            e == null -> fallback
+            // 401/403/429…: il sito blocca le app, ma nel browser di solito si apre.
+            text.startsWith("HTTP 4") -> "Il sito non lascia leggere l'articolo nell'app: aprilo nell'originale."
+            text.startsWith("HTTP ") -> "Il sito non risponde, riprova più tardi."
+            // I problemi di rete hanno già un testo chiaro; gli altri messaggi grezzi non aiutano.
+            else -> e.userMessage(fallback).takeIf { it != text } ?: fallback
         }
     }
 
