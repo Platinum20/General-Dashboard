@@ -108,9 +108,18 @@ object NowPlaying {
                 artworkUrl = json.optString("art"),
                 playing = json.optBoolean("playing"),
             )
+            val wasPlaying = _tracks.value[service]?.playing == true
             _tracks.update { it + (service to track) }
             if (track.playing) ensureService()
+            // Un solo player alla volta: quando questo parte, gli altri si mettono in pausa.
+            if (track.playing && !wasPlaying) pauseOthers(service)
         }
+    }
+
+    /** Mette in pausa tutto ciò che suona tranne [keep] (null = tutto), radio compresa. */
+    fun pauseOthers(keep: MediaService?) {
+        _tracks.value.values.filter { it.playing && it.service != keep }.forEach { command(it.service, PlayerCommand.TOGGLE) }
+        if (keep != null) com.platinum20.dashboard.media.radio.RadioStore.pause()
     }
 
     private fun ensureService() {

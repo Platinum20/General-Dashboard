@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.73.0
+- YouTube e Spotify: nuovo pulsante con la chiave in alto per usare il collegamento ufficiale (API di Google o Client ID di Spotify) anche se hai già fatto l'accesso nell'app
+- Spotify: il Client ID della tua app è già inserito, basta toccare "Collega con il Client ID"
+- Tutto dentro l'app: il collegamento a Spotify si fa in una finestra interna (niente browser) e brani, album e playlist partono nel player di Spotify dell'app invece che nell'app Spotify
+- Un solo player alla volta: se parte YouTube, Spotify o la radio, gli altri vanno in pausa; la bolla e la notifica mostrano sempre quello che suona
+
 ## 1.72.0
 - Nuovo: Compila da solo (Impostazioni > Dati automatici). Canvas legge le notifiche che arrivano sul telefono e ci trova da solo:
   - pacchi in arrivo con codice e data prevista (Amazon, Poste, BRT, GLS, DHL, mail e SMS dei corrieri); quando arriva "consegnato" il pacco si segna da solo
