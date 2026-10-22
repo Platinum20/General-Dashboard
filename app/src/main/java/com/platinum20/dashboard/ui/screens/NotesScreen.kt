@@ -513,7 +513,8 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                         }
                     },
                     singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = MaterialTheme.shapes.large,
+                    colors = canvasFieldColors(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     modifier = Modifier.fillMaxWidth(),
                 )
