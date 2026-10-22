@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.53.0
+- Note: aprendo una nota, sotto il titolo compare quando l'hai modificata l'ultima volta ("Modificata 2 h fa")
+
 ## 1.52.0
 - Note: nell'editor di una nota c'è il pulsante con la puntina per fissarla in alto (o toglierla), senza dover sapere della pressione lunga nella lista
 
