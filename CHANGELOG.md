@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.95.0
+**Media › Video**
+- La pagina Video non è più mezza vuota: sotto i Recenti c'è "Sul telefono" con gli ultimi video registrati o scaricati (miniatura, durata, giorno). Il permesso si chiede solo quando tocchi "Mostra i video del telefono", e un tocco apre il video nel player
+- Player YouTube: finché il video si carica si vede la sua durata (non più "0:00 / 0:00")
+
+**Note**
+- Date: con poche voci compaiono delle idee da aggiungere (compleanno, anniversario, scadenza passaporto, revisione auto, vacanze) che aprono il dialogo già compilato
+- Editor: la prima riga della nota, il titolo, è più grande e in grassetto come nella lista
+- La fila di schede non lascia più un pezzo di pillola tagliato sul bordo: scorre solo se la scheda aperta non si vede tutta
+- Spese fisse: l'affitto del 5 compare il 5 anche se l'app era rimasta aperta o in sottofondo, e dopo un ripristino da backup
+- Se il file delle Note non si legge, Canvas ne salva una copia e lo dice, invece di ripartire vuoto e cancellare tutto alla prima modifica
+- Promemoria: "Rimanda › Stamattina 9:00" fa davvero stamattina anche se lo tocchi dopo le 5
+
+**Impostazioni › Dati**
+- Esporta backup funziona anche nelle cartelle di Google Drive
+- Dopo "Ripristina da backup" la notifica del mattino e il widget si aggiornano subito
+
+**Sotto il cofano**
+- Test nuovi: NotesSafeLoadTest, YtTimeLabelTest, PhoneVideosTest, NotesUiLogicTest, DateIdeasTest, più casi in SnoozeTest
+
 ## 1.94.0
 - Vetro della barra e del +: sfocatura più morbida e velo un filo più presente, così sotto si vedono colori e forme ma non più il testo sbavato intorno alle icone
 
