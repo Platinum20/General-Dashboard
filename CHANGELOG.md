@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.30.0
+- Giro di design su tutta l'app: le sei schede delle Note diventano chip come i filtri delle News, sempre visibili e scorrono da sole fino a quella scelta
+- Abitudini: pressione elastica sulle card, vibrazione leggera alla spunta e giorni passati più facili da toccare (tutta la colonna, non solo il pallino)
+- Pacchi e Spese: card e righe coerenti con il resto, vibrazione alla consegna
+- Media: il blocco pubblicità ha lo stesso fondo delle altre card, con l'icona colorata quando è attivo
+- News: le fonti che non rispondono sono indicate per nome, senza codici d'errore
+
 ## 1.29.0
 - Notifica del mattino: i promemoria mostrano l'orario se scadono oggi, e quelli già scaduti sono segnalati
 - Notifica del mattino: quando gli impegni o le cose da fare sono più di tre compare "…e altri N"
