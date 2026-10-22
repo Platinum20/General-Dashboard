@@ -195,6 +195,7 @@ fun HomeScreen(
     ) { inner ->
         PullToRefreshBox(
             isRefreshing = weather.loading || recap.refreshing,
+            state = rememberHapticPullState(weather.loading || recap.refreshing),
             onRefresh = {
                 if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context, force = true)
                 recap.retry()

@@ -70,6 +70,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
             }
             itemsIndexed(layout.order, key = { _, card -> card.name }) { index, card ->
                 val visible = card !in layout.hidden
+                val haptic = rememberHaptic()
                 ListItem(
                     modifier = Modifier
                         .animateItem()
@@ -79,14 +80,14 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     headlineContent = { Text(card.label) },
                     supportingContent = { Text(card.description) },
                     leadingContent = {
-                        Switch(checked = visible, onCheckedChange = { AppSettings.setCardVisible(card, it) })
+                        Switch(checked = visible, onCheckedChange = hapticToggle { AppSettings.setCardVisible(card, it) })
                     },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { AppSettings.moveCard(card, -1) }, enabled = index > 0) {
+                            IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, -1) }, enabled = index > 0) {
                                 Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Sposta su")
                             }
-                            IconButton(onClick = { AppSettings.moveCard(card, 1) }, enabled = index < layout.order.lastIndex) {
+                            IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, 1) }, enabled = index < layout.order.lastIndex) {
                                 Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Sposta giù")
                             }
                         }

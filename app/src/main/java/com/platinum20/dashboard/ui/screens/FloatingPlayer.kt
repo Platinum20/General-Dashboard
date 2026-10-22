@@ -50,6 +50,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -109,6 +110,7 @@ fun FloatingPlayer(
         val fx = remember { Animatable(savedX) }
         val fy = remember { Animatable(savedY) }
         val scope = rememberCoroutineScope()
+        val view = LocalView.current
         var dragging by remember { mutableStateOf(false) }
         // Comparsa: la bolla "salta fuori" invece di apparire di colpo.
         val appear = remember { Animatable(0f) }
@@ -142,6 +144,7 @@ fun FloatingPlayer(
                     var curY = 0f
                     detectDragGestures(
                         onDragStart = {
+                            view.haptic(Haptic.GRAB)
                             dragging = true
                             tracker.resetTracking()
                             curX = fx.value
@@ -163,6 +166,7 @@ fun FloatingPlayer(
                             val targetY = (curY + vy * 0.12f).coerceIn(0f, 1f)
                             savedX = targetX
                             savedY = targetY
+                            view.haptic(Haptic.SNAP)
                             scope.launch { fx.animateTo(targetX, Springs.bouncy(), initialVelocity = vx) }
                             scope.launch { fy.animateTo(targetY, Springs.bouncy(), initialVelocity = vy) }
                         },

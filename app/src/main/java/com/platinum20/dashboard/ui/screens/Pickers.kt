@@ -345,7 +345,7 @@ fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("Ogni anno", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                    Switch(checked = yearly, onCheckedChange = { yearly = it })
+                    Switch(checked = yearly, onCheckedChange = hapticToggle { yearly = it })
                 }
             }
         },

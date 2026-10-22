@@ -238,6 +238,7 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun TasksCard(onOpenNotes: () -> Unit) {
+    val haptic = rememberHaptic()
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
@@ -259,14 +260,15 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                 },
             )
             open.take(5).forEach { task ->
+                val done = { haptic(Haptic.CONFIRM); NotesStore.toggleTask(task.id) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { NotesStore.toggleTask(task.id) }
+                        .clickable(onClick = done)
                         .padding(start = 8.dp, end = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
+                    Checkbox(checked = task.done, onCheckedChange = { done() })
                     Column {
                         Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         task.dueAt?.let { DueText(it, task.repeat) }

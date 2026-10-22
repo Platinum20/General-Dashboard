@@ -1,6 +1,16 @@
 package com.platinum20.dashboard.ui.screens
 
+import android.os.Build
+import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.material3.pulltorefresh.PullToRefreshState
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalView
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.material.icons.Icons
@@ -87,6 +97,58 @@ fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = composed {
                 pressed = false
             }
         }
+}
+
+/** Tipi di vibrazione dell'app: brevi e leggere, una per ogni gesto. */
+enum class Haptic { TICK, CONFIRM, TOGGLE_ON, TOGGLE_OFF, THRESHOLD, GRAB, SNAP, LONG_PRESS }
+
+/**
+ * Vibrazione di sistema: segue le impostazioni del telefono (se le vibrazioni al tocco
+ * sono spente, non vibra). Sulle versioni vecchie di Android usa l'effetto più vicino.
+ */
+fun View.haptic(kind: Haptic) {
+    val api = Build.VERSION.SDK_INT
+    val constant = when (kind) {
+        Haptic.TICK -> HapticFeedbackConstants.CLOCK_TICK
+        Haptic.CONFIRM -> if (api >= 30) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.CONTEXT_CLICK
+        Haptic.TOGGLE_ON -> if (api >= 34) HapticFeedbackConstants.TOGGLE_ON else HapticFeedbackConstants.CLOCK_TICK
+        Haptic.TOGGLE_OFF -> if (api >= 34) HapticFeedbackConstants.TOGGLE_OFF else HapticFeedbackConstants.CLOCK_TICK
+        Haptic.THRESHOLD -> if (api >= 34) HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE else HapticFeedbackConstants.CONTEXT_CLICK
+        Haptic.GRAB -> if (api >= 30) HapticFeedbackConstants.GESTURE_START else HapticFeedbackConstants.CLOCK_TICK
+        Haptic.SNAP -> if (api >= 30) HapticFeedbackConstants.GESTURE_END else HapticFeedbackConstants.CLOCK_TICK
+        Haptic.LONG_PRESS -> HapticFeedbackConstants.LONG_PRESS
+    }
+    performHapticFeedback(constant)
+}
+
+/** La funzione da chiamare nei gesti: `val haptic = rememberHaptic(); haptic(Haptic.CONFIRM)`. */
+@Composable
+fun rememberHaptic(): (Haptic) -> Unit {
+    val view = LocalView.current
+    return remember(view) { { kind: Haptic -> view.haptic(kind) } }
+}
+
+/** Interruttore con la sua vibrazione: diversa per acceso e spento. */
+@Composable
+fun hapticToggle(onChange: (Boolean) -> Unit): (Boolean) -> Unit {
+    val haptic = rememberHaptic()
+    val current by rememberUpdatedState(onChange)
+    return remember(haptic) { { on: Boolean -> haptic(if (on) Haptic.TOGGLE_ON else Haptic.TOGGLE_OFF); current(on) } }
+}
+
+/** Trascina per aggiornare: un piccolo scatto quando la soglia viene superata e lasciando si aggiorna. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun rememberHapticPullState(isRefreshing: Boolean): PullToRefreshState {
+    val state = rememberPullToRefreshState()
+    val view = LocalView.current
+    val refreshing by rememberUpdatedState(isRefreshing)
+    LaunchedEffect(state) {
+        snapshotFlow { state.distanceFraction >= 1f }
+            .distinctUntilChanged()
+            .collect { past -> if (past && !refreshing) view.haptic(Haptic.THRESHOLD) }
+    }
+    return state
 }
 
 /** Tocco sulla scheda già aperta della barra in basso: le sezioni tornano in cima alla lista. */

@@ -93,6 +93,7 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
+    val haptic = rememberHaptic()
     val loggedIn by Accounts.loggedIn.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -128,7 +129,7 @@ fun SettingsScreen(
                             AppTheme.entries.forEachIndexed { index, option ->
                                 SegmentedButton(
                                     selected = theme == option,
-                                    onClick = { AppSettings.setTheme(option) },
+                                    onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
                                     shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
                                     icon = {},
                                 ) {
@@ -323,7 +324,7 @@ private fun MorningSettings() {
             title = "Notifica del mattino",
             subtitle = if (morning.enabled) "Ogni giorno alle ${morning.timeLabel}" else "Meteo, impegni, cose da fare e notizie",
             onClick = toggle,
-            trailing = { Switch(checked = morning.enabled, onCheckedChange = { toggle() }) },
+            trailing = { Switch(checked = morning.enabled, onCheckedChange = hapticToggle { toggle() }) },
         )
         if (morning.enabled) {
             SettingsRow(
