@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -93,6 +94,7 @@ private const val TAB_SEARCH = 5
  * Il tuo YouTube nell'app: Home, iscrizioni, playlist, Mi piace, Guarda più tardi e ricerca,
  * con anteprime grandi, durata e foto del canale. I video si aprono nel player dell'app.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun YouTubeFeedScreen(
     onBack: () -> Unit,
