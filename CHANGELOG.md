@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.92.0
+- Vetro liquido rifatto: velo molto più leggero, così la pagina sotto si vede davvero; la lente sul bordo ingrandisce quello che c'è sotto invece di riflettere cosa sta fuori (niente più bordo fantasma in alto) e sono spariti gli aloni azzurrini intorno alla barra
+- Un filo di luce sul bordo e una lucentezza morbida in alto, come una goccia di vetro
+- Il + accanto alla barra è anche lui di vetro, colorato col tema, senza l'ombra
+
 ## 1.91.0
 - Nuova icona: una pennellata e una goccia di colore, piena e senza bordino. Con le icone a tema di Android 13+ prende i colori del tuo sfondo
 - Vetro liquido (da Android 13): la barra in basso e il mini player piegano la pagina vicino ai bordi come una lente, con un filo di luce sul bordo. Sotto Android 13 resta il vetro sfocato

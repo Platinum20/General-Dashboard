@@ -86,7 +86,7 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
                     is Outline.Rounded -> outline.roundRect.topLeftCornerRadius.x
                     else -> 0f
                 }
-                val blur = 6.dp.toPx()
+                val blur = 8.dp.toPx()
                 val blurEffect = RenderEffect.createBlurEffect(blur, blur, Shader.TileMode.CLAMP)
                 val lens = shader?.let {
                     runCatching {
@@ -94,7 +94,7 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
                         it.setFloatUniform("pad", pad)
                         it.setFloatUniform("radius", radius.coerceAtMost(minOf(size.width, size.height) / 2f))
                         it.setFloatUniform("band", minOf(18.dp.toPx(), size.height / 2f))
-                        it.setFloatUniform("strength", 10.dp.toPx())
+                        it.setFloatUniform("strength", 7.dp.toPx())
                         RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(it, "content"), blurEffect)
                     }.getOrNull()
                 }
@@ -112,8 +112,8 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
 
 /**
  * Lente sui bordi di un rettangolo arrotondato: dentro una fascia vicina al bordo il punto letto si sposta
- * verso l'esterno (la pagina "si piega" sul bordo), un po' diverso per rosso, verde e blu; poi un riflesso
- * chiaro sul bordo in alto a sinistra e uno più debole in basso a destra.
+ * verso il centro (la pagina si ingrandisce e si curva sul bordo, senza riflettere cosa c'è fuori),
+ * poi un filo di luce sul bordo e una leggera lucentezza in alto. Niente aberrazione cromatica: faceva aloni.
  */
 private const val LIQUID_GLASS_SHADER = """
 uniform shader content;
@@ -140,16 +140,15 @@ half4 main(float2 coord) {
     );
     float len = length(n);
     n = len > 0.0001 ? n / len : float2(0.0, 0.0);
+    // Lente: vicino al bordo si legge un po' più verso il centro, così la pagina sotto si ingrandisce e si curva.
     float t = clamp(1.0 - inside / band, 0.0, 1.0);
-    float bend = t * t * strength;
-    half4 c = content.eval(coord + n * bend);
-    c.r = content.eval(coord + n * bend * 1.12).r;
-    c.b = content.eval(coord + n * bend * 0.88).b;
-    float rim = smoothstep(2.5, 0.0, inside);
-    float light = pow(clamp(dot(n, float2(-0.6, -0.8)), 0.0, 1.0), 1.5);
-    float shade = pow(clamp(dot(n, float2(0.6, 0.8)), 0.0, 1.0), 1.5);
-    float glow = rim * (0.55 * light + 0.22 * shade) + t * t * 0.06;
-    c.rgb = mix(c.rgb, half3(1.0), half(clamp(glow, 0.0, 0.8)));
+    half4 c = content.eval(coord - n * (t * t * strength));
+    // Riflesso sottile sul bordo, più chiaro in alto, e una lucentezza morbida nella metà superiore.
+    float rim = smoothstep(1.6, 0.0, inside);
+    float light = 0.35 + 0.65 * clamp(dot(n, float2(-0.3, -0.95)), 0.0, 1.0);
+    float gloss = clamp(1.0 - (coord.y - pad) / (size.y * 0.55), 0.0, 1.0);
+    float glow = rim * light * 0.55 + gloss * gloss * 0.10;
+    c.rgb = mix(c.rgb, half3(1.0), half(clamp(glow, 0.0, 0.6)));
     return c;
 }
 """
