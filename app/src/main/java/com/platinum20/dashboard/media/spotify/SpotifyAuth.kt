@@ -33,6 +33,8 @@ import com.platinum20.dashboard.net.userMessage
 object SpotifyAuth {
     const val REDIRECT_URI = "com.platinum20.dashboard://spotify-callback"
     private const val PREFS = "spotify_api"
+    // App "Canvas" registrata da Antonio su developer.spotify.com (il Client ID è pubblico, non è un segreto).
+    private const val DEFAULT_CLIENT_ID = "802a1bc467c041538598820b98e20f63"
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_ACCESS = "access_token"
     private const val KEY_REFRESH = "refresh_token"
@@ -65,7 +67,7 @@ object SpotifyAuth {
         if (::prefs.isInitialized) return
         appContext = context.applicationContext
         prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        _clientId.value = prefs.getString(KEY_CLIENT_ID, "").orEmpty()
+        _clientId.value = prefs.getString(KEY_CLIENT_ID, null)?.takeIf { it.isNotBlank() } ?: DEFAULT_CLIENT_ID
         _connected.value = prefs.getString(KEY_REFRESH, null) != null
     }
 
@@ -75,8 +77,8 @@ object SpotifyAuth {
         prefs.edit().putString(KEY_CLIENT_ID, clean).apply()
     }
 
-    /** Apre il login di Spotify nel browser. */
-    fun startLogin(context: Context) {
+    /** Indirizzo del login di Spotify, da aprire dentro l'app (nessun browser esterno). */
+    fun loginUrl(): Uri {
         _error.value = null
         val verifier = randomString(64)
         val state = randomString(16)
@@ -94,10 +96,12 @@ object SpotifyAuth {
             .appendQueryParameter("state", state)
             .appendQueryParameter("scope", SCOPES.joinToString(" "))
             .build()
-        context.startActivity(Intent(Intent.ACTION_VIEW, url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        return url
     }
 
-    /** Ritorno dal browser: scambia il codice con i token. */
+    fun isRedirect(uri: Uri): Boolean = uri.toString().startsWith(REDIRECT_URI)
+
+    /** Ritorno dal login: scambia il codice con i token. */
     fun handleRedirect(uri: Uri) {
         val error = uri.getQueryParameter("error")
         if (error != null) {

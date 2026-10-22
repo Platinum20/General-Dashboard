@@ -105,6 +105,8 @@ dependencies {
 
     // Immagini delle notizie e lettore interno degli articoli
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    // Vetro sfocato sugli elementi che galleggiano (barra in basso, mini player).
+    implementation("dev.chrisbanes.haze:haze:1.3.1")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
     implementation("androidx.webkit:webkit:1.12.1")
     // Modalità lettura: estrae testo, immagini e video dalla pagina dell'articolo (algoritmo Readability)

@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.80.0
+- Impostazioni riorganizzate: Aspetto, Oggi e notifiche, Dati automatici, Meteo, Media, Informazioni; ogni riga ha l'icona colorata e mostra a destra lo stato attuale (orario, località, acceso/spento)
+- Il blocco pubblicità si regola ora in Impostazioni › Media (interruttore, richieste bloccate e "Aggiorna" le liste); in Media resta solo una riga che dice se è attivo
+- In Impostazioni anche l'avviso delle nuove versioni (prima solo dentro Aggiornamenti) e la località del meteo, con "Automatica" o la città scelta
+- Nuova voce Licenze (caratteri Inter, liste del blocco pubblicità, Open-Meteo)
+- Vetro sfocato sugli elementi che galleggiano: la barra in basso e il mini player lasciano intravedere la pagina sotto (sfocatura vera da Android 12)
+
+## 1.73.0
+- YouTube e Spotify: nuovo pulsante con la chiave in alto per usare il collegamento ufficiale (API di Google o Client ID di Spotify) anche se hai già fatto l'accesso nell'app
+- Spotify: il Client ID della tua app è già inserito, basta toccare "Collega con il Client ID"
+- Tutto dentro l'app: il collegamento a Spotify si fa in una finestra interna (niente browser) e brani, album e playlist partono nel player di Spotify dell'app invece che nell'app Spotify
+- Un solo player alla volta: se parte YouTube, Spotify o la radio, gli altri vanno in pausa; la bolla e la notifica mostrano sempre quello che suona
+
+## 1.72.0
+- Nuovo: Compila da solo (Impostazioni > Dati automatici). Canvas legge le notifiche che arrivano sul telefono e ci trova da solo:
+  - pacchi in arrivo con codice e data prevista (Amazon, Poste, BRT, GLS, DHL, mail e SMS dei corrieri); quando arriva "consegnato" il pacco si segna da solo
+  - spese con importo, esercente e categoria (Revolut, banche, Satispay, PayPal, Google Pay, ricevute via mail); niente entrate, rimborsi, codici o pagamenti rifiutati
+  - scadenze e appuntamenti (bollette "scade il…", prenotazioni, visite, biglietti, anche da Gmail) come promemoria con avviso
+- Le cose trovate compaiono in Oggi sotto Adesso ("Trovati per te") e in una notifica silenziosa, con Aggiungi o Ignora; oppure con "Salva senza chiedere" si salvano subito e si possono annullare
+- "Cerca negli SMS": rilegge gli SMS degli ultimi 30 giorni (pagamenti con carta, corrieri, appuntamenti)
+- Le chat (WhatsApp, Telegram…) non vengono lette; niente lascia il telefono
+
 ## 1.71.0
 - Da fare: i tempi si possono scrivere anche a lettere ("tra due ore stendere", "fra dieci minuti tè") e con la mezz'ora ("tra un'ora e mezza uscire")
 

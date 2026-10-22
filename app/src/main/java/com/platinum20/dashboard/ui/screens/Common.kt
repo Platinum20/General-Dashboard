@@ -2,6 +2,10 @@ package com.platinum20.dashboard.ui.screens
 
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -293,6 +297,36 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
         modifier = Modifier.padding(horizontal = 2.dp).size(40.dp).bouncyPress(0.9f),
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
+    }
+}
+
+/**
+ * Il contenuto delle pagine, da sfocare sotto gli elementi che galleggiano (vetro).
+ * Lo fornisce MainActivity attorno alle schermate; null nelle anteprime e nelle activity a parte.
+ */
+val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
+
+/**
+ * Vetro sfocato: la pagina sotto si intravede, sfocata e velata del colore delle card.
+ * Da Android 12 la sfocatura è vera; prima resta un velo quasi pieno, sempre leggibile.
+ */
+fun Modifier.glass(shape: Shape): Modifier = composed {
+    val state = LocalHazeState.current
+    val card = MaterialTheme.colorScheme.card
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    if (state == null) {
+        this.clip(shape).background(card)
+    } else {
+        this.clip(shape).hazeEffect(
+            state,
+            HazeStyle(
+                backgroundColor = MaterialTheme.colorScheme.background,
+                tint = HazeTint(card.copy(alpha = if (dark) 0.55f else 0.62f)),
+                blurRadius = 22.dp,
+                noiseFactor = 0.06f,
+                fallbackTint = HazeTint(card.copy(alpha = 0.96f)),
+            ),
+        )
     }
 }
 

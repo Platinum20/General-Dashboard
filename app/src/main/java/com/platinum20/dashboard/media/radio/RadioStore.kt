@@ -11,6 +11,7 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.media.NowPlaying
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,6 +95,8 @@ object RadioStore {
     }
 
     fun play(station: RadioStation) {
+        // Un solo player alla volta: YouTube e Spotify si fermano.
+        NowPlaying.pauseOthers(null)
         current = station
         _now.value = RadioNow(station, playing = false, buffering = true, track = "", error = null)
         val recent = (listOf(station) + _recent.value.filter { it.id != station.id }).take(10)
@@ -109,7 +112,14 @@ object RadioStore {
 
     fun togglePause() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) c.pause() else {
+            NowPlaying.pauseOthers(null)
+            c.play()
+        }
+    }
+
+    fun pause() {
+        controller?.takeIf { it.isPlaying }?.pause()
     }
 
     fun stop() {

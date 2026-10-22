@@ -66,6 +66,10 @@ import com.platinum20.dashboard.ui.screens.Springs
 import com.platinum20.dashboard.ui.screens.bouncyPress
 import com.platinum20.dashboard.ui.screens.card
 import com.platinum20.dashboard.ui.screens.cardBorder
+import com.platinum20.dashboard.ui.screens.LocalHazeState
+import com.platinum20.dashboard.ui.screens.glass
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import com.platinum20.dashboard.ui.screens.rememberHaptic
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -123,6 +127,7 @@ import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
+import com.platinum20.dashboard.ui.screens.AutoFillScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
@@ -230,6 +235,7 @@ object Routes {
     const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
+    const val AUTOFILL = "settings/autofill"
     const val WEATHER = "home/weather"
     const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
@@ -279,7 +285,7 @@ private val topDestinations = listOf(
 
 /**
  * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
- * e accanto il + tondo per aggiungere al volo. Sotto, una sfumatura tiene leggibile la barra sopra le liste.
+ * e accanto il + tondo per aggiungere al volo. La pillola è di vetro sfocato sopra le liste.
  */
 @Composable
 private fun CanvasNavBar(
@@ -289,22 +295,21 @@ private fun CanvasNavBar(
     onPlus: () -> Unit,
 ) {
     val haptic = rememberHaptic()
-    val background = MaterialTheme.colorScheme.background
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(background.copy(alpha = 0f), background.copy(alpha = 0.92f), background)))
             .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        // Pillola di vetro: le liste scorrono sotto e si intravedono sfocate.
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.card,
+            color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),
             shadowElevation = 8.dp,
-            modifier = Modifier.weight(1f).height(60.dp),
+            modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 6.dp),
@@ -453,6 +458,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val plusOverride by PlusAction.override
     if (capturing) CaptureDialog(initial = "", initialMode = CaptureMode.TASK, onClose = { capturing = false })
 
+    // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
+    val hazeState = remember { HazeState() }
+    CompositionLocalProvider(LocalHazeState provides hazeState) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -475,6 +483,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
         NavHost(
+            modifier = Modifier.hazeSource(hazeState),
             navController = navController,
             startDestination = Routes.HOME,
             // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.
@@ -502,6 +511,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     },
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                    onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
             }
             composable(Routes.MEDIA) {
@@ -531,6 +542,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
+                    onPlayWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, it)) },
                 )
             }
             composable(
@@ -611,7 +623,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                    onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
+            }
+            composable(Routes.AUTOFILL) {
+                AutoFillScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.READER,
@@ -659,5 +676,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             modifier = Modifier.padding(padding),
         )
         }
+    }
     }
 }

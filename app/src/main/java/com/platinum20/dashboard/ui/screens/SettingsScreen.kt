@@ -65,6 +65,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.platinum20.dashboard.BuildConfig
 import com.platinum20.dashboard.adblock.AdBlocker
+import com.platinum20.dashboard.autofill.AutoFill
+import androidx.compose.material.icons.outlined.AutoAwesome
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
@@ -94,12 +96,15 @@ fun SettingsScreen(
     onCustomize: () -> Unit,
     onLogin: (MediaService) -> Unit,
     onPickPlace: () -> Unit,
+    onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
     val layout by AppSettings.homeLayout.collectAsState()
     val haptic = rememberHaptic()
     val loggedIn by Accounts.loggedIn.collectAsState()
+    AutoFill.init(context)
+    val autoFillOn by AutoFill.enabled.collectAsState()
     // La località si legge dalle preferenze: si rilegge tornando dalla scelta della città.
     var place by remember { mutableStateOf(WeatherStore.manualPlace(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -174,7 +179,20 @@ fun SettingsScreen(
                 }
             }
 
-            // Qui sotto, quando arriva, il gruppo "Compila da solo" (dati dalle mail e dalle notifiche).
+            item { SettingsHeader("Dati automatici") }
+            item {
+                SettingsGroup {
+                    SettingsItem(
+                        icon = Icons.Outlined.AutoAwesome,
+                        accent = TileAccent.BLUE,
+                        title = "Compila da solo",
+                        subtitle = if (autoFillOn) "Pacchi, spese e scadenze dalle notifiche" else "Pacchi, spese e scadenze presi da notifiche, mail e SMS",
+                        value = if (autoFillOn) "Acceso" else "Spento",
+                        showChevron = true,
+                        onClick = onOpenAutoFill,
+                    )
+                }
+            }
 
             item { SettingsHeader("Meteo") }
             item {
