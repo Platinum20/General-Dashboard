@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.63.0
+- Oggi: nella card Adesso (e nel widget) il giorno di un compleanno o anniversario dice anche quanti anni compie ("Oggi: Compleanno di Marta (30 anni)")
+
 ## 1.61.0
 - Date: per compleanni e anniversari che si ripetono ogni anno, se hai scritto l'anno vero compare quanti anni compie ("3 dicembre · compie 30 anni"), anche nella card In arrivo di Oggi
 
