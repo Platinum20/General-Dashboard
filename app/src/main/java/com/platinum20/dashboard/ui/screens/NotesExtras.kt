@@ -144,7 +144,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                     Spacer(Modifier.height(8.dp))
                     val budget = data.budgetCents
                     Row(
-                        Modifier.fillMaxWidth().clickable { editingBudget = true }.padding(vertical = 4.dp),
+                        Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { editingBudget = true }.padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (budget == null) {
@@ -211,7 +211,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
             }
             item(key = expense.id) {
                 Row(
-                    Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { editing = expense }.padding(horizontal = 8.dp, vertical = 8.dp),
+                    Modifier.fillMaxWidth().bouncyPress(0.98f).clip(MaterialTheme.shapes.medium).clickable { editing = expense }.padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.43.0
+- Note: i promemoria di Da fare, le righe delle Spese, il budget e i giorni delle Abitudini si "schiacciano" leggermente al tocco come il resto dell'app
+- Scelta della località del meteo: stesso effetto sulle città
+
 ## 1.42.0
 - Oggi: anche le righe dentro le card (Adesso, agenda, promemoria, In arrivo, notizie del giorno) si "schiacciano" leggermente al tocco come il resto dell'app
 - Il punto del giorno: stesso effetto sugli articoli di ogni tema

@@ -109,7 +109,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
             }
             item {
                 ListItem(
-                    modifier = Modifier.clickable { choose(null) },
+                    modifier = Modifier.bouncyPress(0.98f).clickable { choose(null) },
                     leadingContent = { Icon(Icons.Outlined.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     headlineContent = { Text("La mia posizione") },
                     supportingContent = { Text("Segue il telefono ovunque tu sia") },
@@ -137,7 +137,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
             }
             items(results) { place ->
                 ListItem(
-                    modifier = Modifier.clickable { choose(place) },
+                    modifier = Modifier.bouncyPress(0.98f).clickable { choose(place) },
                     leadingContent = { Icon(Icons.Outlined.LocationCity, contentDescription = null) },
                     headlineContent = { Text(place.name) },
                     supportingContent = { if (place.detail.isNotBlank()) Text(place.detail) },

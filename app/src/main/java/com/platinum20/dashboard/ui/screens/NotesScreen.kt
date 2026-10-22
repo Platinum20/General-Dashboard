@@ -363,6 +363,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                                 // Il pallino è piccolo, ma si tocca tutta la colonna (pallino e iniziale del giorno).
                                 Column(
                                     Modifier
+                                        .bouncyPress(0.9f)
                                         .clip(MaterialTheme.shapes.small)
                                         .clickable {
                                             haptic(if (done) Haptic.TICK else Haptic.CONFIRM)
@@ -430,7 +431,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
     var editing by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = task.done, onCheckedChange = {
