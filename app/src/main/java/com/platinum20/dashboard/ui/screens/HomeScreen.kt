@@ -156,8 +156,8 @@ fun HomeScreen(
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
     LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
-        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, relative = false)
-        DashboardWidget.saveBriefing(context, lines.map { it.text })
+        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false)
+        DashboardWidget.saveBriefing(context, lines)
     }
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
@@ -243,16 +243,6 @@ fun HomeScreen(
                         onOpenVideo = onOpenVideo,
                         onOpenService = onOpenService,
                     )
-                }
-            }
-            item {
-                TextButton(
-                    onClick = onCustomize,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Outlined.Tune, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.size(8.dp))
-                    Text("Personalizza questa schermata")
                 }
             }
         }

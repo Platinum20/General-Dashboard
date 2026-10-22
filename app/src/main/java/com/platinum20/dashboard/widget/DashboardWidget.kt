@@ -14,6 +14,8 @@ import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.today.BriefKind
+import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
@@ -80,9 +82,10 @@ class DashboardWidget : AppWidgetProvider() {
         }
 
         /** Le righe di "Adesso" mostrate sotto il meteo: è la stessa domanda della schermata Oggi. */
-        fun saveBriefing(context: Context, lines: List<String>) {
+        fun saveBriefing(context: Context, lines: List<BriefLine>) {
             val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            val raw = JSONArray(lines.take(2)).toString()
+            // I promemoria hanno già la loro riga (sempre aggiornata): qui solo il resto.
+            val raw = JSONArray(lines.filter { it.kind != BriefKind.TASK }.take(2).map { it.text }).toString()
             if (prefs.getString(KEY_BRIEF, null) == raw) return
             prefs.edit().putString(KEY_BRIEF, raw).apply()
             updateAll(context)

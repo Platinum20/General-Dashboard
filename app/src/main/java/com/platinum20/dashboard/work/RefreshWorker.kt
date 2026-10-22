@@ -26,7 +26,7 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             val result = NewsStore.load(force = true)
             DashboardWidget.saveRecap(applicationContext, NewsRecap.build(result.items))
         }
-        runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext).map { it.text }) }
+        runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext, max = 6)) }
         DashboardWidget.updateAll(applicationContext)
         return if (weather.isFailure && news.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }
