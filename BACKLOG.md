@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.93.0, foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13; main non è cambiato da allora). Nessuna PR aperta._
+_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.93.0, foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13). 1.94.0 in lavorazione nella PR #75 (vetro più morbido): non toccare barra e vetro._
 
 ---
 
@@ -119,7 +119,7 @@ _Giro fotografico della 1.93.0 (`main/50`, 2026-10-22 18:13). La 1.93 ha tolto "
 _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 8 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. La revisione UI di `brclxp` è uscita nella 1.91.0: si può lavorare su tutte le schermate._
 
 ### 1. News: intestazione, foto mancanti e righe vuote · News · S
-_(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; restano foto mancanti, miniature vuote e la riga d'errore della fonte.)_
+_(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; restano foto mancanti, miniature vuote e la riga d'errore della fonte. Confermato in `main/50/tour/10_news`: card grande con un riquadro grigio di un terzo di schermo e tre miniature grigie.)_
 **Perché:** ancora nella 1.91 (foto 10_news) l'intestazione dice "Niente di nuovo dall'ultima visita" sopra notizie di 8 minuti fa; la prima notizia grande ha un riquadro grigio vuoto alto un terzo di schermo al posto della foto (quando la foto manca o non si carica), e le miniature vuote restano quadrati grigi. In più "Fanpage non risponde, riprovo al prossimo aggiornamento" è una riga grezza in cima a tutto.
 **Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 8 min fa"; la card grande senza immagine (o con immagine in errore, `AsyncImage` `onError`) diventa una card solo testo con titolo grande, e la miniatura che non si carica sparisce invece di lasciare il quadrato; la fonte che non risponde va in un chip discreto ("1 fonte non risponde") accanto ai filtri, non in una riga in cima. In `NewsRepository` scartare le voci senza articolo (titoli generici come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
 **Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche, nessun riquadro grigio vuoto, nessuna riga d'errore in cima.
@@ -133,9 +133,9 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 
 ### 3. Date, Pacchi, Media e Video: niente mezze pagine vuote · Note, Media · S
 **Perché:** ancora nella 1.91 Date (22_date) ha un compleanno e poi tre quarti di schermo vuoto, e lo stesso in Pacchi (25_pacchi, un pacco), Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
-**Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi (voce sotto). Stile `CanvasCard` con `IconTile`, testo breve.
-**Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto.
-**Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci).
+**Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi è uscito in 1.93 ma compare solo se c'è qualcosa da riprendere: in `main/50/tour/30_media` (primo uso) la pagina ha 4 riquadri e poi due terzi vuoti. Al primo uso mostrare "Per iniziare": 3-4 stazioni radio italiane tappabili (Radio 2, RTL 102.5, Radio Deejay: partono in un tocco) e, se YouTube è collegato, gli ultimi 3 video dalle iscrizioni. Stile `CanvasCard` con `IconTile`, testo breve.
+**Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto (anche `30_media` senza cronologia).
+**Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci); funzione che sceglie le stazioni "Per iniziare" (niente doppioni con le recenti).
 
 ### 5. Video: la pagina vuota diventa la libreria · Media › Video · S
 **Perché:** foto 33_video: un riquadro "Scegli cosa guardare" e due pulsanti, poi due terzi di schermo vuoto. I video del telefono (registrazioni, download) sono lì e l'app non li mostra.
@@ -187,6 +187,12 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 **Cosa fare:** nel `HabitDialog` "Ricordamelo alle…" (ora, facoltativa); un worker/alarm per abitudine (riusa lo schema delle notifiche dei promemoria e "Rimanda" della 1.74) con azioni "Fatto" e "Più tardi" (1 ora); nessuna notifica se già fatta oggi o, per le settimanali, se l'obiettivo della settimana è raggiunto. Dopo un riavvio del telefono gli avvisi si rimettono (stesso `BootReceiver` dei promemoria).
 **Fatto quando:** con "alle 21" e l'abitudine non fatta arriva la notifica, "Fatto" la segna senza aprire l'app e la serie nella scheda sale.
 **Test:** `HabitReminderTest`: prossimo avviso (oggi se non ancora passato, sennò domani), già fatta → nessun avviso, settimanale a obiettivo raggiunto → nessun avviso fino a lunedì, abitudini salvate da una versione vecchia senza ora.
+
+### 16. Radio come sveglia · Media / Oggi · M
+**Perché:** la mattina Antonio ha già la notifica del mattino e il player della radio; manca il legame. Svegliarsi con la propria stazione (e dopo la musica il riepilogo di Oggi) è il gesto quotidiano che rende Canvas la prima app della giornata, tutto sul telefono e gratis. Il timer di spegnimento esiste già in Media: la sveglia è la sua metà mancante.
+**Cosa fare:** in Media, sotto il timer di spegnimento, "Sveglia con la radio": orario, giorni (lun-ven / tutti), stazione (ultima ascoltata o una dalle preferite), volume che sale in 30 s. `AlarmManager.setAlarmClock` (esatta, si vede nella barra di stato; permesso `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` chiesto solo qui) che avvia `MediaPlaybackService` con la stazione; notifica a schermo intero con "Stop" e "Ancora 10 min". Se la rete non c'è dopo 20 s, suono di sveglia di sistema come riserva (mai sveglia muta). In Adesso la sera "Sveglia alle 7:00 · Radio Deejay". Riprogrammare dopo il riavvio (`BOOT_COMPLETED`) e dopo un ripristino del backup.
+**Fatto quando:** impostata per tra 2 minuti, la radio parte da sola a volume crescente con l'app chiusa; senza rete suona la sveglia di sistema; "Ancora 10 min" la rimanda.
+**Test:** funzione pura `nextAlarm(now, ora, giorni)` (oggi già passata → domani, venerdì sera con lun-ven → lunedì, cambio dell'ora legale); persistenza delle impostazioni; test Robolectric che l'allarme programmato porta l'intent con la stazione giusta.
 
 ---
 
