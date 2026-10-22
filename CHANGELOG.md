@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.86.0
+- YouTube rifatto: anteprime grandi con foto del canale e durata, Short in una fila orizzontale, "Stai guardando" in cima per tornare al video
+- Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
+- Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
+
 ## 1.84.0
 - Player di YouTube: barra con il minutaggio (dove sei e quanto dura), scelta della qualità video (ricordata), capitoli toccabili e commenti
 - YouTube: nuova scheda Home con i video consigliati, filtro "Solo dirette" accanto a "Nascondi Shorts", durata e bollino IN DIRETTA sulle anteprime

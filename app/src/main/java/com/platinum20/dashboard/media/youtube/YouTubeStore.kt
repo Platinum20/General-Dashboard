@@ -94,6 +94,13 @@ object YouTubeStore {
         _home.value = Loadable()
     }
 
+    /** Dati finti per le foto automatiche delle schermate (solo test). */
+    internal fun preview(home: List<YtVideo>, subscriptions: List<YtVideo>) {
+        val now = System.currentTimeMillis()
+        _home.value = Loadable(data = home, loadedAt = now)
+        _subscriptions.value = Loadable(data = subscriptions, loadedAt = now)
+    }
+
     private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE
 
     private fun <T> load(
