@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~17:55 UTC (UI prima di tutto), su main 1.91.0, foto: branch `screenshots`, cartella `claude_project-thread-brclxp/45` (stesso codice della 1.91.0; il giro `main/46` era in corso)._
+_Ultimo aggiornamento: 2026-10-22 ~17:55 UTC (UI prima di tutto), su main 1.91.0, foto: branch `screenshots`, cartelle `claude_project-thread-brclxp/45` e `main/46` (giro di main 1.91.0 finito alle 17:5x: conferma tutto quanto sotto). 1.92.0 in lavorazione su `brclxp` (vetro liquido più leggero, + di vetro): non toccare barra e vetro._
 
 ---
 
@@ -131,7 +131,7 @@ _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le 
 
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
-**Cosa fare:** Aggiornamenti (41): "Avvisami delle nuove versioni" sta sia lì sia in Impostazioni (40, "Avviso nuove versioni"): lasciarlo solo in Impostazioni. Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6).
+**Cosa fare:** Aggiornamenti (41): "Avvisami delle nuove versioni" sta sia lì sia in Impostazioni (40, "Avviso nuove versioni"): lasciarlo solo in Impostazioni. Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno.
 **Fatto quando:** nelle foto nessuno dei difetti.
 **Test:** foto del giro.
 
@@ -169,6 +169,18 @@ _(primo passo dell'idea grande G)_
 **Fatto quando:** fotografando uno scontrino del supermercato l'anteprima ha totale e negozio giusti e un tocco salva la spesa.
 **Test:** `ReceiptTest` con 5-6 scontrini veri trascritti come testo (Conad, Esselunga, farmacia, benzinaio con "IMPORTO", ristorante con coperto e totale), importi con virgola e punto, righe sconto da ignorare.
 
+### 13. Ascolta il punto del giorno · News / Media · M
+**Perché:** il punto del giorno (`03_punto`) è il riassunto più utile dell'app, ma si legge solo guardando lo schermo. In macchina, mentre si cucina o si cammina, Canvas può leggerlo ad alta voce come un notiziario di 3 minuti, tutto sul telefono e gratis (sintesi vocale di Android, italiano offline sui telefoni Google). È "avvia in un tocco" applicato alle notizie.
+**Cosa fare:** in `RecapScreen.kt` e nella card di Oggi un pulsante "Ascolta"; un `RecapReader` costruisce il copione (apertura "Il punto delle 18:00, 4 temi"; per ogni tema il titolo + la prima frase pulita dell'articolo centrale, già scelto da `NewsRecap`) e lo legge con `TextToSpeech` dentro il player condiviso (`MediaPlaybackService` / `NowPlaying`): notifica con pausa e "tema successivo", mini player col tema in corso, si ferma se parte un altro media. Senza voce italiana installata: messaggio con cosa fare, nessun crash.
+**Fatto quando:** un tocco su "Ascolta" legge i temi uno dopo l'altro, "successivo" salta al tema dopo e il mini player mostra il tema in corso.
+**Test:** funzione pura `RecapReader.script(recap, now)` (apertura con ora e numero di temi, una frase per tema, niente URL, sigle e virgolette ripulite, massimo 6 temi, recap vuoto → nessun copione).
+
+### 14. Scorciatoie dall'icona e riquadro rapido · Cattura al volo · S
+**Perché:** per segnare una spesa o un promemoria oggi bisogna aprire l'app e toccare il +. Keep e Todoist offrono le scorciatoie con la pressione lunga sull'icona e un riquadro nelle impostazioni rapide: due secondi invece di cinque, sull'uso più frequente di Note.
+**Cosa fare:** `res/xml/shortcuts.xml` con 4 scorciatoie statiche (Promemoria, Spesa, Nota, Radio: ultima stazione) che aprono la cattura veloce già nella modalità giusta (`CaptureMode`) o la radio; un `TileService` "Canvas: aggiungi" che apre la cattura. Icone monocromatiche coerenti con la nuova icona.
+**Fatto quando:** pressione lunga sull'icona → "Spesa" apre la cattura in modalità spesa con la tastiera aperta; il riquadro rapido apre la cattura.
+**Test:** test Robolectric che l'intent di ogni scorciatoia porta alla `CaptureMode` giusta (extra sconosciuto → Promemoria).
+
 ---
 
 ## Dopo
@@ -177,6 +189,8 @@ _(primo passo dell'idea grande G)_
 
 - **Abitudini: promemoria all'ora scelta** · Note › Abitudini · M. (era In cima) Nel `HabitDialog` "Ricordamelo alle…", notifica con "Fatto" e "Più tardi"; niente se già fatta. Test: prossimo avviso, settimanali, parse vecchie.
 - **News: "Leggi dopo"** · News · M. (era In cima) Segnalibro in `ReaderScreen` e pressione lunga in `NewsScreen`, store `SavedArticles` con testo pulito per leggere offline, chip "Salvati". Test: store, limite 100, doppioni.
+- **Cerca ovunque** · Oggi · M. La lente delle Note (1.88) cerca solo nelle Note. Una lente in Oggi che cerca insieme Note, notizie già scaricate, date, stazioni radio e video recenti, con i risultati raggruppati per sezione. Riusa la normalizzazione di `NotesSearch` (accenti, maiuscole). Test: raggruppamento, ordinamento, limite per gruppo.
+- **Abitudini: il mese a colpo d'occhio** · Note › Abitudini · S. Foto `23_abitudini` (`main/46`): due card e poi metà schermo vuoto. Toccando un'abitudine, la griglia del mese con percentuale e serie migliore; con meno di 3 abitudini, esempi tappabili ("Leggere 20 minuti", "Niente telefono a letto"). Test: serie migliore e percentuale del mese, anche per le settimanali.
 - **Cattura a voce** · Cattura al volo · M. Microfono nel campo del "+" (`CaptureDialog`) e nei campi di Da fare/Spese (`RecognizerIntent`, italiano, funziona offline sui telefoni Google), il testo passa per `QuickParse` (anche per gli eventi della 1.88). Fatto quando: dico "domani alle 9 dentista" e il promemoria ha giorno e ora.
 - **Date: promemoria per il regalo** · Note > Date · S. Per i compleanni opzione "Avvisami 7 giorni prima" che crea il promemoria "Regalo per Marco". Si sposa con l'import dai contatti (voce 4).
 - **Spese: esporta CSV del mese** · Note > Spese · S. Dal menu del mese "Esporta CSV" (data;descrizione;categoria;importo;fissa) con condivisione.
