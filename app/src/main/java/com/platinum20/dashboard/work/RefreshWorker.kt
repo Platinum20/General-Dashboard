@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
+import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.widget.DashboardWidget
@@ -21,6 +22,11 @@ import java.util.concurrent.TimeUnit
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        // Anche con l'app chiusa da giorni l'affitto del 5 compare il 5 (e nel widget).
+        runCatching {
+            NotesStore.init(applicationContext)
+            NotesStore.applyFixedExpenses()
+        }
         val weather = runCatching { WeatherStore.fetch(applicationContext, freshLocation = false) }
         val news = runCatching {
             val result = NewsStore.load(force = true)

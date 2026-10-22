@@ -7,6 +7,8 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.weather.GeoPlace
 import com.platinum20.dashboard.weather.WeatherStore
+import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.work.MorningWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -111,10 +113,18 @@ object Backup {
             AppSettings.init(context)
             val now = System.currentTimeMillis()
             val text = encode(NotesStore.exportJson(), AppSettings.snapshot(), WeatherStore.manualPlace(context), now)
-            context.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(text.toByteArray()) }
+            write(uri) { mode -> context.contentResolver.openOutputStream(uri, mode) }
+                .use { it.write(text.toByteArray()) }
             prefs(context).edit().putLong(KEY_LAST, now).apply()
         }.isSuccess
     }
+
+    /**
+     * Apre il file in "wt" (sovrascrive) e, se il fornitore la rifiuta come fa Google Drive,
+     * ripiega su "w".
+     */
+    internal fun write(uri: Uri, open: (String) -> java.io.OutputStream?): java.io.OutputStream =
+        runCatching { open("wt") }.getOrNull() ?: open("w") ?: error("Impossibile scrivere $uri")
 
     /** Legge un file scelto dall'utente, senza toccare nulla. */
     suspend fun read(context: Context, uri: Uri): BackupContent? = withContext(Dispatchers.IO) {
@@ -130,6 +140,9 @@ object Backup {
         NotesStore.replaceAll(content.notes)
         AppSettings.restore(content.settings)
         if (content.place != WeatherStore.manualPlace(context)) WeatherStore.setManualPlace(context, content.place)
+        // Le impostazioni della notifica del mattino sono cambiate: riprogrammarla subito, non al prossimo avvio.
+        runCatching { MorningWorker.schedule(context) }
+        runCatching { DashboardWidget.updateAll(context) }
     }
 
     /** Quando è stato fatto l'ultimo backup (millisecondi), null se mai. */

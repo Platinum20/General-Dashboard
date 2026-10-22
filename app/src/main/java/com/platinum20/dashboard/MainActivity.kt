@@ -77,6 +77,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
+import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
@@ -510,6 +513,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Pallino sulla scheda Note: promemoria scaduti o in scadenza oggi.
     NotesStore.init(context)
     val notes by NotesStore.data.collectAsState()
+    // L'app può restare in memoria per giorni: le spese fisse del giorno vanno aggiunte a ogni ritorno.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { NotesStore.applyFixedExpenses() }
+    val notesProblem by NotesStore.readProblem.collectAsState()
+    LaunchedEffect(notesProblem) {
+        if (notesProblem != null) {
+            Toast.makeText(
+                context,
+                "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup",
+                Toast.LENGTH_LONG,
+            ).show()
+            NotesStore.readProblemShown()
+        }
+    }
     val dueToday = remember(notes) {
         val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         notes.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay }
