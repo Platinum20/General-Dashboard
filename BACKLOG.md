@@ -13,10 +13,11 @@ _Ultimo aggiornamento: 2026-10-22 ~17:55 UTC (UI prima di tutto), su main 1.91.0
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.86.0, giro fotografico `main/41`, 2026-10-22.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.91.0, giro fotografico `main/46`, 2026-10-22.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
+- **Aggiornamento 1.91.0 (`main/46`):** `44_localita` e `26_nota` ora ci sono; **`43_compila_da_solo` invece manca ancora**: nel tour `visit("Compila da solo")` viene chiamato dopo `scroll(down = true)`, la riga è fuori schermo e non composta nella lista, `tap` restituisce false e la foto viene saltata in silenzio. Spostare la visita prima dello scorrimento (o usare `performScrollToNode`).
 - **Cosa non va:** nessuna foto di Calendario (agenda di 60 giorni, "Vai a un giorno", scheda evento, "Nuovo evento"/"Modifica evento"), della pagina Impostazioni › Compila da solo, della card "Trovati per te" in Oggi con una proposta, della pagina Licenze e della pagina web interna (es. tracciamento pacco). Sono le parti più grandi delle ultime versioni e oggi nessuno le guarda dopo una release.
 - **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`
 - **Come riprodurre:** `main/29/tour/` non contiene nessuna di queste schermate.
@@ -25,6 +26,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V8. Il giro fotografico non vede il nuovo player di YouTube né Spotify che suona · giro fotografico · gravità media
 - **Versione:** 1.82.0-1.86.0 (giro `main/41`)
+- **Aggiornamento 1.90.0 (`main/46`):** il player e il feed di YouTube ora sono fotografati da `YouTubeTour` (`youtube_iscrizioni`, `youtube_player`: IN DIRETTA, Short, capitoli, qualità, velocità, si vedono bene). Restano da fare: stato di errore del player con "Riprova", `30b_media_in_corso`, riga urgente in Adesso, e le due foto YouTube anche al buio.
 - **Cosa non va:** la parte più grande di queste versioni non ha nessuna foto: schermata del player YouTube (`YouTubeWatchScreen`: video, titolo, barra col minutaggio, menu qualità, capitoli, commenti, "Prossimi dai canali che segui", stato di errore con "Riprova"), scheda Home e filtro "Solo dirette" del feed, bollino IN DIRETTA, il blocco "brano in riproduzione" di Media col colore del tema (1.86), una riga urgente in arancio dentro "Adesso" (1.86). `31_youtube` e `32_spotify` mostrano solo "Collega il tuo...", `30_media` è senza brano in corso.
 - **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`
 - **Come riprodurre:** in `main/41/tour/` non c'è nessuna di queste schermate.
@@ -47,16 +49,47 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** listener `not_ready` → `deviceId = null` e nuovo `CompletableDeferred`; su 404 dal `playOn` riavviare la pagina (`MediaWebViews.release(SPOTIFY)` + `start`) e riprovare una volta; tradurre gli errori dell'API con una funzione `spotifyMessage(code, message)` in italiano. Antonio: provare sul telefono e dire se si sente.
 - **Test che lo impedisce:** test di `spotifyMessage` (401, 403 Premium, 404 dispositivo, 429, rete assente).
 
+### V13. Le novità della 1.88 non si vedono nel giro fotografico · giro fotografico · gravità media
+- **Versione:** 1.88.0 (giro `main/46`)
+- **Cosa non va:** nessuna foto mostra le funzioni principali della 1.88: una nota con lista di spunta ("3 di 7 fatti" nella lista delle Note, caselle e "Aggiungi voce" nell'editor: `26_nota` mostra una nota di solo testo), la ricerca in tutte le Note con risultati, le spese fisse ("Fisse · variabili" in cima al mese, sezione "Spese fisse · … al mese"), un'abitudine settimanale ("2 su 3 questa settimana"), la riga "2 cose da attivare" aperta, l'anteprima di un evento dal "+", il dialogo "Ripristina da backup" con il riepilogo. I dati finti del tour non hanno né liste, né fisse, né abitudini settimanali, quindi un errore di layout lì non si vedrebbe.
+- **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt` (dati finti e visite).
+- **Come riprodurre:** in `main/46/tour/` nessuna di queste schermate; `24_spese` e `23_abitudini` hanno solo spese variabili e abitudini giornaliere.
+- **Cosa fare:** nei dati finti una nota "Spesa" con `[x] latte`, `[ ] pane`, `[ ] uova`; una spesa fissa ("ogni mese il 5 affitto 650") e una abitudine "Palestra 3 volte a settimana"; nuove foto `27_cerca` (lente, cerca "latte"), `28_lista` (editor della nota lista), `07_da_attivare` (riga aperta). Tutto anche al buio.
+- **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
+
+### V14. Spese fisse aggiunte solo all'avvio dell'app · Note › Spese · gravità media
+- **Versione:** 1.88.0
+- **Cosa non va:** `NotesStore.applyFixedExpenses()` viene chiamata solo in `NotesStore.init`, cioè quando il processo parte. Android tiene l'app in memoria anche per giorni: se l'app resta aperta (o in sottofondo) a cavallo del giorno dell'addebito, l'affitto del 5 non compare nelle spese finché il processo non viene chiuso, e il budget al giorno è sbagliato. Anche `replaceAll` (ripristino da backup) non le applica: dopo un ripristino le fisse scadute da quando è stato fatto il backup restano fuori fino al prossimo avvio.
+- **Dove:** `notes/NotesStore.kt` (`init`, `replaceAll`, `applyFixedExpenses`).
+- **Come riprodurre:** il 4 sera aggiungere "ogni mese il 5 netflix 12,99", lasciare l'app in sottofondo, il 5 riaprirla dalla barra delle app recenti: in Spese non c'è Netflix.
+- **Cosa fare:** chiamare `applyFixedExpenses()` anche a ogni ritorno in primo piano (`ON_RESUME` in `MainActivity` o `ProcessLifecycleOwner`), nel `RefreshWorker`/`MorningWorker` e dopo `replaceAll`.
+- **Test che lo impedisce:** test in `NotesStoreTest`: dopo `replaceAll` con una fissa scaduta la spesa c'è; test che `applyFixedExpenses(today)` chiamata due volte lo stesso giorno non la duplica.
+
+### V15. Backup: esportazione su Drive e notifica del mattino dopo il ripristino · Impostazioni › Dati · gravità bassa
+- **Versione:** 1.88.0
+- **Cosa non va:** (1) `Backup.export` apre il file con `openOutputStream(uri, "wt")`: alcuni fornitori di documenti (Google Drive in particolare) rifiutano la modalità "wt" e l'esportazione finisce con "non riuscita" senza dire perché. (2) Dopo "Ripristina da backup" le impostazioni della notifica del mattino cambiano ma `MorningWorker.schedule` non viene richiamato: la notifica parte (o smette) solo dal prossimo avvio dell'app. Anche il widget non si aggiorna.
+- **Dove:** `backup/Backup.kt` (`export`, `restore`), `ui/screens/BackupUi.kt`.
+- **Come riprodurre:** (1) Esporta backup → scegliere una cartella di Google Drive; (2) ripristinare un backup con la notifica del mattino accesa su un telefono dove era spenta, non riaprire l'app: domattina niente notifica.
+- **Cosa fare:** provare "wt" e se fallisce ripiegare su "w"; in `restore` richiamare `MorningWorker.schedule(context)` e aggiornare il widget; un messaggio d'errore che dica "Questa cartella non accetta il file, prova Download".
+- **Test che lo impedisce:** test Robolectric di `restore` che controlla il lavoro programmato in `WorkManagerTestInitHelper`.
+
+### V16. Editor di una nota: il titolo non si distingue dal testo · Note › nota · gravità bassa
+- **Versione:** 1.91.0 (foto `26_nota`, `scuro_26_nota`)
+- **Cosa non va:** nell'editor la prima riga (il titolo, "Libri da leggere") ha la stessa misura e lo stesso peso del testo sotto; nella lista delle Note invece il titolo è in grassetto. Sembra un blocco di testo unico e la pagina sotto è vuota.
+- **Dove:** `ui/screens/NotesScreen.kt` / `NotesExtras.kt` (editor della nota).
+- **Cosa fare:** prima riga in `titleLarge`/grassetto (campo titolo separato o stile sulla prima riga), come nella lista.
+- **Test che lo impedisce:** foto del giro `26_nota`.
+
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
 - **Cosa non va:** `06_aggiungi.png` è identica byte per byte a `05_oggi_fondo.png` (stesso md5): il tocco su "Aggiungi" non apre la cattura veloce (o la apre in un'altra Activity che Robolectric non fotografa), quindi il pannello del "+" non è mai stato controllato.
 - **Dove:** `ScreenshotTour.kt` righe ~105-108; "Aggiungi" è anche la contentDescription dei + di `HomeCards.kt:365`, `NotesScreen.kt:309` e del ✓ in `AutoFillUi.kt:163`, quindi `tap("Aggiungi")` può prendere il nodo sbagliato.
-- **Come riprodurre:** `md5sum main/29/tour/05_oggi_fondo.png main/29/tour/06_aggiungi.png` (ancora uguali in `main/41`).
+- **Come riprodurre:** `md5sum main/29/tour/05_oggi_fondo.png main/29/tour/06_aggiungi.png` (ancora uguali in `main/41` e in `main/46`).
 - **Cosa fare:** dare al + della barra una contentDescription unica (es. "Aggiungi al volo") e toccare quella; se la cattura è un'Activity a parte, fotografarla con `Robolectric.buildActivity(QuickCaptureActivity::class.java)`.
 - **Test che lo impedisce:** nel tour, dopo il tocco, controllare che esista il nodo con il campo della cattura (es. testo "Promemoria") prima di salvare la foto.
 
 ### V6. Il punto del giorno al buio resta su "Raccolgo le notizie di oggi…" · giro fotografico · gravità bassa
-- **Versione:** 1.81.0 (anche in `main/26`)
+- **Versione:** 1.81.0 (anche in `main/26`, ancora così in `main/46`)
 - **Cosa non va:** in `scuro_01_oggi` e `scuro_05_oggi_fondo` la card Il punto del giorno è ancora in caricamento, mentre in chiaro mostra i temi; manca anche `scuro_03_punto`. Il giro al buio quindi non controlla mai il punto del giorno (titoli dei temi della 1.74.0) al buio.
 - **Dove:** `ScreenshotTour.kt`, parte `+night` (il `settle` iniziale non aspetta `NewsRecap`; la visita "Tutti" non trova il link mentre carica).
 - **Cosa fare:** nel giro al buio aspettare che il recap sia pronto come in chiaro, poi fotografare anche `scuro_03_punto`.
@@ -64,6 +97,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V7. Vetro della barra in basso: da controllare sul telefono · tutte le schermate · gravità bassa
 - **Versione:** 1.80.0, più evidente dalla 1.85.0 (velo più leggero, niente ombra)
+- **Aggiornamento 1.91.0:** con il vetro liquido (Android 13+, `LiquidGlass.kt`) la barra sfoca solo di 6 dp e la lente si disegna solo col disegno accelerato: nel giro fotografico (Robolectric, disegno software) non si vede mai, quindi rifrazione e leggibilità vanno guardate sul telefono. Se lo shader non si compila resta la sfocatura.
 - **Cosa non va:** nel giro fotografico (dove la sfocatura non viene disegnata) il testo sotto la barra flottante si vede attraverso la tinta al 55-62% e si sovrappone alle icone (News `10_news`, Oggi `01_oggi`). Su Android 12+ la sfocatura vera dovrebbe coprirlo, ma se la sfocatura non parte (risparmio energetico, GPU, `hazeSource` mancante in qualche schermata) resta un testo leggibile male sotto le icone. Il `fallbackTint` al 96% vale solo sotto Android 12.
 - **Dove:** `ui/screens/Common.kt` ~righe 336-350, `MainActivity.kt` ~righe 496-520.
 - **Cosa fare:** Antonio lo guarda sul telefono; se si vede male, alzare la tinta al 75-80% o aggiungere un leggero bordo/ombra sotto la barra.
