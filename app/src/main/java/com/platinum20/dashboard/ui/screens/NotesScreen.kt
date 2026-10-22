@@ -39,6 +39,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
@@ -490,12 +493,45 @@ private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskIte
     }
 }
 
+/** Una riga di Da fare: casella e testo. Scorrendo verso sinistra si elimina (con Annulla). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
     var editing by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
+    val dismiss = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                haptic(Haptic.CONFIRM)
+                NotesStore.deleteTask(task.id)
+                onDeleted(task)
+                true
+            } else {
+                false
+            }
+        },
+    )
+    SwipeToDismissBox(
+        state = dismiss,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        },
+    ) {
     Row(
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.card)
+            .bouncyPress(0.98f)
+            .padding(start = 4.dp, top = 2.dp, bottom = 2.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = task.done, onCheckedChange = {
@@ -517,12 +553,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
             )
             if (!task.done) task.dueAt?.let { DueText(it, task.repeat) }
         }
-        IconButton(onClick = {
-            NotesStore.deleteTask(task.id)
-            onDeleted(task)
-        }) {
-            Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    }
     }
     if (editing) TaskEditDialog(task, onDismiss = { editing = false }, onDeleted = onDeleted)
 }
