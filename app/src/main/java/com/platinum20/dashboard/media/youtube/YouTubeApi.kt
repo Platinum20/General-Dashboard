@@ -25,6 +25,11 @@ data class YtVideo(
     val channelId: String,
     val published: Instant?,
     val isShort: Boolean = false,
+    /** Durata in secondi, 0 se non si conosce. */
+    val durationSec: Int = 0,
+    /** In diretta adesso (o in arrivo, con [upcoming]). */
+    val live: Boolean = false,
+    val upcoming: Boolean = false,
 ) {
     val thumbnail: String get() = "https://i.ytimg.com/vi/$id/mqdefault.jpg"
     val watchUrl: String get() = "https://m.youtube.com/watch?v=$id"
@@ -141,6 +146,27 @@ object YouTubeApi {
                 }
             }
             .orEmpty()
+
+    /**
+     * Durata e dirette dei video (1 unità di quota ogni 50 video): i feed RSS non le dicono.
+     * Gli Short vengono riconosciuti anche dalla durata quando il link non lo dice.
+     */
+    suspend fun withDetails(token: String, videos: List<YtVideo>): List<YtVideo> {
+        val details = mutableMapOf<String, JSONObject>()
+        for (chunk in videos.map { it.id }.distinct().chunked(50)) {
+            val page = runCatching { get(token, "videos", mapOf("part" to "contentDetails,snippet", "id" to chunk.joinToString(","))) }
+                .getOrNull() ?: break
+            val items = page.optJSONArray("items") ?: continue
+            for (i in 0 until items.length()) items.optJSONObject(i)?.let { details[it.optString("id")] = it }
+        }
+        return videos.map { video ->
+            val item = details[video.id] ?: return@map video
+            val seconds = runCatching { java.time.Duration.parse(item.optJSONObject("contentDetails")?.optString("duration")).seconds.toInt() }
+                .getOrDefault(0)
+            val broadcast = item.optJSONObject("snippet")?.optString("liveBroadcastContent").orEmpty()
+            video.copy(durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming")
+        }
+    }
 
     /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
     suspend fun uploads(channels: List<YtChannel>): List<YtVideo> = coroutineScope {

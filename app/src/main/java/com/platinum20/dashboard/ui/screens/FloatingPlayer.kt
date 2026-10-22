@@ -93,7 +93,9 @@ fun FloatingPlayer(
     val onWebPlayer = currentRoute?.startsWith("media/web") == true || currentRoute?.startsWith("media/watch") == true
     val onRadio = currentRoute?.startsWith("media/radio") == true
     val youTube = tracks[MediaService.YOUTUBE].takeIf { MediaService.YOUTUBE in open && !onWebPlayer }
-    val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer }
+    // Nella schermata di Spotify c'è già la barra con il brano in corso.
+    val onSpotify = currentRoute == "media/spotify"
+    val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer && !onSpotify }
     val radioNow = radio.takeIf { !onRadio }
     val ytNow = nativeYt.takeIf { !onWebPlayer }
 
