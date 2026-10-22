@@ -11,10 +11,16 @@ import com.platinum20.dashboard.today.Briefing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.YearMonth
 
+// Robolectric: org.json è quello di Android, serve per salvare e rileggere.
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class FixedExpenseTest {
     private val today = LocalDate.of(2026, 10, 22)
     private val oct = YearMonth.of(2026, 10)
