@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.45.0
+- Personalizza Oggi: per mostrare o nascondere una card basta toccare tutta la riga (non solo l'interruttore), con la stessa vibrazione e pressione elastica del resto dell'app
+
 ## 1.44.0
 - Meteo: se la previsione non si carica (niente posizione o niente rete) c'è anche "Scegli località" accanto a "Riprova", con un'icona invece del testo spoglio
 - Impostazioni: le righe si "schiacciano" leggermente al tocco come il resto dell'app

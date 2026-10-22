@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -62,7 +63,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Usa le frecce per spostare le card e l'interruttore per mostrarle o nasconderle.",
+                    "Usa le frecce per spostare le card; tocca una card per mostrarla o nasconderla.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
@@ -71,16 +72,20 @@ fun CustomizeScreen(onBack: () -> Unit) {
             itemsIndexed(layout.order, key = { _, card -> card.name }) { index, card ->
                 val visible = card !in layout.hidden
                 val haptic = rememberHaptic()
+                val toggle = hapticToggle { AppSettings.setCardVisible(card, it) }
                 ListItem(
+                    // Si mostra o nasconde toccando tutta la riga, non solo l'interruttore.
                     modifier = Modifier
                         .animateItem()
                         .padding(vertical = 2.dp)
-                        .clip(MaterialTheme.shapes.large),
+                        .bouncyPress(0.98f)
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable { toggle(!visible) },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     headlineContent = { Text(card.label) },
                     supportingContent = { Text(card.description) },
                     leadingContent = {
-                        Switch(checked = visible, onCheckedChange = hapticToggle { AppSettings.setCardVisible(card, it) })
+                        Switch(checked = visible, onCheckedChange = toggle)
                     },
                     trailingContent = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
