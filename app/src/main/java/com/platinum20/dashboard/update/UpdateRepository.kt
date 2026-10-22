@@ -73,6 +73,11 @@ class UpdateRepository(private val context: Context) {
                     }
                 }
             }
+            // Una connessione caduta a metà lascerebbe un APK incompleto che non si installa.
+            if (total > 0 && target.length() < total) {
+                target.delete()
+                throw IOException("Download interrotto, riprova.")
+            }
         } finally {
             conn.disconnect()
         }

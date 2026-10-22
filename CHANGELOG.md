@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.24.0
+- Errori di rete più chiari in meteo, news e aggiornamenti: "Nessuna connessione a Internet", "connessione troppo lenta" o "il servizio non risponde" al posto dei messaggi tecnici in inglese
+- Aggiornamenti: se il download dell'APK si interrompe a metà ora lo dice, invece di provare a installare un file incompleto
+
 ## 1.23.0
 - News: tolto Il Post, che continuava a bloccare l'app. Al suo posto AGI (agenzia di stampa, articoli gratuiti) e Internazionale
 
