@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.71.0
+- Da fare: i tempi si possono scrivere anche a lettere ("tra due ore stendere", "fra dieci minuti tè") e con la mezz'ora ("tra un'ora e mezza uscire")
+
 ## 1.70.0
 - Nuovo design di Canvas: sfondo color carta, card bianche con un bordo sottile al posto delle ombre, un blu deciso come accento e l'arancio per ciò che è urgente; caratteri Inter inclusi nell'app
 - Nuovo tema "Canvas" (chiaro o scuro come il telefono), ora predefinito; Material You e AMOLED restano nelle Impostazioni

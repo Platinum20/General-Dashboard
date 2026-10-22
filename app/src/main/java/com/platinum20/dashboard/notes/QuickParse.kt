@@ -67,7 +67,13 @@ object QuickParse {
     private val everyMonth = rx("ogni mese")
     private val everyYear = rx("(?:ogni anno|tutti gli anni)")
 
-    private val inAmount = rx("(?:tra|fra) (un|una|un'|mezz'|mezza|\\d+) ?(minut[oi]|min|or[ae]|giorn[oi]|settiman[ae]|mes[ei])")
+    /** Numeri scritti a lettere: "tra due ore", "fra dieci minuti". */
+    private val numberWords = mapOf(
+        "due" to 2L, "tre" to 3L, "quattro" to 4L, "cinque" to 5L, "sei" to 6L, "sette" to 7L,
+        "otto" to 8L, "nove" to 9L, "dieci" to 10L, "quindici" to 15L, "venti" to 20L,
+        "trenta" to 30L, "quaranta" to 40L, "quarantacinque" to 45L,
+    )
+    private val inAmount = rx("(?:tra|fra) (un|una|un'|mezz'|mezza|\\d+|${numberWords.keys.joinToString("|")}) ?(minut[oi]|min|or[ae]|giorn[oi]|settiman[ae]|mes[ei])(?: (e mezz[ao]))?")
     private val dayWord = rx("(oggi|domani|dopodomani)(?: (mattina|pomeriggio|sera))?")
     private val dayShort = rx("(stamattina|stasera|domattina|stanotte)")
     private val weekday = rx("(?:(?:il|di|questo|questa|prossimo|prossima) )?($weekdayGroup)(?: (prossim[oa]))?")
@@ -116,12 +122,14 @@ object QuickParse {
             val n = when (m.groupValues[1].lowercase()) {
                 "un", "una", "un'" -> 1L
                 "mezz'", "mezza" -> 0L
-                else -> m.groupValues[1].toLong()
+                else -> numberWords[m.groupValues[1].lowercase()] ?: m.groupValues[1].toLong()
             }
             val unit = m.groupValues[2].lowercase()
             when {
                 unit.startsWith("min") -> exact = now.plusMinutes(n)
-                unit.startsWith("or") -> exact = if (n == 0L) now.plusMinutes(30) else now.plusHours(n)
+                // "Tra un'ora e mezza": la mezz'ora in più conta solo per le ore.
+                unit.startsWith("or") -> exact = if (n == 0L) now.plusMinutes(30)
+                    else now.plusHours(n).plusMinutes(if (m.groupValues[3].isNotEmpty()) 30 else 0)
                 unit.startsWith("giorn") -> date = today.plusDays(n)
                 unit.startsWith("settiman") -> date = today.plusWeeks(n)
                 else -> date = today.plusMonths(n)
