@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.20.0
+- News: Il Post di nuovo raggiungibile. Il sito bloccava le richieste dell'app come se fosse un bot (HTTP 403): ora, quando succede, feed e articoli vengono scaricati con il motore del browser
+
 ## 1.19.0
 - Widget: una riga con i promemoria scaduti o in scadenza oggi e il prossimo da fare, con l'orario; toccandola si apre la sezione Note
 - Il widget si aggiorna subito quando aggiungi, completi o sposti un promemoria
