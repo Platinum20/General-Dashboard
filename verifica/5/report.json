@@ -1,0 +1,1200 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 59,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 1,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 63,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 72,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1570,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 78,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1765,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 72,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1391,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1387,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 149,
+    "blocked": 0,
+    "wouldBlock": 35,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 6,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "www.google-analytics.com": 5,
+     "cdn.pbstck.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "jmxxobwtdvfoctwaroiru96xgxdbt1792664570.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "intake.pbstck.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 29956,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 120,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 3,
+     "sb.scorecardresearch.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 29965,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/22/da-oggi-diritto-alla-riparazione.-obblighi-per-produttori-tutele-per-consumatori_d741cf0d-dad0-4d72-b5cc-d4ea280a8c56.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 2345,
+    "blocked": 0,
+    "wouldBlock": 2083,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 2,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "t.seedtag.com": 3,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "s.seedtag.com": 46,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "intake.pbstck.com": 3,
+     "vjll3zrz7yruwec1eroeheukovnqk1792664595.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 5,
+     "csync.smartadserver.com": 3,
+     "ad.360yield.com": 26,
+     "onetag-sys.com": 58,
+     "u.openx.net": 9,
+     "match.prod.bidr.io": 8,
+     "sync.smartadserver.com": 14,
+     "ap.lijit.com": 44,
+     "match.adsrvr.org": 27,
+     "t.adx.opera.com": 9,
+     "x.bidswitch.net": 40,
+     "c1.adform.net": 12,
+     "b1sync.outbrain.com": 14,
+     "creativecdn.com": 39,
+     "ups.analytics.yahoo.com": 9,
+     "match.deepintent.com": 7,
+     "id5-sync.com": 7,
+     "ib.adnxs.com": 25,
+     "beachfront-match.dotomi.com": 1,
+     "sync.ipredictive.com": 6,
+     "pixel-sync.sitescout.com": 20,
+     "secure-assets.rubiconproject.com": 33,
+     "ads.pubmatic.com": 23,
+     "visitor.omnitagjs.com": 4,
+     "match.sharethrough.com": 20,
+     "csync.loopme.me": 37,
+     "cs.admanmedia.com": 10,
+     "sync.1rx.io": 51,
+     "sync.srv.stackadapt.com": 20,
+     "ced-ns.sascdn.com": 1,
+     "csync.smilewanted.com": 16,
+     "eb2.3lift.com": 38,
+     "image8.pubmatic.com": 24,
+     "hb.trustedstack.com": 3,
+     "s.ad.smaato.net": 36,
+     "cs.media.net": 16,
+     "id.rlcdn.com": 9,
+     "prebid.a-mo.net": 12,
+     "rtb.mfadsrvr.com": 4,
+     "ssum-sec.casalemedia.com": 5,
+     "sync.richaudience.com": 25,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "public.servenobid.com": 1,
+     "measureadv.com": 1,
+     "sync.adkernel.com": 55,
+     "ssbsync.smartadserver.com": 30,
+     "ittpx.eskimi.com": 12,
+     "eus.rubiconproject.com": 70,
+     "cpm.vistarsagency.com": 1,
+     "ssc-cms.33across.com": 69,
+     "cs-server-s2s.yellowblue.io": 8,
+     "sync-tm.everesttech.net": 5,
+     "cm.g.doubleclick.net": 9,
+     "tr.blismedia.com": 2,
+     "ad.turn.com": 3,
+     "us-east-1-cs-rtb.openwebmp.com": 2,
+     "prebidsrvr.cootlogix.com": 1,
+     "sync.kueezrtb.com": 4,
+     "p.rfihub.com": 19,
+     "ce.lijit.com": 17,
+     "sync.go.sonobi.com": 45,
+     "jadserve.postrelease.com": 11,
+     "hbx.media.net": 29,
+     "ads.servenobid.com": 8,
+     "pixel.33across.com": 1,
+     "token.rubiconproject.com": 54,
+     "visitor.us-east4.gcp.omnitagjs.com": 4,
+     "bh.contextweb.com": 21,
+     "ssbsync-global.smartadserver.com": 12,
+     "ads.yieldmo.com": 22,
+     "rtb.openx.net": 5,
+     "cm.adform.net": 19,
+     "secure.adnxs.com": 10,
+     "ssp-sync.criteo.com": 23,
+     "rtb.gumgum.com": 6,
+     "ms-cookie-sync.presage.io": 7,
+     "prebid-match.dotomi.com": 3,
+     "dsp-service.admatic.de": 4,
+     "cookies.nextmillmedia.com": 8,
+     "sync.ingage.tech": 2,
+     "stx-match.dotomi.com": 2,
+     "sync.a-mo.net": 5,
+     "rtb-csync.smartadserver.com": 1,
+     "sync.rbstsystems.live": 8,
+     "syncingbridge.com": 5,
+     "cs.iqzone.com": 15,
+     "user-sync.fwmrm.net": 6,
+     "openweb-match.dotomi.com": 2,
+     "visitor-ow.omnitagjs.com": 3,
+     "us-u.openx.net": 21,
+     "a.amxrtb.com": 16,
+     "www.temu.com": 2,
+     "pixel-eu.rubiconproject.com": 6,
+     "dsum-sec.casalemedia.com": 1,
+     "visitor-programmaticx.omnitagjs.com": 1,
+     "rt.marphezis.com": 1,
+     "visitor-px.omnitagjs.com": 1,
+     "trace.mediago.io": 1,
+     "gw-iad-bid.ymmobi.com": 33,
+     "dsp-service.adtarget.biz": 2,
+     "u-las.4dex.io": 3,
+     "cs.openwebmp.com": 6,
+     "sync.cootlogix.com": 28,
+     "u-ams.4dex.io": 8,
+     "pbs-cs.yellowblue.io": 4,
+     "sync.sparteo.com": 8,
+     "dsp-service.pixad.com.tr": 3,
+     "usync.ingage.tech": 5,
+     "sync.adtelligent.com": 2,
+     "s.console.adtarget.com.tr": 2,
+     "bidder.smartytouch.co": 2,
+     "33across-match.dotomi.com": 1,
+     "prebid.admatic.de": 6,
+     "sync.technoratimedia.com": 1,
+     "ortb.vdo.ai": 3,
+     "idpix.media6degrees.com": 1,
+     "usync.4dex.io": 4,
+     "visitor-33across.omnitagjs.com": 1,
+     "static.cloudflareinsights.com": 2,
+     "ittpx-us-e.eskimi.com": 4,
+     "ads.betweendigital.com": 1,
+     "pixel.rubiconproject.com": 34,
+     "b1sync.zemanta.com": 3,
+     "ogury-match.dotomi.com": 2,
+     "ps.eyeota.net": 19,
+     "px.ads.linkedin.com": 3,
+     "pixel.tapad.com": 4,
+     "dp1.33across.com": 1,
+     "px.mountain.com": 1,
+     "et-c-ash.33across.com": 1,
+     "id.a-mx.com": 15,
+     "rtb.adentifi.com": 1,
+     "pixel-us-east.rubiconproject.com": 11,
+     "um.simpli.fi": 2,
+     "cms.quantserve.com": 2,
+     "elb.the-ozone-project.com": 1,
+     "s.amazon-adsystem.com": 2,
+     "i.w55c.net": 1,
+     "openx2-match.dotomi.com": 1,
+     "i.liadm.com": 4,
+     "oxp.mxptint.net": 1,
+     "s.company-target.com": 1,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "thrtle.com": 4,
+     "gumgum-match.dotomi.com": 3,
+     "cs.yellowblue.io": 3,
+     "dsp.360yield.com": 3,
+     "contextual.media.net": 4,
+     "aorta.clickagy.com": 4,
+     "pxl.iqm.com": 1,
+     "aa.agkn.com": 1,
+     "cs.ingage.tech": 1,
+     "openx-ums.acuityplatform.com": 1,
+     "su.semasio.net": 1,
+     "dmp.brand-display.com": 6,
+     "bpi.rtactivate.com": 6,
+     "capi.connatix.com": 8,
+     "prebid.pixad.com.tr": 4,
+     "prebid.adtarget.biz": 1,
+     "vop.sundaysky.com": 6,
+     "sync.crwdcntrl.net": 6,
+     "static.cdn.admatic.de": 3,
+     "ads58.console.adtarget.com.tr": 4,
+     "sync.serverbid.com": 1,
+     "data.adsrvr.org": 1,
+     "bttrack.com": 1,
+     "us.ck-ie.com": 26,
+     "krush-match.dotomi.com": 13,
+     "sync.aniview.com": 26,
+     "sync.bfmio.com": 13,
+     "eu-rtbstack-cm.admixer.net": 13,
+     "sync-km.ads.yieldmo.com": 13,
+     "player.aniview.com": 13,
+     "sync.colossusssp.com": 13,
+     "match.sync.ad.cpe.dotomi.com": 13,
+     "visitor-krushmedia_video.omnitagjs.com": 13,
+     "image2.pubmatic.com": 13,
+     "visitor-krushmedia.omnitagjs.com": 13,
+     "usersync.gumgum.com": 13,
+     "ads.stickyadstv.com": 13,
+     "sync.mathtag.com": 13,
+     "ice.360yield.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Da oggi diritto alla riparazione. Obblighi per produttori tutele per consumatori - Ultima ora - Ansa.it",
+    "textLength": 9427,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 46,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Da oggi diritto alla riparazione. Obblighi per produttori tutele per consumatori - Ultima ora - Ansa.it",
+    "textLength": 9427,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/attualita/voli-a-rischio-in-7-aeroporti-italiani-rifornimenti-limitati-e-restrizioni-per-lo-sciopero-dei-camionisti/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 312,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 312,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 367,
+    "blocked": 0,
+    "wouldBlock": 107,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 2,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.insurads.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "applets.ebxcdn.com": 2,
+     "ep2.adtrafficquality.google": 3,
+     "vpbvggkah0euubncyqzvhdk88zgoc1792664672.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cdn.permutive.app": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "cm.everesttech.net": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "services.insurads.com": 3,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "c.amazon-adsystem.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "esp.rtbhouse.com": 1,
+     "0f01542ae652149bfcc5dca9f68891ed.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2,
+     "gum.criteo.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21070,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 257,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21062,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/22/annalisa-cuzzocrea-nuova-direttrice-huffpost-italia/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 202,
+    "blocked": 0,
+    "wouldBlock": 139,
+    "blockedHosts": {
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 6,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "assets.evolutionadv.it": 1,
+     "trc.taboola.com": 3,
+     "pagead2.googlesyndication.com": 20,
+     "sb.scorecardresearch.com": 2,
+     "applets.ebxcdn.com": 2,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "cdn.permutive.app": 1,
+     "myfx8xn55obgmt5okzacqaslkz2ws1792664694.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "googleads.g.doubleclick.net": 2,
+     "ep1.adtrafficquality.google": 2,
+     "cm.everesttech.net": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "services.insurads.com": 4,
+     "cdn1.anonymised.io": 2,
+     "ep2.adtrafficquality.google": 3,
+     "ch-trc-events.taboola.com": 3,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "cds.taboola.com": 1,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "c.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "esp.rtbhouse.com": 1,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "aeadaa020033b201671d81801e4b704b.safeframe.googlesyndication.com": 2,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 3,
+     "p.typekit.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Annalisa Cuzzocrea è la nuova direttrice di HuffPost Italia - Open",
+    "textLength": 5365,
+    "adFrames": 1,
+    "adBoxes": 17
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Annalisa Cuzzocrea è la nuova direttrice di HuffPost Italia - Open",
+    "textLength": 4316,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/articoli/2026/10/trump-vuole-ribattezzare-atlantico-oceano-americano-ma-google-dice-no-non-si-puo-fare-4674b4c2-3d24-4a24-a2a8-0aa26a2615a3.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 340,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 340,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 149,
+    "blocked": 0,
+    "wouldBlock": 40,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "pagead2.googlesyndication.com": 3,
+     "ep1.adtrafficquality.google": 2,
+     "97db9a3807e9c07c424d699cd3b0a534.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 3,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15101,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 113,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14482,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/cronaca/news/2026-10-22/cortei-nordio-nuovi-reati-39655286/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 171,
+    "blocked": 0,
+    "wouldBlock": 53,
+    "blockedHosts": {
+     "www.googletagmanager.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "pagead2.googlesyndication.com": 6,
+     "s0.2mdn.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "e4e956287fa812a24aef8509d101c070.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 3,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 18
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Cortei: Nordio, 'costretti a creare nuovi reati e inasprire le pene'",
+    "textLength": 7372,
+    "adFrames": 1,
+    "adBoxes": 1
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 117,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')"
+    ]
+   },
+   "info": {
+    "title": "Cortei: Nordio, 'costretti a creare nuovi reati e inasprire le pene'",
+    "textLength": 5967,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 188,
+    "blocked": 0,
+    "wouldBlock": 47,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 1,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "a53accba90a7d25ba09f24e7268b236c.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "h.clarity.ms": 2,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11775,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 148,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11731,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/oroscopo/2026/10/22/bilancia-22-28-ottobre-2026"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 120,
+    "blocked": 0,
+    "wouldBlock": 58,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 8,
+     "static.chartbeat.com": 3,
+     "a.teads.tv": 1,
+     "www.google-analytics.com": 2,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 2,
+     "static.teads.tv": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "62f921c2ecc6ce4356037038b165a70a.safeframe.googlesyndication.com": 1,
+     "ep1.adtrafficquality.google": 2,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 11,
+     "tpc.googlesyndication.com": 4,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "l.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Oroscopo Rob Brezsny Bilancia 22/28 ottobre 2026 - Internazionale",
+    "textLength": 782,
+    "adFrames": 0,
+    "adBoxes": 7
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 67,
+    "blocked": 10,
+    "wouldBlock": 10,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "a.teads.tv": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Oroscopo Rob Brezsny Bilancia 22/28 ottobre 2026 - Internazionale",
+    "textLength": 771,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
