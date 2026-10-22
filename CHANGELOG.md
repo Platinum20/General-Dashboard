@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.89.0
+- Nuova icona: una tela su un cavalletto, piena e senza bordino. Con le icone a tema di Android 13+ prende i colori del tuo sfondo
 - Vetro liquido (da Android 13): la barra in basso e il mini player piegano la pagina vicino ai bordi come una lente, con un filo di luce sul bordo. Sotto Android 13 resta il vetro sfocato
 - Le pagine interne (Meteo, Il punto del giorno, Personalizza, Aggiornamenti, Calendario, Compila da solo, Località) hanno il titolo grande con la freccia, come Impostazioni
 - Note: le sei schede diventano pillole come i filtri delle News, e la riga scorre da sola fino a quella aperta
