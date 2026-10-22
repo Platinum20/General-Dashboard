@@ -142,11 +142,12 @@ private fun StationRow(station: RadioStation, now: RadioNow?) {
     val favorites by RadioStore.favorites.collectAsState()
     val favorite = favorites.any { it.id == station.id }
     val playing = now?.station?.id == station.id
+    val haptic = rememberHaptic()
     Surface(
         onClick = { RadioStore.play(station) },
         shape = MaterialTheme.shapes.large,
         color = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             StationLogo(station, 48)
@@ -162,7 +163,10 @@ private fun StationRow(station: RadioStation, now: RadioNow?) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = { RadioStore.toggleFavorite(station) }) {
+            IconButton(onClick = {
+                haptic(if (favorite) Haptic.TICK else Haptic.CONFIRM)
+                RadioStore.toggleFavorite(station)
+            }) {
                 Icon(
                     if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = if (favorite) "Togli dalle preferite" else "Aggiungi alle preferite",
