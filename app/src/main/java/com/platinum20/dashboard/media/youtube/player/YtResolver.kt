@@ -10,6 +10,10 @@ import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
+import org.schabi.newpipe.extractor.search.SearchInfo
+import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
+import org.schabi.newpipe.extractor.stream.StreamInfoItem
+import com.platinum20.dashboard.media.youtube.YtVideo
 
 /** Un video di YouTube pronto per il player nativo: indirizzi dei flussi e dati da mostrare. */
 data class YtStream(
@@ -47,6 +51,26 @@ object YtResolver {
 
     fun videoId(link: String): String? =
         Regex("""(?:v=|youtu\.be/|shorts/|embed/|live/)([A-Za-z0-9_-]{11})""").find(link)?.groupValues?.get(1)
+
+    /** Ricerca dei video senza API e senza quota: stessi risultati della ricerca di YouTube. */
+    suspend fun search(query: String): List<YtVideo> = withContext(Dispatchers.IO) {
+        init()
+        val service = ServiceList.YouTube
+        val handler = service.searchQHFactory.fromQuery(query, listOf(YoutubeSearchQueryHandlerFactory.VIDEOS), "")
+        SearchInfo.getInfo(service, handler).relatedItems
+            .filterIsInstance<StreamInfoItem>()
+            .mapNotNull { item ->
+                val id = videoId(item.url) ?: return@mapNotNull null
+                YtVideo(
+                    id = id,
+                    title = item.name,
+                    channel = item.uploaderName.orEmpty(),
+                    channelId = "",
+                    published = null,
+                    isShort = item.isShortFormContent,
+                )
+            }
+    }
 
     suspend fun resolve(link: String): YtStream = withContext(Dispatchers.IO) {
         init()

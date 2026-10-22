@@ -584,7 +584,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 YouTubeFeedScreen(
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
-                    onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                 )
             }

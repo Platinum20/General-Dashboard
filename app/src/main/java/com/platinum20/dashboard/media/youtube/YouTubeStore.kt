@@ -3,6 +3,7 @@ package com.platinum20.dashboard.media.youtube
 import android.content.Context
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.userMessage
+import com.platinum20.dashboard.media.youtube.player.YtResolver
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,7 +67,13 @@ object YouTubeStore {
         if (query.isBlank()) return
         _search.update { it.copy(loading = true, error = null) }
         scope.launch {
-            _search.value = call(context, web = { YouTubeWeb.search(it, query.trim()) }) { token -> YouTubeApi.search(token, query.trim()) }
+            // Prima la ricerca nativa (niente quota dell'API); se YouTube la blocca, la strada di prima.
+            val native = runCatching { YtResolver.search(query.trim()) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            _search.value = if (native != null) {
+                Loadable(data = native, loadedAt = System.currentTimeMillis())
+            } else {
+                call(context, web = { YouTubeWeb.search(it, query.trim()) }) { token -> YouTubeApi.search(token, query.trim()) }
+            }
         }
     }
 

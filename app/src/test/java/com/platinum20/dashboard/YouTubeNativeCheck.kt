@@ -45,6 +45,9 @@ class YouTubeNativeCheck {
                 out.append("  - $name (client $client): HTTP $code\n")
             }
         }
+        val found = runCatching { YtResolver.search("lofi hip hop") }
+        found.getOrNull()?.let { out.append("- ✅ ricerca: ${it.size} video, primo \"${it.firstOrNull()?.title}\"\n") }
+            ?: out.append("- ❌ ricerca: ${found.exceptionOrNull()}\n")
         println(out)
         val dir = File(System.getProperty("live.dir") ?: "build/live").apply { mkdirs() }
         File(dir, "youtube.md").writeText(out.toString())

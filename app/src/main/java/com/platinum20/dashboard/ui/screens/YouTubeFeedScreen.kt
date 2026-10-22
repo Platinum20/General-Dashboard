@@ -33,7 +33,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.OndemandVideo
-import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
@@ -44,7 +43,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -88,7 +86,6 @@ private val youTubeTabs = listOf("Iscrizioni", "Playlist", "Mi piace", "Più tar
 fun YouTubeFeedScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
-    onOpenWeb: () -> Unit,
     onLogin: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -135,9 +132,6 @@ fun YouTubeFeedScreen(
                             Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")
                         }
                     }
-                    IconButton(onClick = onOpenWeb) {
-                        Icon(Icons.Outlined.OpenInBrowser, contentDescription = "Apri YouTube completo")
-                    }
                 },
             )
         },
@@ -148,7 +142,7 @@ fun YouTubeFeedScreen(
                 .padding(inner)
         ) {
             if (!connected || (setup && !official)) {
-                ConnectYouTube(onOpenWeb = onOpenWeb, onLogin = onLogin)
+                ConnectYouTube(onLogin = onLogin)
                 return@Column
             }
             val playlist = openPlaylist
@@ -174,7 +168,7 @@ fun YouTubeFeedScreen(
 }
 
 @Composable
-private fun ConnectYouTube(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
+private fun ConnectYouTube(onLogin: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -244,8 +238,6 @@ private fun ConnectYouTube(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
             Spacer(Modifier.height(16.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onOpenWeb) { Text("Apri YouTube completo") }
     }
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.84.0
+- Ricerca di YouTube nativa: risultati senza consumare la quota dell'API di Google
+- Tolti i pulsanti che aprivano il sito di YouTube: ora è tutto nell'app
+
 ## 1.83.0
 - YouTube con il player nativo di Android: il video arriva direttamente nell'app, senza pagina web né pubblicità
 - Ascolto in sottofondo con controlli nella notifica e nella schermata di blocco; la bolla mostra il video
