@@ -47,14 +47,14 @@ object Briefing {
         tomorrow: List<CalendarEvent>?,
         tasks: List<TaskItem>,
         countdowns: List<Countdown>,
-        habits: List<Habit> = emptyList(),
-        parcels: List<Parcel> = emptyList(),
-        expenses: List<Expense> = emptyList(),
-        budgetCents: Long? = null,
         zone: ZoneId = ZoneId.systemDefault(),
         max: Int = 4,
         /** false per il widget, che si aggiorna ogni ora: "alle 15:00" invece di "tra 25 min". */
         relative: Boolean = true,
+        habits: List<Habit> = emptyList(),
+        parcels: List<Parcel> = emptyList(),
+        expenses: List<Expense> = emptyList(),
+        budgetCents: Long? = null,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
