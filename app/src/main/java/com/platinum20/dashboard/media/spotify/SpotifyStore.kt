@@ -73,13 +73,23 @@ object SpotifyStore {
         )
     }
 
+    private val lockedMessage = java.util.concurrent.ConcurrentHashMap<String, String>()
+
     fun loadChildren(parent: SpItem, force: Boolean = false) {
         val state = _children.value[parent.id]
         if (!force && state != null && (state.loading || state.data != null)) return
         _children.update { it + (parent.id to (state ?: Loadable()).copy(loading = true, error = null)) }
         scope.launch {
-            val result = call { token -> SpotifyApi.children(token, parent) }
-            _children.update { it + (parent.id to result) }
+            val result = call { token ->
+                try {
+                    SpotifyApi.children(token, parent)
+                } catch (e: PlaylistLockedException) {
+                    // Il titolo e "Riproduci" restano: la playlist suona lo stesso, manca solo l'elenco.
+                    lockedMessage[parent.id] = e.message.orEmpty()
+                    emptyList()
+                }
+            }
+            _children.update { it + (parent.id to (lockedMessage[parent.id]?.let { msg -> result.copy(error = msg) } ?: result)) }
         }
     }
 

@@ -361,7 +361,9 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
     val all by SpotifyStore.children.collectAsState()
     val state = all[parent.id] ?: Loadable(loading = true)
     LaunchedEffect(parent.id) { SpotifyStore.loadChildren(parent) }
-    FeedList(state, empty = "Vuoto") {
+    // Con i dati (anche vuoti) l'avviso va sotto il titolo, così "Riproduci" resta lì sopra.
+    val note = state.error?.takeIf { state.data != null }
+    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto") {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96)
@@ -376,6 +378,11 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
                         }
                     }
                 }
+            }
+        }
+        note?.let { message ->
+            item(key = "note") {
+                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         items(state.data.orEmpty(), key = { it.uri + it.id }) { child ->
