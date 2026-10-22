@@ -18,7 +18,7 @@ enum class HomeCard(val label: String, val description: String) {
     MODULES("Scorciatoie", "Meteo, punto del giorno, video, YouTube e Spotify a un tocco"),
     CALENDAR("Agenda", "Gli impegni di oggi; la sera, finiti quelli, quelli di domani. Sparisce se non ce ne sono"),
     TASKS("Da fare", "I promemoria ancora aperti"),
-    COUNTDOWN("In arrivo", "Compleanni, viaggi e scadenze dei prossimi 30 giorni. Sparisce se non ce ne sono"),
+    COUNTDOWN("In arrivo", "Compleanni, viaggi e scadenze della prossima settimana. Sparisce se non ce ne sono"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
 }
 

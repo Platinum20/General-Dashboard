@@ -319,7 +319,7 @@ fun DueText(dueAt: Long) {
 }
 
 /** In Oggi solo le date vicine: le altre restano in Note > Date. */
-const val SOON_DAYS = 30L
+const val SOON_DAYS = 7L
 
 val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
 
