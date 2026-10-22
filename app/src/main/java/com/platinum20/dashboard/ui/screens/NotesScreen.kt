@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Checklist as ChecklistIcon
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.OutlinedIconToggleButton
 import androidx.compose.foundation.BorderStroke
@@ -83,6 +85,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.notes.Checklist
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
@@ -567,9 +570,16 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                             )
                         }
                     }
+                    Checklist.progressLabel(note.text)?.let { progress ->
+                        Text(
+                            progress,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     if (note.body.isNotBlank()) {
                         Text(
-                            note.body,
+                            Checklist.preview(note.body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 4,
@@ -641,6 +651,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var id by remember { mutableStateOf(noteId) }
     var text by rememberSaveable { mutableStateOf(noteId?.let { NotesStore.note(it)?.text }.orEmpty()) }
     var deleted by remember { mutableStateOf(false) }
+    // Le note con voci da spuntare si aprono come lista; la matita torna al testo.
+    var checkMode by rememberSaveable { mutableStateOf(noteId != null && Checklist.hasItems(text)) }
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val pinned = id?.let { current -> data.notes.firstOrNull { it.id == current }?.pinned } ?: false
     val haptic = rememberHaptic()
@@ -672,6 +684,21 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        if (checkMode) {
+                            checkMode = false
+                        } else {
+                            text = Checklist.toList(text)
+                            id = NotesStore.saveNote(id, text) ?: id
+                            checkMode = true
+                        }
+                    }) {
+                        if (checkMode) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Modifica il testo")
+                        } else {
+                            Icon(Icons.Outlined.ChecklistIcon, contentDescription = "Lista")
+                        }
+                    }
                     // Fissa in alto: lo stesso della pressione lunga nella lista, ma visibile.
                     IconButton(onClick = {
                         id?.let {
@@ -707,6 +734,20 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             )
         },
     ) { inner ->
+        if (checkMode) {
+            ChecklistView(
+                text = text,
+                onChange = { next ->
+                    text = next
+                    id = NotesStore.saveNote(id, next) ?: id
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(inner)
+                    .imePadding(),
+            )
+            return@Scaffold
+        }
         TextField(
             value = text,
             onValueChange = {
@@ -729,5 +770,75 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 .imePadding()
                 .autoFocus(enabled = noteId == null),
         )
+    }
+}
+
+/** Una nota-lista: righe da spuntare con un tocco e un campo per aggiungerne in fondo. */
+@Composable
+private fun ChecklistView(text: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val haptic = rememberHaptic()
+    var draft by rememberSaveable { mutableStateOf("") }
+    fun addDraft() {
+        if (draft.isBlank()) return
+        haptic(Haptic.CONFIRM)
+        onChange(Checklist.add(text, draft))
+        draft = ""
+    }
+    LazyColumn(modifier, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+        item(key = "title") {
+            Column(Modifier.padding(bottom = 8.dp)) {
+                Text(
+                    text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty().ifEmpty { "Lista" },
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Checklist.progressLabel(text)?.let { progress ->
+                    Text(progress, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        items(Checklist.lines(text), key = { it.index }) { line ->
+            when (line) {
+                is Checklist.Item -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable {
+                            haptic(if (line.done) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                            onChange(Checklist.toggle(text, line.index))
+                        }
+                        .semantics { contentDescription = (if (line.done) "Fatto: " else "Da fare: ") + line.text },
+                ) {
+                    Checkbox(checked = line.done, onCheckedChange = null, modifier = Modifier.padding(12.dp))
+                    Text(
+                        line.text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (line.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (line.done) TextDecoration.LineThrough else null,
+                    )
+                }
+                is Checklist.Plain -> if (line.text.isBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                } else {
+                    Text(line.text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(vertical = 6.dp))
+                }
+            }
+        }
+        item(key = "add") {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                placeholder = { Text("Aggiungi voce") },
+                leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                singleLine = true,
+                shape = MaterialTheme.shapes.large,
+                colors = canvasFieldColors(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { addDraft() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+        }
     }
 }
