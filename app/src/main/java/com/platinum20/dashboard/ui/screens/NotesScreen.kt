@@ -443,7 +443,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
             Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
-    if (editing) TaskEditDialog(task, onDismiss = { editing = false })
+    if (editing) TaskEditDialog(task, onDismiss = { editing = false }, onDeleted = onDeleted)
 }
 
 @OptIn(ExperimentalFoundationApi::class)

@@ -132,9 +132,12 @@ fun DateTimePickDialog(initial: Long?, onDismiss: () -> Unit, onConfirm: (Long) 
     }
 }
 
-/** Modifica di un promemoria: testo e scadenza con avviso. */
+/**
+ * Modifica di un promemoria: testo e scadenza con avviso.
+ * [onDeleted] riceve il promemoria eliminato, così chi apre il dialog può offrire "Annulla".
+ */
 @Composable
-fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
+fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit, onDeleted: (TaskItem) -> Unit = {}) {
     val context = LocalContext.current
     var text by remember { mutableStateOf(task.text) }
     var due by remember { mutableStateOf(task.dueAt) }
@@ -207,7 +210,10 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
         },
         confirmButton = {
             TextButton(onClick = {
-                if (text.isBlank()) NotesStore.deleteTask(task.id) else {
+                if (text.isBlank()) {
+                    NotesStore.deleteTask(task.id)
+                    onDeleted(task)
+                } else {
                     NotesStore.editTask(task.id, text)
                     NotesStore.setTaskRepeat(task.id, repeat.takeIf { due != null })
                     NotesStore.setTaskDue(task.id, due)
@@ -218,6 +224,7 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit) {
         dismissButton = {
             TextButton(onClick = {
                 NotesStore.deleteTask(task.id)
+                onDeleted(task)
                 onDismiss()
             }) { Text("Elimina") }
         },

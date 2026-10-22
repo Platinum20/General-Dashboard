@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.39.0
+- Note > Da fare: anche quando elimini un promemoria dalla sua finestra di modifica (o ne svuoti il testo) compare "Annulla" per qualche secondo
+
 ## 1.38.0
 - Vibrazione leggera quando aggiungi un promemoria (da Oggi o da Note) o una spesa: senti che è salvato senza guardare
 
