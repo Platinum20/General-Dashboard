@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.platinum20.dashboard.adblock.AdBlocker
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -101,7 +104,12 @@ object WebFetcher {
         settings.loadsImagesAutomatically = false
         settings.mediaPlaybackRequiresUserGesture = true
         addJavascriptInterface(Bridge, "GDFetch")
+        // Solo il blocco delle richieste: la home del sito si carica senza annunci e tracciamento.
+        val adBlock = AdBlocker.attach(this, inPage = false)
         webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                adBlock.intercept(request)
+
             override fun onPageFinished(view: WebView, url: String) {
                 pageLoaded?.complete(Unit)
             }
