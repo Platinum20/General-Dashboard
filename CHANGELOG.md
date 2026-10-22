@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.44.0
+- Meteo: se la previsione non si carica (niente posizione o niente rete) c'è anche "Scegli località" accanto a "Riprova", con un'icona invece del testo spoglio
+- Impostazioni: le righe si "schiacciano" leggermente al tocco come il resto dell'app
+
 ## 1.43.0
 - Note: i promemoria di Da fare, le righe delle Spese, il budget e i giorni delle Abitudini si "schiacciano" leggermente al tocco come il resto dell'app
 - Scelta della località del meteo: stesso effetto sulle città
