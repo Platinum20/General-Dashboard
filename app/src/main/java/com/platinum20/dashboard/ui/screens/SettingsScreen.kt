@@ -82,6 +82,8 @@ import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.autofill.AutoFill
+import androidx.compose.material.icons.outlined.AutoAwesome
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,11 +92,14 @@ fun SettingsScreen(
     onOpenUpdates: () -> Unit,
     onCustomize: () -> Unit,
     onLogin: (MediaService) -> Unit,
+    onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
     val haptic = rememberHaptic()
     val loggedIn by Accounts.loggedIn.collectAsState()
+    AutoFill.init(context)
+    val autoFillOn by AutoFill.enabled.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
@@ -161,6 +166,19 @@ fun SettingsScreen(
                 }
             }
 
+            item { SettingsHeader("Dati automatici") }
+            item {
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Outlined.AutoAwesome,
+                        title = "Compila da solo",
+                        subtitle = if (autoFillOn) "Acceso · pacchi, spese e scadenze dalle notifiche" else "Pacchi, spese e scadenze presi da notifiche, mail e SMS",
+                        showChevron = true,
+                        onClick = onOpenAutoFill,
+                    )
+                }
+            }
+
             item { SettingsHeader("Account e Media") }
             item {
                 SettingsGroup {
@@ -219,12 +237,12 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SettingsHeader(text: String) {
+internal fun SettingsHeader(text: String) {
     SectionHeader(text, Modifier.padding(top = 14.dp, bottom = 2.dp))
 }
 
 @Composable
-private fun SettingsGroup(content: @Composable () -> Unit) {
+internal fun SettingsGroup(content: @Composable () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.card,
@@ -235,7 +253,7 @@ private fun SettingsGroup(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsRow(
+internal fun SettingsRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
@@ -255,7 +273,7 @@ private fun SettingsRow(
 
 /** Riga compatta delle impostazioni: icona, titolo, una riga di descrizione e un comando a destra. */
 @Composable
-private fun SettingsItem(
+internal fun SettingsItem(
     icon: ImageVector,
     title: String,
     subtitle: String? = null,
