@@ -109,6 +109,7 @@ fun NewsScreen(
     ) { inner ->
         PullToRefreshBox(
             isRefreshing = state.refreshing,
+            state = rememberHapticPullState(state.refreshing),
             onRefresh = viewModel::refresh,
             modifier = Modifier
                 .fillMaxSize()

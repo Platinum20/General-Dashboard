@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.28.0
+- Feedback aptico leggero dove aiuta: spunta di un promemoria, bolla del player presa e agganciata al bordo, soglia del "trascina per aggiornare", interruttori, ordine delle card, scelta del tema e pressione lunga su una nota per fissarla
+- Usa le vibrazioni di sistema: se nel telefono sono spente, l'app non vibra
+
 ## 1.27.0
 - Promemoria scritti come parli: "domani alle 9 dentista", "venerdì 18:30 palestra", "tra 20 minuti forno", "il 15 novembre bollo auto". Giorno, ora e avviso si impostano da soli, e mentre scrivi vedi quando suonerà
 - Promemoria ricorrenti: "ogni mese il 5 affitto", "ogni lunedì spazzatura". Quando lo spunti passa alla volta successiva; la ripetizione si cambia anche dal promemoria

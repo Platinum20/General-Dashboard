@@ -351,11 +351,15 @@ private fun GroupLabel(text: String, error: Boolean = false) {
 @Composable
 private fun TaskRow(task: TaskItem) {
     var editing by remember { mutableStateOf(false) }
+    val haptic = rememberHaptic()
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = task.done, onCheckedChange = { NotesStore.toggleTask(task.id) })
+        Checkbox(checked = task.done, onCheckedChange = {
+            haptic(if (task.done) Haptic.TICK else Haptic.CONFIRM)
+            NotesStore.toggleTask(task.id)
+        })
         Column(
             Modifier
                 .weight(1f)
@@ -382,6 +386,7 @@ private fun TaskRow(task: TaskItem) {
 @Composable
 private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Long?) -> Unit) {
     val sorted = notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+    val haptic = rememberHaptic()
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(sorted, key = { it.id }) { note ->
             ElevatedCard(
@@ -391,7 +396,7 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                     .bouncyPress()
                     .combinedClickable(
                         onClick = { onOpenNote(note.id) },
-                        onLongClick = { NotesStore.togglePin(note.id) },
+                        onLongClick = { haptic(Haptic.LONG_PRESS); NotesStore.togglePin(note.id) },
                     ),
             ) {
                 Column(Modifier.padding(16.dp)) {
