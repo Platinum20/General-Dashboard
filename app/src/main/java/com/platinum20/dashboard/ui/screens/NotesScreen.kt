@@ -618,7 +618,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
-                .imePadding(),
+                .imePadding()
+                .autoFocus(enabled = noteId == null),
         )
     }
 }

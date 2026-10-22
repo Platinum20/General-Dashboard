@@ -12,6 +12,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
@@ -99,6 +102,22 @@ fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = composed {
                 pressed = false
             }
         }
+}
+
+/**
+ * Campo da scrivere subito: per gli elementi nuovi la tastiera si apre da sola,
+ * senza un tocco in più (cattura veloce). Per le modifiche resta chiusa.
+ */
+fun Modifier.autoFocus(enabled: Boolean = true): Modifier = composed {
+    val focus = remember { FocusRequester() }
+    if (enabled) {
+        LaunchedEffect(Unit) {
+            // Un frame di attesa: nei dialog il campo si aggancia dopo la prima composizione.
+            withFrameNanos { }
+            runCatching { focus.requestFocus() }
+        }
+    }
+    focusRequester(focus)
 }
 
 /** Tipi di vibrazione dell'app: brevi e leggere, una per ogni gesto. */

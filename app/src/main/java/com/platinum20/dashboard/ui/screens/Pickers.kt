@@ -282,7 +282,7 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
                     placeholder = { Text("Es. Bere 2 litri d'acqua") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(enabled = habit == null),
                 )
                 if (habit != null) {
                     Spacer(Modifier.height(12.dp))
@@ -333,7 +333,7 @@ fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit, onDeleted: (Co
                     placeholder = { Text("Es. Compleanno di Sara, Vacanze") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(enabled = countdown == null),
                 )
                 Row(
                     modifier = Modifier
