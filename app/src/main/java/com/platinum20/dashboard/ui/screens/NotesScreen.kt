@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
@@ -225,7 +226,7 @@ fun NotesScreen(
 @Composable
 private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDeleted: (Countdown) -> Unit) {
     var editing by remember { mutableStateOf<Countdown?>(null) }
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(upcoming, key = { it.id }) { item ->
             val days = item.daysLeft()
             ElevatedCard(
@@ -274,7 +275,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (
         if (NotesStore.addTask(draft) != null) haptic(Haptic.CONFIRM)
         draft = ""
     }
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         item {
             OutlinedTextField(
                 value = draft,
@@ -325,7 +326,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
     var editing by remember { mutableStateOf<Habit?>(null) }
     val today = LocalDate.now()
     val haptic = rememberHaptic()
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (habits.isNotEmpty()) {
             item {
                 val done = habits.count { it.isDone(today) }
@@ -468,7 +469,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
 private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Long?) -> Unit) {
     val sorted = notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
     val haptic = rememberHaptic()
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         items(sorted, key = { it.id }) { note ->
             ElevatedCard(
                 shape = MaterialTheme.shapes.extraLarge,

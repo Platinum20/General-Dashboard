@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.47.0
+- Note e Media: toccando di nuovo la scheda già aperta nella barra in basso la lista torna in cima, come già in Oggi e News
+
 ## 1.46.0
 - Lettore articoli: se un articolo non si scarica il messaggio è in italiano chiaro ("Il sito non lascia leggere l'articolo nell'app: aprilo nell'originale", "Nessuna connessione a Internet") invece di codici come "HTTP 403"
 

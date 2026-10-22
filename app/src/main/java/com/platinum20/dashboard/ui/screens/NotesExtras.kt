@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.Routes
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -89,7 +90,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
 
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         item {
             OutlinedTextField(
                 value = draft,
@@ -368,7 +369,7 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
     val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
     val haptic = rememberHaptic()
 
-    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(incoming + delivered, key = { it.id }) { parcel ->
             ElevatedCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
                 Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
