@@ -364,7 +364,7 @@ fun CountdownCard() {
                     Column(Modifier.weight(1f)) {
                         Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            longDate(item.nextDate()) + if (item.yearly) " · ogni anno" else "",
+                            item.dateLine(),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
