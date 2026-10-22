@@ -1,0 +1,1223 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 59,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 72,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1524,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1582,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1363,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 82,
+    "blocked": 8,
+    "wouldBlock": 8,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 5
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 2293,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 163,
+    "blocked": 0,
+    "wouldBlock": 34,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 6,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "intake.pbstck.com": 3,
+     "www.google-analytics.com": 5,
+     "cdn-gl.imrworldwide.com": 3,
+     "yf3rkxxamet3xhitnrmnjnvxrlxnt1792632337.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 31625,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 135,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 3,
+     "sb.scorecardresearch.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 31625,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/22/brasile-ordinato-larresto-di-ex-militare-uruguaiano-condannato-in-italia_fbfe281d-9f96-4592-9d6e-a9066e4912ac.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 2850,
+    "blocked": 0,
+    "wouldBlock": 2521,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "t.seedtag.com": 3,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.ansa.it": 1,
+     "www.google-analytics.com": 1,
+     "s.seedtag.com": 54,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "bdtqfcndhyv3uekzpve5n8ncfuk0d1792632362.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 9,
+     "secure-assets.rubiconproject.com": 44,
+     "ads.pubmatic.com": 40,
+     "ad.360yield.com": 22,
+     "match.sharethrough.com": 15,
+     "sync.srv.stackadapt.com": 17,
+     "sync.ipredictive.com": 6,
+     "beachfront-match.dotomi.com": 1,
+     "pixel-sync.sitescout.com": 21,
+     "ib.adnxs.com": 31,
+     "b1sync.outbrain.com": 24,
+     "match.adsrvr.org": 33,
+     "x.bidswitch.net": 49,
+     "ap.lijit.com": 47,
+     "match.deepintent.com": 10,
+     "u.openx.net": 8,
+     "id5-sync.com": 7,
+     "c1.adform.net": 20,
+     "csync.loopme.me": 30,
+     "t.adx.opera.com": 14,
+     "creativecdn.com": 42,
+     "ups.analytics.yahoo.com": 14,
+     "match.prod.bidr.io": 13,
+     "sync.smartadserver.com": 9,
+     "cs.admanmedia.com": 20,
+     "sync.1rx.io": 75,
+     "csync.smartadserver.com": 3,
+     "onetag-sys.com": 104,
+     "visitor.omnitagjs.com": 4,
+     "ced-ns.sascdn.com": 1,
+     "cm.g.doubleclick.net": 7,
+     "sync.richaudience.com": 24,
+     "ad.turn.com": 2,
+     "tr.blismedia.com": 6,
+     "measureadv.com": 1,
+     "ssc-cms.33across.com": 66,
+     "cs-server-s2s.yellowblue.io": 30,
+     "cpm.vistarsagency.com": 1,
+     "ssbsync.smartadserver.com": 29,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "csync.smilewanted.com": 15,
+     "image8.pubmatic.com": 40,
+     "s.ad.smaato.net": 45,
+     "eb2.3lift.com": 32,
+     "hb.trustedstack.com": 4,
+     "rtb.mfadsrvr.com": 4,
+     "ssum-sec.casalemedia.com": 13,
+     "prebid.a-mo.net": 18,
+     "id.rlcdn.com": 13,
+     "cs.media.net": 13,
+     "public.servenobid.com": 1,
+     "eus.rubiconproject.com": 80,
+     "ittpx.eskimi.com": 27,
+     "sync.adkernel.com": 63,
+     "sync-tm.everesttech.net": 7,
+     "pixel.33across.com": 1,
+     "us-east-1-cs-rtb.openwebmp.com": 8,
+     "prebidsrvr.cootlogix.com": 1,
+     "sync.kueezrtb.com": 14,
+     "p.rfihub.com": 13,
+     "ce.lijit.com": 11,
+     "hbx.media.net": 23,
+     "sync.go.sonobi.com": 30,
+     "jadserve.postrelease.com": 28,
+     "bttrack.com": 2,
+     "rtb-csync.smartadserver.com": 2,
+     "stx-match.dotomi.com": 2,
+     "ads.servenobid.com": 8,
+     "ssbsync-global.smartadserver.com": 10,
+     "secure.adnxs.com": 8,
+     "visitor.us-east4.gcp.omnitagjs.com": 4,
+     "cm.adform.net": 19,
+     "prebid-match.dotomi.com": 7,
+     "sync.rbstsystems.live": 14,
+     "ads.yieldmo.com": 14,
+     "us-u.openx.net": 17,
+     "sync.ingage.tech": 2,
+     "ssp-sync.criteo.com": 29,
+     "sync.a-mo.net": 4,
+     "ms-cookie-sync.presage.io": 9,
+     "contextual.media.net": 4,
+     "bh.contextweb.com": 20,
+     "token.rubiconproject.com": 66,
+     "dsp-service.admatic.de": 11,
+     "rtb.openx.net": 9,
+     "cookies.nextmillmedia.com": 37,
+     "dsum-sec.casalemedia.com": 1,
+     "pxl.iqm.com": 4,
+     "cs.iqzone.com": 19,
+     "rtb.gumgum.com": 5,
+     "cms.quantserve.com": 3,
+     "s.company-target.com": 1,
+     "pixel-eu.rubiconproject.com": 5,
+     "a.amxrtb.com": 24,
+     "www.temu.com": 13,
+     "syncingbridge.com": 15,
+     "user-sync.fwmrm.net": 9,
+     "openweb-match.dotomi.com": 2,
+     "visitor-ow.omnitagjs.com": 3,
+     "rt.marphezis.com": 1,
+     "visitor-programmaticx.omnitagjs.com": 5,
+     "visitor-px.omnitagjs.com": 5,
+     "u-las.4dex.io": 3,
+     "dsp-service.adtarget.biz": 3,
+     "s.console.adtarget.com.tr": 2,
+     "sync.sparteo.com": 19,
+     "dsp-service.pixad.com.tr": 3,
+     "sync.cootlogix.com": 63,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "pbs-cs.yellowblue.io": 6,
+     "usync.ingage.tech": 18,
+     "ittpx-us-e.eskimi.com": 4,
+     "cs.openwebmp.com": 6,
+     "sync.technoratimedia.com": 5,
+     "usync.4dex.io": 11,
+     "33across-match.dotomi.com": 2,
+     "u-ams.4dex.io": 23,
+     "aax-eu.amazon-adsystem.com": 1,
+     "pixel.rubiconproject.com": 31,
+     "s.amazon-adsystem.com": 4,
+     "id.a-mx.com": 11,
+     "static.cloudflareinsights.com": 10,
+     "pixel-us-east.rubiconproject.com": 12,
+     "ortb.vdo.ai": 15,
+     "visitor-33across.omnitagjs.com": 1,
+     "ads.betweendigital.com": 1,
+     "prebid.admatic.de": 7,
+     "pixel.tapad.com": 13,
+     "et-c-ash.33across.com": 2,
+     "i.w55c.net": 3,
+     "b1sync.zemanta.com": 4,
+     "rtb.adentifi.com": 1,
+     "elb.the-ozone-project.com": 3,
+     "i.liadm.com": 6,
+     "idpix.media6degrees.com": 1,
+     "ogury-match.dotomi.com": 4,
+     "gw-iad-bid.ymmobi.com": 25,
+     "px.ads.linkedin.com": 3,
+     "dp1.33across.com": 1,
+     "px.mountain.com": 1,
+     "thrtle.com": 3,
+     "ps.eyeota.net": 22,
+     "um.simpli.fi": 2,
+     "openx2-match.dotomi.com": 3,
+     "oxp.mxptint.net": 3,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "aorta.clickagy.com": 4,
+     "gumgum-match.dotomi.com": 2,
+     "cs.yellowblue.io": 8,
+     "dsp.360yield.com": 3,
+     "cs.ingage.tech": 1,
+     "aa.agkn.com": 5,
+     "su.semasio.net": 1,
+     "openx-ums.acuityplatform.com": 1,
+     "prebid.pixad.com.tr": 4,
+     "prebid.adtarget.biz": 1,
+     "vop.sundaysky.com": 3,
+     "cdn.undertone.com": 6,
+     "static.cdn.admatic.de": 5,
+     "ads18.console.adtarget.com.tr": 4,
+     "evt.undertone.com": 1,
+     "sync.crwdcntrl.net": 5,
+     "loadm.exelator.com": 2,
+     "sync.intentiq.com": 5,
+     "idsync.rlcdn.com": 9,
+     "dpm.demdex.net": 5,
+     "sync.serverbid.com": 1,
+     "sync.colossusssp.com": 17,
+     "dis.criteo.com": 1,
+     "sync.ottadvisors.com": 4,
+     "inv-nets.admixer.net": 4,
+     "inmobi-match.dotomi.com": 4,
+     "cs.playdigo.com": 4,
+     "us.ck-ie.com": 20,
+     "sync.pinklion.io": 4,
+     "tracker-shr.ortb.net": 4,
+     "ice.360yield.com": 1,
+     "pbs-us-east.openx.net": 1,
+     "sync.aniview.com": 16,
+     "krush-match.dotomi.com": 8,
+     "sync.bfmio.com": 8,
+     "ads.stickyadstv.com": 8,
+     "player.aniview.com": 8,
+     "eu-rtbstack-cm.admixer.net": 8,
+     "usersync.gumgum.com": 8,
+     "image2.pubmatic.com": 8,
+     "visitor-krushmedia.omnitagjs.com": 8,
+     "sync-km.ads.yieldmo.com": 8,
+     "match.sync.ad.cpe.dotomi.com": 8,
+     "visitor-krushmedia_video.omnitagjs.com": 8,
+     "sync.mathtag.com": 8,
+     "capi.connatix.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Brasile, ordinato l'arresto di ex militare uruguaiano condannato in Italia - Ultima ora - Ansa.it",
+    "textLength": 7894,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Brasile, ordinato l'arresto di ex militare uruguaiano condannato in Italia - Ultima ora - Ansa.it",
+    "textLength": 7894,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/sport/calcio/chivu-difende-pepo-martinez-so-che-il-portiere-viene-sempre-messo-in-prima-pagina-e-in-piazza-quando-fa-errori/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 320,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 320,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 372,
+    "blocked": 0,
+    "wouldBlock": 109,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 3,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn.insurads.com": 3,
+     "dpm.demdex.net": 1,
+     "cdn.confiant-integrations.net": 2,
+     "static.anonymised.io": 1,
+     "ep2.adtrafficquality.google": 3,
+     "applets.ebxcdn.com": 2,
+     "cm.everesttech.net": 1,
+     "cdn.permutive.app": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "services.insurads.com": 3,
+     "guzyfcxznjiohoka49v6dwnvglrvv1792632443.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "secure.cdn.fastclick.net": 1,
+     "prod.us-east-1.cxm-bcn.publisher-services.amazon.dev": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "esp.rtbhouse.com": 1,
+     "386643e865ecd7271252239e87187334.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "gum.criteo.com": 2,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21712,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 261,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21704,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/21/milano-studentessa-erasmus-violentata-fermato-31enne/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 198,
+    "blocked": 0,
+    "wouldBlock": 139,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 7,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "cdn.permutive.app": 1,
+     "ep2.adtrafficquality.google": 3,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cm.everesttech.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "qesb8wjq0fs5gfk9fih3z2qcjwgj01792632467.nuid.imrworldwide.com": 1,
+     "applets.ebxcdn.com": 2,
+     "secure-it.imrworldwide.com": 2,
+     "services.insurads.com": 4,
+     "trc.taboola.com": 3,
+     "cdn1.anonymised.io": 2,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "ch-trc-events.taboola.com": 4,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "cds.taboola.com": 1,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "c.amazon-adsystem.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "esp.rtbhouse.com": 1,
+     "id5-sync.com": 1,
+     "7fb707b8df4fea9a03fe11c73e7134aa.safeframe.googlesyndication.com": 2,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 3,
+     "p.typekit.net": 1
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Studentessa in Erasmus violentata a Milano, fermato un 31enne: è stato incastrato da uno zaino abbandonato - Open",
+    "textLength": 7502,
+    "adFrames": 1,
+    "adBoxes": 18
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 61,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function",
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Studentessa in Erasmus violentata a Milano, fermato un 31enne: è stato incastrato da uno zaino abbandonato - Open",
+    "textLength": 6554,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/maratona/2026/10/ucraina-guerra-spiragli-dialogo-mosca-e-kiev-aprono-a-negoziati-trilaterali-con-usa-aa82c8ce-ba0e-4aaf-bf07-4bb374f7bc0a.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 332,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 332,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 189,
+    "blocked": 0,
+    "wouldBlock": 81,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "cm.g.doubleclick.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "image6.pubmatic.com": 2,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 6,
+     "pagead2.googlesyndication.com": 25,
+     "ep2.adtrafficquality.google": 7,
+     "bbeb0a041fc8acff60c2317de6267173.safeframe.googlesyndication.com": 1,
+     "s0.2mdn.net": 2,
+     "track.activemetering.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14955,
+    "adFrames": 0,
+    "adBoxes": 5
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 113,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14139,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/cronaca/news/2026-10-22/roma-bioparco-laboratorio-salute-pianeta-39645676/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 218,
+    "blocked": 0,
+    "wouldBlock": 95,
+    "blockedHosts": {
+     "www.googletagmanager.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "s0.2mdn.net": 2,
+     "pagead2.googlesyndication.com": 17,
+     "ep1.adtrafficquality.google": 4,
+     "6b16e4bea23317ce630907e7ccd9354d.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 5,
+     "cdn.taboola.com": 3,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "ch-trc-events.taboola.com": 3,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Il Bioparco di Roma diventa laboratorio per la salute del pianeta",
+    "textLength": 12345,
+    "adFrames": 1,
+    "adBoxes": 12
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 123,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')"
+    ]
+   },
+   "info": {
+    "title": "Il Bioparco di Roma diventa laboratorio per la salute del pianeta",
+    "textLength": 10270,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 214,
+    "blocked": 0,
+    "wouldBlock": 72,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 12,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "pagead2.googlesyndication.com": 20,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "6fe9820132110354072e763c5ba93f53.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "tpc.googlesyndication.com": 8,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "i.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11957,
+    "adFrames": 0,
+    "adBoxes": 20
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 149,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11902,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/video/2026/10/21/a-dieci-anni-dall-terremoto-in-italia-centrale-la-ricostruzione-e-lontana"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 129,
+    "blocked": 0,
+    "wouldBlock": 60,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 10,
+     "plausible.io": 1,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "google-analytics.com": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "pagead2.googlesyndication.com": 12,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "0b67fc46ac4a000726460d9d33afeef8.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "tpc.googlesyndication.com": 4,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "h.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 3,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "A dieci anni dal terremoto in Italia centrale la ricostruzione è lontana (Video) - Internazionale",
+    "textLength": 1461,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 77,
+    "blocked": 10,
+    "wouldBlock": 10,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "A dieci anni dal terremoto in Italia centrale la ricostruzione è lontana (Video) - Internazionale",
+    "textLength": 1437,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]

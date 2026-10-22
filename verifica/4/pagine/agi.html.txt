@@ -1,0 +1,44 @@
+https://www.agi.it/cronaca/news/2026-10-22/roma-bioparco-laboratorio-salute-pianeta-39645676/
+
+<!doctype html>
+<html lang="en">
+ <head> 
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  <title></title> 
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style> 
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AE/qwqtu/NmmS+2HUzkzMc/AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMspUgzX44iwdH53ZkAgEQgDudNYcsYE3N1SP+GFZ8cQ4p60BsiA6rdcw3w58YCDRHYmVBQwyW0FQEZ+3PKPBgd30+6F/rDOOJ1uO7sQ==",
+          "iv":"EkQp8AEvCgAACPuB",
+          "context":"tHmYIrhA1LmK2vnbG9Amzt6GwU95v4NyixDxJWHovULvjG86kOg45ql8xHZ0vNvw6CB3VD/top9JQ06z6oj/r3DJgepqDsWCwS5JFVyVMVLUgExlwbDW+K0rx1P8f5k2DHkSNcNns/yYhL+PDLLZySMWel8UMvHfBl/M8nObx1y1TL+BMB+Gkt7gBkNgkBA8TM+isS+NMlOXLIycN3/XYnle4HPodVrh/AElU9AYD+GEqmgzHYKndChyOttndcDFP9K9z8i0a5EzYDBlr+fzTE1Klwub3ffDAZ4KQADsNwvPp6YYyRd729rnUxoimJ28UwXEM/e9I7iel7OF9BLC3mEpa4h77yHRk0gX1K0haEMToQb172iyDBE8tQi++wqUGK/GjSuvb4N5HD5nhYImFTW97IMp25IyUrr9uKjnLSy/I+Y2UnaYuhDyptHZYgJuLD42BTQtAE6G1XkO+Gc/Nn5pSmZs+trbh2y9ZL+Pb9zH143o3C41JBepmh0LwjTI9xxpFeAE0OS6v64iDoo2UOd3zjQfb/O/u+yUMB1tvN8fsBUKknBeb+ReXAmvnLkisAR8MNMZSxWBoZp3udwimeoqE44BR4vHO3QLDrznIv1LA1VbvXG7PnWDR5xDJBmKG4/9E5CY5OLzgzsKtOLszGyTpicD93pMQpOUUVWMtaM/kl30k/Qp4gYki642R6JjwaqAv+Vw92ifZL6Jc+TjowbIe2kBevXFeSYhoq74mRDoDYqST1/zOeODYI3416ASIrA="
+};
+    </script> 
+  <script src="https://a49c870577a3.f245ce8f.us-east-2.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script> 
+ </head> 
+ <body> 
+  <div id="challenge-container"></div> 
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script> 
+  <noscript> 
+   <h1>JavaScript is disabled</h1> In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page. 
+  </noscript>  
+ </body>
+</html>
