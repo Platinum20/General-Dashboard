@@ -104,7 +104,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         }
         // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella schermata Oggi.
         val brief = runCatching { Briefing.load(context, relative = true, max = 1) }.getOrDefault(emptyList()).firstOrNull()
-        val summary = brief?.text ?: lines.firstOrNull { it.isNotBlank() } ?: "Apri la Dashboard per il riepilogo della giornata."
+        val summary = brief?.text ?: lines.firstOrNull { it.isNotBlank() } ?: "Apri Canvas per il riepilogo della giornata."
 
         ensureChannel(context)
         val intent = Intent(context, MainActivity::class.java)

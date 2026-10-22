@@ -172,7 +172,7 @@ private fun StatusCard(state: UpdateUiState) {
         status is UpdateStatus.NeedsPermission -> Triple(
             Icons.Outlined.Security,
             "Serve un permesso",
-            "Consenti a General Dashboard di installare app, poi torna qui: l'installazione parte da sola.",
+            "Consenti a Canvas di installare app, poi torna qui: l'installazione parte da sola.",
         )
         status is UpdateStatus.Installing -> Triple(
             Icons.Outlined.CloudDownload,

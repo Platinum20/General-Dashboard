@@ -95,6 +95,6 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "Nessuna nota per questa versione." > notes.md
           gh release create "${{ steps.version.outputs.tag }}" "${{ steps.apk.outputs.file }}" \
-            --title "General Dashboard $VERSION" \
+            --title "Canvas $VERSION" \
             --notes-file notes.md \
             --target "$GITHUB_SHA"

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.25.0
+- L'app ora si chiama Canvas: nome sotto l'icona, widget, voce "Guarda in Canvas" nel menu Condividi e titolo delle release
+- Icona nuova: i tre riquadri appoggiati su una tela con una cornice sottile
+- Animazioni elastiche: la bolla del player si lancia e rimbalza sul bordo, le schermate e la barra in basso entrano con una molla
+- Card, scorciatoie, notizie e pulsanti si "schiacciano" leggermente al tocco e tornano su con un piccolo rimbalzo
+
 ## 1.24.0
 - Errori di rete più chiari in meteo, news e aggiornamenti: "Nessuna connessione a Internet", "connessione troppo lenta" o "il servizio non risponde" al posto dei messaggi tecnici in inglese
 - Aggiornamenti: se il download dell'APK si interrompe a metà ora lo dice, invece di provare a installare un file incompleto

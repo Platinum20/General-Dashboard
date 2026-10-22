@@ -233,7 +233,7 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
         // Gli articoli già aperti restano, ma attenuati: l'occhio va subito a quelli da leggere.
-        modifier = Modifier.fillMaxWidth().alpha(if (read) READ_ALPHA else 1f),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         if (item.imageUrl != null) {
@@ -288,7 +288,7 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
 private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().alpha(if (read) READ_ALPHA else 1f),
+        modifier = Modifier.fillMaxWidth().bouncyPress().alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.large,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {

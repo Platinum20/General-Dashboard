@@ -46,7 +46,7 @@
                 android:textColor="@color/widget_text"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:text="General Dashboard" />
+                android:text="Canvas" />
 
             <TextView
                 android:id="@+id/widget_desc"

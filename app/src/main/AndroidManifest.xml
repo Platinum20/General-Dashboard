@@ -34,7 +34,7 @@
         <receiver
             android:name=".widget.DashboardWidget"
             android:exported="false"
-            android:label="Dashboard">
+            android:label="Canvas">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -50,7 +50,7 @@
         <activity
             android:name=".media.ShareReceiverActivity"
             android:exported="true"
-            android:label="Guarda in Dashboard"
+            android:label="Guarda in Canvas"
             android:noHistory="true"
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">

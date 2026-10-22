@@ -302,7 +302,7 @@ private fun WeatherCard(
     val forecast = state.forecast
     ElevatedCard(
         onClick = { if (forecast != null) onClick() else if (!hasPermission) onRequestPermission() else onRetry() },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
@@ -569,6 +569,7 @@ private fun RowScope.ShortcutTile(icon: ImageVector, label: String, onClick: () 
     Column(
         modifier = Modifier
             .weight(1f)
+            .bouncyPress(0.9f)
             .clip(MaterialTheme.shapes.large)
             .clickable(onClick = onClick)
             .padding(vertical = 8.dp),
