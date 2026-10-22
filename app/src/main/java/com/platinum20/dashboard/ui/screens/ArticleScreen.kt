@@ -62,6 +62,7 @@ fun ArticleScreen(
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
+    val inAppNav = LocalInAppNav.current
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     var pageTitle by remember { mutableStateOf<String?>(null) }
@@ -80,6 +81,7 @@ fun ArticleScreen(
             onFinished = { loading = false },
             onHistoryChanged = { canGoBack = it },
             onMainFrameError = { failed = true; loading = false },
+            onPlayerLink = { link -> inAppNav?.openWeb?.invoke(link, sourceName) },
         ).also { it.loadUrl(url) }
     }
 
@@ -189,6 +191,7 @@ private fun createWebView(
     onFinished: () -> Unit,
     onHistoryChanged: (canGoBack: Boolean) -> Unit,
     onMainFrameError: () -> Unit,
+    onPlayerLink: (String) -> Unit,
 ): WebView = WebView(context).apply {
     settings.apply {
         javaScriptEnabled = true
@@ -214,7 +217,12 @@ private fun createWebView(
             val target = request.url
             // Tutto resta nell'app: le pagine web qui, gli inviti ad aprire un'altra app (intent://)
             // con il loro indirizzo web di riserva; mail e telefono vanno al compositore e al tastierino.
-            if (target.scheme == "http" || target.scheme == "https") return false
+            if (target.scheme == "http" || target.scheme == "https") {
+                // YouTube e Spotify nei player dell'app invece che nel loro sito dentro la pagina.
+                if (!request.isForMainFrame || InAppLinks.staysInPage(target.toString())) return false
+                onPlayerLink(target.toString())
+                return true
+            }
             InAppLinks.intentFallback(target.toString())?.let { view.loadUrl(it) }
             if (target.scheme == "mailto" || target.scheme == "tel") openSystemAction(view.context, target)
             return true

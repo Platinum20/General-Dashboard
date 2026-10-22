@@ -4,7 +4,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.ui.screens.InAppLinks
 import com.platinum20.dashboard.ui.screens.LinkTarget
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -21,6 +23,14 @@ class InAppLinksTest {
     fun videoYouTubeNelPlayer() {
         assertEquals(LinkTarget.YouTube("https://m.youtube.com/watch?v=abc"), InAppLinks.target("https://youtu.be/abc"))
         assertEquals(LinkTarget.YouTube("https://m.youtube.com/watch?v=abc"), InAppLinks.target("https://www.youtube.com/watch?v=abc"))
+    }
+
+    @Test
+    fun nellaPaginaInternaRestanoSoloLePagineNormali() {
+        assertTrue(InAppLinks.staysInPage("https://www.repubblica.it/cronaca/2026/10/22/articolo"))
+        assertFalse(InAppLinks.staysInPage("https://youtu.be/abc"))
+        assertFalse(InAppLinks.staysInPage("https://www.youtube.com/watch?v=abc"))
+        assertFalse(InAppLinks.staysInPage("https://open.spotify.com/track/1"))
     }
 
     @Test
