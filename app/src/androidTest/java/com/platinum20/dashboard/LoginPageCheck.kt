@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
 import com.platinum20.dashboard.settings.AppTheme
 import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
@@ -48,20 +49,51 @@ class LoginPageCheck {
 
     /** La schermata vera dell'app ("Accedi a Spotify"), dentro il vetro come nella navigazione. */
     @Test
-    fun spotifyInApp() {
+    fun spotifyInApp() = inCompose("spotify-in-app", haze = true) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
+
+    @Test
+    fun spotifyInAppNoHaze() = inCompose("spotify-in-app-nohaze", haze = false) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
+
+    /** WebView semplice dentro Compose: carica subito, come la schermata di accesso. */
+    @Test
+    fun composeWebView() = inCompose("compose-webview", haze = false) {
+        AndroidView(
+            factory = { ctx ->
+                createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
+                    settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
+                    loadUrl(MediaService.SPOTIFY.loginUrl)
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    private fun inCompose(name: String, haze: Boolean, content: @androidx.compose.runtime.Composable () -> Unit) {
         val scenario = ActivityScenario.launch(ComponentActivity::class.java)
         scenario.onActivity { activity ->
             activity.setContent {
-                val haze = remember { HazeState() }
+                val state = remember { HazeState() }
                 GeneralDashboardTheme(AppTheme.CANVAS) {
-                    Box(Modifier.fillMaxSize().hazeSource(haze)) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
+                    Box(if (haze) Modifier.fillMaxSize().hazeSource(state) else Modifier.fillMaxSize()) { content() }
                 }
             }
         }
         Thread.sleep(25_000)
+        scenario.onActivity { activity ->
+            val web = findWebView(activity.window.decorView)
+            Log.i("LoginCheck", "$name webview ${web?.width}x${web?.height} layer=${web?.layerType} hw=${web?.isHardwareAccelerated}")
+            web?.evaluateJavascript(DUMP) { Log.i("LoginCheck", "$name page $it") }
+        }
+        Thread.sleep(2_000)
         val shot: Bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
-        File(outDir, "spotify-in-app.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
+        File(outDir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
         scenario.close()
+    }
+
+    private fun findWebView(view: android.view.View): WebView? {
+        if (view is WebView) return view
+        if (view is android.view.ViewGroup) for (i in 0 until view.childCount) findWebView(view.getChildAt(i))?.let { return it }
+        return null
     }
 
     private fun check(name: String, url: String) {
@@ -84,13 +116,17 @@ class LoginPageCheck {
         }
         Thread.sleep(25_000)
         scenario.onActivity {
-            webView.evaluateJavascript(
-                "(function(){return location.href+' | bg='+getComputedStyle(document.body).backgroundColor+' | '+document.body.innerText.replace(/\\s+/g,' ').slice(0,400)})()"
-            ) { Log.i("LoginCheck", "$name page $it") }
+            webView.evaluateJavascript(DUMP) { Log.i("LoginCheck", "$name page $it") }
         }
         Thread.sleep(2_000)
         val shot: Bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         File(outDir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
         scenario.close()
+    }
+
+    private companion object {
+        const val DUMP = "(function(){var r=document.querySelector('main,#root,#__next,form')||document.body;var b=r.getBoundingClientRect();" +
+            "return location.href.slice(0,60)+' | vp='+innerWidth+'x'+innerHeight+' dpr='+devicePixelRatio+' | root='+r.tagName+'#'+r.id+' '+Math.round(b.width)+'x'+Math.round(b.height)+'@'+Math.round(b.top)+" +
+            "' op='+getComputedStyle(r).opacity+' vis='+getComputedStyle(r).visibility+' | '+document.body.innerText.replace(/\\s+/g,' ').slice(0,200)})()"
     }
 }
