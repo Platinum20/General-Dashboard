@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.notes
 
 import android.content.Context
+import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -73,7 +74,29 @@ data class Habit(
     /** Gli ultimi [days] giorni, dal più vecchio a oggi. */
     fun lastDays(today: LocalDate = LocalDate.now(), days: Int = 7): List<Pair<LocalDate, Boolean>> =
         (days - 1 downTo 0).map { today.minusDays(it.toLong()).let { d -> d to (d in done) } }
+
+    /**
+     * La riga sotto il nome: la serie di giorni di fila; dall'ora in cui Adesso ricorda
+     * le abitudini, se oggi manca ancora, "Manca oggi" in evidenza.
+     */
+    fun statusLine(now: LocalDateTime): HabitLine {
+        val today = now.toLocalDate()
+        if (!isDone(today) && now.hour >= Briefing.HABIT_HOUR) {
+            val streak = streak(today)
+            return HabitLine(if (streak > 0) "Manca oggi · $streak di fila" else "Manca oggi", urgent = true)
+        }
+        return HabitLine(
+            when (val streak = streak(today)) {
+                0 -> "Inizia oggi"
+                1 -> "1 giorno"
+                else -> "$streak giorni di fila"
+            },
+            urgent = false,
+        )
+    }
 }
+
+data class HabitLine(val text: String, val urgent: Boolean)
 
 data class Note(
     val id: Long,

@@ -11,6 +11,12 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.OutlinedIconToggleButton
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import java.time.LocalDateTime
 import java.util.Locale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -356,7 +362,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
         }
         items(habits, key = { it.id }) { habit ->
             val doneToday = habit.isDone(today)
-            val streak = habit.streak(today)
+            val line = habit.statusLine(LocalDateTime.now())
             CanvasCard(
                 onClick = { editing = habit },
                 shape = MaterialTheme.shapes.large,
@@ -366,13 +372,9 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                     Column(Modifier.weight(1f)) {
                         Text(habit.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            when (streak) {
-                                0 -> "Inizia oggi"
-                                1 -> "1 giorno"
-                                else -> "$streak giorni di fila"
-                            },
+                            line.text,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (line.urgent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(8.dp))
                         Row {
@@ -389,13 +391,22 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                                         .padding(horizontal = 4.dp, vertical = 2.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
+                                    // Oggi non ancora fatto: un anello, così si vede che manca.
+                                    val missingToday = !done && day == today
                                     Box(
                                         Modifier
                                             .size(14.dp)
                                             .clip(CircleShape)
                                             .background(
-                                                if (done) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.surfaceVariant
+                                                when {
+                                                    done -> MaterialTheme.colorScheme.primary
+                                                    missingToday -> Color.Transparent
+                                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                                }
+                                            )
+                                            .then(
+                                                if (missingToday) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                                else Modifier
                                             ),
                                     )
                                     Text(
@@ -407,15 +418,22 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                             }
                         }
                     }
-                    FilledIconToggleButton(
-                        checked = doneToday,
-                        onCheckedChange = {
-                            haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
-                            NotesStore.toggleHabit(habit.id)
-                        },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(Icons.Outlined.Check, contentDescription = if (doneToday) "Fatta oggi" else "Segna fatta oggi")
+                    // Da fare: cerchio vuoto con il bordo; fatta: pieno con l'accento e la spunta.
+                    val toggle: (Boolean) -> Unit = {
+                        haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
+                        NotesStore.toggleHabit(habit.id)
+                    }
+                    if (doneToday) {
+                        FilledIconToggleButton(checked = true, onCheckedChange = toggle, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Outlined.Check, contentDescription = "Fatta oggi")
+                        }
+                    } else {
+                        OutlinedIconToggleButton(
+                            checked = false,
+                            onCheckedChange = toggle,
+                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                            modifier = Modifier.size(48.dp).semantics { contentDescription = "Segna fatta oggi" },
+                        ) {}
                     }
                 }
             }
