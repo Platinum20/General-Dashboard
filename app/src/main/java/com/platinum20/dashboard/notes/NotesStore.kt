@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.notes
 
 import android.content.Context
+import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -163,6 +164,8 @@ object NotesStore {
                 tmp.renameTo(file)
             }
         }
+        // Il widget mostra i promemoria di oggi: lo ridisegna a ogni modifica.
+        if (::appContext.isInitialized) runCatching { DashboardWidget.updateAll(appContext) }
     }
 
     private fun serialize(d: NotesData): String = JSONObject()

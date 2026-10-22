@@ -12,14 +12,20 @@ import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.work.RefreshWorker
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
-/** Widget della schermata Home: meteo e i primi tre temi del giorno. */
+/** Widget della schermata Home: meteo, promemoria di oggi e i primi tre temi del giorno. */
 class DashboardWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -107,6 +113,13 @@ class DashboardWidget : AppWidgetProvider() {
                 )
             }
 
+            val tasks = tasksLine(context)
+            views.setViewVisibility(R.id.widget_tasks, if (tasks == null) View.GONE else View.VISIBLE)
+            if (tasks != null) {
+                views.setTextViewText(R.id.widget_tasks, tasks)
+                views.setOnClickPendingIntent(R.id.widget_tasks, openApp(context, OpenRequest(OpenRequest.NOTES), 3))
+            }
+
             val news = headlines(context)
             val rows = listOf(R.id.widget_news1, R.id.widget_news2, R.id.widget_news3)
             views.setViewVisibility(R.id.widget_recap_title, if (news.isEmpty()) View.GONE else View.VISIBLE)
@@ -124,6 +137,32 @@ class DashboardWidget : AppWidgetProvider() {
                 }
             }
             return views
+        }
+
+        /** Riga con i promemoria scaduti o in scadenza oggi, null se non ce ne sono. */
+        private fun tasksLine(context: Context): String? {
+            NotesStore.init(context)
+            val zone = ZoneId.systemDefault()
+            val endOfToday = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val due = NotesStore.data.value.openTasks.filter { (it.dueAt ?: Long.MAX_VALUE) < endOfToday }
+            if (due.isEmpty()) return null
+            val now = System.currentTimeMillis()
+            val late = due.count { (it.dueAt ?: 0) < now }
+            val next = due.firstOrNull { (it.dueAt ?: 0) >= now } ?: due.first()
+            val count = when {
+                late == due.size -> if (late == 1) "1 promemoria scaduto" else "$late promemoria scaduti"
+                late > 0 -> "${due.size} promemoria oggi ($late ${if (late == 1) "scaduto" else "scaduti"})"
+                due.size == 1 -> "1 promemoria oggi"
+                else -> "${due.size} promemoria oggi"
+            }
+            return "📌 $count · ${next.text} ${timeOf(next, zone)}".trim()
+        }
+
+        private fun timeOf(task: TaskItem, zone: ZoneId): String {
+            val due = task.dueAt ?: return ""
+            val time = Instant.ofEpochMilli(due).atZone(zone)
+            return if (time.toLocalDate() == LocalDate.now(zone)) "alle " + time.format(DateTimeFormatter.ofPattern("HH:mm"))
+            else ""
         }
 
         private fun openApp(context: Context, request: OpenRequest, code: Int): PendingIntent {
