@@ -121,7 +121,7 @@ dependencies {
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("io.coil-kt.coil3:coil-video:3.0.4")
     // Player nativo di YouTube: ricava i flussi dei video senza pagina web (lo stesso motore di NewPipe)
-    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.24.8")
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.4")
     // Accesso Google per le API di YouTube (solo lettura)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
