@@ -66,7 +66,7 @@ jobs:
         if: always()
         run: |
           mkdir -p live-out
-          cp app/build/live/funzioni.md live-out/ 2>/dev/null || true
+          cp -r app/build/live/. live-out/ 2>/dev/null || true
           for f in live-out/funzioni.md live-out/report.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done; true
 
       - name: Pubblica nel ramo screenshots

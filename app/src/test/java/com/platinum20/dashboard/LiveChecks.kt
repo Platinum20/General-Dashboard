@@ -31,6 +31,7 @@ class LiveChecks {
 
     private val report = StringBuilder("# Verifica dal vivo delle funzioni\n\n")
     private val problems = mutableListOf<String>()
+    private val liveDir = File(System.getProperty("live.dir") ?: "build/live").apply { mkdirs() }
 
     private fun line(ok: Boolean, text: String) {
         report.append(if (ok) "- ✅ " else "- ❌ ").append(text).append('\n')
@@ -61,8 +62,13 @@ class LiveChecks {
         report.append("\n## Lettore (modalità lettura)\n\n")
         for (source in NewsSources.all) {
             val item = news?.items?.firstOrNull { it.source.id == source.id } ?: continue
-            val article = runCatching { ArticleExtractor.extractBest(ArticleExtractor.download(item.link)) }
+            val page = runCatching { ArticleExtractor.download(item.link) }
+            val article = page.mapCatching { ArticleExtractor.extractBest(it) }
             val length = article.getOrNull()?.textLength ?: 0
+            // La pagina che non si legge resta tra i risultati, per capire perché.
+            if (length < ArticleExtractor.GOOD_TEXT_LENGTH) page.getOrNull()?.let {
+                File(liveDir, "pagine").apply { mkdirs() }.resolve("${source.id}.html.txt").writeText("${it.url}\n\n${it.html}")
+            }
             line(
                 length >= ArticleExtractor.GOOD_TEXT_LENGTH,
                 "${source.name}: $length caratteri da ${item.link}" +
@@ -117,8 +123,7 @@ class LiveChecks {
         val search = runCatching { RadioApi.search("radio deejay") }
         line(search.getOrNull().orEmpty().isNotEmpty(), "Ricerca \"radio deejay\": ${search.getOrNull()?.size ?: 0} risultati")
 
-        val dir = File(System.getProperty("live.dir") ?: "build/live").apply { mkdirs() }
-        File(dir, "funzioni.md").writeText(report.toString())
+        File(liveDir, "funzioni.md").writeText(report.toString())
         println(report)
         assertTrue("Problemi: $problems", problems.isEmpty())
     }
