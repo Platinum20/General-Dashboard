@@ -72,7 +72,7 @@ object SpotifyApi {
                         code == 403 -> "Spotify non permette questa richiesta (account non aggiunto in User Management?)"
                         code == 404 && reason == "NO_ACTIVE_DEVICE" -> "Nessun dispositivo Spotify attivo"
                         code == 429 -> "Troppe richieste a Spotify, riprova tra poco"
-                        else -> error?.optString("message")?.ifBlank { null } ?: "Spotify ha risposto HTTP $code"
+                        else -> "Spotify non risponde ($code), riprova più tardi"
                     },
                     code,
                 )

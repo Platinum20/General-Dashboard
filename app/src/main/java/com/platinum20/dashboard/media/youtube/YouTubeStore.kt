@@ -2,6 +2,7 @@ package com.platinum20.dashboard.media.youtube
 
 import android.content.Context
 import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,7 +111,7 @@ object YouTubeStore {
             }
             Loadable(data = data, loadedAt = System.currentTimeMillis())
         } catch (e: Exception) {
-            Loadable(error = e.message ?: "Errore di rete")
+            Loadable(error = e.userMessage("YouTube non è raggiungibile, riprova tra poco."))
         }
     }
 }
