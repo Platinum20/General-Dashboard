@@ -156,8 +156,8 @@ object YouTubeApi {
 
     private fun channelFeed(channelId: String): List<YtVideo> {
         val conn = (URL("https://www.youtube.com/feeds/videos.xml?channel_id=$channelId").openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10_000
-            readTimeout = 15_000
+            connectTimeout = 5_000
+            readTimeout = 8_000
             setRequestProperty("User-Agent", "GeneralDashboard/${BuildConfig.VERSION_NAME} (Android)")
         }
         try {

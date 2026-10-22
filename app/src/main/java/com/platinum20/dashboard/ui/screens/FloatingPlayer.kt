@@ -88,7 +88,7 @@ fun FloatingPlayer(
     val radio by RadioStore.now.collectAsState()
 
     // Sulle schermate dei player la bolla non serve: c'è già il player grande.
-    val onWebPlayer = currentRoute?.startsWith("media/web") == true
+    val onWebPlayer = currentRoute?.startsWith("media/web") == true || currentRoute?.startsWith("media/watch") == true
     val onRadio = currentRoute?.startsWith("media/radio") == true
     val youTube = tracks[MediaService.YOUTUBE].takeIf { MediaService.YOUTUBE in open && !onWebPlayer }
     val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer }
