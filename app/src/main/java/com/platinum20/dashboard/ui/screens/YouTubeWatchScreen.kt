@@ -50,6 +50,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -80,6 +81,7 @@ import coil3.compose.AsyncImage
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.player.YtChapter
 import com.platinum20.dashboard.media.youtube.player.YtComment
+import com.platinum20.dashboard.media.youtube.player.YtComments
 import com.platinum20.dashboard.media.youtube.player.YtNow
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
@@ -147,13 +149,22 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (showComments) {
                         item(key = "comments-h") { SectionHeader("Commenti") }
-                        val comments = loadedComments
-                        when {
-                            comments == null -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
-                            comments.isEmpty() -> item(key = "comments-e") {
+                        when (val comments = loadedComments) {
+                            null, YtComments.Loading -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
+                            YtComments.Empty -> item(key = "comments-e") {
                                 Text("Nessun commento (o commenti disattivati)", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            else -> items(comments.size, key = { "c$it" }) { CommentRow(comments[it]) }
+                            YtComments.Failed -> item(key = "comments-f") {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Non riesco a caricare i commenti",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { commentCache.remove(stream.id) }) { Text("Riprova") }
+                                }
+                            }
+                            is YtComments.Loaded -> items(comments.list.size, key = { "c$it" }) { CommentRow(comments.list[it]) }
                         }
                     }
                 }
@@ -528,15 +539,16 @@ private fun Chapters(chapters: List<YtChapter>) {
     }
 }
 
-private val commentCache = mutableStateMapOf<String, List<YtComment>>()
+private val commentCache = mutableStateMapOf<String, Result<List<YtComment>>>()
 
-/** Commenti del video, caricati la prima volta che si aprono (null mentre arrivano). */
+/** Commenti del video, caricati la prima volta che si aprono; "Riprova" toglie l'errore dalla cache e ricarica. */
 @Composable
-private fun commentsFor(id: String): List<YtComment>? {
-    LaunchedEffect(id) {
-        if (id !in commentCache) commentCache[id] = runCatching { YtResolver.comments(id) }.getOrDefault(emptyList())
+private fun commentsFor(id: String): YtComments {
+    val cached = id in commentCache
+    LaunchedEffect(id, cached) {
+        if (!cached) commentCache[id] = runCatching { YtResolver.comments(id) }
     }
-    return commentCache[id]
+    return YtComments.from(commentCache[id])
 }
 
 @Composable

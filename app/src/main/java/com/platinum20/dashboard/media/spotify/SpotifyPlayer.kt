@@ -58,12 +58,33 @@ object SpotifyPlayer {
                 if (_error.value == null) _error.value = "Il riproduttore di Spotify non si avvia, riprova"
                 return@launch
             }
-            val result = runCatching {
-                val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
-                SpotifyApi.playOn(token, device, contextUri, uris, offsetUri)
+            var result = runCatching { playOn(device, contextUri, uris, offsetUri) }
+            // 404: il riproduttore nascosto si è scollegato (rete cambiata, standby lungo) e Spotify
+            // non conosce più quel dispositivo. Si riavvia la pagina e si riprova una volta.
+            if ((result.exceptionOrNull() as? SpotifyApiException)?.code == 404) {
+                restart(context)
+                val again = withTimeoutOrNull(25_000) { ready.await() }
+                if (again != null) result = runCatching { playOn(again, contextUri, uris, offsetUri) }
             }
-            result.exceptionOrNull()?.let { _error.value = it.message }
+            result.exceptionOrNull()?.let { _error.value = spotifyMessage(it) }
         }
+    }
+
+    private suspend fun playOn(device: String, contextUri: String?, uris: List<String>, offsetUri: String?) {
+        val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
+        SpotifyApi.playOn(token, device, contextUri, uris, offsetUri)
+    }
+
+    private fun restart(context: Context) {
+        MediaWebViews.release(MediaService.SPOTIFY)
+        forget()
+        start(context)
+    }
+
+    /** Il dispositivo non vale più: chi suona dopo aspetta un nuovo "ready". */
+    private fun forget() {
+        deviceId = null
+        if (ready.isCompleted) ready = CompletableDeferred()
     }
 
     /** Prepara il riproduttore nascosto (se non è già pronto). */
@@ -71,8 +92,7 @@ object SpotifyPlayer {
         SpotifyAuth.init(context)
         val existing = MediaWebViews.webViewFor(MediaService.SPOTIFY)
         if (existing != null && existing.url?.startsWith(BASE_URL) == true) return
-        deviceId = null
-        if (ready.isCompleted) ready = CompletableDeferred()
+        forget()
         MediaWebViews.obtainHidden(context, MediaService.SPOTIFY, BASE_URL, PAGE, Bridge, "CanvasSpotify")
     }
 
@@ -88,14 +108,29 @@ object SpotifyPlayer {
         }
 
         @JavascriptInterface
+        fun onNotReady() = forget()
+
+        @JavascriptInterface
         fun onError(kind: String, message: String) {
             _error.value = when (kind) {
-                "initialization_error" -> "Questo telefono non riesce ad avviare il riproduttore di Spotify ($message)"
+                "initialization_error" -> "Questo telefono non riesce ad avviare il riproduttore di Spotify: aggiorna \"Android System WebView\" dal Play Store e riprova"
                 "authentication_error" -> "Ricollega Spotify con la chiave in alto per ascoltare nell'app"
                 "account_error" -> "Per ascoltare nell'app serve Spotify Premium"
                 else -> "Spotify: $message"
             }
         }
+    }
+
+    /** Messaggio in italiano per un errore del comando "suona" (mai il testo grezzo dell'API o della rete). */
+    fun spotifyMessage(error: Throwable): String = when {
+        error is SpotifyApiException -> when (error.code) {
+            401 -> "Ricollega Spotify con la chiave in alto per ascoltare nell'app"
+            404 -> "Il riproduttore di Spotify si è scollegato: riprova tra qualche secondo"
+            else -> error.message ?: "Spotify non risponde, riprova più tardi"
+        }
+        error is java.net.UnknownHostException || error is java.net.SocketTimeoutException || error is java.net.ConnectException ->
+            "Nessuna connessione: Spotify non è raggiungibile"
+        else -> "Spotify non risponde, riprova più tardi"
     }
 
     /** spotify:track:ID da un link di open.spotify.com (anche con /intl-it/) o da un URI già pronto. */
@@ -128,6 +163,7 @@ window.onSpotifyWebPlaybackSDKReady = function () {
   });
   window.cp = player;
   player.addListener('ready', function (e) { CanvasSpotify.onReady(e.device_id); });
+  player.addListener('not_ready', function () { CanvasSpotify.onNotReady(); });
   ['initialization_error', 'authentication_error', 'account_error', 'playback_error'].forEach(function (k) {
     player.addListener(k, function (e) { CanvasSpotify.onError(k, (e && e.message) || ''); });
   });

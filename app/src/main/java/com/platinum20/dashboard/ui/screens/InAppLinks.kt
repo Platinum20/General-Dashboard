@@ -16,6 +16,8 @@ class InAppNav(
     val openCalendar: () -> Unit,
     val openEvent: (CalendarEvent) -> Unit,
     val newEvent: (LocalDate) -> Unit,
+    /** Una pagina qualsiasi dell'app (vedi Routes). */
+    val openRoute: (String) -> Unit = {},
 )
 
 val LocalInAppNav = staticCompositionLocalOf<InAppNav?> { null }

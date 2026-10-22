@@ -3,8 +3,11 @@ name: Verifica player YouTube
 # Prova dal vivo il player nativo di YouTube (NewPipe Extractor): flussi ricavati e scaricabili.
 on:
   workflow_dispatch:
+  # Una volta al giorno: se YouTube cambia qualcosa e l'estrazione si rompe, lo si vede subito.
+  schedule:
+    - cron: "17 5 * * *"
   push:
-    branches: ["claude/**"]
+    branches: ["claude/**", "main"]
     paths:
       - ".github/workflows/ytcheck.yml"
       - "app/src/main/java/com/platinum20/dashboard/media/youtube/player/**"
