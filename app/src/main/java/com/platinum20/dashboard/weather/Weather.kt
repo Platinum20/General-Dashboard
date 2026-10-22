@@ -69,7 +69,8 @@ data class Forecast(
     val nowcast: List<Pair<LocalDateTime, Double>> = emptyList(),
     val air: AirQuality? = null,
 ) {
-    val today: DailyPoint? get() = daily.firstOrNull()
+    /** Il giorno di oggi: con una previsione salvata ieri non è il primo della lista. */
+    val today: DailyPoint? get() = LocalDate.now().let { now -> daily.firstOrNull { !it.date.isBefore(now) } }
 
     /** Avviso breve sulla pioggia delle prossime ore, se c'è qualcosa da dire. */
     val rainAlert: String?
