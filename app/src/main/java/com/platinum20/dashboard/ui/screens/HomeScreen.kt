@@ -70,6 +70,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.calendar.CalendarRepository
+import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.BriefKind
@@ -244,7 +245,11 @@ fun HomeScreen(
                     HomeCard.COUNTDOWN -> CountdownCard()
                     HomeCard.RECAP -> RecapCard(
                         state = recap,
-                        onOpenTheme = { onOpenArticle(it.headline) },
+                        onOpenTheme = {
+                            NewsHistory.init(context)
+                            NewsHistory.markRead(it.headline.link)
+                            onOpenArticle(it.headline)
+                        },
                         onOpenAll = onOpenRecap,
                     )
                     HomeCard.MODULES -> Shortcuts(

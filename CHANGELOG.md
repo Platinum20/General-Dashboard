@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.36.0
+- Il punto del giorno: gli articoli già aperti sono attenuati come nella sezione News, così vedi subito cosa ti manca
+- Gli articoli aperti da Oggi o dal Punto del giorno contano come letti anche in News
+
 ## 1.35.0
 - Media: le righe di radio, playlist di YouTube, Spotify e la card di cosa sta suonando si "schiacciano" al tocco come il resto dell'app
 - Radio: vibrazione leggera quando aggiungi o togli una stazione dalle preferite
