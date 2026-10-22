@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.64.0
+- Da fare: i tempi si possono scrivere anche a lettere ("tra due ore stendere", "fra dieci minuti tè") e con la mezz'ora ("tra un'ora e mezza uscire")
+
 ## 1.63.0
 - Oggi: nella card Adesso (e nel widget) il giorno di un compleanno o anniversario dice anche quanti anni compie ("Oggi: Compleanno di Marta (30 anni)")
 
