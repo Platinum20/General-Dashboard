@@ -10,7 +10,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.FilterChip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Checklist as ChecklistIcon
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.OutlinedIconToggleButton
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import java.time.LocalDateTime
 import java.util.Locale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -77,6 +85,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.notes.Checklist
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
@@ -152,6 +161,7 @@ fun NotesScreen(
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(NotesTabs.TASKS) }
     var adding by remember { mutableStateOf(false) }
+    var searching by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -193,7 +203,10 @@ fun NotesScreen(
                         overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                     ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
                     actions = {
-                        if (tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
+                        if (!searching) {
+                            RoundIconButton(Icons.Outlined.Search, "Cerca in tutte le Note") { searching = true }
+                        }
+                        if (!searching && tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
                             RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
                                 val done = data.tasks.filter { it.done }
                                 NotesStore.clearDone()
@@ -202,7 +215,7 @@ fun NotesScreen(
                         }
                     },
                 )
-                NotesTabStrip(selected = tab, onSelect = { tab = it })
+                if (!searching) NotesTabStrip(selected = tab, onSelect = { tab = it })
             }
         },
     ) { inner ->
@@ -212,6 +225,16 @@ fun NotesScreen(
             top = inner.calculateTopPadding() + 12.dp,
             bottom = bottomPadding.calculateBottomPadding() + 24.dp,
         )
+        if (searching) {
+            NotesSearchPanel(
+                data = data,
+                padding = padding,
+                onClose = { searching = false },
+                onOpenNote = { onOpenNote(it) },
+                onOpenTab = { searching = false; tab = it },
+            )
+            return@Scaffold
+        }
         when (tab) {
             NotesTabs.TASKS -> TasksTab(data.tasks, padding, onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") })
             NotesTabs.HABITS -> HabitsTab(data.habits, padding, onDeleted = { h ->
@@ -356,7 +379,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
         }
         items(habits, key = { it.id }) { habit ->
             val doneToday = habit.isDone(today)
-            val streak = habit.streak(today)
+            val line = habit.statusLine(LocalDateTime.now())
             CanvasCard(
                 onClick = { editing = habit },
                 shape = MaterialTheme.shapes.large,
@@ -366,13 +389,9 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                     Column(Modifier.weight(1f)) {
                         Text(habit.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            when (streak) {
-                                0 -> "Inizia oggi"
-                                1 -> "1 giorno"
-                                else -> "$streak giorni di fila"
-                            },
+                            line.text,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (line.urgent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(8.dp))
                         Row {
@@ -389,13 +408,22 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                                         .padding(horizontal = 4.dp, vertical = 2.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                 ) {
+                                    // Oggi non ancora fatto: un anello, così si vede che manca.
+                                    val missingToday = !done && day == today
                                     Box(
                                         Modifier
                                             .size(14.dp)
                                             .clip(CircleShape)
                                             .background(
-                                                if (done) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.surfaceVariant
+                                                when {
+                                                    done -> MaterialTheme.colorScheme.primary
+                                                    missingToday -> Color.Transparent
+                                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                                }
+                                            )
+                                            .then(
+                                                if (missingToday) Modifier.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                                else Modifier
                                             ),
                                     )
                                     Text(
@@ -407,15 +435,22 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                             }
                         }
                     }
-                    FilledIconToggleButton(
-                        checked = doneToday,
-                        onCheckedChange = {
-                            haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
-                            NotesStore.toggleHabit(habit.id)
-                        },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(Icons.Outlined.Check, contentDescription = if (doneToday) "Fatta oggi" else "Segna fatta oggi")
+                    // Da fare: cerchio vuoto con il bordo; fatta: pieno con l'accento e la spunta.
+                    val toggle: (Boolean) -> Unit = {
+                        haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
+                        NotesStore.toggleHabit(habit.id)
+                    }
+                    if (doneToday) {
+                        FilledIconToggleButton(checked = true, onCheckedChange = toggle, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Outlined.Check, contentDescription = "Fatta oggi")
+                        }
+                    } else {
+                        OutlinedIconToggleButton(
+                            checked = false,
+                            onCheckedChange = toggle,
+                            border = BorderStroke(2.dp, MaterialTheme.colorScheme.outline),
+                            modifier = Modifier.size(48.dp).semantics { contentDescription = "Segna fatta oggi" },
+                        ) {}
                     }
                 }
             }
@@ -549,9 +584,16 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                             )
                         }
                     }
+                    Checklist.progressLabel(note.text)?.let { progress ->
+                        Text(
+                            progress,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     if (note.body.isNotBlank()) {
                         Text(
-                            note.body,
+                            Checklist.preview(note.body),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 4,
@@ -623,6 +665,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var id by remember { mutableStateOf(noteId) }
     var text by rememberSaveable { mutableStateOf(noteId?.let { NotesStore.note(it)?.text }.orEmpty()) }
     var deleted by remember { mutableStateOf(false) }
+    // Le note con voci da spuntare si aprono come lista; la matita torna al testo.
+    var checkMode by rememberSaveable { mutableStateOf(noteId != null && Checklist.hasItems(text)) }
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val pinned = id?.let { current -> data.notes.firstOrNull { it.id == current }?.pinned } ?: false
     val haptic = rememberHaptic()
@@ -654,6 +698,21 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        if (checkMode) {
+                            checkMode = false
+                        } else {
+                            text = Checklist.toList(text)
+                            id = NotesStore.saveNote(id, text) ?: id
+                            checkMode = true
+                        }
+                    }) {
+                        if (checkMode) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Modifica il testo")
+                        } else {
+                            Icon(Icons.Outlined.ChecklistIcon, contentDescription = "Lista")
+                        }
+                    }
                     // Fissa in alto: lo stesso della pressione lunga nella lista, ma visibile.
                     IconButton(onClick = {
                         id?.let {
@@ -689,6 +748,20 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             )
         },
     ) { inner ->
+        if (checkMode) {
+            ChecklistView(
+                text = text,
+                onChange = { next ->
+                    text = next
+                    id = NotesStore.saveNote(id, next) ?: id
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(inner)
+                    .imePadding(),
+            )
+            return@Scaffold
+        }
         TextField(
             value = text,
             onValueChange = {
@@ -711,5 +784,75 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 .imePadding()
                 .autoFocus(enabled = noteId == null),
         )
+    }
+}
+
+/** Una nota-lista: righe da spuntare con un tocco e un campo per aggiungerne in fondo. */
+@Composable
+private fun ChecklistView(text: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val haptic = rememberHaptic()
+    var draft by rememberSaveable { mutableStateOf("") }
+    fun addDraft() {
+        if (draft.isBlank()) return
+        haptic(Haptic.CONFIRM)
+        onChange(Checklist.add(text, draft))
+        draft = ""
+    }
+    LazyColumn(modifier, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+        item(key = "title") {
+            Column(Modifier.padding(bottom = 8.dp)) {
+                Text(
+                    text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty().ifEmpty { "Lista" },
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Checklist.progressLabel(text)?.let { progress ->
+                    Text(progress, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        items(Checklist.lines(text), key = { it.index }) { line ->
+            when (line) {
+                is Checklist.Item -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable {
+                            haptic(if (line.done) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                            onChange(Checklist.toggle(text, line.index))
+                        }
+                        .semantics { contentDescription = (if (line.done) "Fatto: " else "Da fare: ") + line.text },
+                ) {
+                    Checkbox(checked = line.done, onCheckedChange = null, modifier = Modifier.padding(12.dp))
+                    Text(
+                        line.text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (line.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        textDecoration = if (line.done) TextDecoration.LineThrough else null,
+                    )
+                }
+                is Checklist.Plain -> if (line.text.isBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                } else {
+                    Text(line.text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(vertical = 6.dp))
+                }
+            }
+        }
+        item(key = "add") {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = { draft = it },
+                placeholder = { Text("Aggiungi voce") },
+                leadingIcon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                singleLine = true,
+                shape = MaterialTheme.shapes.large,
+                colors = canvasFieldColors(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { addDraft() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+        }
     }
 }

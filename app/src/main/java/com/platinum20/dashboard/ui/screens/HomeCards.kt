@@ -121,7 +121,7 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
 }
 
 /** Toglie l'Agenda da Oggi: resta riaccendibile da Personalizza. */
-private fun hideAgenda(context: Context) {
+internal fun hideAgenda(context: Context) {
     AppSettings.setCardVisible(HomeCard.CALENDAR, false)
     Toast.makeText(context, "Agenda nascosta: la riaccendi da Personalizza", Toast.LENGTH_LONG).show()
 }

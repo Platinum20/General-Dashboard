@@ -1,11 +1,37 @@
 # Changelog
 
-## 1.87.0
+## 1.90.0
 - Accesso a Spotify sistemato: la pagina restava nera, ora si entra con l'accesso ufficiale di Spotify (lo stesso che serve per la libreria e per ascoltare qui)
 - YouTube: schede e filtri (Shorts, dirette) in un'unica fila, non più due barre che scorrono
 - YouTube rifatto: anteprime grandi con foto del canale e durata, Short in una fila orizzontale, "Stai guardando" in cima per tornare al video
 - Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
 - Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
+
+## 1.88.0
+**Note**
+- Liste di spunta: le righe "- latte" o "[ ] pane" diventano caselle da spuntare con un tocco; il pulsante Lista trasforma le righe di una nota, "Aggiungi voce" in fondo, e nella lista delle note si legge "3 di 7 fatti"
+- Cerca in tutte le Note: la lente in alto cerca in promemoria (anche completati), note, spese (anche per importo: "12,5" trova 12,50 €), pacchi (anche per codice), date e abitudini, senza badare ad accenti e maiuscole
+- Spese fisse e abbonamenti: "ogni mese il 5 affitto 650" o "netflix 12,99 il 25 di ogni mese" si aggiungono da sole il giorno giusto; in cima al mese "Fisse · variabili", il budget al giorno tiene da parte le fisse ancora in arrivo
+- Abitudini con obiettivo settimanale ("3 volte a settimana"): "2 su 3 questa settimana", serie in settimane, e niente rimproveri finché si è in tempo
+- Abitudini: si vede a colpo d'occhio cosa manca oggi (cerchio vuoto da fare, pieno da fatta, "Manca oggi" in arancio dopo le 17)
+
+**Oggi**
+- Gli inviti a impostare (agenda, Compila da solo) non stanno più in cima: una riga in fondo "2 cose da attivare" apre i pulsanti, così sotto Adesso viene subito Da fare
+- Adesso avvisa il giorno prima di un addebito fisso: "Domani addebito: Netflix 12,99 €"
+
+**Cattura al volo e Calendario**
+- Il "+" crea anche eventi: con "Evento", "venerdì alle 20 cena da Luca", "domani dalle 9 alle 11 corso", "per 2 ore" o "tutto il giorno" finiscono nel calendario del telefono, con l'anteprima prima di salvare
+- Scheda evento: se eliminare non riesce o manca il permesso di scrittura ora lo dice, e dopo un rifiuto definitivo il pulsante porta alle impostazioni dell'app
+
+**Impostazioni**
+- Nuovo gruppo Dati: "Esporta backup" salva promemoria, abitudini, spese, note, pacchi, date e impostazioni in un file; "Ripristina da backup" mostra cosa contiene prima di sostituire. I dati entrano anche nel backup automatico di Android
+
+**Promemoria e pagine web**
+- "Rimanda" dopo mezzanotte diventa "Stamattina 9:00" invece di saltare un giorno
+- Nella pagina web interna i link a YouTube e Spotify aprono i player dell'app invece del loro sito
+
+**Test**
+- Nuovi test automatici: ChecklistTest, NotesSearchTest, InvitesTest, QuickEventTest, HabitWeeklyTest, FixedExpenseTest, NotesStoreTest (anche un file di una versione vecchia), BackupTest, HabitTest, CalendarPermissionTest
 
 ## 1.86.0
 - "Adesso" in Oggi, il meteo di adesso e il brano in riproduzione in Media hanno il colore del tema invece del nero: con Material You prendono il colore dello sfondo del telefono, con Canvas un azzurro chiaro

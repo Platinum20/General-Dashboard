@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.notes
 
 import android.content.Context
+import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,8 +10,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -51,13 +54,52 @@ data class Countdown(
         if (!yearly) null else (nextDate(today).year - date.year).takeIf { it >= 2 }
 }
 
-/** Un'abitudine da tenere ogni giorno: si spunta e conta i giorni di fila. */
+/**
+ * Un'abitudine: ogni giorno, oppure [perWeek] volte a settimana ("palestra 3 volte").
+ * Si spunta e conta i giorni (o le settimane) di fila.
+ */
 data class Habit(
     val id: Long,
     val title: String,
     val done: Set<LocalDate> = emptySet(),
+    /** 0 = ogni giorno; da 1 a 6 = quante volte a settimana. */
+    val perWeek: Int = 0,
 ) {
+    val weekly: Boolean get() = perWeek in 1..6
+
     fun isDone(day: LocalDate = LocalDate.now()): Boolean = day in done
+
+    /** Quante volte è stata fatta nella settimana (da lunedì) che contiene [day], fino a quel giorno. */
+    fun weekCount(day: LocalDate = LocalDate.now()): Int {
+        val monday = day.with(DayOfWeek.MONDAY)
+        return done.count { !it.isBefore(monday) && !it.isAfter(day) }
+    }
+
+    /** Settimane di fila con l'obiettivo raggiunto; quella in corso conta solo se è già raggiunto. */
+    fun weekStreak(today: LocalDate = LocalDate.now()): Int {
+        if (!weekly) return 0
+        var monday = today.with(DayOfWeek.MONDAY)
+        if (weekCount(today) < perWeek) monday = monday.minusWeeks(1)
+        var count = 0
+        while (weekCount(monday.plusDays(6)) >= perWeek) {
+            count++
+            monday = monday.minusWeeks(1)
+        }
+        return count
+    }
+
+    /**
+     * Da ricordare in Adesso? Ogni giorno: dal tardo pomeriggio se oggi manca. Settimanale:
+     * solo quando, senza farla oggi, non si arriverebbe più all'obiettivo della settimana.
+     */
+    fun needsReminder(now: LocalDateTime): Boolean {
+        val today = now.toLocalDate()
+        if (isDone(today) || now.hour < Briefing.HABIT_HOUR) return false
+        if (!weekly) return true
+        val missing = perWeek - weekCount(today)
+        val daysLeft = DayOfWeek.SUNDAY.value - today.dayOfWeek.value + 1
+        return missing > 0 && missing == daysLeft
+    }
 
     /** Giorni di fila fino a oggi; se oggi manca ancora, la serie di ieri è ancora viva. */
     fun streak(today: LocalDate = LocalDate.now()): Int {
@@ -73,7 +115,40 @@ data class Habit(
     /** Gli ultimi [days] giorni, dal più vecchio a oggi. */
     fun lastDays(today: LocalDate = LocalDate.now(), days: Int = 7): List<Pair<LocalDate, Boolean>> =
         (days - 1 downTo 0).map { today.minusDays(it.toLong()).let { d -> d to (d in done) } }
+
+    /**
+     * La riga sotto il nome: la serie di giorni di fila; dall'ora in cui Adesso ricorda
+     * le abitudini, se oggi manca ancora, "Manca oggi" in evidenza.
+     */
+    fun statusLine(now: LocalDateTime): HabitLine {
+        val today = now.toLocalDate()
+        if (weekly) {
+            val week = "${weekCount(today)} su $perWeek questa settimana"
+            val streak = weekStreak(today)
+            val text = when {
+                needsReminder(now) -> "Manca oggi · $week"
+                streak > 1 -> "$week · $streak settimane di fila"
+                streak == 1 && weekCount(today) >= perWeek -> "$week · obiettivo raggiunto"
+                else -> week
+            }
+            return HabitLine(text, urgent = needsReminder(now))
+        }
+        if (!isDone(today) && now.hour >= Briefing.HABIT_HOUR) {
+            val streak = streak(today)
+            return HabitLine(if (streak > 0) "Manca oggi · $streak di fila" else "Manca oggi", urgent = true)
+        }
+        return HabitLine(
+            when (val streak = streak(today)) {
+                0 -> "Inizia oggi"
+                1 -> "1 giorno"
+                else -> "$streak giorni di fila"
+            },
+            urgent = false,
+        )
+    }
 }
+
+data class HabitLine(val text: String, val urgent: Boolean)
 
 data class Note(
     val id: Long,
@@ -95,6 +170,7 @@ data class NotesData(
     /** Tetto di spesa del mese in centesimi, null se non impostato. */
     val budgetCents: Long? = null,
     val parcels: List<Parcel> = emptyList(),
+    val fixedExpenses: List<FixedExpense> = emptyList(),
 ) {
     /** Pacchi ancora in viaggio, prima quelli attesi prima; quelli senza data in fondo. */
     val incoming: List<Parcel>
@@ -123,6 +199,36 @@ object NotesStore {
         appContext = context.applicationContext
         file = File(appContext.filesDir, FILE)
         _data.value = runCatching { parse(file.readText()) }.getOrDefault(NotesData())
+        applyFixedExpenses()
+    }
+
+    /** Aggiunge le spese fisse arrivate a scadenza (anche più mesi, se l'app non si apriva da tempo). */
+    fun applyFixedExpenses(today: LocalDate = LocalDate.now()) = update { d -> withFixedApplied(d, today, ::newId) }
+
+    internal fun withFixedApplied(d: NotesData, today: LocalDate, id: () -> Long): NotesData {
+        var expenses = d.expenses
+        val fixed = d.fixedExpenses.map { f ->
+            val months = f.dueMonths(today)
+            if (months.isEmpty()) return@map f
+            expenses = months.reversed().map { Expense(id(), f.cents, f.text, f.category, f.dateIn(it), fixedId = f.id) } + expenses
+            f.copy(lastMonth = months.last())
+        }
+        return if (fixed == d.fixedExpenses) d else d.copy(expenses = expenses, fixedExpenses = fixed)
+    }
+
+    /** "ogni mese il 5 affitto 650": salva la spesa fissa (e la aggiunge se oggi è il giorno). */
+    fun addFixedExpense(text: String, today: LocalDate = LocalDate.now()): FixedExpense? {
+        val parsed = Expenses.parseFixed(text, today) ?: return null
+        val item = parsed.copy(id = newId())
+        update { d -> withFixedApplied(d.copy(fixedExpenses = d.fixedExpenses + item), today, ::newId) }
+        return item
+    }
+
+    /** Smette di aggiungerla; quelle già aggiunte restano nei mesi passati. */
+    fun deleteFixedExpense(id: Long) = update { d -> d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }) }
+
+    fun restoreFixedExpense(item: FixedExpense) = update { d ->
+        if (d.fixedExpenses.any { it.id == item.id }) d else d.copy(fixedExpenses = d.fixedExpenses + item)
     }
 
     private fun newId(): Long = System.nanoTime()
@@ -220,11 +326,12 @@ object NotesStore {
         update { d -> d.copy(countdowns = d.countdowns.filter { it.id != item.id } + item) }
     }
 
-    fun saveHabit(id: Long?, title: String) {
+    fun saveHabit(id: Long?, title: String, perWeek: Int = 0) {
         val clean = title.trim().ifEmpty { return }
+        val target = perWeek.coerceIn(0, 6)
         update { d ->
-            if (id == null) d.copy(habits = d.habits + Habit(newId(), clean))
-            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean) else it })
+            if (id == null) d.copy(habits = d.habits + Habit(newId(), clean, perWeek = target))
+            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean, perWeek = target) else it })
         }
     }
 
@@ -344,6 +451,17 @@ object NotesStore {
 
     fun note(id: Long): Note? = _data.value.notes.firstOrNull { it.id == id }
 
+    /** Tutti i dati in JSON, per il backup. */
+    fun exportJson(): String = serialize(_data.value)
+
+    /** Ripristino da backup: sostituisce tutto e rimette i promemoria con la loro notifica. */
+    fun replaceAll(next: NotesData) {
+        val before = _data.value.tasks.map { it.id }
+        update { next }
+        before.forEach(::syncReminder)
+        next.tasks.forEach { syncReminder(it.id) }
+    }
+
     private fun update(change: (NotesData) -> NotesData) {
         val next = change(_data.value)
         if (next == _data.value) return
@@ -359,7 +477,7 @@ object NotesStore {
         if (::appContext.isInitialized) runCatching { DashboardWidget.updateAll(appContext) }
     }
 
-    private fun serialize(d: NotesData): String = JSONObject()
+    internal fun serialize(d: NotesData): String = JSONObject()
         .put("tasks", JSONArray().apply {
             d.tasks.forEach {
                 put(
@@ -385,7 +503,7 @@ object NotesStore {
             val since = LocalDate.now().minusDays(400)
             d.habits.forEach { h ->
                 put(
-                    JSONObject().put("id", h.id).put("title", h.title)
+                    JSONObject().put("id", h.id).put("title", h.title).put("perWeek", h.perWeek)
                         .put("done", JSONArray(h.done.filter { it.isAfter(since) }.sorted().map { it.toString() }))
                 )
             }
@@ -395,6 +513,16 @@ object NotesStore {
                 put(
                     JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
                         .put("category", it.category.name).put("date", it.date.toString())
+                        .apply { it.fixedId?.let { f -> put("fixedId", f) } }
+                )
+            }
+        })
+        .put("fixedExpenses", JSONArray().apply {
+            d.fixedExpenses.forEach {
+                put(
+                    JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
+                        .put("category", it.category.name).put("day", it.day).put("from", it.from.toString())
+                        .apply { it.lastMonth?.let { m -> put("lastMonth", m.toString()) } }
                 )
             }
         })
@@ -412,7 +540,7 @@ object NotesStore {
         })
         .toString()
 
-    private fun parse(raw: String): NotesData {
+    internal fun parse(raw: String): NotesData {
         val json = JSONObject(raw)
         val tasks = json.optJSONArray("tasks") ?: JSONArray()
         val notes = json.optJSONArray("notes") ?: JSONArray()
@@ -420,6 +548,9 @@ object NotesStore {
         val habits = json.optJSONArray("habits") ?: JSONArray()
         val expenses = json.optJSONArray("expenses") ?: JSONArray()
         val parcels = json.optJSONArray("parcels") ?: JSONArray()
+        val fixedExpenses = json.optJSONArray("fixedExpenses") ?: JSONArray()
+        fun JSONObject.month(key: String): YearMonth? =
+            if (has(key)) runCatching { YearMonth.parse(optString(key)) }.getOrNull() else null
         fun JSONObject.date(key: String): LocalDate? =
             if (has(key)) runCatching { LocalDate.parse(optString(key)) }.getOrNull() else null
         return NotesData(
@@ -451,6 +582,8 @@ object NotesStore {
                     o.getLong("id"),
                     o.optString("title"),
                     (0 until done.length()).mapNotNull { runCatching { LocalDate.parse(done.getString(it)) }.getOrNull() }.toSet(),
+                    // Le abitudini salvate prima della 1.84 sono tutte quotidiane.
+                    perWeek = o.optInt("perWeek", 0).coerceIn(0, 6),
                 )
             },
             expenses = (0 until expenses.length()).mapNotNull { i ->
@@ -461,6 +594,19 @@ object NotesStore {
                     o.optString("text"),
                     runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
                     o.date("date") ?: return@mapNotNull null,
+                    fixedId = if (o.has("fixedId")) o.optLong("fixedId") else null,
+                )
+            },
+            fixedExpenses = (0 until fixedExpenses.length()).mapNotNull { i ->
+                val o = fixedExpenses.getJSONObject(i)
+                FixedExpense(
+                    o.getLong("id"),
+                    o.optLong("cents"),
+                    o.optString("text"),
+                    runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
+                    o.optInt("day", 1).coerceIn(1, 31),
+                    o.month("from") ?: return@mapNotNull null,
+                    o.month("lastMonth"),
                 )
             },
             budgetCents = if (json.has("budgetCents")) json.optLong("budgetCents") else null,
