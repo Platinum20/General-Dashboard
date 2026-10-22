@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~13:35 UTC (UI prima di tutto), su main 1.86.0 (1.88.0 in uscita con quasi tutta la vecchia cima), foto: branch `screenshots`, cartella `main/41`._
+_Ultimo aggiornamento: 2026-10-22 ~17:55 UTC (UI prima di tutto), su main 1.91.0, foto: branch `screenshots`, cartella `claude_project-thread-brclxp/45` (stesso codice della 1.91.0; il giro `main/46` era in corso)._
 
 ---
 
@@ -89,15 +89,15 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
-_Giro fotografico di main 1.86.0 (`main/41`, 2026-10-22 13:3x UTC). La 1.88.0 ha svuotato quasi tutta la cima: qui le prossime voci, con più funzioni nuove._
+_Giro fotografico della 1.91.0 (`claude_project-thread-brclxp/45`, 2026-10-22). La 1.90 e la 1.91 hanno rifatto YouTube, titoli grandi e schede delle Note, ma nessuna delle voci qui sotto è ancora uscita: nelle foto si vedono ancora tutte (News "niente di nuovo", X in Da fare, mezze pagine vuote in Media, Video, Date e Pacchi)._
 
-_**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 7 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. Attenzione a non sovrapporsi alla revisione UI in corso su `claude/project-thread-brclxp` (titoli grandi nelle pagine interne, schede delle Note a chip, spese in card, Personalizza)._
+_**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 8 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. La revisione UI di `brclxp` è uscita nella 1.91.0: si può lavorare su tutte le schermate._
 
-### 1. News: intestazione e righe vuote · News · S
-**Perché:** nella foto 10_news (`main/41`) l'intestazione dice ancora "Niente di nuovo dall'ultima visita" sopra notizie di 2 minuti fa, e c'è una notizia di Internazionale con titolo "Dalla redazione di Internazionale" (una voce del feed che non è un articolo) con la miniatura vuota.
-**Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 2 min fa"; in `NewsRepository` scartare le voci senza articolo (titoli generici della fonte come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
-**Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche e la voce di Internazionale non c'è.
-**Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri.
+### 1. News: intestazione, foto mancanti e righe vuote · News · S
+**Perché:** ancora nella 1.91 (foto 10_news) l'intestazione dice "Niente di nuovo dall'ultima visita" sopra notizie di 8 minuti fa; la prima notizia grande ha un riquadro grigio vuoto alto un terzo di schermo al posto della foto (quando la foto manca o non si carica), e le miniature vuote restano quadrati grigi. In più "Fanpage non risponde, riprovo al prossimo aggiornamento" è una riga grezza in cima a tutto.
+**Cosa fare:** in `NewsHistory`/`NewsScreen.kt` al primo avvio o con 0 nuove ma articoli più recenti dell'ultima visita scrivere "Aggiornate 8 min fa"; la card grande senza immagine (o con immagine in errore, `AsyncImage` `onError`) diventa una card solo testo con titolo grande, e la miniatura che non si carica sparisce invece di lasciare il quadrato; la fonte che non risponde va in un chip discreto ("1 fonte non risponde") accanto ai filtri, non in una riga in cima. In `NewsRepository` scartare le voci senza articolo (titoli generici come "Dalla redazione di …", link alla home o a una sezione). Togliere da "Dopo" la voce gemella.
+**Fatto quando:** nella foto l'intestazione non dice "niente di nuovo" sopra notizie fresche, nessun riquadro grigio vuoto, nessuna riga d'errore in cima.
+**Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri; scelta del layout della card (con foto / solo testo).
 
 ### 2. Test automatici: quello che manca · robustezza · S
 **Perché:** la 1.88 ha coperto i dati delle Note (NotesStore, abitudini, spese fisse, ricerca, backup). Restano senza test il widget, le news "dall'ultima visita" e il giro fotografico non si accorge quando una schermata manca (vedi V1, V2, V6: `06_aggiungi` è ancora identica a `05_oggi_fondo` in `main/41`, `scuro_03_punto` manca ancora).
@@ -105,9 +105,9 @@ _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le 
 **Fatto quando:** i test nuovi girano in `build.yml`; un giro con una foto mancante o doppia fallisce.
 **Test:** sono la voce stessa.
 
-### 3. Date, Media e Video: niente mezze pagine vuote · Note › Date, Media · S
-**Perché:** nelle foto `main/41` Date (22_date) ha un compleanno e poi metà schermo vuoto, e lo stesso in Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
-**Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi (voce sotto). Stile `CanvasCard` con `IconTile`, testo breve.
+### 3. Date, Pacchi, Media e Video: niente mezze pagine vuote · Note, Media · S
+**Perché:** ancora nella 1.91 Date (22_date) ha un compleanno e poi tre quarti di schermo vuoto, e lo stesso in Pacchi (25_pacchi, un pacco), Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
+**Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi (voce sotto). Stile `CanvasCard` con `IconTile`, testo breve.
 **Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto.
 **Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci).
 
@@ -129,22 +129,23 @@ _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le 
 **Fatto quando:** nella foto le righe hanno solo casella e testo.
 **Test:** foto del giro; nessuna logica nuova.
 
-### 7. Rifiniture viste nelle foto · Meteo, Aggiornamenti, Oggi · S
-**Perché:** piccole cose che fanno sembrare l'app non finita (foto `main/41`).
-**Cosa fare:** Meteo (02_meteo): in alto a destra il cerchio di caricamento resta anche con i dati mostrati: tornare all'icona "aggiorna" a caricamento finito (se è solo un effetto del giro fotografico, scartare). Aggiornamenti (41): "Avviso nuove versioni" sta sia lì sia in Impostazioni: lasciarlo solo in Impostazioni. Adesso (01_oggi): accanto a "ADESSO · ROMA" c'è un simbolo "(" (luna?) che sembra un refuso: verificare in `HomeCards.kt` e usare un'icona vera o toglierlo.
-**Fatto quando:** nelle foto nessuno dei tre difetti.
+### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
+**Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
+**Cosa fare:** Aggiornamenti (41): "Avvisami delle nuove versioni" sta sia lì sia in Impostazioni (40, "Avviso nuove versioni"): lasciarlo solo in Impostazioni. Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località").
+**Fatto quando:** nelle foto nessuno dei difetti.
 **Test:** foto del giro.
 
-### 8. Notifica del mattino: proporla · Oggi · S
-**Perché:** nella foto 40_impostazioni la notifica del mattino è ancora spenta: è il riepilogo più utile dell'app e si scopre solo frugando nelle Impostazioni.
-**Cosa fare:** dopo 3 giorni d'uso una riga in fondo a Oggi (dentro la riga "cose da attivare" della 1.88, `InvitesUi.kt`) "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (chiede il permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora".
-**Fatto quando:** al quarto giorno compare l'invito e con un tocco la notifica è attiva.
-**Test:** nel test degli inviti della 1.88: giorni d'uso, già attiva, due rifiuti.
+### 8. Spotify, Video e Radio come le altre pagine; via il Client ID · Media · S
+**Perché:** la 1.91 ha dato il titolo grande a tutte le pagine interne, ma Spotify (32_spotify) e Video (33_video) hanno ancora il titolo piccolo da barra vecchia. In Spotify, sotto "Accedi a Spotify", c'è ancora il campo "Client ID dell'app Spotify" con il codice esadecimale in chiaro e "Collega con il Client ID": dalla 1.90 l'accesso ufficiale funziona e quel blocco è solo rumore tecnico da sviluppatore.
+**Cosa fare:** `SpotifyFeedScreen.kt`, `VideoPlayerScreen.kt`, `RadioScreen.kt`: stessa intestazione grande con freccia di Impostazioni/Meteo (con sopra la riga piccola "IL TUO SPOTIFY" come YouTube). Spostare il Client ID in Impostazioni › Media › Spotify sotto "Avanzate" (chiuso), non nella pagina di accesso.
+**Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nella pagina di accesso di Spotify c'è solo il pulsante.
+**Test:** foto del giro (aggiungere `34_radio` se manca).
 
 ### 9. Avviso pioggia · Oggi / notifiche · M
 **Perché:** Canvas ha già il nowcast a 15 minuti di Open-Meteo (`Forecast.nowcast`, `Weather.kt`) e lo usa solo se apri l'app. Il momento in cui serve è prima di uscire: "tra 20 minuti piove" va detto da solo, come fanno le app meteo di riferimento.
 **Cosa fare:** in Impostazioni › Meteo l'interruttore "Avvisami se sta per piovere" (spento di default). Un `RainAlertWorker` periodico (15 min, solo tra le 7 e le 23, rete qualsiasi) legge `minutely_15` della località attuale e, se nei prossimi 45 minuti la pioggia passa da 0 a ≥ 0,3 mm, manda una notifica "Pioggia tra 20 minuti a Roma, debole per 40 minuti" che apre il Meteo. Al massimo un avviso ogni 3 ore, niente avvisi se sta già piovendo. Stessa frase anche come prima riga di Adesso.
-**Fatto quando:** con l'interruttore acceso e pioggia prevista tra mezz'ora arriva una sola notifica; spento, nessun worker attivo.
+Nel Meteo, sopra "Prossime 24 ore", una striscia "Prossima ora" con le barre di `minutely_15` e la frase ("Pioggia debole dalle 18:15") quando c'è pioggia in arrivo: oggi la pagina dice solo "Pioggia oggi 13%".
+**Fatto quando:** con l'interruttore acceso e pioggia prevista tra mezz'ora arriva una sola notifica; spento, nessun worker attivo; nel Meteo la striscia compare solo con pioggia nelle prossime 2 ore.
 **Test:** funzione pura `RainAlert.decide(nowcast, now, lastAlert)` (inizio pioggia tra 20 min → avviso con minuti e durata; già piove → niente; avviso 1 h fa → niente; soglia 0,3 mm; fuori orario → niente).
 
 ### 10. Domani, dalle 18 · Oggi · M
@@ -161,9 +162,18 @@ _(primo passo dell'idea grande E)_
 **Fatto quando:** importo da una rubrica con 5 compleanni e in Date ne compaiono 5 con "compie N anni" dove l'anno è noto; reimportando non si duplicano.
 **Test:** conversione riga contatto → data (`1990-03-12`, `--03-12` senza anno, formato non valido scartato), riconoscimento doppioni per nome + giorno.
 
+### 12. Spese: foto dello scontrino · Note › Spese · M
+_(primo passo dell'idea grande G)_
+**Perché:** la spesa si segna quando si paga, e lì scrivere "63,40 spesa conad" è il passo che fa saltare l'abitudine. Lo scontrino è già in mano: una foto basta.
+**Cosa fare:** nel campo delle Spese e nel "+" un'icona fotocamera: `ActivityResultContracts.TakePicture` (nessun permesso fotocamera da chiedere) e lettura del testo sul telefono con ML Kit Text Recognition (modello incluso nell'app, gratis, senza rete). Una funzione pura `Receipt.parse(righe)` trova il totale ("TOTALE", "TOTALE COMPLESSIVO", "IMPORTO PAGATO", il numero più grande vicino a "EUR"), il negozio (prima riga in maiuscolo) e la data; mostra l'anteprima "Conad · 63,40 € · Spesa" da confermare. Categoria dal nome del negozio con le stesse regole di Compila da solo. La foto non si salva (o si salva solo se l'utente lo chiede).
+**Fatto quando:** fotografando uno scontrino del supermercato l'anteprima ha totale e negozio giusti e un tocco salva la spesa.
+**Test:** `ReceiptTest` con 5-6 scontrini veri trascritti come testo (Conad, Esselunga, farmacia, benzinaio con "IMPORTO", ristorante con coperto e totale), importi con virgola e punto, righe sconto da ignorare.
+
 ---
 
 ## Dopo
+
+- **Notifica del mattino: proporla** · Oggi · S. (era In cima) In 40_impostazioni è ancora spenta. Dopo 3 giorni d'uso, nella riga "cose da attivare" di Oggi (`InvitesUi.kt`), "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora". Test: nel test degli inviti (giorni d'uso, già attiva, due rifiuti).
 
 - **Abitudini: promemoria all'ora scelta** · Note › Abitudini · M. (era In cima) Nel `HabitDialog` "Ricordamelo alle…", notifica con "Fatto" e "Più tardi"; niente se già fatta. Test: prossimo avviso, settimanali, parse vecchie.
 - **News: "Leggi dopo"** · News · M. (era In cima) Segnalibro in `ReaderScreen` e pressione lunga in `NewsScreen`, store `SavedArticles` con testo pulito per leggere offline, chip "Salvati". Test: store, limite 100, doppioni.
@@ -218,11 +228,21 @@ _(primo passo dell'idea grande E)_
 3. (S) "Nuovi episodi" dei podcast seguiti in cima alla fonte e una riga in Adesso al mattino ("2 nuovi episodi: …"), aggiornati dal `RefreshWorker`.
 4. (S) Scarica per l'ascolto offline (WorkManager, solo Wi-Fi), cancellati da soli dopo l'ascolto.
 
+### G. Spese senza scrivere · Note › Spese · L
+**Perché:** le spese sono la scheda che più dipende dalla costanza: ogni passo in meno conta.
+**Passi:**
+1. (M) Foto dello scontrino: è la voce 12 di In cima.
+2. (S) Notifiche di pagamento (Google Wallet, app della banca) già lette da Compila da solo: proporre la spesa con importo e negozio, un tocco per confermare.
+3. (S) "Come ieri": dal campo delle Spese i 5 negozi/descrizioni più frequenti come chip, con l'ultimo importo.
+4. (M) Spese divise: "cena 80 diviso 4" segna 20 € e tiene "Luca mi deve 20 €" in fondo al mese, con promemoria.
+
 ---
 
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.91.0 · Nuova icona; vetro liquido da Android 13; titoli grandi con freccia nelle pagine interne; schede delle Note a pillole; spese in card; Personalizza con icone
+- 1.90.0 · Accesso a Spotify con OAuth ufficiale; YouTube rifatto (anteprime grandi, Short in fila, "Stai guardando", comandi propri del player, velocità, descrizione)
 - 1.88.0 · Liste di spunta nelle note (ex 9); Cerca in tutte le Note (ex 8); Spese fisse e abbonamenti con "Domani addebito" in Adesso (ex 5); Abitudini con obiettivo settimanale (ex 7) e fatte/non fatte a colpo d'occhio (ex 13); inviti di Oggi in una riga in fondo (ex 14); eventi del calendario dal "+" (ex 15); Backup ed esportazione in Impostazioni › Dati (ex 2); test dei dati delle Note con file di una versione vecchia (ex 0); V3, V4, V5 del verificatore
 - 1.86.0 · Adesso, meteo e brano in corso con il colore del tema (Material You)
 - 1.85.0 · Vetro della barra in basso e del mini player davvero trasparente
