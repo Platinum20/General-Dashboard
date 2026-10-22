@@ -7,6 +7,10 @@
 - Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
 - Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
 
+## 1.86.0
+- "Adesso" in Oggi, il meteo di adesso e il brano in riproduzione in Media hanno il colore del tema invece del nero: con Material You prendono il colore dello sfondo del telefono, con Canvas un azzurro chiaro
+- In "Adesso" le cose urgenti restano in arancio, più carico col tema chiaro così si leggono sul fondo colorato
+
 ## 1.85.0
 - Vetro della barra in basso e del mini player davvero trasparente: velo più leggero e sfocatura meno forte, così la pagina sotto si vede scorrere
 - La sfocatura parte già da Android 12 (prima solo da Android 13); sui telefoni più vecchi resta un velo semitrasparente
