@@ -93,6 +93,7 @@ object YtHistory {
     }
 
     private fun persist() {
+        val p = prefs ?: return
         val array = JSONArray()
         _items.value.values.forEach { w ->
             array.put(
@@ -100,6 +101,6 @@ object YtHistory {
                     .put("pos", w.positionMs).put("dur", w.durationMs).put("at", w.watchedAt)
             )
         }
-        prefs?.edit()?.putString(KEY, array.toString())?.apply()
+        p.edit().putString(KEY, array.toString()).apply()
     }
 }

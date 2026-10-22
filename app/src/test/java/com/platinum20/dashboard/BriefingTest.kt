@@ -5,6 +5,7 @@ import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Briefing
 import org.junit.Assert.assertEquals
@@ -52,7 +53,7 @@ class BriefingTest {
             zone = zone,
         )
         assertEquals(BriefKind.TASK, lines.first().kind)
-        assertEquals("1 promemoria scaduto", lines.first().text)
+        assertEquals("Scaduto: Bolletta", lines.first().text)
     }
 
     @Test
@@ -154,5 +155,62 @@ class BriefingTest {
         ).first { it.kind == BriefKind.WEATHER }
         assertEquals("Domani 22° / 10°, pioggia 60%", line.text)
         assertEquals(61, line.weatherCode)
+    }
+
+    @Test
+    fun righeConAzioneRapida() {
+        // Voce 17: abitudini, pacchi e promemoria si chiudono da Adesso.
+        val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
+        val lines = Briefing.build(
+            evening, null, emptyList(), emptyList(),
+            tasks = listOf(TaskItem(7, "Bolletta", dueAt = ms(evening.minusHours(2)))),
+            countdowns = emptyList(), zone = zone,
+            habits = listOf(Habit(1, "Acqua"), Habit(2, "Leggere 20 minuti")),
+            parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate())),
+            max = 6,
+        )
+        val task = lines.first { it.kind == BriefKind.TASK }
+        assertEquals("Scaduto: Bolletta", task.text)
+        assertEquals(BriefAction.TASK_DONE, task.action)
+        assertEquals(listOf(7L), task.targetIds)
+        val parcel = lines.first { it.kind == BriefKind.PARCEL }
+        assertEquals(BriefAction.PARCEL_ARRIVED, parcel.action)
+        assertEquals(listOf(3L), parcel.targetIds)
+        val habits = lines.first { it.kind == BriefKind.HABIT }
+        assertEquals(BriefAction.HABITS, habits.action)
+        assertEquals(listOf(1L, 2L), habits.targetIds)
+    }
+
+    @Test
+    fun abitudineSegnataLaRigaScende() {
+        val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
+        fun habitLine(habits: List<Habit>) = Briefing.build(
+            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone, habits = habits,
+        ).firstOrNull { it.kind == BriefKind.HABIT }
+        val both = listOf(Habit(1, "Acqua"), Habit(2, "Lettura"))
+        assertEquals(BriefAction.HABITS, habitLine(both)?.action)
+        val oneDone = listOf(Habit(1, "Acqua", setOf(evening.toLocalDate())), Habit(2, "Lettura"))
+        assertEquals(BriefAction.HABIT_DONE, habitLine(oneDone)?.action)
+        assertEquals(listOf(2L), habitLine(oneDone)?.targetIds)
+        val allDone = both.map { it.copy(done = setOf(evening.toLocalDate())) }
+        assertEquals(null, habitLine(allDone))
+    }
+
+    @Test
+    fun piuPacchiNessunArrivato() {
+        val lines = Briefing.build(
+            morning, null, emptyList(), null, emptyList(), emptyList(), zone,
+            parcels = listOf(Parcel(1, "Cuffie", expected = morning.toLocalDate()), Parcel(2, "Libro", expected = morning.toLocalDate())),
+        )
+        assertEquals(null, lines.first { it.kind == BriefKind.PARCEL }.action)
+    }
+
+    @Test
+    fun nomiDelleAbitudiniNonTagliati() {
+        assertEquals("Ancora da fare oggi: Acqua", Briefing.habitsText(listOf("Acqua")))
+        assertEquals("Ancora da fare oggi: Acqua, Lettura", Briefing.habitsText(listOf("Acqua", "Lettura")))
+        assertEquals("Ancora da fare: 2 abitudini", Briefing.habitsText(listOf("Bere 2 litri d'acqua", "Camminare 30 minuti")))
+        assertEquals("Ancora da fare: 1 abitudine", Briefing.habitsText(listOf("Meditare dieci minuti prima di dormire")))
+        assertEquals("Ancora da fare: 3 abitudini", Briefing.habitsText(listOf("A", "B", "C")))
     }
 }
