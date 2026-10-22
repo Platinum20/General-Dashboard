@@ -78,6 +78,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.Tomorrow
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
@@ -179,6 +180,14 @@ fun HomeScreen(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
             fixedExpenses = notes.fixedExpenses, resume = resume,
+        )
+    }
+    // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
+    val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
+        Tomorrow.build(
+            minute, weather.forecast,
+            events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
+            tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -290,6 +299,16 @@ fun HomeScreen(
         ) {
             // La prima card (di solito Adesso), poi le cose trovate da sole in notifiche e SMS, poi le altre.
             items(cards.take(1), key = { it.name }) { cardContent(it) }
+            tomorrowPlan?.let { plan ->
+                item(key = "tomorrow") {
+                    TomorrowCard(
+                        plan = plan,
+                        onOpenWeather = onOpenWeather,
+                        onOpenCalendar = { inApp?.openCalendar?.invoke() },
+                        onOpenNotes = onOpenNotes,
+                    )
+                }
+            }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
             items(cards.drop(1), key = { it.name }) { cardContent(it) }
             item(key = "invites") {
