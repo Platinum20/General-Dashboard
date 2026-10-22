@@ -59,6 +59,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.TodayTaskPicker
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -223,6 +224,8 @@ fun TasksCard(onOpenNotes: () -> Unit) {
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
+    // Solo quello che conta adesso: il resto è a un tocco, in Note.
+    val today = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
     LaunchedEffect(lastDone) {
@@ -246,7 +249,15 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     modifier = Modifier.padding(16.dp),
                 )
             }
-            open.take(5).forEachIndexed { index, task ->
+            if (today.shown.isEmpty() && open.isNotEmpty() && lastDone == null) {
+                Text(
+                    "Niente in scadenza oggi.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            today.shown.forEachIndexed { index, task ->
                 val done = { haptic(Haptic.CONFIRM); lastDone = task; NotesStore.toggleTask(task.id) }
                 if (index > 0) RowDivider()
                 Row(
@@ -264,10 +275,10 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     }
                 }
             }
-            if (open.size > 5) {
+            if (today.more > 0) {
                 RowDivider()
                 Text(
-                    "e altri ${open.size - 5}",
+                    "+ altri ${today.more} in Note",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
