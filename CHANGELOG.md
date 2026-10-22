@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.52.0
+- Note: nell'editor di una nota c'è il pulsante con la puntina per fissarla in alto (o toglierla), senza dover sapere della pressione lunga nella lista
+
 ## 1.51.0
 - Località del meteo: una X nel campo di ricerca per cancellare quello che hai scritto, e il tasto Cerca della tastiera sceglie subito la prima città trovata
 
