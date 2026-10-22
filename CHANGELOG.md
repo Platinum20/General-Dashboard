@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.18.0
+- Note: nuova scheda "Date" con tutti i conti alla rovescia (compleanni, viaggi, scadenze), con il pulsante + per aggiungerne
+- Animazioni tra le schermate: le pagine di dettaglio entrano da destra e tornano indietro scorrendo, tra le schede una dissolvenza
+- Toccare la scheda già aperta (Oggi o News) riporta la lista in cima
+- Oggi: senza il permesso del calendario la card dell'agenda occupa una sola riga
+- Meteo: il titolo del dettaglio è "Meteo", la città resta nella card
+
 ## 1.17.0
 - Mini player a bolla dentro l'app: il video di YouTube, Spotify o la radio restano in un riquadro che si trascina dove vuoi e ti segue in tutte le sezioni; un tocco riapre il player
 - Radio: le stazioni più ascoltate in Italia, ricerca in tutto il mondo, preferite e ascoltate di recente, ascolto in sottofondo con notifica e comandi in cuffia
