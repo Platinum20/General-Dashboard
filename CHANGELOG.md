@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.97.0
+- Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore
+- Spotify: le tue playlist usano il nuovo indirizzo dell'API di Spotify; la pagina di un artista mostra album e singoli (i "brani più ascoltati" non sono più disponibili per le app personali)
+
 ## 1.96.0
 **Media › Video**
 - La pagina Video non è più mezza vuota: sotto i Recenti c'è "Sul telefono" con gli ultimi video registrati o scaricati (miniatura, durata, giorno). Il permesso si chiede solo quando tocchi "Mostra i video del telefono", e un tocco apre il video nel player
