@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.35.0
+- Media: le righe di radio, playlist di YouTube, Spotify e la card di cosa sta suonando si "schiacciano" al tocco come il resto dell'app
+- Radio: vibrazione leggera quando aggiungi o togli una stazione dalle preferite
+
 ## 1.34.0
 - Oggi: dopo aver spuntato un promemoria compare "Annulla" per qualche secondo, così una spunta data per sbaglio si rimette a posto con un tocco (anche per i promemoria ricorrenti)
 

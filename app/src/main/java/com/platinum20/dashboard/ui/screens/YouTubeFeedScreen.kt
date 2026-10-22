@@ -273,7 +273,7 @@ private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit) {
                 onClick = { onOpen(playlist) },
                 shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
             ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Thumbnail(playlist.thumbnail, Modifier.width(120.dp))
