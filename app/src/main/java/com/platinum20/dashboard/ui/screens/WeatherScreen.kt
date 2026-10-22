@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -127,11 +128,17 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     }
                 }
             }
-        } else LazyColumn(
+        } else PullToRefreshBox(
+            isRefreshing = state.loading,
+            state = rememberHapticPullState(state.loading),
+            onRefresh = { WeatherStore.refresh(context, force = true) },
+            modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding()),
+        ) {
+        LazyColumn(
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = inner.calculateTopPadding() + 8.dp,
+                top = 8.dp,
                 bottom = inner.calculateBottomPadding() + 16.dp,
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -188,6 +195,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
+        }
         }
     }
 }
