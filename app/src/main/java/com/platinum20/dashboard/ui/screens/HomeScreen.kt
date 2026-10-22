@@ -367,8 +367,24 @@ private fun WeatherCard(
     }
 }
 
-/** L'arancio di ciò che è urgente in "Adesso" col tema scuro; col chiaro si usa il terziario, più carico. */
-private val UrgentOnDark = Color(0xFFFF9466)
+/**
+ * L'arancio di ciò che è urgente in "Adesso": fisso, non preso dal tema, così resta arancio anche
+ * con Material You (dove il terziario viene dallo sfondo del telefono). Scuro col tema chiaro e
+ * chiaro col tema scuro, sempre con contrasto almeno 4,5:1 sul blocco colorato.
+ */
+internal object Urgent {
+    val onLight = Color(0xFFA63C17)
+    val onDark = Color(0xFFFF9466)
+
+    fun color(darkTheme: Boolean): Color = if (darkTheme) onDark else onLight
+
+    /** Rapporto di contrasto WCAG tra due colori (1..21). */
+    fun contrast(a: Color, b: Color): Float {
+        val la = a.luminance()
+        val lb = b.luminance()
+        return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
+    }
+}
 
 /** Una riga di "Adesso": icona, testo, in evidenza se è urgente. */
 @Composable
@@ -385,7 +401,7 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val content = LocalContentColor.current
-    val urgent = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) UrgentOnDark else MaterialTheme.colorScheme.tertiary
+    val urgent = Urgent.color(darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f)
     val color = if (line.urgent) urgent else content.copy(alpha = 0.7f)
     Row(
         modifier = Modifier
