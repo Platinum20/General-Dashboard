@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.90.0
+- Accesso a Spotify sistemato: la pagina restava nera, ora si entra con l'accesso ufficiale di Spotify (lo stesso che serve per la libreria e per ascoltare qui)
+- YouTube: schede e filtri (Shorts, dirette) in un'unica fila, non più due barre che scorrono
+- YouTube rifatto: anteprime grandi con foto del canale e durata, Short in una fila orizzontale, "Stai guardando" in cima per tornare al video
+- Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
+- Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
+
 ## 1.88.0
 **Note**
 - Liste di spunta: le righe "- latte" o "[ ] pane" diventano caselle da spuntare con un tocco; il pulsante Lista trasforma le righe di una nota, "Aggiungi voce" in fondo, e nella lista delle note si legge "3 di 7 fatti"

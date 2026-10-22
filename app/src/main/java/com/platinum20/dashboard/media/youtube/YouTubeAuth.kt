@@ -50,6 +50,12 @@ object YouTubeAuth {
         _connected.value = prefs(context).getBoolean(KEY_CONNECTED, false)
     }
 
+    /** Solo per le foto automatiche delle schermate (test). */
+    internal fun previewConnected() {
+        initialized = true
+        _connected.value = true
+    }
+
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private val request = AuthorizationRequest.builder()
