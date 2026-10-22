@@ -2,6 +2,7 @@ package com.platinum20.dashboard.news
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.platinum20.dashboard.net.userMessage
 import com.platinum20.dashboard.news.reader.ArticleVerifier
 import com.platinum20.dashboard.news.reader.VerificationState
 import com.platinum20.dashboard.news.reader.WebPageRenderer
@@ -66,7 +67,7 @@ class NewsViewModel : ViewModel() {
                 }
                 .onFailure { e ->
                     _state.update {
-                        it.copy(loading = false, refreshing = false, error = e.message ?: "Errore di rete.")
+                        it.copy(loading = false, refreshing = false, error = e.userMessage("Errore di rete."))
                     }
                 }
         }

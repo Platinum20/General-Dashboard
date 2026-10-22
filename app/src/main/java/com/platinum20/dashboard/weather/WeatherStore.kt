@@ -2,6 +2,7 @@ package com.platinum20.dashboard.weather
 
 import android.content.Context
 import com.platinum20.dashboard.net.Http
+import com.platinum20.dashboard.net.userMessage
 import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,7 +63,7 @@ object WeatherStore {
             runCatching { fetch(app) }
                 .onSuccess { f -> _state.value = WeatherState(forecast = f) }
                 .onFailure { e ->
-                    _state.update { it.copy(loading = false, error = e.message ?: "Meteo non disponibile.") }
+                    _state.update { it.copy(loading = false, error = e.userMessage("Meteo non disponibile.")) }
                 }
         }
     }

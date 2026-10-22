@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.platinum20.dashboard.BuildConfig
+import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,7 +54,7 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repository.fetchReleases() }
                 .onSuccess { list -> _state.update { it.copy(releases = list, loadingReleases = false) } }
                 .onFailure { e ->
-                    _state.update { it.copy(loadingReleases = false, releasesError = e.message ?: "Errore di rete.") }
+                    _state.update { it.copy(loadingReleases = false, releasesError = e.userMessage("Errore di rete.")) }
                 }
         }
     }
@@ -64,7 +65,7 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(status = UpdateStatus.Checking) }
             val releases = runCatching { repository.fetchReleases() }.getOrElse { e ->
-                _state.update { it.copy(status = UpdateStatus.Error(e.message ?: "Errore di rete.")) }
+                _state.update { it.copy(status = UpdateStatus.Error(e.userMessage("Errore di rete."))) }
                 return@launch
             }
             _state.update { it.copy(releases = releases, releasesError = null) }
@@ -81,7 +82,7 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
                     _state.update { it.copy(status = UpdateStatus.Downloading(target, p)) }
                 }
             }.getOrElse { e ->
-                _state.update { it.copy(status = UpdateStatus.Error(e.message ?: "Download non riuscito.")) }
+                _state.update { it.copy(status = UpdateStatus.Error(e.userMessage("Download non riuscito."))) }
                 return@launch
             }
             install(target, apk)
