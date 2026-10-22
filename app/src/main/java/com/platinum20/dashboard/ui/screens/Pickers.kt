@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.DateIdea
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.QuickParse
 import com.platinum20.dashboard.notes.Repeat
@@ -338,10 +339,15 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
 
 /** Nuovo conto alla rovescia o modifica di uno esistente. */
 @Composable
-fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit, onDeleted: (Countdown) -> Unit = {}) {
-    var title by remember { mutableStateOf(countdown?.title.orEmpty()) }
+fun CountdownDialog(
+    countdown: Countdown?,
+    onDismiss: () -> Unit,
+    onDeleted: (Countdown) -> Unit = {},
+    idea: DateIdea? = null,
+) {
+    var title by remember { mutableStateOf(countdown?.title ?: idea?.title.orEmpty()) }
     var date by remember { mutableStateOf(countdown?.date ?: LocalDate.now().plusDays(7)) }
-    var yearly by remember { mutableStateOf(countdown?.yearly ?: false) }
+    var yearly by remember { mutableStateOf(countdown?.yearly ?: idea?.yearly ?: false) }
     var picking by remember { mutableStateOf(false) }
     val setYearly = hapticToggle { yearly = it }
 

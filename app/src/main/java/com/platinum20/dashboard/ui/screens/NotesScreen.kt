@@ -79,6 +79,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.platinum20.dashboard.notes.DateIdeas
+import com.platinum20.dashboard.notes.DateIdea
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -127,6 +137,18 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
 }
 
 /**
+ * Dove far scorrere la fila di pillole perché quella aperta stia intera con un margine:
+ * null se è già tutta in vista (così la fila non si muove e non lascia pezzi tagliati).
+ * Le posizioni sono in pixel dall'inizio della fila, [scroll] è lo scorrimento attuale.
+ */
+internal fun stripScrollTarget(chipStart: Int, chipEnd: Int, viewport: Int, scroll: Int, margin: Int): Int? = when {
+    viewport <= 0 -> null
+    chipStart - margin < scroll -> (chipStart - margin).coerceAtLeast(0)
+    chipEnd + margin > scroll + viewport -> chipEnd + margin - viewport
+    else -> null
+}
+
+/**
  * Le sei schede delle Note come pillole, uguali ai filtri delle News: stanno in una riga che scorre
  * e la riga si sposta da sola per tenere in vista la scheda attiva.
  */
@@ -134,13 +156,19 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
 private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
     val haptic = rememberHaptic()
     val scroll = rememberScrollState()
-    val chipX = remember { mutableStateMapOf<NotesTabs, Int>() }
-    LaunchedEffect(selected) {
-        chipX[selected]?.let { x -> scroll.animateScrollTo((x - 48).coerceAtLeast(0)) }
+    val chipBounds = remember { mutableStateMapOf<NotesTabs, IntRange>() }
+    var viewport by remember { mutableStateOf(0) }
+    val margin = with(LocalDensity.current) { 16.dp.roundToPx() }
+    LaunchedEffect(selected, viewport) {
+        val bounds = chipBounds[selected] ?: return@LaunchedEffect
+        // Le posizioni delle pillole non contano i 16 dp di bordo della fila: li aggiungo.
+        stripScrollTarget(bounds.first + margin, bounds.last + margin, viewport, scroll.value, margin)
+            ?.let { scroll.animateScrollTo(it.coerceIn(0, scroll.maxValue)) }
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .onSizeChanged { viewport = it.width }
             .horizontalScroll(scroll)
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -150,7 +178,10 @@ private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
                 selected = selected == t,
                 onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
                 label = t.label,
-                modifier = Modifier.onGloballyPositioned { chipX[t] = it.positionInParent().x.toInt() },
+                modifier = Modifier.onGloballyPositioned {
+                    val x = it.positionInParent().x.toInt()
+                    chipBounds[t] = x..(x + it.size.width)
+                },
             )
         }
     }
@@ -276,6 +307,7 @@ fun NotesScreen(
 @Composable
 private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDeleted: (Countdown) -> Unit) {
     var editing by remember { mutableStateOf<Countdown?>(null) }
+    var proposing by remember { mutableStateOf<DateIdea?>(null) }
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(upcoming, key = { it.id }) { item ->
             val days = item.daysLeft()
@@ -313,8 +345,40 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDelete
         if (upcoming.isEmpty()) {
             item { EmptyHint("Nessuna data. Aggiungi un compleanno, un viaggio o una scadenza con il pulsante +.") }
         }
+        val ideas = DateIdeas.suggest(upcoming)
+        if (ideas.isNotEmpty()) {
+            item {
+                Column(Modifier.padding(top = 8.dp)) {
+                    SectionHeader("Idee da aggiungere")
+                    Spacer(Modifier.height(4.dp))
+                    CanvasCard(Modifier.fillMaxWidth()) {
+                        ideas.forEachIndexed { i, idea ->
+                            if (i > 0) RowDivider()
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { proposing = idea }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(idea.title.trim(), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        if (idea.yearly) "Ogni anno" else "Una volta",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi ${idea.title.trim()}", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
+    proposing?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposing = null }) }
 }
 
 @Composable
@@ -806,6 +870,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             },
             placeholder = { Text("Scrivi… la prima riga fa da titolo") },
             textStyle = TextStyle.Default.merge(MaterialTheme.typography.bodyLarge),
+            visualTransformation = rememberTitleLine(),
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -819,6 +884,25 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 .imePadding()
                 .autoFocus(enabled = noteId == null),
         )
+    }
+}
+
+/** Dove finisce il titolo di una nota: la prima riga, come nella lista delle Note. */
+internal fun noteTitleEnd(text: String): Int = text.indexOf('\n').let { if (it < 0) text.length else it }
+
+/** La prima riga dell'editor più grande e in grassetto: si vede che è il titolo. */
+@Composable
+private fun rememberTitleLine(): VisualTransformation {
+    val title = MaterialTheme.typography.titleLarge
+    return remember(title) {
+        VisualTransformation { text ->
+            val end = noteTitleEnd(text.text)
+            val styled = buildAnnotatedString {
+                append(text)
+                if (end > 0) addStyle(SpanStyle(fontSize = title.fontSize, fontWeight = FontWeight.SemiBold), 0, end)
+            }
+            TransformedText(styled, OffsetMapping.Identity)
+        }
     }
 }
 

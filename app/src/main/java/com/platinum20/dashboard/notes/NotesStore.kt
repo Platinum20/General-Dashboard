@@ -194,12 +194,37 @@ object NotesStore {
     private val _data = MutableStateFlow(NotesData())
     val data: StateFlow<NotesData> = _data.asStateFlow()
 
+    /** Il file delle Note non si leggeva: nome della copia salvata, da dire una volta all'utente. */
+    private val _readProblem = MutableStateFlow<String?>(null)
+    val readProblem: StateFlow<String?> = _readProblem.asStateFlow()
+
     fun init(context: Context) {
         if (::file.isInitialized) return
         appContext = context.applicationContext
         file = File(appContext.filesDir, FILE)
-        _data.value = runCatching { parse(file.readText()) }.getOrDefault(NotesData())
+        val (loaded, copy) = load(file, LocalDate.now())
+        _data.value = loaded
+        _readProblem.value = copy?.name
         applyFixedExpenses()
+    }
+
+    fun readProblemShown() {
+        _readProblem.value = null
+    }
+
+    /**
+     * Legge il file delle Note. Se esiste ma non si legge (rovinato, o scritto da una versione
+     * più nuova) lo copia accanto come notes.json.bad-AAAA-MM-GG prima di partire vuoti,
+     * così la prima modifica non cancella i dati vecchi. Restituisce i dati e la copia fatta.
+     */
+    internal fun load(file: File, today: LocalDate): Pair<NotesData, File?> {
+        val raw = runCatching { file.readText() }.getOrNull()
+        if (raw.isNullOrBlank()) return NotesData() to null
+        runCatching { parse(raw) }.onSuccess { return it to null }
+        var copy = File(file.parentFile, "${file.name}.bad-$today")
+        var n = 2
+        while (copy.exists()) copy = File(file.parentFile, "${file.name}.bad-$today-${n++}")
+        return NotesData() to runCatching { file.copyTo(copy) }.getOrNull()
     }
 
     /** Aggiunge le spese fisse arrivate a scadenza (anche più mesi, se l'app non si apriva da tempo). */
@@ -457,7 +482,8 @@ object NotesStore {
     /** Ripristino da backup: sostituisce tutto e rimette i promemoria con la loro notifica. */
     fun replaceAll(next: NotesData) {
         val before = _data.value.tasks.map { it.id }
-        update { next }
+        // Le spese fisse scadute da quando è stato fatto il backup vanno aggiunte subito.
+        update { withFixedApplied(next, LocalDate.now(), ::newId) }
         before.forEach(::syncReminder)
         next.tasks.forEach { syncReminder(it.id) }
     }
