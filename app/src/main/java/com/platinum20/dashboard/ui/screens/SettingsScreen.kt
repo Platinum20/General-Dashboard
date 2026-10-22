@@ -72,15 +72,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.platinum20.dashboard.media.Accounts
+import com.platinum20.dashboard.media.spotify.SpotifyStore
+import com.platinum20.dashboard.media.spotify.SpotifyWebSession
+import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +94,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
     val loggedIn by Accounts.loggedIn.collectAsState()
-    val adBlock by AppSettings.adBlock.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
@@ -163,39 +163,31 @@ fun SettingsScreen(
             item { SectionHeader("Account e Media") }
             item {
                 SettingsGroup {
+                    // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
                     MediaService.entries.forEach { service ->
                         val connected = service in loggedIn
                         SettingsItem(
                             icon = Icons.Outlined.AccountCircle,
                             title = service.label,
-                            subtitle = if (connected) "Collegato" else "Non collegato",
+                            subtitle = if (connected) "Collegato · player e feed nella sezione Media" else "Non collegato",
                             trailing = {
                                 if (connected) {
-                                    TextButton(onClick = { Accounts.logout(service) }) { Text("Esci") }
+                                    TextButton(onClick = {
+                                        Accounts.logout(service)
+                                        when (service) {
+                                            MediaService.YOUTUBE -> YouTubeStore.clear()
+                                            MediaService.SPOTIFY -> {
+                                                SpotifyWebSession.clear()
+                                                SpotifyStore.clear()
+                                            }
+                                        }
+                                    }) { Text("Esci") }
                                 } else {
                                     FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
                                 }
                             },
                         )
                     }
-                    SettingsItem(
-                        icon = Icons.Outlined.Shield,
-                        title = "Blocco pubblicità",
-                        subtitle = "Annunci e tracciamento in YouTube e Spotify",
-                        onClick = {
-                            AppSettings.setAdBlock(!adBlock)
-                            MediaWebViews.releaseAll()
-                        },
-                        trailing = {
-                            Switch(
-                                checked = adBlock,
-                                onCheckedChange = {
-                                    AppSettings.setAdBlock(it)
-                                    MediaWebViews.releaseAll()
-                                },
-                            )
-                        },
-                    )
                 }
             }
 

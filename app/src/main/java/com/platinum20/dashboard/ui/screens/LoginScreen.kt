@@ -107,7 +107,11 @@ fun LoginScreen(
                     LinearProgressIndicator(progress = { loadProgress }, modifier = Modifier.fillMaxWidth())
                 } else {
                     Text(
-                        "Accedi come in un browser: le credenziali vanno solo a ${service.label}.",
+                        if (service == MediaService.SPOTIFY) {
+                            "Se \"Continua con Google\" non va, scegli \"Continua con email\": ti arriva un codice per entrare."
+                        } else {
+                            "Accedi come in un browser: le credenziali vanno solo a ${service.label}."
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

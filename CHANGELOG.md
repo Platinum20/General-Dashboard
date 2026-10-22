@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.26.0
+- YouTube e Spotify senza registrazioni: il feed nell'app usa l'accesso fatto in Impostazioni, niente Google Cloud né app per sviluppatori
+- YouTube: nuova scheda "Più tardi" con i video di Guarda più tardi
+- Impostazioni: un solo accesso per servizio, che vale per player e feed; il blocco pubblicità si regola in Media
+- Accesso a Spotify: suggerimento per entrare con email e codice se l'accesso con Google non va
+
 ## 1.25.0
 - L'app ora si chiama Canvas: nome sotto l'icona, widget, voce "Guarda in Canvas" nel menu Condividi e titolo delle release
 - Icona nuova: i tre riquadri appoggiati su una tela con una cornice sottile

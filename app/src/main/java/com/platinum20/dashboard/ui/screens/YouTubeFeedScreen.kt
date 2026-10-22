@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
+import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.Accounts
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -75,7 +79,7 @@ import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import kotlinx.coroutines.launch
 
-private val youTubeTabs = listOf("Iscrizioni", "Playlist", "Mi piace", "Cerca")
+private val youTubeTabs = listOf("Iscrizioni", "Playlist", "Mi piace", "Più tardi", "Cerca")
 
 /** Il tuo YouTube in versione nativa: iscrizioni, playlist, video piaciuti e ricerca. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,10 +88,15 @@ fun YouTubeFeedScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
     onOpenWeb: () -> Unit,
+    onLogin: () -> Unit,
 ) {
     val context = LocalContext.current
     YouTubeAuth.init(context)
-    val connected by YouTubeAuth.connected.collectAsState()
+    val official by YouTubeAuth.connected.collectAsState()
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
+    // Basta l'accesso a YouTube fatto nell'app; l'API ufficiale di Google resta un'alternativa.
+    val connected = official || MediaService.YOUTUBE in loggedIn
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
 
@@ -111,6 +120,7 @@ fun YouTubeFeedScreen(
                                 tab == 0 -> YouTubeStore.refreshSubscriptions(context, force = true)
                                 tab == 1 -> YouTubeStore.refreshPlaylists(context, force = true)
                                 tab == 2 -> YouTubeStore.refreshLiked(context, force = true)
+                                tab == 3 -> YouTubeStore.refreshWatchLater(context, force = true)
                             }
                         }) {
                             Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")
@@ -129,7 +139,7 @@ fun YouTubeFeedScreen(
                 .padding(inner)
         ) {
             if (!connected) {
-                ConnectYouTube(onOpenWeb = onOpenWeb)
+                ConnectYouTube(onOpenWeb = onOpenWeb, onLogin = onLogin)
                 return@Column
             }
             val playlist = openPlaylist
@@ -146,6 +156,7 @@ fun YouTubeFeedScreen(
                 0 -> SubscriptionsTab(onPlay)
                 1 -> PlaylistsTab(onOpen = { openPlaylist = it })
                 2 -> LikedTab(onPlay)
+                3 -> WatchLaterTab(onPlay)
                 else -> SearchTab(onPlay)
             }
         }
@@ -153,7 +164,7 @@ fun YouTubeFeedScreen(
 }
 
 @Composable
-private fun ConnectYouTube(onOpenWeb: () -> Unit) {
+private fun ConnectYouTube(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -182,14 +193,16 @@ private fun ConnectYouTube(onOpenWeb: () -> Unit) {
         Text("Collega il tuo YouTube", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Vedrai qui i nuovi video dei canali che segui, le tue playlist e i video che ti piacciono. " +
-                "L'app chiede a Google solo la lettura: non può pubblicare né modificare niente.",
+            "Vedrai qui i nuovi video dei canali che segui, le tue playlist, i Mi piace e Guarda più tardi. " +
+                "Basta accedere a YouTube una volta, qui nell'app: nessuna registrazione da fare.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        Button(
+        Button(onClick = onLogin) { Text("Accedi a YouTube") }
+        Spacer(Modifier.height(8.dp))
+        TextButton(
             enabled = !busy,
             onClick = {
                 busy = true
@@ -215,7 +228,7 @@ private fun ConnectYouTube(onOpenWeb: () -> Unit) {
                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
             }
-            Text("Collega con Google")
+            Text("Oppure collega l'API ufficiale di Google")
         }
         problem?.let {
             Spacer(Modifier.height(16.dp))
@@ -300,6 +313,16 @@ private fun LikedTab(onPlay: (String) -> Unit) {
     LaunchedEffect(Unit) { YouTubeStore.refreshLiked(context) }
     FeedList(state, empty = "Nessun video con il Mi piace") {
         items(state.data.orEmpty(), key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
+    }
+}
+
+@Composable
+private fun WatchLaterTab(onPlay: (String) -> Unit) {
+    val context = LocalContext.current
+    val state by YouTubeStore.watchLater.collectAsState()
+    LaunchedEffect(Unit) { YouTubeStore.refreshWatchLater(context) }
+    FeedList(state, empty = "Nessun video da guardare più tardi") {
+        items(state.data.orEmpty(), key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl + "&list=WL") }) }
     }
 }
 
