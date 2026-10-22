@@ -62,6 +62,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
@@ -78,6 +79,7 @@ fun NotesScreen(
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(0) }
+    var addingDate by remember { mutableStateOf(false) }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
@@ -96,15 +98,16 @@ fun NotesScreen(
                 PrimaryTabRow(selectedTabIndex = tab) {
                     Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Da fare") })
                     Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Note") })
+                    Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Date") })
                 }
             }
         },
         floatingActionButton = {
-            if (tab == 1) {
+            if (tab != 0) {
                 FloatingActionButton(
-                    onClick = { onOpenNote(null) },
+                    onClick = { if (tab == 1) onOpenNote(null) else addingDate = true },
                     modifier = Modifier.padding(bottom = bottomPadding.calculateBottomPadding()),
-                ) { Icon(Icons.Outlined.Add, contentDescription = "Nuova nota") }
+                ) { Icon(Icons.Outlined.Add, contentDescription = if (tab == 1) "Nuova nota" else "Nuova data") }
             }
         },
     ) { inner ->
@@ -114,8 +117,58 @@ fun NotesScreen(
             top = inner.calculateTopPadding() + 8.dp,
             bottom = bottomPadding.calculateBottomPadding() + 88.dp,
         )
-        if (tab == 0) TasksTab(data.tasks, padding) else NotesTab(data.notes, padding, onOpenNote)
+        when (tab) {
+            0 -> TasksTab(data.tasks, padding)
+            1 -> NotesTab(data.notes, padding, onOpenNote)
+            else -> DatesTab(data.upcoming, padding)
+        }
     }
+    if (addingDate) CountdownDialog(countdown = null, onDismiss = { addingDate = false })
+}
+
+/** Conti alla rovescia: compleanni, viaggi e scadenze, dal più vicino. */
+@Composable
+private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
+    var editing by remember { mutableStateOf<Countdown?>(null) }
+    LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(upcoming, key = { it.id }) { item ->
+            val days = item.daysLeft()
+            ElevatedCard(
+                onClick = { editing = item },
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            longDate(item.nextDate()) + if (item.yearly) " · ogni anno" else "",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            when (days) {
+                                0L -> "Oggi"
+                                1L -> "Domani"
+                                else -> "$days"
+                            },
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (days > 1) {
+                            Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+        }
+        if (upcoming.isEmpty()) {
+            item { EmptyHint("Nessuna data. Aggiungi un compleanno, un viaggio o una scadenza con il pulsante +.") }
+        }
+    }
+    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
 }
 
 @Composable

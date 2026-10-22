@@ -115,16 +115,18 @@ fun CalendarCard(refreshKey: Int = 0) {
             )
             val list = events
             when {
-                !granted -> Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                // Senza permesso: una riga sola con il pulsante a destra, non un blocco di testo.
+                !granted -> Row(
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
-                        "Consenti l'accesso al calendario per vedere qui gli impegni di oggi.",
+                        "Vedi qui gli impegni di oggi",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
                     )
-                    FilledTonalButton(
-                        onClick = { launcher.launch(Manifest.permission.READ_CALENDAR) },
-                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
-                    ) { Text("Consenti") }
+                    FilledTonalButton(onClick = { launcher.launch(Manifest.permission.READ_CALENDAR) }) { Text("Consenti") }
                 }
                 list == null -> Spacer(Modifier.height(8.dp))
                 list.isEmpty() -> Text(

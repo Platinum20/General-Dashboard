@@ -79,17 +79,47 @@ class ScreenshotTour {
         compose.mainClock.autoAdvance = false
         scenario = ActivityScenario.launch(MainActivity::class.java)
         settle(until = { WeatherStore.state.value.let { it.forecast != null || it.error != null } && NewsStore.result.value != null })
-        shot(prefix + "01_home")
+        val p = prefix
+        shot(p + "01_oggi")
+        // Dettagli raggiungibili da Oggi
+        visit("Meteo", p + "02_meteo")
+        visit("Il punto", p + "03_punto")
+        visit("Personalizza", p + "04_personalizza")
         scroll(down = true)
-        shot(prefix + "02_home_fondo")
+        shot(p + "05_oggi_fondo")
 
-        val tabs = listOf("News", "Note", "Media", "Impostazioni")
-        tabs.forEachIndexed { i, label ->
-            if (tap(label)) {
-                settle(3_000)
-                shot(prefix + "%02d_%s".format(10 + i, label.lowercase()))
+        if (tap("News")) { settle(3_000); shot(p + "10_news") }
+        if (tap("Note")) {
+            settle(1_500); shot(p + "20_note")
+            for ((tab, name) in listOf("Note" to "21_note_libere", "Date" to "22_date")) {
+                // Il primo nodo è la scheda in alto; "Note" compare anche nella barra in basso.
+                val nodes = compose.onAllNodes(hasText(tab) and hasClickAction())
+                val count = nodes.fetchSemanticsNodes().size
+                if (count > 0) {
+                    nodes[0].performClick()
+                    settle(1_000); shot(p + name)
+                }
             }
         }
+        if (tap("Media")) {
+            settle(2_000); shot(p + "30_media")
+            visit("YouTube", p + "31_youtube")
+            visit("Spotify", p + "32_spotify")
+            visit("Video", p + "33_video")
+        }
+        if (tap("Impostazioni")) {
+            settle(1_500); shot(p + "40_impostazioni")
+            visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
+        }
+    }
+
+    /** Apre una schermata toccando [label], la fotografa e torna indietro. */
+    private fun visit(label: String, name: String, waitMs: Long = 3_000) {
+        if (!tap(label)) return
+        settle(waitMs)
+        shot(name)
+        scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        settle(1_000)
     }
 
     /** Tocca il primo elemento cliccabile con quel testo; false se non c'è. */

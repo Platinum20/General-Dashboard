@@ -74,7 +74,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.forecast?.place ?: "Meteo") },
+                title = { Text("Meteo") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")

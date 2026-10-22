@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
@@ -120,6 +122,10 @@ fun HomeScreen(
     }
 
     val recap = rememberRecapState()
+    val listState = rememberLazyListState()
+    LaunchedEffect(Unit) {
+        TabReselect.events.collect { if (it == Routes.HOME) listState.animateScrollToItem(0) }
+    }
     val layout by AppSettings.homeLayout.collectAsStateWithLifecycle()
     var calendarRefresh by remember { mutableStateOf(0) }
 
@@ -152,6 +158,7 @@ fun HomeScreen(
                 .padding(top = inner.calculateTopPadding()),
         ) {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
