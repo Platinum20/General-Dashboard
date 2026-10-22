@@ -39,7 +39,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.news.NewsSources
 import com.platinum20.dashboard.news.NewsViewModel
@@ -62,6 +69,17 @@ fun NewsScreen(
     viewModel: NewsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    NewsHistory.init(context)
+    val read by NewsHistory.read.collectAsStateWithLifecycle()
+    // L'ultima visita si legge all'ingresso e si aggiorna all'uscita: le "nuove" restano tali finché sei qui.
+    val since = remember { NewsHistory.lastVisit() }
+    DisposableEffect(Unit) { onDispose { NewsHistory.markVisit() } }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { NewsHistory.markVisit() }
+    val open = { item: NewsItem ->
+        NewsHistory.markRead(item.link)
+        onOpenArticle(item)
+    }
     val listState = rememberLazyListState()
     LaunchedEffect(Unit) {
         TabReselect.events.collect { if (it == Routes.NEWS) listState.animateScrollToItem(0) }
@@ -145,10 +163,22 @@ fun NewsScreen(
                             )
                         }
                     }
+                    // Le notizie uscite dopo l'ultima visita in cima; dalla prima già vista in poi, un separatore.
+                    val items = state.visibleItems
+                    val firstSeen = if (since == null) -1 else items.indexOfFirst { it.publishedAt != null && !it.publishedAt.isAfter(since) }
+                    if (firstSeen > 0) {
+                        item(key = "new-count") {
+                            SectionLabel(if (firstSeen == 1) "1 nuova dall'ultima visita" else "$firstSeen nuove dall'ultima visita")
+                        }
+                    }
                     // La prima notizia in grande, le altre come righe compatte con la miniatura.
-                    itemsIndexed(state.visibleItems, key = { _, it -> it.link }) { index, item ->
-                        if (index == 0) NewsCard(item, onClick = { onOpenArticle(item) })
-                        else NewsRow(item, onClick = { onOpenArticle(item) })
+                    itemsIndexed(items, key = { _, it -> it.link }) { index, item ->
+                        Column {
+                            if (index == firstSeen && firstSeen > 0) SectionLabel("Già viste", Modifier.padding(top = 8.dp, bottom = 8.dp))
+                            val seen = item.link in read
+                            if (index == 0) NewsCard(item, read = seen, onClick = { open(item) })
+                            else NewsRow(item, read = seen, onClick = { open(item) })
+                        }
                     }
                     if (state.visibleItems.isEmpty()) {
                         item {
@@ -164,6 +194,18 @@ fun NewsScreen(
             }
         }
     }
+}
+
+private const val READ_ALPHA = 0.55f
+
+@Composable
+private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = 4.dp),
+    )
 }
 
 @Composable
@@ -187,10 +229,11 @@ private fun SourceChips(selected: String?, onSelect: (String?) -> Unit) {
 }
 
 @Composable
-private fun NewsCard(item: NewsItem, onClick: () -> Unit) {
+private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        // Gli articoli già aperti restano, ma attenuati: l'occhio va subito a quelli da leggere.
+        modifier = Modifier.fillMaxWidth().alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         if (item.imageUrl != null) {
@@ -242,10 +285,10 @@ private fun NewsCard(item: NewsItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun NewsRow(item: NewsItem, onClick: () -> Unit) {
+private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     ElevatedCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.large,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
