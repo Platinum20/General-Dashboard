@@ -195,11 +195,19 @@ fun NotesScreen(
         )
         when (tab) {
             NotesTabs.TASKS -> TasksTab(data.tasks, padding, onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") })
-            NotesTabs.HABITS -> HabitsTab(data.habits, padding)
-            NotesTabs.MONEY -> ExpensesTab(data, padding)
+            NotesTabs.HABITS -> HabitsTab(data.habits, padding, onDeleted = { h ->
+                offerUndo("Abitudine eliminata") { NotesStore.restoreHabit(h) }
+            })
+            NotesTabs.MONEY -> ExpensesTab(data, padding, onDeleted = { e ->
+                offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) }
+            })
             NotesTabs.NOTES -> NotesTab(data.notes, padding, onOpenNote)
-            NotesTabs.PARCELS -> ParcelsTab(data.parcels, padding)
-            NotesTabs.DATES -> DatesTab(data.upcoming, padding)
+            NotesTabs.PARCELS -> ParcelsTab(data.parcels, padding, onDeleted = { p ->
+                offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) }
+            })
+            NotesTabs.DATES -> DatesTab(data.upcoming, padding, onDeleted = { c ->
+                offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) }
+            })
         }
     }
     if (adding) {
@@ -215,7 +223,7 @@ fun NotesScreen(
 
 /** Conti alla rovescia: compleanni, viaggi e scadenze, dal più vicino. */
 @Composable
-private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
+private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDeleted: (Countdown) -> Unit) {
     var editing by remember { mutableStateOf<Countdown?>(null) }
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(upcoming, key = { it.id }) { item ->
@@ -255,7 +263,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
             item { EmptyHint("Nessuna data. Aggiungi un compleanno, un viaggio o una scadenza con il pulsante +.") }
         }
     }
-    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
+    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 
 @Composable
@@ -313,7 +321,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (
 
 /** Abitudini di ogni giorno: un tocco per spuntare oggi, la serie di giorni di fila, l'ultima settimana. */
 @Composable
-private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
+private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (Habit) -> Unit) {
     var editing by remember { mutableStateOf<Habit?>(null) }
     val today = LocalDate.now()
     val haptic = rememberHaptic()
@@ -404,7 +412,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
             }
         }
     }
-    editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }) }
+    editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 
 @Composable
