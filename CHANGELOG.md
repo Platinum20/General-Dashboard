@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.49.0
+- Note: quando crei una nota, un'abitudine, una data o un pacco la tastiera si apre da sola sul campo da scrivere, senza un tocco in più (in modifica resta chiusa)
+
 ## 1.48.0
 - Meteo: si aggiorna anche trascinando la pagina verso il basso, con il piccolo scatto alla soglia come in Oggi e News
 
