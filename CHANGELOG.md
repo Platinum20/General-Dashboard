@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.93.0
+- Vetro della barra e del +: sfocatura più morbida e velo un filo più presente, così sotto si vedono colori e forme ma non più il testo sbavato intorno alle icone
+
 ## 1.92.0
 - Vetro liquido rifatto: velo molto più leggero, così la pagina sotto si vede davvero; la lente sul bordo ingrandisce quello che c'è sotto invece di riflettere cosa sta fuori (niente più bordo fantasma in alto) e sono spariti gli aloni azzurrini intorno alla barra
 - Un filo di luce sul bordo e una lucentezza morbida in alto, come una goccia di vetro
