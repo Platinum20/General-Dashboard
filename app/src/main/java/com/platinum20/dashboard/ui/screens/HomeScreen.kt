@@ -198,10 +198,12 @@ fun HomeScreen(
             )
         },
     ) { inner ->
+        val pull = rememberPullRefresh(weather.loading || recap.refreshing)
         PullToRefreshBox(
-            isRefreshing = weather.loading || recap.refreshing,
-            state = rememberHapticPullState(weather.loading || recap.refreshing),
+            isRefreshing = pull.showing,
+            state = rememberHapticPullState(pull.showing),
             onRefresh = {
+                pull.start()
                 if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context, force = true)
                 recap.retry()
                 calendarRefresh++
