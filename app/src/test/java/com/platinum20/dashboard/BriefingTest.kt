@@ -70,6 +70,20 @@ class BriefingTest {
     }
 
     @Test
+    fun compleannoConGliAnni() {
+        val lines = Briefing.build(
+            now = morning,
+            forecast = null,
+            today = emptyList(),
+            tomorrow = null,
+            tasks = emptyList(),
+            countdowns = listOf(Countdown(3, "Compleanno di Marta", morning.toLocalDate().withYear(1996), yearly = true)),
+            zone = zone,
+        )
+        assertTrue(lines.map { it.text }.contains("Oggi: Compleanno di Marta (30 anni)"))
+    }
+
+    @Test
     fun giornataLibera() {
         val lines = Briefing.build(morning, null, emptyList(), null, emptyList(), emptyList(), zone)
         assertEquals(listOf(BriefKind.FREE), lines.map { it.kind })

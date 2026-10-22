@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.62.0
+## 1.70.0
 - Nuovo design di Canvas: sfondo color carta, card bianche con un bordo sottile al posto delle ombre, un blu deciso come accento e l'arancio per ciò che è urgente; caratteri Inter inclusi nell'app
 - Nuovo tema "Canvas" (chiaro o scuro come il telefono), ora predefinito; Material You e AMOLED restano nelle Impostazioni
 - Barra in basso flottante: il nome compare solo sulla sezione aperta, e accanto c'è un + sempre a portata per aggiungere al volo promemoria, note, spese e pacchi (in Note aggiunge alla scheda aperta)
@@ -9,6 +9,9 @@
 - Note: schede sottolineate al posto dei bottoni, e i promemoria raggruppati in card per Scaduti, Oggi, Prossimi giorni
 - Media: Video, YouTube, Spotify e Radio in una griglia 2×2 con un colore ciascuno; il brano in corso nel blocco scuro in alto
 - News: la notizia principale con il titolo grande, filtri delle fonti più puliti
+
+## 1.63.0
+- Oggi: nella card Adesso (e nel widget) il giorno di un compleanno o anniversario dice anche quanti anni compie ("Oggi: Compleanno di Marta (30 anni)")
 
 ## 1.61.0
 - Date: per compleanni e anniversari che si ripetono ogni anno, se hai scritto l'anno vero compare quanti anni compie ("3 dicembre · compie 30 anni"), anche nella card In arrivo di Oggi
