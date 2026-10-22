@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~17:55 UTC (UI prima di tutto), su main 1.91.0, foto: branch `screenshots`, cartelle `claude_project-thread-brclxp/45` e `main/46` (giro di main 1.91.0 finito alle 17:5x: conferma tutto quanto sotto). 1.92.0 in lavorazione su `brclxp` (vetro liquido più leggero, + di vetro): non toccare barra e vetro._
+_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.93.0, foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13; main non è cambiato da allora). Nessuna PR aperta._
 
 ---
 
@@ -114,7 +114,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
-_Giro fotografico della 1.91.0 (`claude_project-thread-brclxp/45`, 2026-10-22). La 1.90 e la 1.91 hanno rifatto YouTube, titoli grandi e schede delle Note, ma nessuna delle voci qui sotto è ancora uscita: nelle foto si vedono ancora tutte (News "niente di nuovo", X in Da fare, mezze pagine vuote in Media, Video, Date e Pacchi)._
+_Giro fotografico della 1.93.0 (`main/50`, 2026-10-22 18:13). La 1.93 ha tolto "Niente di nuovo" dalle News e la X in Da fare, ma in `main/50` si vedono ancora: riquadro grigio al posto della foto e riga "Fanpage non risponde" in News (1), mezze pagine vuote in Date, Pacchi, Abitudini, Media e Video (3, 5), Client ID in Spotify (8), cerchio fermo e "Alba · Tramonto" da solo nel Meteo (7). Nuovo: la card Domani ripete il promemoria che c'è già sotto in Da fare (7)._
 
 _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 8 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. La revisione UI di `brclxp` è uscita nella 1.91.0: si può lavorare su tutte le schermate._
 
@@ -145,9 +145,9 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
-**Cosa fare:** ~~Aggiornamenti: avviso nuove versioni solo in Impostazioni~~ (fatto in 1.93.0). Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno.
+**Cosa fare:** ~~Aggiornamenti: avviso nuove versioni solo in Impostazioni~~ (fatto in 1.93.0). Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno. Da `main/50` (1.93): la card Domani mostra "9:00 · Chiamare il commercialista" e subito sotto Da fare ripete "Chiamare il commercialista · Domani 09:00": quando la card Domani è visibile, in Da fare tenere solo scaduti e oggi (i promemoria di domani stanno nella card), oppure togliere dalla card i promemoria già elencati sotto; e nella card Domani l'icona dell'ombrello sul meteo "Rovesci" ha uno sfondo diverso dalle altre `IconTile`: uniformare.
 **Fatto quando:** nelle foto nessuno dei difetti.
-**Test:** foto del giro.
+**Test:** foto del giro; in `TomorrowTest`/`TodayTasksTest` un caso "promemoria di domani con la card Domani visibile" che compare una volta sola.
 
 ### 8. Spotify, Video e Radio come le altre pagine; via il Client ID · Media · S
 **Perché:** la 1.91 ha dato il titolo grande a tutte le pagine interne, ma Spotify (32_spotify) e Video (33_video) hanno ancora il titolo piccolo da barra vecchia. In Spotify, sotto "Accedi a Spotify", c'è ancora il campo "Client ID dell'app Spotify" con il codice esadecimale in chiaro e "Collega con il Client ID": dalla 1.90 l'accesso ufficiale funziona e quel blocco è solo rumore tecnico da sviluppatore.
@@ -181,13 +181,20 @@ _(primo passo dell'idea grande G)_
 **Fatto quando:** pressione lunga sull'icona → "Spesa" apre la cattura in modalità spesa con la tastiera aperta; il riquadro rapido apre la cattura.
 **Test:** test Robolectric che l'intent di ogni scorciatoia porta alla `CaptureMode` giusta (extra sconosciuto → Promemoria).
 
+### 15. Abitudini: promemoria all'ora scelta · Note › Abitudini · M
+_(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca oggi" alle 20 e l'app non lo dice finché non la apri)_
+**Perché:** "Manca oggi" in arancio si vede solo aprendo Note › Abitudini. Le app di abitudini (Loop, Streaks) vivono del promemoria all'ora giusta: è quello che tiene viva la serie di "5 di fila".
+**Cosa fare:** nel `HabitDialog` "Ricordamelo alle…" (ora, facoltativa); un worker/alarm per abitudine (riusa lo schema delle notifiche dei promemoria e "Rimanda" della 1.74) con azioni "Fatto" e "Più tardi" (1 ora); nessuna notifica se già fatta oggi o, per le settimanali, se l'obiettivo della settimana è raggiunto. Dopo un riavvio del telefono gli avvisi si rimettono (stesso `BootReceiver` dei promemoria).
+**Fatto quando:** con "alle 21" e l'abitudine non fatta arriva la notifica, "Fatto" la segna senza aprire l'app e la serie nella scheda sale.
+**Test:** `HabitReminderTest`: prossimo avviso (oggi se non ancora passato, sennò domani), già fatta → nessun avviso, settimanale a obiettivo raggiunto → nessun avviso fino a lunedì, abitudini salvate da una versione vecchia senza ora.
+
 ---
 
 ## Dopo
 
 - **Notifica del mattino: proporla** · Oggi · S. (era In cima) In 40_impostazioni è ancora spenta. Dopo 3 giorni d'uso, nella riga "cose da attivare" di Oggi (`InvitesUi.kt`), "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora". Test: nel test degli inviti (giorni d'uso, già attiva, due rifiuti).
 
-- **Abitudini: promemoria all'ora scelta** · Note › Abitudini · M. (era In cima) Nel `HabitDialog` "Ricordamelo alle…", notifica con "Fatto" e "Più tardi"; niente se già fatta. Test: prossimo avviso, settimanali, parse vecchie.
+- **Meteo: la pioggia della prossima ora** · Meteo / Oggi · S. L'avviso pioggia della 1.93 scarica già la pioggia a 15 minuti (Open-Meteo) ma la usa solo per la notifica. Nel Meteo sotto la card grande (e in Adesso quando piove entro un'ora) una barretta "Prossima ora" con l'intensità a 15 minuti e la frase "Pioggia debole dalle 20:30 per 45 minuti"; al posto del buco accanto ad "Alba · Tramonto" se serve. Test: frase dalla serie a 15 minuti (niente pioggia, inizia tra poco, sta piovendo e smette alle…), riusando la logica di `RainAlert`.
 - **News: "Leggi dopo"** · News · M. (era In cima) Segnalibro in `ReaderScreen` e pressione lunga in `NewsScreen`, store `SavedArticles` con testo pulito per leggere offline, chip "Salvati". Test: store, limite 100, doppioni.
 - **Cerca ovunque** · Oggi · M. La lente delle Note (1.88) cerca solo nelle Note. Una lente in Oggi che cerca insieme Note, notizie già scaricate, date, stazioni radio e video recenti, con i risultati raggruppati per sezione. Riusa la normalizzazione di `NotesSearch` (accenti, maiuscole). Test: raggruppamento, ordinamento, limite per gruppo.
 - **Abitudini: il mese a colpo d'occhio** · Note › Abitudini · S. Foto `23_abitudini` (`main/46`): due card e poi metà schermo vuoto. Toccando un'abitudine, la griglia del mese con percentuale e serie migliore; con meno di 3 abitudini, esempi tappabili ("Leggere 20 minuti", "Niente telefono a letto"). Test: serie migliore e percentuale del mese, anche per le settimanali.
