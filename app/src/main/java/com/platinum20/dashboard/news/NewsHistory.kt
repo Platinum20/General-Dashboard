@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -41,5 +42,26 @@ object NewsHistory {
         val list = (_read.value + link).takeLast(MAX_READ)
         _read.value = list
         prefs.edit().putString(KEY_READ, list.joinToString("\n")).apply()
+    }
+
+    /**
+     * Riga sopra il titolo delle News. Con 0 nuove dall'ultima visita non si dice "niente di nuovo"
+     * sopra notizie fresche: si dice quanto è recente l'ultima ("Aggiornate 2 min fa").
+     */
+    fun headline(total: Int, newCount: Int?, newest: Instant?, now: Instant = Instant.now()): String = when {
+        total == 0 -> "Notizie libere"
+        newCount == null || newCount >= total -> "$total notizie"
+        newCount == 1 -> "1 nuova dall'ultima visita"
+        newCount > 1 -> "$newCount nuove dall'ultima visita"
+        newest == null -> "$total notizie"
+        else -> {
+            val minutes = Duration.between(newest, now).toMinutes().coerceAtLeast(0)
+            when {
+                minutes < 1 -> "Aggiornate adesso"
+                minutes < 60 -> "Aggiornate $minutes min fa"
+                minutes < 24 * 60 -> "Aggiornate ${minutes / 60} h fa"
+                else -> "Niente di nuovo dall'ultima visita"
+            }
+        }
     }
 }

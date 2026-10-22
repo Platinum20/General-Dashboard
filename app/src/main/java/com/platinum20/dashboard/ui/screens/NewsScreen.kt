@@ -96,13 +96,7 @@ fun NewsScreen(
             Column(Modifier.background(MaterialTheme.colorScheme.background)) {
                 TopLevelBar(
                     title = "News",
-                    subtitle = when {
-                        items.isEmpty() -> "Notizie libere"
-                        newCount == null || newCount == items.size -> "${items.size} notizie"
-                        newCount == 0 -> "Niente di nuovo dall'ultima visita"
-                        newCount == 1 -> "1 nuova dall'ultima visita"
-                        else -> "$newCount nuove dall'ultima visita"
-                    },
+                    subtitle = NewsHistory.headline(items.size, newCount, items.mapNotNull { it.publishedAt }.maxOrNull()),
                     actions = {
                         RoundIconButton(
                             Icons.Outlined.Refresh,
