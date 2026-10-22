@@ -3,6 +3,11 @@ name: Verifica accesso in WebView
 # Su un emulatore Android vero: apre le pagine di accesso nella WebView dell'app, salva foto e testo.
 on:
   workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - ".github/workflows/logincheck.yml"
+      - "app/src/androidTest/**"
 
 permissions:
   contents: write
