@@ -74,6 +74,9 @@ android {
                 // Giro fotografico dell'app: gradle testDebugUnitTest -Ptour=true
                 it.systemProperty("tour", project.findProperty("tour") ?: "false")
                 it.systemProperty("tour.dir", layout.buildDirectory.dir("tour").get().asFile.absolutePath)
+                // Controlli con la rete vera (notizie, meteo, aggiornamenti, radio): gradle testDebugUnitTest -Plive=true
+                it.systemProperty("live", project.findProperty("live") ?: "false")
+                it.systemProperty("live.dir", layout.buildDirectory.dir("live").get().asFile.absolutePath)
                 it.maxHeapSize = "3g"
             }
         }

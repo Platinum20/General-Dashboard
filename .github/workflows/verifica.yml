@@ -1,6 +1,7 @@
 name: Verifica dal vivo
 
-# Prova il blocco pubblicità su YouTube e sui siti di notizie veri con Chromium (lo stesso motore
+# Controlla le funzioni che usano la rete (notizie, lettore, meteo, aggiornamenti, radio) e
+# prova il blocco pubblicità su YouTube e sui siti di notizie veri con Chromium (lo stesso motore
 # della WebView): stesse liste, stesso motore dei filtri e stesso script nella pagina dell'app.
 # Il resoconto e le foto finiscono nel ramo "screenshots", cartella verifica/<run>.
 on:
@@ -9,6 +10,8 @@ on:
   push:
     branches: ["claude/**"]
     paths:
+      - ".github/workflows/verifica.yml"
+      - "app/src/test/java/com/platinum20/dashboard/LiveChecks.kt"
       - "tools/adblock-check/**"
       - "app/src/main/assets/adblock/**"
       - "app/src/main/java/com/platinum20/dashboard/adblock/**"
@@ -39,6 +42,10 @@ jobs:
       - name: Liste dei filtri pubblicità
         run: python3 scripts/update_filter_lists.py
 
+      - name: Funzioni dell'app con la rete vera
+        continue-on-error: true
+        run: gradle :app:testDebugUnitTest -Plive=true --tests '*LiveChecks*' --no-daemon
+
       - name: Motore dei filtri come server locale
         run: |
           gradle -p tools/adblock-check installDist --no-daemon
@@ -58,7 +65,9 @@ jobs:
       - name: Resoconto
         if: always()
         run: |
-          [ -f live-out/report.md ] && cat live-out/report.md >> "$GITHUB_STEP_SUMMARY" || true
+          mkdir -p live-out
+          cp app/build/live/funzioni.md live-out/ 2>/dev/null || true
+          for f in live-out/funzioni.md live-out/report.md; do [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"; done; true
 
       - name: Pubblica nel ramo screenshots
         if: always()
