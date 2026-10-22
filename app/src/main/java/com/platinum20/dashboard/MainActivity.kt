@@ -337,7 +337,7 @@ private fun CanvasNavBar(
             shape = CircleShape,
             color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),
-            shadowElevation = 8.dp,
+            // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
             modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
         ) {
             Row(
