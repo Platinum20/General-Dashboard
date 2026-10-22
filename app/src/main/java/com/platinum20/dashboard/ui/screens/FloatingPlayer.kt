@@ -61,6 +61,7 @@ import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -86,6 +87,7 @@ fun FloatingPlayer(
     val tracks by NowPlaying.tracks.collectAsState()
     val open by MediaWebViews.open.collectAsState()
     val radio by RadioStore.now.collectAsState()
+    val nativeYt by YtPlayer.now.collectAsState()
 
     // Sulle schermate dei player la bolla non serve: c'è già il player grande.
     val onWebPlayer = currentRoute?.startsWith("media/web") == true || currentRoute?.startsWith("media/watch") == true
@@ -93,8 +95,9 @@ fun FloatingPlayer(
     val youTube = tracks[MediaService.YOUTUBE].takeIf { MediaService.YOUTUBE in open && !onWebPlayer }
     val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer }
     val radioNow = radio.takeIf { !onRadio }
+    val ytNow = nativeYt.takeIf { !onWebPlayer }
 
-    if (youTube == null && spotify == null && radioNow == null) return
+    if (ytNow == null && youTube == null && spotify == null && radioNow == null) return
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -185,6 +188,11 @@ fun FloatingPlayer(
                 },
         ) {
             when {
+                ytNow != null -> NativeYouTubeBubble(
+                    title = ytNow.stream?.title ?: "YouTube",
+                    playing = ytNow.playing,
+                    onExpand = { onExpand(FloatingTarget.Web(MediaService.YOUTUBE)) },
+                )
                 youTube != null -> YouTubeBubble(
                     playing = youTube.playing,
                     onExpand = { onExpand(FloatingTarget.Web(MediaService.YOUTUBE)) },
@@ -302,6 +310,46 @@ private fun AudioBubble(
         }
         IconButton(onClick = onClose) {
             Icon(Icons.Filled.Close, contentDescription = "Chiudi")
+        }
+    }
+}
+
+/** Bolla del player nativo di YouTube: il video stesso, in piccolo, con play/pausa e chiusura. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Composable
+private fun NativeYouTubeBubble(title: String, playing: Boolean, onExpand: () -> Unit) {
+    val context = LocalContext.current
+    Column {
+        Box(
+            Modifier
+                .size(width = 224.dp, height = 126.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(Color.Black)
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    androidx.media3.ui.PlayerView(ctx).apply {
+                        useController = false
+                        player = YtPlayer.player(ctx)
+                    }
+                },
+                onRelease = { it.player = null },
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.width(224.dp)) {
+            IconButton(onClick = { YtPlayer.toggle(context) }) {
+                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (playing) "Pausa" else "Riproduci")
+            }
+            Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            IconButton(onClick = { YtPlayer.stop(context) }) {
+                Icon(Icons.Filled.Close, contentDescription = "Chiudi")
+            }
         }
     }
 }

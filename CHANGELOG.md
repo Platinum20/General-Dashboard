@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.83.0
+- YouTube con il player nativo di Android: il video arriva direttamente nell'app, senza pagina web né pubblicità
+- Ascolto in sottofondo con controlli nella notifica e nella schermata di blocco; la bolla mostra il video
+- A fine video parte il successivo dai canali che segui
+
 ## 1.82.0
 - YouTube con il player dell'app: toccando un video si apre una schermata dell'app con il video in alto e, sotto, titolo, canale, barra di avanzamento, ±10 secondi, schermo intero e i prossimi video dai canali che segui. Niente più pagina del sito
 - Anche i link di YouTube condivisi, la notifica e la bolla aprono il player dell'app

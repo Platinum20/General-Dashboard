@@ -1,0 +1,35 @@
+name: Verifica player YouTube
+
+# Prova dal vivo il player nativo di YouTube (NewPipe Extractor): flussi ricavati e scaricabili.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - ".github/workflows/ytcheck.yml"
+      - "app/src/main/java/com/platinum20/dashboard/media/youtube/player/**"
+      - "app/src/test/java/com/platinum20/dashboard/YouTubeNativeCheck.kt"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - name: Versioni di NewPipe Extractor
+        run: |
+          echo "## NewPipe Extractor" >> "$GITHUB_STEP_SUMMARY"
+          curl -s "https://api.github.com/repos/TeamNewPipe/NewPipeExtractor/tags?per_page=8" | grep '"name"' | head -8 | tee -a "$GITHUB_STEP_SUMMARY"
+          curl -s "https://jitpack.io/api/builds/com.github.TeamNewPipe/NewPipeExtractor/latest" | tee -a "$GITHUB_STEP_SUMMARY"; echo >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: Flussi dal vivo
+        run: gradle :app:testDebugUnitTest -Plive=true --tests '*YouTubeNativeCheck*' --no-daemon -i | grep -E "✅|❌|  - |Exception|error" | head -80
+      - name: Resoconto
+        if: always()
+        run: cat app/build/live/youtube.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true

@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,34 +13,25 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,93 +39,73 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
-import com.platinum20.dashboard.media.NowPlaying
-import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtVideo
-import kotlinx.coroutines.delay
-import org.json.JSONObject
-import org.json.JSONTokener
+import com.platinum20.dashboard.media.youtube.player.YtPlayer
+import com.platinum20.dashboard.media.youtube.player.YtResolver
 
 /**
- * Riproduzione di un video di YouTube come schermata dell'app: dalla pagina del sito si mostra
- * solo il video, mentre titolo, comandi e video successivi sono dell'app. La pagina resta quella
- * condivisa con la bolla e la notifica, quindi il video continua anche uscendo da qui.
+ * Player di YouTube dell'app: il video arriva direttamente nel player di Android (niente pagina
+ * del sito, niente pubblicità). Sotto, titolo, canale e i prossimi video dai canali che segui.
+ * Il player è condiviso con la bolla e la notifica, quindi il video continua uscendo da qui.
  */
+@OptIn(UnstableApi::class)
 @Composable
 fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
     val context = LocalContext.current
-    var current by rememberSaveable { mutableStateOf(url) }
-    val webView = remember { MediaWebViews.obtain(context, MediaService.YOUTUBE, url) }
-    val hostParent = remember { arrayOfNulls<android.view.ViewParent>(1) }
-    val tracks by NowPlaying.tracks.collectAsState()
-    val track = tracks[MediaService.YOUTUBE]
+    val now by YtPlayer.now.collectAsState()
     val feed by YouTubeStore.subscriptions.collectAsState()
-    var position by remember { mutableFloatStateOf(0f) }
-    var duration by remember { mutableFloatStateOf(0f) }
-    var seeking by remember { mutableStateOf<Float?>(null) }
     var fullscreen by rememberSaveable { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        onDispose { MediaWebViews.detach(MediaService.YOUTUBE, hostParent[0]) }
-    }
-    // Solo il video, senza il resto della pagina: lo stesso stile della bolla, a tutta larghezza.
-    LaunchedEffect(Unit) {
-        while (true) {
-            MediaWebViews.setMiniMode(MediaService.YOUTUBE, true)
-            webView.evaluateJavascript(PROGRESS_SCRIPT) { raw ->
-                val json = runCatching { JSONObject(JSONTokener(raw).nextValue() as String) }.getOrNull() ?: return@evaluateJavascript
-                position = json.optDouble("t", 0.0).toFloat()
-                duration = json.optDouble("d", 0.0).toFloat().takeIf { !it.isNaN() && it.isFinite() } ?: 0f
-            }
-            delay(500)
-        }
+    LaunchedEffect(url) { url?.let { YtPlayer.play(context, it) } }
+
+    val currentId = now?.stream?.id ?: url?.let { YtResolver.videoId(it) }
+    val upNext = feed.data.orEmpty().filter { !it.isShort && it.id != currentId }.take(30)
+    // Finito un video parte il successivo della lista.
+    LaunchedEffect(upNext.map { it.id }, currentId) {
+        YtPlayer.queue = listOfNotNull(currentId?.let { "https://www.youtube.com/watch?v=$it" }) + upNext.map { it.watchUrl }
     }
 
-    FullscreenEffect(enabled = fullscreen)
+    val inPip = rememberPictureInPicture(enabled = now?.playing == true)
+    FullscreenEffect(enabled = fullscreen && !inPip)
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
-    fun play(video: YtVideo) {
-        current = video.watchUrl
-        webView.loadUrl(video.watchUrl)
-    }
-
-    val upNext = feed.data.orEmpty().filter { !it.isShort && current?.contains(it.id) != true }.take(30)
-
-    Surface(color = if (fullscreen) Color.Black else MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(if (fullscreen) Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()) {
+    Surface(color = if (fullscreen || inPip) Color.Black else MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+        Column(if (fullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()) {
             Box(
-                (if (fullscreen) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f))
+                (if (fullscreen || inPip) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f))
                     .background(Color.Black)
             ) {
                 AndroidView(
-                    factory = {
-                        (webView.parent as? ViewGroup)?.removeView(webView)
-                        webView
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = YtPlayer.player(ctx)
+                            setShowNextButton(false)
+                            setShowPreviousButton(false)
+                            setFullscreenButtonClickListener { fullscreen = it }
+                        }
                     },
-                    update = { hostParent[0] = it.parent },
+                    update = { it.useController = !inPip },
+                    onRelease = { it.player = null },
                     modifier = Modifier.fillMaxSize(),
                 )
-                if (!fullscreen) {
+                if (now?.loading == true && now?.error == null) {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center).size(40.dp), color = Color.White)
+                }
+                if (!fullscreen && !inPip) {
                     IconButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart)) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro", tint = Color.White)
                     }
                 }
-                IconButton(onClick = { fullscreen = !fullscreen }, modifier = Modifier.align(Alignment.BottomEnd)) {
-                    Icon(
-                        if (fullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                        contentDescription = if (fullscreen) "Esci da schermo intero" else "Schermo intero",
-                        tint = Color.White,
-                    )
-                }
             }
-            if (fullscreen) return@Column
+            if (fullscreen || inPip) return@Column
 
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
@@ -142,50 +113,30 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
+                    val stream = now?.stream
                     Text(
-                        track?.title ?: "Caricamento…",
+                        stream?.title ?: if (now?.error != null) "Video non disponibile" else "Caricamento…",
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (!track?.artist.isNullOrBlank()) {
-                        Text(track!!.artist, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                item {
-                    Column {
-                        Slider(
-                            value = seeking ?: position,
-                            onValueChange = { seeking = it },
-                            onValueChangeFinished = {
-                                seeking?.let { webView.evaluateJavascript("(function(){var v=document.querySelector('video');if(v)v.currentTime=$it;})()", null) }
-                                seeking = null
-                            },
-                            valueRange = 0f..maxOf(duration, 1f),
+                    if (!stream?.channel.isNullOrBlank()) {
+                        Text(
+                            stream!!.channel + if (stream.height > 0) " · ${stream.height}p" else "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(formatTime(seeking ?: position), style = MaterialTheme.typography.labelSmall)
-                            Text(formatTime(duration), style = MaterialTheme.typography.labelSmall)
-                        }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { seekBy(webView, -10) }) { Icon(Icons.Filled.Replay10, contentDescription = "Indietro di 10 secondi") }
-                            Spacer(Modifier.width(16.dp))
-                            FilledIconButton(onClick = { NowPlaying.command(MediaService.YOUTUBE, PlayerCommand.TOGGLE) }) {
-                                val playing = track?.playing == true
-                                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (playing) "Pausa" else "Riproduci")
-                            }
-                            Spacer(Modifier.width(16.dp))
-                            IconButton(onClick = { seekBy(webView, 10) }) { Icon(Icons.Filled.Forward10, contentDescription = "Avanti di 10 secondi") }
-                            Spacer(Modifier.width(16.dp))
-                            IconButton(enabled = upNext.isNotEmpty(), onClick = { upNext.firstOrNull()?.let(::play) }) {
-                                Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video")
-                            }
-                        }
+                    }
+                    now?.error?.let { error ->
+                        Spacer(Modifier.size(8.dp))
+                        Text(error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Start)
+                        Spacer(Modifier.size(8.dp))
+                        Button(onClick = { YtPlayer.play(context, now?.link ?: url ?: return@Button) }) { Text("Riprova") }
                     }
                 }
                 if (upNext.isNotEmpty()) {
                     item { Text("Prossimi dai canali che segui", style = MaterialTheme.typography.titleMedium) }
-                    items(upNext, key = { it.id }) { video -> UpNextRow(video, onClick = { play(video) }) }
+                    items(upNext, key = { it.id }) { video -> UpNextRow(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
                 }
             }
         }
@@ -210,18 +161,3 @@ private fun UpNextRow(video: YtVideo, onClick: () -> Unit) {
         }
     }
 }
-
-private fun seekBy(webView: android.webkit.WebView, seconds: Int) {
-    webView.evaluateJavascript("(function(){var v=document.querySelector('video');if(v)v.currentTime=Math.max(0,v.currentTime+($seconds));})()", null)
-}
-
-private fun formatTime(seconds: Float): String {
-    val total = seconds.toInt().coerceAtLeast(0)
-    val h = total / 3600
-    val m = total % 3600 / 60
-    val s = total % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
-}
-
-private const val PROGRESS_SCRIPT =
-    "(function(){var v=document.querySelector('video');return v?JSON.stringify({t:v.currentTime,d:v.duration}):'{}';})()"

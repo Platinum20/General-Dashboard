@@ -6,3 +6,14 @@
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
+
+# NewPipe Extractor (player nativo di YouTube): usa riflessione e Rhino per il JavaScript di YouTube.
+-keep class org.schabi.newpipe.extractor.** { *; }
+-keep class org.mozilla.javascript.** { *; }
+-keep class org.mozilla.classfile.ClassFileWriter
+-dontwarn org.mozilla.javascript.**
+-dontwarn javax.script.**
+-dontwarn java.beans.**
+-dontwarn jdk.dynalink.**
+-dontwarn org.jsoup.**
+-dontwarn com.google.errorprone.annotations.**
