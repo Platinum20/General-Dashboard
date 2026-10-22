@@ -60,6 +60,16 @@ class ScreenshotTour {
             NotesStore.saveNote(null, "Idee per le vacanze\nLisbona, Porto, oppure Sicilia in macchina.")
             NotesStore.saveNote(null, "Libri da leggere\nIl nome della rosa, Le città invisibili")
             NotesStore.saveCountdown(null, "Compleanno di Marco", LocalDate.now().plusDays(12), yearly = true)
+            NotesStore.saveHabit(null, "Camminare 30 minuti")
+            NotesStore.saveHabit(null, "Leggere 10 pagine")
+            NotesStore.data.value.habits.firstOrNull()?.let { h ->
+                (1L..3L).forEach { NotesStore.toggleHabit(h.id, LocalDate.now().minusDays(it)) }
+            }
+            NotesStore.addExpense("12,50 pizza")
+            NotesStore.addExpense("45 benzina")
+            NotesStore.addExpense("32 spesa conad")
+            NotesStore.setBudget(60_000)
+            NotesStore.saveParcel(null, "Cuffie", "1Z999AA10123456784", LocalDate.now().plusDays(2))
             NotesStore.addTask("ogni mese il 5 pagare l'affitto")
             NotesStore.addTask("domani alle 9 chiamare il commercialista")
             NotesStore.saveHabit(null, "Bere 2 litri d'acqua")
@@ -94,8 +104,9 @@ class ScreenshotTour {
         val p = prefix
         shot(p + "01_oggi")
         // Dettagli raggiungibili da Oggi
-        visit("Meteo", p + "02_meteo")
-        visit("Il punto", p + "03_punto")
+        // Le scorciatoie sono nascoste: si entra dalle card (il testo del luogo è dentro la card del meteo).
+        visit("Roma", p + "02_meteo")
+        visit("Tutti", p + "03_punto")
         visit("Personalizza", p + "04_personalizza")
         scroll(down = true)
         shot(p + "05_oggi_fondo")
