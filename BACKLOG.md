@@ -130,6 +130,22 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** in un test scrivere `{"tasks": [` (troncato) in `files/notes.json`, chiamare `init` (dati vuoti), aggiungere un promemoria: il vecchio contenuto è sparito.
 - **Cosa fare:** se `parse` fallisce su un file che esiste e non è vuoto, copiarlo in `notes.json.bad-<data>` prima di continuare e mostrare una volta "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup".
 - **Test che lo impedisce:** in `NotesStoreTest` un file rovinato: dopo `init` e un'aggiunta esiste il file `.bad` con il contenuto originale.
+### V18. Player di YouTube: "0:00 / 0:00" finché il video non è caricato · YouTube › player · gravità bassa
+- **Versione:** 1.90.0 (foto `main/46/tour/youtube_player.png`)
+- **Cosa non va:** sopra il video si legge "0:00 / 0:00" con la barra vuota, anche se la durata del video è già nota dal feed (3:33 sull'anteprima). Sembra un video rotto o lungo zero secondi.
+- **Dove:** `ui/screens/YouTubeWatchScreen.kt`, barra del minutaggio.
+- **Come riprodurre:** aprire un video con rete lenta: prima che ExoPlayer conosca la durata si vede 0:00 / 0:00.
+- **Cosa fare:** finché la durata del player è sconosciuta usare quella del video già nota (stream/feed), oppure mostrare "--:--".
+- **Test che lo impedisce:** test di una funzione pura `timeLabel(position, playerDuration, knownSeconds)`.
+
+### V19. Note: la fila di pillole lascia un pezzetto tagliato a sinistra · Note · gravità bassa
+- **Versione:** 1.91.0 (foto `main/46/tour/23_abitudini.png`)
+- **Cosa non va:** aprendo Abitudini la fila scorre da sola, ma a sinistra resta una "e" tagliata (la fine di "Da fare"). Nelle altre schede la fila si ferma pulita su una pillola intera.
+- **Dove:** `ui/screens/NotesScreen.kt`, scorrimento automatico della fila di pillole.
+- **Come riprodurre:** Note › Abitudini.
+- **Cosa fare:** scorrere in modo che la pillola aperta stia intera con un margine (`animateScrollToItem(index, -padding)`), oppure scorrere solo se la pillola aperta è fuori dallo schermo.
+- **Test che lo impedisce:** la foto `23_abitudini` nel giro (nessun pezzo di pillola sul bordo).
+
 ---
 
 ## In cima
