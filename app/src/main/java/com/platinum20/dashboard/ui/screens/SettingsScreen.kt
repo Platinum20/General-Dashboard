@@ -310,6 +310,10 @@ private fun MorningSettings() {
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) enable(true)
     }
+    // Il permesso chiesto dal tasto "Invia una prova": appena concesso parte la prova.
+    val testPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) MorningWorker.sendTest(context)
+    }
 
     Column {
         val toggle = {
@@ -339,7 +343,7 @@ private fun MorningSettings() {
                 subtitle = "Ricevi subito la notifica di oggi",
                 onClick = {
                     if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        testPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     } else {
                         MorningWorker.sendTest(context)
                     }

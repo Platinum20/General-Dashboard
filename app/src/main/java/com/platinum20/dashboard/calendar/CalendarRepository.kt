@@ -53,7 +53,10 @@ object CalendarRepository {
         )
         val events = mutableListOf<CalendarEvent>()
         runCatching {
-            context.contentResolver.query(uri, projection, null, null, "${CalendarContract.Instances.BEGIN} ASC")?.use { c ->
+            // Solo i calendari visibili nell'app Calendario, senza gli inviti rifiutati.
+            val selection = "${CalendarContract.Instances.VISIBLE} = 1 AND " +
+                "${CalendarContract.Instances.SELF_ATTENDEE_STATUS} != ${CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED}"
+            context.contentResolver.query(uri, projection, selection, null, "${CalendarContract.Instances.BEGIN} ASC")?.use { c ->
                 while (c.moveToNext()) {
                     val allDay = c.getInt(4) == 1
                     val begin = c.getLong(2)

@@ -4,7 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,6 +80,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
+import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.news.reader.ReaderArticle
 import com.platinum20.dashboard.news.reader.ReaderBlock
 import com.platinum20.dashboard.news.reader.ReaderUiState
@@ -310,6 +314,21 @@ private fun ArticleVideo(video: ReaderBlock.Video, baseUrl: String) {
             settings.domStorageEnabled = true
             settings.mediaPlaybackRequiresUserGesture = true
             webChromeClient = WebChromeClient()
+            // Anche i player incorporati (YouTube, ...) hanno annunci: stesse regole delle altre pagine.
+            val adBlock = AdBlocker.attach(this, pageUrl = baseUrl)
+            webViewClient = object : WebViewClient() {
+                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+                    adBlock.intercept(request)
+
+                // Come senza WebViewClient: un link che cambia pagina si apre fuori (app o browser).
+                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                    if (!request.isForMainFrame) return false
+                    runCatching {
+                        view.context.startActivity(Intent(Intent.ACTION_VIEW, request.url).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                    return true
+                }
+            }
             setBackgroundColor(android.graphics.Color.BLACK)
             loadDataWithBaseURL(baseUrl, playerHtml(video), "text/html", "utf-8", null)
         }

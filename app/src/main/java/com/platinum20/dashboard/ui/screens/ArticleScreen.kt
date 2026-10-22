@@ -9,6 +9,7 @@ import android.net.Uri
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import com.platinum20.dashboard.adblock.AdBlocker
 
 /** Pagina originale del giornale dentro l'app, per quando il lettore non riesce a ricavare il testo. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -209,11 +211,16 @@ private fun createWebView(
         builtInZoomControls = true
         displayZoomControls = false
     }
+    // Le pagine dei giornali sono piene di pubblicità: stesse liste di uBlock Origin dei player.
+    val adBlock = AdBlocker.attach(this)
     webChromeClient = object : WebChromeClient() {
         override fun onProgressChanged(view: WebView, newProgress: Int) = onProgress(newProgress)
         override fun onReceivedTitle(view: WebView, title: String?) = onTitle(title)
     }
     webViewClient = object : WebViewClient() {
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+            adBlock.intercept(request)
+
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val target = request.url
             // Le pagine web restano nel lettore; mail, telefono, app esterne (intent://, whatsapp:, ...) escono.
@@ -222,12 +229,17 @@ private fun createWebView(
             return true
         }
 
-        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) = onStarted(url)
+        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+            adBlock.onPage(view, url)
+            onStarted(url)
+        }
 
         override fun onPageFinished(view: WebView, url: String) = onFinished()
 
-        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) =
+        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+            adBlock.onPage(view, url)
             onHistoryChanged(view.canGoBack())
+        }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
             if (request.isForMainFrame) onMainFrameError()

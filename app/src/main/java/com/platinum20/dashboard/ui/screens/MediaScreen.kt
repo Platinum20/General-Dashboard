@@ -42,7 +42,10 @@ import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import androidx.compose.ui.platform.LocalContext
-import com.platinum20.dashboard.media.AdBlocker
+import com.platinum20.dashboard.adblock.AdBlocker
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
@@ -92,6 +95,7 @@ fun MediaScreen(
     val open by MediaWebViews.open.collectAsState()
     val adBlock by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
+    val adBlockStatus by AdBlocker.status.collectAsState()
     val tracks by NowPlaying.tracks.collectAsState()
     val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
@@ -169,6 +173,7 @@ fun MediaScreen(
                 AdBlockCard(
                     enabled = adBlock,
                     blocked = blocked,
+                    status = adBlockStatus,
                     onToggle = {
                         AppSettings.setAdBlock(it)
                         // Le pagine aperte ripartono con la nuova impostazione.
@@ -181,7 +186,7 @@ fun MediaScreen(
 }
 
 @Composable
-private fun AdBlockCard(enabled: Boolean, blocked: Int, onToggle: (Boolean) -> Unit) {
+private fun AdBlockCard(enabled: Boolean, blocked: Int, status: AdBlocker.Status, onToggle: (Boolean) -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
         // Stesso fondo delle altre card: lo stato lo dicono l'icona colorata e l'interruttore, senza un blocco di colore.
@@ -207,10 +212,35 @@ private fun AdBlockCard(enabled: Boolean, blocked: Int, onToggle: (Boolean) -> U
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (enabled) {
+                    Text(
+                        adBlockStatusText(status),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (enabled) {
+                TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
             }
             Switch(checked = enabled, onCheckedChange = hapticToggle(onToggle))
         }
     }
+}
+
+/** "EasyList, EasyPrivacy e uBlock Origin · 163.784 regole · aggiornate il 22 ott". */
+private fun adBlockStatusText(status: AdBlocker.Status): String {
+    val parts = mutableListOf<String>()
+    when {
+        status.updating -> parts += "Aggiornamento in corso…"
+        !status.ready -> parts += "Caricamento delle liste…"
+        else -> parts += "%,d regole".format(Locale.ITALY, status.rules)
+    }
+    parts += status.updatedAt?.let {
+        "aggiornate il " + SimpleDateFormat("d MMM", Locale.ITALIAN).format(Date(it))
+    } ?: "liste incluse nell'app"
+    status.lastError?.let { parts += it }
+    return "EasyList, EasyPrivacy e uBlock Origin · " + parts.joinToString(" · ")
 }
 
 @Composable

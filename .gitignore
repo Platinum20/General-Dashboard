@@ -12,3 +12,6 @@
 *.jks
 *.keystore
 *.apk
+
+# Liste dei filtri: le scarica scripts/update_filter_lists.py prima di compilare
+/app/src/main/assets/adblock/lists/
