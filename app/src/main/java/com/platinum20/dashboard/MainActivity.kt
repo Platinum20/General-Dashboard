@@ -82,6 +82,13 @@ import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import com.platinum20.dashboard.ui.screens.CalendarScreen
+import com.platinum20.dashboard.ui.screens.EventDetailScreen
+import com.platinum20.dashboard.ui.screens.EventEditScreen
+import com.platinum20.dashboard.ui.screens.InAppLinks
+import com.platinum20.dashboard.ui.screens.InAppNav
+import com.platinum20.dashboard.ui.screens.LinkTarget
+import com.platinum20.dashboard.ui.screens.LocalInAppNav
 import java.time.LocalDate
 import java.time.ZoneId
 import androidx.compose.runtime.mutableStateOf
@@ -266,6 +273,14 @@ object Routes {
         "news/reader?url=${Uri.encode(url)}&source=${Uri.encode(source)}&title=${Uri.encode(title)}"
 
     fun webPage(url: String, source: String) = "news/web?url=${Uri.encode(url)}&source=${Uri.encode(source)}"
+
+    const val CALENDAR = "home/calendar"
+    const val CALENDAR_EVENT = "home/calendar/event?id={id}&begin={begin}&end={end}"
+    const val CALENDAR_EDIT = "home/calendar/edit?id={id}&day={day}"
+
+    fun calendarEvent(id: Long, begin: Long = 0, end: Long = 0) = "home/calendar/event?id=$id&begin=$begin&end=$end"
+
+    fun calendarEdit(id: Long?, day: LocalDate = LocalDate.now()) = "home/calendar/edit?id=${id ?: -1L}&day=${day.toEpochDay()}"
 }
 
 private data class TopDestination(
@@ -394,7 +409,26 @@ private fun NavController.switchTab(route: String) {
 @Composable
 private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
-    CompositionLocalProvider(LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }) {
+    // Link, pagine e calendario si aprono sempre dentro l'app.
+    val inApp = remember(navController) {
+        InAppNav(
+            openWeb = { url, title ->
+                when (val target = InAppLinks.target(url)) {
+                    is LinkTarget.YouTube -> navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, target.watchUrl))
+                    is LinkTarget.Spotify -> navController.navigate(Routes.webPlayer(MediaService.SPOTIFY, target.url))
+                    is LinkTarget.Web -> navController.navigate(Routes.webPage(target.url, title))
+                    LinkTarget.None -> Unit
+                }
+            },
+            openCalendar = { navController.navigate(Routes.CALENDAR) { launchSingleTop = true } },
+            openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
+            newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
+        )
+    }
+    CompositionLocalProvider(
+        LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
+        LocalInAppNav provides inApp,
+    ) {
         AppContent(navController, openRequest, onOpenHandled)
     }
 }
@@ -657,6 +691,42 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     url = entry.arguments?.getString("url").orEmpty(),
                     sourceName = entry.arguments?.getString("source").orEmpty(),
                     onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.CALENDAR) {
+                CalendarScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
+                    onNewEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
+                )
+            }
+            composable(
+                Routes.CALENDAR_EVENT,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.LongType; defaultValue = -1L },
+                    navArgument("begin") { type = NavType.LongType; defaultValue = 0L },
+                    navArgument("end") { type = NavType.LongType; defaultValue = 0L },
+                ),
+            ) { entry ->
+                EventDetailScreen(
+                    eventId = entry.arguments?.getLong("id") ?: -1L,
+                    begin = entry.arguments?.getLong("begin") ?: 0L,
+                    end = entry.arguments?.getLong("end") ?: 0L,
+                    onBack = { navController.popBackStack() },
+                    onEdit = { navController.navigate(Routes.calendarEdit(it)) },
+                )
+            }
+            composable(
+                Routes.CALENDAR_EDIT,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.LongType; defaultValue = -1L },
+                    navArgument("day") { type = NavType.LongType; defaultValue = LocalDate.now().toEpochDay() },
+                ),
+            ) { entry ->
+                EventEditScreen(
+                    eventId = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
+                    day = LocalDate.ofEpochDay(entry.arguments?.getLong("day") ?: LocalDate.now().toEpochDay()),
+                    onDone = { navController.popBackStack() },
                 )
             }
             composable(Routes.UPDATES) {

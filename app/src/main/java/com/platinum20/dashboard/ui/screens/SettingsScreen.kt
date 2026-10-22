@@ -1,8 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -100,6 +98,7 @@ fun SettingsScreen(
     onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     val theme by AppSettings.theme.collectAsState()
     val layout by AppSettings.homeLayout.collectAsState()
     val haptic = rememberHaptic()
@@ -269,11 +268,7 @@ fun SettingsScreen(
                         title = "Codice sorgente",
                         subtitle = BuildConfig.GITHUB_REPO,
                         showChevron = true,
-                        onClick = {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.GITHUB_REPO}"))
-                            )
-                        },
+                        onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
                     )
                     RowDivider()
                     SettingsItem(

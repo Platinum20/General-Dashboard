@@ -1,8 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.Routes
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +24,6 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -45,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -377,7 +373,7 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
 @Composable
 fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel) -> Unit = {}) {
     var editing by remember { mutableStateOf<Parcel?>(null) }
-    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     val today = LocalDate.now()
     val incoming = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
     val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
@@ -415,9 +411,10 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
                         )
                     }
                     parcel.trackingUrl()?.let { url ->
-                        IconButton(onClick = {
-                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-                        }) { Icon(Icons.Outlined.OpenInNew, contentDescription = "Traccia") }
+                        // La pagina del corriere si apre dentro Canvas, non nel browser.
+                        IconButton(onClick = { inApp?.openWeb(url, parcel.carrier.label) }) {
+                            Icon(Icons.Outlined.LocalShipping, contentDescription = "Traccia")
+                        }
                     }
                 }
             }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.81.0
+- Tutto dentro l'app: nessun link apre più il browser o un'altra app. Le pagine dei giornali, il tracciamento dei pacchi e il codice sorgente si aprono nella pagina web interna (con il blocco pubblicità); i link dei video negli articoli vanno nel player di YouTube dell'app
+- Le pagine che provano ad aprire l'app del sito (intent://) restano nella pagina interna usando il loro indirizzo web; mail e numeri di telefono continuano ad aprire il compositore e il tastierino
+- Nuovo calendario dentro Canvas: da Oggi, "Calendario" mostra gli impegni dei prossimi 60 giorni giorno per giorno, con "Vai a un giorno"
+- Toccando un evento si apre la sua scheda (orario, luogo, note, calendario); da lì si modifica o si elimina, e il + crea un nuovo evento con titolo, orari, tutto il giorno, luogo, note e calendario. Tutto si salva nel calendario del telefono (serve il permesso di scrittura, chiesto la prima volta)
+- Per gli eventi che si ripetono si cambiano titolo, luogo e note di tutta la serie; i calendari di sola lettura si possono solo guardare
+
 ## 1.80.0
 - Impostazioni riorganizzate: Aspetto, Oggi e notifiche, Dati automatici, Meteo, Media, Informazioni; ogni riga ha l'icona colorata e mostra a destra lo stato attuale (orario, località, acceso/spento)
 - Il blocco pubblicità si regola ora in Impostazioni › Media (interruttore, richieste bloccate e "Aggiorna" le liste); in Media resta solo una riga che dice se è attivo

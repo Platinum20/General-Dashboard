@@ -129,6 +129,7 @@ private fun hideAgenda(context: Context) {
 @Composable
 fun CalendarCard(agenda: AgendaState) {
     val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     val granted = agenda.granted
     val tomorrow = agenda.showsTomorrow()
     val events = if (granted && agenda.today != null) agenda.shown() else null
@@ -136,10 +137,10 @@ fun CalendarCard(agenda: AgendaState) {
     Section(
         title = if (tomorrow) "Domani" else "Agenda",
         action = if (granted) "Calendario" else null,
-        onAction = { CalendarRepository.openCalendar(context) },
+        onAction = { inApp?.openCalendar?.invoke() },
         trailing = {
             if (granted) {
-                IconButton(onClick = { CalendarRepository.newEvent(context) }, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = { inApp?.newEvent?.invoke(if (tomorrow) LocalDate.now().plusDays(1) else LocalDate.now()) }, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Outlined.Add, contentDescription = "Nuovo evento", modifier = Modifier.size(20.dp))
                 }
             }
@@ -172,7 +173,7 @@ fun CalendarCard(agenda: AgendaState) {
                 else -> {
                     val now = System.currentTimeMillis()
                     // Gli eventi già finiti restano visibili ma attenuati.
-                    list.take(6).forEach { EventRow(it, past = !it.allDay && it.end < now) { CalendarRepository.openEvent(context, it) } }
+                    list.take(6).forEach { EventRow(it, past = !it.allDay && it.end < now) { inApp?.openEvent?.invoke(it) } }
                     if (list.size > 6) {
                         Text(
                             "e altri ${list.size - 6}",
