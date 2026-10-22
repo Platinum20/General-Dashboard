@@ -153,6 +153,12 @@ fun HomeScreen(
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns)
     }
+    // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
+    LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
+        if (agenda.granted && agenda.today == null) return@LaunchedEffect
+        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, relative = false)
+        DashboardWidget.saveBriefing(context, lines.map { it.text })
+    }
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {

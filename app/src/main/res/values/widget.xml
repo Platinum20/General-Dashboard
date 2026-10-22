@@ -11,4 +11,15 @@
         <item name="android:textColor">@color/widget_text</item>
         <item name="android:textSize">13sp</item>
     </style>
+
+    <!-- Righe di "Adesso": una sola riga ciascuna, in evidenza rispetto alle notizie. -->
+    <style name="WidgetBrief">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/widget_accent</item>
+        <item name="android:textSize">13sp</item>
+    </style>
 </resources>

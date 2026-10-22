@@ -1,12 +1,17 @@
 package com.platinum20.dashboard.today
 
+import android.content.Context
 import com.platinum20.dashboard.calendar.CalendarEvent
+import com.platinum20.dashboard.calendar.CalendarRepository
+import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.Forecast
 import com.platinum20.dashboard.weather.asTemp
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -36,6 +41,8 @@ object Briefing {
         countdowns: List<Countdown>,
         zone: ZoneId = ZoneId.systemDefault(),
         max: Int = 4,
+        /** false per il widget, che si aggiorna ogni ora: "alle 15:00" invece di "tra 25 min". */
+        relative: Boolean = true,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
@@ -50,7 +57,7 @@ object Briefing {
         if (next != null) {
             val minutes = Duration.ofMillis(next.begin - nowMs).toMinutes()
             val text = when {
-                minutes < 60 -> "Tra ${minutes.coerceAtLeast(1)} min: ${next.title}"
+                relative && minutes < 60 -> "Tra ${minutes.coerceAtLeast(1)} min: ${next.title}"
                 else -> "Alle ${next.begin.at(zone)}: ${next.title}"
             } + if (next.location.isNotBlank()) " · ${next.location}" else ""
             lines += BriefLine(BriefKind.EVENT, text, urgent = minutes < 60)
@@ -105,6 +112,24 @@ object Briefing {
         }
         // Le urgenze in cima, poi l'ordine in cui le abbiamo pensate.
         return lines.withIndex().sortedWith(compareBy({ !it.value.urgent }, { it.index })).map { it.value }.take(max)
+    }
+
+    /** Lo stesso riepilogo letto dai dati salvati sul telefono, per widget e lavori in background. */
+    suspend fun load(context: Context, relative: Boolean = false, max: Int = 4): List<BriefLine> {
+        NotesStore.init(context)
+        val notes = NotesStore.data.value
+        val day = LocalDate.now()
+        val calendar = CalendarRepository.hasPermission(context)
+        return build(
+            now = LocalDateTime.now(),
+            forecast = WeatherStore.cached(context),
+            today = if (calendar) CalendarRepository.eventsOn(context, day) else null,
+            tomorrow = if (calendar) CalendarRepository.eventsOn(context, day.plusDays(1)) else null,
+            tasks = notes.openTasks,
+            countdowns = notes.countdowns,
+            max = max,
+            relative = relative,
+        )
     }
 
     private fun Long.at(zone: ZoneId): String = Instant.ofEpochMilli(this).atZone(zone).format(hour)
