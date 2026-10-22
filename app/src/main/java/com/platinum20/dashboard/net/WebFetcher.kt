@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Scarica un indirizzo passando da un WebView invisibile, cioè con lo stesso motore di Chrome.
  *
- * Alcuni siti (per esempio Il Post) rispondono 403 alle richieste dirette dell'app perché le
+ * Alcuni siti rispondono 403 alle richieste dirette dell'app perché le
  * scambiano per un bot, ma lasciano passare un browser vero. Qui apriamo la home del sito nel
  * WebView e poi chiediamo il feed o l'articolo con fetch() dalla pagina stessa: stessi cookie,
  * stesso browser. Un solo WebView per tutta l'app, una richiesta alla volta.

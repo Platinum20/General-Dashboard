@@ -42,10 +42,11 @@ object NewsSources {
     val all = listOf(
         // Solo fonti gratuite: niente testate con abbonamento (la Repubblica, Il Sole 24 Ore, ...).
         NewsSource("ansa", "ANSA", "https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml"),
-        NewsSource("ilpost", "Il Post", "https://www.ilpost.it/feed/"),
+        NewsSource("agi", "AGI", "https://www.agi.it/rss"),
         NewsSource("open", "Open", "https://www.open.online/feed/"),
         NewsSource("rainews", "RaiNews", "https://www.rainews.it/rss/tutti"),
         NewsSource("fanpage", "Fanpage", "https://www.fanpage.it/feed/"),
+        NewsSource("internazionale", "Internazionale", "https://www.internazionale.it/sitemaps/rss.xml"),
     )
 }
 

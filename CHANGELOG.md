@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.23.0
+- News: tolto Il Post, che continuava a bloccare l'app. Al suo posto AGI (agenzia di stampa, articoli gratuiti) e Internazionale
+
 ## 1.21.0
 - Oggi risponde a "cosa mi serve sapere adesso?": sotto il meteo la sezione Adesso con poche righe che cambiano con l'ora (prossimo impegno, pioggia in arrivo, promemoria scaduti o in scadenza, date di oggi; la sera il meteo e il primo impegno di domani). Tocca una riga per aprire il dettaglio
 - Le card vuote spariscono: niente più "Nessun impegno oggi"; "In arrivo" compare solo con date entro una settimana
