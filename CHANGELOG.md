@@ -21,6 +21,9 @@
 **Note**
 - Da fare: niente più X su ogni riga, si scorre verso sinistra per eliminare (con Annulla); eliminare resta anche nella modifica
 
+**Aggiornamenti**
+- L'interruttore "Avviso nuove versioni" sta solo in Impostazioni, non più ripetuto nella pagina Aggiornamenti
+
 **Sotto il cofano**
 - Test nuovi: avviso pioggia, card Domani, Riprendi, link di YouTube e Spotify, colore urgente; il controllo del player YouTube gira anche ogni giorno e su main
 
