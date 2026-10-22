@@ -189,21 +189,28 @@ fun MediaScreen(
 private fun AdBlockCard(enabled: Boolean, blocked: Int, status: AdBlocker.Status, onToggle: (Boolean) -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = if (enabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-        contentColor = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+        // Stesso fondo delle altre card: lo stato lo dicono l'icona colorata e l'interruttore, senza un blocco di colore.
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Outlined.Shield, contentDescription = null, modifier = Modifier.size(20.dp))
+            Icon(
+                Icons.Outlined.Shield,
+                contentDescription = null,
+                tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("Blocco pubblicità", style = MaterialTheme.typography.titleSmall)
                 Text(
                     if (enabled) "Attivo · $blocked richieste bloccate" else "Disattivato",
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (enabled) {
                     Text(
@@ -216,7 +223,7 @@ private fun AdBlockCard(enabled: Boolean, blocked: Int, status: AdBlocker.Status
             if (enabled) {
                 TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
             }
-            Switch(checked = enabled, onCheckedChange = onToggle)
+            Switch(checked = enabled, onCheckedChange = hapticToggle(onToggle))
         }
     }
 }

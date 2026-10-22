@@ -4,6 +4,10 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.FilterChip
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.FilledIconToggleButton
 import java.util.Locale
@@ -42,9 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -87,6 +89,30 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
     DATES("Date", "Nuova data"),
 }
 
+/**
+ * Le sei schede delle Note come chip, come i filtri delle News: stanno meglio in larghezza
+ * di sei tab e la scelta resta sempre visibile (la lista scorre da sola fino al chip attivo).
+ */
+@Composable
+private fun NotesTabChips(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
+    val listState = rememberLazyListState()
+    val haptic = rememberHaptic()
+    LaunchedEffect(selected) { listState.animateScrollToItem((selected.ordinal - 1).coerceAtLeast(0)) }
+    LazyRow(
+        state = listState,
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(NotesTabs.entries) { t ->
+            FilterChip(
+                selected = selected == t,
+                onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
+                label = { Text(t.label) },
+            )
+        }
+    }
+}
+
 /** Sezione "Note": promemoria, abitudini, spese, note libere, pacchi e date. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,11 +140,7 @@ fun NotesScreen(
                         }
                     },
                 )
-                PrimaryScrollableTabRow(selectedTabIndex = tab.ordinal, edgePadding = 8.dp) {
-                    NotesTabs.entries.forEach { t ->
-                        Tab(selected = tab == t, onClick = { tab = t }, text = { Text(t.label) })
-                    }
-                }
+                NotesTabChips(selected = tab, onSelect = { tab = it })
             }
         },
         floatingActionButton = {
@@ -260,6 +282,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
 private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
     var editing by remember { mutableStateOf<Habit?>(null) }
     val today = LocalDate.now()
+    val haptic = rememberHaptic()
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (habits.isNotEmpty()) {
             item {
@@ -278,7 +301,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
             ElevatedCard(
                 onClick = { editing = habit },
                 shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
             ) {
                 Row(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
@@ -293,9 +316,19 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row {
                             habit.lastDays(today).forEach { (day, done) ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                // Il pallino è piccolo, ma si tocca tutta la colonna (pallino e iniziale del giorno).
+                                Column(
+                                    Modifier
+                                        .clip(MaterialTheme.shapes.small)
+                                        .clickable {
+                                            haptic(if (done) Haptic.TICK else Haptic.CONFIRM)
+                                            NotesStore.toggleHabit(habit.id, day)
+                                        }
+                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
                                     Box(
                                         Modifier
                                             .size(14.dp)
@@ -303,8 +336,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
                                             .background(
                                                 if (done) MaterialTheme.colorScheme.primary
                                                 else MaterialTheme.colorScheme.surfaceVariant
-                                            )
-                                            .clickable { NotesStore.toggleHabit(habit.id, day) },
+                                            ),
                                     )
                                     Text(
                                         day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, Locale.ITALIAN),
@@ -317,7 +349,10 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues) {
                     }
                     FilledIconToggleButton(
                         checked = doneToday,
-                        onCheckedChange = { NotesStore.toggleHabit(habit.id) },
+                        onCheckedChange = {
+                            haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
+                            NotesStore.toggleHabit(habit.id)
+                        },
                         modifier = Modifier.size(48.dp),
                     ) {
                         Icon(Icons.Outlined.Check, contentDescription = if (doneToday) "Fatta oggi" else "Segna fatta oggi")

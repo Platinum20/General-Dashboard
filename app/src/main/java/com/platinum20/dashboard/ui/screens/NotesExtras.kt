@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -206,7 +207,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues) {
             }
             item(key = expense.id) {
                 Row(
-                    Modifier.fillMaxWidth().clickable { editing = expense }.padding(horizontal = 8.dp, vertical = 8.dp),
+                    Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { editing = expense }.padding(horizontal = 8.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -360,12 +361,16 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues) {
     val today = LocalDate.now()
     val incoming = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
     val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
+    val haptic = rememberHaptic()
 
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(incoming + delivered, key = { it.id }) { parcel ->
-            ElevatedCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+            ElevatedCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
                 Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = parcel.delivered, onCheckedChange = { NotesStore.toggleDelivered(parcel.id) })
+                    Checkbox(checked = parcel.delivered, onCheckedChange = {
+                        haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
+                        NotesStore.toggleDelivered(parcel.id)
+                    })
                     Column(Modifier.weight(1f)) {
                         Text(
                             parcel.title,

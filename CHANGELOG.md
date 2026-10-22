@@ -1,12 +1,23 @@
 # Changelog
 
-## 1.30.0
+## 1.31.0
 - Blocco pubblicità rifatto come uBlock Origin: usa le stesse liste di filtri (EasyList, EasyPrivacy e le liste di uBlock Origin), aggiornate da sole ogni 4 giorni o con "Aggiorna" in Media
 - Funziona in tutte le pagine web dell'app, non solo nel player: articoli delle news, lettore, video negli articoli e il browser invisibile che scarica feed e pagine
 - Oltre a bloccare le richieste nasconde i riquadri pubblicitari vuoti e ferma gli script che li rimettono; su YouTube toglie gli annunci dal video e salta quelli che passano
 - Agenda: non mostra più i calendari nascosti e gli inviti che hai rifiutato
 - Meteo: "oggi" è giusto anche quando la previsione salvata è di ieri
 - Notifica del mattino: "Invia una prova" parte subito dopo aver concesso il permesso
+
+## 1.30.0
+- Giro di design su tutta l'app: le sei schede delle Note diventano chip come i filtri delle News, sempre visibili e scorrono da sole fino a quella scelta
+- Abitudini: pressione elastica sulle card, vibrazione leggera alla spunta e giorni passati più facili da toccare (tutta la colonna, non solo il pallino)
+- Pacchi e Spese: card e righe coerenti con il resto, vibrazione alla consegna
+- Media: il blocco pubblicità ha lo stesso fondo delle altre card, con l'icona colorata quando è attivo
+- News: le fonti che non rispondono sono indicate per nome, senza codici d'errore
+
+## 1.29.0
+- Notifica del mattino: i promemoria mostrano l'orario se scadono oggi, e quelli già scaduti sono segnalati
+- Notifica del mattino: quando gli impegni o le cose da fare sono più di tre compare "…e altri N"
 
 ## 1.28.0
 - Feedback aptico leggero dove aiuta: spunta di un promemoria, bolla del player presa e agganciata al bordo, soglia del "trascina per aggiornare", interruttori, ordine delle card, scelta del tema e pressione lunga su una nota per fissarla
