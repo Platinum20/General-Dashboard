@@ -29,7 +29,7 @@ class NotesSearchTest {
             Expense(5, 120_00, "Bolletta luce", ExpenseCategory.entries.first(), day),
             Expense(6, 12_00, "Pizza", ExpenseCategory.entries.first(), day),
         ),
-        parcels = listOf(Parcel(7, "Cuffie", code = "1Z999AA10123456784")),
+        parcels = listOf(Parcel(7, "Cuffie", code = "1Z999AA10345678")),
         countdowns = listOf(Countdown(8, "Compleanno di Nicolò", day)),
         habits = listOf(Habit(9, "Caffè senza zucchero")),
     )
