@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.46.0
+- Lettore articoli: se un articolo non si scarica il messaggio è in italiano chiaro ("Il sito non lascia leggere l'articolo nell'app: aprilo nell'originale", "Nessuna connessione a Internet") invece di codici come "HTTP 403"
+
 ## 1.45.0
 - Personalizza Oggi: per mostrare o nascondere una card basta toccare tutta la riga (non solo l'interruttore), con la stessa vibrazione e pressione elastica del resto dell'app
 
