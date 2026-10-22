@@ -37,7 +37,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.rememberCoroutineScope
+import com.platinum20.dashboard.calendar.CalendarRepository
+import com.platinum20.dashboard.calendar.QuickEvent
+import com.platinum20.dashboard.calendar.QuickEventDraft
 import com.platinum20.dashboard.notes.Carrier
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import kotlinx.coroutines.launch
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.ChipRow
@@ -103,6 +110,7 @@ internal enum class CaptureMode(val label: String, val title: String, val hint: 
     NOTE("Nota", "Nuova nota", "Scrivi… la prima riga fa da titolo"),
     EXPENSE("Spesa", "Nuova spesa", "Es. 12,50 pizza"),
     PARCEL("Pacco", "Pacco in arrivo", "Cosa arriva e il codice di tracciamento"),
+    EVENT("Evento", "Nuovo evento", "Es. venerdì alle 20 cena da Luca"),
 }
 
 @Composable
@@ -112,10 +120,30 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
     var mode by rememberSaveable { mutableStateOf(initialMode) }
     val focus = remember { FocusRequester() }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onClose() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    val expense = remember(text, mode) { if (mode == CaptureMode.EXPENSE) Expenses.parse(text) else null }
+    val scope = rememberCoroutineScope()
+    val event = remember(text, mode) { if (mode == CaptureMode.EVENT) QuickEvent.parse(text) else null }
 
     fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+
+    // L'evento va nel calendario principale del telefono: lo vedono Oggi, Adesso, il widget e Calendario.
+    fun saveEvent() {
+        val draft = event ?: return toast("Scrivi anche quando: es. domani alle 15")
+        scope.launch {
+            val calendar = CalendarRepository.writableCalendars(context).firstOrNull()
+            if (calendar == null) {
+                toast("Nessun calendario in cui scrivere")
+                return@launch
+            }
+            val id = CalendarRepository.save(context, draft.toDraft(calendar.id))
+            toast(if (id != null) "Evento: ${eventLine(draft)}" else "Il calendario non ha accettato l'evento")
+            if (id != null) onClose()
+        }
+    }
+    val calendarPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        if (result.values.all { it }) saveEvent() else toast("Serve il permesso del calendario per salvare l'evento")
+    }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    val expense = remember(text, mode) { if (mode == CaptureMode.EXPENSE) Expenses.parse(text) else null }
 
     val save = save@{
         if (text.isBlank()) return@save onClose()
@@ -135,6 +163,15 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                     .firstOrNull { it.isNotEmpty() }.orEmpty().take(60)
                 NotesStore.saveParcel(null, title.ifEmpty { "Pacco" }, code, null)
                 toast("Pacco aggiunto" + if (code.isNotEmpty()) " · ${Carrier.detect(code).label}" else "")
+            }
+            CaptureMode.EVENT -> {
+                if (CalendarRepository.canWrite(context)) {
+                    saveEvent()
+                } else {
+                    calendarPermission.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
+                }
+                // Si chiude da solo quando l'evento è salvato.
+                return@save
             }
             CaptureMode.TASK -> {
                 val due = NotesStore.addTask(text)?.dueAt
@@ -184,6 +221,13 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                     CaptureMode.PARCEL -> Carrier.findCode(text)?.let {
                         Text("$it · ${Carrier.detect(it).label}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
+                    CaptureMode.EVENT -> if (text.isNotBlank()) {
+                        Text(
+                            event?.let { "${eventLine(it)} · ${it.title}" } ?: "Scrivi anche quando: es. domani alle 15",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     CaptureMode.NOTE -> Unit
                 }
             }
@@ -191,6 +235,15 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         confirmButton = { TextButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
         dismissButton = { TextButton(onClick = onClose) { Text("Annulla") } },
     )
+}
+
+private val eventDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
+private val eventHour = DateTimeFormatter.ofPattern("H:mm")
+
+/** "Ven 24 ott 20:00–21:00", oppure "Sab 25 ott · tutto il giorno". */
+internal fun eventLine(e: QuickEventDraft): String {
+    val day = e.start.format(eventDay).replaceFirstChar { it.uppercase() }
+    return if (e.allDay) "$day · tutto il giorno" else "$day ${e.start.format(eventHour)}–${e.end.format(eventHour)}"
 }
 
 /** Riquadro "Promemoria al volo" nelle impostazioni rapide (la tendina in alto). */

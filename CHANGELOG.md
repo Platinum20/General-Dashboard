@@ -1,13 +1,37 @@
 # Changelog
 
-## 1.88.0
+## 1.89.0
 - Vetro liquido (da Android 13): la barra in basso e il mini player piegano la pagina vicino ai bordi come una lente, con un filo di luce sul bordo. Sotto Android 13 resta il vetro sfocato
 - Le pagine interne (Meteo, Il punto del giorno, Personalizza, Aggiornamenti, Calendario, Compila da solo, Località) hanno il titolo grande con la freccia, come Impostazioni
-- Oggi: "Compila da solo" e il permesso dell'Agenda non occupano più la parte alta, ma stanno insieme in "Da attivare", in fondo, ciascuno con Attiva e una X per nasconderlo
 - Note: le sei schede diventano pillole come i filtri delle News, e la riga scorre da sola fino a quella aperta
 - Spese: le spese di ogni giorno stanno in una card, come le altre liste
-- Abitudini: il cerchio per segnare fatta oggi ha il bordo del colore del tema, prima era un grigio poco visibile
 - Personalizza Oggi: ogni card ha la sua icona, l'interruttore è a destra e le frecce per l'ordine sono più leggibili
+
+## 1.88.0
+**Note**
+- Liste di spunta: le righe "- latte" o "[ ] pane" diventano caselle da spuntare con un tocco; il pulsante Lista trasforma le righe di una nota, "Aggiungi voce" in fondo, e nella lista delle note si legge "3 di 7 fatti"
+- Cerca in tutte le Note: la lente in alto cerca in promemoria (anche completati), note, spese (anche per importo: "12,5" trova 12,50 €), pacchi (anche per codice), date e abitudini, senza badare ad accenti e maiuscole
+- Spese fisse e abbonamenti: "ogni mese il 5 affitto 650" o "netflix 12,99 il 25 di ogni mese" si aggiungono da sole il giorno giusto; in cima al mese "Fisse · variabili", il budget al giorno tiene da parte le fisse ancora in arrivo
+- Abitudini con obiettivo settimanale ("3 volte a settimana"): "2 su 3 questa settimana", serie in settimane, e niente rimproveri finché si è in tempo
+- Abitudini: si vede a colpo d'occhio cosa manca oggi (cerchio vuoto da fare, pieno da fatta, "Manca oggi" in arancio dopo le 17)
+
+**Oggi**
+- Gli inviti a impostare (agenda, Compila da solo) non stanno più in cima: una riga in fondo "2 cose da attivare" apre i pulsanti, così sotto Adesso viene subito Da fare
+- Adesso avvisa il giorno prima di un addebito fisso: "Domani addebito: Netflix 12,99 €"
+
+**Cattura al volo e Calendario**
+- Il "+" crea anche eventi: con "Evento", "venerdì alle 20 cena da Luca", "domani dalle 9 alle 11 corso", "per 2 ore" o "tutto il giorno" finiscono nel calendario del telefono, con l'anteprima prima di salvare
+- Scheda evento: se eliminare non riesce o manca il permesso di scrittura ora lo dice, e dopo un rifiuto definitivo il pulsante porta alle impostazioni dell'app
+
+**Impostazioni**
+- Nuovo gruppo Dati: "Esporta backup" salva promemoria, abitudini, spese, note, pacchi, date e impostazioni in un file; "Ripristina da backup" mostra cosa contiene prima di sostituire. I dati entrano anche nel backup automatico di Android
+
+**Promemoria e pagine web**
+- "Rimanda" dopo mezzanotte diventa "Stamattina 9:00" invece di saltare un giorno
+- Nella pagina web interna i link a YouTube e Spotify aprono i player dell'app invece del loro sito
+
+**Test**
+- Nuovi test automatici: ChecklistTest, NotesSearchTest, InvitesTest, QuickEventTest, HabitWeeklyTest, FixedExpenseTest, NotesStoreTest (anche un file di una versione vecchia), BackupTest, HabitTest, CalendarPermissionTest
 
 ## 1.86.0
 - "Adesso" in Oggi, il meteo di adesso e il brano in riproduzione in Media hanno il colore del tema invece del nero: con Material You prendono il colore dello sfondo del telefono, con Canvas un azzurro chiaro

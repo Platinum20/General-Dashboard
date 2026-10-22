@@ -8,6 +8,7 @@ import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
 import java.time.YearMonth
@@ -55,6 +56,7 @@ object Briefing {
         parcels: List<Parcel> = emptyList(),
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
+        fixedExpenses: List<FixedExpense> = emptyList(),
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
@@ -107,6 +109,14 @@ object Briefing {
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
+        // Spese fisse: il giorno prima, per non trovarsi l'addebito a sorpresa.
+        fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+            lines += BriefLine(
+                BriefKind.MONEY,
+                "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
+            )
+        }
+
         // Spese: se ne parla solo quando il tetto del mese è vicino.
         if (budgetCents != null && budgetCents > 0) {
             val spent = Expenses.total(expenses, YearMonth.from(date))
@@ -122,7 +132,8 @@ object Briefing {
 
         // Abitudini: dal tardo pomeriggio, quelle non ancora fatte oggi (prima c'è tempo).
         if (now.hour >= HABIT_HOUR) {
-            val missing = habits.filter { !it.isDone(date) }
+            // Le settimanali solo quando serve farle oggi per restare nell'obiettivo.
+            val missing = habits.filter { it.needsReminder(now) }
             when {
                 missing.isEmpty() -> Unit
                 missing.size <= 2 -> lines += BriefLine(BriefKind.HABIT, "Ancora da fare oggi: " + missing.joinToString(", ") { it.title })
@@ -177,6 +188,7 @@ object Briefing {
             parcels = notes.parcels,
             expenses = notes.expenses,
             budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
             max = max,
             relative = relative,
         )

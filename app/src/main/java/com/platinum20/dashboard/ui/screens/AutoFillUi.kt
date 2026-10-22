@@ -91,7 +91,7 @@ fun AutoFillCard(onOpenSettings: () -> Unit) {
     val haptic = rememberHaptic()
     val shown = remember(items) { AutoFillRules.visible(items, System.currentTimeMillis()) }
 
-    // Spento: l'invito ad accenderlo sta in "Da attivare", in fondo a Oggi.
+    // L'invito ad attivarla sta in fondo a Oggi (InvitesRow), non in cima.
     if (!enabled) return
     if (shown.isEmpty()) return
 
@@ -167,7 +167,7 @@ private fun openListenerSettings(context: Context) {
     }
 }
 
-private fun openAppInfo(context: Context) {
+internal fun openAppInfo(context: Context) {
     runCatching {
         context.startActivity(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))

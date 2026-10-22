@@ -77,7 +77,9 @@ import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.today.Invites
 import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.weather.LocationProvider
 import com.platinum20.dashboard.weather.WeatherCodes
@@ -165,6 +167,7 @@ fun HomeScreen(
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -172,13 +175,17 @@ fun HomeScreen(
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
         val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses,
         )
         DashboardWidget.saveBriefing(context, lines)
     }
+    AutoFill.init(context)
+    val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
+    val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
-            // Senza permesso l'Agenda non occupa un posto in pagina: la richiesta va in "Da attivare" in fondo.
+            // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
             HomeCard.CALENDAR -> agenda.granted && agenda.hasContent
             HomeCard.COUNTDOWN -> notes.soon.isNotEmpty()
             else -> true
@@ -273,11 +280,17 @@ fun HomeScreen(
             items(cards.take(1), key = { it.name }) { cardContent(it) }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
             items(cards.drop(1), key = { it.name }) { cardContent(it) }
-            item(key = "setup") {
-                SetupCard(
-                    agenda = agenda,
-                    askAgenda = HomeCard.CALENDAR in layout.visible,
+            item(key = "invites") {
+                InvitesRow(
+                    invites = Invites.pending(
+                        agendaVisible = HomeCard.CALENDAR in layout.visible,
+                        calendarGranted = agenda.granted,
+                        autoFillEnabled = autoFillEnabled,
+                        autoFillDismissed = autoFillDismissed,
+                    ),
+                    onAllowCalendar = agenda.requestPermission,
                     onOpenAutoFill = onOpenAutoFill,
+                    onDismissAutoFill = { AutoFill.dismissIntro() },
                 )
             }
         }
