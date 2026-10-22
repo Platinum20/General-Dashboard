@@ -36,6 +36,7 @@ import com.platinum20.dashboard.media.MediaPageListener
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
 
 /** Pagina di accesso ufficiale di Google o Spotify: la password resta tra te e il servizio. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +75,13 @@ fun LoginScreen(
                 historyBack = canGoBack
             }
 
+            override fun onAppLink(uri: Uri): Boolean {
+                if (!SpotifyAuth.isRedirect(uri)) return false
+                SpotifyAuth.handleRedirect(uri)
+                finish()
+                return true
+            }
+
             override fun onPageFinished(url: String) {
                 // Accesso riuscito quando si torna sul sito del servizio con i cookie dell'account.
                 if (Uri.parse(url).host == service.homeHost && Accounts.isLoggedIn(service)) finish()
@@ -84,7 +92,15 @@ fun LoginScreen(
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
         view.settings.setSupportZoom(false)
         view.settings.builtInZoomControls = false
-        view.also { it.loadUrl(service.loginUrl) }
+        // Spotify: accesso ufficiale (OAuth) che dà all'app il permesso di leggere la libreria e
+        // suonare. La vecchia pagina di login che portava al web player sui telefoni restava nera.
+        val start = if (service == MediaService.SPOTIFY) {
+            SpotifyAuth.init(context)
+            SpotifyAuth.loginUrl().toString()
+        } else {
+            service.loginUrl
+        }
+        view.also { it.loadUrl(start) }
     }
 
     DisposableEffect(Unit) {
