@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
@@ -78,7 +79,7 @@ import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import kotlinx.coroutines.launch
 
-private val youTubeTabs = listOf("Iscrizioni", "Playlist", "Mi piace", "Più tardi", "Cerca")
+private val youTubeTabs = listOf("Home", "Iscrizioni", "Playlist", "Mi piace", "Più tardi", "Cerca")
 
 /** Il tuo YouTube in versione nativa: iscrizioni, playlist, video piaciuti e ricerca. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,7 +99,8 @@ fun YouTubeFeedScreen(
     // Collegamento ufficiale raggiungibile anche quando l'accesso nell'app c'è già ma il feed non si carica.
     var setup by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = setup && !official) { setup = false }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    // Si apre sulle Iscrizioni; la Home è subito a sinistra.
+    var tab by rememberSaveable { mutableIntStateOf(1) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
 
     BackHandler(enabled = openPlaylist != null) { openPlaylist = null }
@@ -123,10 +125,11 @@ fun YouTubeFeedScreen(
                             val playlist = openPlaylist
                             when {
                                 playlist != null -> YouTubeStore.loadPlaylist(context, playlist.id, force = true)
-                                tab == 0 -> YouTubeStore.refreshSubscriptions(context, force = true)
-                                tab == 1 -> YouTubeStore.refreshPlaylists(context, force = true)
-                                tab == 2 -> YouTubeStore.refreshLiked(context, force = true)
-                                tab == 3 -> YouTubeStore.refreshWatchLater(context, force = true)
+                                tab == 0 -> YouTubeStore.refreshHome(context, force = true)
+                                tab == 1 -> YouTubeStore.refreshSubscriptions(context, force = true)
+                                tab == 2 -> YouTubeStore.refreshPlaylists(context, force = true)
+                                tab == 3 -> YouTubeStore.refreshLiked(context, force = true)
+                                tab == 4 -> YouTubeStore.refreshWatchLater(context, force = true)
                             }
                         }) {
                             Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")
@@ -157,10 +160,11 @@ fun YouTubeFeedScreen(
                 }
             }
             when (tab) {
-                0 -> SubscriptionsTab(onPlay)
-                1 -> PlaylistsTab(onOpen = { openPlaylist = it })
-                2 -> LikedTab(onPlay)
-                3 -> WatchLaterTab(onPlay)
+                0 -> HomeTab(onPlay)
+                1 -> SubscriptionsTab(onPlay)
+                2 -> PlaylistsTab(onOpen = { openPlaylist = it })
+                3 -> LikedTab(onPlay)
+                4 -> WatchLaterTab(onPlay)
                 else -> SearchTab(onPlay)
             }
         }
@@ -245,14 +249,41 @@ private fun ConnectYouTube(onLogin: () -> Unit) {
 private fun SubscriptionsTab(onPlay: (String) -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.subscriptions.collectAsState()
-    var hideShorts by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(Unit) { YouTubeStore.refreshSubscriptions(context) }
-    val videos = state.data.orEmpty().filter { !hideShorts || !it.isShort }
-    FeedList(state, empty = "Nessun video nuovo dai canali che segui") {
+    FilteredVideos(state, empty = "Nessun video nuovo dai canali che segui", onPlay = onPlay)
+}
+
+@Composable
+private fun HomeTab(onPlay: (String) -> Unit) {
+    val context = LocalContext.current
+    val state by YouTubeStore.home.collectAsState()
+    LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
+    FilteredVideos(state, empty = "La Home è vuota: tocca Aggiorna", onPlay = onPlay)
+}
+
+/** Lista di video con i filtri: senza Short e solo dirette. */
+@Composable
+private fun FilteredVideos(state: Loadable<List<YtVideo>>, empty: String, onPlay: (String) -> Unit) {
+    var hideShorts by rememberSaveable { mutableStateOf(true) }
+    var onlyLive by rememberSaveable { mutableStateOf(false) }
+    val videos = state.data.orEmpty()
+        .filter { !hideShorts || !it.isShort }
+        .filter { !onlyLive || it.live || it.upcoming }
+        // In diretta adesso prima di quelle in arrivo.
+        .let { list -> if (onlyLive) list.sortedByDescending { it.live } else list }
+    FeedList(state, empty = empty) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CanvasChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = "Nascondi Shorts")
+                CanvasChip(selected = onlyLive, onClick = { onlyLive = !onlyLive }, label = "Solo dirette")
             }
+        }
+        if (onlyLive && videos.isEmpty() && state.data != null) item {
+            Text(
+                "Nessuna diretta in corso o in arrivo",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 24.dp),
+            )
         }
         items(videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
     }
@@ -384,7 +415,27 @@ private fun VideoCard(video: YtVideo, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Column {
-            Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
+            Box {
+                Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
+                val badge = when {
+                    video.live -> "IN DIRETTA"
+                    video.upcoming -> "IN ARRIVO"
+                    video.durationSec > 0 -> formatDuration(video.durationSec * 1000L)
+                    else -> null
+                }
+                if (badge != null) {
+                    Text(
+                        badge,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp)
+                            .background(if (video.live) Color(0xFFCC0000) else Color.Black.copy(alpha = 0.75f), MaterialTheme.shapes.extraSmall)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
             Column(Modifier.padding(12.dp)) {
                 Text(video.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
@@ -414,3 +465,4 @@ private fun Thumbnail(url: String, modifier: Modifier) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
     )
 }
+

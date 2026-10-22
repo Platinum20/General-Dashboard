@@ -55,6 +55,10 @@ object YouTubeWeb {
 
     suspend fun watchLater(context: Context): List<YtVideo> = playlistItems(context, "WL")
 
+    /** Video consigliati della Home, come nell'app di YouTube. */
+    suspend fun home(context: Context): List<YtVideo> =
+        page(context, "/", requireLogin = true).videos
+
     suspend fun search(context: Context, query: String): List<YtVideo> =
         page(context, "/results?search_query=" + URLEncoder.encode(query, "UTF-8"), requireLogin = false).videos
 
@@ -117,7 +121,11 @@ object YouTubeWeb {
             }.distinctBy { it.id },
             videos = list("videos") { v ->
                 v.optString("id").takeIf { it.isNotBlank() }?.let {
-                    YtVideo(it, v.optString("title"), v.optString("channel"), v.optString("channelId"), null, v.optBoolean("short"))
+                    YtVideo(
+                        it, v.optString("title"), v.optString("channel"), v.optString("channelId"), null, v.optBoolean("short"),
+                        durationSec = durationSeconds(v.optString("length")),
+                        live = v.optBoolean("live"),
+                    )
                 }
             }.distinctBy { it.id },
             playlists = list("playlists") { p ->
@@ -127,6 +135,10 @@ object YouTubeWeb {
             }.distinctBy { it.id },
         )
     }
+
+    /** "1:02:03" o "12:34" in secondi. */
+    private fun durationSeconds(text: String): Int =
+        text.split(":").mapNotNull { it.trim().toIntOrNull() }.takeIf { it.size in 2..3 }?.fold(0) { acc, n -> acc * 60 + n } ?: 0
 
     // Percorre i dati della pagina (ytInitialData) e raccoglie canali, video e playlist
     // qualunque sia la struttura: YouTube la cambia spesso, i singoli blocchi molto meno.
@@ -169,7 +181,10 @@ object YouTubeWeb {
         var cmd = parts.text.commandRuns && parts.text.commandRuns[0].onTap.innertubeCommand.browseEndpoint;
         if (cmd) channelId = cmd.browseId;
       } catch (e) {}
-      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId});
+      var img = JSON.stringify(l.contentImage || {});
+      var len = (img.match(/"text":"(\d{1,2}(?::\d{2}){1,2})"/) || [])[1] || '';
+      var live = /LIVE/.test(img) && !len;
+      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live});
     } else if (type.indexOf('PLAYLIST') >= 0) {
       var count = 0;
       try { count = parseInt(JSON.stringify(l.contentImage).match(/"text":"(\d+)/)[1], 10) || 0; } catch (e) {}
@@ -189,7 +204,9 @@ object YouTubeWeb {
       } else if ((key === 'videoRenderer' || key === 'playlistVideoRenderer' || key === 'gridVideoRenderer' ||
                   key === 'compactVideoRenderer') && v.videoId) {
         var by = byline(v);
-        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id});
+        var overlays = JSON.stringify(v.thumbnailOverlays || []) + JSON.stringify(v.badges || []);
+        var live = /LIVE/.test(overlays) && !v.lengthText;
+        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live});
       } else if (key === 'reelItemRenderer' && v.videoId) {
         videos.push({id: v.videoId, title: text(v.headline), channel: '', channelId: '', short: true});
       } else if ((key === 'gridPlaylistRenderer' || key === 'playlistRenderer') && v.playlistId) {

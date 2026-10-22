@@ -49,6 +49,29 @@ object YtPlayer {
     private val _now = MutableStateFlow<YtNow?>(null)
     val now: StateFlow<YtNow?> = _now.asStateFlow()
 
+    private const val PREFS = "yt_player"
+    private const val KEY_HEIGHT = "max_height"
+
+    /** Qualità scelta dall'utente (altezza massima, 0 = automatica fino a 1080p), ricordata. */
+    fun preferredHeight(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(KEY_HEIGHT, 0)
+
+    /** Cambia qualità al volo, dal punto in cui si era. */
+    fun setQuality(context: Context, height: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putInt(KEY_HEIGHT, height).apply()
+        val stream = _now.value?.stream ?: return
+        val quality = stream.qualities.firstOrNull { it.height == height } ?: return
+        if (quality.height == stream.height && !usingMuxed) return
+        val position = exo?.currentPosition ?: 0L
+        val wasPlaying = exo?.playWhenReady ?: true
+        usingMuxed = false
+        start(context, stream.copy(videoUrl = quality.url, height = quality.height), muxed = false, positionMs = position, play = wasPlaying)
+    }
+
+    fun seekTo(context: Context, positionMs: Long) {
+        player(context).seekTo(positionMs)
+    }
+
     /** Video da far partire uno dopo l'altro (link), impostati dalla schermata del player. */
     var queue: List<String> = emptyList()
 
@@ -76,7 +99,7 @@ object YtPlayer {
                     // Se l'unione video+audio non va, si riprova con il flusso unico.
                     if (stream != null && !usingMuxed && stream.muxedUrl != null) {
                         usingMuxed = true
-                        start(context, stream, muxed = true)
+                        start(context, stream, muxed = true, positionMs = exo?.currentPosition ?: 0L)
                     } else {
                         _now.value = _now.value?.copy(loading = false, playing = false, error = "Video non riproducibile, riprova più tardi")
                     }
@@ -95,7 +118,7 @@ object YtPlayer {
         _now.value = YtNow(link = link, stream = null)
         context.startService(Intent(context, YtPlaybackService::class.java))
         job = scope.launch {
-            runCatching { YtResolver.resolve(link) }
+            runCatching { YtResolver.resolve(link, preferredHeight(context)) }
                 .onSuccess {
                     usingMuxed = false
                     start(context, it, muxed = false)
@@ -134,7 +157,7 @@ object YtPlayer {
         _now.value = null
     }
 
-    private fun start(context: Context, stream: YtStream, muxed: Boolean) {
+    private fun start(context: Context, stream: YtStream, muxed: Boolean, positionMs: Long = 0L, play: Boolean = true) {
         val metadata = MediaMetadata.Builder()
             .setTitle(stream.title)
             .setArtist(stream.channel)
@@ -153,9 +176,9 @@ object YtPlayer {
         }
         _now.value = YtNow(link = _now.value?.link ?: stream.id, stream = stream, loading = true)
         player(context).apply {
-            setMediaSource(source)
+            setMediaSource(source, positionMs)
             prepare()
-            play()
+            playWhenReady = play
         }
     }
 

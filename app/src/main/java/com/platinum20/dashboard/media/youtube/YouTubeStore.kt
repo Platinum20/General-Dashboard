@@ -39,8 +39,15 @@ object YouTubeStore {
 
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
         load(context, _subscriptions, force, web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
-            YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300)
+            YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
         }
+
+    private val _home = MutableStateFlow(Loadable<List<YtVideo>>())
+    /** La Home di YouTube (video consigliati): c'è solo con l'accesso a YouTube fatto nell'app. */
+    val home: StateFlow<Loadable<List<YtVideo>>> = _home.asStateFlow()
+
+    fun refreshHome(context: Context, force: Boolean = false) =
+        load(context, _home, force, web = { YouTubeWeb.home(it) }, api = null)
 
     fun refreshPlaylists(context: Context, force: Boolean = false) =
         load(context, _playlists, force, web = { YouTubeWeb.playlists(it) }) { token -> YouTubeApi.playlists(token) }
@@ -84,6 +91,7 @@ object YouTubeStore {
         _watchLater.value = Loadable()
         _playlistItems.value = emptyMap()
         _search.value = Loadable()
+        _home.value = Loadable()
     }
 
     private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE

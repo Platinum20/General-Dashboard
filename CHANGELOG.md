@@ -1,6 +1,8 @@
 # Changelog
 
 ## 1.84.0
+- Player di YouTube: barra con il minutaggio (dove sei e quanto dura), scelta della qualità video (ricordata), capitoli toccabili e commenti
+- YouTube: nuova scheda Home con i video consigliati, filtro "Solo dirette" accanto a "Nascondi Shorts", durata e bollino IN DIRETTA sulle anteprime
 - Spotify suona dentro l'app con il riproduttore ufficiale (serve Premium): tocchi un brano, un album o una playlist e parte qui, con notifica e bolla. Mai il sito
 - Se avevi già collegato Spotify con la chiave, ricollegalo una volta per dare il permesso di ascolto
 - I link di Spotify e YouTube (anche dalle notizie) si aprono nei player dell'app
