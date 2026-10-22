@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.media.youtube.player.YtChapter
@@ -55,7 +56,7 @@ class YouTubeTour {
     @Before
     fun setUp() {
         assumeTrue(System.getProperty("tour") == "true")
-        context.getSharedPreferences("youtube_api", Context.MODE_PRIVATE).edit().putBoolean("connected", true).commit()
+        YouTubeAuth.previewConnected()
         YouTubeStore.preview(home = videos.shuffled(java.util.Random(4)), subscriptions = videos)
     }
 

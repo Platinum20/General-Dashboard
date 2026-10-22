@@ -562,8 +562,9 @@ private fun CommentRow(comment: YtComment) {
     }
 }
 
-/** 1234 → "1234", 15300 → "15,3K", 2100000 → "2,1 Mln". */
+/** 1234 → "1234", 15300 → "15,3K", 2100000 → "2,1 Mln", 1700000000 → "1,7 Mld". */
 private fun compactCount(n: Long): String = when {
+    n >= 1_000_000_000 -> "%.1f Mld".format(java.util.Locale.ITALY, n / 1_000_000_000.0).replace(",0 ", " ")
     n >= 1_000_000 -> "%.1f Mln".format(java.util.Locale.ITALY, n / 1_000_000.0).replace(",0 ", " ")
     n >= 10_000 -> "%.1fK".format(java.util.Locale.ITALY, n / 1000.0).replace(",0K", "K")
     else -> n.toString()
