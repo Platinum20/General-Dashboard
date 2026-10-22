@@ -159,6 +159,17 @@ object SpotifyApi {
         request(token, "me/player/play", "PUT", body)
     }
 
+    /**
+     * Fa partire la musica sul dispositivo [deviceId] (il riproduttore dentro l'app): un brano,
+     * oppure un album/playlist ([contextUri]) a partire da [offsetUri].
+     */
+    suspend fun playOn(token: String, deviceId: String, contextUri: String?, uris: List<String>, offsetUri: String? = null) {
+        val body = JSONObject()
+        if (contextUri != null) body.put("context_uri", contextUri) else body.put("uris", JSONArray(uris))
+        if (contextUri != null && offsetUri != null) body.put("offset", JSONObject().put("uri", offsetUri))
+        request(token, "me/player/play?device_id=" + URLEncoder.encode(deviceId, "UTF-8"), "PUT", body)
+    }
+
     suspend fun pause(token: String) { request(token, "me/player/pause", "PUT") }
     suspend fun resume(token: String) { request(token, "me/player/play", "PUT") }
     suspend fun next(token: String) { request(token, "me/player/next", "POST") }

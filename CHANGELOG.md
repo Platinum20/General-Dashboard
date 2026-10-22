@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.84.0
+- Player di YouTube: barra con il minutaggio (dove sei e quanto dura), scelta della qualità video (ricordata), capitoli toccabili e commenti
+- YouTube: nuova scheda Home con i video consigliati, filtro "Solo dirette" accanto a "Nascondi Shorts", durata e bollino IN DIRETTA sulle anteprime
+- Spotify suona dentro l'app con il riproduttore ufficiale (serve Premium): tocchi un brano, un album o una playlist e parte qui, con notifica e bolla. Mai il sito
+- Se avevi già collegato Spotify con la chiave, ricollegalo una volta per dare il permesso di ascolto
+- I link di Spotify e YouTube (anche dalle notizie) si aprono nei player dell'app
+- Ricerca di YouTube nativa: risultati senza consumare la quota dell'API di Google
+- Tolti i pulsanti che aprivano il sito di YouTube: ora è tutto nell'app
+
 ## 1.83.0
 - YouTube con il player nativo di Android: il video arriva direttamente nell'app, senza pagina web né pubblicità
 - Ascolto in sottofondo con controlli nella notifica e nella schermata di blocco; la bolla mostra il video
