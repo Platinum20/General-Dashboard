@@ -273,9 +273,10 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
 @Composable
 fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit = {}) {
     var title by remember { mutableStateOf(habit?.title.orEmpty()) }
+    var perWeek by remember { mutableStateOf(habit?.perWeek ?: 0) }
     val save = {
         if (title.isNotBlank()) {
-            NotesStore.saveHabit(habit?.id, title)
+            NotesStore.saveHabit(habit?.id, title, perWeek)
             onDismiss()
         }
     }
@@ -294,10 +295,24 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
                     keyboardActions = KeyboardActions(onDone = { save() }),
                     modifier = Modifier.fillMaxWidth().autoFocus(enabled = habit == null),
                 )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    if (perWeek == 0) "Quanto spesso" else "$perWeek ${if (perWeek == 1) "volta" else "volte"} a settimana",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                // "Ogni giorno" oppure quante volte a settimana: la serie conta le settimane.
+                ChipRow(
+                    options = listOf("Ogni giorno") + (1..6).map { "$it×" },
+                    selected = perWeek,
+                    onSelect = { perWeek = it },
+                )
                 if (habit != null) {
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Serie attuale: ${habit.streak()} giorni · in tutto ${habit.done.size} giorni",
+                        if (habit.weekly) "Settimane di fila: ${habit.weekStreak()} · in tutto ${habit.done.size} volte"
+                        else "Serie attuale: ${habit.streak()} giorni · in tutto ${habit.done.size} giorni",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

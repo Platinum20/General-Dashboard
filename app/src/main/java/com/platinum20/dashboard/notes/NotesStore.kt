@@ -10,6 +10,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -52,13 +53,52 @@ data class Countdown(
         if (!yearly) null else (nextDate(today).year - date.year).takeIf { it >= 2 }
 }
 
-/** Un'abitudine da tenere ogni giorno: si spunta e conta i giorni di fila. */
+/**
+ * Un'abitudine: ogni giorno, oppure [perWeek] volte a settimana ("palestra 3 volte").
+ * Si spunta e conta i giorni (o le settimane) di fila.
+ */
 data class Habit(
     val id: Long,
     val title: String,
     val done: Set<LocalDate> = emptySet(),
+    /** 0 = ogni giorno; da 1 a 6 = quante volte a settimana. */
+    val perWeek: Int = 0,
 ) {
+    val weekly: Boolean get() = perWeek in 1..6
+
     fun isDone(day: LocalDate = LocalDate.now()): Boolean = day in done
+
+    /** Quante volte è stata fatta nella settimana (da lunedì) che contiene [day], fino a quel giorno. */
+    fun weekCount(day: LocalDate = LocalDate.now()): Int {
+        val monday = day.with(DayOfWeek.MONDAY)
+        return done.count { !it.isBefore(monday) && !it.isAfter(day) }
+    }
+
+    /** Settimane di fila con l'obiettivo raggiunto; quella in corso conta solo se è già raggiunto. */
+    fun weekStreak(today: LocalDate = LocalDate.now()): Int {
+        if (!weekly) return 0
+        var monday = today.with(DayOfWeek.MONDAY)
+        if (weekCount(today) < perWeek) monday = monday.minusWeeks(1)
+        var count = 0
+        while (weekCount(monday.plusDays(6)) >= perWeek) {
+            count++
+            monday = monday.minusWeeks(1)
+        }
+        return count
+    }
+
+    /**
+     * Da ricordare in Adesso? Ogni giorno: dal tardo pomeriggio se oggi manca. Settimanale:
+     * solo quando, senza farla oggi, non si arriverebbe più all'obiettivo della settimana.
+     */
+    fun needsReminder(now: LocalDateTime): Boolean {
+        val today = now.toLocalDate()
+        if (isDone(today) || now.hour < Briefing.HABIT_HOUR) return false
+        if (!weekly) return true
+        val missing = perWeek - weekCount(today)
+        val daysLeft = DayOfWeek.SUNDAY.value - today.dayOfWeek.value + 1
+        return missing > 0 && missing == daysLeft
+    }
 
     /** Giorni di fila fino a oggi; se oggi manca ancora, la serie di ieri è ancora viva. */
     fun streak(today: LocalDate = LocalDate.now()): Int {
@@ -81,6 +121,17 @@ data class Habit(
      */
     fun statusLine(now: LocalDateTime): HabitLine {
         val today = now.toLocalDate()
+        if (weekly) {
+            val week = "${weekCount(today)} su $perWeek questa settimana"
+            val streak = weekStreak(today)
+            val text = when {
+                needsReminder(now) -> "Manca oggi · $week"
+                streak > 1 -> "$week · $streak settimane di fila"
+                streak == 1 && weekCount(today) >= perWeek -> "$week · obiettivo raggiunto"
+                else -> week
+            }
+            return HabitLine(text, urgent = needsReminder(now))
+        }
         if (!isDone(today) && now.hour >= Briefing.HABIT_HOUR) {
             val streak = streak(today)
             return HabitLine(if (streak > 0) "Manca oggi · $streak di fila" else "Manca oggi", urgent = true)
@@ -243,11 +294,12 @@ object NotesStore {
         update { d -> d.copy(countdowns = d.countdowns.filter { it.id != item.id } + item) }
     }
 
-    fun saveHabit(id: Long?, title: String) {
+    fun saveHabit(id: Long?, title: String, perWeek: Int = 0) {
         val clean = title.trim().ifEmpty { return }
+        val target = perWeek.coerceIn(0, 6)
         update { d ->
-            if (id == null) d.copy(habits = d.habits + Habit(newId(), clean))
-            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean) else it })
+            if (id == null) d.copy(habits = d.habits + Habit(newId(), clean, perWeek = target))
+            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean, perWeek = target) else it })
         }
     }
 
@@ -419,7 +471,7 @@ object NotesStore {
             val since = LocalDate.now().minusDays(400)
             d.habits.forEach { h ->
                 put(
-                    JSONObject().put("id", h.id).put("title", h.title)
+                    JSONObject().put("id", h.id).put("title", h.title).put("perWeek", h.perWeek)
                         .put("done", JSONArray(h.done.filter { it.isAfter(since) }.sorted().map { it.toString() }))
                 )
             }
@@ -485,6 +537,8 @@ object NotesStore {
                     o.getLong("id"),
                     o.optString("title"),
                     (0 until done.length()).mapNotNull { runCatching { LocalDate.parse(done.getString(it)) }.getOrNull() }.toSet(),
+                    // Le abitudini salvate prima della 1.84 sono tutte quotidiane.
+                    perWeek = o.optInt("perWeek", 0).coerceIn(0, 6),
                 )
             },
             expenses = (0 until expenses.length()).mapNotNull { i ->

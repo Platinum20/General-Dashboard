@@ -122,7 +122,8 @@ object Briefing {
 
         // Abitudini: dal tardo pomeriggio, quelle non ancora fatte oggi (prima c'è tempo).
         if (now.hour >= HABIT_HOUR) {
-            val missing = habits.filter { !it.isDone(date) }
+            // Le settimanali solo quando serve farle oggi per restare nell'obiettivo.
+            val missing = habits.filter { it.needsReminder(now) }
             when {
                 missing.isEmpty() -> Unit
                 missing.size <= 2 -> lines += BriefLine(BriefKind.HABIT, "Ancora da fare oggi: " + missing.joinToString(", ") { it.title })
