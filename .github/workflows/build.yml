@@ -63,6 +63,10 @@ jobs:
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
           echo "SIGNED=true" >> "$GITHUB_ENV"
 
+      - name: Test
+        # I test veloci (nessuna rete): giro fotografico e controlli dal vivo restano spenti.
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
       - name: Compila APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

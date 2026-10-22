@@ -115,6 +115,7 @@ fun HomeScreen(
     onOpenVideo: () -> Unit,
     onOpenService: (MediaService) -> Unit,
     onCustomize: () -> Unit,
+    onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -183,6 +184,50 @@ fun HomeScreen(
         }
     }
 
+    // Una card della pagina; la lista la divide per mettere sotto la prima le cose trovate da sole.
+    val cardContent: @Composable (HomeCard) -> Unit = { card ->
+        when (card) {
+            HomeCard.WEATHER -> WeatherCard(
+                state = weather,
+                hasPermission = hasLocation,
+                onRequestPermission = {
+                    permissionLauncher.launch(
+                        arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
+                    )
+                },
+                onRetry = { WeatherStore.refresh(context, force = true) },
+                onClick = onOpenWeather,
+                briefing = briefing,
+                onOpenBrief = { kind ->
+                    when (kind) {
+                        BriefKind.EVENT -> CalendarRepository.openCalendar(context)
+                        BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
+                        BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
+                        BriefKind.FREE -> Unit
+                    }
+                },
+            )
+            HomeCard.CALENDAR -> CalendarCard(agenda)
+            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
+            HomeCard.COUNTDOWN -> CountdownCard()
+            HomeCard.RECAP -> RecapCard(
+                state = recap,
+                onOpenTheme = {
+                    NewsHistory.init(context)
+                    NewsHistory.markRead(it.headline.link)
+                    onOpenArticle(it.headline)
+                },
+                onOpenAll = onOpenRecap,
+            )
+            HomeCard.MODULES -> Shortcuts(
+                onOpenWeather = onOpenWeather,
+                onOpenRecap = onOpenRecap,
+                onOpenVideo = onOpenVideo,
+                onOpenService = onOpenService,
+            )
+        }
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
@@ -221,48 +266,10 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            items(cards, key = { it.name }) { card ->
-                when (card) {
-                    HomeCard.WEATHER -> WeatherCard(
-                        state = weather,
-                        hasPermission = hasLocation,
-                        onRequestPermission = {
-                            permissionLauncher.launch(
-                                arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION)
-                            )
-                        },
-                        onRetry = { WeatherStore.refresh(context, force = true) },
-                        onClick = onOpenWeather,
-                        briefing = briefing,
-                        onOpenBrief = { kind ->
-                            when (kind) {
-                                BriefKind.EVENT -> CalendarRepository.openCalendar(context)
-                                BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
-                                BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
-                                BriefKind.FREE -> Unit
-                            }
-                        },
-                    )
-                    HomeCard.CALENDAR -> CalendarCard(agenda)
-                    HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
-                    HomeCard.COUNTDOWN -> CountdownCard()
-                    HomeCard.RECAP -> RecapCard(
-                        state = recap,
-                        onOpenTheme = {
-                            NewsHistory.init(context)
-                            NewsHistory.markRead(it.headline.link)
-                            onOpenArticle(it.headline)
-                        },
-                        onOpenAll = onOpenRecap,
-                    )
-                    HomeCard.MODULES -> Shortcuts(
-                        onOpenWeather = onOpenWeather,
-                        onOpenRecap = onOpenRecap,
-                        onOpenVideo = onOpenVideo,
-                        onOpenService = onOpenService,
-                    )
-                }
-            }
+            // La prima card (di solito Adesso), poi le cose trovate da sole in notifiche e SMS, poi le altre.
+            items(cards.take(1), key = { it.name }) { cardContent(it) }
+            item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
+            items(cards.drop(1), key = { it.name }) { cardContent(it) }
         }
         }
     }

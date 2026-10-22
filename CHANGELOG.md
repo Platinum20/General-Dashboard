@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.72.0
+- Nuovo: Compila da solo (Impostazioni > Dati automatici). Canvas legge le notifiche che arrivano sul telefono e ci trova da solo:
+  - pacchi in arrivo con codice e data prevista (Amazon, Poste, BRT, GLS, DHL, mail e SMS dei corrieri); quando arriva "consegnato" il pacco si segna da solo
+  - spese con importo, esercente e categoria (Revolut, banche, Satispay, PayPal, Google Pay, ricevute via mail); niente entrate, rimborsi, codici o pagamenti rifiutati
+  - scadenze e appuntamenti (bollette "scade il…", prenotazioni, visite, biglietti, anche da Gmail) come promemoria con avviso
+- Le cose trovate compaiono in Oggi sotto Adesso ("Trovati per te") e in una notifica silenziosa, con Aggiungi o Ignora; oppure con "Salva senza chiedere" si salvano subito e si possono annullare
+- "Cerca negli SMS": rilegge gli SMS degli ultimi 30 giorni (pagamenti con carta, corrieri, appuntamenti)
+- Le chat (WhatsApp, Telegram…) non vengono lette; niente lascia il telefono
+
 ## 1.71.0
 - Da fare: i tempi si possono scrivere anche a lettere ("tra due ore stendere", "fra dieci minuti tè") e con la mezz'ora ("tra un'ora e mezza uscire")
 

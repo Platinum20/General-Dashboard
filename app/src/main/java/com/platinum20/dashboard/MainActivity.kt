@@ -123,6 +123,7 @@ import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
+import com.platinum20.dashboard.ui.screens.AutoFillScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
@@ -230,6 +231,7 @@ object Routes {
     const val NEWS = "news"
     const val SETTINGS = "settings"
     const val UPDATES = "settings/updates"
+    const val AUTOFILL = "settings/autofill"
     const val WEATHER = "home/weather"
     const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
@@ -502,6 +504,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     },
                     onOpenVideo = { navController.navigate(Routes.VIDEO) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                 )
             }
             composable(Routes.MEDIA) {
@@ -611,7 +614,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                 )
+            }
+            composable(Routes.AUTOFILL) {
+                AutoFillScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.READER,
