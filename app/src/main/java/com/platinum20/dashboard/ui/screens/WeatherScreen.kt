@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Air
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.EditLocationAlt
 import androidx.compose.material.icons.outlined.Masks
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material.icons.outlined.WbTwilight
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -105,9 +107,24 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                 if (state.loading) {
                     CircularProgressIndicator()
                 } else {
-                    Text(state.error ?: "Nessun dato meteo.", textAlign = TextAlign.Center)
+                    Icon(
+                        Icons.Outlined.CloudOff,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(40.dp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        state.error ?: "Meteo non disponibile.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                    )
                     Spacer(Modifier.height(16.dp))
-                    Button(onClick = { WeatherStore.refresh(context, force = true) }) { Text("Riprova") }
+                    // Senza posizione l'uscita più rapida è scegliere una città: il pulsante è subito qui.
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onPickPlace, modifier = Modifier.bouncyPress()) { Text("Scegli località") }
+                        Button(onClick = { WeatherStore.refresh(context, force = true) }, modifier = Modifier.bouncyPress()) { Text("Riprova") }
+                    }
                 }
             }
         } else LazyColumn(
