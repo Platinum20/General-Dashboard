@@ -88,30 +88,11 @@ fun AutoFillCard(onOpenSettings: () -> Unit) {
     AutoFill.init(context)
     val items by AutoFill.items.collectAsStateWithLifecycle()
     val enabled by AutoFill.enabled.collectAsStateWithLifecycle()
-    val introDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     val haptic = rememberHaptic()
     val shown = remember(items) { AutoFillRules.visible(items, System.currentTimeMillis()) }
 
-    if (!enabled) {
-        if (introDismissed) return
-        Section(title = "Compila da solo", action = "Non ora", onAction = { AutoFill.dismissIntro() }) {
-            Row(
-                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable(onClick = onOpenSettings).padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "Pacchi, spese e scadenze presi dalle notifiche di banche, Revolut, corrieri e Gmail. Tutto resta sul telefono.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Spacer(Modifier.width(8.dp))
-                FilledTonalButton(onClick = onOpenSettings) { Text("Attiva") }
-            }
-        }
-        return
-    }
+    // Spento: l'invito ad accenderlo sta in "Da attivare", in fondo a Oggi.
+    if (!enabled) return
     if (shown.isEmpty()) return
 
     val pending = shown.count { it.state == SuggestionState.PENDING }
@@ -236,13 +217,9 @@ fun AutoFillScreen(onBack: () -> Unit) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Compila da solo") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Compila da solo",
+                onBack = onBack,
                 scrollBehavior = scrollBehavior,
             )
         },

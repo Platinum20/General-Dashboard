@@ -131,18 +131,13 @@ fun CalendarScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Calendario") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Calendario",
+                onBack = onBack,
                 actions = {
                     if (granted) {
                         RoundIconButton(Icons.Outlined.CalendarMonth, "Vai a un giorno") { picking = true }
                         RoundIconButton(Icons.Outlined.Add, "Nuovo evento") { onNewEvent(first) }
-                        Spacer(Modifier.width(8.dp))
                     }
                 },
             )

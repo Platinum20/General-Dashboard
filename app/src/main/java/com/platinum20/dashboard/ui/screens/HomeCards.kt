@@ -71,6 +71,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.platinum20.dashboard.autofill.AutoFill
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.layout.PaddingValues
 
 /** Gli impegni di oggi e di domani, condivisi tra "Adesso" e l'agenda. */
 class AgendaState(
@@ -124,6 +130,74 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
 private fun hideAgenda(context: Context) {
     AppSettings.setCardVisible(HomeCard.CALENDAR, false)
     Toast.makeText(context, "Agenda nascosta: la riaccendi da Personalizza", Toast.LENGTH_LONG).show()
+}
+
+/**
+ * Le cose ancora da accendere (Compila da solo, permesso del calendario), tutte in una card in fondo a Oggi
+ * invece di occupare la parte alta della pagina. Sparisce quando non resta niente.
+ */
+@Composable
+fun SetupCard(agenda: AgendaState, askAgenda: Boolean, onOpenAutoFill: () -> Unit) {
+    val context = LocalContext.current
+    AutoFill.init(context)
+    val autoFillOn by AutoFill.enabled.collectAsStateWithLifecycle()
+    val introDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
+    val showAutoFill = !autoFillOn && !introDismissed
+    val showAgenda = askAgenda && !agenda.granted
+    if (!showAutoFill && !showAgenda) return
+    Section(title = "Da attivare") {
+        if (showAutoFill) {
+            SetupRow(
+                icon = Icons.Outlined.AutoAwesome,
+                accent = TileAccent.PURPLE,
+                title = "Compila da solo",
+                subtitle = "Pacchi, spese e scadenze dalle notifiche. Resta tutto sul telefono",
+                button = "Attiva",
+                onClick = onOpenAutoFill,
+                onDismiss = { AutoFill.dismissIntro() },
+            )
+        }
+        if (showAutoFill && showAgenda) RowDivider()
+        if (showAgenda) {
+            SetupRow(
+                icon = Icons.Outlined.Event,
+                accent = TileAccent.BLUE,
+                title = "Agenda",
+                subtitle = "Gli impegni di oggi qui in Oggi",
+                button = "Consenti",
+                onClick = agenda.requestPermission,
+                onDismiss = { hideAgenda(context) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun SetupRow(
+    icon: ImageVector,
+    accent: TileAccent,
+    title: String,
+    subtitle: String,
+    button: String,
+    onClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.width(8.dp))
+        FilledTonalButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 14.dp)) { Text(button) }
+        IconButton(onClick = onDismiss, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Outlined.Close, contentDescription = "Non ora", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 @Composable

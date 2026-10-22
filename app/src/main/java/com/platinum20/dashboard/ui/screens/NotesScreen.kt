@@ -96,6 +96,13 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.foundation.border
 
 /** Le schede della sezione Note, nell'ordine in cui si usano di più. */
 enum class NotesTabs(val label: String, val addLabel: String?) {
@@ -108,33 +115,30 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
 }
 
 /**
- * Le sei schede delle Note, sottolineate come un indice: stanno in una riga che scorre
- * e la scelta resta sempre visibile (la riga scorre da sola fino alla scheda attiva).
+ * Le sei schede delle Note come pillole, uguali ai filtri delle News: stanno in una riga che scorre
+ * e la riga si sposta da sola per tenere in vista la scheda attiva.
  */
 @Composable
 private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
     val haptic = rememberHaptic()
-    ScrollableTabRow(
-        selectedTabIndex = selected.ordinal,
-        edgePadding = 16.dp,
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        indicator = { positions ->
-            TabRowDefaults.SecondaryIndicator(
-                Modifier.tabIndicatorOffset(positions[selected.ordinal]),
-                height = 2.5.dp,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) },
+    val scroll = rememberScrollState()
+    val chipX = remember { mutableStateMapOf<NotesTabs, Int>() }
+    LaunchedEffect(selected) {
+        chipX[selected]?.let { x -> scroll.animateScrollTo((x - 48).coerceAtLeast(0)) }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(scroll)
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         NotesTabs.entries.forEach { t ->
-            Tab(
+            CanvasChip(
                 selected = selected == t,
                 onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
-                selectedContentColor = MaterialTheme.colorScheme.onSurface,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                text = { Text(t.label, style = MaterialTheme.typography.titleSmall) },
+                label = t.label,
+                modifier = Modifier.onGloballyPositioned { chipX[t] = it.positionInParent().x.toInt() },
             )
         }
     }
@@ -413,7 +417,14 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                             haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
                             NotesStore.toggleHabit(habit.id)
                         },
-                        modifier = Modifier.size(48.dp),
+                        // Da fare: cerchio col bordo del colore del tema; fatta: pieno.
+                        colors = IconButtonDefaults.filledIconToggleButtonColors(
+                            containerColor = MaterialTheme.colorScheme.card,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                        ),
+                        modifier = Modifier
+                            .size(48.dp)
+                            .border(1.5.dp, if (doneToday) Color.Transparent else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape),
                     ) {
                         Icon(Icons.Outlined.Check, contentDescription = if (doneToday) "Fatta oggi" else "Segna fatta oggi")
                     }

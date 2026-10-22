@@ -93,13 +93,9 @@ fun UpdatesScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Aggiornamenti") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Aggiornamenti",
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = viewModel::refreshReleases, enabled = !state.loadingReleases) {
                         Icon(Icons.Outlined.Refresh, contentDescription = "Ricarica changelog")

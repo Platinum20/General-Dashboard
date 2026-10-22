@@ -178,7 +178,8 @@ fun HomeScreen(
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
-            HomeCard.CALENDAR -> agenda.hasContent
+            // Senza permesso l'Agenda non occupa un posto in pagina: la richiesta va in "Da attivare" in fondo.
+            HomeCard.CALENDAR -> agenda.granted && agenda.hasContent
             HomeCard.COUNTDOWN -> notes.soon.isNotEmpty()
             else -> true
         }
@@ -272,6 +273,13 @@ fun HomeScreen(
             items(cards.take(1), key = { it.name }) { cardContent(it) }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
             items(cards.drop(1), key = { it.name }) { cardContent(it) }
+            item(key = "setup") {
+                SetupCard(
+                    agenda = agenda,
+                    askAgenda = HomeCard.CALENDAR in layout.visible,
+                    onOpenAutoFill = onOpenAutoFill,
+                )
+            }
         }
         }
     }

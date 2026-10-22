@@ -53,13 +53,9 @@ fun RecapScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Il punto del giorno") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Il punto del giorno",
+                onBack = onBack,
             )
         },
     ) { inner ->
