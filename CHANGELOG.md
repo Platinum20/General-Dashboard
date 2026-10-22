@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.21.0
+- Oggi risponde a "cosa mi serve sapere adesso?": sotto il meteo la sezione Adesso con poche righe che cambiano con l'ora (prossimo impegno, pioggia in arrivo, promemoria scaduti o in scadenza, date di oggi; la sera il meteo e il primo impegno di domani). Tocca una riga per aprire il dettaglio
+- Le card vuote spariscono: niente più "Nessun impegno oggi"; "In arrivo" compare solo con date entro una settimana
+- La sera, finiti gli impegni di oggi, l'agenda mostra quelli di domani
+- Le scorciatoie sono nascoste di default (ripetevano la barra in basso): si riaccendono da Personalizza
+- Widget: le righe di Adesso sotto il meteo; la notifica del mattino mostra in chiaro la riga più utile
+- News: in cima "N nuove dall'ultima visita" e un separatore "Già viste"; gli articoli già aperti sono attenuati
+- Note: i promemoria sono raggruppati in Scaduti, Oggi, Prossimi giorni e Senza scadenza
+- Oggi: tolto il pulsante "Personalizza questa schermata" in fondo, che ripeteva l'icona in alto
+
 ## 1.20.0
 - News: Il Post di nuovo raggiungibile. Il sito bloccava le richieste dell'app come se fosse un bot (HTTP 403): ora, quando succede, feed e articoli vengono scaricati con il motore del browser
 

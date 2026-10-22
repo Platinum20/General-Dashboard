@@ -14,6 +14,8 @@ import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.today.BriefKind
+import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
@@ -25,7 +27,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** Widget della schermata Home: meteo, promemoria di oggi e i primi tre temi del giorno. */
+/** Widget della schermata Home: meteo, le righe di "Adesso", i promemoria di oggi e i temi del giorno. */
 class DashboardWidget : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -45,6 +47,7 @@ class DashboardWidget : AppWidgetProvider() {
     companion object {
         private const val PREFS = "widget"
         private const val KEY_HEADLINES = "headlines"
+        private const val KEY_BRIEF = "brief"
 
         fun hasWidgets(context: Context): Boolean = ids(context).isNotEmpty()
 
@@ -76,6 +79,22 @@ class DashboardWidget : AppWidgetProvider() {
             context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit().putString(KEY_HEADLINES, array.toString()).apply()
             updateAll(context)
+        }
+
+        /** Le righe di "Adesso" mostrate sotto il meteo: è la stessa domanda della schermata Oggi. */
+        fun saveBriefing(context: Context, lines: List<BriefLine>) {
+            val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            // I promemoria hanno già la loro riga (sempre aggiornata): qui solo il resto.
+            val raw = JSONArray(lines.filter { it.kind != BriefKind.TASK }.take(2).map { it.text }).toString()
+            if (prefs.getString(KEY_BRIEF, null) == raw) return
+            prefs.edit().putString(KEY_BRIEF, raw).apply()
+            updateAll(context)
+        }
+
+        private fun briefing(context: Context): List<String> {
+            val raw = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_BRIEF, null) ?: return emptyList()
+            return runCatching { JSONArray(raw).let { a -> (0 until a.length()).map { a.getString(it) } } }.getOrDefault(emptyList())
         }
 
         data class Headline(val title: String, val link: String, val source: String)
@@ -113,6 +132,14 @@ class DashboardWidget : AppWidgetProvider() {
                 )
             }
 
+            // "Adesso" senza i promemoria: quelli hanno la loro riga, che si aggiorna a ogni modifica.
+            val brief = briefing(context)
+            listOf(R.id.widget_brief1, R.id.widget_brief2).forEachIndexed { i, id ->
+                val line = brief.getOrNull(i)
+                views.setViewVisibility(id, if (line == null) View.GONE else View.VISIBLE)
+                if (line != null) views.setTextViewText(id, line)
+            }
+
             val tasks = tasksLine(context)
             views.setViewVisibility(R.id.widget_tasks, if (tasks == null) View.GONE else View.VISIBLE)
             if (tasks != null) {
@@ -120,7 +147,8 @@ class DashboardWidget : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_tasks, openApp(context, OpenRequest(OpenRequest.NOTES), 3))
             }
 
-            val news = headlines(context)
+            // Con le righe sopra le notizie scendono a due, per stare nello stesso spazio.
+            val news = headlines(context).take(if (brief.isEmpty() && tasks == null) 3 else 2)
             val rows = listOf(R.id.widget_news1, R.id.widget_news2, R.id.widget_news3)
             views.setViewVisibility(R.id.widget_recap_title, if (news.isEmpty()) View.GONE else View.VISIBLE)
             rows.forEachIndexed { i, id ->

@@ -67,6 +67,8 @@ import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** Sezione "Note": promemoria da spuntare e note libere. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,24 +198,40 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             )
         }
-        val open = tasks.filter { !it.done }
+        // Raggruppati per quando vanno fatti: prima ciò che è scaduto o in scadenza oggi.
+        val now = System.currentTimeMillis()
+        val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        val open = tasks.filter { !it.done }.sortedBy { it.dueAt ?: Long.MAX_VALUE }
+        val groups = listOf(
+            "Scaduti" to open.filter { it.dueAt != null && it.dueAt < now },
+            "Oggi" to open.filter { it.dueAt != null && it.dueAt in now until endOfDay },
+            "Prossimi giorni" to open.filter { it.dueAt != null && it.dueAt >= endOfDay },
+            "Senza scadenza" to open.filter { it.dueAt == null },
+        ).filter { it.second.isNotEmpty() }
         val done = tasks.filter { it.done }
-        items(open, key = { it.id }) { TaskRow(it) }
+        groups.forEach { (label, list) ->
+            // Con un gruppo solo l'intestazione non dice niente.
+            if (groups.size > 1) item(key = "group-$label") { GroupLabel(label, error = label == "Scaduti") }
+            items(list, key = { it.id }) { TaskRow(it) }
+        }
         if (done.isNotEmpty()) {
-            item {
-                Text(
-                    "Completati",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp, top = 16.dp, bottom = 4.dp),
-                )
-            }
+            item { GroupLabel("Completati") }
             items(done, key = { it.id }) { TaskRow(it) }
         }
         if (tasks.isEmpty()) {
             item { EmptyHint("Nessun promemoria. Scrivi qui sopra e premi invio; toccane uno per aggiungere un avviso.") }
         }
     }
+}
+
+@Composable
+private fun GroupLabel(text: String, error: Boolean = false) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 4.dp),
+    )
 }
 
 @Composable

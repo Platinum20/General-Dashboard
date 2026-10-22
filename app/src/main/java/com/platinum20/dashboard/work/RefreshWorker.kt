@@ -12,11 +12,12 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
+import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.widget.DashboardWidget
 import java.util.concurrent.TimeUnit
 
-/** Aggiorna meteo e temi del giorno in background, per il widget. */
+/** Aggiorna meteo, "Adesso" e temi del giorno in background, per il widget. */
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -25,6 +26,7 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             val result = NewsStore.load(force = true)
             DashboardWidget.saveRecap(applicationContext, NewsRecap.build(result.items))
         }
+        runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext, max = 6)) }
         DashboardWidget.updateAll(applicationContext)
         return if (weather.isFailure && news.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }

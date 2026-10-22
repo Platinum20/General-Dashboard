@@ -26,6 +26,7 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
@@ -101,7 +102,9 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             lines += "📰 Il punto del giorno"
             themes.take(3).forEach { lines += "• ${it.headline.title}" }
         }
-        val summary = lines.firstOrNull { it.isNotBlank() } ?: "Apri la Dashboard per il riepilogo della giornata."
+        // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella schermata Oggi.
+        val brief = runCatching { Briefing.load(context, relative = true, max = 1) }.getOrDefault(emptyList()).firstOrNull()
+        val summary = brief?.text ?: lines.firstOrNull { it.isNotBlank() } ?: "Apri la Dashboard per il riepilogo della giornata."
 
         ensureChannel(context)
         val intent = Intent(context, MainActivity::class.java)
