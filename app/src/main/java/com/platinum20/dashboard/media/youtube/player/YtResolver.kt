@@ -50,6 +50,24 @@ data class YtChapter(val title: String, val startSec: Int)
 
 data class YtComment(val author: String, val text: String, val likes: Int, val date: String, val avatar: String, val replies: Int)
 
+/** Stato dei commenti sotto il video: un errore di rete non deve sembrare "nessun commento". */
+sealed interface YtComments {
+    data object Loading : YtComments
+    data object Failed : YtComments
+    data object Empty : YtComments
+    data class Loaded(val list: List<YtComment>) : YtComments
+
+    companion object {
+        /** null = richiesta ancora in corso. */
+        fun from(result: Result<List<YtComment>>?): YtComments = when {
+            result == null -> Loading
+            result.isFailure -> Failed
+            result.getOrThrow().isEmpty() -> Empty
+            else -> Loaded(result.getOrThrow())
+        }
+    }
+}
+
 /**
  * Ricava i flussi di un video con NewPipe Extractor (lo stesso di NewPipe): niente pagina web,
  * niente pubblicità, il video si riproduce con il player di Android.

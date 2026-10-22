@@ -88,7 +88,11 @@ object YtPlayer {
     /** Video da far partire uno dopo l'altro (link), impostati dalla schermata del player. */
     var queue: List<String> = emptyList()
 
-    fun player(context: Context): ExoPlayer = exo ?: ExoPlayer.Builder(context.applicationContext)
+    // Sempre il contesto dell'applicazione: il listener vive quanto il player e non deve tenere
+    // in memoria un'Activity (né usarla dopo che è stata chiusa, a fine video).
+    fun player(context: Context): ExoPlayer = exo ?: newPlayer(context.applicationContext)
+
+    private fun newPlayer(context: Context): ExoPlayer = ExoPlayer.Builder(context)
         .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
         .setHandleAudioBecomingNoisy(true)
         .setWakeMode(C.WAKE_MODE_NETWORK)
@@ -120,12 +124,12 @@ object YtPlayer {
             })
         }
 
+    /**
+     * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
+     * video messo in pausa resta in pausa (si riprende con il tasto play).
+     */
     fun play(context: Context, link: String) {
-        val id = YtResolver.videoId(link)
-        if (id != null && _now.value?.stream?.id == id && _now.value?.error == null) {
-            player(context).play()
-            return
-        }
+        if (isLoaded(_now.value, link)) return
         NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
         job?.cancel()
         _now.value = YtNow(link = link, stream = null)
@@ -161,6 +165,13 @@ object YtPlayer {
         val current = _now.value?.stream?.id
         val index = queue.indexOfFirst { YtResolver.videoId(it) == current }
         queue.getOrNull(index + 1)?.let { play(context, it) }
+    }
+
+    /** Il video di [link] è già nel player e senza errori (anche se in pausa o ancora in caricamento). */
+    internal fun isLoaded(now: YtNow?, link: String): Boolean {
+        val id = YtResolver.videoId(link) ?: return false
+        if (now == null || now.error != null) return false
+        return now.stream?.id == id || (now.stream == null && YtResolver.videoId(now.link) == id)
     }
 
     /** Video finto per le foto automatiche delle schermate (solo test). */
