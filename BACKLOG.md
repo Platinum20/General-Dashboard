@@ -37,29 +37,11 @@ _(Le scrive il "verificatore": vanno fatte per prime. Per ora nessuna segnalazio
 **Fatto quando:** esporto, cancello i dati dell'app, ripristino e ritrovo tutto (anche serie delle abitudini e budget).
 **Test:** serialize → parse identico con tutti i tipi; ripristino da un file di una versione vecchia; file non valido rifiutato senza toccare i dati.
 
-### 3. Punto del giorno: titoli che si leggono · Oggi / Punto del giorno · S
-**Perché:** nelle foto ogni tema ha per titolo tre parole chiave ("Tir · Sospesa · Protesta", "Bancarotta · Chiedono · Santanchè", "Russo · Morti · Kiev"): sembrano errori e non dicono niente in 5 secondi. Il titolo vero è subito sotto, ripetuto.
-**Cosa fare:** in `HomeScreen.kt` (`RecapRow`) e `RecapScreen.kt` usare `theme.headline.title` come titolo del tema e togliere la riga di parole chiave (o tenerla solo come piccola etichetta della fonte più citata). Valutare in `NewsRecap.kt` di scegliere come headline l'articolo più "centrale" (più parole chiave in comune) invece del primo.
-**Fatto quando:** nelle foto di Oggi e del Punto del giorno ogni tema si legge come un titolo di giornale, senza la terna di parole.
-**Test:** in `NewsRecap` la headline scelta è quella più centrale su un insieme fisso di titoli.
-
-### 4. "Rimanda" nelle notifiche dei promemoria · Note / notifiche · S
-**Perché:** la notifica di un promemoria ha solo "Fatto". Se suona in un momento sbagliato l'unica scelta è ignorarla, e il promemoria diventa "scaduto" in rosso.
-**Cosa fare:** in `TaskReminderWorker.kt` due azioni in più: "Tra 1 ora" e "Domani 9:00" (BroadcastReceiver che chiama `NotesStore.setTaskDue`). Per i ricorrenti sposta solo questa occorrenza.
-**Fatto quando:** dalla notifica rimando di un'ora, la notifica sparisce e torna dopo un'ora; in Note la scadenza è aggiornata.
-**Test:** calcolo della nuova scadenza ("tra 1 ora", "domani 9:00") anche per i ricorrenti, che spostano solo l'occorrenza.
-
 ### 5. Spese fisse e abbonamenti · Note > Spese (+ Adesso) · M
 **Perché:** affitto, bollette, Netflix, Spotify sono la parte più grossa delle spese ma vanno riscritte ogni mese a mano, e il budget non le prevede. Il parser dei ricorrenti esiste già per i promemoria.
 **Cosa fare:** nelle Spese "ogni mese il 5 affitto 650" (riusare `Repeat` e `QuickParse`) crea una spesa fissa: si aggiunge da sola il giorno giusto (al primo avvio dopo la data), con un'icona di ripetizione. In cima al mese "Fisse: 720 € · Variabili: 115,90 €"; il budget giornaliero calcola solo sulle variabili. In Adesso, il giorno prima: "Domani addebito: Netflix 12,99 €".
 **Fatto quando:** creo una spesa fissa, cambio data del telefono al mese dopo, e la spesa compare da sola nel totale.
 **Test:** parse di "ogni mese il 5 affitto 650"; generazione delle spese fisse saltando mesi (anche il 31 in febbraio); totale fisse/variabili e budget.
-
-### 6. Oggi: la card "Da fare" mostra solo quello che conta · Oggi · S
-**Perché:** nelle foto la card elenca tutti e 5 i promemoria, anche quelli senza scadenza, e ripete in piccolo la scheda Note. Oggi dovrebbe rispondere "cosa devo fare adesso?".
-**Cosa fare:** in `HomeCards.kt` mostrare scaduti, di oggi e (dalle 18) di domani; poi al massimo 2 senza scadenza; sotto "+ altri N in Note" che apre la scheda. Il campo "Aggiungi un promemoria" resta.
-**Fatto quando:** con 10 promemoria la card non supera 5 righe e i primi sono sempre quelli con scadenza più vicina.
-**Test:** funzione pura che sceglie le righe della card (scaduti, oggi, dalle 18 domani, massimo 2 senza scadenza, "altri N").
 
 ### 7. Abitudini con obiettivo settimanale · Note > Abitudini · M
 **Perché:** molte abitudini reali non sono quotidiane ("palestra 3 volte a settimana", "chiamare la nonna 1 volta"): oggi l'unica scelta è "ogni giorno", così la serie si rompe e l'app rimprovera alle 17 anche quando sei in pari.
@@ -78,18 +60,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Per ora nessuna segnalazio
 **Cosa fare:** nell'editor delle note (`NotesScreen.kt`/`NoteEditor`) le righe che iniziano con "- " o "[ ]" diventano caselle spuntabili; pulsante "Lista" nella barra dell'editor che trasforma le righe selezionate. Nella lista delle note si vede "3 di 7 fatti". Salvato come testo semplice (`[x] ` / `[ ] `) così resta compatibile.
 **Fatto quando:** creo una lista della spesa, spunto due voci, chiudo e riapro: le spunte ci sono e in lista leggo "2 di 5".
 **Test:** conversione testo ↔ righe spuntabili e conteggio "2 di 5".
-
-### 10. Oggi: niente cerchio di caricamento sopra le card · Oggi · S
-**Perché:** nelle foto di Oggi (anche `main/26`, 1.63.0) c'è un cerchio di caricamento appoggiato sopra la card del meteo accanto a "Roma", e scorrendo in fondo lo stesso cerchio copre la riga "Pagare l'affitto": sembra un difetto. È l'indicatore del "trascina per aggiornare" acceso dal caricamento automatico (`isRefreshing = weather.loading || recap.refreshing`, `HomeScreen.kt` ~199).
-**Cosa fare:** accendere l'indicatore del pull solo quando il caricamento parte da un trascinamento; per il caricamento automatico basta il piccolo indicatore già presente dentro la card (`HomeScreen.kt` ~427). Stessa cosa da controllare in News e Meteo.
-**Fatto quando:** nelle foto di Oggi non c'è più il cerchio sopra la card; trascinando in basso l'indicatore compare come prima.
-**Test:** nessuno di logica; controllare nelle foto del giro fotografico.
-
-### 11. Agenda: "Non ora" sulla richiesta del calendario · Oggi · S
-**Perché:** senza permesso del calendario la card "Agenda di oggi" con "Consenti" resta lì per sempre al secondo posto: occupa spazio in una schermata che deve mostrare solo cose utili.
-**Cosa fare:** in `HomeCards.kt` accanto a "Consenti" un "Non ora" che nasconde la card (aggiunge `HomeCard.CALENDAR` a `hidden`, riattivabile da Personalizza) con un messaggio "La riaccendi da Personalizza". Se il permesso viene negato due volte, idem automaticamente.
-**Fatto quando:** tocco "Non ora" e la card sparisce; in Personalizza l'interruttore dell'Agenda è spento.
-**Test:** logica "negato due volte → nascondi" in una funzione pura.
 
 ### 12. Blocco pubblicità fuori da Media · Media / Impostazioni · S
 **Perché:** nelle foto di Media l'ultima card è "Blocco pubblicità" con contatori, numero di regole e "Aggiorna": è un'impostazione da toccare una volta, non qualcosa da riprendere o avviare. In Media ruba spazio alla futura card "Riprendi" (voce 1) e confonde lo scopo della schermata.
@@ -156,6 +126,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Per ora nessuna segnalazio
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.74.0 · "Rimanda" (1 ora / domani 9:00) nelle notifiche dei promemoria, anche per i ricorrenti (ex 4); Oggi "Da fare" solo scaduti/oggi/domani dalle 18 + max 2 senza scadenza (ex 6); Punto del giorno con il titolo dell'articolo più centrale (ex 3); Agenda "Non ora" e card nascosta dopo due rifiuti (ex 11); cerchio del pull solo dopo il trascinamento in Oggi e Meteo (ex 10); test nuovi NewsRecapTest, SnoozeTest, TodayTasksTest, CalendarAskTest
 - 1.64.0 (in uscita) · Da fare: numeri a lettere e "un'ora e mezza" nelle scadenze scritte
 - 1.63.0 · Adesso e widget: quanti anni compie chi festeggia oggi
 - 1.61.0 · Date: "compie 30 anni" per compleanni e anniversari
