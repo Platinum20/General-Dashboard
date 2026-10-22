@@ -13,7 +13,7 @@ _Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.93.0
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.91.0, giro fotografico `main/46`, 2026-10-22.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.93.0, giro fotografico `main/50`, 2026-10-22.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
@@ -26,6 +26,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V8. Il giro fotografico non vede il nuovo player di YouTube né Spotify che suona · giro fotografico · gravità media
 - **Versione:** 1.82.0-1.86.0 (giro `main/41`)
+- **Aggiornamento 1.93.0 (`main/50`):** mancano anche "Riprendi" in cima a Media (`30_media` è senza cronologia, quindi la sezione non si vede mai) e la riga "Riprendi: …" in Adesso; la card "Domani" si vede solo perché il giro gira dopo le 18 (aggiungere un orario fisso alle 19 per il giro, altrimenti sparisce nei giri del mattino). L'avviso pioggia è solo una notifica: verificato dal codice e da `RainAlertTest`. Aggiungere `30b_media_riprendi` con un video e una radio finti in `MediaHistory`.
 - **Aggiornamento 1.90.0 (`main/46`):** il player e il feed di YouTube ora sono fotografati da `YouTubeTour` (`youtube_iscrizioni`, `youtube_player`: IN DIRETTA, Short, capitoli, qualità, velocità, si vedono bene). Restano da fare: stato di errore del player con "Riprova", `30b_media_in_corso`, riga urgente in Adesso, e le due foto YouTube anche al buio.
 - **Cosa non va:** la parte più grande di queste versioni non ha nessuna foto: schermata del player YouTube (`YouTubeWatchScreen`: video, titolo, barra col minutaggio, menu qualità, capitoli, commenti, "Prossimi dai canali che segui", stato di errore con "Riprova"), scheda Home e filtro "Solo dirette" del feed, bollino IN DIRETTA, il blocco "brano in riproduzione" di Media col colore del tema (1.86), una riga urgente in arancio dentro "Adesso" (1.86). `31_youtube` e `32_spotify` mostrano solo "Collega il tuo...", `30_media` è senza brano in corso.
 - **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`
@@ -49,6 +50,14 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** chiamare `applyFixedExpenses()` anche a ogni ritorno in primo piano (`ON_RESUME` in `MainActivity` o `ProcessLifecycleOwner`), nel `RefreshWorker`/`MorningWorker` e dopo `replaceAll`.
 - **Test che lo impedisce:** test in `NotesStoreTest`: dopo `replaceAll` con una fissa scaduta la spesa c'è; test che `applyFixedExpenses(today)` chiamata due volte lo stesso giorno non la duplica.
 
+### V20. La sera "Adesso" e la card "Domani" dicono le stesse cose · Oggi · gravità media
+- **Versione:** 1.93.0 (foto `01_oggi`, `05_oggi_fondo`, `scuro_01_oggi`, `scuro_05_oggi_fondo` di `main/50`)
+- **Cosa non va:** dalle 18 "Adesso" continua ad aggiungere le sue righe su domani (`Briefing.kt` ~righe 100-160: "Domani 22° / 10°, pioggia 60%", "Domani alle …", "Domani: compleanno", "Domani arriva", "Domani addebito") e subito sotto la nuova card "Domani" ripete meteo, impegni, date e addebiti. Nel giro: "Domani 22° / 10°, pioggia 60%" in Adesso e "Rovesci · Pioggia 60% · 22° / 10°" nella card; "Chiamare il commercialista" compare tre volte (card Domani, Da fare con "Domani 09:00"). In più la riga meteo di Adesso usa l'icona del sole anche con pioggia al 60%.
+- **Dove:** `today/Briefing.kt` (parte serale), `ui/screens/HomeScreen.kt` (dove si mostrano Adesso e TomorrowCard).
+- **Come riprodurre:** aprire Oggi dopo le 18 con le previsioni di domani e un promemoria per domani.
+- **Cosa fare:** quando la card Domani c'è (`Tomorrow.build` non null), togliere da Adesso le righe "Domani …" che la card già mostra (meteo, impegni, date, addebiti, pacchi se aggiunti alla card); l'icona della riga meteo deve venire dal codice meteo (`weatherIcon(code)`), non sempre il sole.
+- **Test che lo impedisce:** in `BriefingTest`, `build(...)` alle 19 con `tomorrowCard = true` non contiene righe che iniziano con "Domani"; un test che con pioggia ≥ 50% la riga meteo non ha l'icona del sole; foto `01_oggi` di sera.
+
 ### V15. Backup: esportazione su Drive e notifica del mattino dopo il ripristino · Impostazioni › Dati · gravità bassa
 - **Versione:** 1.88.0
 - **Cosa non va:** (1) `Backup.export` apre il file con `openOutputStream(uri, "wt")`: alcuni fornitori di documenti (Google Drive in particolare) rifiutano la modalità "wt" e l'esportazione finisce con "non riuscita" senza dire perché. (2) Dopo "Ripristina da backup" le impostazioni della notifica del mattino cambiano ma `MorningWorker.schedule` non viene richiamato: la notifica parte (o smette) solo dal prossimo avvio dell'app. Anche il widget non si aggiorna. (3) "Rimanda" di notte: l'etichetta si calcola quando la notifica viene mostrata (`TaskReminderWorker.kt:70`), l'orario quando si tocca (riga 131). Notifica alle 4:50 con "Stamattina 9:00", toccata alle 5:10: rimanda a domani 9:00, non a stamattina.
@@ -63,6 +72,14 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Dove:** `ui/screens/NotesScreen.kt` / `NotesExtras.kt` (editor della nota).
 - **Cosa fare:** prima riga in `titleLarge`/grassetto (campo titolo separato o stile sulla prima riga), come nella lista.
 - **Test che lo impedisce:** foto del giro `26_nota`.
+
+### V21. Card "Domani": frase in cima quasi mai visibile, e dopo mezzanotte dice "Domani" per oggi · Oggi › Domani · gravità bassa
+- **Versione:** 1.93.0 (foto `01_oggi` di `main/50`)
+- **Cosa non va:** (1) la frase in cima ("Domani 8:30 Dentista, pioggia dalle 10") la costruisce `Tomorrow.headline` solo con un evento del calendario o con `rainFrom`: un promemoria con orario (come "9:00 Chiamare il commercialista" nel giro) non conta, e la pioggia al 60% del giorno senza un'ora ≥ 50% non conta, quindi nel giro la frase non c'è. (2) Tra mezzanotte e le 3 `targetDay` è oggi, ma il titolo della sezione resta "Domani · venerdì 23" e la frase inizia con "Domani".
+- **Dove:** `today/Tomorrow.kt` (`headline`, `targetDay`), `ui/screens/TomorrowCard.kt` (titolo `"Domani · $dayName"`).
+- **Come riprodurre:** (1) dopo le 18 senza calendario collegato e un promemoria per domani alle 9: nessuna frase in cima; (2) all'1 di notte: la card dice "Domani · venerdì 23" ma venerdì 23 è oggi.
+- **Cosa fare:** nella frase usare anche il primo promemoria con orario se non c'è un evento; dopo mezzanotte titolo "Oggi · …" (o "Più tardi"), frase senza "Domani".
+- **Test che lo impedisce:** `TomorrowTest`: con solo un promemoria alle 9 la frase è "Domani 9:00 …"; alle 1:00 il titolo/frase non contengono "Domani".
 
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
@@ -81,6 +98,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V7. Vetro della barra in basso: da controllare sul telefono · tutte le schermate · gravità bassa
 - **Versione:** 1.80.0, più evidente dalla 1.85.0 (velo più leggero, niente ombra)
+- **Aggiornamento 1.92.0 (`main/50`):** il velo è ancora più leggero (22% in chiaro, 30% al buio col vetro liquido): nel giro `10_news` il titolo "Fine vita, … legge sul …" passa sotto le icone della barra e si legge come se fosse sopra, più che in `main/46`. Anche il + ora è di vetro (primario al 72-78%): al buio è lilla chiaro, si vede bene. Da guardare sul telefono con una pagina piena di testo sotto la barra.
 - **Aggiornamento 1.91.0:** con il vetro liquido (Android 13+, `LiquidGlass.kt`) la barra sfoca solo di 6 dp e la lente si disegna solo col disegno accelerato: nel giro fotografico (Robolectric, disegno software) non si vede mai, quindi rifrazione e leggibilità vanno guardate sul telefono. Se lo shader non si compila resta la sfocatura.
 - **Cosa non va:** nel giro fotografico (dove la sfocatura non viene disegnata) il testo sotto la barra flottante si vede attraverso la tinta al 55-62% e si sovrappone alle icone (News `10_news`, Oggi `01_oggi`). Su Android 12+ la sfocatura vera dovrebbe coprirlo, ma se la sfocatura non parte (risparmio energetico, GPU, `hazeSource` mancante in qualche schermata) resta un testo leggibile male sotto le icone. Il `fallbackTint` al 96% vale solo sotto Android 12.
 - **Dove:** `ui/screens/Common.kt` ~righe 336-350, `MainActivity.kt` ~righe 496-520.

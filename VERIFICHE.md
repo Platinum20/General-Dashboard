@@ -5,6 +5,8 @@ I problemi trovati sono in BACKLOG.md, sezione "Problemi trovati dal verificator
 
 | Versione | Data | Giro fotografico | Esito |
 |---|---|---|---|
+| 1.93.0 | 2026-10-22 | `main/50` | Funziona: card "Domani" dalle 18 (anche al buio), "Avvisami se sta per piovere" in Impostazioni › Meteo, News con "Aggiornate 4 min fa", Da fare senza X (si scorre per eliminare). Riprendi in Media e in Adesso, avviso pioggia e link con t= solo dal codice e dai test (nuovi test verdi). Problemi: V20 media, V21 bassa; foto mancanti in V8 |
+| 1.92.0 | 2026-10-22 | `main/50` | Funziona: + della barra di vetro colorato col tema, senza ombra, chiaro e scuro. Lente e lucentezza del vetro liquido non fotografabili (Robolectric disegna in software). Problemi: velo ancora più leggero, testo sotto la barra più visibile (V7 bassa) |
 | 1.91.0 | 2026-10-22 | `main/46` | Funziona: titoli grandi con freccia nelle pagine interne (02, 03, 04, 41, 44), schede delle Note a pillole che scorrono a quella aperta, spese in una card, Personalizza con icone e interruttore a destra, anche al buio. Vetro liquido e icona nuova non fotografabili (V7). Problemi: V16 V19 bassa; `43_compila_da_solo` saltata (V1) |
 | 1.90.0 | 2026-10-22 | `main/46` | Funziona: feed YouTube rifatto (schede in una fila, anteprime grandi, IN DIRETTA, "In pausa" in cima) e player con comandi propri, capitoli, qualità e velocità (foto `youtube_*`). Accesso Spotify con OAuth ufficiale: solo dal codice (redirect gestito in `LoginScreen`). Problemi: V18 bassa |
 | 1.88.0 | 2026-10-22 | `main/46` | Funziona: riga "2 cose da attivare" in fondo a Oggi, abitudini con cerchio vuoto e "Manca oggi" in arancio, gruppo Dati con backup; liste, ricerca, spese fisse, eventi dal +, Rimanda di notte solo dal codice e dai test (nuovi test verdi). Problemi: V13 V14 media, V15 V17 bassa |
@@ -22,3 +24,4 @@ I problemi trovati sono in BACKLOG.md, sezione "Problemi trovati dal verificator
 Base della prima verifica: 1.71.0 (giro `main/26`). Test del giro `main/29`: 138, 0 falliti, 1 ignorato.
 Test del giro `main/41` (main 1.86.0): 139, 0 falliti, 2 ignorati (`YouTubeNativeCheck` gira solo con la rete in `ytcheck.yml`).
 Test del giro `main/46` (main 1.91.0): 225, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).
+Test del giro `main/50` (main 1.93.0): 262, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).
