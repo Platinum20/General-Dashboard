@@ -74,8 +74,16 @@ object YtHistory {
         persist()
     }
 
-    fun clear() {
+    /** Svuota tutto e restituisce quello che c'era, per poterlo rimettere con [restore]. */
+    fun clear(): Map<String, YtWatched> {
+        val previous = _items.value
         _items.value = emptyMap()
+        persist()
+        return previous
+    }
+
+    fun restore(previous: Map<String, YtWatched>) {
+        _items.value = previous + _items.value
         persist()
     }
 

@@ -45,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -74,12 +75,17 @@ import coil3.compose.AsyncImage
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.youtube.YtHistory
+import com.platinum20.dashboard.media.youtube.YtWatched
+import com.platinum20.dashboard.media.MediaHistory
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
@@ -618,26 +624,65 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
     val ids = watched.map { it.id }.toSet()
     val fromYouTube = web.data.orEmpty().filter { it.id !in ids }
     val state = Loadable(data = watched.map { it.id } + fromYouTube.map { it.id }, loading = web.loading && watched.isEmpty())
-    FeedList(state, empty = "Ancora nessun video guardato") {
-        if (watched.isNotEmpty()) {
-            item(key = "local-h") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) { SectionHeader("Guardati qui") }
-                    TextButton(onClick = { YtHistory.clear() }) { Text("Svuota") }
-                }
-            }
-            items(watched, key = { "l" + it.id }) { w ->
-                val video = YtVideo(
-                    id = w.id, title = w.title, channel = w.channel, channelId = "", published = null,
-                    durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
-                    uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
-                )
-                VideoRow(video, onClick = { onPlay(video.watchUrl) })
+    // Svuotare cancella anche i punti in cui eri: prima si chiede, poi per qualche secondo si può annullare.
+    var confirmClear by remember { mutableStateOf(false) }
+    var undo by remember { mutableStateOf<Pair<Map<String, YtWatched>, List<ResumeItem>>?>(null) }
+    LaunchedEffect(undo) {
+        if (undo != null) {
+            delay(6_000)
+            undo = null
+        }
+    }
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Svuotare la cronologia?") },
+            text = { Text("${watched.size} video guardati qui e i punti in cui eri. Spariscono anche da Riprendi in Media.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClear = false
+                    MediaHistory.init(context)
+                    undo = YtHistory.clear() to MediaHistory.removeKind(ResumeKind.YOUTUBE)
+                }) { Text("Svuota") }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Annulla") } },
+        )
+    }
+    Column(Modifier.fillMaxSize()) {
+        undo?.let { (videos, resume) ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Cronologia svuotata", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                TextButton(onClick = {
+                    YtHistory.restore(videos)
+                    MediaHistory.restore(resume)
+                    undo = null
+                }) { Text("Annulla") }
             }
         }
-        if (fromYouTube.isNotEmpty()) {
-            item(key = "web-h") { SectionHeader("Dalla tua cronologia di YouTube") }
-            items(fromYouTube, key = { "w" + it.id }) { VideoRow(it, onClick = { onPlay(it.watchUrl) }) }
+        FeedList(state, empty = "Ancora nessun video guardato") {
+            if (watched.isNotEmpty()) {
+                item(key = "local-h") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f)) { SectionHeader("Guardati qui") }
+                        TextButton(onClick = { confirmClear = true }) { Text("Svuota") }
+                    }
+                }
+                items(watched, key = { "l" + it.id }) { w ->
+                    val video = YtVideo(
+                        id = w.id, title = w.title, channel = w.channel, channelId = "", published = null,
+                        durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
+                        uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
+                    )
+                    VideoRow(video, onClick = { onPlay(video.watchUrl) })
+                }
+            }
+            if (fromYouTube.isNotEmpty()) {
+                item(key = "web-h") { SectionHeader("Dalla tua cronologia di YouTube") }
+                items(fromYouTube, key = { "w" + it.id }) { VideoRow(it, onClick = { onPlay(it.watchUrl) }) }
+            }
         }
     }
 }
