@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.54.0
+- Spese: correggendo una spesa sopra i mille euro ("1.234,50") le modifiche venivano perse senza avviso; ora l'importo è riconosciuto
+- Spese: se l'importo non è valido il dialog lo dice ("Scrivi un importo, es. 12,50") e Salva resta spento invece di chiudere senza salvare; Invio sulla descrizione salva
+
 ## 1.53.0
 - Note: aprendo una nota, sotto il titolo compare quando l'hai modificata l'ultima volta ("Modificata 2 h fa")
 

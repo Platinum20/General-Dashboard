@@ -246,8 +246,12 @@ private fun dailyLeft(cents: Long): String {
     return Expenses.format((cents / days).coerceAtLeast(0))
 }
 
-private fun centsOf(text: String): Long? =
-    text.replace("€", "").trim().replace(',', '.').toBigDecimalOrNull()?.movePointRight(2)?.toLong()
+private fun centsOf(text: String): Long? {
+    val clean = text.replace("€", "").filterNot { it.isWhitespace() }
+    // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
+    val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean
+    return number.toBigDecimalOrNull()?.movePointRight(2)?.toLong()
+}
 
 @Composable
 private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
@@ -290,6 +294,13 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
     var category by remember { mutableStateOf(expense.category) }
     var date by remember { mutableStateOf(expense.date) }
     var picking by remember { mutableStateOf(false) }
+    val cents = centsOf(amount)?.takeIf { it > 0 }
+    val save = {
+        if (cents != null) {
+            NotesStore.saveExpense(expense.copy(cents = cents, text = text.trim(), category = category, date = date))
+            onDismiss()
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spesa") },
@@ -299,8 +310,11 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
                     value = amount,
                     onValueChange = { amount = it },
                     suffix = { Text("€") },
+                    // Importo non valido: lo diciamo invece di chiudere senza salvare.
+                    isError = cents == null,
+                    supportingText = if (cents == null) ({ Text("Scrivi un importo, es. 12,50") }) else null,
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -308,7 +322,8 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
                     onValueChange = { text = it },
                     placeholder = { Text("Descrizione") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { save() }),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 ChipRow(
@@ -327,13 +342,7 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val cents = centsOf(amount)
-                if (cents != null && cents > 0) {
-                    NotesStore.saveExpense(expense.copy(cents = cents, text = text.trim(), category = category, date = date))
-                }
-                onDismiss()
-            }) { Text("Salva") }
+            TextButton(onClick = save, enabled = cents != null) { Text("Salva") }
         },
         dismissButton = {
             TextButton(onClick = {
