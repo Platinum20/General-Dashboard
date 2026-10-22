@@ -23,6 +23,8 @@ data class TaskItem(
     val dueAt: Long? = null,
     /** Se si ripete, spuntandolo la scadenza passa alla volta dopo invece di chiuderlo. */
     val repeat: Repeat? = null,
+    /** Scadenza originale di un ricorrente rimandato dalla notifica: la volta dopo si calcola da qui. */
+    val snoozedFrom: Long? = null,
 )
 
 /** Una data da aspettare: compleanni, viaggi, scadenze. Se [yearly] si ripete ogni anno. */
@@ -162,11 +164,11 @@ object NotesStore {
     /** Un promemoria ricorrente non si chiude: passa alla prossima volta. */
     private fun advanceRepeat(task: TaskItem): Boolean {
         val repeat = task.repeat ?: return false
-        val due = task.dueAt ?: return false
+        val due = task.snoozedFrom ?: task.dueAt ?: return false
         val zone = ZoneId.systemDefault()
         val from = Instant.ofEpochMilli(due).atZone(zone).toLocalDateTime()
         val next = repeat.nextAfter(from, LocalDateTime.now()).atZone(zone).toInstant().toEpochMilli()
-        update { d -> d.copy(tasks = d.tasks.map { if (it.id == task.id) it.copy(dueAt = next) else it }) }
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == task.id) it.copy(dueAt = next, snoozedFrom = null) else it }) }
         syncReminder(task.id)
         return true
     }
@@ -176,7 +178,13 @@ object NotesStore {
     }
 
     fun setTaskDue(id: Long, dueAt: Long?) {
-        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(dueAt = dueAt) else it }) }
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(dueAt = dueAt, snoozedFrom = null) else it }) }
+        syncReminder(id)
+    }
+
+    /** "Rimanda" dalla notifica: sposta solo questa volta, anche per i ricorrenti. */
+    fun snoozeTask(id: Long, until: Long) {
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.snoozed(until) else it }) }
         syncReminder(id)
     }
 
@@ -329,6 +337,7 @@ object NotesStore {
                     JSONObject().put("id", it.id).put("text", it.text).put("done", it.done).put("createdAt", it.createdAt)
                         .apply { it.dueAt?.let { due -> put("dueAt", due) } }
                         .apply { it.repeat?.let { r -> put("repeat", r.name) } }
+                        .apply { it.snoozedFrom?.let { s -> put("snoozedFrom", s) } }
                 )
             }
         })
@@ -394,6 +403,7 @@ object NotesStore {
                     o.optLong("createdAt"),
                     if (o.has("dueAt")) o.optLong("dueAt") else null,
                     runCatching { Repeat.valueOf(o.optString("repeat")) }.getOrNull(),
+                    if (o.has("snoozedFrom")) o.optLong("snoozedFrom") else null,
                 )
             },
             notes = (0 until notes.length()).map { i ->
