@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -57,7 +58,9 @@ import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -244,9 +247,17 @@ fun TasksCard(onOpenNotes: () -> Unit) {
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var draft by rememberSaveable { mutableStateOf("") }
     val open = data.openTasks
+    // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
+    var lastDone by remember { mutableStateOf<TaskItem?>(null) }
+    LaunchedEffect(lastDone) {
+        if (lastDone != null) {
+            delay(UNDO_MS)
+            lastDone = null
+        }
+    }
 
     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-        Column(Modifier.padding(vertical = 8.dp)) {
+        Column(Modifier.animateContentSize(Springs.snappy()).padding(vertical = 8.dp)) {
             CardHeader(
                 icon = Icons.Outlined.Checklist,
                 title = if (open.isEmpty()) "Da fare" else "Da fare · ${open.size}",
@@ -260,7 +271,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                 },
             )
             open.take(5).forEach { task ->
-                val done = { haptic(Haptic.CONFIRM); NotesStore.toggleTask(task.id) }
+                val done = { haptic(Haptic.CONFIRM); lastDone = task; NotesStore.toggleTask(task.id) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -282,6 +293,29 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
+            }
+            lastDone?.let { undone ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        if (undone.repeat != null) "Spostato alla prossima volta: ${undone.text}" else "Fatto: ${undone.text}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = {
+                            haptic(Haptic.TICK)
+                            NotesStore.restoreTask(undone)
+                            lastDone = null
+                        },
+                        modifier = Modifier.bouncyPress(),
+                    ) { Text("Annulla") }
+                }
             }
             OutlinedTextField(
                 value = draft,
@@ -321,6 +355,9 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
         color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
     )
 }
+
+/** Per quanto resta visibile "Annulla" dopo una spunta. */
+private const val UNDO_MS = 5_000L
 
 /** In Oggi solo le date vicine: le altre restano in Note > Date. */
 const val SOON_DAYS = 7L

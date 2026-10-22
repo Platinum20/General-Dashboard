@@ -139,6 +139,12 @@ object NotesStore {
         syncReminder(id)
     }
 
+    /** Rimette un promemoria com'era prima della spunta: serve ad "Annulla". */
+    fun restoreTask(task: TaskItem) {
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == task.id) task else it }) }
+        syncReminder(task.id)
+    }
+
     fun setTaskDone(id: Long) {
         val task = task(id) ?: return
         if (!task.done && advanceRepeat(task)) return

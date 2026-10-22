@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.34.0
+- Oggi: dopo aver spuntato un promemoria compare "Annulla" per qualche secondo, così una spunta data per sbaglio si rimette a posto con un tocco (anche per i promemoria ricorrenti)
+
 ## 1.33.0
 - YouTube e Spotify: se il feed non si carica il messaggio è in italiano chiaro ("Nessuna connessione a Internet", "YouTube non risponde, riprova più tardi") invece dei testi tecnici in inglese
 - Accesso a YouTube e collegamento a Spotify: errori comprensibili, senza codici di Google
