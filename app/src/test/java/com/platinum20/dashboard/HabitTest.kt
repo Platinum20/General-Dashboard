@@ -50,3 +50,30 @@ class RepeatTest {
         assertEquals(LocalDateTime.of(2026, 10, 23, 8, 0), Repeat.DAILY.nextAfter(from, LocalDateTime.of(2026, 10, 22, 9, 0)))
     }
 }
+
+class HabitLineTest {
+    private val today = LocalDate.of(2026, 10, 22)
+    private val habit = Habit(1, "Palestra", setOf(today.minusDays(1), today.minusDays(2)))
+
+    @Test fun dimattinaLaSerie() {
+        val line = habit.statusLine(today.atTime(10, 0))
+        assertEquals("2 giorni di fila", line.text)
+        assertFalse(line.urgent)
+    }
+
+    @Test fun dopoLe17MancaOggiInEvidenza() {
+        val line = habit.statusLine(today.atTime(17, 0))
+        assertEquals("Manca oggi · 2 di fila", line.text)
+        assertTrue(line.urgent)
+    }
+
+    @Test fun fattaOggiNienteAvviso() {
+        val line = habit.copy(done = habit.done + today).statusLine(today.atTime(20, 0))
+        assertEquals("3 giorni di fila", line.text)
+        assertFalse(line.urgent)
+    }
+
+    @Test fun maiFattaLaSera() = assertEquals("Manca oggi", Habit(2, "Leggere").statusLine(today.atTime(21, 0)).text)
+
+    @Test fun maiFattaDiGiorno() = assertEquals("Inizia oggi", Habit(2, "Leggere").statusLine(today.atTime(9, 0)).text)
+}
