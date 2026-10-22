@@ -19,9 +19,11 @@ import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.work.MorningWorker
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
-/** Avvisa quando scade un promemoria, con il tasto "Fatto" direttamente nella notifica. */
+/** Avvisa quando scade un promemoria, con "Fatto" e "Rimanda" direttamente nella notifica. */
 class TaskReminderWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     @SuppressLint("MissingPermission")
@@ -57,6 +59,19 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
                 "Fatto",
                 PendingIntent.getBroadcast(context, notificationId(id), done, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
             )
+            .apply {
+                Snooze.entries.forEach { option ->
+                    val snooze = Intent(context, TaskSnoozeReceiver::class.java)
+                        .setAction("snooze_${option.name}")
+                        .putExtra(KEY_ID, id)
+                        .putExtra(KEY_SNOOZE, option.name)
+                    addAction(
+                        0,
+                        option.label,
+                        PendingIntent.getBroadcast(context, notificationId(id), snooze, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
+                    )
+                }
+            }
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
@@ -66,6 +81,7 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 
     companion object {
         const val KEY_ID = "task_id"
+        const val KEY_SNOOZE = "snooze"
         private const val CHANNEL = "tasks"
 
         fun notificationId(id: Long): Int = 1000 + (id and 0x3FFFFFFF).toInt()
@@ -101,6 +117,19 @@ class TaskDoneReceiver : BroadcastReceiver() {
         if (id < 0) return
         NotesStore.init(context)
         NotesStore.setTaskDone(id)
+        NotificationManagerCompat.from(context).cancel(TaskReminderWorker.notificationId(id))
+    }
+}
+
+/** "Tra 1 ora" / "Domani 9:00" della notifica: sposta il promemoria e la notifica tornerà allora. */
+class TaskSnoozeReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val id = intent.getLongExtra(TaskReminderWorker.KEY_ID, -1L)
+        val option = runCatching { Snooze.valueOf(intent.getStringExtra(TaskReminderWorker.KEY_SNOOZE).orEmpty()) }.getOrNull()
+        if (id < 0 || option == null) return
+        NotesStore.init(context)
+        val until = option.until(LocalDateTime.now()).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        NotesStore.snoozeTask(id, until)
         NotificationManagerCompat.from(context).cancel(TaskReminderWorker.notificationId(id))
     }
 }

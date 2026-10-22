@@ -84,11 +84,14 @@ fun RecapScreen(
                 itemsIndexed(state.themes) { index, theme ->
                     CanvasCard(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(vertical = 8.dp)) {
+                            // Il primo articolo è il titolo del tema; sopra solo quanto se ne parla.
                             Text(
-                                "${index + 1}. " + theme.keywords.ifEmpty { listOf(theme.headline.source.name) }.joinToString(" · "),
-                                style = MaterialTheme.typography.titleMedium,
+                                "${index + 1} · " + if (theme.items.size > 1) {
+                                    "${theme.items.size} articoli da ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
+                                } else "1 articolo",
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
                             )
                             theme.items.take(6).forEachIndexed { i, item ->
                                 if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
@@ -107,7 +110,7 @@ fun RecapScreen(
                                     )
                                     Text(
                                         item.title,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = if (i == 0) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                                         maxLines = 3,
                                         overflow = TextOverflow.Ellipsis,
                                     )

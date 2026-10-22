@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
+import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
@@ -51,6 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.calendar.CalendarAsk
+import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.Countdown
@@ -59,6 +64,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.TodayTaskPicker
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -98,6 +104,7 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         granted = it
         reload++
+        if (!it && CalendarAsk.shouldHide(CalendarAsk.recordDenial(context))) hideAgenda(context)
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         granted = CalendarRepository.hasPermission(context)
@@ -111,6 +118,12 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
         }
     }
     return AgendaState(granted, today, tomorrow) { launcher.launch(Manifest.permission.READ_CALENDAR) }
+}
+
+/** Toglie l'Agenda da Oggi: resta riaccendibile da Personalizza. */
+private fun hideAgenda(context: Context) {
+    AppSettings.setCardVisible(HomeCard.CALENDAR, false)
+    Toast.makeText(context, "Agenda nascosta: la riaccendi da Personalizza", Toast.LENGTH_LONG).show()
 }
 
 @Composable
@@ -146,6 +159,7 @@ fun CalendarCard(agenda: AgendaState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
+                    TextButton(onClick = { hideAgenda(context) }) { Text("Non ora") }
                     FilledTonalButton(onClick = agenda.requestPermission) { Text("Consenti") }
                 }
                 list == null -> Spacer(Modifier.height(8.dp))
@@ -223,6 +237,8 @@ fun TasksCard(onOpenNotes: () -> Unit) {
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
+    // Solo quello che conta adesso: il resto è a un tocco, in Note.
+    val today = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
     LaunchedEffect(lastDone) {
@@ -246,7 +262,15 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     modifier = Modifier.padding(16.dp),
                 )
             }
-            open.take(5).forEachIndexed { index, task ->
+            if (today.shown.isEmpty() && open.isNotEmpty() && lastDone == null) {
+                Text(
+                    "Niente in scadenza oggi.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            today.shown.forEachIndexed { index, task ->
                 val done = { haptic(Haptic.CONFIRM); lastDone = task; NotesStore.toggleTask(task.id) }
                 if (index > 0) RowDivider()
                 Row(
@@ -264,10 +288,10 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     }
                 }
             }
-            if (open.size > 5) {
+            if (today.more > 0) {
                 RowDivider()
                 Text(
-                    "e altri ${open.size - 5}",
+                    "+ altri ${today.more} in Note",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
