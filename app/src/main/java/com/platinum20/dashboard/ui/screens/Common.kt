@@ -12,7 +12,22 @@ import androidx.compose.material.icons.outlined.Thunderstorm
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +56,38 @@ import java.time.format.DateTimeFormatter
 val topLevelInsets: WindowInsets
     @Composable get() = ScaffoldDefaults.contentWindowInsets
         .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
+/** Molle comuni dell'app: un piccolo rimbalzo, mai lento. */
+object Springs {
+    /** Movimenti grandi (bolla del player, pagine): rimbalzo visibile ma breve. */
+    fun <T> bouncy() = spring<T>(dampingRatio = 0.62f, stiffness = Spring.StiffnessMediumLow)
+
+    /** Ritorni piccoli (pressione su card e pulsanti): elastico e svelto. */
+    fun <T> snappy() = spring<T>(dampingRatio = 0.45f, stiffness = Spring.StiffnessMedium)
+}
+
+/**
+ * La card si stringe appena alla pressione e torna con una molla.
+ * Osserva i tocchi senza consumarli, quindi click e scorrimento funzionano come prima.
+ */
+fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = composed {
+    var pressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(if (pressed) pressedScale else 1f, Springs.snappy(), label = "press")
+    this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .pointerInput(Unit) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                pressed = true
+                // Se parte uno scorrimento l'evento viene consumato e la card torna subito com'era.
+                waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                pressed = false
+            }
+        }
+}
 
 /** Tocco sulla scheda già aperta della barra in basso: le sezioni tornano in cima alla lista. */
 object TabReselect {

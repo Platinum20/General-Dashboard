@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.view.ViewGroup
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -27,6 +29,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -38,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -53,6 +60,7 @@ import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.radio.RadioStore
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Dove porta il tocco sul mini player. */
@@ -95,31 +103,78 @@ fun FloatingPlayer(
         var bubbleW by remember { mutableIntStateOf(0) }
         var bubbleH by remember { mutableIntStateOf(0) }
         // Posizione in frazioni dello spazio, così resta sensata anche ruotando lo schermo.
-        var fx by rememberSaveable { mutableFloatStateOf(1f) }
-        var fy by rememberSaveable { mutableFloatStateOf(0.85f) }
+        // Le frazioni sono Animatable: lasciata la bolla, una molla la porta al bordo con un rimbalzo.
+        var savedX by rememberSaveable { mutableFloatStateOf(1f) }
+        var savedY by rememberSaveable { mutableFloatStateOf(0.85f) }
+        val fx = remember { Animatable(savedX) }
+        val fy = remember { Animatable(savedY) }
+        val scope = rememberCoroutineScope()
+        var dragging by remember { mutableStateOf(false) }
+        // Comparsa: la bolla "salta fuori" invece di apparire di colpo.
+        val appear = remember { Animatable(0f) }
+        LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
+        val pressScale by animateFloatAsState(if (dragging) 0.94f else 1f, Springs.snappy(), label = "drag")
 
         val rangeX = (maxW - bubbleW - 2 * margin).coerceAtLeast(1f)
         val rangeY = (maxH - bubbleH - 2 * margin).coerceAtLeast(1f)
 
         Surface(
             shape = MaterialTheme.shapes.large,
-            shadowElevation = 8.dp,
+            shadowElevation = if (dragging) 14.dp else 8.dp,
             tonalElevation = 3.dp,
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier
-                .offset { IntOffset((margin + fx * rangeX).roundToInt(), (margin + fy * rangeY).roundToInt()) }
+                .offset { IntOffset((margin + fx.value * rangeX).roundToInt(), (margin + fy.value * rangeY).roundToInt()) }
+                .graphicsLayer {
+                    val s = (0.6f + 0.4f * appear.value) * pressScale
+                    scaleX = s
+                    scaleY = s
+                    alpha = appear.value.coerceIn(0f, 1f)
+                }
                 .onSizeChanged {
                     bubbleW = it.width
                     bubbleH = it.height
                 }
                 .pointerInput(rangeX, rangeY) {
+                    val tracker = VelocityTracker()
+                    // Posizione del dito tenuta qui, in modo sincrono: gli snapTo partono in coroutine.
+                    var curX = 0f
+                    var curY = 0f
                     detectDragGestures(
-                        // Lasciata la bolla, si aggancia al bordo sinistro o destro.
-                        onDragEnd = { fx = if (fx < 0.5f) 0f else 1f },
+                        onDragStart = {
+                            dragging = true
+                            tracker.resetTracking()
+                            curX = fx.value
+                            curY = fy.value
+                        },
+                        onDragCancel = { dragging = false },
+                        // Lasciata la bolla, si aggancia al bordo verso cui la si lancia (o al più vicino).
+                        onDragEnd = {
+                            dragging = false
+                            val velocity = tracker.calculateVelocity()
+                            val vx = velocity.x / rangeX
+                            val vy = velocity.y / rangeY
+                            val targetX = when {
+                                vx > 1.5f -> 1f
+                                vx < -1.5f -> 0f
+                                else -> if (curX < 0.5f) 0f else 1f
+                            }
+                            // Un lancio in verticale sposta un po' anche l'altezza, senza uscire dallo schermo.
+                            val targetY = (curY + vy * 0.12f).coerceIn(0f, 1f)
+                            savedX = targetX
+                            savedY = targetY
+                            scope.launch { fx.animateTo(targetX, Springs.bouncy(), initialVelocity = vx) }
+                            scope.launch { fy.animateTo(targetY, Springs.bouncy(), initialVelocity = vy) }
+                        },
                     ) { change, drag ->
                         change.consume()
-                        fx = (fx + drag.x / rangeX).coerceIn(0f, 1f)
-                        fy = (fy + drag.y / rangeY).coerceIn(0f, 1f)
+                        tracker.addPosition(change.uptimeMillis, change.position)
+                        curX = (curX + drag.x / rangeX).coerceIn(-0.04f, 1.04f)
+                        curY = (curY + drag.y / rangeY).coerceIn(0f, 1f)
+                        scope.launch {
+                            fx.snapTo(curX)
+                            fy.snapTo(curY)
+                        }
                     }
                 },
         ) {

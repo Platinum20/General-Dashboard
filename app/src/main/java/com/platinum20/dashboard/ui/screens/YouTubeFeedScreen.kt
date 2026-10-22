@@ -359,7 +359,7 @@ private fun VideoCard(video: YtVideo, onClick: () -> Unit) {
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Column {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
