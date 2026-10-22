@@ -35,6 +35,11 @@ data class SpPlayback(
 
 class SpotifyApiException(message: String, val code: Int) : IOException(message)
 
+/** Playlist non tua: Spotify non dà l'elenco dei brani alle app personali, ma si può ascoltare. */
+class PlaylistLockedException : IOException(
+    "Spotify non mostra alle app personali i brani delle playlist che non hai creato tu. Puoi comunque ascoltarla: tocca Riproduci."
+)
+
 /** Web API di Spotify: libreria, ascolti e, con Premium, comandi della riproduzione. */
 object SpotifyApi {
     private const val BASE = "https://api.spotify.com/v1/"
@@ -69,7 +74,7 @@ object SpotifyApi {
                     when {
                         code == 401 -> "Accesso a Spotify scaduto"
                         code == 403 && reason == "PREMIUM_REQUIRED" -> "Per comandare la riproduzione serve Spotify Premium"
-                        code == 403 -> "Spotify non permette questa richiesta (account non aggiunto in User Management?)"
+                        code == 403 -> "Spotify non permette questa richiesta alle app personali"
                         code == 404 && reason == "NO_ACTIVE_DEVICE" -> "Nessun dispositivo Spotify attivo"
                         code == 429 -> "Troppe richieste a Spotify, riprova tra poco"
                         else -> "Spotify non risponde ($code), riprova più tardi"
@@ -113,15 +118,22 @@ object SpotifyApi {
 
     /** Contenuto di una playlist, di un album, di un artista (brani più ascoltati) o di un podcast. */
     suspend fun children(token: String, parent: SpItem): List<SpItem> = when (parent.kind) {
-        SpKind.PLAYLIST -> request(token, "playlists/${parent.id}/tracks?limit=100")?.optJSONArray("items")
-            .objects().mapNotNull { it.optJSONObject("track")?.toItem() }
+        // Da febbraio 2026 l'elenco si chiama "items" e Spotify lo dà alle app personali solo per le
+        // playlist tue o collaborative: per le altre (es. quelle create da Spotify) risponde 403.
+        SpKind.PLAYLIST -> try {
+            request(token, "playlists/${parent.id}/items?limit=100")?.optJSONArray("items")
+                .objects().mapNotNull { (it.optJSONObject("item") ?: it.optJSONObject("track"))?.toItem() }
+        } catch (e: SpotifyApiException) {
+            if (e.code == 403) throw PlaylistLockedException() else throw e
+        }
         SpKind.ALBUM -> {
             val album = request(token, "albums/${parent.id}") ?: JSONObject()
             val image = album.image()
             album.optJSONObject("tracks")?.optJSONArray("items").objects()
                 .mapNotNull { it.toItem()?.copy(image = image) }
         }
-        SpKind.ARTIST -> request(token, "artists/${parent.id}/top-tracks?market=from_token")?.optJSONArray("tracks")
+        // I "brani più ascoltati" dell'artista non ci sono più per le app personali: album e singoli.
+        SpKind.ARTIST -> request(token, "artists/${parent.id}/albums?include_groups=album,single&limit=30")?.optJSONArray("items")
             .objects().mapNotNull { it.toItem() }
         SpKind.SHOW -> request(token, "shows/${parent.id}/episodes?limit=50&market=from_token")?.optJSONArray("items")
             .objects().mapNotNull { it.toItem() }
