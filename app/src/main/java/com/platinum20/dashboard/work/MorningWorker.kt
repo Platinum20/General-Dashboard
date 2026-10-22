@@ -33,6 +33,7 @@ import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.widget.DashboardWidget
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -79,20 +80,34 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         }
         forecast?.rainAlert?.let { lines += "☔ $it" }
         forecast?.air?.let { lines += "Aria: ${it.label.lowercase()}" }
+        val time = DateTimeFormatter.ofPattern("HH:mm")
+        val zone = ZoneId.systemDefault()
         if (events.isNotEmpty()) {
-            val time = DateTimeFormatter.ofPattern("HH:mm")
-            val zone = ZoneId.systemDefault()
             lines += ""
             lines += "📅 " + if (events.size == 1) "1 impegno" else "${events.size} impegni"
             events.take(3).forEach { e ->
                 val at = if (e.allDay) "tutto il giorno" else Instant.ofEpochMilli(e.begin).atZone(zone).format(time)
                 lines += "• $at ${e.title}"
             }
+            more(events.size)?.let { lines += it }
         }
         if (tasks.isNotEmpty()) {
             lines += ""
             lines += "✅ " + if (tasks.size == 1) "1 cosa da fare" else "${tasks.size} cose da fare"
-            tasks.take(3).forEach { lines += "• ${it.text}" }
+            val now = System.currentTimeMillis()
+            val today = LocalDate.now(zone)
+            tasks.take(3).forEach { t ->
+                val dueAt = t.dueAt
+                val at = when {
+                    dueAt == null -> ""
+                    dueAt < now -> "⚠️ scaduto · "
+                    Instant.ofEpochMilli(dueAt).atZone(zone).toLocalDate() == today ->
+                        Instant.ofEpochMilli(dueAt).atZone(zone).format(time) + " "
+                    else -> ""
+                }
+                lines += "• $at${t.text}"
+            }
+            more(tasks.size)?.let { lines += it }
         }
         NotesStore.data.value.upcoming.filter { it.daysLeft() <= 1 }.forEach {
             lines += if (it.daysLeft() == 0L) "🎉 Oggi: ${it.title}" else "⏳ Domani: ${it.title}"
@@ -125,6 +140,13 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         if (canNotify(context)) {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
         }
+    }
+
+    /** "…e altri N" quando la lista è più lunga delle tre righe mostrate. */
+    private fun more(total: Int): String? = when (val rest = total - 3) {
+        in Int.MIN_VALUE..0 -> null
+        1 -> "…e un altro"
+        else -> "…e altri $rest"
     }
 
     companion object {

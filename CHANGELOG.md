@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.29.0
+- Notifica del mattino: i promemoria mostrano l'orario se scadono oggi, e quelli già scaduti sono segnalati
+- Notifica del mattino: quando gli impegni o le cose da fare sono più di tre compare "…e altri N"
+
 ## 1.28.0
 - Feedback aptico leggero dove aiuta: spunta di un promemoria, bolla del player presa e agganciata al bordo, soglia del "trascina per aggiornare", interruttori, ordine delle card, scelta del tema e pressione lunga su una nota per fissarla
 - Usa le vibrazioni di sistema: se nel telefono sono spente, l'app non vibra
