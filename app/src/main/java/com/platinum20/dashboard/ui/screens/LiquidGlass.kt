@@ -81,12 +81,12 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
             @Suppress("UNUSED_VARIABLE") val frame = backdrop.frame
             if (source != null && size.width > 0f && size.height > 0f && drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
                 // Margine attorno: la lente pesca un po' oltre il bordo e la sfocatura non scurisce i lati.
-                val pad = 24.dp.toPx()
+                val pad = 32.dp.toPx()
                 val radius = when (val outline = shape.createOutline(size, layoutDirection, this)) {
                     is Outline.Rounded -> outline.roundRect.topLeftCornerRadius.x
                     else -> 0f
                 }
-                val blur = 8.dp.toPx()
+                val blur = 16.dp.toPx()
                 val blurEffect = RenderEffect.createBlurEffect(blur, blur, Shader.TileMode.CLAMP)
                 val lens = shader?.let {
                     runCatching {

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.94.0
+- Vetro della barra e del +: sfocatura più morbida e velo un filo più presente, così sotto si vedono colori e forme ma non più il testo sbavato intorno alle icone
+
 ## 1.93.0
 **Oggi**
 - Nuova card "Domani" dalle 18: meteo di domani (minime, massime e "pioggia dalle 10"), i primi impegni, i promemoria con scadenza domani, compleanni e addebiti fissi. In cima la frase che conta, tipo "Domani 8:30 Dentista, pioggia dalle 10"; ogni riga apre la sua pagina
