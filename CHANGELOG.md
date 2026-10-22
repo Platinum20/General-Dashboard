@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.51.0
+- Località del meteo: una X nel campo di ricerca per cancellare quello che hai scritto, e il tasto Cerca della tastiera sceglie subito la prima città trovata
+
 ## 1.50.0
 - Note: nel dialog di una nuova abitudine e del budget mensile basta premere Invio sulla tastiera per salvare; nel nuovo pacco Invio passa al codice di tracciamento
 - Budget mensile: la prima volta la tastiera numerica si apre da sola

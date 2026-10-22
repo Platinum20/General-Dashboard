@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.LocationCity
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Search
@@ -97,10 +99,17 @@ fun PlacePickerScreen(onBack: () -> Unit) {
                     placeholder = { Text("Cerca una città") },
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                     trailingIcon = {
-                        if (searching) CircularProgressIndicator(modifier = Modifier.padding(12.dp), strokeWidth = 2.dp)
+                        when {
+                            searching -> CircularProgressIndicator(modifier = Modifier.padding(12.dp), strokeWidth = 2.dp)
+                            query.isNotEmpty() -> IconButton(onClick = { query = "" }) {
+                                Icon(Icons.Outlined.Close, contentDescription = "Cancella ricerca")
+                            }
+                        }
                     },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    // Cerca sulla tastiera sceglie il primo risultato, come toccarlo.
+                    keyboardActions = KeyboardActions(onSearch = { results.firstOrNull()?.let(::choose) }),
                     shape = MaterialTheme.shapes.large,
                     modifier = Modifier
                         .fillMaxWidth()
