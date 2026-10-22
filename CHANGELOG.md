@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.57.0
+## 1.61.0
 - Date: per compleanni e anniversari che si ripetono ogni anno, se hai scritto l'anno vero compare quanti anni compie ("3 dicembre · compie 30 anni"), anche nella card In arrivo di Oggi
 
 ## 1.56.0
