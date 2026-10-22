@@ -379,7 +379,8 @@ private fun ItemRow(item: SpItem, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
         modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

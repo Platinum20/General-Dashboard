@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
@@ -76,6 +75,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import com.platinum20.dashboard.settings.AppSettings
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 
 /** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +113,16 @@ fun MediaScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            TopLevelBar(title = "Media", scrollBehavior = scrollBehavior)
+            TopLevelBar(
+                title = "Media",
+                subtitle = when {
+                    tracks.values.any { it.playing } -> "In riproduzione"
+                    radio != null -> "In ascolto: ${radio?.station?.name}"
+                    tracks.isNotEmpty() -> "Riprendi da dove eri"
+                    else -> "Video, musica e radio"
+                },
+                scrollBehavior = scrollBehavior,
+            )
         },
     ) { inner ->
         LazyColumn(
@@ -133,43 +147,48 @@ fun MediaScreen(
             if (tracks.isNotEmpty()) {
                 item(key = "sleep") { SleepTimerRow(sleepAt = sleepAt, onSet = NowPlaying::setSleepTimer) }
             }
-            item {
-                MediaCard(
-                    icon = Icons.Outlined.PlayCircle,
-                    title = "Video",
-                    subtitle = "Video e musica del telefono o da un link, riprendi da dove eri rimasto",
-                    onClick = onOpenVideo,
-                )
-            }
-            MediaService.entries.forEach { service ->
-                item(key = service.name) {
-                    MediaCard(
-                        icon = when (service) {
-                            MediaService.YOUTUBE -> Icons.Outlined.OndemandVideo
-                            MediaService.SPOTIFY -> Icons.Outlined.GraphicEq
-                        },
-                        title = service.label,
-                        subtitle = when (service) {
-                            MediaService.YOUTUBE ->
-                                if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega il tuo account per il feed"
-                            MediaService.SPOTIFY ->
-                                if (spotifyLinked) "Per te, playlist, libreria e ricerca" else "Collega il tuo account per il feed"
-                        },
-                        onClick = { onOpenService(service) },
-                        playing = service in open,
-                        onStop = { MediaWebViews.release(service) },
-                    )
+            // Le quattro fonti in una griglia 2×2: il colore dell'icona le distingue a colpo d'occhio.
+            item(key = "grid") {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MediaTile(
+                            icon = Icons.Outlined.PlayCircle,
+                            accent = TileAccent.BLUE,
+                            title = "Video",
+                            subtitle = "File e link, riprendi da dove eri",
+                            onClick = onOpenVideo,
+                        )
+                        MediaTile(
+                            icon = Icons.Outlined.OndemandVideo,
+                            accent = TileAccent.ORANGE,
+                            title = MediaService.YOUTUBE.label,
+                            subtitle = if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega l'account per il feed",
+                            onClick = { onOpenService(MediaService.YOUTUBE) },
+                            playing = MediaService.YOUTUBE in open,
+                            onStop = { MediaWebViews.release(MediaService.YOUTUBE) },
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MediaTile(
+                            icon = Icons.Outlined.GraphicEq,
+                            accent = TileAccent.GREEN,
+                            title = MediaService.SPOTIFY.label,
+                            subtitle = if (spotifyLinked) "Per te, playlist e libreria" else "Collega l'account per il feed",
+                            onClick = { onOpenService(MediaService.SPOTIFY) },
+                            playing = MediaService.SPOTIFY in open,
+                            onStop = { MediaWebViews.release(MediaService.SPOTIFY) },
+                        )
+                        MediaTile(
+                            icon = Icons.Outlined.Radio,
+                            accent = TileAccent.PURPLE,
+                            title = "Radio",
+                            subtitle = radio?.let { "In ascolto: ${it.station.name}" } ?: "Stazioni italiane e del mondo",
+                            onClick = onOpenRadio,
+                            playing = radio != null,
+                            onStop = { RadioStore.stop() },
+                        )
+                    }
                 }
-            }
-            item(key = "radio") {
-                MediaCard(
-                    icon = Icons.Outlined.Radio,
-                    title = "Radio",
-                    subtitle = radio?.let { "In ascolto: ${it.station.name}" } ?: "Le stazioni italiane e di tutto il mondo, in sottofondo",
-                    onClick = onOpenRadio,
-                    playing = radio != null,
-                    onStop = { RadioStore.stop() },
-                )
             }
             item(key = "adblock") {
                 AdBlockCard(
@@ -192,7 +211,8 @@ private fun AdBlockCard(enabled: Boolean, blocked: Int, status: AdBlocker.Status
     Surface(
         shape = MaterialTheme.shapes.large,
         // Stesso fondo delle altre card: lo stato lo dicono l'icona colorata e l'interruttore, senza un blocco di colore.
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
         contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -245,48 +265,58 @@ private fun adBlockStatusText(status: AdBlocker.Status): String {
     return "EasyList, EasyPrivacy e uBlock Origin · " + parts.joinToString(" · ")
 }
 
+/** Colori delle icone della griglia Media: chiaro e scuro, sempre leggibili. */
+private enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val darkBg: Long) {
+    BLUE(0xFF3550E8, 0xFFE3E8FF, 0xFF9AABFF, 0xFF252B4A),
+    ORANGE(0xFFD9572B, 0xFFFCE5DA, 0xFFFF8F66, 0xFF3A241B),
+    GREEN(0xFF1E8A57, 0xFFDDF3E7, 0xFF5FD39B, 0xFF1F3A2C),
+    PURPLE(0xFF7A44C2, 0xFFEFE4FB, 0xFFD7A6FF, 0xFF33283F),
+}
+
 @Composable
-private fun MediaCard(
+private fun RowScope.MediaTile(
     icon: ImageVector,
+    accent: TileAccent,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
     playing: Boolean = false,
     onStop: () -> Unit = {},
-    onLogin: (() -> Unit)? = null,
 ) {
-    ElevatedCard(
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    CanvasCard(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().bouncyPress(),
+        modifier = Modifier.weight(1f).heightIn(min = 128.dp).bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(28.dp))
-            }
-            Spacer(Modifier.size(16.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (playing || onLogin != null) {
-                    Row {
-                        if (playing) TextButton(onClick = onStop) { Text("Chiudi player") }
-                        if (onLogin != null) TextButton(onClick = onLogin) { Text("Accedi") }
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(Color(if (dark) accent.darkBg else accent.lightBg)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, contentDescription = null, tint = Color(if (dark) accent.dark else accent.light), modifier = Modifier.size(22.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                if (playing) {
+                    // Chiude il player rimasto aperto in sottofondo.
+                    IconButton(onClick = onStop, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Outlined.Close, contentDescription = "Chiudi player", modifier = Modifier.size(18.dp))
                     }
                 }
             }
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
+            Spacer(Modifier.height(14.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(
+                if (playing) "Aperto · $subtitle" else subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -294,13 +324,16 @@ private fun MediaCard(
 /** Mini player: cosa sta suonando, con i comandi, anche quando la pagina non è a schermo. */
 @Composable
 private fun NowPlayingCard(track: Track, onOpen: () -> Unit, onCommand: (PlayerCommand) -> Unit) {
-    Card(
+    CanvasCard(
         onClick = onOpen,
         modifier = Modifier.fillMaxWidth().bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
+        // Come "Adesso" in Oggi: il blocco scuro è ciò che sta succedendo ora.
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            containerColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.primaryContainer
+            else MaterialTheme.colorScheme.inverseSurface,
+            contentColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.onPrimaryContainer
+            else MaterialTheme.colorScheme.inverseOnSurface,
         ),
     ) {
         Row(
@@ -373,10 +406,10 @@ private fun SleepTimerRow(sleepAt: Long?, onSet: (Int?) -> Unit) {
             modifier = Modifier.horizontalScroll(rememberScrollState()),
         ) {
             sleepOptions.forEach { (minutes, label) ->
-                FilterChip(selected = false, onClick = { onSet(minutes) }, label = { Text(label) })
+                CanvasChip(selected = false, onClick = { onSet(minutes) }, label = label)
             }
             if (sleepAt != null) {
-                FilterChip(selected = true, onClick = { onSet(null) }, label = { Text("Annulla") })
+                CanvasChip(selected = true, onClick = { onSet(null) }, label = "Annulla")
             }
         }
     }

@@ -42,7 +42,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -87,6 +86,16 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.launch
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.animation.animateContentSize
+import androidx.compose.runtime.key
+import androidx.compose.ui.unit.sp
+import com.platinum20.dashboard.capture.CaptureDialog
+import com.platinum20.dashboard.capture.CaptureMode
 
 /** Le schede della sezione Note, nell'ordine in cui si usano di più. */
 enum class NotesTabs(val label: String, val addLabel: String?) {
@@ -99,24 +108,33 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
 }
 
 /**
- * Le sei schede delle Note come chip, come i filtri delle News: stanno meglio in larghezza
- * di sei tab e la scelta resta sempre visibile (la lista scorre da sola fino al chip attivo).
+ * Le sei schede delle Note, sottolineate come un indice: stanno in una riga che scorre
+ * e la scelta resta sempre visibile (la riga scorre da sola fino alla scheda attiva).
  */
 @Composable
-private fun NotesTabChips(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
-    val listState = rememberLazyListState()
+private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
     val haptic = rememberHaptic()
-    LaunchedEffect(selected) { listState.animateScrollToItem((selected.ordinal - 1).coerceAtLeast(0)) }
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ScrollableTabRow(
+        selectedTabIndex = selected.ordinal,
+        edgePadding = 16.dp,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        indicator = { positions ->
+            TabRowDefaults.SecondaryIndicator(
+                Modifier.tabIndicatorOffset(positions[selected.ordinal]),
+                height = 2.5.dp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        },
+        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) },
     ) {
-        items(NotesTabs.entries) { t ->
-            FilterChip(
+        NotesTabs.entries.forEach { t ->
+            Tab(
                 selected = selected == t,
                 onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
-                label = { Text(t.label) },
+                selectedContentColor = MaterialTheme.colorScheme.onSurface,
+                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = { Text(t.label, style = MaterialTheme.typography.titleSmall) },
             )
         }
     }
@@ -155,6 +173,12 @@ fun NotesScreen(
         DeletedNote.take()?.let { note -> offerUndo("Nota eliminata") { NotesStore.restoreNote(note) } }
     }
 
+    // Il + della barra in basso aggiunge alla scheda aperta: promemoria, spesa, nota, pacco…
+    ProvidePlusAction { if (tab == NotesTabs.NOTES) onOpenNote(null) else adding = true }
+    val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    val overdue = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < System.currentTimeMillis() }
+    val dueToday = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay } - overdue
+
     Scaffold(
         contentWindowInsets = topLevelInsets,
         snackbarHost = {
@@ -164,37 +188,29 @@ fun NotesScreen(
             Column {
                 TopLevelBar(
                     title = "Note",
+                    subtitle = listOfNotNull(
+                        dueToday.takeIf { it > 0 }?.let { "$it oggi" },
+                        overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
+                    ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
                     actions = {
                         if (tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
-                            IconButton(onClick = {
+                            RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
                                 val done = data.tasks.filter { it.done }
                                 NotesStore.clearDone()
                                 offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
-                            }) {
-                                Icon(Icons.Outlined.DeleteSweep, contentDescription = "Elimina completati")
                             }
                         }
                     },
                 )
-                NotesTabChips(selected = tab, onSelect = { tab = it })
-            }
-        },
-        floatingActionButton = {
-            // Promemoria e spese si scrivono nel campo in alto: il + serve alle altre schede.
-            val label = tab.addLabel
-            if (label != null) {
-                FloatingActionButton(
-                    onClick = { if (tab == NotesTabs.NOTES) onOpenNote(null) else adding = true },
-                    modifier = Modifier.padding(bottom = bottomPadding.calculateBottomPadding()).bouncyPress(0.9f),
-                ) { Icon(Icons.Outlined.Add, contentDescription = label) }
+                NotesTabStrip(selected = tab, onSelect = { tab = it })
             }
         },
     ) { inner ->
         val padding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
-            top = inner.calculateTopPadding() + 8.dp,
-            bottom = bottomPadding.calculateBottomPadding() + 88.dp,
+            top = inner.calculateTopPadding() + 12.dp,
+            bottom = bottomPadding.calculateBottomPadding() + 24.dp,
         )
         when (tab) {
             NotesTabs.TASKS -> TasksTab(data.tasks, padding, onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") })
@@ -219,7 +235,9 @@ fun NotesScreen(
             NotesTabs.HABITS -> HabitDialog(habit = null, onDismiss = close)
             NotesTabs.PARCELS -> ParcelDialog(parcel = null, onDismiss = close)
             NotesTabs.DATES -> CountdownDialog(countdown = null, onDismiss = close)
-            else -> adding = false
+            NotesTabs.TASKS -> CaptureDialog(initial = "", initialMode = CaptureMode.TASK, onClose = close)
+            NotesTabs.MONEY -> CaptureDialog(initial = "", initialMode = CaptureMode.EXPENSE, onClose = close)
+            NotesTabs.NOTES -> adding = false
         }
     }
 }
@@ -231,7 +249,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDelete
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(upcoming, key = { it.id }) { item ->
             val days = item.daysLeft()
-            ElevatedCard(
+            CanvasCard(
                 onClick = { editing = item },
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth().bouncyPress(),
@@ -292,6 +310,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (
                     }
                 },
                 shape = MaterialTheme.shapes.large,
+                colors = canvasFieldColors(),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
             )
             QuickPreview(draft, Modifier.padding(start = 12.dp, bottom = 8.dp))
@@ -307,14 +326,14 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (
             "Senza scadenza" to open.filter { it.dueAt == null },
         ).filter { it.second.isNotEmpty() }
         val done = tasks.filter { it.done }
+        // Ogni gruppo è una card con le sue righe; con un gruppo solo l'intestazione non dice niente.
         groups.forEach { (label, list) ->
-            // Con un gruppo solo l'intestazione non dice niente.
-            if (groups.size > 1) item(key = "group-$label") { GroupLabel(label, error = label == "Scaduti") }
-            items(list, key = { it.id }) { TaskRow(it, onDeleted) }
+            item(key = "group-$label") {
+                TaskGroup(label.takeIf { groups.size > 1 }, list, onDeleted, error = label == "Scaduti")
+            }
         }
         if (done.isNotEmpty()) {
-            item { GroupLabel("Completati") }
-            items(done, key = { it.id }) { TaskRow(it, onDeleted) }
+            item(key = "group-done") { TaskGroup("Completati", done, onDeleted) }
         }
         if (tasks.isEmpty()) {
             item { EmptyHint("Nessun promemoria. Scrivi come parli: \"venerdì alle 18 palestra\", \"ogni mese il 5 affitto\", \"tra 20 minuti forno\". Giorno, ora e ripetizione si impostano da soli.") }
@@ -332,18 +351,13 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
         if (habits.isNotEmpty()) {
             item {
                 val done = habits.count { it.isDone(today) }
-                Text(
-                    if (done == habits.size) "Tutte fatte oggi" else "Oggi $done su ${habits.size}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
-                )
+                SectionHeader(if (done == habits.size) "Tutte fatte oggi" else "Oggi $done su ${habits.size}")
             }
         }
         items(habits, key = { it.id }) { habit ->
             val doneToday = habit.isDone(today)
             val streak = habit.streak(today)
-            ElevatedCard(
+            CanvasCard(
                 onClick = { editing = habit },
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
@@ -420,13 +434,21 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
 }
 
 @Composable
-private fun GroupLabel(text: String, error: Boolean = false) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 4.dp),
-    )
+private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskItem) -> Unit, error: Boolean = false) {
+    Column(Modifier.padding(bottom = 8.dp)) {
+        if (label != null) {
+            SectionHeader(label, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(2.dp))
+        }
+        CanvasCard(Modifier.fillMaxWidth().animateContentSize(Springs.snappy())) {
+            tasks.forEachIndexed { index, task ->
+                key(task.id) {
+                    if (index > 0) RowDivider()
+                    TaskRow(task, onDeleted)
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -434,7 +456,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
     var editing by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
     Row(
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = task.done, onCheckedChange = {
@@ -491,14 +513,15 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
                         }
                     },
                     singleLine = true,
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = MaterialTheme.shapes.large,
+                    colors = canvasFieldColors(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
         items(sorted, key = { it.id }) { note ->
-            ElevatedCard(
+            CanvasCard(
                 shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier
                     .fillMaxWidth()
