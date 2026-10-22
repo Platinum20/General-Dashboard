@@ -64,7 +64,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -95,6 +94,7 @@ import com.platinum20.dashboard.media.spotify.SpPlayback
 import com.platinum20.dashboard.media.spotify.SpotifyApi
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyStore
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.delay
 
 private val spotifyTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
@@ -104,9 +104,7 @@ private val spotifyTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
 @Composable
 fun SpotifyFeedScreen(
     onBack: () -> Unit,
-    onOpenWeb: () -> Unit,
     onLogin: () -> Unit,
-    onPlayWeb: (String) -> Unit,
 ) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
@@ -130,6 +128,13 @@ fun SpotifyFeedScreen(
         message?.let {
             snackbar.showSnackbar(it)
             SpotifyStore.consumeMessage()
+        }
+    }
+    val playerError by SpotifyPlayer.error.collectAsState()
+    LaunchedEffect(playerError) {
+        playerError?.let {
+            snackbar.showSnackbar(it)
+            SpotifyPlayer.consumeError()
         }
     }
     // Stato della riproduzione aggiornato mentre la schermata è aperta.
@@ -189,12 +194,19 @@ fun SpotifyFeedScreen(
                 .padding(inner)
         ) {
             if (!connected || (setup && !official)) {
-                ConnectSpotify(onOpenWeb, onLogin)
+                ConnectSpotify(onLogin)
                 return@Column
             }
             val parent = opened
             if (parent != null) {
-                ChildrenList(parent, onOpen = { opened = it }, onPlay = { onPlayWeb(it.webUrl) })
+                ChildrenList(parent, onOpen = { opened = it }, onPlay = { SpotifyPlayer.play(context, it) }, onPlayFrom = { child ->
+                    // Da un album o una playlist si continua con i brani successivi.
+                    if (parent.kind == SpKind.ALBUM || parent.kind == SpKind.PLAYLIST || parent.kind == SpKind.SHOW) {
+                        SpotifyPlayer.play(context, parent, startAt = child)
+                    } else {
+                        SpotifyPlayer.play(context, child)
+                    }
+                })
                 return@Column
             }
             // Scorrevole: con cinque schede le etichette non vengono più tagliate.
@@ -204,7 +216,7 @@ fun SpotifyFeedScreen(
                 }
             }
             val onItem: (SpItem) -> Unit = { item ->
-                if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) onPlayWeb(item.webUrl) else opened = item
+                if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) SpotifyPlayer.play(context, item) else opened = item
             }
             when (tab) {
                 0 -> HomeTab(onItem)
@@ -217,7 +229,7 @@ fun SpotifyFeedScreen(
 }
 
 @Composable
-private fun ConnectSpotify(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
+private fun ConnectSpotify(onLogin: () -> Unit) {
     val context = LocalContext.current
     val clientId by SpotifyAuth.clientId.collectAsState()
     val error by SpotifyAuth.error.collectAsState()
@@ -273,8 +285,6 @@ private fun ConnectSpotify(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = onOpenWeb) { Text("Apri il web player") }
     }
 }
 
@@ -344,7 +354,7 @@ private fun SearchTab(onItem: (SpItem) -> Unit) {
 }
 
 @Composable
-private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit) {
+private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit, onPlayFrom: (SpItem) -> Unit) {
     val context = LocalContext.current
     val all by SpotifyStore.children.collectAsState()
     val state = all[parent.id] ?: Loadable(loading = true)
@@ -369,7 +379,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
         items(state.data.orEmpty(), key = { it.uri + it.id }) { child ->
             ItemRow(child, onClick = {
                 if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
-                    onPlay(child)
+                    onPlayFrom(child)
                 } else {
                     onOpen(child)
                 }

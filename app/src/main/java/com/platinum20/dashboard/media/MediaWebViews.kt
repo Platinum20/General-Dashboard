@@ -70,6 +70,26 @@ object MediaWebViews {
         return webView
     }
 
+    /**
+     * Pagina nascosta fatta dall'app (mai a schermo), per esempio il riproduttore di Spotify:
+     * [html] caricato con origine [baseUrl] e [bridge] raggiungibile dagli script come [bridgeName].
+     * Se c'era la pagina del sito di quel servizio, viene chiusa.
+     */
+    @SuppressLint("JavascriptInterface", "AddJavascriptInterface")
+    fun obtainHidden(context: Context, service: MediaService, baseUrl: String, html: String, bridge: Any, bridgeName: String): WebView {
+        views[service]?.let { existing ->
+            if (existing.url?.startsWith(baseUrl) == true) return existing
+            release(service)
+        }
+        val webView = createMediaWebView(MutableContextWrapper(context.applicationContext), service, blockAds = false) { null }
+        webView.addJavascriptInterface(bridge, bridgeName)
+        webView.loadDataWithBaseURL(baseUrl, html, "text/html", "UTF-8", null)
+        views[service] = webView
+        _open.update { it + service }
+        NowPlaying.start(context)
+        return webView
+    }
+
     fun webViewFor(service: MediaService): WebView? = views[service]
 
     fun openServices(): Set<MediaService> = views.keys.toSet()

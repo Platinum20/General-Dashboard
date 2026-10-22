@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.84.0
+- Spotify suona dentro l'app con il riproduttore ufficiale (serve Premium): tocchi un brano, un album o una playlist e parte qui, con notifica e bolla. Mai il sito
+- Se avevi già collegato Spotify con la chiave, ricollegalo una volta per dare il permesso di ascolto
+- I link di Spotify e YouTube (anche dalle notizie) si aprono nei player dell'app
 - Ricerca di YouTube nativa: risultati senza consumare la quota dell'API di Google
 - Tolti i pulsanti che aprivano il sito di YouTube: ora è tutto nell'app
 
