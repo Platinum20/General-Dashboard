@@ -47,6 +47,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -57,6 +61,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -78,6 +83,7 @@ import com.platinum20.dashboard.notes.TaskItem
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.launch
 
 /** Le schede della sezione Note, nell'ordine in cui si usano di più. */
 enum class NotesTabs(val label: String, val addLabel: String?) {
@@ -125,16 +131,35 @@ fun NotesScreen(
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(NotesTabs.TASKS) }
     var adding by remember { mutableStateOf(false) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
+    fun offerUndo(removed: List<TaskItem>, message: String) {
+        if (removed.isEmpty()) return
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val result = snackbar.showSnackbar(message, actionLabel = "Annulla", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) NotesStore.restoreTasks(removed)
+        }
+    }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
+        snackbarHost = {
+            SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
+        },
         topBar = {
             Column {
                 TopLevelBar(
                     title = "Note",
                     actions = {
                         if (tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
-                            IconButton(onClick = NotesStore::clearDone) {
+                            IconButton(onClick = {
+                                val done = data.tasks.filter { it.done }
+                                NotesStore.clearDone()
+                                offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
+                            }) {
                                 Icon(Icons.Outlined.DeleteSweep, contentDescription = "Elimina completati")
                             }
                         }
@@ -161,7 +186,7 @@ fun NotesScreen(
             bottom = bottomPadding.calculateBottomPadding() + 88.dp,
         )
         when (tab) {
-            NotesTabs.TASKS -> TasksTab(data.tasks, padding)
+            NotesTabs.TASKS -> TasksTab(data.tasks, padding, onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") })
             NotesTabs.HABITS -> HabitsTab(data.habits, padding)
             NotesTabs.MONEY -> ExpensesTab(data, padding)
             NotesTabs.NOTES -> NotesTab(data.notes, padding, onOpenNote)
@@ -226,7 +251,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
 }
 
 @Composable
-private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
+private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (TaskItem) -> Unit) {
     var draft by rememberSaveable { mutableStateOf("") }
     val add = {
         NotesStore.addTask(draft)
@@ -265,11 +290,11 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues) {
         groups.forEach { (label, list) ->
             // Con un gruppo solo l'intestazione non dice niente.
             if (groups.size > 1) item(key = "group-$label") { GroupLabel(label, error = label == "Scaduti") }
-            items(list, key = { it.id }) { TaskRow(it) }
+            items(list, key = { it.id }) { TaskRow(it, onDeleted) }
         }
         if (done.isNotEmpty()) {
             item { GroupLabel("Completati") }
-            items(done, key = { it.id }) { TaskRow(it) }
+            items(done, key = { it.id }) { TaskRow(it, onDeleted) }
         }
         if (tasks.isEmpty()) {
             item { EmptyHint("Nessun promemoria. Scrivi come parli: \"venerdì alle 18 palestra\", \"ogni mese il 5 affitto\", \"tra 20 minuti forno\". Giorno, ora e ripetizione si impostano da soli.") }
@@ -384,7 +409,7 @@ private fun GroupLabel(text: String, error: Boolean = false) {
 }
 
 @Composable
-private fun TaskRow(task: TaskItem) {
+private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
     var editing by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
     Row(
@@ -410,7 +435,10 @@ private fun TaskRow(task: TaskItem) {
             )
             if (!task.done) task.dueAt?.let { DueText(it, task.repeat) }
         }
-        IconButton(onClick = { NotesStore.deleteTask(task.id) }) {
+        IconButton(onClick = {
+            NotesStore.deleteTask(task.id)
+            onDeleted(task)
+        }) {
             Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
