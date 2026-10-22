@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
+import android.content.Context
+import androidx.core.app.ActivityCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -46,6 +48,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,9 +77,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.platinum20.dashboard.calendar.CalendarDays
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarInfo
+import com.platinum20.dashboard.calendar.CalendarPermission
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.calendar.EventDetail
 import com.platinum20.dashboard.calendar.EventDraft
+import com.platinum20.dashboard.calendar.PermissionStatus
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -116,8 +123,10 @@ fun CalendarScreen(
     var days by remember { mutableStateOf<Map<LocalDate, List<CalendarEvent>>?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     var picking by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf(PermissionStatus.DENIED) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         granted = it
+        status = statusAfter(context, it, Manifest.permission.READ_CALENDAR)
         reload++
     }
     // Tornando dalla scheda o dalla modifica di un evento l'agenda si rilegge.
@@ -153,8 +162,12 @@ fun CalendarScreen(
             !granted -> CalendarMessage(
                 modifier = Modifier.padding(inner),
                 text = "Per vedere qui i tuoi impegni Canvas deve poter leggere il calendario del telefono.",
-                action = "Consenti",
-                onAction = { launcher.launch(Manifest.permission.READ_CALENDAR) },
+                action = CalendarPermission.actionLabel(status),
+                // Negato per sempre: Android non mostra più il dialog, resta Info app.
+                onAction = {
+                    if (status == PermissionStatus.BLOCKED) openAppInfo(context)
+                    else launcher.launch(Manifest.permission.READ_CALENDAR)
+                },
             )
             list == null -> Box(Modifier.padding(inner))
             else -> LazyColumn(
@@ -250,6 +263,13 @@ private fun ColorDot(color: Int, alpha: Float = 1f) {
     )
 }
 
+/** Lo stato del permesso dopo una risposta, chiedendo ad Android se mostrerebbe ancora il dialog. */
+private fun statusAfter(context: Context, granted: Boolean, permission: String): PermissionStatus {
+    val activity = context.findActivity()
+    val rationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
+    return CalendarPermission.afterRequest(granted, rationale)
+}
+
 @Composable
 private fun CalendarMessage(text: String, action: String, onAction: () -> Unit, modifier: Modifier = Modifier) {
     Column(
@@ -301,8 +321,23 @@ fun EventDetailScreen(
     var reload by remember { mutableIntStateOf(0) }
     var confirmDelete by remember { mutableStateOf(false) }
     var askWrite by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+    // Mai fallire in silenzio: un messaggio, e con il permesso negato per sempre la strada per Info app.
+    fun tell(text: String, status: PermissionStatus = PermissionStatus.GRANTED) {
+        scope.launch {
+            val result = snackbar.showSnackbar(
+                text,
+                actionLabel = if (status == PermissionStatus.BLOCKED) CalendarPermission.actionLabel(status) else null,
+                withDismissAction = status != PermissionStatus.BLOCKED,
+            )
+            if (result == SnackbarResult.ActionPerformed) openAppInfo(context)
+        }
+    }
     val writeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) askWrite?.invoke()
+        if (ok) askWrite?.invoke() else {
+            val status = statusAfter(context, false, Manifest.permission.WRITE_CALENDAR)
+            CalendarPermission.writeDeniedMessage(status)?.let { tell(it, status) }
+        }
         askWrite = null
     }
     fun withWrite(action: () -> Unit) {
@@ -320,6 +355,7 @@ fun EventDetailScreen(
 
     val current = event
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {},
@@ -418,6 +454,8 @@ fun EventDetailScreen(
                             if (CalendarRepository.delete(context, current.id)) {
                                 haptic(Haptic.CONFIRM)
                                 onBack()
+                            } else {
+                                tell(CalendarPermission.DELETE_FAILED)
                             }
                         }
                     }
@@ -459,9 +497,15 @@ fun EventEditScreen(
     var saving by remember { mutableStateOf(false) }
     var granted by remember { mutableStateOf(CalendarRepository.hasPermission(context) && CalendarRepository.canWrite(context)) }
     var asked by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf(PermissionStatus.DENIED) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         granted = result.values.all { it } || (CalendarRepository.hasPermission(context) && CalendarRepository.canWrite(context))
+        status = statusAfter(context, granted, Manifest.permission.WRITE_CALENDAR)
         asked = true
+    }
+    // Tornando da Info app con il permesso acceso, il modulo si apre da solo.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        if (!granted && CalendarRepository.hasPermission(context) && CalendarRepository.canWrite(context)) granted = true
     }
     LaunchedEffect(Unit) {
         if (!granted) launcher.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
@@ -518,8 +562,11 @@ fun EventEditScreen(
             !granted && asked -> CalendarMessage(
                 modifier = Modifier.padding(inner),
                 text = "Per salvare gli eventi Canvas deve poter scrivere nel calendario del telefono.",
-                action = "Consenti",
-                onAction = { launcher.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)) },
+                action = CalendarPermission.actionLabel(status),
+                onAction = {
+                    if (status == PermissionStatus.BLOCKED) openAppInfo(context)
+                    else launcher.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
+                },
             )
             loaded && current == null -> Text(
                 if (eventId != null) "Questo evento non c'è più."
