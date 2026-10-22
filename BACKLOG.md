@@ -13,7 +13,7 @@ _Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.94.0
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.93.0, giro fotografico `main/50`, 2026-10-22.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.96.0, giro fotografico `main/53`, 2026-10-22.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
@@ -27,6 +27,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V8. Il giro fotografico non vede il nuovo player di YouTube né Spotify che suona · giro fotografico · gravità media
 - **Versione:** 1.82.0-1.86.0 (giro `main/41`)
+- **Aggiornamento 1.96.0 (`main/53`):** `youtube_iscrizioni` ora mostra la barra rossa di quanto hai visto e `youtube_player` il "Non mi piace" e la durata mentre carica: bene. Restano senza foto la scheda **Cronologia** ("Guardati qui" + "Dalla tua cronologia di YouTube"), i **commenti** nuovi (Mi piace/Non mi piace, fissato, cuore, risposte, "Altri commenti"), il tasto **sottotitoli**, i **correlati** con Ripeti/Condividi e la pagina **Video** con dei video in "Sul telefono" (`33_video` mostra solo l'invito, perché il tour non concede `READ_MEDIA_VIDEO`). Aggiungere `youtube_cronologia`, `youtube_commenti` e `33b_video_telefono` (permesso concesso con `ShadowApplication.grantPermissions` e 3 video finti in `PhoneVideos`, o una lista iniettata).
 - **Aggiornamento 1.93.0 (`main/50`):** mancano anche "Riprendi" in cima a Media (`30_media` è senza cronologia, quindi la sezione non si vede mai) e la riga "Riprendi: …" in Adesso; la card "Domani" si vede solo perché il giro gira dopo le 18 (aggiungere un orario fisso alle 19 per il giro, altrimenti sparisce nei giri del mattino). L'avviso pioggia è solo una notifica: verificato dal codice e da `RainAlertTest`. Aggiungere `30b_media_riprendi` con un video e una radio finti in `MediaHistory`.
 - **Aggiornamento 1.90.0 (`main/46`):** il player e il feed di YouTube ora sono fotografati da `YouTubeTour` (`youtube_iscrizioni`, `youtube_player`: IN DIRETTA, Short, capitoli, qualità, velocità, si vedono bene). Restano da fare: stato di errore del player con "Riprova", `30b_media_in_corso`, riga urgente in Adesso, e le due foto YouTube anche al buio.
 - **Cosa non va:** la parte più grande di queste versioni non ha nessuna foto: schermata del player YouTube (`YouTubeWatchScreen`: video, titolo, barra col minutaggio, menu qualità, capitoli, commenti, "Prossimi dai canali che segui", stato di errore con "Riprova"), scheda Home e filtro "Solo dirette" del feed, bollino IN DIRETTA, il blocco "brano in riproduzione" di Media col colore del tema (1.86), una riga urgente in arancio dentro "Adesso" (1.86). `31_youtube` e `32_spotify` mostrano solo "Collega il tuo...", `30_media` è senza brano in corso.
@@ -51,14 +52,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** quando la card Domani c'è (`Tomorrow.build` non null), togliere da Adesso le righe "Domani …" che la card già mostra (meteo, impegni, date, addebiti, pacchi se aggiunti alla card); l'icona della riga meteo deve venire dal codice meteo (`weatherIcon(code)`), non sempre il sole.
 - **Test che lo impedisce:** in `BriefingTest`, `build(...)` alle 19 con `tomorrowCard = true` non contiene righe che iniziano con "Domani"; un test che con pioggia ≥ 50% la riga meteo non ha l'icona del sole; foto `01_oggi` di sera.
 
-### V22. YouTube: cambiando video mentre suona, il punto del video di prima si perde · Media › Riprendi, Adesso · gravità media
-- **Versione:** 1.93.0
-- **Cosa non va:** `YtPlayer.remember()` salva il punto solo quando il player smette di suonare (`onIsPlayingChanged(false)`) e prende il video da `_now.value`. Ma `play()` mette subito `_now.value = YtNow(link nuovo, stream = null)` e `start()` lo sostituisce con lo stream nuovo prima di `setMediaSource`: quando il video vecchio si ferma, `_now` parla già del nuovo, quindi il vecchio non viene salvato (o viene salvato col nome del nuovo). Si perde anche se il processo viene chiuso mentre il video suona (nessun salvataggio periodico). È il caso tipico: guardi 20 minuti di A, tocchi un video in "Prossimi" o un altro link, e in Riprendi A non c'è o riparte da capo.
-- **Dove:** `media/youtube/player/YtPlayer.kt` (`play`, `start`, `remember`, listener `onIsPlayingChanged`).
-- **Come riprodurre:** aprire un video, lasciarlo suonare due minuti senza pausa, aprire un altro video da "Prossimi"; tornare in Media: il primo non è in Riprendi (o è al punto 0).
-- **Cosa fare:** in `play()` chiamare `remember(context)` per il video corrente prima di cambiare `_now`; salvare anche ogni 30 s mentre suona e in `stop()`/`release()`.
-- **Test che lo impedisce:** test di `YtPlayer` (o di una funzione estratta) che, passando da A a 2:00 a B, lascia in `MediaHistory` A con posizione 120 000 ms.
-
 ### V21. Card "Domani": frase in cima quasi mai visibile, e dopo mezzanotte dice "Domani" per oggi · Oggi › Domani · gravità bassa
 - **Versione:** 1.93.0 (foto `01_oggi` di `main/50`)
 - **Cosa non va:** (1) la frase in cima ("Domani 8:30 Dentista, pioggia dalle 10") la costruisce `Tomorrow.headline` solo con un evento del calendario o con `rainFrom`: un promemoria con orario (come "9:00 Chiamare il commercialista" nel giro) non conta, e la pioggia al 60% del giorno senza un'ora ≥ 50% non conta, quindi nel giro la frase non c'è. (2) Tra mezzanotte e le 3 `targetDay` è oggi, ma il titolo della sezione resta "Domani · venerdì 23" e la frase inizia con "Domani".
@@ -66,6 +59,32 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** (1) dopo le 18 senza calendario collegato e un promemoria per domani alle 9: nessuna frase in cima; (2) all'1 di notte: la card dice "Domani · venerdì 23" ma venerdì 23 è oggi.
 - **Cosa fare:** nella frase usare anche il primo promemoria con orario se non c'è un evento; dopo mezzanotte titolo "Oggi · …" (o "Più tardi"), frase senza "Domani".
 - **Test che lo impedisce:** `TomorrowTest`: con solo un promemoria alle 9 la frase è "Domani 9:00 …"; alle 1:00 il titolo/frase non contengono "Domani".
+
+### V22. YouTube: cambiando video mentre suona, il punto del video di prima si perde · Media › Riprendi, Adesso · gravità bassa
+- **Versione:** 1.93.0
+- **Aggiornamento 1.96.0:** in parte attenuato dalla 1.95: `YtHistory` salva il punto ogni 5 secondi, quindi riaprendo il video A riparte da dove eri. Ma la voce di A in Media › Riprendi e in Adesso (`MediaHistory`) resta quella scritta all'avvio (posizione 0, barra vuota) perché `remember()` continua a non salvare il video vecchio quando si cambia video. Ora ci sono due cronologie (`MediaHistory` e `YtHistory`) che dicono cose diverse sullo stesso video: Riprendi dovrebbe prendere posizione e durata da `YtHistory` per i video YouTube. Gravità abbassata a bassa.
+- **Cosa non va:** `YtPlayer.remember()` salva il punto solo quando il player smette di suonare (`onIsPlayingChanged(false)`) e prende il video da `_now.value`. Ma `play()` mette subito `_now.value = YtNow(link nuovo, stream = null)` e `start()` lo sostituisce con lo stream nuovo prima di `setMediaSource`: quando il video vecchio si ferma, `_now` parla già del nuovo, quindi il vecchio non viene salvato (o viene salvato col nome del nuovo). Si perde anche se il processo viene chiuso mentre il video suona (nessun salvataggio periodico). È il caso tipico: guardi 20 minuti di A, tocchi un video in "Prossimi" o un altro link, e in Riprendi A non c'è o riparte da capo.
+- **Dove:** `media/youtube/player/YtPlayer.kt` (`play`, `start`, `remember`, listener `onIsPlayingChanged`).
+- **Come riprodurre:** aprire un video, lasciarlo suonare due minuti senza pausa, aprire un altro video da "Prossimi"; tornare in Media: il primo non è in Riprendi (o è al punto 0).
+- **Cosa fare:** in `play()` chiamare `remember(context)` per il video corrente prima di cambiare `_now`; salvare anche ogni 30 s mentre suona e in `stop()`/`release()`.
+- **Test che lo impedisce:** test di `YtPlayer` (o di una funzione estratta) che, passando da A a 2:00 a B, lascia in `MediaHistory` A con posizione 120 000 ms.
+
+
+### V23. Video del telefono: se il permesso è negato per sempre il tocco non fa nulla · Media › Video › Sul telefono · gravità bassa
+- **Versione:** 1.96.0 (foto `33_video`, `scuro_33_video` di `main/53`: l'invito si vede bene, chiaro e scuro)
+- **Cosa non va:** (1) dopo due "Non consentire" Android non mostra più la richiesta: `phonePermission.launch(...)` torna subito con false e la card "Mostra i video del telefono" resta lì senza dire niente, all'infinito. (2) Con il permesso già dato, la lista si legge una volta sola (`LaunchedEffect(phoneAllowed)`): un video registrato mentre l'app è in sottofondo non compare tornando nella pagina finché non la si chiude e riapre.
+- **Dove:** `ui/screens/VideoPlayerScreen.kt` (blocco "Video del telefono", `PhoneVideosInvite`).
+- **Come riprodurre:** (1) toccare "Mostra i video del telefono" e rifiutare due volte, poi toccare ancora: non succede nulla. (2) Aprire Video, registrare un video con la fotocamera, tornare: non c'è.
+- **Cosa fare:** se il permesso viene negato e `shouldShowRequestPermissionRationale` è false, cambiare il testo della card in "Permesso negato: aprilo nelle impostazioni" e aprire `Settings.ACTION_APPLICATION_DETAILS_SETTINGS`; ricaricare `PhoneVideos.load` anche a ogni `ON_RESUME` quando il permesso c'è.
+- **Test che lo impedisce:** test di una funzione pura (es. `phoneInviteState(granted, askedBefore, rationale)`) che restituisce "apri impostazioni" dopo un rifiuto definitivo; foto `33b_video_telefono` (vedi V8).
+
+### V24. YouTube › Cronologia: "Svuota" cancella tutto con un tocco, senza conferma né Annulla · YouTube › Cronologia · gravità bassa
+- **Versione:** 1.95.0 (solo dal codice: la scheda non è nel giro fotografico)
+- **Cosa non va:** `TextButton(onClick = { YtHistory.clear() })` in `HistoryTab` cancella fino a 300 video guardati, con i punti in cui eri, al primo tocco; nel resto dell'app le eliminazioni hanno "Annulla" (Da fare, Note). Svuota inoltre non tocca `MediaHistory`, quindi gli stessi video restano in Media › Riprendi.
+- **Dove:** `ui/screens/YouTubeFeedScreen.kt` (`HistoryTab`), `media/youtube/YtHistory.kt`.
+- **Come riprodurre:** YouTube › Cronologia › Svuota: tutto sparisce senza modo di tornare indietro.
+- **Cosa fare:** snackbar "Cronologia svuotata · Annulla" (tenere la mappa vecchia e rimetterla), oppure un dialogo di conferma; decidere se svuotare anche le voci YouTube di `MediaHistory`.
+- **Test che lo impedisce:** `YtHistoryTest`: dopo `clear()` e `restore(previous)` gli elementi e le posizioni sono gli stessi.
 
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
