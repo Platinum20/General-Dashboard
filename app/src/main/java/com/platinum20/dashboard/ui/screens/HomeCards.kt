@@ -246,6 +246,10 @@ fun TasksCard(onOpenNotes: () -> Unit) {
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var draft by rememberSaveable { mutableStateOf("") }
+    val add = {
+        if (NotesStore.addTask(draft) != null) haptic(Haptic.CONFIRM)
+        draft = ""
+    }
     val open = data.openTasks
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
@@ -323,16 +327,10 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                 placeholder = { Text("Aggiungi un promemoria") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    NotesStore.addTask(draft)
-                    draft = ""
-                }),
+                keyboardActions = KeyboardActions(onDone = { add() }),
                 trailingIcon = {
                     if (draft.isNotBlank()) {
-                        IconButton(onClick = {
-                            NotesStore.addTask(draft)
-                            draft = ""
-                        }) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
+                        IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
                     }
                 },
                 shape = MaterialTheme.shapes.large,

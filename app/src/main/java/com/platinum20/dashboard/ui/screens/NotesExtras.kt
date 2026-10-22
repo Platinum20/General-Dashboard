@@ -78,8 +78,12 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues) {
     var editingBudget by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Expense?>(null) }
     val parsed = remember(draft) { Expenses.parse(draft) }
+    val haptic = rememberHaptic()
     val add = {
-        if (NotesStore.addExpense(draft) != null) draft = ""
+        if (NotesStore.addExpense(draft) != null) {
+            haptic(Haptic.CONFIRM)
+            draft = ""
+        }
     }
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))

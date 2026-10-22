@@ -253,8 +253,9 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues) {
 @Composable
 private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (TaskItem) -> Unit) {
     var draft by rememberSaveable { mutableStateOf("") }
+    val haptic = rememberHaptic()
     val add = {
-        NotesStore.addTask(draft)
+        if (NotesStore.addTask(draft) != null) haptic(Haptic.CONFIRM)
         draft = ""
     }
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {

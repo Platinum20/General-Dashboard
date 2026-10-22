@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.38.0
+- Vibrazione leggera quando aggiungi un promemoria (da Oggi o da Note) o una spesa: senti che è salvato senza guardare
+
 ## 1.37.0
 - Note > Da fare: quando elimini un promemoria con la X, o tutti i completati con il cestino in alto, compare "Annulla" per qualche secondo
 
