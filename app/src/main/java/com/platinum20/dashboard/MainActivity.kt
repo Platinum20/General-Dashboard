@@ -407,12 +407,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE, it)) },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.YOUTUBE)) },
+                    onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                 )
             }
             composable(Routes.SPOTIFY_FEED) {
                 SpotifyFeedScreen(
                     onBack = { navController.popBackStack() },
                     onOpenWeb = { navController.navigate(Routes.webPlayer(MediaService.SPOTIFY)) },
+                    onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
                 )
             }
             composable(

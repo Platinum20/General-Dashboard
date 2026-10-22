@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material3.OutlinedButton
+import com.platinum20.dashboard.media.spotify.SpotifyWebSession
+import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.Accounts
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -90,10 +94,15 @@ private val spotifyTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
 fun SpotifyFeedScreen(
     onBack: () -> Unit,
     onOpenWeb: () -> Unit,
+    onLogin: () -> Unit,
 ) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
-    val connected by SpotifyAuth.connected.collectAsState()
+    val official by SpotifyAuth.connected.collectAsState()
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
+    // Basta l'accesso fatto nell'app; il collegamento con un'app per sviluppatori resta un'alternativa.
+    val connected = official || MediaService.SPOTIFY in loggedIn
     val message by SpotifyStore.message.collectAsState()
     val playback by SpotifyStore.playback.collectAsState()
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -141,7 +150,8 @@ fun SpotifyFeedScreen(
                             }
                         }) { Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna") }
                         IconButton(onClick = {
-                            SpotifyAuth.disconnect()
+                            if (official) SpotifyAuth.disconnect() else Accounts.logout(MediaService.SPOTIFY)
+                            SpotifyWebSession.clear()
                             SpotifyStore.clear()
                         }) { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = "Scollega Spotify") }
                     }
@@ -159,7 +169,7 @@ fun SpotifyFeedScreen(
                 .padding(inner)
         ) {
             if (!connected) {
-                ConnectSpotify(onOpenWeb)
+                ConnectSpotify(onOpenWeb, onLogin)
                 return@Column
             }
             val parent = opened
@@ -186,7 +196,7 @@ fun SpotifyFeedScreen(
 }
 
 @Composable
-private fun ConnectSpotify(onOpenWeb: () -> Unit) {
+private fun ConnectSpotify(onOpenWeb: () -> Unit, onLogin: () -> Unit) {
     val context = LocalContext.current
     val clientId by SpotifyAuth.clientId.collectAsState()
     val error by SpotifyAuth.error.collectAsState()
@@ -205,13 +215,22 @@ private fun ConnectSpotify(onOpenWeb: () -> Unit) {
         Text("Collega il tuo Spotify", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Ascoltati di recente, i tuoi preferiti, playlist, album e podcast. Il login si fa sul sito di Spotify " +
-                "nel browser: l'app riceve solo il permesso di lettura e dei comandi di riproduzione.",
+            "Ascoltati di recente, i tuoi preferiti, playlist, album e podcast. Basta accedere al tuo account " +
+                "Spotify una volta, qui nell'app: nessuna registrazione da fare.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(20.dp))
+        Button(onClick = onLogin) { Text("Accedi a Spotify") }
+        Spacer(Modifier.height(32.dp))
+        Text(
+            "In alternativa, se hai creato un'app su developer.spotify.com, incolla qui il suo Client ID.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
         OutlinedTextField(
             value = draft,
             onValueChange = { draft = it.trim() },
@@ -223,13 +242,13 @@ private fun ConnectSpotify(onOpenWeb: () -> Unit) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://claude.ai/artifact/MGivavbbvKjLz3kkKAMyHE")))
         }) { Text("Dove lo trovo?") }
         Spacer(Modifier.height(8.dp))
-        Button(
+        OutlinedButton(
             enabled = draft.length >= 20,
             onClick = {
                 SpotifyAuth.setClientId(draft)
                 SpotifyAuth.startLogin(context)
             },
-        ) { Text("Accedi con Spotify") }
+        ) { Text("Collega con il Client ID") }
         error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)

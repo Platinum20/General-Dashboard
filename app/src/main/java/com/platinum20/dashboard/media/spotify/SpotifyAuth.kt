@@ -46,6 +46,7 @@ object SpotifyAuth {
     )
 
     private lateinit var prefs: SharedPreferences
+    private lateinit var appContext: Context
     private val refreshLock = Mutex()
     private val scope = MainScope()
 
@@ -61,7 +62,8 @@ object SpotifyAuth {
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        appContext = context.applicationContext
+        prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _clientId.value = prefs.getString(KEY_CLIENT_ID, "").orEmpty()
         _connected.value = prefs.getString(KEY_REFRESH, null) != null
     }
@@ -122,8 +124,16 @@ object SpotifyAuth {
         }
     }
 
-    /** Token valido per le chiamate, rinnovato quando scade. Null se non collegato. */
-    suspend fun token(forceRefresh: Boolean = false): String? = refreshLock.withLock {
+    /**
+     * Token valido per le chiamate, rinnovato quando scade. Senza il collegamento ufficiale si usa
+     * quello del web player con l'accesso fatto nell'app. Null se nessuno dei due è disponibile.
+     */
+    suspend fun token(forceRefresh: Boolean = false): String? {
+        if (!_connected.value) return SpotifyWebSession.token(appContext, forceRefresh)
+        return officialToken(forceRefresh)
+    }
+
+    private suspend fun officialToken(forceRefresh: Boolean): String? = refreshLock.withLock {
         val access = prefs.getString(KEY_ACCESS, null)
         if (!forceRefresh && access != null && System.currentTimeMillis() < prefs.getLong(KEY_EXPIRES, 0)) {
             return access
