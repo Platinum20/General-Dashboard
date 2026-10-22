@@ -81,6 +81,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.clickable
 
 /** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,9 +100,6 @@ fun MediaScreen(
     val youTubeLinked by YouTubeAuth.connected.collectAsState()
     val spotifyLinked by SpotifyAuth.connected.collectAsState()
     val open by MediaWebViews.open.collectAsState()
-    val adBlock by AppSettings.adBlock.collectAsState()
-    val blocked by AdBlocker.blocked.collectAsState()
-    val adBlockStatus by AdBlocker.status.collectAsState()
     val tracks by NowPlaying.tracks.collectAsState()
     val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
@@ -190,87 +188,22 @@ fun MediaScreen(
                     }
                 }
             }
+            // Il blocco pubblicità si regola nelle Impostazioni: qui solo una riga che dice se è attivo.
             item(key = "adblock") {
-                AdBlockCard(
-                    enabled = adBlock,
-                    blocked = blocked,
-                    status = adBlockStatus,
-                    onToggle = {
-                        AppSettings.setAdBlock(it)
-                        // Le pagine aperte ripartono con la nuova impostazione.
-                        MediaWebViews.releaseAll()
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AdBlockCard(enabled: Boolean, blocked: Int, status: AdBlocker.Status, onToggle: (Boolean) -> Unit) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        // Stesso fondo delle altre card: lo stato lo dicono l'icona colorata e l'interruttore, senza un blocco di colore.
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                Icons.Outlined.Shield,
-                contentDescription = null,
-                tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(Modifier.size(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Blocco pubblicità", style = MaterialTheme.typography.titleSmall)
+                val adBlock by AppSettings.adBlock.collectAsState()
                 Text(
-                    if (enabled) "Attivo · $blocked richieste bloccate" else "Disattivato",
-                    style = MaterialTheme.typography.bodySmall,
+                    if (adBlock) "Pubblicità bloccata nei player · Impostazioni" else "Blocco pubblicità spento · Impostazioni",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable(onClick = onOpenSettings)
+                        .padding(horizontal = 4.dp, vertical = 8.dp),
                 )
-                if (enabled) {
-                    Text(
-                        adBlockStatusText(status),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
-            if (enabled) {
-                TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
-            }
-            Switch(checked = enabled, onCheckedChange = hapticToggle(onToggle))
         }
     }
-}
-
-/** "EasyList, EasyPrivacy e uBlock Origin · 163.784 regole · aggiornate il 22 ott". */
-private fun adBlockStatusText(status: AdBlocker.Status): String {
-    val parts = mutableListOf<String>()
-    when {
-        status.updating -> parts += "Aggiornamento in corso…"
-        !status.ready -> parts += "Caricamento delle liste…"
-        else -> parts += "%,d regole".format(Locale.ITALY, status.rules)
-    }
-    parts += status.updatedAt?.let {
-        "aggiornate il " + SimpleDateFormat("d MMM", Locale.ITALIAN).format(Date(it))
-    } ?: "liste incluse nell'app"
-    status.lastError?.let { parts += it }
-    return "EasyList, EasyPrivacy e uBlock Origin · " + parts.joinToString(" · ")
-}
-
-/** Colori delle icone della griglia Media: chiaro e scuro, sempre leggibili. */
-private enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val darkBg: Long) {
-    BLUE(0xFF3550E8, 0xFFE3E8FF, 0xFF9AABFF, 0xFF252B4A),
-    ORANGE(0xFFD9572B, 0xFFFCE5DA, 0xFFFF8F66, 0xFF3A241B),
-    GREEN(0xFF1E8A57, 0xFFDDF3E7, 0xFF5FD39B, 0xFF1F3A2C),
-    PURPLE(0xFF7A44C2, 0xFFEFE4FB, 0xFFD7A6FF, 0xFF33283F),
 }
 
 @Composable
@@ -283,7 +216,6 @@ private fun RowScope.MediaTile(
     playing: Boolean = false,
     onStop: () -> Unit = {},
 ) {
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     CanvasCard(
         onClick = onClick,
         modifier = Modifier.weight(1f).heightIn(min = 128.dp).bouncyPress(),
@@ -291,15 +223,7 @@ private fun RowScope.MediaTile(
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(40.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(Color(if (dark) accent.darkBg else accent.lightBg)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(icon, contentDescription = null, tint = Color(if (dark) accent.dark else accent.light), modifier = Modifier.size(22.dp))
-                }
+                IconTile(icon, accent)
                 Spacer(Modifier.weight(1f))
                 if (playing) {
                     // Chiude il player rimasto aperto in sottofondo.
