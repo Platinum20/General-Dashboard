@@ -67,11 +67,11 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V15. Backup: esportazione su Drive e notifica del mattino dopo il ripristino · Impostazioni › Dati · gravità bassa
 - **Versione:** 1.88.0
-- **Cosa non va:** (1) `Backup.export` apre il file con `openOutputStream(uri, "wt")`: alcuni fornitori di documenti (Google Drive in particolare) rifiutano la modalità "wt" e l'esportazione finisce con "non riuscita" senza dire perché. (2) Dopo "Ripristina da backup" le impostazioni della notifica del mattino cambiano ma `MorningWorker.schedule` non viene richiamato: la notifica parte (o smette) solo dal prossimo avvio dell'app. Anche il widget non si aggiorna.
-- **Dove:** `backup/Backup.kt` (`export`, `restore`), `ui/screens/BackupUi.kt`.
+- **Cosa non va:** (1) `Backup.export` apre il file con `openOutputStream(uri, "wt")`: alcuni fornitori di documenti (Google Drive in particolare) rifiutano la modalità "wt" e l'esportazione finisce con "non riuscita" senza dire perché. (2) Dopo "Ripristina da backup" le impostazioni della notifica del mattino cambiano ma `MorningWorker.schedule` non viene richiamato: la notifica parte (o smette) solo dal prossimo avvio dell'app. Anche il widget non si aggiorna. (3) "Rimanda" di notte: l'etichetta si calcola quando la notifica viene mostrata (`TaskReminderWorker.kt:70`), l'orario quando si tocca (riga 131). Notifica alle 4:50 con "Stamattina 9:00", toccata alle 5:10: rimanda a domani 9:00, non a stamattina.
+- **Dove:** `backup/Backup.kt` (`export`, `restore`), `ui/screens/BackupUi.kt`; per (3) `notes/TaskReminderWorker.kt`, `notes/Snooze.kt`.
 - **Come riprodurre:** (1) Esporta backup → scegliere una cartella di Google Drive; (2) ripristinare un backup con la notifica del mattino accesa su un telefono dove era spenta, non riaprire l'app: domattina niente notifica.
 - **Cosa fare:** provare "wt" e se fallisce ripiegare su "w"; in `restore` richiamare `MorningWorker.schedule(context)` e aggiornare il widget; un messaggio d'errore che dica "Questa cartella non accetta il file, prova Download".
-- **Test che lo impedisce:** test Robolectric di `restore` che controlla il lavoro programmato in `WorkManagerTestInitHelper`.
+- **Test che lo impedisce:** test Robolectric di `restore` che controlla il lavoro programmato in `WorkManagerTestInitHelper`. Per (3): mettere nell'intent dell'azione l'istante in cui la notifica è stata mostrata e calcolare `until` da quello; `SnoozeTest` con etichetta e orario dallo stesso istante (4:50 mostrata, 5:10 toccata → stamattina 9:00).
 
 ### V16. Editor di una nota: il titolo non si distingue dal testo · Note › nota · gravità bassa
 - **Versione:** 1.91.0 (foto `26_nota`, `scuro_26_nota`)
