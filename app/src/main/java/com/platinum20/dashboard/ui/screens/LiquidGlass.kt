@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -51,10 +52,15 @@ fun Modifier.backdropSource(backdrop: Backdrop): Modifier = composed {
     this
         .onGloballyPositioned { backdrop.origin = it.positionInRoot() }
         .drawWithContent {
-            layer.record { this@drawWithContent.drawContent() }
-            drawLayer(layer)
-            backdrop.layer = layer
-            backdrop.frame++
+            // I livelli grafici esistono solo col disegno accelerato; altrimenti (catture a bitmap, test) si disegna e basta.
+            if (drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
+                layer.record { this@drawWithContent.drawContent() }
+                drawLayer(layer)
+                backdrop.layer = layer
+                backdrop.frame++
+            } else {
+                drawContent()
+            }
         }
 }
 
@@ -73,7 +79,7 @@ internal fun Modifier.liquidGlass(backdrop: Backdrop, shape: Shape, tint: Color)
         .drawWithContent {
             val source = backdrop.layer
             @Suppress("UNUSED_VARIABLE") val frame = backdrop.frame
-            if (source != null && size.width > 0f && size.height > 0f) {
+            if (source != null && size.width > 0f && size.height > 0f && drawContext.canvas.nativeCanvas.isHardwareAccelerated) {
                 // Margine attorno: la lente pesca un po' oltre il bordo e la sfocatura non scurisce i lati.
                 val pad = 24.dp.toPx()
                 val radius = when (val outline = shape.createOutline(size, layoutDirection, this)) {
