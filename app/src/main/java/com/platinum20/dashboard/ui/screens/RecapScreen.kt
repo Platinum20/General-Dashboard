@@ -96,6 +96,7 @@ fun RecapScreen(
                                 Column(
                                     Modifier
                                         .fillMaxWidth()
+                                        .bouncyPress(0.98f)
                                         .clickable { open(item) }
                                         .padding(horizontal = 20.dp, vertical = 10.dp)
                                         .alpha(if (item.link in read) READ_ALPHA else 1f)

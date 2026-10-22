@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.42.0
+- Oggi: anche le righe dentro le card (Adesso, agenda, promemoria, In arrivo, notizie del giorno) si "schiacciano" leggermente al tocco come il resto dell'app
+- Il punto del giorno: stesso effetto sugli articoli di ogni tema
+
 ## 1.41.0
 - Note: "Annulla" per qualche secondo anche quando elimini un'abitudine (con tutta la sua serie), una spesa, un pacco o una data
 

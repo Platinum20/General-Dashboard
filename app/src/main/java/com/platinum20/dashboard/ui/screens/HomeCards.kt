@@ -78,7 +78,7 @@ fun CardHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .then(if (onClick != null) Modifier.bouncyPress(0.98f).clickable(onClick = onClick) else Modifier)
             .padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -209,6 +209,7 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .bouncyPress(0.98f)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -279,6 +280,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .bouncyPress(0.98f)
                         .clickable(onClick = done)
                         .padding(start = 8.dp, end = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -396,6 +398,7 @@ fun CountdownCard() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .bouncyPress(0.98f)
                         .clickable { editing = item }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,

@@ -348,6 +348,7 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (line.kind != BriefKind.FREE) Modifier.bouncyPress(0.98f) else Modifier)
             .clickable(enabled = line.kind != BriefKind.FREE, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -512,6 +513,7 @@ fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
+            .bouncyPress(0.98f)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
