@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~22:45 UTC (UI prima di tutto), su main 1.94.0 (PR #75 uscita alle 22:42: solo vetro della barra e del + più morbido), foto: branch `screenshots`, cartella `main/50` (giro di main 1.93.0 delle 18:13; valgono ancora, la 1.94 tocca solo la sfocatura). Nessuna PR aperta._
+_Ultimo aggiornamento: 2026-10-22 ~23:25 UTC (UI prima di tutto), su main 1.96.0, foto: branch `screenshots`, cartella `main/53` (giro del verificatore sulla 1.96.0, 292 test verdi). Nessuna PR aperta._
 
 ---
 
@@ -114,7 +114,9 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
-_Giro fotografico della 1.93.0 (`main/50`, 2026-10-22 18:13). La 1.93 ha tolto "Niente di nuovo" dalle News e la X in Da fare, ma in `main/50` si vedono ancora: riquadro grigio al posto della foto e riga "Fanpage non risponde" in News (1), mezze pagine vuote in Date, Pacchi, Abitudini, Media e Video (3, 5), Client ID in Spotify (8), cerchio fermo e "Alba · Tramonto" da solo nel Meteo (7). Nuovo: la card Domani ripete il promemoria che c'è già sotto in Da fare (7)._
+_Giro fotografico della 1.96.0 (`main/53`): Date ora ha le "Idee da aggiungere" e non è più mezza vuota, Video ha "Sul telefono", la barra rossa di YouTube si vede. **Ancora uguali a `main/50`:** riquadro grigio e riga "Fanpage non risponde" in News (1), Media al primo uso con due terzi vuoti, Pacchi con un pacco e il resto vuoto, Abitudini a metà (3), Client ID in Spotify e titoli piccoli in Spotify/Video (8), "Alba · Tramonto" da solo e riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" tagliata, la card Domani che ripete il promemoria di Da fare (7), la riga "Domani 22° / 10°, pioggia 48%" col sole in Adesso (V20). Le voci 1, 3, 7, 8 sono UI e vanno fatte prima delle funzioni nuove. Voce 14 (scorciatoie) tolta: le 3 scorciatoie e il riquadro rapido esistono già (`res/xml/shortcuts.xml`, `QuickCaptureTile`)._
+
+_Foto `main/50` (2026-10-22 18:13). La 1.93 ha tolto "Niente di nuovo" dalle News e la X in Da fare, ma in `main/50` si vedono ancora: riquadro grigio al posto della foto e riga "Fanpage non risponde" in News (1), mezze pagine vuote in Date, Pacchi, Abitudini, Media e Video (3, 5), Client ID in Spotify (8), cerchio fermo e "Alba · Tramonto" da solo nel Meteo (7). Nuovo: la card Domani ripete il promemoria che c'è già sotto in Da fare (7)._
 
 _**Antonio (2026-10-22 13:29): "Focalizzati su UI adesso prima del resto".** Le prime 8 voci sono interfaccia (cose che si vedono nelle foto), le funzioni nuove vengono dopo. La revisione UI di `brclxp` è uscita nella 1.91.0: si può lavorare su tutte le schermate._
 
@@ -131,7 +133,8 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 **Fatto quando:** i test nuovi girano in `build.yml`; un giro con una foto mancante o doppia fallisce.
 **Test:** sono la voce stessa.
 
-### 3. Date, Pacchi, Media e Video: niente mezze pagine vuote · Note, Media · S
+### 3. Pacchi, Abitudini e Media: niente mezze pagine vuote · Note, Media · S
+_(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `main/53` restano `25_pacchi` (un pacco e poi tutto vuoto), `23_abitudini` (due card e metà schermo vuoto) e `30_media` (4 riquadri e due terzi vuoti). Per Abitudini usare lo stesso schema delle idee di Date: "Idee da aggiungere" con "Leggere 20 minuti", "Palestra 3 volte a settimana", "Niente telefono a letto" che aprono il dialogo già compilato.)_
 **Perché:** ancora nella 1.91 Date (22_date) ha un compleanno e poi tre quarti di schermo vuoto, e lo stesso in Pacchi (25_pacchi, un pacco), Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
 **Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi è uscito in 1.93 ma compare solo se c'è qualcosa da riprendere: in `main/50/tour/30_media` (primo uso) la pagina ha 4 riquadri e poi due terzi vuoti. Al primo uso mostrare "Per iniziare": 3-4 stazioni radio italiane tappabili (Radio 2, RTL 102.5, Radio Deejay: partono in un tocco) e, se YouTube è collegato, gli ultimi 3 video dalle iscrizioni. Stile `CanvasCard` con `IconTile`, testo breve.
 **Fatto quando:** nessuna di queste schermate nelle foto ha più di un terzo di schermo vuoto (anche `30_media` senza cronologia).
@@ -146,8 +149,15 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 ### 8. Spotify, Video e Radio come le altre pagine; via il Client ID · Media · S
 **Perché:** la 1.91 ha dato il titolo grande a tutte le pagine interne, ma Spotify (32_spotify) e Video (33_video) hanno ancora il titolo piccolo da barra vecchia. In Spotify, sotto "Accedi a Spotify", c'è ancora il campo "Client ID dell'app Spotify" con il codice esadecimale in chiaro e "Collega con il Client ID": dalla 1.90 l'accesso ufficiale funziona e quel blocco è solo rumore tecnico da sviluppatore.
 **Cosa fare:** `SpotifyFeedScreen.kt`, `VideoPlayerScreen.kt`, `RadioScreen.kt`: stessa intestazione grande con freccia di Impostazioni/Meteo (con sopra la riga piccola "IL TUO SPOTIFY" come YouTube). Spostare il Client ID in Impostazioni › Media › Spotify sotto "Avanzate" (chiuso), non nella pagina di accesso.
-**Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nella pagina di accesso di Spotify c'è solo il pulsante.
+Da `main/53`: stessa cosa per YouTube, dove sotto "Accedi a YouTube" c'è "Oppure collega l'API ufficiale di Google" (anche quello in Avanzate); in Video il pulsante "Dal telefono" in alto e la card "Mostra i video del telefono" sotto fanno la stessa cosa: tenerne uno solo (la card) e rendere più bassa la card "Scegli cosa guardare", che occupa un terzo di schermo per una frase tecnica ("mp4, webm, streaming m3u8").
+**Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nelle pagine di accesso di Spotify e YouTube c'è solo il pulsante; in Video un solo modo di aprire i video del telefono.
 **Test:** foto del giro (aggiungere `34_radio` se manca).
+
+### 17. Adesso: chiudere le cose con un tocco · Oggi · M
+**Perché:** in `main/53` Adesso dice "Pacco in arrivo: Cuffie" e "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…", ma per segnare l'abitudine fatta o il pacco arrivato bisogna andare in Note, trovare la scheda e toccare lì: tre tocchi e un cambio di pagina per una cosa che Oggi già sa. Oggi deve servire a *fare* in 5 secondi, non solo a sapere.
+**Cosa fare:** in `HomeScreen.kt`/`Briefing.kt` dare a ogni riga di Adesso un'azione rapida a destra (piccolo bottone tondo, stile `RoundIconButton`): abitudini mancanti → si apre un mini elenco con un cerchio per abitudine da toccare (al posto dei nomi tagliati, "Ancora da fare: 2 abitudini"); pacco in arrivo/in ritardo → "Arrivato"; promemoria scaduto → "Fatto" e "Domani"; addebito di domani → nessuna azione. Ogni azione con vibrazione e snackbar "Annulla" come in Note. `Briefing` restituisce già righe tipizzate: aggiungere un campo `action` (enum) e un `targetId`.
+**Fatto quando:** da Oggi si segna un'abitudine fatta e un pacco arrivato senza aprire Note, e Adesso si aggiorna subito togliendo la riga.
+**Test:** `BriefingTest`: le righe di abitudini, pacchi e promemoria scaduti portano l'azione e l'id giusti; dopo `markHabitDone` la riga abitudini sparisce o scende a "1 abitudine"; testo "Ancora da fare: N abitudini" quando i nomi superano la larghezza (funzione pura sul numero di caratteri).
 
 ### 11. Date: compleanni dai contatti · Note › Date · M
 _(primo passo dell'idea grande E)_
@@ -169,12 +179,6 @@ _(primo passo dell'idea grande G)_
 **Fatto quando:** un tocco su "Ascolta" legge i temi uno dopo l'altro, "successivo" salta al tema dopo e il mini player mostra il tema in corso.
 **Test:** funzione pura `RecapReader.script(recap, now)` (apertura con ora e numero di temi, una frase per tema, niente URL, sigle e virgolette ripulite, massimo 6 temi, recap vuoto → nessun copione).
 
-### 14. Scorciatoie dall'icona e riquadro rapido · Cattura al volo · S
-**Perché:** per segnare una spesa o un promemoria oggi bisogna aprire l'app e toccare il +. Keep e Todoist offrono le scorciatoie con la pressione lunga sull'icona e un riquadro nelle impostazioni rapide: due secondi invece di cinque, sull'uso più frequente di Note.
-**Cosa fare:** `res/xml/shortcuts.xml` con 4 scorciatoie statiche (Promemoria, Spesa, Nota, Radio: ultima stazione) che aprono la cattura veloce già nella modalità giusta (`CaptureMode`) o la radio; un `TileService` "Canvas: aggiungi" che apre la cattura. Icone monocromatiche coerenti con la nuova icona.
-**Fatto quando:** pressione lunga sull'icona → "Spesa" apre la cattura in modalità spesa con la tastiera aperta; il riquadro rapido apre la cattura.
-**Test:** test Robolectric che l'intent di ogni scorciatoia porta alla `CaptureMode` giusta (extra sconosciuto → Promemoria).
-
 ### 15. Abitudini: promemoria all'ora scelta · Note › Abitudini · M
 _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca oggi" alle 20 e l'app non lo dice finché non la apri)_
 **Perché:** "Manca oggi" in arancio si vede solo aprendo Note › Abitudini. Le app di abitudini (Loop, Streaks) vivono del promemoria all'ora giusta: è quello che tiene viva la serie di "5 di fila".
@@ -188,9 +192,18 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 **Fatto quando:** impostata per tra 2 minuti, la radio parte da sola a volume crescente con l'app chiusa; senza rete suona la sveglia di sistema; "Ancora 10 min" la rimanda.
 **Test:** funzione pura `nextAlarm(now, ora, giorni)` (oggi già passata → domani, venerdì sera con lun-ven → lunedì, cambio dell'ora legale); persistenza delle impostazioni; test Robolectric che l'allarme programmato porta l'intent con la stazione giusta.
 
+### 18. Podcast in Media · Media · M
+_(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pagina più vuota dell'app, e i podcast sono l'ascolto quotidiano "da riprendere" che manca)_
+**Perché:** Antonio vuole tutto dentro l'app e un solo player. I podcast si possono fare in modo completamente nativo e gratis: ricerca con l'API pubblica di iTunes Search (nessuna chiave), episodi dai feed RSS, audio nel player condiviso. Niente siti, niente DRM.
+**Cosa fare:** quinta fonte "Podcast" in Media (`MediaScreen.kt`, riquadro con `IconTile` come gli altri quattro, la griglia diventa 2+2+1 o una riga larga); `media/podcast/PodcastRepository.kt` con ricerca (`https://itunes.apple.com/search?media=podcast&country=it&term=…`), "Segui" salvato in prefs/JSON, `PodcastFeed.parse()` per l'RSS (titolo, data, durata, descrizione pulita, enclosure); pagina del podcast con l'elenco episodi e pagina "I tuoi podcast" con gli ultimi episodi di quelli seguiti. Il tocco su un episodio lo fa suonare in `MediaPlaybackService`/`NowPlaying` con posizione ricordata (`MediaHistory`, così entra in Riprendi), velocità e ±15/30 s.
+**Fatto quando:** cerco "il post" o "muschio selvaggio", lo seguo, tocco un episodio e suona nel mini player; chiudendo e riaprendo riparte dal punto.
+**Test:** `PodcastFeedTest` con 2 feed RSS veri salvati in `src/test/resources` (`itunes:duration` "1:02:03", "3723" e assente; descrizione HTML ripulita; episodi senza enclosure scartati); parsing della risposta di iTunes Search; foto `35_podcast` nel giro.
+
 ---
 
 ## Dopo
+
+- **Scorciatoia "Radio" sull'icona** · Cattura al volo · S. Le scorciatoie Promemoria/Nota/Spesa e il riquadro rapido esistono già; manca una quarta scorciatoia dinamica (`ShortcutManagerCompat.pushDynamicShortcut`) "Radio Deejay" con l'ultima stazione ascoltata, che parte senza aprire Media. Test: l'intent porta la stazione giusta; nessuna scorciatoia se non c'è una stazione recente.
 
 - **Notifica del mattino: proporla** · Oggi · S. (era In cima) In 40_impostazioni è ancora spenta. Dopo 3 giorni d'uso, nella riga "cose da attivare" di Oggi (`InvitesUi.kt`), "Riepilogo ogni mattina alle 7:30 · Attiva"; un tocco la accende (permesso notifiche su Android 13+). Sparisce se accesa o dopo due "Non ora". Test: nel test degli inviti (giorni d'uso, già attiva, due rifiuti).
 
@@ -244,7 +257,7 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 ### F. Podcast nel player di Canvas · Media · L
 **Perché:** Media ha video, YouTube, Spotify e radio, ma non i podcast, che sono l'ascolto quotidiano più "da riprendere" che ci sia. Si fanno tutti in modo nativo e gratis: ricerca con l'API pubblica di iTunes Search (nessuna chiave), episodi dai feed RSS, audio nel player condiviso (`MediaPlaybackService`). Niente siti, niente Spotify DRM.
 **Passi:**
-1. (M) Quinta fonte "Podcast" in Media: cerca (iTunes Search API `entity=podcast`), segui, elenco episodi dal feed RSS (titolo, data, durata, descrizione). Test: parser RSS con 2 feed veri salvati come risorsa (itunes:duration "1:02:03" e "3723").
+1. (M) È la voce 18 di In cima. Quinta fonte "Podcast" in Media: cerca (iTunes Search API `entity=podcast`), segui, elenco episodi dal feed RSS (titolo, data, durata, descrizione). Test: parser RSS con 2 feed veri salvati come risorsa (itunes:duration "1:02:03" e "3723").
 2. (M) Riproduzione nel player condiviso con posizione ricordata per episodio, velocità 1×/1,25×/1,5×, salta ±15/30 s, notifica e bolla. Entra in "Riprendi" (voce 1).
 3. (S) "Nuovi episodi" dei podcast seguiti in cima alla fonte e una riga in Adesso al mattino ("2 nuovi episodi: …"), aggiornati dal `RefreshWorker`.
 4. (S) Scarica per l'ascolto offline (WorkManager, solo Wi-Fi), cancellati da soli dopo l'ascolto.
