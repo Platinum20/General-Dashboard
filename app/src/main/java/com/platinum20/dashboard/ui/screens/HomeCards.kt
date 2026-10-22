@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
+import android.content.Context
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
@@ -51,6 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.calendar.CalendarAsk
+import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.Countdown
@@ -99,6 +104,7 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         granted = it
         reload++
+        if (!it && CalendarAsk.shouldHide(CalendarAsk.recordDenial(context))) hideAgenda(context)
     }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         granted = CalendarRepository.hasPermission(context)
@@ -112,6 +118,12 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
         }
     }
     return AgendaState(granted, today, tomorrow) { launcher.launch(Manifest.permission.READ_CALENDAR) }
+}
+
+/** Toglie l'Agenda da Oggi: resta riaccendibile da Personalizza. */
+private fun hideAgenda(context: Context) {
+    AppSettings.setCardVisible(HomeCard.CALENDAR, false)
+    Toast.makeText(context, "Agenda nascosta: la riaccendi da Personalizza", Toast.LENGTH_LONG).show()
 }
 
 @Composable
@@ -147,6 +159,7 @@ fun CalendarCard(agenda: AgendaState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
+                    TextButton(onClick = { hideAgenda(context) }) { Text("Non ora") }
                     FilledTonalButton(onClick = agenda.requestPermission) { Text("Consenti") }
                 }
                 list == null -> Spacer(Modifier.height(8.dp))
