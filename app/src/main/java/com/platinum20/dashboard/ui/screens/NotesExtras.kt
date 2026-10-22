@@ -459,7 +459,7 @@ fun ParcelDialog(
                     placeholder = { Text("Cosa arriva (es. Cuffie)") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(enabled = parcel == null && initialTitle.isBlank()),
                 )
                 OutlinedTextField(
                     value = code,
