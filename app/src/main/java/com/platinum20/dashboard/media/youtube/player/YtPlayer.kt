@@ -72,6 +72,19 @@ object YtPlayer {
         player(context).seekTo(positionMs)
     }
 
+    /** Avanti o indietro di [deltaMs] (doppio tocco sul video). */
+    fun seekBy(context: Context, deltaMs: Long) {
+        val p = player(context)
+        val duration = p.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
+        p.seekTo((p.currentPosition + deltaMs).coerceIn(0L, duration))
+    }
+
+    fun setSpeed(context: Context, speed: Float) {
+        player(context).setPlaybackSpeed(speed)
+    }
+
+    fun speed(): Float = exo?.playbackParameters?.speed ?: 1f
+
     /** Video da far partire uno dopo l'altro (link), impostati dalla schermata del player. */
     var queue: List<String> = emptyList()
 
@@ -148,6 +161,11 @@ object YtPlayer {
         val current = _now.value?.stream?.id
         val index = queue.indexOfFirst { YtResolver.videoId(it) == current }
         queue.getOrNull(index + 1)?.let { play(context, it) }
+    }
+
+    /** Video finto per le foto automatiche delle schermate (solo test). */
+    internal fun preview(stream: YtStream) {
+        _now.value = YtNow(link = "https://www.youtube.com/watch?v=${stream.id}", stream = stream, playing = true, loading = false)
     }
 
     internal fun release() {

@@ -38,6 +38,10 @@ data class YtStream(
     val chapters: List<YtChapter> = emptyList(),
     val views: Long = -1,
     val uploaded: String = "",
+    val channelAvatar: String = "",
+    val subscribers: Long = -1,
+    val likes: Long = -1,
+    val description: String = "",
 )
 
 data class YtQuality(val height: Int, val url: String)
@@ -140,6 +144,12 @@ object YtResolver {
             chapters = info.streamSegments.orEmpty().map { YtChapter(it.title.orEmpty(), it.startTimeSeconds) },
             views = info.viewCount,
             uploaded = info.textualUploadDate.orEmpty(),
+            channelAvatar = info.uploaderAvatars.maxByOrNull { it.height }?.url.orEmpty(),
+            subscribers = info.uploaderSubscriberCount,
+            likes = info.likeCount,
+            description = info.description?.content.orEmpty().let { raw ->
+                if ('<' in raw) Html.fromHtml(raw, Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
+            },
         ).also {
             if (it.hlsUrl == null && it.muxedUrl == null && (it.videoUrl == null || it.audioUrl == null) && it.audioUrl == null) {
                 throw IllegalStateException("Nessun flusso riproducibile per questo video")

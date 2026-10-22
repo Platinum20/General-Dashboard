@@ -30,6 +30,8 @@ data class YtVideo(
     /** In diretta adesso (o in arrivo, con [upcoming]). */
     val live: Boolean = false,
     val upcoming: Boolean = false,
+    /** Foto del canale, se si conosce. */
+    val channelAvatar: String = "",
 ) {
     val thumbnail: String get() = "https://i.ytimg.com/vi/$id/mqdefault.jpg"
     val watchUrl: String get() = "https://m.youtube.com/watch?v=$id"
@@ -173,7 +175,9 @@ object YouTubeApi {
         val gate = Semaphore(8)
         channels.map { channel ->
             async(Dispatchers.IO) {
-                gate.withPermit { runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()) }
+                gate.withPermit {
+                    runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()).map { it.copy(channelAvatar = channel.thumbnail) }
+                }
             }
         }.awaitAll().flatten()
             .distinctBy { it.id }

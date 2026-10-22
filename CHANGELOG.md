@@ -1,12 +1,19 @@
 # Changelog
 
-## 1.89.0
+## 1.91.0
 - Nuova icona: una pennellata e una goccia di colore, piena e senza bordino. Con le icone a tema di Android 13+ prende i colori del tuo sfondo
 - Vetro liquido (da Android 13): la barra in basso e il mini player piegano la pagina vicino ai bordi come una lente, con un filo di luce sul bordo. Sotto Android 13 resta il vetro sfocato
 - Le pagine interne (Meteo, Il punto del giorno, Personalizza, Aggiornamenti, Calendario, Compila da solo, Località) hanno il titolo grande con la freccia, come Impostazioni
 - Note: le sei schede diventano pillole come i filtri delle News, e la riga scorre da sola fino a quella aperta
 - Spese: le spese di ogni giorno stanno in una card, come le altre liste
 - Personalizza Oggi: ogni card ha la sua icona, l'interruttore è a destra e le frecce per l'ordine sono più leggibili
+
+## 1.90.0
+- Accesso a Spotify sistemato: la pagina restava nera, ora si entra con l'accesso ufficiale di Spotify (lo stesso che serve per la libreria e per ascoltare qui)
+- YouTube: schede e filtri (Shorts, dirette) in un'unica fila, non più due barre che scorrono
+- YouTube rifatto: anteprime grandi con foto del canale e durata, Short in una fila orizzontale, "Stai guardando" in cima per tornare al video
+- Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
+- Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
 
 ## 1.88.0
 **Note**

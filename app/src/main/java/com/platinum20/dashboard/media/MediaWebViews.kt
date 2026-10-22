@@ -32,6 +32,8 @@ interface MediaPageListener {
     fun onHistoryChanged(canGoBack: Boolean) {}
     fun onShowFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {}
     fun onHideFullscreen() {}
+    /** Indirizzo non web (es. il ritorno dal login di Spotify): true se l'ha gestito chi ascolta. */
+    fun onAppLink(uri: Uri): Boolean = false
 }
 
 /**
@@ -203,6 +205,7 @@ fun createMediaWebView(
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val target = request.url
             if (target.scheme == "http" || target.scheme == "https") return false
+            if (listener()?.onAppLink(target) == true) return true
             // Gli inviti ad aprire l'app ufficiale (intent://, spotify:, vnd.youtube:) restano qui:
             // se c'è un indirizzo web alternativo lo apriamo nella pagina, altrimenti li ignoriamo.
             if (target.scheme == "intent") {
