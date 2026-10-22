@@ -40,6 +40,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** report `main/41/report`: 139 test, 2 ignorati (uno è `YouTubeNativeCheck.flussi`); nessuna classe di test per YtResolver o SpotifyPlayer.
 - **Cosa fare:** `YtLinksTest` e `SpotifyLinksTest` (Robolectric per `Uri`) con i casi sopra; aggiungere a `ytcheck.yml` un `schedule` (es. una volta al giorno, gratis sul repo pubblico) e anche il push su `main`, così un'estrazione rotta si vede nel giro del verificatore.
 - **Test che lo impedisce:** i due file di test; `ytcheck` programmato.
+- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
 
 ### V10. Spotify nell'app: riproduttore non più pronto e messaggi grezzi · Spotify, link di Spotify · gravità media
 - **Versione:** 1.84.0
@@ -48,6 +49,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** con Spotify Premium collegato, far partire un brano, togliere la rete per un minuto, rimetterla e toccare un altro brano.
 - **Cosa fare:** listener `not_ready` → `deviceId = null` e nuovo `CompletableDeferred`; su 404 dal `playOn` riavviare la pagina (`MediaWebViews.release(SPOTIFY)` + `start`) e riprovare una volta; tradurre gli errori dell'API con una funzione `spotifyMessage(code, message)` in italiano. Antonio: provare sul telefono e dire se si sente.
 - **Test che lo impedisce:** test di `spotifyMessage` (401, 403 Premium, 404 dispositivo, 429, rete assente).
+- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
 
 ### V13. Le novità della 1.88 non si vedono nel giro fotografico · giro fotografico · gravità media
 - **Versione:** 1.88.0 (giro `main/46`)
@@ -118,6 +120,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** (2) modalità aereo, aprire un video già in cache e toccare Commenti; (3) mettere in pausa, aprire Media e poi la bolla/il mini player.
 - **Cosa fare:** usare sempre `context.applicationContext` dentro `YtPlayer`; distinguere errore e lista vuota nei commenti; in `play` non chiamare `play()` se lo stesso video è già caricato e in pausa per scelta dell'utente.
 - **Test che lo impedisce:** test di una funzione pura per lo stato dei commenti (caricamento, errore, vuoti, lista) e del caso "stesso video già caricato".
+- **Stato (verifica 1.91):** la correzione è pronta nel branch `claude/giro-2026-10-22-1353` (build e `ytcheck` verdi alle 14:00), ma non è ancora su main: togliere la voce quando esce in una versione.
 
 
 ### V17. Se il file delle Note non si legge, la prima modifica lo cancella · Note (tutti i dati) · gravità bassa
