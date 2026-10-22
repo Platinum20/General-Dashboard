@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.61.0
+- Date: per compleanni e anniversari che si ripetono ogni anno, se hai scritto l'anno vero compare quanti anni compie ("3 dicembre · compie 30 anni"), anche nella card In arrivo di Oggi
+
 ## 1.56.0
 - Note: quando le note sono tante, in cima alla lista c'è "Cerca nelle note" per trovare subito quella che ti serve (con la X per cancellare)
 

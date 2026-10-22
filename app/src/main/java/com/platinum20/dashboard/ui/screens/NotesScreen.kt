@@ -240,7 +240,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDelete
                     Column(Modifier.weight(1f)) {
                         Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            longDate(item.nextDate()) + if (item.yearly) " · ogni anno" else "",
+                            item.dateLine(),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -550,6 +550,12 @@ private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Lon
             item { EmptyHint("Nessuna nota contiene \"${query.trim()}\".") }
         }
     }
+}
+
+/** Riga sotto il titolo di una data: "12 marzo · compie 30 anni" o "· ogni anno". */
+fun Countdown.dateLine(): String = longDate(nextDate()) + when {
+    !yearly -> ""
+    else -> yearsAtNext()?.let { " · compie $it anni" } ?: " · ogni anno"
 }
 
 /** Da quante note in su compare il campo di ricerca. */
