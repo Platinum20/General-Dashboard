@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.55.0
+- Tempi più leggibili in tutta l'app (note, notizie, video, meteo): oltre il giorno si legge "ieri 14:30", "lun 9:15" o "12 ott" invece di "21/10 14:30"
+
 ## 1.54.0
 - Spese: correggendo una spesa sopra i mille euro ("1.234,50") le modifiche venivano perse senza avviso; ora l'importo è riconosciuto
 - Spese: se l'importo non è valido il dialog lo dice ("Scrivi un importo, es. 12,50") e Salva resta spento invece di chiudere senza salvare; Invio sulla descrizione salva

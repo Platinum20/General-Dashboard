@@ -230,15 +230,25 @@ fun TopLevelBar(
     )
 }
 
-private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM HH:mm")
+private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val dayFormatter = DateTimeFormatter.ofPattern("d MMM", java.util.Locale.ITALIAN)
+private val yearFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.ITALIAN)
+private val weekdayFormatter = DateTimeFormatter.ofPattern("EEE", java.util.Locale.ITALIAN)
 
+/** Tempo trascorso a parole: "5 min fa", "3 h fa", poi "ieri 14:30", "lun 9:15", "12 ott". */
 fun relativeTime(instant: Instant): String {
     val minutes = Duration.between(instant, Instant.now()).toMinutes()
+    if (minutes < 1) return "adesso"
+    if (minutes < 60) return "$minutes min fa"
+    val zone = ZoneId.systemDefault()
+    val then = instant.atZone(zone)
+    val days = java.time.temporal.ChronoUnit.DAYS.between(then.toLocalDate(), java.time.LocalDate.now(zone))
     return when {
-        minutes < 1 -> "adesso"
-        minutes < 60 -> "$minutes min fa"
-        minutes < 24 * 60 -> "${minutes / 60} h fa"
-        else -> dateFormatter.format(instant.atZone(ZoneId.systemDefault()))
+        minutes < 24 * 60 && days == 0L -> "${minutes / 60} h fa"
+        days == 1L -> "ieri " + timeFormatter.format(then)
+        days in 2..6 -> weekdayFormatter.format(then) + " " + timeFormatter.format(then)
+        then.year == java.time.LocalDate.now(zone).year -> dayFormatter.format(then)
+        else -> yearFormatter.format(then)
     }
 }
 
