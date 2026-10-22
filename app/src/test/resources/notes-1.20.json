@@ -1,0 +1,12 @@
+{
+  "tasks": [
+    {"id": 1, "text": "Chiamare il meccanico", "done": false, "createdAt": 1760000000000, "dueAt": 1760090000000},
+    {"id": 2, "text": "Comprare il latte", "done": true, "createdAt": 1760000100000}
+  ],
+  "notes": [
+    {"id": 10, "text": "Libri da leggere\nIl nome della rosa", "updatedAt": 1760000200000}
+  ],
+  "countdowns": [
+    {"id": 20, "title": "Compleanno di Marco", "date": "1990-03-14", "yearly": true}
+  ]
+}
