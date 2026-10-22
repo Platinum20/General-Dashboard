@@ -23,6 +23,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
 import java.security.SecureRandom
+import com.platinum20.dashboard.net.userMessage
 
 /**
  * Accesso alle API di Spotify con il flusso PKCE: il login si fa nel browser sul sito di Spotify,
@@ -120,7 +121,7 @@ object SpotifyAuth {
                         "code_verifier" to verifier,
                     )
                 )
-            }.onFailure { _error.value = "Collegamento non riuscito: ${it.message}" }
+            }.onFailure { _error.value = "Collegamento non riuscito. " + it.userMessage("Riprova tra poco.") }
         }
     }
 

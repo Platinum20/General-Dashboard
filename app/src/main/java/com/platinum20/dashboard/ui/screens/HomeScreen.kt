@@ -86,6 +86,7 @@ import com.platinum20.dashboard.weather.WeatherState
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -280,7 +281,7 @@ fun rememberRecapState(): RecapUiState {
         error = null
         refreshing = attempt > 0
         runCatching { NewsStore.load(force = attempt > 0) }
-            .onFailure { if (it !is CancellationException) error = it.message ?: "Notizie non disponibili." }
+            .onFailure { if (it !is CancellationException) error = it.userMessage("Notizie non disponibili.") }
         refreshing = false
     }
     val context = LocalContext.current

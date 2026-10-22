@@ -62,7 +62,7 @@ object YouTubeApi {
                             when (reason) {
                                 "quotaExceeded" -> "Quota giornaliera di YouTube esaurita, riprova domani"
                                 "accessNotConfigured" -> "YouTube Data API non abilitata nel progetto Google Cloud"
-                                else -> "YouTube ha risposto HTTP $code" + (reason?.let { " ($it)" } ?: "")
+                                else -> "YouTube non risponde ($code), riprova più tardi"
                             }
                         )
                     }

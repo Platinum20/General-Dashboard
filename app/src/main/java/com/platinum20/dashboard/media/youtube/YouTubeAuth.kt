@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import com.platinum20.dashboard.net.userMessage
 
 /**
  * Accesso alle API di YouTube con l'account Google del telefono (solo lettura).
@@ -69,11 +70,11 @@ object YouTubeAuth {
         }
     } catch (e: ApiException) {
         Outcome.Failed(
-            message = CommonStatusCodes.getStatusCodeString(e.statusCode),
+            message = if (e.statusCode == CommonStatusCodes.NETWORK_ERROR) "Nessuna connessione a Internet" else "Google ha rifiutato la richiesta, riprova",
             notConfigured = e.statusCode == CommonStatusCodes.DEVELOPER_ERROR,
         )
     } catch (e: Exception) {
-        Outcome.Failed(e.message ?: e.javaClass.simpleName, notConfigured = false)
+        Outcome.Failed(e.userMessage("Riprova tra poco"), notConfigured = false)
     }
 
     /** Risultato della schermata di consenso di Google. */
