@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~10:35 UTC, su main 1.63.0, foto: branch `screenshots`, cartella `main/26`._
+_Ultimo aggiornamento: 2026-10-22 ~11:40 UTC, su main 1.81.0 (1.82.0 in lavorazione: player YouTube nativo), foto: branch `screenshots`, cartella `main/29`._
 
 ---
 
@@ -73,53 +73,67 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
-### 0. Test automatici in CI · robustezza · M
-**Perché:** oggi i test (`BriefingTest`, `QuickParseTest`, `ExpensesTest`, `CountdownTest`, `FilterEngineTest`) girano solo dentro il giro fotografico (`screenshots.yml`); `build.yml`, che costruisce e pubblica le versioni, non li esegue. Un giro di sviluppo può quindi rilasciare una versione che rompe il parser delle date o le serie delle abitudini senza che nessuno se ne accorga. L'app sta crescendo di una versione ogni pochi minuti: la rete di sicurezza deve crescere con lei.
-**Cosa fare:** (1) in `.github/workflows/build.yml` un passo `gradle :app:testDebugUnitTest` prima della build, che fa fallire la build e quindi blocca la release (escludere `ScreenshotTour` e `LiveChecks`, che vanno in rete, con la stessa proprietà `-Ptour` di `screenshots.yml`). (2) Test nuovi sulle parti principali: `NotesStore` serialize/parse andata e ritorno con tutti i tipi (promemoria ricorrenti, abitudini con serie, spese, pacchi, date) e con un JSON delle versioni vecchie senza i campi nuovi; `Habit.streak`; `Repeat` (prossima occorrenza a fine mese, 29 febbraio); `NewsRecap` (raggruppamento su un piccolo insieme fisso di titoli); `NewsHistory` (nuove/già viste); le righe del widget (`DashboardWidget`, la parte che costruisce i testi).
-**Fatto quando:** una PR che rompe un test ha la build rossa e non esce nessuna release; almeno 6 file di test nuovi.
-**Test:** sono la voce stessa; controllare che un test fallito volutamente su un branch di prova faccia fallire `build.yml`.
-
-### 1. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
-**Perché:** lo scopo di Media è "riprendi o avvia in un tocco", ma oggi la schermata è solo un menu di quattro voci (Video, YouTube, Spotify, Radio): per riprendere il video di ieri servono 3 tocchi e bisogna ricordarsi dove era.
-**Cosa fare:** in cima a `MediaScreen.kt` una card "Riprendi" con l'ultima cosa ascoltata o vista: video locale/link con la posizione (`VideoLibrary.recent`, ha già `positionMs`/`durationMs`), ultima stazione radio (`RadioStore.recent`), ultimo video YouTube aperto nel player. Un tocco riparte dal punto giusto; barra di avanzamento per i video. Se c'è qualcosa in pausa da meno di 24 h, una riga anche in "Adesso" di Oggi (`BriefKind` nuovo o `FREE`).
-**Fatto quando:** aprendo Media la prima cosa è "Riprendi: <titolo> · 12:30 di 45:00" e un tocco riprende da lì; senza cronologia la card non c'è.
-**Test:** funzione pura che sceglie cosa riprendere (video con posizione, radio, YouTube) dalle cronologie, con i casi "niente cronologia" e "più vecchio di 24 h".
+### 0. Test automatici: la rete sui dati · robustezza · M
+**Perché:** dalla 1.72 `build.yml` esegue i test e un test rosso blocca la release: bene. Ma i test coprono soprattutto parser e logica di Oggi; manca proprio la parte che, se si rompe, fa perdere la vita di Antonio: il file delle Note. Nessun test garantisce che un aggiornamento legga ancora i dati vecchi, e la voce Backup (2) ci si appoggia.
+**Cosa fare:** test nuovi in `app/src/test`: `NotesStore` serialize → parse andata e ritorno con tutti i tipi (promemoria ricorrenti e rimandati, abitudini con giorni, spese e budget, note fissate, pacchi, date ogni anno con anno di nascita); parse di un JSON "di una versione vecchia" senza abitudini/spese/pacchi (salvato come risorsa di test); `Habit.streak`/`isDone`/`lastDays`; `Repeat` (31 del mese, 29 febbraio, ogni settimana); `NewsHistory` (nuove/già viste); la parte del widget che costruisce le righe (`DashboardWidget`, estrarla in funzione pura se serve). Rendere `serialize`/`parse` `internal` per poterli chiamare.
+**Fatto quando:** almeno 5 file di test nuovi verdi in `build.yml`; il JSON vecchio si legge senza perdere nulla.
+**Test:** sono la voce stessa.
 
 ### 2. Backup ed esportazione dei dati · Impostazioni · M
-**Perché:** promemoria, abitudini (con le serie), spese, note, pacchi e date stanno in un solo file JSON dentro l'app. Cambiando telefono o reinstallando si perde tutto, e Antonio ci sta mettendo la sua vita quotidiana.
-**Cosa fare:** in Impostazioni una sezione "Dati" con "Esporta backup" (file `canvas-backup-AAAA-MM-GG.json` scelto con `ACTION_CREATE_DOCUMENT`, il JSON di `NotesStore.serialize` più le impostazioni utili di `AppSettings`) e "Ripristina da backup" (`ACTION_OPEN_DOCUMENT`, conferma con il riepilogo "142 promemoria, 3 abitudini…", poi sostituisce). Aggiungere `dataExtractionRules`/`fullBackupContent` nel manifest perché il file delle note sia sicuramente nel backup automatico di Android. Test unitario: serialize → parse dà gli stessi dati.
+**Perché:** promemoria, abitudini (con le serie), spese, note, pacchi e date stanno in un solo file JSON dentro l'app, e con "Compila da solo" (1.72) si riempie anche da solo. Cambiando telefono o reinstallando l'APK si perde tutto.
+**Cosa fare:** in Impostazioni un gruppo "Dati" (sopra Informazioni) con "Esporta backup" (`ACTION_CREATE_DOCUMENT`, file `canvas-backup-AAAA-MM-GG.json` con il JSON di `NotesStore` più le impostazioni utili di `AppSettings`: card di Oggi, località, tema, budget) e "Ripristina da backup" (`ACTION_OPEN_DOCUMENT`, conferma con il riepilogo "42 promemoria, 3 abitudini, 18 spese…", poi sostituisce). `dataExtractionRules`/`fullBackupContent` nel manifest perché il file sia nel backup automatico di Android. Riga a destra "Ultimo backup: mai / 12 ott".
 **Fatto quando:** esporto, cancello i dati dell'app, ripristino e ritrovo tutto (anche serie delle abitudini e budget).
-**Test:** serialize → parse identico con tutti i tipi; ripristino da un file di una versione vecchia; file non valido rifiutato senza toccare i dati.
+**Test:** serialize → parse identico; ripristino da un file di una versione vecchia; file non valido o di un'altra app rifiutato senza toccare i dati; riepilogo del conteggio.
+
+### 1. Media: "Riprendi" in un tocco · Media (+ Oggi) · M
+**Perché:** lo scopo di Media è "riprendi o avvia in un tocco", ma nelle foto (`main/29`, 30_media) la schermata è solo la griglia delle quattro fonti e sotto metà schermo vuoto. Quando nulla suona, per riprendere il video di ieri o la radio di stamattina servono 2-3 tocchi e bisogna ricordarsi dove era. La card "In riproduzione" c'è solo finché il player è vivo.
+**Cosa fare:** in cima a `MediaScreen.kt`, quando nulla suona, un blocco scuro "Riprendi" (lo stesso stile del brano in corso) con l'ultima cosa vista o ascoltata: video locale/link con posizione (`VideoLibrary.recent`, ha `positionMs`/`durationMs`) e barra di avanzamento, ultima stazione (`RadioStore.recent`), ultimo video YouTube del player nativo (dalla 1.82 `YouTubeWatchScreen`: salvare id, titolo e secondo). Sotto la griglia, "Recenti": le altre 3-4 voci in una riga ciascuna. Se c'è qualcosa lasciato a metà da meno di 24 h, una riga anche in Adesso di Oggi.
+**Fatto quando:** aprendo Media senza nulla in riproduzione la prima cosa è "Riprendi: <titolo> · 12:30 di 45:00" e un tocco riparte da lì; senza cronologia il blocco non c'è.
+**Test:** funzione pura che sceglie cosa riprendere dalle cronologie (video con posizione, radio, YouTube; più recente vince; video finito al 95% escluso; più vecchio di 24 h non va in Adesso).
+
+_Il giro fotografico completo (Calendario, scheda evento, player YouTube 1.82, Radio, editor nota, "+") è ora la segnalazione V1 del verificatore: aggiungere anche il player YouTube nativo e il compleanno con l'anno di nascita nei dati di prova._
+
+### 13. Abitudini: si capisce cosa è fatto · Note > Abitudini · S
+**Perché:** nelle foto (23_abitudini) l'intestazione dice "Oggi 0 su 2" ma entrambe le abitudini hanno a destra lo stesso cerchio grigio con la spunta: sembra già fatto. È `FilledIconToggleButton` con l'icona `Check` sia da spento sia da acceso (`NotesScreen.kt`, `HabitsTab`).
+**Cosa fare:** da non fatta un cerchio vuoto con bordo (`OutlinedIconToggleButton` o icona `RadioButtonUnchecked`), da fatta pieno con l'accento e la spunta bianca; il pallino di oggi nella fila dei giorni con un anello quando non è ancora fatto, così si vede "manca oggi". Dopo le 17, se manca, testo "Manca oggi" in arancio al posto di "5 giorni di fila".
+**Fatto quando:** nella foto si distingue a colpo d'occhio la fatta dalla non fatta.
+**Test:** nessuna logica nuova; la foto di `ScreenshotTour` con una fatta e una no.
+
+### 14. Oggi: gli inviti a impostare non stanno in cima · Oggi · S
+**Perché:** nelle foto (01_oggi) sotto Adesso ci sono due card che chiedono di impostare qualcosa: "Compila da solo · Attiva" e "Agenda · Consenti". Occupano lo spazio dove dovrebbe esserci cosa fare oggi, e "Da fare" scivola sotto la piega: va contro lo scopo di Oggi (5 secondi).
+**Cosa fare:** in `HomeScreen.kt`/`AutoFillUi.kt` unire gli inviti in una sola riga compatta in fondo a Oggi ("2 cose da attivare: agenda, compila da solo ›") che apre un piccolo foglio con i due pulsanti e "Non ora"; una volta concesso il permesso o detto due volte "Non ora" la riga sparisce (la logica dei rifiuti c'è già in `CalendarAsk`). Le card vere (agenda con eventi, "Trovati per te") restano dove sono.
+**Fatto quando:** nella foto di Oggi senza permessi, subito sotto Adesso c'è Da fare.
+**Test:** funzione pura che decide quali inviti mostrare (permesso, rifiuti, già attivo) sul modello di `CalendarAskTest`.
+
+### 15. Il "+" crea anche eventi del calendario · Cattura al volo / Calendario · M
+**Perché:** dalla 1.81 Canvas scrive nel calendario del telefono, ma il "+" e la cattura al volo creano solo promemoria: "venerdì alle 20 cena da Luca" finisce in Da fare invece che in agenda, dove lo vedrebbero anche Adesso, l'Agenda di Oggi e il widget. È il flusso più frequente di una giornata e oggi richiede di aprire Calendario e compilare il modulo.
+**Cosa fare:** in `CaptureDialog`/`QuickCaptureActivity` una scelta "Promemoria / Evento" accanto al campo (ricordando l'ultima usata); con Evento il testo passa per `QuickParse` (giorno, ora, "per 2 ore", "tutto il giorno") e crea l'evento con `CalendarRepository` nel calendario predefinito, con anteprima "Ven 24 ott 20:00–21:00 · Cena da Luca" prima di salvare. "Annulla" nella snackbar. Se manca il permesso di scrittura, lo chiede lì.
+**Fatto quando:** dal "+" scrivo "domani alle 15 dentista" con Evento e lo trovo nell'Agenda di Oggi e nel Calendario di Canvas.
+**Test:** conversione testo → evento (inizio, fine predefinita di 1 ora, tutto il giorno, "per 2 ore", "dalle 9 alle 11").
 
 ### 5. Spese fisse e abbonamenti · Note > Spese (+ Adesso) · M
-**Perché:** affitto, bollette, Netflix, Spotify sono la parte più grossa delle spese ma vanno riscritte ogni mese a mano, e il budget non le prevede. Il parser dei ricorrenti esiste già per i promemoria.
-**Cosa fare:** nelle Spese "ogni mese il 5 affitto 650" (riusare `Repeat` e `QuickParse`) crea una spesa fissa: si aggiunge da sola il giorno giusto (al primo avvio dopo la data), con un'icona di ripetizione. In cima al mese "Fisse: 720 € · Variabili: 115,90 €"; il budget giornaliero calcola solo sulle variabili. In Adesso, il giorno prima: "Domani addebito: Netflix 12,99 €".
-**Fatto quando:** creo una spesa fissa, cambio data del telefono al mese dopo, e la spesa compare da sola nel totale.
-**Test:** parse di "ogni mese il 5 affitto 650"; generazione delle spese fisse saltando mesi (anche il 31 in febbraio); totale fisse/variabili e budget.
+**Perché:** affitto, bollette, Netflix, Spotify sono la parte più grossa delle spese ma vanno riscritte ogni mese a mano, e il budget non le prevede (nelle foto: "48,41 € al giorno" calcolato sul totale). Il parser dei ricorrenti esiste già per i promemoria ("Pagare l'affitto · ogni mese").
+**Cosa fare:** nelle Spese "ogni mese il 5 affitto 650" (riusare `Repeat` e `QuickParse`) crea una spesa fissa che si aggiunge da sola il giorno giusto (al primo avvio dopo la data), con un'icona di ripetizione. In cima al mese "Fisse: 720 € · Variabili: 115,90 €"; il budget giornaliero calcola solo sulle variabili. In Adesso, il giorno prima: "Domani addebito: Netflix 12,99 €". Con "Compila da solo" acceso, se la stessa spesa arriva dalla notifica non va contata due volte.
+**Fatto quando:** creo una spesa fissa, il mese dopo compare da sola nel totale e il budget giornaliero non la conta.
+**Test:** parse di "ogni mese il 5 affitto 650"; generazione saltando mesi (anche il 31 in febbraio); totale fisse/variabili e budget; nessun doppione con una spesa trovata da Compila da solo lo stesso giorno.
 
 ### 7. Abitudini con obiettivo settimanale · Note > Abitudini · M
-**Perché:** molte abitudini reali non sono quotidiane ("palestra 3 volte a settimana", "chiamare la nonna 1 volta"): oggi l'unica scelta è "ogni giorno", così la serie si rompe e l'app rimprovera alle 17 anche quando sei in pari.
-**Cosa fare:** nel `HabitDialog` scelta "Ogni giorno" / "N volte a settimana". Per le settimanali: card con "2 su 3 questa settimana", serie in settimane, e in Adesso (`Briefing.kt`) la riga solo se non si fa più in tempo a raggiungere l'obiettivo. Migrazione: le abitudini esistenti restano quotidiane (campo nuovo con default nel parse).
+**Perché:** molte abitudini reali non sono quotidiane ("palestra 3 volte a settimana"): oggi l'unica scelta è "ogni giorno", così la serie si rompe e Adesso rimprovera alle 17 anche quando sei in pari.
+**Cosa fare:** nel `HabitDialog` scelta "Ogni giorno" / "N volte a settimana". Per le settimanali: "2 su 3 questa settimana", serie in settimane, e in Adesso (`Briefing.kt`) la riga solo se non si fa più in tempo a raggiungere l'obiettivo. Le abitudini esistenti restano quotidiane (campo nuovo con default nel parse).
 **Fatto quando:** una abitudine "3 a settimana" spuntata lun-mer non compare più in Adesso fino a lunedì.
-**Test:** conteggio della settimana, serie in settimane, riga di Adesso solo quando l'obiettivo non è più raggiungibile; parse delle abitudini vecchie senza campo nuovo.
+**Test:** conteggio della settimana, serie in settimane, riga di Adesso solo quando l'obiettivo non è più raggiungibile; parse delle abitudini vecchie.
 
 ### 8. Cerca in tutte le Note · Note · M
-**Perché:** le Note crescono (promemoria completati, spese, note libere, pacchi). Dalla 1.56.0 si cercano solo le note libere, e solo quando sono tante: non c'è modo di trovare "quanto ho speso dal meccanico" o il promemoria completato di marzo.
-**Cosa fare:** riusare la ricerca della 1.56.0 come base; icona lente nella barra di `NotesScreen.kt`; una pagina di ricerca che cerca mentre scrivi in promemoria (anche completati), note, spese (testo e importo), pacchi (titolo e codice) e date; risultati raggruppati per tipo, tocco apre la voce. Senza accenti e maiuscole ("perche" trova "perché").
+**Perché:** le Note crescono (promemoria completati, spese anche automatiche, note, pacchi). Dalla 1.56 si cercano solo le note libere: non c'è modo di trovare "quanto ho speso dal meccanico" o il promemoria completato di marzo.
+**Cosa fare:** lente accanto all'ingranaggio nella barra di `NotesScreen.kt`; pagina di ricerca che cerca mentre scrivi in promemoria (anche completati), note, spese (testo e importo), pacchi (titolo e codice) e date; risultati raggruppati per tipo, tocco apre la voce. Senza accenti e maiuscole.
 **Fatto quando:** scrivo "mecc" e trovo la spesa "Tagliando meccanico" e il promemoria "Chiamare il meccanico".
 **Test:** ricerca senza accenti e maiuscole su tutti i tipi, anche importi ("12,5" trova 12,50 €).
 
 ### 9. Note libere con liste di spunta · Note > Note · M
-**Perché:** nelle foto la nota "Libri da leggere" è una lista scritta con le virgole. Liste della spesa, valigie, libri sono l'uso più comune di un'app di note.
-**Cosa fare:** nell'editor delle note (`NotesScreen.kt`/`NoteEditor`) le righe che iniziano con "- " o "[ ]" diventano caselle spuntabili; pulsante "Lista" nella barra dell'editor che trasforma le righe selezionate. Nella lista delle note si vede "3 di 7 fatti". Salvato come testo semplice (`[x] ` / `[ ] `) così resta compatibile.
+**Perché:** nelle foto (21_note_libere) "Libri da leggere" e "Idee per le vacanze" sono liste scritte con le virgole. Liste della spesa, valigie, libri sono l'uso più comune di un'app di note.
+**Cosa fare:** nell'editor (`NoteEditor`) le righe che iniziano con "- " o "[ ]" diventano caselle spuntabili; pulsante "Lista" che trasforma le righe. In lista "3 di 7 fatti". Salvato come testo (`[x] ` / `[ ] `) per restare compatibile.
 **Fatto quando:** creo una lista della spesa, spunto due voci, chiudo e riapro: le spunte ci sono e in lista leggo "2 di 5".
 **Test:** conversione testo ↔ righe spuntabili e conteggio "2 di 5".
-
-### 12. Blocco pubblicità fuori da Media · Media / Impostazioni · S
-**Perché:** nelle foto di Media l'ultima card è "Blocco pubblicità" con contatori, numero di regole e "Aggiorna": è un'impostazione da toccare una volta, non qualcosa da riprendere o avviare. In Media ruba spazio alla futura card "Riprendi" (voce 1) e confonde lo scopo della schermata.
-**Cosa fare:** spostare la card da `MediaScreen.kt` a una riga di `SettingsScreen.kt` (sezione "Account e Media": interruttore + "N richieste bloccate · aggiornate il 22 ott", tocco apre il dettaglio con "Aggiorna"). In Media, al massimo una piccola etichetta "Senza pubblicità" nei player.
-**Fatto quando:** nella foto di Media non c'è più la card; in Impostazioni si accende, spegne e aggiorna come prima.
-**Test:** nessuna logica nuova; aggiornare `ScreenshotTour` se fotografa la card.
 
 ---
 
@@ -132,10 +146,11 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Notifica del mattino: proporla** · Oggi · S. È spenta di default (foto Impostazioni) e pochi la scoprono. Dopo 3 giorni d'uso una riga in Adesso "Vuoi questo riepilogo ogni mattina alle 7:30? Attiva" che la accende in un tocco, una volta sola.
 - **Video: schermata vuota** · Media > Video · S. Senza recenti mezza schermata è vuota (foto 33_video): mostrare i video recenti del telefono (MediaStore, ultimi 6 con miniatura) oppure togliere il riquadro grande e tenere solo i due pulsanti.
 - **Spese: esporta CSV del mese** · Note > Spese · S. Dal menu del mese "Esporta CSV" (data;descrizione;categoria;importo) con condivisione. Utile per il commercialista e per fogli di calcolo.
-- **Giro fotografico più completo** · robustezza · S. `ScreenshotTour` non fotografa Meteo, Radio, Lettore, Cattura al volo, dialog di modifica promemoria, editor di una nota e News senza rete: aggiungerli, così il regista vede tutta l'app. Nelle foto i dati di prova non hanno l'anno di nascita del compleanno: aggiungerlo, così si vede anche "compie 30 anni" (1.61–1.63).
-- **Note: le sei schede non entrano** · Note · S. Nelle foto la fila Da fare / Abitudini / Spese / Note / Pacchi / Date è più larga dello schermo: "Date" o "Da fare" restano tagliate a metà. Valutare con il nuovo design icone + etichetta corta o un numero di scadenze sulla scheda ("Da fare 2"), così si vede dove c'è qualcosa da fare senza aprirle tutte.
+- **Note: le sei schede non entrano** · Note · S. Ancora vero nella 1.81 (foto `main/29`: "Pacchi" e "P" tagliate). Nelle foto la fila Da fare / Abitudini / Spese / Note / Pacchi / Date è più larga dello schermo: "Date" o "Da fare" restano tagliate a metà. Valutare con il nuovo design icone + etichetta corta o un numero di scadenze sulla scheda ("Da fare 2"), così si vede dove c'è qualcosa da fare senza aprirle tutte.
 - **Pacchi: "arrivato" in un tocco e storico** · Note > Pacchi · S. Oggi il pacco si spunta e sparisce; tenere gli ultimi 10 arrivati in una sezione chiusa "Arrivati", e in Adesso "Pacco in arrivo: Cuffie" con l'azione "Arrivato".
-- **Test di non regressione dei dati** · robustezza · S. Test unitari su `NotesStore.parse` con un JSON delle versioni vecchie (senza abitudini/spese/pacchi) per garantire che un aggiornamento non perda mai i dati.
+- **Aggiornamenti: un solo interruttore** · Impostazioni · S. "Avvisami delle nuove versioni" compare sia in Impostazioni (dalla 1.80) sia in cima alla pagina Aggiornamenti (foto 41): lasciarlo solo in Impostazioni e in Aggiornamenti mostrare la versione e "Controlla e aggiorna".
+- **News: "Niente di nuovo" con notizie di 2 minuti fa** · News · S. Nella foto 10_news l'intestazione dice "Niente di nuovo dall'ultima visita" sopra articoli "2 min fa": al primo avvio (nessuna visita registrata) o quando il conteggio è 0 ma ci sono articoli più recenti dell'ultima visita, verificare `NewsHistory` e dire "Aggiornate 2 min fa" invece di "niente di nuovo".
+- **Calendario in Adesso: "Esci alle…"** · Oggi · M. Per il prossimo evento con un luogo, stimare il tempo di viaggio (distanza in linea d'aria dalla posizione del meteo, senza servizi a pagamento) e scrivere "Dentista alle 15 · esci verso le 14:35"; notifica facoltativa 10 minuti prima.
 - **Widget piccolo "Da fare"** · Widget · M. Secondo widget 2x2 con i promemoria di oggi spuntabili direttamente (RemoteViews con collezione o checkbox API 31+), senza aprire l'app.
 
 ---
@@ -143,9 +158,10 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 ## Idee grandi
 
 ### A. La sera: "Prepara domani" · Oggi · L
-**Perché:** dalle 18 Oggi guarda già a domani, ma solo per leggere. Il momento in cui si decide la giornata dopo è la sera.
+**Perché:** dalle 18 Oggi guarda già a domani, ma solo per leggere. Il momento in cui si decide la giornata dopo è la sera. Ora che Canvas scrive nel calendario (1.81) la sera si può anche pianificare, non solo guardare.
 **Passi:**
-1. (M) Card "Domani" dalle 18: meteo di domani (min/max, pioggia), primo impegno con orario, promemoria in scadenza, date e pacchi.
+1. (M) Card "Domani" dalle 18: meteo di domani (min/max, pioggia), impegni del calendario con orario, promemoria in scadenza, date e pacchi.
+1b. (S) Da un promemoria senza ora, "Mettilo in agenda domani" che crea l'evento in un'ora libera tra gli impegni (usa `CalendarDays`).
 2. (S) Per i promemoria scaduti di oggi azioni rapide "Domani" / "Fatto" direttamente nella card.
 3. (S) Notifica serale facoltativa (orario scelto, come quella del mattino) con la riga più importante di domani: "Domani 8:30 dentista, pioggia dalle 10".
 4. (S) Nella notifica del mattino rimandare a ciò che si è pianificato la sera.
@@ -180,6 +196,12 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.82.0 (in lavorazione) · Player YouTube nativo, login Spotify mobile
+- 1.81.0 · Tutto dentro l'app: link nella pagina interna; Calendario nativo dentro Canvas con creazione e modifica degli eventi
+- 1.80.0 · Impostazioni riorganizzate a gruppi, vetro sfocato; Blocco pubblicità spostato da Media a Impostazioni › Media (ex 12)
+- 1.73.0 · Media tutto nell'app, un solo player alla volta
+- 1.72.0 · "Compila da solo": pacchi, spese e scadenze dalle notifiche e dagli SMS; `build.yml` esegue i test unitari e un test rosso blocca la release (prima parte dell'ex 0)
+- 1.70.0 · Nuovo design Canvas (tema, barra flottante con "+", card con bordo)
 - 1.74.0 · "Rimanda" (1 ora / domani 9:00) nelle notifiche dei promemoria, anche per i ricorrenti (ex 4); Oggi "Da fare" solo scaduti/oggi/domani dalle 18 + max 2 senza scadenza (ex 6); Punto del giorno con il titolo dell'articolo più centrale (ex 3); Agenda "Non ora" e card nascosta dopo due rifiuti (ex 11); cerchio del pull solo dopo il trascinamento in Oggi e Meteo (ex 10); test nuovi NewsRecapTest, SnoozeTest, TodayTasksTest, CalendarAskTest
 - 1.64.0 (in uscita) · Da fare: numeri a lettere e "un'ora e mezza" nelle scadenze scritte
 - 1.63.0 · Adesso e widget: quanti anni compie chi festeggia oggi
