@@ -54,8 +54,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.today.Briefing
 import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -81,11 +85,34 @@ fun CardHeader(
     }
 }
 
+/** Gli impegni di oggi e di domani, condivisi tra "Adesso" e l'agenda. */
+class AgendaState(
+    val granted: Boolean,
+    /** null finché non sono stati letti (o manca il permesso). */
+    val today: List<CalendarEvent>?,
+    val tomorrow: List<CalendarEvent>?,
+    val requestPermission: () -> Unit,
+) {
+    /** La sera, finiti gli impegni di oggi, l'agenda mostra domani. */
+    fun showsTomorrow(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        if (now.hour < Briefing.EVENING_HOUR) return false
+        val nowMs = System.currentTimeMillis()
+        return today.orEmpty().none { it.allDay || it.end > nowMs } && !tomorrow.isNullOrEmpty()
+    }
+
+    /** Gli impegni da mostrare ora; vuoto se non c'è niente da dire. */
+    fun shown(): List<CalendarEvent> = if (showsTomorrow()) tomorrow.orEmpty() else today.orEmpty()
+
+    /** Con il permesso e nessun impegno la card sparisce: non serve leggere "nessun impegno". */
+    val hasContent: Boolean get() = !granted || shown().isNotEmpty()
+}
+
 @Composable
-fun CalendarCard(refreshKey: Int = 0) {
+fun rememberAgenda(refreshKey: Int = 0): AgendaState {
     val context = LocalContext.current
     var granted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
-    var events by remember { mutableStateOf<List<CalendarEvent>?>(null) }
+    var today by remember { mutableStateOf<List<CalendarEvent>?>(null) }
+    var tomorrow by remember { mutableStateOf<List<CalendarEvent>?>(null) }
     var reload by remember { mutableStateOf(0) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         granted = it
@@ -96,14 +123,27 @@ fun CalendarCard(refreshKey: Int = 0) {
         reload++
     }
     LaunchedEffect(granted, reload, refreshKey) {
-        if (granted) events = CalendarRepository.eventsOn(context)
+        if (granted) {
+            val day = LocalDate.now()
+            today = CalendarRepository.eventsOn(context, day)
+            tomorrow = CalendarRepository.eventsOn(context, day.plusDays(1))
+        }
     }
+    return AgendaState(granted, today, tomorrow) { launcher.launch(Manifest.permission.READ_CALENDAR) }
+}
+
+@Composable
+fun CalendarCard(agenda: AgendaState) {
+    val context = LocalContext.current
+    val granted = agenda.granted
+    val tomorrow = agenda.showsTomorrow()
+    val events = if (granted && agenda.today != null) agenda.shown() else null
 
     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
         Column(Modifier.padding(vertical = 8.dp)) {
             CardHeader(
                 icon = Icons.Outlined.CalendarMonth,
-                title = "Agenda di oggi",
+                title = if (tomorrow) "Domani" else "Agenda di oggi",
                 onClick = if (granted) ({ CalendarRepository.openCalendar(context) }) else null,
                 trailing = {
                     if (granted) {
@@ -126,7 +166,7 @@ fun CalendarCard(refreshKey: Int = 0) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    FilledTonalButton(onClick = { launcher.launch(Manifest.permission.READ_CALENDAR) }) { Text("Consenti") }
+                    FilledTonalButton(onClick = agenda.requestPermission) { Text("Consenti") }
                 }
                 list == null -> Spacer(Modifier.height(8.dp))
                 list.isEmpty() -> Text(
@@ -278,6 +318,11 @@ fun DueText(dueAt: Long) {
     )
 }
 
+/** In Oggi solo le date vicine: le altre restano in Note > Date. */
+const val SOON_DAYS = 30L
+
+val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
+
 @Composable
 fun CountdownCard() {
     val context = LocalContext.current
@@ -286,13 +331,13 @@ fun CountdownCard() {
     var editing by remember { mutableStateOf<Countdown?>(null) }
     var adding by remember { mutableStateOf(false) }
     var showAll by remember { mutableStateOf(false) }
-    val upcoming = data.upcoming
+    val upcoming = data.soon
 
     ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
         Column(Modifier.padding(vertical = 8.dp)) {
             CardHeader(
                 icon = Icons.Outlined.HourglassTop,
-                title = "Conti alla rovescia",
+                title = "In arrivo",
                 trailing = {
                     IconButton(onClick = { adding = true }) {
                         Icon(Icons.Outlined.Add, contentDescription = "Aggiungi")

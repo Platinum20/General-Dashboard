@@ -21,6 +21,11 @@ import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Tune
@@ -61,7 +66,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.news.NewsItem
+import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.today.BriefKind
+import com.platinum20.dashboard.today.BriefLine
+import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
@@ -75,8 +85,10 @@ import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.widget.DashboardWidget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -128,6 +140,27 @@ fun HomeScreen(
     }
     val layout by AppSettings.homeLayout.collectAsStateWithLifecycle()
     var calendarRefresh by remember { mutableStateOf(0) }
+    val agenda = rememberAgenda(calendarRefresh)
+    NotesStore.init(context)
+    val notes by NotesStore.data.collectAsStateWithLifecycle()
+    // Ricalcola "Adesso" ogni minuto: "tra 25 min" deve scendere da solo.
+    val minute by produceState(LocalDateTime.now()) {
+        while (true) {
+            delay(60_000L - System.currentTimeMillis() % 60_000L)
+            value = LocalDateTime.now()
+        }
+    }
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
+        Briefing.build(minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns)
+    }
+    // Una card compare solo se ha qualcosa da dire.
+    val cards = layout.visible.filter { card ->
+        when (card) {
+            HomeCard.CALENDAR -> agenda.hasContent
+            HomeCard.COUNTDOWN -> notes.soon.isNotEmpty()
+            else -> true
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -168,7 +201,7 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            items(layout.visible, key = { it.name }) { card ->
+            items(cards, key = { it.name }) { card ->
                 when (card) {
                     HomeCard.WEATHER -> WeatherCard(
                         state = weather,
@@ -180,8 +213,17 @@ fun HomeScreen(
                         },
                         onRetry = { WeatherStore.refresh(context, force = true) },
                         onClick = onOpenWeather,
+                        briefing = briefing,
+                        onOpenBrief = { kind ->
+                            when (kind) {
+                                BriefKind.EVENT -> CalendarRepository.openCalendar(context)
+                                BriefKind.TASK, BriefKind.DATE -> onOpenNotes()
+                                BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
+                                BriefKind.FREE -> Unit
+                            }
+                        },
                     )
-                    HomeCard.CALENDAR -> CalendarCard(refreshKey = calendarRefresh)
+                    HomeCard.CALENDAR -> CalendarCard(agenda)
                     HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
                     HomeCard.COUNTDOWN -> CountdownCard()
                     HomeCard.RECAP -> RecapCard(
@@ -258,6 +300,8 @@ private fun WeatherCard(
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
     onClick: () -> Unit,
+    briefing: List<BriefLine>,
+    onOpenBrief: (BriefKind) -> Unit,
 ) {
     val forecast = state.forecast
     ElevatedCard(
@@ -265,95 +309,143 @@ private fun WeatherCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
-        when {
-            forecast != null -> Row(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    weatherIcon(forecast.current.code, forecast.current.isDay),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp),
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
+        if (briefing.isNotEmpty()) {
+            HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Column(Modifier.padding(vertical = 6.dp)) {
+                briefing.forEach { line -> BriefRow(line) { onOpenBrief(line.kind) } }
+            }
+        }
+    }
+}
+
+/** Una riga di "Adesso": icona, testo, in evidenza se è urgente. */
+@Composable
+private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
+    val icon = when (line.kind) {
+        BriefKind.EVENT -> Icons.Outlined.Event
+        BriefKind.RAIN -> Icons.Outlined.Umbrella
+        BriefKind.TASK -> Icons.Outlined.TaskAlt
+        BriefKind.DATE -> Icons.Outlined.Celebration
+        BriefKind.WEATHER -> Icons.Outlined.WbSunny
+        BriefKind.FREE -> Icons.Outlined.CheckCircle
+    }
+    val color = if (line.urgent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = line.kind != BriefKind.FREE, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(12.dp))
+        Text(
+            line.text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (line.urgent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun WeatherSummary(
+    state: WeatherState,
+    hasPermission: Boolean,
+    onRequestPermission: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    val forecast = state.forecast
+    when {
+        forecast != null -> Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                weatherIcon(forecast.current.code, forecast.current.isDay),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(40.dp),
+            )
+            Spacer(Modifier.size(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    WeatherCodes.description(forecast.current.code),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.size(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        WeatherCodes.description(forecast.current.code),
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.LocationOn,
+                        contentDescription = null,
+                        modifier = Modifier.size(13.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Outlined.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            " " + forecast.place,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    val today = forecast.today
-                    val alert = forecast.rainAlert
-                    val rain = alert ?: today?.precipitationProbability?.takeIf { it >= 30 }?.let { "Pioggia $it%" }
-                    if (rain != null) {
-                        Text(
-                            rain,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                Spacer(Modifier.size(8.dp))
-                Column(horizontalAlignment = Alignment.End) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (state.loading) {
-                            CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                            Spacer(Modifier.size(6.dp))
-                        }
-                        Text(forecast.current.temperature.asTemp(), style = MaterialTheme.typography.headlineLarge)
-                    }
-                    val today = forecast.today
-                    // Massima e minima su una riga sola, sotto la temperatura: non vanno più a capo.
                     Text(
-                        if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "Percepita ${forecast.current.apparent.asTemp()}",
+                        " " + forecast.place,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                val today = forecast.today
+                // L'avviso di pioggia delle prossime ore sta già in "Adesso": qui solo la probabilità del giorno.
+                val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "Pioggia $it%" }
+                if (rain != null) {
+                    Text(
+                        rain,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            !hasPermission -> CardMessage(
-                icon = Icons.Outlined.LocationOn,
-                title = "Meteo",
-                text = "Consenti la posizione per vedere il meteo del posto in cui sei.",
-                action = "Consenti",
-                onAction = onRequestPermission,
-            )
-            state.loading || state.error == null -> Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
-                Spacer(Modifier.size(16.dp))
-                Text("Cerco il meteo della tua zona…", style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.size(8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.loading) {
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.size(6.dp))
+                    }
+                    Text(forecast.current.temperature.asTemp(), style = MaterialTheme.typography.headlineLarge)
+                }
+                val today = forecast.today
+                // Massima e minima su una riga sola, sotto la temperatura: non vanno più a capo.
+                Text(
+                    if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "Percepita ${forecast.current.apparent.asTemp()}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
-            else -> CardMessage(
-                icon = Icons.Outlined.WbSunny,
-                title = "Meteo non disponibile",
-                text = state.error ?: "",
-                action = "Riprova",
-                onAction = onRetry,
-            )
         }
+        !hasPermission -> CardMessage(
+            icon = Icons.Outlined.LocationOn,
+            title = "Meteo",
+            text = "Consenti la posizione per vedere il meteo del posto in cui sei.",
+            action = "Consenti",
+            onAction = onRequestPermission,
+        )
+        state.loading || state.error == null -> Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+            Spacer(Modifier.size(16.dp))
+            Text("Cerco il meteo della tua zona…", style = MaterialTheme.typography.bodyLarge)
+        }
+        else -> CardMessage(
+            icon = Icons.Outlined.WbSunny,
+            title = "Meteo non disponibile",
+            text = state.error ?: "",
+            action = "Riprova",
+            onAction = onRetry,
+        )
     }
 }
 
