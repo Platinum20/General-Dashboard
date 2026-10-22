@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.19.0
+- Widget: una riga con i promemoria scaduti o in scadenza oggi e il prossimo da fare, con l'orario; toccandola si apre la sezione Note
+- Il widget si aggiorna subito quando aggiungi, completi o sposti un promemoria
+
 ## 1.18.0
 - Note: nuova scheda "Date" con tutti i conti alla rovescia (compleanni, viaggi, scadenze), con il pulsante + per aggiungerne
 - Animazioni tra le schermate: le pagine di dettaglio entrano da destra e tornano indietro scorrendo, tra le schede una dissolvenza
