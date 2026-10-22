@@ -36,6 +36,7 @@ import com.platinum20.dashboard.media.MediaPageListener
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.media.inFrame
 import com.platinum20.dashboard.media.loadWhenAttached
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 
@@ -145,7 +146,7 @@ fun LoginScreen(
         },
     ) { inner ->
         AndroidView(
-            factory = { webView },
+            factory = { ctx -> webView.inFrame(ctx) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner),

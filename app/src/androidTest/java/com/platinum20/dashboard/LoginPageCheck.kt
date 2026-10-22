@@ -52,64 +52,6 @@ class LoginPageCheck {
     @Test
     fun spotifyInApp() = inCompose("spotify-in-app", haze = true) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
 
-    @Test
-    fun spotifyInAppNoHaze() = inCompose("spotify-in-app-nohaze", haze = false) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
-
-    /** WebView semplice dentro Compose: carica subito, come la schermata di accesso. */
-    @Test
-    fun composeWebView() = inCompose("compose-webview", haze = false) {
-        AndroidView(
-            factory = { ctx ->
-                createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
-                    settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
-                    loadUrl(MediaService.SPOTIFY.loginUrl)
-                }
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-
-    /** Come sopra ma caricando solo quando la WebView è sullo schermo. */
-    @Test
-    fun composeWebViewAttached() = inCompose("compose-webview-attached", haze = false) {
-        AndroidView(
-            factory = { ctx ->
-                createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
-                    settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
-                    loadWhenAttached(MediaService.SPOTIFY.loginUrl)
-                }
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-
-    @Test
-    fun composeNoTheme() = inCompose("compose-notheme", haze = false, theme = false) { SpotifyWebView() }
-
-    @Test
-    fun composeFrame() = inCompose("compose-frame", haze = false) {
-        AndroidView(
-            factory = { ctx -> android.widget.FrameLayout(ctx).apply { addView(spotifyWebView(ctx)) } },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-
-    @Test
-    fun composePreRaster() = inCompose("compose-preraster", haze = false) {
-        AndroidView(
-            factory = { ctx -> spotifyWebView(ctx).apply { settings.offscreenPreRaster = true } },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-
-    @Test
-    fun composeSoftware() = inCompose("compose-software", haze = false) {
-        AndroidView(
-            factory = { ctx -> spotifyWebView(ctx).apply { setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null) } },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
-
     @androidx.compose.runtime.Composable
     private fun SpotifyWebView() {
         AndroidView(factory = { ctx -> spotifyWebView(ctx) }, modifier = Modifier.fillMaxSize())

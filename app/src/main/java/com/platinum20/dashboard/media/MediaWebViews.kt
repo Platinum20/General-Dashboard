@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.view.ViewParent
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
@@ -159,6 +160,15 @@ fun WebView.loadWhenAttached(url: String) {
 
         override fun onViewDetachedFromWindow(v: View) {}
     })
+}
+
+/**
+ * La WebView dentro un FrameLayout, da passare ad AndroidView. Messa direttamente in Compose, la pagina
+ * di accesso di Spotify si vedeva tutta nera (solo lo sfondo): verificato su emulatore Android 14 e 16.
+ */
+fun WebView.inFrame(context: Context): FrameLayout = FrameLayout(context).also { frame ->
+    (parent as? ViewGroup)?.removeView(this)
+    frame.addView(this, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
 }
 
 /** User agent di Chrome per computer, con la stessa versione del motore della WebView. */
