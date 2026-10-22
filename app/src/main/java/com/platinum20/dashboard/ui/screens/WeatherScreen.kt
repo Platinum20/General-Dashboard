@@ -64,6 +64,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
+import androidx.compose.ui.graphics.luminance
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,8 +205,11 @@ private fun CurrentSection(forecast: Forecast) {
     val c = forecast.current
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        // Il blocco scuro come "Adesso" in Oggi.
+        color = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.inverseSurface,
+        contentColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.inverseOnSurface,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(24.dp)) {
@@ -279,12 +283,7 @@ private fun DetailCell(icon: ImageVector, label: String, value: String, modifier
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-    )
+    SectionHeader(text, Modifier.padding(top = 8.dp))
 }
 
 @Composable

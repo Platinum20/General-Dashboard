@@ -351,12 +351,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
         if (habits.isNotEmpty()) {
             item {
                 val done = habits.count { it.isDone(today) }
-                Text(
-                    if (done == habits.size) "Tutte fatte oggi" else "Oggi $done su ${habits.size}",
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-                )
+                SectionHeader(if (done == habits.size) "Tutte fatte oggi" else "Oggi $done su ${habits.size}")
             }
         }
         items(habits, key = { it.id }) { habit ->

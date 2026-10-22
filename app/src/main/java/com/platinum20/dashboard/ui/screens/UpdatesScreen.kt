@@ -130,12 +130,7 @@ fun UpdatesScreen(
             item { NotifyCard() }
 
             item {
-                Text(
-                    "Changelog",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                )
+                SectionHeader("Changelog", Modifier.padding(top = 8.dp))
             }
 
             when {

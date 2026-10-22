@@ -63,6 +63,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
 private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
@@ -204,9 +206,9 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
                             LocalDate.now().minusDays(1) -> "Ieri"
                             else -> day.format(dayHeader).replaceFirstChar { it.uppercase() }
                         },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 2.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 2.dp),
                     )
                 }
             }
