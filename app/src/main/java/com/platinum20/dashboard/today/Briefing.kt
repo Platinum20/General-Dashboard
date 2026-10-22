@@ -93,8 +93,10 @@ object Briefing {
 
         // Date: oggi sempre, domani solo la sera (al mattino è presto per pensarci).
         val date = now.toLocalDate()
-        countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.title}") }
-        if (evening) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.title}") }
+        // Per compleanni e anniversari con l'anno vero, anche quanti anni compie.
+        fun Countdown.label() = title + (yearsAtNext(date)?.let { " ($it anni)" } ?: "")
+        countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}") }
+        if (evening) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
 
         // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
         val waiting = parcels.filter { !it.delivered && it.expected != null }
