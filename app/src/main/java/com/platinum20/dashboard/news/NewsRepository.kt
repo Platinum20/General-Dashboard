@@ -3,6 +3,7 @@ package com.platinum20.dashboard.news
 import android.text.Html
 import android.util.Xml
 import com.platinum20.dashboard.BuildConfig
+import com.platinum20.dashboard.net.WebFetcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -81,6 +82,11 @@ class NewsRepository {
             if (!items.isNullOrEmpty()) return@withContext items
             lastError = result.exceptionOrNull() ?: IOException("feed vuoto")
         }
+        // Alcuni siti (Il Post) bloccano le richieste dirette come bot: riproviamo col motore del browser.
+        WebFetcher.fetchText(source.feedUrl)
+            ?.let { xml -> runCatching { parse(trimLeadingJunk(xml.toByteArray()).inputStream(), source) }.getOrNull() }
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { return@withContext it }
         throw lastError ?: IOException("feed vuoto")
     }
 
