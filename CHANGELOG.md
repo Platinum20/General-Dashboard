@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.80.0
+- Impostazioni riorganizzate: Aspetto, Oggi e notifiche, Dati automatici, Meteo, Media, Informazioni; ogni riga ha l'icona colorata e mostra a destra lo stato attuale (orario, località, acceso/spento)
+- Il blocco pubblicità si regola ora in Impostazioni › Media (interruttore, richieste bloccate e "Aggiorna" le liste); in Media resta solo una riga che dice se è attivo
+- In Impostazioni anche l'avviso delle nuove versioni (prima solo dentro Aggiornamenti) e la località del meteo, con "Automatica" o la città scelta
+- Nuova voce Licenze (caratteri Inter, liste del blocco pubblicità, Open-Meteo)
+- Vetro sfocato sugli elementi che galleggiano: la barra in basso e il mini player lasciano intravedere la pagina sotto (sfocatura vera da Android 12)
+
 ## 1.74.0
 - Promemoria: nella notifica, oltre a "Fatto", ci sono "Tra 1 ora" e "Domani 9:00". Per quelli che si ripetono si sposta solo questa volta, la volta dopo resta quella di sempre
 - Oggi: la card "Da fare" mostra quello che conta adesso (scaduti, di oggi e dalle 18 anche di domani, più al massimo due senza scadenza) e sotto "+ altri N in Note"

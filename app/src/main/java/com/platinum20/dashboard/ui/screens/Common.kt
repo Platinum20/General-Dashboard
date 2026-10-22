@@ -2,6 +2,14 @@ package com.platinum20.dashboard.ui.screens
 
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
@@ -257,10 +265,19 @@ fun TopLevelBar(
     title: String,
     subtitle: String? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    /** Per le pagine aperte da una sezione (Impostazioni): freccia indietro al posto dell'ingranaggio. */
+    onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    val openSettings = LocalOpenSettings.current
+    val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
     TopAppBar(
+        navigationIcon = {
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                }
+            }
+        },
         title = {
             Column {
                 if (subtitle != null) {
@@ -302,6 +319,60 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
         modifier = Modifier.padding(horizontal = 2.dp).size(40.dp).bouncyPress(0.9f),
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
+    }
+}
+
+/**
+ * Il contenuto delle pagine, da sfocare sotto gli elementi che galleggiano (vetro).
+ * Lo fornisce MainActivity attorno alle schermate; null nelle anteprime e nelle activity a parte.
+ */
+val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
+
+/**
+ * Vetro sfocato: la pagina sotto si intravede, sfocata e velata del colore delle card.
+ * Da Android 12 la sfocatura è vera; prima resta un velo quasi pieno, sempre leggibile.
+ */
+fun Modifier.glass(shape: Shape): Modifier = composed {
+    val state = LocalHazeState.current
+    val card = MaterialTheme.colorScheme.card
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    if (state == null) {
+        this.clip(shape).background(card)
+    } else {
+        this.clip(shape).hazeEffect(
+            state,
+            HazeStyle(
+                backgroundColor = MaterialTheme.colorScheme.background,
+                tint = HazeTint(card.copy(alpha = if (dark) 0.55f else 0.62f)),
+                blurRadius = 22.dp,
+                noiseFactor = 0.06f,
+                fallbackTint = HazeTint(card.copy(alpha = 0.96f)),
+            ),
+        )
+    }
+}
+
+/** Colori delle icone nei quadratini (griglia Media, righe delle Impostazioni): chiaro e scuro. */
+enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val darkBg: Long) {
+    BLUE(0xFF3550E8, 0xFFE3E8FF, 0xFF9AABFF, 0xFF252B4A),
+    ORANGE(0xFFD9572B, 0xFFFCE5DA, 0xFFFF8F66, 0xFF3A241B),
+    GREEN(0xFF1E8A57, 0xFFDDF3E7, 0xFF5FD39B, 0xFF1F3A2C),
+    PURPLE(0xFF7A44C2, 0xFFEFE4FB, 0xFFD7A6FF, 0xFF33283F),
+    NEUTRAL(0xFF5E5A52, 0xFFECE8DF, 0xFFC9C4BA, 0xFF2E2C28),
+}
+
+/** Icona dentro un quadratino colorato. */
+@Composable
+fun IconTile(icon: ImageVector, accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    Box(
+        Modifier
+            .size(size)
+            .clip(MaterialTheme.shapes.medium)
+            .background(Color(if (dark) accent.darkBg else accent.lightBg)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = Color(if (dark) accent.dark else accent.light), modifier = Modifier.size(iconSize))
     }
 }
 

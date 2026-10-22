@@ -123,8 +123,9 @@ fun FloatingPlayer(
         Surface(
             shape = MaterialTheme.shapes.large,
             shadowElevation = if (dragging) 14.dp else 8.dp,
-            tonalElevation = 3.dp,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            // Bolla di vetro: si sposta sopra le pagine e le lascia intravedere sfocate.
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            border = cardBorder(),
             modifier = Modifier
                 .offset { IntOffset((margin + fx.value * rangeX).roundToInt(), (margin + fy.value * rangeY).roundToInt()) }
                 .graphicsLayer {
@@ -137,6 +138,7 @@ fun FloatingPlayer(
                     bubbleW = it.width
                     bubbleH = it.height
                 }
+                .glass(MaterialTheme.shapes.large)
                 .pointerInput(rangeX, rangeY) {
                     val tracker = VelocityTracker()
                     // Posizione del dito tenuta qui, in modo sincrono: gli snapTo partono in coroutine.

@@ -131,6 +131,8 @@ class ScreenshotTour {
         }
         if (tap("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
+            scroll(down = true)
+            shot(p + "42_impostazioni_fondo")
             visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
         }
     }
