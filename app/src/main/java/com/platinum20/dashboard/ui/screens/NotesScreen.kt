@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
@@ -562,6 +563,9 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var id by remember { mutableStateOf(noteId) }
     var text by rememberSaveable { mutableStateOf(noteId?.let { NotesStore.note(it)?.text }.orEmpty()) }
     var deleted by remember { mutableStateOf(false) }
+    val data by NotesStore.data.collectAsStateWithLifecycle()
+    val pinned = id?.let { current -> data.notes.firstOrNull { it.id == current }?.pinned } ?: false
+    val haptic = rememberHaptic()
 
     DisposableEffect(Unit) {
         onDispose { if (!deleted) NotesStore.saveNote(id, text) }
@@ -577,6 +581,19 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    // Fissa in alto: lo stesso della pressione lunga nella lista, ma visibile.
+                    IconButton(onClick = {
+                        id?.let {
+                            haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                            NotesStore.togglePin(it)
+                        }
+                    }, enabled = id != null) {
+                        if (pinned) {
+                            Icon(Icons.Filled.PushPinFilled, contentDescription = "Togli da in alto", tint = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Icon(Icons.Outlined.PushPin, contentDescription = "Fissa in alto")
+                        }
+                    }
                     IconButton(onClick = {
                         val share = android.content.Intent(android.content.Intent.ACTION_SEND)
                             .setType("text/plain")
