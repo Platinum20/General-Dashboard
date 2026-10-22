@@ -46,4 +46,10 @@ class TodayTasksTest {
         assertEquals(emptyList<TaskItem>(), pick.shown)
         assertEquals(1, pick.more)
     }
+
+    @Test fun conLaCardDomaniIPromemoriaDiDomaniNonSiRipetono() {
+        val pick = TodayTaskPicker.pick(listOf(overdue, today, tomorrow, nextWeek), evening, zone, tomorrowCard = true)
+        assertEquals(listOf(1L, 2L), pick.shown.map { it.id })
+        assertEquals(2, pick.more)
+    }
 }

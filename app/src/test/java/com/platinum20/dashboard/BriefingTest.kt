@@ -13,6 +13,10 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import com.platinum20.dashboard.weather.CurrentWeather
+import com.platinum20.dashboard.weather.DailyPoint
+import com.platinum20.dashboard.weather.Forecast
+import org.junit.Assert.assertFalse
 
 class BriefingTest {
     private val zone = ZoneId.of("Europe/Rome")
@@ -105,5 +109,50 @@ class BriefingTest {
         )
         assertTrue(lines.any { it.kind == BriefKind.HABIT && it.text.endsWith("Acqua") })
         assertTrue(lines.any { it.kind == BriefKind.PARCEL && it.text == "Domani arriva: Cuffie" })
+    }
+
+    private fun rainyTomorrow(day: LocalDate) = Forecast(
+        place = "Roma", latitude = 0.0, longitude = 0.0, fetchedAt = 0L,
+        current = CurrentWeather(day.atTime(19, 0), 15.0, 14.0, 70, 0, false, 5.0, 180, 0.0, 1013.0),
+        hourly = emptyList(),
+        daily = listOf(day, day.plusDays(1)).map { DailyPoint(it, 61, 22.0, 10.0, 60, 3.0, null, null, 10.0, 3.0) },
+    )
+
+    @Test
+    fun conLaCardDomaniNienteRigheSuDomani() {
+        // V20: la sera, se sotto c'è la card "Domani", Adesso non ripete meteo, impegni e date di domani.
+        val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
+        val tomorrow = evening.toLocalDate().plusDays(1).atTime(9, 30)
+        fun build(card: Boolean) = Briefing.build(
+            now = evening,
+            forecast = rainyTomorrow(evening.toLocalDate()),
+            today = emptyList(),
+            tomorrow = listOf(event("Treno", tomorrow, tomorrow.plusHours(2))),
+            tasks = emptyList(),
+            countdowns = listOf(Countdown(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23))),
+            parcels = listOf(Parcel(1, "Cuffie", expected = LocalDate.of(2026, 10, 23))),
+            zone = zone,
+            tomorrowCard = card,
+        )
+        assertTrue(build(card = false).any { it.text.startsWith("Domani") })
+        val withCard = build(card = true)
+        assertFalse(withCard.any { it.text.startsWith("Domani") })
+        assertEquals(listOf("Niente altro per stasera"), withCard.map { it.text })
+    }
+
+    @Test
+    fun rigaMeteoDiDomaniPortaIlCodiceDellaPioggia() {
+        val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
+        val line = Briefing.build(
+            now = evening,
+            forecast = rainyTomorrow(evening.toLocalDate()),
+            today = emptyList(),
+            tomorrow = emptyList(),
+            tasks = emptyList(),
+            countdowns = emptyList(),
+            zone = zone,
+        ).first { it.kind == BriefKind.WEATHER }
+        assertEquals("Domani 22° / 10°, pioggia 60%", line.text)
+        assertEquals(61, line.weatherCode)
     }
 }

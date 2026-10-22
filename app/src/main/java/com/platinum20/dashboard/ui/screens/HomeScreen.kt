@@ -175,19 +175,19 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos) {
         Resume.forAdesso(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis())
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume) {
-        Briefing.build(
-            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, resume = resume,
-        )
-    }
     // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
     val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Tomorrow.build(
             minute, weather.forecast,
             events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
             tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
+        )
+    }
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume, tomorrowPlan) {
+        Briefing.build(
+            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses, resume = resume, tomorrowCard = tomorrowPlan != null,
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -237,7 +237,7 @@ fun HomeScreen(
                 },
             )
             HomeCard.CALENDAR -> CalendarCard(agenda)
-            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
+            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
             HomeCard.COUNTDOWN -> CountdownCard()
             HomeCard.RECAP -> RecapCard(
                 state = recap,
@@ -425,7 +425,7 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
         BriefKind.RAIN -> Icons.Outlined.Umbrella
         BriefKind.TASK -> Icons.Outlined.TaskAlt
         BriefKind.DATE -> Icons.Outlined.Celebration
-        BriefKind.WEATHER -> Icons.Outlined.WbSunny
+        BriefKind.WEATHER -> line.weatherCode?.let { weatherIcon(it) } ?: Icons.Outlined.WbSunny
         BriefKind.HABIT -> Icons.Outlined.Autorenew
         BriefKind.PARCEL -> Icons.Outlined.LocalShipping
         BriefKind.MONEY -> Icons.Outlined.Euro

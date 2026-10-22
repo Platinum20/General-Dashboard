@@ -38,7 +38,7 @@ fun TomorrowCard(
     onOpenNotes: () -> Unit,
 ) {
     val dayName = plan.day.format(DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN))
-    Section(title = "Domani · $dayName") {
+    Section(title = "${plan.label} · $dayName") {
         Column(Modifier.padding(vertical = 4.dp)) {
             plan.headline?.let { headline ->
                 Text(
