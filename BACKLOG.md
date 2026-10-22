@@ -119,6 +119,14 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** usare sempre `context.applicationContext` dentro `YtPlayer`; distinguere errore e lista vuota nei commenti; in `play` non chiamare `play()` se lo stesso video è già caricato e in pausa per scelta dell'utente.
 - **Test che lo impedisce:** test di una funzione pura per lo stato dei commenti (caricamento, errore, vuoti, lista) e del caso "stesso video già caricato".
 
+
+### V17. Se il file delle Note non si legge, la prima modifica lo cancella · Note (tutti i dati) · gravità bassa
+- **Versione:** già prima, più pesante dalla 1.88.0 (nel file ora ci sono anche spese fisse, liste, abitudini settimanali)
+- **Cosa non va:** `NotesStore.init` fa `runCatching { parse(file.readText()) }.getOrDefault(NotesData())`: se `notes.json` è rovinato, o scritto da una versione più nuova con un valore che fa fallire `parse`, l'app parte con le Note vuote senza dirlo e il primo promemoria aggiunto riscrive il file, perdendo tutto.
+- **Dove:** `notes/NotesStore.kt` riga ~201 (`init`).
+- **Come riprodurre:** in un test scrivere `{"tasks": [` (troncato) in `files/notes.json`, chiamare `init` (dati vuoti), aggiungere un promemoria: il vecchio contenuto è sparito.
+- **Cosa fare:** se `parse` fallisce su un file che esiste e non è vuoto, copiarlo in `notes.json.bad-<data>` prima di continuare e mostrare una volta "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup".
+- **Test che lo impedisce:** in `NotesStoreTest` un file rovinato: dopo `init` e un'aggiunta esiste il file `.bad` con il contenuto originale.
 ---
 
 ## In cima
