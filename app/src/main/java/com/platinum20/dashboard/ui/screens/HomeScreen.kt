@@ -77,7 +77,9 @@ import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.today.Invites
 import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.weather.LocationProvider
 import com.platinum20.dashboard.weather.WeatherCodes
@@ -175,10 +177,14 @@ fun HomeScreen(
         )
         DashboardWidget.saveBriefing(context, lines)
     }
+    AutoFill.init(context)
+    val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
+    val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
-            HomeCard.CALENDAR -> agenda.hasContent
+            // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
+            HomeCard.CALENDAR -> agenda.granted && agenda.hasContent
             HomeCard.COUNTDOWN -> notes.soon.isNotEmpty()
             else -> true
         }
@@ -272,6 +278,19 @@ fun HomeScreen(
             items(cards.take(1), key = { it.name }) { cardContent(it) }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
             items(cards.drop(1), key = { it.name }) { cardContent(it) }
+            item(key = "invites") {
+                InvitesRow(
+                    invites = Invites.pending(
+                        agendaVisible = HomeCard.CALENDAR in layout.visible,
+                        calendarGranted = agenda.granted,
+                        autoFillEnabled = autoFillEnabled,
+                        autoFillDismissed = autoFillDismissed,
+                    ),
+                    onAllowCalendar = agenda.requestPermission,
+                    onOpenAutoFill = onOpenAutoFill,
+                    onDismissAutoFill = { AutoFill.dismissIntro() },
+                )
+            }
         }
         }
     }
