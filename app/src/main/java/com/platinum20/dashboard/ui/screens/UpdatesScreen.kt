@@ -1,8 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.Manifest
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +25,6 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.CloudDownload
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.NewReleases
-import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.Button
@@ -38,12 +35,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
@@ -69,7 +63,6 @@ import com.platinum20.dashboard.update.UpdateStatus
 import com.platinum20.dashboard.update.UpdateUiState
 import com.platinum20.dashboard.update.UpdateViewModel
 import com.platinum20.dashboard.update.compareVersions
-import com.platinum20.dashboard.work.MorningWorker
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -93,13 +86,9 @@ fun UpdatesScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Aggiornamenti") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = "Aggiornamenti",
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = viewModel::refreshReleases, enabled = !state.loadingReleases) {
                         Icon(Icons.Outlined.Refresh, contentDescription = "Ricarica changelog")
@@ -127,7 +116,6 @@ fun UpdatesScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { StatusCard(state) }
-            item { NotifyCard() }
 
             item {
                 SectionHeader("Changelog", Modifier.padding(top = 8.dp))
@@ -226,53 +214,6 @@ private fun StatusCard(state: UpdateUiState) {
                 )
             }
         }
-    }
-}
-
-/** Interruttore per la notifica delle nuove versioni. */
-@Composable
-private fun NotifyCard() {
-    val context = LocalContext.current
-    val enabled by AppSettings.updateNotify.collectAsState()
-
-    fun set(on: Boolean) {
-        AppSettings.setUpdateNotify(on)
-        UpdateCheckWorker.schedule(context)
-    }
-
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) set(true)
-    }
-    val blocked = enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
-
-    val toggle = {
-        if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
-            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            set(!enabled)
-        }
-    }
-    val onSwitch = hapticToggle { toggle() }
-
-    CanvasCard(
-        onClick = { onSwitch(!(enabled && !blocked)) },
-        modifier = Modifier.fillMaxWidth().bouncyPress(),
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            leadingContent = {
-                Icon(Icons.Outlined.NotificationsActive, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            },
-            headlineContent = { Text("Avvisami delle nuove versioni") },
-            supportingContent = {
-                Text(
-                    if (blocked) "Le notifiche sono bloccate: tocca per consentirle"
-                    else "Una notifica quando esce un aggiornamento, controllato ogni qualche ora"
-                )
-            },
-            trailingContent = { Switch(checked = enabled && !blocked, onCheckedChange = onSwitch) },
-        )
     }
 }
 

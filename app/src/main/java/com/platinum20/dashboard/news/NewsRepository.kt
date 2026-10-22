@@ -50,6 +50,25 @@ object NewsSources {
     )
 }
 
+/** Scarta le voci dei feed che non sono articoli (presentazioni della testata, home, pagine di sezione). */
+object NewsFilter {
+    private val generic = listOf("dalla redazione di", "la redazione di", "chi siamo", "abbonati", "newsletter")
+
+    fun isArticle(title: String, link: String): Boolean {
+        val t = title.trim().lowercase()
+        if (generic.any { t.startsWith(it) }) return false
+        val uri = runCatching { java.net.URI(link.trim()) }.getOrNull() ?: return false
+        val segments = uri.path.orEmpty().split('/').filter { it.isNotBlank() }
+        if (segments.isEmpty()) return uri.query != null
+        // Un solo pezzo di percorso senza numeri né trattini ("/cultura/") è una sezione, non un articolo.
+        if (segments.size == 1 && uri.query == null) {
+            val only = segments[0]
+            if (only.none { it.isDigit() } && '-' !in only && '.' !in only) return false
+        }
+        return true
+    }
+}
+
 class NewsRepository {
 
     /** Scarica tutti i feed in parallelo e li unisce, dal più recente. */
@@ -199,7 +218,7 @@ class NewsRepository {
                         if (inItem && (name == "item" || name == "entry")) {
                             inItem = false
                             val cleanTitle = htmlToText(title)
-                            if (cleanTitle.isNotBlank() && link.isNotBlank()) {
+                            if (cleanTitle.isNotBlank() && link.isNotBlank() && NewsFilter.isArticle(cleanTitle, link.trim())) {
                                 items += NewsItem(
                                     title = cleanTitle,
                                     link = link.trim(),

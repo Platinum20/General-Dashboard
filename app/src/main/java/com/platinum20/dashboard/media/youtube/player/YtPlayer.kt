@@ -25,9 +25,12 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YtWatched
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -137,12 +140,16 @@ object YtPlayer {
     /** Video da far partire uno dopo l'altro (link), impostati dalla schermata del player. */
     var queue: List<String> = emptyList()
 
-    fun player(context: Context): ExoPlayer = exo ?: ExoPlayer.Builder(context.applicationContext)
+    // Sempre il contesto dell'applicazione: il listener vive quanto il player e non deve tenere
+    // in memoria un'Activity (né usarla dopo che è stata chiusa, a fine video).
+    fun player(context: Context): ExoPlayer = exo ?: newPlayer(context.applicationContext)
+
+    private fun newPlayer(context: Context): ExoPlayer = ExoPlayer.Builder(context)
         // Si parte dalla qualità più alta e si scende solo se la rete non regge (stima iniziale alta).
-        .setBandwidthMeter(DefaultBandwidthMeter.Builder(context.applicationContext).setInitialBitrateEstimate(20_000_000).build())
+        .setBandwidthMeter(DefaultBandwidthMeter.Builder(context).setInitialBitrateEstimate(20_000_000).build())
         .setTrackSelector(
             DefaultTrackSelector(
-                context.applicationContext,
+                context,
                 AdaptiveTrackSelection.Factory(
                     5_000,
                     AdaptiveTrackSelection.DEFAULT_MAX_DURATION_FOR_QUALITY_DECREASE_MS,
@@ -168,6 +175,8 @@ object YtPlayer {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     // Un solo player alla volta: se parte YouTube si fermano Spotify e la radio.
                     if (isPlaying) NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
+                    // In pausa (o finito) si ricorda il punto, per "Riprendi" in Media e in Adesso.
+                    else remember(context)
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
@@ -185,12 +194,12 @@ object YtPlayer {
             })
         }
 
+    /**
+     * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
+     * video messo in pausa resta in pausa (si riprende con il tasto play).
+     */
     fun play(context: Context, link: String) {
-        val id = YtResolver.videoId(link)
-        if (id != null && _now.value?.stream?.id == id && _now.value?.error == null) {
-            player(context).play()
-            return
-        }
+        if (isLoaded(_now.value, link)) return
         NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
         job?.cancel()
         _now.value = YtNow(link = link, stream = null)
@@ -200,8 +209,14 @@ object YtPlayer {
                 .onSuccess {
                     val auto = preferredHeight(context) == 0 && it.dashManifest != null
                     YtHistory.init(context)
-                    // Riparte da dove eri rimasto l'ultima volta.
-                    start(context, it, if (auto) Mode.AUTO else Mode.FIXED, positionMs = YtHistory.resumeMs(it.id), subtitle = pickSubtitle(it))
+                    // Un link con t=... (anche quello di "Riprendi") parte da quel punto, se no da dove eri rimasto.
+                    val from = YtResolver.startSeconds(link) * 1000
+                    start(
+                        context, it, if (auto) Mode.AUTO else Mode.FIXED,
+                        positionMs = if (from > 0) from else YtHistory.resumeMs(it.id),
+                        subtitle = pickSubtitle(it),
+                    )
+                    remember(context)
                 }
                 .onFailure { _now.value = YtNow(link, null, loading = false, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
@@ -228,6 +243,13 @@ object YtPlayer {
         val current = _now.value?.stream?.id
         val index = queue.indexOfFirst { YtResolver.videoId(it) == current }
         queue.getOrNull(index + 1)?.let { play(context, it) }
+    }
+
+    /** Il video di [link] è già nel player e senza errori (anche se in pausa o ancora in caricamento). */
+    internal fun isLoaded(now: YtNow?, link: String): Boolean {
+        val id = YtResolver.videoId(link) ?: return false
+        if (now == null || now.error != null) return false
+        return now.stream?.id == id || (now.stream == null && YtResolver.videoId(now.link) == id)
     }
 
     /** Video finto per le foto automatiche delle schermate (solo test). */
@@ -291,6 +313,27 @@ object YtPlayer {
             prepare()
             playWhenReady = play
         }
+    }
+
+    private fun remember(context: Context) {
+        val stream = _now.value?.stream ?: return
+        MediaHistory.init(context)
+        val live = stream.hlsUrl != null
+        val duration = exo?.duration?.takeIf { it > 0 } ?: (stream.durationSec * 1000)
+        val position = if (live) 0 else exo?.currentPosition ?: 0
+        MediaHistory.record(
+            ResumeItem(
+                kind = ResumeKind.YOUTUBE,
+                key = stream.id,
+                title = stream.title,
+                subtitle = stream.channel,
+                image = stream.thumbnail,
+                // Arrivato quasi in fondo: la prossima volta riparte dall'inizio.
+                positionMs = if (duration > 0 && duration - position < 5_000) duration else position,
+                durationMs = if (live) 0 else duration,
+                at = System.currentTimeMillis(),
+            ),
+        )
     }
 
     private fun publish() {

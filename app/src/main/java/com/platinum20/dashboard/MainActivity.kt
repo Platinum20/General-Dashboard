@@ -142,9 +142,14 @@ import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 import com.platinum20.dashboard.widget.DashboardWidget
 import com.platinum20.dashboard.work.MorningWorker
+import com.platinum20.dashboard.work.RainAlertWorker
 import com.platinum20.dashboard.work.RefreshWorker
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import androidx.compose.runtime.setValue
+import com.platinum20.dashboard.ui.screens.Backdrop
+import com.platinum20.dashboard.ui.screens.LocalBackdrop
+import com.platinum20.dashboard.ui.screens.glassSource
+import androidx.compose.foundation.BorderStroke
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -201,6 +206,7 @@ class MainActivity : ComponentActivity() {
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
         MorningWorker.schedule(this)
+        RainAlertWorker.schedule(this)
         UpdateCheckWorker.schedule(this)
         enableEdgeToEdge()
         setContent {
@@ -358,10 +364,11 @@ private fun CanvasNavBar(
         Surface(
             onClick = { haptic(Haptic.TICK); onPlus() },
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary,
+            // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
+            color = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            shadowElevation = 8.dp,
-            modifier = Modifier.size(60.dp).bouncyPress(0.88f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+            modifier = Modifier.size(60.dp).bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Add, contentDescription = "Aggiungi", modifier = Modifier.size(28.dp))
@@ -441,6 +448,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             openCalendar = { navController.navigate(Routes.CALENDAR) { launchSingleTop = true } },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
+            openRoute = { navController.navigate(it) },
         )
     }
     CompositionLocalProvider(
@@ -514,7 +522,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
 
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
     val hazeState = remember { HazeState() }
-    CompositionLocalProvider(LocalHazeState provides hazeState) {
+    val backdrop = remember { Backdrop() }
+    CompositionLocalProvider(LocalHazeState provides hazeState, LocalBackdrop provides backdrop) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -537,7 +546,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
         NavHost(
-            modifier = Modifier.hazeSource(hazeState),
+            modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,
             startDestination = Routes.HOME,
             // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.

@@ -71,6 +71,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.platinum20.dashboard.autofill.AutoFill
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.layout.PaddingValues
 
 /** Gli impegni di oggi e di domani, condivisi tra "Adesso" e l'agenda. */
 class AgendaState(

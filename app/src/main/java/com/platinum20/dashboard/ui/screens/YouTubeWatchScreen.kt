@@ -165,6 +165,16 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                         item(key = "comments-h") { SectionHeader("Commenti") }
                         when {
                             thread == null || !thread.loaded -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
+                            thread.failed && thread.comments.isEmpty() -> item(key = "comments-f") {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Non riesco a caricare i commenti",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    TextButton(onClick = { scope.launch { thread.load(stream.id, null) } }) { Text("Riprova") }
+                                }
+                            }
                             thread.comments.isEmpty() -> item(key = "comments-e") {
                                 Text("Nessun commento (o commenti disattivati)", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -635,6 +645,8 @@ private class CommentThread {
     var next by mutableStateOf<Page?>(null)
     var loading by mutableStateOf(false)
     var loaded by mutableStateOf(false)
+    /** L'ultima richiesta non è andata (rete): un errore non deve sembrare "nessun commento". */
+    var failed by mutableStateOf(false)
 
     suspend fun load(videoId: String, page: Page?) {
         if (loading) return
@@ -643,8 +655,9 @@ private class CommentThread {
             .onSuccess {
                 comments.addAll(it.comments)
                 next = it.next
+                failed = false
             }
-            .onFailure { next = null }
+            .onFailure { failed = true }
         loading = false
         loaded = true
     }

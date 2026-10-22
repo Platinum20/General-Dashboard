@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.media.radio
 
+import com.platinum20.dashboard.media.MediaHistory
 import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
@@ -63,6 +64,7 @@ object RadioStore {
         if (::prefs.isInitialized) return
         appContext = context.applicationContext
         prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        MediaHistory.init(appContext)
         _favorites.value = read(KEY_FAVORITES)
         _recent.value = read(KEY_RECENT)
     }
@@ -102,6 +104,7 @@ object RadioStore {
         val recent = (listOf(station) + _recent.value.filter { it.id != station.id }).take(10)
         _recent.value = recent
         write(KEY_RECENT, recent)
+        MediaHistory.recordRadio(station)
         scope.launch { RadioApi.click(station) }
         val ready = controller
         if (ready != null) start(ready, station) else {

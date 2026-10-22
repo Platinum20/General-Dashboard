@@ -107,6 +107,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import dev.chrisbanes.haze.hazeSource
 
 /**
  * Insets per le schermate con la barra di navigazione in basso:
@@ -323,6 +324,12 @@ fun RoundIconButton(icon: ImageVector, contentDescription: String, enabled: Bool
 }
 
 /**
+ * Le pagine come sorgente del vetro: da Android 13 per il vetro liquido, prima per Haze.
+ */
+fun Modifier.glassSource(hazeState: HazeState, backdrop: Backdrop): Modifier =
+    if (Build.VERSION.SDK_INT >= 33) backdropSource(backdrop) else hazeSource(hazeState)
+
+/**
  * Il contenuto delle pagine, da sfocare sotto gli elementi che galleggiano (vetro).
  * Lo fornisce MainActivity attorno alle schermate; null nelle anteprime e nelle activity a parte.
  */
@@ -333,21 +340,27 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  * Velo leggero perché sotto si veda davvero la pagina. Da Android 12 la sfocatura è vera
  * (Haze di suo la accende solo da Android 13); prima resta un velo semitrasparente senza sfocatura.
  */
-fun Modifier.glass(shape: Shape): Modifier = composed {
+fun Modifier.glass(shape: Shape, color: Color? = null): Modifier = composed {
     val state = LocalHazeState.current
-    val card = MaterialTheme.colorScheme.card
+    // [color]: vetro colorato (il + della barra); altrimenti il velo del colore delle card.
+    val card = color ?: MaterialTheme.colorScheme.card
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    if (state == null) {
+    val backdrop = LocalBackdrop.current
+    val tint = card.copy(alpha = if (color != null) 0.78f else if (dark) 0.42f else 0.38f)
+    if (backdrop != null && Build.VERSION.SDK_INT >= 33) {
+        // Da Android 13 il vetro è "liquido": oltre a sfocare, piega la pagina sui bordi. Velo più leggero: si vede sotto.
+        this.clip(shape).liquidGlass(backdrop, shape, card.copy(alpha = if (color != null) 0.72f else if (dark) 0.30f else 0.22f))
+    } else if (state == null) {
         this.clip(shape).background(card)
     } else {
         this.clip(shape).hazeEffect(
             state,
             HazeStyle(
                 backgroundColor = MaterialTheme.colorScheme.background,
-                tint = HazeTint(card.copy(alpha = if (dark) 0.42f else 0.38f)),
+                tint = HazeTint(tint),
                 blurRadius = 14.dp,
                 noiseFactor = 0.04f,
-                fallbackTint = HazeTint(card.copy(alpha = 0.82f)),
+                fallbackTint = HazeTint(card.copy(alpha = if (color != null) 0.95f else 0.82f)),
             ),
         ) { blurEnabled = Build.VERSION.SDK_INT >= 31 }
     }

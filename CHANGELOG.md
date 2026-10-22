@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.93.0
+**Oggi**
+- Nuova card "Domani" dalle 18: meteo di domani (minime, massime e "pioggia dalle 10"), i primi impegni, i promemoria con scadenza domani, compleanni e addebiti fissi. In cima la frase che conta, tipo "Domani 8:30 Dentista, pioggia dalle 10"; ogni riga apre la sua pagina
+- Adesso: le cose urgenti sono di un arancio fisso, più scuro e leggibile col tema chiaro, e restano arancio anche con Material You
+- Adesso ricorda il video lasciato a metà nelle ultime 24 ore, con un tocco riparte da lì
+
+**Meteo**
+- Avviso pioggia: in Impostazioni › Meteo "Avvisami se sta per piovere". Arriva una notifica circa mezz'ora prima ("Pioggia tra 20 minuti a Roma, debole per circa 45 minuti"), solo dalle 7 alle 23, al massimo una ogni 3 ore e mai se piove già
+
+**Media**
+- "Riprendi" in cima a Media quando nulla suona: l'ultimo video, YouTube o radio con il punto in cui eri, e sotto le fonti i Recenti
+- YouTube parte dal secondo scritto nel link (t=90, t=1m30s)
+- Player YouTube: se i commenti non arrivano si vede l'errore con Riprova (non più "nessun commento"), e un video messo in pausa resta in pausa quando ci torni
+- Spotify riparte da solo se il riproduttore perde il collegamento, e gli errori sono spiegati in italiano
+
+**News**
+- Sopra notizie fresche si legge "Aggiornate X min fa" invece di "Niente di nuovo"; spariscono le voci dei feed che non sono articoli
+
+**Note**
+- Da fare: niente più X su ogni riga, si scorre verso sinistra per eliminare (con Annulla); eliminare resta anche nella modifica
+
+**Aggiornamenti**
+- L'interruttore "Avviso nuove versioni" sta solo in Impostazioni, non più ripetuto nella pagina Aggiornamenti
+
+**Sotto il cofano**
+- Test nuovi: avviso pioggia, card Domani, Riprendi, link di YouTube e Spotify, colore urgente; il controllo del player YouTube gira anche ogni giorno e su main
+
+## 1.92.0
+- Vetro liquido rifatto: velo molto più leggero, così la pagina sotto si vede davvero; la lente sul bordo ingrandisce quello che c'è sotto invece di riflettere cosa sta fuori (niente più bordo fantasma in alto) e sono spariti gli aloni azzurrini intorno alla barra
+- Un filo di luce sul bordo e una lucentezza morbida in alto, come una goccia di vetro
+- Il + accanto alla barra è anche lui di vetro, colorato col tema, senza l'ombra
+
+## 1.91.0
+- Nuova icona: una pennellata e una goccia di colore, piena e senza bordino. Con le icone a tema di Android 13+ prende i colori del tuo sfondo
+- Vetro liquido (da Android 13): la barra in basso e il mini player piegano la pagina vicino ai bordi come una lente, con un filo di luce sul bordo. Sotto Android 13 resta il vetro sfocato
+- Le pagine interne (Meteo, Il punto del giorno, Personalizza, Aggiornamenti, Calendario, Compila da solo, Località) hanno il titolo grande con la freccia, come Impostazioni
+- Note: le sei schede diventano pillole come i filtri delle News, e la riga scorre da sola fino a quella aperta
+- Spese: le spese di ogni giorno stanno in una card, come le altre liste
+- Personalizza Oggi: ogni card ha la sua icona, l'interruttore è a destra e le frecce per l'ordine sono più leggibili
+
 ## 1.90.0
 - Accesso a Spotify sistemato: la pagina restava nera, ora si entra con l'accesso ufficiale di Spotify (lo stesso che serve per la libreria e per ascoltare qui)
 - YouTube: schede e filtri (Shorts, dirette) in un'unica fila, non più due barre che scorrono

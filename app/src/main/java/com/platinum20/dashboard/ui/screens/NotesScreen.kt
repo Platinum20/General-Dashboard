@@ -39,6 +39,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
@@ -105,6 +108,13 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.foundation.border
 
 /** Le schede della sezione Note, nell'ordine in cui si usano di più. */
 enum class NotesTabs(val label: String, val addLabel: String?) {
@@ -117,33 +127,30 @@ enum class NotesTabs(val label: String, val addLabel: String?) {
 }
 
 /**
- * Le sei schede delle Note, sottolineate come un indice: stanno in una riga che scorre
- * e la scelta resta sempre visibile (la riga scorre da sola fino alla scheda attiva).
+ * Le sei schede delle Note come pillole, uguali ai filtri delle News: stanno in una riga che scorre
+ * e la riga si sposta da sola per tenere in vista la scheda attiva.
  */
 @Composable
 private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
     val haptic = rememberHaptic()
-    ScrollableTabRow(
-        selectedTabIndex = selected.ordinal,
-        edgePadding = 16.dp,
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        indicator = { positions ->
-            TabRowDefaults.SecondaryIndicator(
-                Modifier.tabIndicatorOffset(positions[selected.ordinal]),
-                height = 2.5.dp,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        },
-        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) },
+    val scroll = rememberScrollState()
+    val chipX = remember { mutableStateMapOf<NotesTabs, Int>() }
+    LaunchedEffect(selected) {
+        chipX[selected]?.let { x -> scroll.animateScrollTo((x - 48).coerceAtLeast(0)) }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(scroll)
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         NotesTabs.entries.forEach { t ->
-            Tab(
+            CanvasChip(
                 selected = selected == t,
                 onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
-                selectedContentColor = MaterialTheme.colorScheme.onSurface,
-                unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                text = { Text(t.label, style = MaterialTheme.typography.titleSmall) },
+                label = t.label,
+                modifier = Modifier.onGloballyPositioned { chipX[t] = it.positionInParent().x.toInt() },
             )
         }
     }
@@ -486,12 +493,45 @@ private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskIte
     }
 }
 
+/** Una riga di Da fare: casella e testo. Scorrendo verso sinistra si elimina (con Annulla). */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
     var editing by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
+    val dismiss = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) {
+                haptic(Haptic.CONFIRM)
+                NotesStore.deleteTask(task.id)
+                onDeleted(task)
+                true
+            } else {
+                false
+            }
+        },
+    )
+    SwipeToDismissBox(
+        state = dismiss,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        },
+    ) {
     Row(
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.card)
+            .bouncyPress(0.98f)
+            .padding(start = 4.dp, top = 2.dp, bottom = 2.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = task.done, onCheckedChange = {
@@ -513,12 +553,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
             )
             if (!task.done) task.dueAt?.let { DueText(it, task.repeat) }
         }
-        IconButton(onClick = {
-            NotesStore.deleteTask(task.id)
-            onDeleted(task)
-        }) {
-            Icon(Icons.Outlined.Close, contentDescription = "Elimina", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    }
     }
     if (editing) TaskEditDialog(task, onDismiss = { editing = false }, onDeleted = onDeleted)
 }
