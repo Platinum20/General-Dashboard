@@ -215,6 +215,11 @@ object NotesStore {
 
     fun deleteHabit(id: Long) = update { d -> d.copy(habits = d.habits.filter { it.id != id }) }
 
+    /** Rimette un'abitudine eliminata per sbaglio, con la sua serie: serve ad "Annulla". */
+    fun restoreHabit(habit: Habit) = update { d ->
+        if (d.habits.any { it.id == habit.id }) d else d.copy(habits = d.habits + habit)
+    }
+
     fun toggleHabit(id: Long, day: LocalDate = LocalDate.now()) = update { d ->
         d.copy(habits = d.habits.map { h ->
             if (h.id != id) h else h.copy(done = if (day in h.done) h.done - day else h.done + day)
@@ -235,6 +240,10 @@ object NotesStore {
 
     fun deleteExpense(id: Long) = update { d -> d.copy(expenses = d.expenses.filter { it.id != id }) }
 
+    fun restoreExpense(item: Expense) = update { d ->
+        if (d.expenses.any { it.id == item.id }) d else d.copy(expenses = listOf(item) + d.expenses)
+    }
+
     fun setBudget(cents: Long?) = update { it.copy(budgetCents = cents?.takeIf { c -> c > 0 }) }
 
     fun saveParcel(id: Long?, title: String, code: String, expected: LocalDate?) {
@@ -252,7 +261,15 @@ object NotesStore {
 
     fun deleteParcel(id: Long) = update { d -> d.copy(parcels = d.parcels.filter { it.id != id }) }
 
+    fun restoreParcel(item: Parcel) = update { d ->
+        if (d.parcels.any { it.id == item.id }) d else d.copy(parcels = d.parcels + item)
+    }
+
     fun deleteCountdown(id: Long) = update { d -> d.copy(countdowns = d.countdowns.filter { it.id != id }) }
+
+    fun restoreCountdown(item: Countdown) = update { d ->
+        if (d.countdowns.any { it.id == item.id }) d else d.copy(countdowns = d.countdowns + item)
+    }
 
     /** Salva una nota (nuova se [id] è null) e ne restituisce l'id. Una nota vuota viene eliminata. */
     fun saveNote(id: Long?, text: String): Long? {

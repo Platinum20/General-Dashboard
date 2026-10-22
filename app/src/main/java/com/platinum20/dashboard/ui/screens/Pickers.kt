@@ -267,9 +267,9 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** Nuova abitudine o modifica (nome, eliminazione) di una esistente. */
+/** Nuova abitudine o modifica (nome, eliminazione) di una esistente. [onDeleted] offre "Annulla". */
 @Composable
-fun HabitDialog(habit: Habit?, onDismiss: () -> Unit) {
+fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit = {}) {
     var title by remember { mutableStateOf(habit?.title.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -305,6 +305,7 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit) {
                 TextButton(onClick = {
                     NotesStore.deleteHabit(habit.id)
                     onDismiss()
+                    onDeleted(habit)
                 }) { Text("Elimina") }
             } else {
                 TextButton(onClick = onDismiss) { Text("Annulla") }
@@ -315,7 +316,7 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit) {
 
 /** Nuovo conto alla rovescia o modifica di uno esistente. */
 @Composable
-fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit) {
+fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit, onDeleted: (Countdown) -> Unit = {}) {
     var title by remember { mutableStateOf(countdown?.title.orEmpty()) }
     var date by remember { mutableStateOf(countdown?.date ?: LocalDate.now().plusDays(7)) }
     var yearly by remember { mutableStateOf(countdown?.yearly ?: false) }
@@ -370,6 +371,7 @@ fun CountdownDialog(countdown: Countdown?, onDismiss: () -> Unit) {
                 TextButton(onClick = {
                     NotesStore.deleteCountdown(countdown.id)
                     onDismiss()
+                    onDeleted(countdown)
                 }) { Text("Elimina") }
             } else {
                 TextButton(onClick = onDismiss) { Text("Annulla") }

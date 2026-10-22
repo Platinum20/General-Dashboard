@@ -72,7 +72,7 @@ private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
  * In alto il totale del mese, il budget e dove vanno i soldi.
  */
 @Composable
-fun ExpensesTab(data: NotesData, padding: PaddingValues) {
+fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) -> Unit = {}) {
     var month by remember { mutableStateOf(YearMonth.now()) }
     var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
@@ -236,7 +236,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues) {
     }
 
     if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
-    editing?.let { ExpenseDialog(it, onDismiss = { editing = null }) }
+    editing?.let { ExpenseDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 
 private fun dailyLeft(cents: Long): String {
@@ -280,7 +280,7 @@ private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit) {
+private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (Expense) -> Unit) {
     var text by remember { mutableStateOf(expense.text) }
     var amount by remember { mutableStateOf(Expenses.format(expense.cents).replace("€", "").trim()) }
     var category by remember { mutableStateOf(expense.category) }
@@ -335,6 +335,7 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit) {
             TextButton(onClick = {
                 NotesStore.deleteExpense(expense.id)
                 onDismiss()
+                onDeleted(expense)
             }) { Text("Elimina") }
         },
     )
@@ -359,7 +360,7 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
 
 /** Pacchi in arrivo: cosa aspetti, quando arriva e il tracciamento a un tocco. */
 @Composable
-fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues) {
+fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel) -> Unit = {}) {
     var editing by remember { mutableStateOf<Parcel?>(null) }
     val context = LocalContext.current
     val today = LocalDate.now()
@@ -423,7 +424,7 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues) {
             }
         }
     }
-    editing?.let { ParcelDialog(it, onDismiss = { editing = null }) }
+    editing?.let { ParcelDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 
 private fun dueDay(date: LocalDate, today: LocalDate): String = when (ChronoUnit.DAYS.between(today, date)) {
@@ -435,7 +436,13 @@ private fun dueDay(date: LocalDate, today: LocalDate): String = when (ChronoUnit
 
 /** Nuovo pacco (parcel null) o modifica. [initialCode] arriva da un testo condiviso. */
 @Composable
-fun ParcelDialog(parcel: Parcel?, onDismiss: () -> Unit, initialTitle: String = "", initialCode: String = "") {
+fun ParcelDialog(
+    parcel: Parcel?,
+    onDismiss: () -> Unit,
+    initialTitle: String = "",
+    initialCode: String = "",
+    onDeleted: (Parcel) -> Unit = {},
+) {
     var title by remember { mutableStateOf(parcel?.title ?: initialTitle) }
     var code by remember { mutableStateOf(parcel?.code ?: initialCode) }
     var expected by remember { mutableStateOf(parcel?.expected) }
@@ -487,8 +494,11 @@ fun ParcelDialog(parcel: Parcel?, onDismiss: () -> Unit, initialTitle: String = 
         },
         dismissButton = {
             TextButton(onClick = {
-                parcel?.let { NotesStore.deleteParcel(it.id) }
                 onDismiss()
+                parcel?.let {
+                    NotesStore.deleteParcel(it.id)
+                    onDeleted(it)
+                }
             }) { Text(if (parcel == null) "Annulla" else "Elimina") }
         },
     )

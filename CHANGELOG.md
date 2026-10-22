@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.41.0
+- Note: "Annulla" per qualche secondo anche quando elimini un'abitudine (con tutta la sua serie), una spesa, un pacco o una data
+
 ## 1.40.0
 - Note: quando elimini una nota dal suo editor, tornando alla lista compare "Annulla" per qualche secondo per recuperarla
 
