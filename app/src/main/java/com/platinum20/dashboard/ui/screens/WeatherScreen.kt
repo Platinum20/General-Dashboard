@@ -35,7 +35,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -181,7 +180,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
             item {
                 val low = forecast.daily.minOfOrNull { it.min }?.takeIf { !it.isNaN() } ?: 0.0
                 val high = forecast.daily.maxOfOrNull { it.max }?.takeIf { !it.isNaN() } ?: 1.0
-                ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                CanvasCard(shape = MaterialTheme.shapes.extraLarge) {
                     Column(Modifier.padding(vertical = 8.dp)) {
                         forecast.daily.forEach { DayRow(it, low, high) }
                     }
@@ -263,7 +262,8 @@ private fun DetailsGrid(forecast: Forecast) {
 private fun DetailCell(icon: ImageVector, label: String, value: String, modifier: Modifier) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
         modifier = modifier,
     ) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -291,7 +291,8 @@ private fun SectionTitle(text: String) {
 private fun HourCell(point: HourlyPoint) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp).width(44.dp),

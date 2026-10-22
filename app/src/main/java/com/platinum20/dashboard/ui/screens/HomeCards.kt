@@ -25,7 +25,6 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,28 +65,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-
-/** Intestazione comune delle card della Dashboard. */
-@Composable
-fun CardHeader(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    onClick: (() -> Unit)? = null,
-    trailing: @Composable () -> Unit = {},
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.bouncyPress(0.98f).clickable(onClick = onClick) else Modifier)
-            .padding(start = 16.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        Spacer(Modifier.size(12.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(vertical = 8.dp))
-        trailing()
-    }
-}
 
 /** Gli impegni di oggi e di domani, condivisi tra "Adesso" e l'agenda. */
 class AgendaState(
@@ -143,25 +120,24 @@ fun CalendarCard(agenda: AgendaState) {
     val tomorrow = agenda.showsTomorrow()
     val events = if (granted && agenda.today != null) agenda.shown() else null
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-        Column(Modifier.padding(vertical = 8.dp)) {
-            CardHeader(
-                icon = Icons.Outlined.CalendarMonth,
-                title = if (tomorrow) "Domani" else "Agenda di oggi",
-                onClick = if (granted) ({ CalendarRepository.openCalendar(context) }) else null,
-                trailing = {
-                    if (granted) {
-                        IconButton(onClick = { CalendarRepository.newEvent(context) }) {
-                            Icon(Icons.Outlined.Add, contentDescription = "Nuovo evento")
-                        }
-                    }
-                },
-            )
+    Section(
+        title = if (tomorrow) "Domani" else "Agenda",
+        action = if (granted) "Calendario" else null,
+        onAction = { CalendarRepository.openCalendar(context) },
+        trailing = {
+            if (granted) {
+                IconButton(onClick = { CalendarRepository.newEvent(context) }, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Outlined.Add, contentDescription = "Nuovo evento", modifier = Modifier.size(20.dp))
+                }
+            }
+        },
+    ) {
+        Column(Modifier.padding(vertical = 6.dp)) {
             val list = events
             when {
                 // Senza permesso: una riga sola con il pulsante a destra, non un blocco di testo.
                 !granted -> Row(
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -177,7 +153,7 @@ fun CalendarCard(agenda: AgendaState) {
                     "Nessun impegno oggi.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
                 else -> {
                     val now = System.currentTimeMillis()
@@ -246,11 +222,6 @@ fun TasksCard(onOpenNotes: () -> Unit) {
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
-    var draft by rememberSaveable { mutableStateOf("") }
-    val add = {
-        if (NotesStore.addTask(draft) != null) haptic(Haptic.CONFIRM)
-        draft = ""
-    }
     val open = data.openTasks
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
@@ -261,28 +232,29 @@ fun TasksCard(onOpenNotes: () -> Unit) {
         }
     }
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-        Column(Modifier.animateContentSize(Springs.snappy()).padding(vertical = 8.dp)) {
-            CardHeader(
-                icon = Icons.Outlined.Checklist,
-                title = if (open.isEmpty()) "Da fare" else "Da fare · ${open.size}",
-                onClick = onOpenNotes,
-                trailing = {
-                    Icon(
-                        Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 12.dp),
-                    )
-                },
-            )
-            open.take(5).forEach { task ->
+    Section(
+        title = if (open.isEmpty()) "Da fare" else "Da fare · ${open.size}",
+        action = "Tutte",
+        onAction = onOpenNotes,
+    ) {
+        Column(Modifier.animateContentSize(Springs.snappy())) {
+            if (open.isEmpty() && lastDone == null) {
+                Text(
+                    "Niente da fare. Tocca + in basso per aggiungere un promemoria.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+            open.take(5).forEachIndexed { index, task ->
                 val done = { haptic(Haptic.CONFIRM); lastDone = task; NotesStore.toggleTask(task.id) }
+                if (index > 0) RowDivider()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .bouncyPress(0.98f)
                         .clickable(onClick = done)
-                        .padding(start = 8.dp, end = 16.dp),
+                        .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Checkbox(checked = task.done, onCheckedChange = { done() })
@@ -293,14 +265,19 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                 }
             }
             if (open.size > 5) {
+                RowDivider()
                 Text(
                     "e altri ${open.size - 5}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOpenNotes)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
             }
             lastDone?.let { undone ->
+                RowDivider()
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -323,24 +300,6 @@ fun TasksCard(onOpenNotes: () -> Unit) {
                     ) { Text("Annulla") }
                 }
             }
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                placeholder = { Text("Aggiungi un promemoria") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { add() }),
-                trailingIcon = {
-                    if (draft.isNotBlank()) {
-                        IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
-                    }
-                },
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            QuickPreview(draft, Modifier.padding(start = 28.dp, bottom = 8.dp))
         }
     }
 }
@@ -350,7 +309,7 @@ fun TasksCard(onOpenNotes: () -> Unit) {
 fun DueText(dueAt: Long, repeat: Repeat? = null) {
     val overdue = dueAt < System.currentTimeMillis()
     Text(
-        (if (overdue) "Scaduto · " else "⏰ ") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
+        (if (overdue) "Scaduto · " else "") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
         style = MaterialTheme.typography.labelMedium,
         color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
     )
@@ -374,17 +333,15 @@ fun CountdownCard() {
     var showAll by remember { mutableStateOf(false) }
     val upcoming = data.soon
 
-    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-        Column(Modifier.padding(vertical = 8.dp)) {
-            CardHeader(
-                icon = Icons.Outlined.HourglassTop,
-                title = "In arrivo",
-                trailing = {
-                    IconButton(onClick = { adding = true }) {
-                        Icon(Icons.Outlined.Add, contentDescription = "Aggiungi")
-                    }
-                },
-            )
+    Section(
+        title = "In arrivo",
+        trailing = {
+            IconButton(onClick = { adding = true }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi", modifier = Modifier.size(20.dp))
+            }
+        },
+    ) {
+        Column(Modifier.padding(vertical = 4.dp)) {
             if (upcoming.isEmpty()) {
                 Text(
                     "Aggiungi un compleanno, un viaggio o una scadenza per vedere quanti giorni mancano.",
@@ -393,14 +350,15 @@ fun CountdownCard() {
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                 )
             }
-            (if (showAll) upcoming else upcoming.take(4)).forEach { item ->
+            (if (showAll) upcoming else upcoming.take(4)).forEachIndexed { index, item ->
                 val days = item.daysLeft()
+                if (index > 0) RowDivider()
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .bouncyPress(0.98f)
                         .clickable { editing = item }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -411,15 +369,20 @@ fun CountdownCard() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    Text(
-                        when (days) {
-                            0L -> "Oggi! 🎉"
-                            1L -> "Domani"
-                            else -> "$days giorni"
-                        },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            when (days) {
+                                0L -> "Oggi! 🎉"
+                                1L -> "Domani"
+                                else -> "$days"
+                            },
+                            style = if (days > 1) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        if (days > 1) {
+                            Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
                 }
             }
             if (upcoming.size > 4) {

@@ -232,7 +232,8 @@ private fun SectionHeader(text: String) {
 private fun SettingsGroup(content: @Composable () -> Unit) {
     Surface(
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
     ) {
         Column { content() }
     }

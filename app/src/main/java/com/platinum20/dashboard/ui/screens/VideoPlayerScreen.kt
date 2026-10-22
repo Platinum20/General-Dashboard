@@ -369,7 +369,8 @@ private fun PlayerOptions(
 private fun EmptyPlayer() {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainer,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -406,7 +407,8 @@ private fun RecentVideo(
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
-        color = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
+        border = if (playing) null else cardBorder(),
     ) {
         Column {
             ListItem(

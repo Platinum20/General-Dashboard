@@ -26,7 +26,6 @@ import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -85,18 +84,32 @@ fun NewsScreen(
         TabReselect.events.collect { if (it == Routes.NEWS) listState.animateScrollToItem(0) }
     }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    // Le notizie uscite dopo l'ultima visita stanno in cima; dalla prima già vista in poi, un separatore.
+    val items = state.visibleItems
+    val firstSeen = if (since == null) -1 else items.indexOfFirst { it.publishedAt != null && !it.publishedAt.isAfter(since) }
+    val newCount = if (since == null) null else if (firstSeen < 0) items.size else firstSeen
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            Column(Modifier.background(MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.background(MaterialTheme.colorScheme.background)) {
                 TopLevelBar(
                     title = "News",
+                    subtitle = when {
+                        items.isEmpty() -> "Notizie libere"
+                        newCount == null || newCount == items.size -> "${items.size} notizie"
+                        newCount == 0 -> "Niente di nuovo dall'ultima visita"
+                        newCount == 1 -> "1 nuova dall'ultima visita"
+                        else -> "$newCount nuove dall'ultima visita"
+                    },
                     actions = {
-                        IconButton(onClick = viewModel::refresh, enabled = !state.loading && !state.refreshing) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")
-                        }
+                        RoundIconButton(
+                            Icons.Outlined.Refresh,
+                            "Aggiorna",
+                            enabled = !state.loading && !state.refreshing,
+                            onClick = viewModel::refresh,
+                        )
                     },
                     scrollBehavior = scrollBehavior,
                 )
@@ -167,18 +180,10 @@ fun NewsScreen(
                             )
                         }
                     }
-                    // Le notizie uscite dopo l'ultima visita in cima; dalla prima già vista in poi, un separatore.
-                    val items = state.visibleItems
-                    val firstSeen = if (since == null) -1 else items.indexOfFirst { it.publishedAt != null && !it.publishedAt.isAfter(since) }
-                    if (firstSeen > 0) {
-                        item(key = "new-count") {
-                            SectionLabel(if (firstSeen == 1) "1 nuova dall'ultima visita" else "$firstSeen nuove dall'ultima visita")
-                        }
-                    }
                     // La prima notizia in grande, le altre come righe compatte con la miniatura.
                     itemsIndexed(items, key = { _, it -> it.link }) { index, item ->
                         Column {
-                            if (index == firstSeen && firstSeen > 0) SectionLabel("Già viste", Modifier.padding(top = 8.dp, bottom = 8.dp))
+                            if (index == firstSeen && firstSeen > 0) SectionHeader("Già viste", Modifier.padding(top = 8.dp, bottom = 4.dp))
                             val seen = item.link in read
                             if (index == 0) NewsCard(item, read = seen, onClick = { open(item) })
                             else NewsRow(item, read = seen, onClick = { open(item) })
@@ -203,16 +208,6 @@ fun NewsScreen(
 const val READ_ALPHA = 0.55f
 
 @Composable
-private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(horizontal = 4.dp),
-    )
-}
-
-@Composable
 private fun SourceChips(selected: String?, onSelect: (String?) -> Unit) {
     Row(
         modifier = Modifier
@@ -221,20 +216,16 @@ private fun SourceChips(selected: String?, onSelect: (String?) -> Unit) {
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        FilterChip(selected = selected == null, onClick = { onSelect(null) }, label = { Text("Tutte") })
+        CanvasChip(selected = selected == null, onClick = { onSelect(null) }, label = "Tutte")
         NewsSources.all.forEach { source ->
-            FilterChip(
-                selected = selected == source.id,
-                onClick = { onSelect(source.id) },
-                label = { Text(source.name) },
-            )
+            CanvasChip(selected = selected == source.id, onClick = { onSelect(source.id) }, label = source.name)
         }
     }
 }
 
 @Composable
 private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
-    ElevatedCard(
+    CanvasCard(
         onClick = onClick,
         // Gli articoli già aperti restano, ma attenuati: l'occhio va subito a quelli da leggere.
         modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).alpha(if (read) READ_ALPHA else 1f),
@@ -270,8 +261,8 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Text(
                 item.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 3,
+                style = MaterialTheme.typography.headlineSmall,
+                maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
             )
             if (item.summary.isNotBlank() && item.summary != item.title) {
@@ -290,7 +281,7 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
-    ElevatedCard(
+    CanvasCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().bouncyPress().alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.large,

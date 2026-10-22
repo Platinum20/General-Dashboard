@@ -36,8 +36,37 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import com.platinum20.dashboard.capture.CaptureDialog
+import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.ui.screens.Haptic
+import com.platinum20.dashboard.ui.screens.PlusAction
+import com.platinum20.dashboard.ui.screens.Springs
+import com.platinum20.dashboard.ui.screens.bouncyPress
+import com.platinum20.dashboard.ui.screens.card
+import com.platinum20.dashboard.ui.screens.cardBorder
+import com.platinum20.dashboard.ui.screens.rememberHaptic
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -101,6 +130,7 @@ import com.platinum20.dashboard.widget.DashboardWidget
 import com.platinum20.dashboard.work.MorningWorker
 import com.platinum20.dashboard.work.RefreshWorker
 import com.platinum20.dashboard.work.UpdateCheckWorker
+import androidx.compose.runtime.setValue
 
 /** Cosa aprire quando l'app parte da widget o notifica. */
 data class OpenRequest(
@@ -247,6 +277,94 @@ private val topDestinations = listOf(
 )
 // Le Impostazioni non stanno nella barra: si aprono dall'ingranaggio in alto in ogni sezione.
 
+/**
+ * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
+ * e accanto il + tondo per aggiungere al volo. Sotto, una sfumatura tiene leggibile la barra sopra le liste.
+ */
+@Composable
+private fun CanvasNavBar(
+    currentRoute: String?,
+    dueToday: Int,
+    onSelect: (TopDestination) -> Unit,
+    onPlus: () -> Unit,
+) {
+    val haptic = rememberHaptic()
+    val background = MaterialTheme.colorScheme.background
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(background.copy(alpha = 0f), background.copy(alpha = 0.92f), background)))
+            .navigationBarsPadding()
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.card,
+            border = cardBorder(),
+            shadowElevation = 8.dp,
+            modifier = Modifier.weight(1f).height(60.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround,
+            ) {
+                topDestinations.forEach { dest ->
+                    NavPill(
+                        dest = dest,
+                        selected = currentRoute == dest.route,
+                        badge = if (dest.route == Routes.NOTES) dueToday else 0,
+                        onClick = { haptic(Haptic.TICK); onSelect(dest) },
+                    )
+                }
+            }
+        }
+        Surface(
+            onClick = { haptic(Haptic.TICK); onPlus() },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            shadowElevation = 8.dp,
+            modifier = Modifier.size(60.dp).bouncyPress(0.88f),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Add, contentDescription = "Aggiungi", modifier = Modifier.size(28.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
+    val container by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent, label = "pill",
+    )
+    val content by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant, label = "pillText",
+    )
+    Row(
+        modifier = Modifier
+            .bouncyPress(0.9f)
+            .clip(CircleShape)
+            .background(container)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = dest.label }
+            .animateContentSize(Springs.snappy())
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BadgedBox(badge = { if (badge > 0) Badge { Text("$badge") } }) {
+            Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
+        }
+        if (selected) {
+            Spacer(Modifier.width(8.dp))
+            Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
+        }
+    }
+}
+
 // Molle delle transizioni: le pagine arrivano con un leggero rimbalzo invece di una curva fissa.
 private val pageSpring = spring(
     dampingRatio = 0.72f,
@@ -330,6 +448,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         notes.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay }
     }
 
+    // Il + della barra: cattura veloce, oppure l'azione della sezione aperta (in Note, la scheda scelta).
+    var capturing by remember { mutableStateOf(false) }
+    val plusOverride by PlusAction.override
+    if (capturing) CaptureDialog(initial = "", initialMode = CaptureMode.TASK, onClose = { capturing = false })
+
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -337,28 +460,18 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 enter = slideInVertically(pageSpring) { it } + fadeIn(),
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
-                NavigationBar {
-                    topDestinations.forEach { dest ->
-                        val selected = currentRoute == dest.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                // Toccare la scheda già aperta riporta la lista in cima.
-                                if (selected) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
-                            },
-                            icon = {
-                                BadgedBox(badge = {
-                                    if (dest.route == Routes.NOTES && dueToday > 0) Badge { Text("$dueToday") }
-                                }) {
-                                    Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null)
-                                }
-                            },
-                            label = { Text(dest.label, maxLines = 1) },
-                        )
-                    }
-                }
+                CanvasNavBar(
+                    currentRoute = currentRoute,
+                    dueToday = dueToday,
+                    onSelect = { dest ->
+                        // Toccare la scheda già aperta riporta la lista in cima.
+                        if (currentRoute == dest.route) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
+                    },
+                    onPlus = { plusOverride?.invoke() ?: run { capturing = true } },
+                )
             }
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
         NavHost(

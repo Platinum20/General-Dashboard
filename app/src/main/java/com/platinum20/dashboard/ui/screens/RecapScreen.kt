@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -83,7 +82,7 @@ fun RecapScreen(
                     )
                 }
                 itemsIndexed(state.themes) { index, theme ->
-                    ElevatedCard(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.fillMaxWidth()) {
+                    CanvasCard(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(vertical = 8.dp)) {
                             Text(
                                 "${index + 1}. " + theme.keywords.ifEmpty { listOf(theme.headline.source.name) }.joinToString(" · "),

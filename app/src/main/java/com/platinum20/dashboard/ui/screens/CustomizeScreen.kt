@@ -81,7 +81,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
                         .bouncyPress(0.98f)
                         .clip(MaterialTheme.shapes.large)
                         .clickable { toggle(!visible) },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.card),
                     headlineContent = { Text(card.label) },
                     supportingContent = { Text(card.description) },
                     leadingContent = {
