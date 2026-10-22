@@ -79,6 +79,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.platinum20.dashboard.notes.DateIdeas
+import com.platinum20.dashboard.notes.DateIdea
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.OffsetMapping
@@ -305,6 +307,7 @@ fun NotesScreen(
 @Composable
 private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDeleted: (Countdown) -> Unit) {
     var editing by remember { mutableStateOf<Countdown?>(null) }
+    var proposing by remember { mutableStateOf<DateIdea?>(null) }
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(upcoming, key = { it.id }) { item ->
             val days = item.daysLeft()
@@ -342,8 +345,40 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDelete
         if (upcoming.isEmpty()) {
             item { EmptyHint("Nessuna data. Aggiungi un compleanno, un viaggio o una scadenza con il pulsante +.") }
         }
+        val ideas = DateIdeas.suggest(upcoming)
+        if (ideas.isNotEmpty()) {
+            item {
+                Column(Modifier.padding(top = 8.dp)) {
+                    SectionHeader("Idee da aggiungere")
+                    Spacer(Modifier.height(4.dp))
+                    CanvasCard(Modifier.fillMaxWidth()) {
+                        ideas.forEachIndexed { i, idea ->
+                            if (i > 0) RowDivider()
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { proposing = idea }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(idea.title.trim(), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        if (idea.yearly) "Ogni anno" else "Una volta",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi ${idea.title.trim()}", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
+    proposing?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposing = null }) }
 }
 
 @Composable
