@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.40.0
+- Note: quando elimini una nota dal suo editor, tornando alla lista compare "Annulla" per qualche secondo per recuperarla
+
 ## 1.39.0
 - Note > Da fare: anche quando elimini un promemoria dalla sua finestra di modifica (o ne svuoti il testo) compare "Annulla" per qualche secondo
 
