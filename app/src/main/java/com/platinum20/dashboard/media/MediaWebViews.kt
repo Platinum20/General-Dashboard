@@ -142,6 +142,25 @@ object MediaWebViews {
 fun browserUserAgent(webViewAgent: String): String =
     webViewAgent.replace("; wv", "").replace(Regex("""Version/\d+(\.\d+)* """), "")
 
+/**
+ * Carica la pagina solo quando la WebView è già sullo schermo. Dentro Compose la vista nasce staccata
+ * dalla finestra: caricata così, la pagina di accesso di Spotify restava tutta nera (si vedeva solo lo sfondo).
+ */
+fun WebView.loadWhenAttached(url: String) {
+    if (isAttachedToWindow) {
+        loadUrl(url)
+        return
+    }
+    addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: View) {
+            v.removeOnAttachStateChangeListener(this)
+            v.post { loadUrl(url) }
+        }
+
+        override fun onViewDetachedFromWindow(v: View) {}
+    })
+}
+
 /** User agent di Chrome per computer, con la stessa versione del motore della WebView. */
 fun desktopUserAgent(webViewAgent: String): String {
     val chrome = Regex("""Chrome/([\d.]+)""").find(webViewAgent)?.groupValues?.get(1) ?: "130.0.0.0"

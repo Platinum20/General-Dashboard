@@ -13,6 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.browserUserAgent
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.media.loadWhenAttached
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,6 +63,20 @@ class LoginPageCheck {
                 createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
                     settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
                     loadUrl(MediaService.SPOTIFY.loginUrl)
+                }
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    /** Come sopra ma caricando solo quando la WebView è sullo schermo. */
+    @Test
+    fun composeWebViewAttached() = inCompose("compose-webview-attached", haze = false) {
+        AndroidView(
+            factory = { ctx ->
+                createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
+                    settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
+                    loadWhenAttached(MediaService.SPOTIFY.loginUrl)
                 }
             },
             modifier = Modifier.fillMaxSize(),

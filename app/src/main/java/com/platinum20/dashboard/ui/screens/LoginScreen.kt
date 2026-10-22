@@ -36,6 +36,7 @@ import com.platinum20.dashboard.media.MediaPageListener
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.media.loadWhenAttached
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 
 /** Pagina di accesso ufficiale di Google o Spotify: la password resta tra te e il servizio. */
@@ -100,7 +101,7 @@ fun LoginScreen(
         } else {
             service.loginUrl
         }
-        view.also { it.loadUrl(start) }
+        view.also { it.loadWhenAttached(start) }
     }
 
     DisposableEffect(Unit) {
