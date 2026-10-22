@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.33.0
+- YouTube e Spotify: se il feed non si carica il messaggio è in italiano chiaro ("Nessuna connessione a Internet", "YouTube non risponde, riprova più tardi") invece dei testi tecnici in inglese
+- Accesso a YouTube e collegamento a Spotify: errori comprensibili, senza codici di Google
+- Oggi: anche il riassunto delle notizie spiega in italiano perché non si è caricato
+
 ## 1.32.0
 - Aggiornamenti: le card hanno lo stesso stile del resto dell'app (angoli arrotondati e ombra leggera)
 - Aggiornamenti: l'interruttore "Avvisami delle nuove versioni" vibra come gli altri e si attiva toccando tutta la card
