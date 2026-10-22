@@ -114,6 +114,10 @@ fun YouTubeFeedScreen(
     // Si apre sulle Iscrizioni; la Home è subito a sinistra.
     var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
+    // Filtri del feed nella stessa fila delle schede: una sola barra che scorre, non due.
+    var hideShorts by rememberSaveable { mutableStateOf(true) }
+    var onlyLive by rememberSaveable { mutableStateOf(false) }
+    val feedTab = tab == TAB_HOME || tab == TAB_SUBS
     BackHandler(enabled = openPlaylist != null) { openPlaylist = null }
 
     val subs by YouTubeStore.subscriptions.collectAsState()
@@ -168,15 +172,32 @@ fun YouTubeFeedScreen(
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(bottom = 4.dp),
             ) {
                 items(youTubeTabs.size) { index ->
                     CanvasChip(selected = tab == index, onClick = { tab = index }, label = youTubeTabs[index])
                 }
+                if (feedTab) {
+                    item(key = "divider") {
+                        Box(
+                            Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(width = 1.dp, height = 24.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                    }
+                    item(key = "shorts") {
+                        CanvasChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = "Nascondi Shorts")
+                    }
+                    item(key = "live") {
+                        CanvasChip(selected = onlyLive, onClick = { onlyLive = !onlyLive }, label = "Solo dirette")
+                    }
+                }
             }
             when (tab) {
-                TAB_HOME -> HomeTab(onPlay)
-                TAB_SUBS -> SubscriptionsTab(onPlay)
+                TAB_HOME -> HomeTab(hideShorts, onlyLive, onPlay)
+                TAB_SUBS -> SubscriptionsTab(hideShorts, onlyLive, onPlay)
                 TAB_PLAYLISTS -> PlaylistsTab(onOpen = { openPlaylist = it })
                 TAB_LIKED -> {
                     val liked by YouTubeStore.liked.collectAsState()
@@ -260,19 +281,19 @@ private fun ConnectYouTube(onLogin: () -> Unit) {
 }
 
 @Composable
-private fun HomeTab(onPlay: (String) -> Unit) {
+private fun HomeTab(hideShorts: Boolean, onlyLive: Boolean, onPlay: (String) -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.home.collectAsState()
     LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
-    VideoFeed(state, empty = "La Home è vuota: tocca Aggiorna", onPlay = onPlay)
+    VideoFeed(state, empty = "La Home è vuota: tocca Aggiorna", hideShorts, onlyLive, onPlay = onPlay)
 }
 
 @Composable
-private fun SubscriptionsTab(onPlay: (String) -> Unit) {
+private fun SubscriptionsTab(hideShorts: Boolean, onlyLive: Boolean, onPlay: (String) -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.subscriptions.collectAsState()
     LaunchedEffect(Unit) { YouTubeStore.refreshSubscriptions(context) }
-    VideoFeed(state, empty = "Nessun video nuovo dai canali che segui", onPlay = onPlay)
+    VideoFeed(state, empty = "Nessun video nuovo dai canali che segui", hideShorts, onlyLive, onPlay = onPlay)
 }
 
 /**
@@ -280,25 +301,13 @@ private fun SubscriptionsTab(onPlay: (String) -> Unit) {
  * in una fila orizzontale (se non sono nascosti) e i video con le anteprime grandi.
  */
 @Composable
-fun VideoFeed(state: Loadable<List<YtVideo>>, empty: String, onPlay: (String) -> Unit) {
-    var hideShorts by rememberSaveable { mutableStateOf(true) }
-    var onlyLive by rememberSaveable { mutableStateOf(false) }
+fun VideoFeed(state: Loadable<List<YtVideo>>, empty: String, hideShorts: Boolean, onlyLive: Boolean, onPlay: (String) -> Unit) {
     val all = state.data.orEmpty()
     val lives = all.filter { it.live || it.upcoming }.sortedByDescending { it.live }
     val shorts = all.filter { it.isShort }
     val videos = if (onlyLive) lives else all.filter { !it.isShort }
     FeedList(state, empty = empty) {
         item(key = "now") { WatchingHero(onPlay) }
-        item(key = "filters") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                CanvasChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = "Nascondi Shorts")
-                CanvasChip(
-                    selected = onlyLive,
-                    onClick = { onlyLive = !onlyLive },
-                    label = if (lives.isEmpty()) "Solo dirette" else "Solo dirette · ${lives.size}",
-                )
-            }
-        }
         if (onlyLive && lives.isEmpty() && state.data != null) item(key = "nolive") {
             Text(
                 "Nessuna diretta in corso o in arrivo",
