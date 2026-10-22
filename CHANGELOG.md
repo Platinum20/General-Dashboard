@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.62.0
+## 1.63.0
 - Oggi: nella card Adesso (e nel widget) il giorno di un compleanno o anniversario dice anche quanti anni compie ("Oggi: Compleanno di Marta (30 anni)")
 
 ## 1.61.0
