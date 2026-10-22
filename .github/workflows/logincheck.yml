@@ -15,6 +15,10 @@ permissions:
 jobs:
   emulator:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [36]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
@@ -35,7 +39,7 @@ jobs:
         run: gradle :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           disable-animations: true
@@ -53,10 +57,11 @@ jobs:
       - name: Pubblica le foto nel ramo screenshots
         if: always()
         run: |
-          DEST="login-check/${{ github.run_number }}"
+          DEST="login-check/${{ github.run_number }}-${{ matrix.api }}"
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           mkdir -p "$RUNNER_TEMP/out" && cp -r shots logincheck.txt "$RUNNER_TEMP/out/" 2>/dev/null || true
           git fetch origin screenshots && git checkout -B screenshots origin/screenshots
           mkdir -p "$DEST" && cp -r "$RUNNER_TEMP/out/." "$DEST/"
-          git add "$DEST" && git commit -m "Verifica accesso $DEST" >/dev/null && git push origin screenshots
+          git add "$DEST" && git commit -m "Verifica accesso $DEST" >/dev/null
+          for i in 1 2 3; do git push origin screenshots && break; git pull -q --rebase origin screenshots; done

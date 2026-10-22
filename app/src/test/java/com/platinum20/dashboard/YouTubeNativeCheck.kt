@@ -26,6 +26,8 @@ class YouTubeNativeCheck {
                 continue
             }
             out.append("- ✅ $link: \"${stream.title}\" di ${stream.channel}, ${stream.height}p\n")
+            out.append("  - qualità automatica (DASH): ${if (stream.dashManifest != null) "sì" else "no"}, " +
+                "sottotitoli: ${stream.subtitles.size}, correlati: ${stream.related.size}\n")
             for ((name, url) in listOf("video" to stream.videoUrl, "audio" to stream.audioUrl, "unico" to stream.muxedUrl)) {
                 if (url == null) {
                     out.append("  - $name: assente\n")
@@ -45,6 +47,16 @@ class YouTubeNativeCheck {
                 out.append("  - $name (client $client): HTTP $code\n")
             }
         }
+        // Video con l'audio doppiato in più lingue: deve restare la traccia originale.
+        runCatching { YtResolver.resolve("https://www.youtube.com/watch?v=0e3GPea1Tyg") }
+            .onSuccess { out.append("- audio multilingua: ${Regex("[?&]xtags=[^&]*").find(it.audioUrl.orEmpty())?.value ?: "nessun tag"}\n") }
+            .onFailure { out.append("- ❌ audio multilingua: $it\n") }
+        val comments = runCatching { YtResolver.comments("dQw4w9WgXcQ") }
+        comments.getOrNull()?.let { page ->
+            val withReplies = page.comments.firstOrNull { it.repliesPage != null }
+            val replies = withReplies?.let { runCatching { YtResolver.comments("dQw4w9WgXcQ", it.repliesPage) }.getOrNull() }
+            out.append("- ✅ commenti: ${page.comments.size}, altra pagina: ${page.next != null}, risposte caricate: ${replies?.comments?.size}\n")
+        } ?: out.append("- ❌ commenti: ${comments.exceptionOrNull()}\n")
         val found = runCatching { YtResolver.search("lofi hip hop") }
         found.getOrNull()?.let { out.append("- ✅ ricerca: ${it.size} video, primo \"${it.firstOrNull()?.title}\"\n") }
             ?: out.append("- ❌ ricerca: ${found.exceptionOrNull()}\n")

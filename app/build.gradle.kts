@@ -118,6 +118,7 @@ dependencies {
     // Player video (file del telefono, mp4/webm e streaming HLS) e anteprime dei video
     implementation("androidx.media3:media3-exoplayer:1.5.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.5.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("io.coil-kt.coil3:coil-video:3.0.4")

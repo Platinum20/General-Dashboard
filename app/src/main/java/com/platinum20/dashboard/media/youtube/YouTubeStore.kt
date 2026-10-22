@@ -46,6 +46,13 @@ object YouTubeStore {
     /** La Home di YouTube (video consigliati): c'è solo con l'accesso a YouTube fatto nell'app. */
     val home: StateFlow<Loadable<List<YtVideo>>> = _home.asStateFlow()
 
+    private val _history = MutableStateFlow(Loadable<List<YtVideo>>())
+    /** Cronologia di YouTube del tuo account (con l'accesso nell'app); quella dell'app è in [YtHistory]. */
+    val history: StateFlow<Loadable<List<YtVideo>>> = _history.asStateFlow()
+
+    fun refreshHistory(context: Context, force: Boolean = false) =
+        load(context, _history, force, web = { YouTubeWeb.history(it) }, api = null)
+
     fun refreshHome(context: Context, force: Boolean = false) =
         load(context, _home, force, web = { YouTubeWeb.home(it) }, api = null)
 
@@ -92,6 +99,7 @@ object YouTubeStore {
         _playlistItems.value = emptyMap()
         _search.value = Loadable()
         _home.value = Loadable()
+        _history.value = Loadable()
     }
 
     /** Dati finti per le foto automatiche delle schermate (solo test). */

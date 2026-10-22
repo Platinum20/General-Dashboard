@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.view.ViewParent
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
@@ -141,6 +142,34 @@ object MediaWebViews {
 /** User agent di Chrome senza i segni della WebView: Google altrimenti rifiuta l'accesso. */
 fun browserUserAgent(webViewAgent: String): String =
     webViewAgent.replace("; wv", "").replace(Regex("""Version/\d+(\.\d+)* """), "")
+
+/**
+ * Carica la pagina solo quando la WebView è già sullo schermo. Dentro Compose la vista nasce staccata
+ * dalla finestra: caricata così, la pagina di accesso di Spotify restava tutta nera (si vedeva solo lo sfondo).
+ */
+fun WebView.loadWhenAttached(url: String) {
+    if (isAttachedToWindow) {
+        loadUrl(url)
+        return
+    }
+    addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+        override fun onViewAttachedToWindow(v: View) {
+            v.removeOnAttachStateChangeListener(this)
+            v.post { loadUrl(url) }
+        }
+
+        override fun onViewDetachedFromWindow(v: View) {}
+    })
+}
+
+/**
+ * La WebView dentro un FrameLayout, da passare ad AndroidView. Messa direttamente in Compose, la pagina
+ * di accesso di Spotify si vedeva tutta nera (solo lo sfondo): verificato su emulatore Android 14 e 16.
+ */
+fun WebView.inFrame(context: Context): FrameLayout = FrameLayout(context).also { frame ->
+    (parent as? ViewGroup)?.removeView(this)
+    frame.addView(this, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+}
 
 /** User agent di Chrome per computer, con la stessa versione del motore della WebView. */
 fun desktopUserAgent(webViewAgent: String): String {

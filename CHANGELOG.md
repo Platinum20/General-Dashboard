@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.95.0
+**Spotify**
+- Accesso sistemato davvero: la pagina di Spotify dentro l'app restava nera (si vedeva solo lo sfondo). Ora il modulo per entrare compare, verificato su Android 14 e 16
+
+**YouTube**
+- Qualità "Automatica" di default: parte dalla più alta e scende solo se la rete non regge, senza fermarsi a caricare; si può sempre scegliere una qualità fissa
+- Audio sempre nella lingua originale del video (prima a volte partiva un doppiaggio, per esempio in tedesco)
+- Sottotitoli: scegli la lingua dal tasto sotto il video, restano accesi anche per i video dopo
+- Commenti con icone Mi piace e Non mi piace, commento fissato e cuore dell'autore, risposte da aprire con un tocco e "Altri commenti"
+- Non mi piace del video (stima pubblica di Return YouTube Dislike) accanto ai Mi piace
+- Cronologia: nuova scheda con i video guardati qui e la cronologia del tuo account YouTube
+- Riprende da dove eri rimasto e sulle anteprime c'è la barra rossa di quanto hai visto
+- Sotto il video i correlati come nell'app di YouTube, più Ripeti e Condividi
+
 ## 1.94.0
 - Vetro della barra e del +: sfocatura più morbida e velo un filo più presente, così sotto si vedono colori e forme ma non più il testo sbavato intorno alle icone
 
