@@ -5,6 +5,11 @@
 - Player di YouTube con comandi propri: tocca per mostrarli, doppio tocco a sinistra/destra per -10/+10 secondi, trascina giù per rimpicciolirlo nella bolla, schermo intero
 - Sotto il video: canale con iscritti e Mi piace, qualità, velocità (0,5×–2×), descrizione, capitoli e commenti
 
+## 1.85.0
+- Vetro della barra in basso e del mini player davvero trasparente: velo più leggero e sfocatura meno forte, così la pagina sotto si vede scorrere
+- La sfocatura parte già da Android 12 (prima solo da Android 13); sui telefoni più vecchi resta un velo semitrasparente
+- Tolta l'ombra sotto barra e mini player, che dietro il vetro lo faceva sembrare grigio e pieno
+
 ## 1.84.0
 - Player di YouTube: barra con il minutaggio (dove sei e quanto dura), scelta della qualità video (ricordata), capitoli toccabili e commenti
 - YouTube: nuova scheda Home con i video consigliati, filtro "Solo dirette" accanto a "Nascondi Shorts", durata e bollino IN DIRETTA sulle anteprime
