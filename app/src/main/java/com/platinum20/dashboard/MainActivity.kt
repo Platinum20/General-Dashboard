@@ -58,6 +58,14 @@ import com.platinum20.dashboard.media.youtubeWatchUrl
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
+import com.platinum20.dashboard.ui.screens.FloatingPlayer
+import com.platinum20.dashboard.ui.screens.FloatingTarget
+import com.platinum20.dashboard.ui.screens.RadioScreen
+import com.platinum20.dashboard.media.radio.RadioService
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.WebPlayerScreen
 import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
@@ -189,6 +197,7 @@ object Routes {
     fun video(uri: String) = "media/video?uri=${Uri.encode(uri)}"
     const val YOUTUBE_FEED = "media/youtube"
     const val SPOTIFY_FEED = "media/spotify"
+    const val RADIO = "media/radio"
     const val WEB_PLAYER = "media/web/{service}?url={url}"
     const val LOGIN = "settings/login/{service}"
 
@@ -262,8 +271,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
                 }
-                OpenRequest.MEDIA -> MediaService.entries.firstOrNull { it.name == request.source }
-                    ?.let { navController.navigate(Routes.webPlayer(it)) }
+                OpenRequest.MEDIA -> if (request.source == RadioService.SOURCE_RADIO) {
+                    navController.navigate(Routes.RADIO) { launchSingleTop = true }
+                } else {
+                    MediaService.entries.firstOrNull { it.name == request.source }
+                        ?.let { navController.navigate(Routes.webPlayer(it)) }
+                }
                 OpenRequest.PLAY -> if (request.url.isNotBlank()) {
                     val youtube = youtubeWatchUrl(request.url)
                     when {
@@ -316,6 +329,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
         },
     ) { padding ->
+        Box(Modifier.fillMaxSize()) {
         NavHost(navController = navController, startDestination = Routes.HOME) {
             composable(Routes.HOME) {
                 HomeScreen(
@@ -339,8 +353,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenService = {
                         navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.SPOTIFY_FEED)
                     },
+                    onOpenRadio = { navController.navigate(Routes.RADIO) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
+            }
+            composable(Routes.RADIO) {
+                RadioScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.YOUTUBE_FEED) {
                 YouTubeFeedScreen(
@@ -468,6 +486,18 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.UPDATES) {
                 UpdatesScreen(onBack = { navController.popBackStack() })
             }
+        }
+        // Mini player a bolla, sopra tutte le schermate.
+        FloatingPlayer(
+            currentRoute = currentRoute,
+            onExpand = { target ->
+                when (target) {
+                    is FloatingTarget.Web -> navController.navigate(Routes.webPlayer(target.service))
+                    FloatingTarget.Radio -> navController.navigate(Routes.RADIO) { launchSingleTop = true }
+                }
+            },
+            modifier = Modifier.padding(padding),
+        )
         }
     }
 }

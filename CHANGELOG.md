@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.17.0
+- Mini player a bolla dentro l'app: il video di YouTube, Spotify o la radio restano in un riquadro che si trascina dove vuoi e ti segue in tutte le sezioni; un tocco riapre il player
+- Radio: le stazioni più ascoltate in Italia, ricerca in tutto il mondo, preferite e ascoltate di recente, ascolto in sottofondo con notifica e comandi in cuffia
+- Media: schede riordinate, il blocco pubblicità diventa una riga compatta in fondo
+
 ## 1.16.0
 - Picture-in-picture: uscendo dall'app durante un video (player o YouTube) il video continua in un riquadro sopra le altre app
 - "Guarda in Dashboard" nel menu Condividi: i link di YouTube si aprono nel player senza pubblicità, video e audio nel player video

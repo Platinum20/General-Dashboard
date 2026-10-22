@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewParent
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -70,11 +71,28 @@ object MediaWebViews {
         if (listener == null) listeners.remove(service) else listeners[service] = listener
     }
 
-    /** La schermata è chiusa: la pagina resta in vita ma senza riferimenti all'Activity. */
-    fun detach(service: MediaService) {
+    /**
+     * La schermata è chiusa: la pagina resta in vita ma senza riferimenti all'Activity.
+     * Con [fromParent] si stacca solo se è ancora lì: nel frattempo può averla presa il mini player.
+     */
+    fun detach(service: MediaService, fromParent: ViewParent? = null) {
         val webView = views[service] ?: return
+        if (fromParent != null && webView.parent !== fromParent) return
         (webView.parent as? ViewGroup)?.removeView(webView)
         (webView.context as? MutableContextWrapper)?.let { it.baseContext = it.applicationContext }
+    }
+
+    /** Nel mini player la pagina mostra solo il video, a tutto riquadro. */
+    fun setMiniMode(service: MediaService, mini: Boolean) {
+        views[service]?.evaluateJavascript(
+            "(function(){var d=document.documentElement;if(!d)return;" +
+                "if(!document.getElementById('gd-mini-style')){var s=document.createElement('style');s.id='gd-mini-style';" +
+                "s.textContent='.gd-mini video{position:fixed!important;top:0!important;left:0!important;width:100vw!important;" +
+                "height:100vh!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}" +
+                ".gd-mini body{overflow:hidden!important}';(document.head||d).appendChild(s);}" +
+                "d.classList.toggle('gd-mini',$mini);})()",
+            null,
+        )
     }
 
     fun release(service: MediaService) {
