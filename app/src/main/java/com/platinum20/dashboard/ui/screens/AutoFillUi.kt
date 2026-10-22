@@ -186,7 +186,7 @@ private fun openListenerSettings(context: Context) {
     }
 }
 
-private fun openAppInfo(context: Context) {
+internal fun openAppInfo(context: Context) {
     runCatching {
         context.startActivity(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
