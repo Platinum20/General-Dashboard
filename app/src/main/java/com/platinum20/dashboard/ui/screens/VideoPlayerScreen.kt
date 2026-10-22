@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -80,6 +81,8 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.platinum20.dashboard.media.PhoneVideo
+import com.platinum20.dashboard.media.PhoneVideos
 import androidx.media3.ui.PlayerView
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
@@ -126,6 +129,14 @@ fun VideoPlayerScreen(
         player.prepare()
         player.play()
     }
+    // Video del telefono: si leggono solo dopo il tocco su "Mostra i video del telefono".
+    var phoneAllowed by remember { mutableStateOf(PhoneVideos.hasPermission(context)) }
+    var phoneVideos by remember { mutableStateOf<List<PhoneVideo>?>(null) }
+    val phonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { phoneAllowed = it }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { phoneAllowed = PhoneVideos.hasPermission(context) }
+    LaunchedEffect(phoneAllowed) { phoneVideos = if (phoneAllowed) PhoneVideos.load(context) else null }
+    val phoneShown = remember(phoneVideos, recent) { PhoneVideos.forLibrary(phoneVideos.orEmpty(), recent) }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(play)
     }
@@ -309,6 +320,33 @@ fun VideoPlayerScreen(
                             )
                         }
                     }
+                    item { SectionHeader("Sul telefono", modifier = Modifier.padding(top = 4.dp)) }
+                    when {
+                        !phoneAllowed -> item {
+                            PhoneVideosInvite(onClick = { phonePermission.launch(PhoneVideos.permission) })
+                        }
+                        phoneVideos != null && phoneShown.isEmpty() -> item {
+                            Text(
+                                if (phoneVideos.isNullOrEmpty()) "Nessun video sul telefono" else "Sono tutti nei Recenti",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp),
+                            )
+                        }
+                        else -> items(phoneShown.chunked(2), key = { row -> row.first().uri }) { row ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                row.forEach { video ->
+                                    PhoneVideoTile(
+                                        video = video,
+                                        thumbnails = thumbnails,
+                                        onClick = { play(Uri.parse(video.uri)) },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                                if (row.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -391,6 +429,57 @@ private fun EmptyPlayer() {
                     "I link di YouTube si aprono nel player YouTube senza pubblicità.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Invito a mostrare i video del telefono: il permesso si chiede solo da qui. */
+@Composable
+private fun PhoneVideosInvite(onClick: () -> Unit) {
+    CanvasCard(Modifier.fillMaxWidth(), onClick = onClick) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconTile(Icons.Outlined.VideoLibrary, TileAccent.PURPLE)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Mostra i video del telefono", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Registrazioni e download, a portata di tocco. Restano sul telefono.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Miniatura di un video del telefono con durata e giorno. */
+@Composable
+private fun PhoneVideoTile(video: PhoneVideo, thumbnails: ImageLoader, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    CanvasCard(modifier.bouncyPress(), onClick = onClick) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Outlined.Movie, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            AsyncImage(
+                model = video.uri,
+                imageLoader = thumbnails,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(video.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                PhoneVideos.caption(video),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
             )
         }
     }
