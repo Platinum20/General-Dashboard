@@ -22,6 +22,26 @@ class SnoozeTest {
     @Test fun domaniAFineMese() =
         assertEquals(LocalDateTime.of(2026, 11, 1, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 31, 22, 0)))
 
+    @Test fun dopoMezzanotteDomaniVuolDireStamattina() =
+        assertEquals(LocalDateTime.of(2026, 10, 23, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 0, 30)))
+
+    @Test fun primaDiMezzanotteEIlGiornoDopo() =
+        assertEquals(LocalDateTime.of(2026, 10, 24, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 23, 50)))
+
+    @Test fun alleQuattroENovantanoveEAncoraNotte() =
+        assertEquals(LocalDateTime.of(2026, 10, 23, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 4, 59)))
+
+    @Test fun primaEDopoLeNove() {
+        assertEquals(LocalDateTime.of(2026, 10, 24, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 8, 59)))
+        assertEquals(LocalDateTime.of(2026, 10, 24, 9, 0), Snooze.TOMORROW.until(LocalDateTime.of(2026, 10, 23, 9, 1)))
+    }
+
+    @Test fun etichettaDiNotte() {
+        assertEquals("Stamattina 9:00", Snooze.TOMORROW.label(LocalDateTime.of(2026, 10, 23, 0, 30)))
+        assertEquals("Domani 9:00", Snooze.TOMORROW.label(now))
+        assertEquals("Tra 1 ora", Snooze.HOUR.label(LocalDateTime.of(2026, 10, 23, 0, 30)))
+    }
+
     @Test fun promemoriaSempliceSpostaSoloLaScadenza() {
         val task = TaskItem(1, "Dentista", dueAt = 1_000L)
         val moved = task.snoozed(5_000L)
