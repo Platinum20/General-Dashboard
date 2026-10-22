@@ -161,6 +161,7 @@ fun NotesScreen(
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableStateOf(NotesTabs.TASKS) }
     var adding by remember { mutableStateOf(false) }
+    var searching by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -202,7 +203,10 @@ fun NotesScreen(
                         overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                     ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
                     actions = {
-                        if (tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
+                        if (!searching) {
+                            RoundIconButton(Icons.Outlined.Search, "Cerca in tutte le Note") { searching = true }
+                        }
+                        if (!searching && tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
                             RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
                                 val done = data.tasks.filter { it.done }
                                 NotesStore.clearDone()
@@ -211,7 +215,7 @@ fun NotesScreen(
                         }
                     },
                 )
-                NotesTabStrip(selected = tab, onSelect = { tab = it })
+                if (!searching) NotesTabStrip(selected = tab, onSelect = { tab = it })
             }
         },
     ) { inner ->
@@ -221,6 +225,16 @@ fun NotesScreen(
             top = inner.calculateTopPadding() + 12.dp,
             bottom = bottomPadding.calculateBottomPadding() + 24.dp,
         )
+        if (searching) {
+            NotesSearchPanel(
+                data = data,
+                padding = padding,
+                onClose = { searching = false },
+                onOpenNote = { onOpenNote(it) },
+                onOpenTab = { searching = false; tab = it },
+            )
+            return@Scaffold
+        }
         when (tab) {
             NotesTabs.TASKS -> TasksTab(data.tasks, padding, onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") })
             NotesTabs.HABITS -> HabitsTab(data.habits, padding, onDeleted = { h ->
