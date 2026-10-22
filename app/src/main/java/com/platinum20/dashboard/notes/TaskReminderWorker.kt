@@ -67,7 +67,7 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
                         .putExtra(KEY_SNOOZE, option.name)
                     addAction(
                         0,
-                        option.label,
+                        option.label(LocalDateTime.now()),
                         PendingIntent.getBroadcast(context, notificationId(id), snooze, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
                     )
                 }
