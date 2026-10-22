@@ -82,6 +82,7 @@ import com.platinum20.dashboard.work.MorningWorker
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.layout.widthIn
 
 /**
  * Impostazioni: tutto ciò che si regola una volta sola, raccolto qui anche se prima stava
