@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -72,6 +73,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
@@ -82,13 +84,14 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-private val youTubeTabs = listOf("Home", "Iscrizioni", "Playlist", "Mi piace", "Più tardi", "Cerca")
+private val youTubeTabs = listOf("Home", "Iscrizioni", "Playlist", "Mi piace", "Più tardi", "Cronologia", "Cerca")
 private const val TAB_HOME = 0
 private const val TAB_SUBS = 1
 private const val TAB_PLAYLISTS = 2
 private const val TAB_LIKED = 3
 private const val TAB_LATER = 4
-private const val TAB_SEARCH = 5
+private const val TAB_HISTORY = 5
+private const val TAB_SEARCH = 6
 
 /**
  * Il tuo YouTube nell'app: Home, iscrizioni, playlist, Mi piace, Guarda più tardi e ricerca,
@@ -207,6 +210,7 @@ fun YouTubeFeedScreen(
                     val later by YouTubeStore.watchLater.collectAsState()
                     SimpleVideos(later, "Nessun video da guardare più tardi", onPlay, list = "WL") { YouTubeStore.refreshWatchLater(context) }
                 }
+                TAB_HISTORY -> HistoryTab(onPlay)
                 else -> SearchTab(onPlay)
             }
         }
@@ -520,9 +524,10 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit) {
             .clip(MaterialTheme.shapes.large)
             .clickable(onClick = onClick)
     ) {
-        Box {
+        Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
+            WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
         Row(Modifier.padding(top = 10.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
             ChannelAvatar(video.channelAvatar, video.channel, 36)
@@ -535,10 +540,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    listOfNotNull(
-                        video.channel.takeIf { it.isNotBlank() },
-                        video.published?.let { relativeTime(it) },
-                    ).joinToString(" · "),
+                    videoMeta(video),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -560,15 +562,16 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(150.dp)) {
+        Box(Modifier.width(150.dp).clip(MaterialTheme.shapes.medium)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+            WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                listOfNotNull(video.channel.takeIf { it.isNotBlank() }, video.published?.let { relativeTime(it) }).joinToString(" · "),
+                videoMeta(video),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -576,6 +579,75 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
             )
         }
     }
+}
+
+/** Canale, visualizzazioni e quando è uscito. */
+private fun videoMeta(video: YtVideo): String = listOfNotNull(
+    video.channel.takeIf { it.isNotBlank() },
+    video.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
+    video.published?.let { relativeTime(it) } ?: video.uploadedText.takeIf { it.isNotBlank() },
+).joinToString(" · ")
+
+/** Barra rossa sotto l'anteprima: quanto hai già visto (nell'app o su YouTube). */
+@Composable
+private fun WatchedBar(video: YtVideo, modifier: Modifier) {
+    val history by YtHistory.items.collectAsState()
+    val progress = history[video.id]?.progress ?: (video.watchedPercent / 100f)
+    if (progress < 0.02f) return
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(4.dp)
+            .background(Color.White.copy(alpha = 0.35f))
+    ) {
+        Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(Color(0xFFFF0033)))
+    }
+}
+
+/** I video guardati nell'app (con il punto in cui eri) e la cronologia del tuo account YouTube. */
+@Composable
+private fun HistoryTab(onPlay: (String) -> Unit) {
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        YtHistory.init(context)
+        YouTubeStore.refreshHistory(context)
+    }
+    val local by YtHistory.items.collectAsState()
+    val web by YouTubeStore.history.collectAsState()
+    val watched = local.values.sortedByDescending { it.watchedAt }
+    val ids = watched.map { it.id }.toSet()
+    val fromYouTube = web.data.orEmpty().filter { it.id !in ids }
+    val state = Loadable(data = watched.map { it.id } + fromYouTube.map { it.id }, loading = web.loading && watched.isEmpty())
+    FeedList(state, empty = "Ancora nessun video guardato") {
+        if (watched.isNotEmpty()) {
+            item(key = "local-h") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { SectionHeader("Guardati qui") }
+                    TextButton(onClick = { YtHistory.clear() }) { Text("Svuota") }
+                }
+            }
+            items(watched, key = { "l" + it.id }) { w ->
+                val video = YtVideo(
+                    id = w.id, title = w.title, channel = w.channel, channelId = "", published = null,
+                    durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
+                    uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
+                )
+                VideoRow(video, onClick = { onPlay(video.watchUrl) })
+            }
+        }
+        if (fromYouTube.isNotEmpty()) {
+            item(key = "web-h") { SectionHeader("Dalla tua cronologia di YouTube") }
+            items(fromYouTube, key = { "w" + it.id }) { VideoRow(it, onClick = { onPlay(it.watchUrl) }) }
+        }
+    }
+}
+
+/** 1234 → "1234", 15300 → "15,3K", 2100000 → "2,1 Mln", 1700000000 → "1,7 Mld". */
+internal fun compactCount(n: Long): String = when {
+    n >= 1_000_000_000 -> "%.1f Mld".format(java.util.Locale.ITALY, n / 1_000_000_000.0).replace(",0 ", " ")
+    n >= 1_000_000 -> "%.1f Mln".format(java.util.Locale.ITALY, n / 1_000_000.0).replace(",0 ", " ")
+    n >= 10_000 -> "%.1fK".format(java.util.Locale.ITALY, n / 1000.0).replace(",0K", "K")
+    else -> n.toString()
 }
 
 /** Durata, IN DIRETTA o IN ARRIVO sull'anteprima. */

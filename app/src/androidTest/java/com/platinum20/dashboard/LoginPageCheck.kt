@@ -13,6 +13,18 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.browserUserAgent
 import com.platinum20.dashboard.media.createMediaWebView
+import com.platinum20.dashboard.media.loadWhenAttached
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
+import com.platinum20.dashboard.settings.AppTheme
+import com.platinum20.dashboard.ui.screens.LoginScreen
+import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -36,6 +48,55 @@ class LoginPageCheck {
             "&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&scope=streaming",
     )
 
+    /** La schermata vera dell'app ("Accedi a Spotify"), dentro il vetro come nella navigazione. */
+    @Test
+    fun spotifyInApp() = inCompose("spotify-in-app", haze = true) { LoginScreen(MediaService.SPOTIFY, onDone = {}) }
+
+    @androidx.compose.runtime.Composable
+    private fun SpotifyWebView() {
+        AndroidView(factory = { ctx -> spotifyWebView(ctx) }, modifier = Modifier.fillMaxSize())
+    }
+
+    private fun spotifyWebView(ctx: android.content.Context): WebView =
+        createMediaWebView(ctx, MediaService.SPOTIFY, blockAds = false) { null }.apply {
+            settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(ctx))
+            loadUrl(MediaService.SPOTIFY.loginUrl)
+        }
+
+    private fun inCompose(name: String, haze: Boolean, theme: Boolean = true, content: @androidx.compose.runtime.Composable () -> Unit) {
+        val scenario = ActivityScenario.launch(ComponentActivity::class.java)
+        scenario.onActivity { activity ->
+            activity.setContent {
+                val state = remember { HazeState() }
+                if (theme) {
+                    GeneralDashboardTheme(AppTheme.CANVAS) {
+                        Box(if (haze) Modifier.fillMaxSize().hazeSource(state) else Modifier.fillMaxSize()) { content() }
+                    }
+                } else {
+                    Box(Modifier.fillMaxSize()) { content() }
+                }
+            }
+        }
+        Thread.sleep(25_000)
+        scenario.onActivity { activity ->
+            val web = findWebView(activity.window.decorView)
+            val rect = android.graphics.Rect()
+            val visible = web?.getGlobalVisibleRect(rect)
+            Log.i("LoginCheck", "$name webview ${web?.width}x${web?.height} layer=${web?.layerType} hw=${web?.isHardwareAccelerated} visible=$visible $rect parent=${web?.parent?.javaClass?.simpleName} ${(web?.parent as? android.view.View)?.let { "${it.width}x${it.height}" }}")
+            web?.evaluateJavascript(DUMP) { Log.i("LoginCheck", "$name page $it") }
+        }
+        Thread.sleep(2_000)
+        val shot: Bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        File(outDir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
+        scenario.close()
+    }
+
+    private fun findWebView(view: android.view.View): WebView? {
+        if (view is WebView) return view
+        if (view is android.view.ViewGroup) for (i in 0 until view.childCount) findWebView(view.getChildAt(i))?.let { return it }
+        return null
+    }
+
     private fun check(name: String, url: String) {
         val scenario = ActivityScenario.launch(ComponentActivity::class.java)
         lateinit var webView: WebView
@@ -56,13 +117,17 @@ class LoginPageCheck {
         }
         Thread.sleep(25_000)
         scenario.onActivity {
-            webView.evaluateJavascript(
-                "(function(){return location.href+' | bg='+getComputedStyle(document.body).backgroundColor+' | '+document.body.innerText.replace(/\\s+/g,' ').slice(0,400)})()"
-            ) { Log.i("LoginCheck", "$name page $it") }
+            webView.evaluateJavascript(DUMP) { Log.i("LoginCheck", "$name page $it") }
         }
         Thread.sleep(2_000)
         val shot: Bitmap = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
         File(outDir, "$name.png").outputStream().use { shot.compress(Bitmap.CompressFormat.PNG, 90, it) }
         scenario.close()
+    }
+
+    private companion object {
+        const val DUMP = "(function(){var r=document.querySelector('main,#root,#__next,form')||document.body;var b=r.getBoundingClientRect();" +
+            "return location.href.slice(0,60)+' | vp='+innerWidth+'x'+innerHeight+' dpr='+devicePixelRatio+' | root='+r.tagName+'#'+r.id+' '+Math.round(b.width)+'x'+Math.round(b.height)+'@'+Math.round(b.top)+" +
+            "' op='+getComputedStyle(r).opacity+' state='+document.visibilityState+' anims='+(document.getAnimations?document.getAnimations().length:-1)+' h1='+(function(h){if(!h)return 'none';var q=h.getBoundingClientRect();var o=1,e=h;while(e){o*=parseFloat(getComputedStyle(e).opacity);e=e.parentElement;}return Math.round(q.top)+'/'+Math.round(q.height)+' op='+o;})(document.querySelector('h1'))+' | '+document.body.innerText.replace(/\\s+/g,' ').slice(0,200)})()"
     }
 }

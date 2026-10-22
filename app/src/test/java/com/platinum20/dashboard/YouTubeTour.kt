@@ -10,6 +10,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtVideo
+import com.platinum20.dashboard.media.youtube.YtHistory
+import com.platinum20.dashboard.media.youtube.YtWatched
 import com.platinum20.dashboard.media.youtube.player.YtChapter
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtQuality
@@ -58,6 +60,9 @@ class YouTubeTour {
         assumeTrue(System.getProperty("tour") == "true")
         YouTubeAuth.previewConnected()
         YouTubeStore.preview(home = videos.shuffled(java.util.Random(4)), subscriptions = videos)
+        YtHistory.preview(
+            listOf(YtWatched("dQw4w9WgXcQ", "Never Gonna Give You Up", "Rick Astley", "", 85_000, 213_000, System.currentTimeMillis()))
+        )
     }
 
     @Test

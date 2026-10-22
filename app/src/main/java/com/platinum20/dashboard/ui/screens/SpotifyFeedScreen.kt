@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.media.inFrame
+import com.platinum20.dashboard.media.loadWhenAttached
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Dialog
@@ -508,10 +510,10 @@ private fun SpotifyAuthDialog(url: String, onDone: () -> Unit) {
                                     return target.scheme != "http" && target.scheme != "https"
                                 }
                             }
-                            loadUrl(url)
-                        }
+                            loadWhenAttached(url)
+                        }.inFrame(ctx)
                     },
-                    onRelease = { it.destroy() },
+                    onRelease = { frame -> (frame.getChildAt(0) as? WebView)?.destroy() },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

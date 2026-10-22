@@ -56,6 +56,10 @@ object YouTubeWeb {
     suspend fun watchLater(context: Context): List<YtVideo> = playlistItems(context, "WL")
 
     /** Video consigliati della Home, come nell'app di YouTube. */
+    /** La cronologia di YouTube del tuo account, con quanto hai visto di ogni video. */
+    suspend fun history(context: Context): List<YtVideo> =
+        page(context, "/feed/history", requireLogin = true).videos
+
     suspend fun home(context: Context): List<YtVideo> =
         page(context, "/", requireLogin = true).videos
 
@@ -126,6 +130,7 @@ object YouTubeWeb {
                         durationSec = durationSeconds(v.optString("length")),
                         live = v.optBoolean("live"),
                         channelAvatar = v.optString("avatar"),
+                        watchedPercent = v.optInt("watched"),
                     )
                 }
             }.distinctBy { it.id },
@@ -185,9 +190,10 @@ object YouTubeWeb {
       var img = JSON.stringify(l.contentImage || {});
       var len = (img.match(/"text":"(\d{1,2}(?::\d{2}){1,2})"/) || [])[1] || '';
       var live = /LIVE/.test(img) && !len;
+      var watched = parseInt((img.match(/"startPercent":(\d+)/) || [])[1] || '0', 10);
       var avatar = '';
       try { avatar = thumb(meta.image.decoratedAvatarViewModel.avatar.avatarViewModel.image); } catch (e) {}
-      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, avatar: avatar});
+      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, avatar: avatar, watched: watched});
     } else if (type.indexOf('PLAYLIST') >= 0) {
       var count = 0;
       try { count = parseInt(JSON.stringify(l.contentImage).match(/"text":"(\d+)/)[1], 10) || 0; } catch (e) {}
@@ -209,10 +215,11 @@ object YouTubeWeb {
         var by = byline(v);
         var overlays = JSON.stringify(v.thumbnailOverlays || []) + JSON.stringify(v.badges || []);
         var live = /LIVE/.test(overlays) && !v.lengthText;
+        var watched = parseInt((overlays.match(/"percentDurationWatched":(\d+)/) || [])[1] || '0', 10);
         var avatar = '';
         try { avatar = thumb(v.channelThumbnailSupportedRenderers.channelThumbnailWithLinkRenderer.thumbnail); } catch (e) {}
         if (!avatar && v.channelThumbnail) avatar = thumb(v.channelThumbnail);
-        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, avatar: avatar});
+        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, avatar: avatar, watched: watched});
       } else if (key === 'reelItemRenderer' && v.videoId) {
         videos.push({id: v.videoId, title: text(v.headline), channel: '', channelId: '', short: true});
       } else if ((key === 'gridPlaylistRenderer' || key === 'playlistRenderer') && v.playlistId) {

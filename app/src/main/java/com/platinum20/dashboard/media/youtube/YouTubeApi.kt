@@ -32,6 +32,11 @@ data class YtVideo(
     val upcoming: Boolean = false,
     /** Foto del canale, se si conosce. */
     val channelAvatar: String = "",
+    /** Visualizzazioni e data come le scrive YouTube ("3 giorni fa"), quando non c'è [published]. */
+    val views: Long = -1,
+    val uploadedText: String = "",
+    /** Quanto ne hai già visto su YouTube (0-100), dalla cronologia del tuo account. */
+    val watchedPercent: Int = 0,
 ) {
     val thumbnail: String get() = "https://i.ytimg.com/vi/$id/mqdefault.jpg"
     val watchUrl: String get() = "https://m.youtube.com/watch?v=$id"
