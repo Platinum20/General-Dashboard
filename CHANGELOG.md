@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.104.0
+**Note › Abitudini**
+- "Ricordamelo alle…" nella scheda dell'abitudine: scegli un'ora e, se a quell'ora non l'hai ancora fatta, arriva una notifica con la serie in gioco ("5 di fila: non perdere la serie") o, per le settimanali, "1 su 3 questa settimana"
+- Dalla notifica "Fatto" la segna senza aprire l'app, "Più tardi" la ripropone tra un'ora. Nessun avviso se è già fatta o se l'obiettivo della settimana è raggiunto (si riparte il lunedì); gli avvisi restano anche dopo il riavvio del telefono
+
+**Oggi**
+- Il saluto segue l'orologio: lasciando l'app aperta la notte, la mattina dice "Buongiorno" e non più "Buonasera"; anche la data in cima cambia a mezzanotte
+- Fino alle 6 del mattino la card "Oggi · …" dice com'è la mattina: pioggia ("pioggia dalle 8") e primo impegno o promemoria. Prima spariva alle 3
+- Con la card del giorno visibile, Adesso non ripete massima, minima e pioggia: resta solo il cielo di adesso
+- La riga del meteo di Adesso non va più a capo a metà ("pioggia / 48%"): parole e numeri restano insieme
+
+**Meteo**
+- "Prevalentemente sereno" ha il sole (o la luna di notte) invece di una nuvola piena, nel Meteo, in Adesso, nel widget e nella notifica del mattino
+
+**Sotto il cofano**
+- Test nuovi: HabitReminderTest, GreetingTest, WeatherCodesTest; TomorrowTest con la mattina presto (3:30, 5:30, 7:00)
+
 ## 1.103.0
 **News**
 - Niente più riquadri grigi: la prima notizia senza foto (o con la foto che non si carica) diventa una card solo testo, e le miniature che non arrivano spariscono invece di lasciare un quadrato vuoto. Loghi e immagini segnaposto dei feed non si mostrano più come foto
