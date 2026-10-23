@@ -23,8 +23,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -102,8 +103,13 @@ fun DatePickDialog(initial: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalD
             ) { Text("OK") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        // Di vetro come le altre finestre.
+        modifier = Modifier.glassDialog(MaterialTheme.shapes.extraLarge),
+        shape = MaterialTheme.shapes.extraLarge,
+        tonalElevation = 0.dp,
+        colors = DatePickerDefaults.colors(containerColor = Color.Transparent),
     ) {
-        DatePicker(state = state)
+        DatePicker(state = state, colors = DatePickerDefaults.colors(containerColor = Color.Transparent))
     }
 }
 
@@ -123,7 +129,7 @@ fun DateTimePickDialog(initial: Long?, onDismiss: () -> Unit, onConfirm: (Long) 
     if (picked == null) {
         DatePickDialog(initial = start.toLocalDate(), onDismiss = onDismiss, onConfirm = { date = it })
     } else {
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = onDismiss,
             title = { Text(longDate(picked)) },
             text = { TimePicker(state = timeState) },
@@ -151,7 +157,7 @@ fun TaskEditDialog(task: TaskItem, onDismiss: () -> Unit, onDeleted: (TaskItem) 
     var picking by remember { mutableStateOf(false) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text("Promemoria") },
         text = {
@@ -291,7 +297,7 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
     if (pickingTime) {
         val start = remindAt ?: LocalTime.of(21, 0)
         val timeState = rememberTimePickerState(initialHour = start.hour, initialMinute = start.minute, is24Hour = true)
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { pickingTime = false },
             title = { Text("Ricordamelo alle") },
             text = { TimePicker(state = timeState) },
@@ -307,7 +313,7 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
             dismissButton = { TextButton(onClick = { pickingTime = false }) { Text("Annulla") } },
         )
     }
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (habit == null) "Nuova abitudine" else "Abitudine") },
         text = {
@@ -396,7 +402,7 @@ fun CountdownDialog(
     var picking by remember { mutableStateOf(false) }
     val setYearly = hapticToggle { yearly = it }
 
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (countdown == null) "Nuovo conto alla rovescia" else "Conto alla rovescia") },
         text = {

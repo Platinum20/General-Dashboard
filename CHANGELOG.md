@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.132.0
+**Finestre di vetro**
+- Il vetro della barra arriva anche alle finestre che si aprono sopra la pagina (conferme, scelta di data e ora, token, licenze, backup e le altre): da Android 12 la pagina dietro si sfoca e la finestra la lascia intravedere, con un filo di luce sul bordo alto. Se il telefono spegne la sfocatura (risparmio energetico) la finestra torna piena, sempre leggibile
+- Il vetro che c'era resta dov'era: barra, +, mini player, fumetto del + e della voce
+
 ## 1.131.0
 **Il + più affidabile**
 - Il gesto del + si legge prima che il cerchio si ingrandisca: prima, appena partiva il microfono, il cerchio cresceva e il dito sembrava spostarsi, così il blocco scattava o non scattava a caso

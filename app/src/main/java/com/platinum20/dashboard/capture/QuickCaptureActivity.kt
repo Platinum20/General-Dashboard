@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.capture
 
+import com.platinum20.dashboard.ui.screens.CanvasDialog
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -32,7 +33,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -204,7 +204,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         onClose()
     }
 
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onClose,
         title = { Text(if (auto) "Aggiungi" else mode.title) },
         text = {

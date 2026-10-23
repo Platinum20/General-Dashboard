@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +67,7 @@ fun InvitesRow(
         }
     }
     if (open && invites.isNotEmpty()) {
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { open = false },
             title = { Text("Da attivare") },
             text = {
