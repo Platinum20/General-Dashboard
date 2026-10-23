@@ -21,6 +21,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Forward30
+import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import com.platinum20.dashboard.media.PlaySource
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -103,6 +108,20 @@ fun FloatingPlayer(
         val appear = remember { Animatable(0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
         val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
+        // Per chiudere: già in basso, la si tira ancora giù; compare la X e lasciandola si chiude.
+        val closePx = with(LocalDensity.current) { 72.dp.toPx() }
+        val overshootMax = closePx * 1.4f / range
+        val over = ((y.value - 1f) * range / closePx).coerceIn(0f, 1f)
+        var closeArmed by remember { mutableStateOf(false) }
+        var closing by remember { mutableStateOf(false) }
+        // Se dopo la chiusura qualcosa suona ancora (es. Spotify non risponde) la barra torna al suo posto.
+        LaunchedEffect(closing) {
+            if (closing) {
+                kotlinx.coroutines.delay(1_500)
+                closing = false
+                y.animateTo(1f, Springs.bouncy())
+            }
+        }
 
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
@@ -115,7 +134,7 @@ fun FloatingPlayer(
                     val sc = (0.8f + 0.2f * appear.value) * pressScale
                     scaleX = sc
                     scaleY = sc
-                    alpha = appear.value.coerceIn(0f, 1f)
+                    alpha = appear.value.coerceIn(0f, 1f) * (if (closing) 0f else 1f - 0.25f * over)
                 }
                 .onSizeChanged { barH = it.height }
                 .glass(MaterialTheme.shapes.extraLarge)
@@ -137,11 +156,18 @@ fun FloatingPlayer(
                         },
                         onDragCancel = {
                             dragging = false
+                            closeArmed = false
                             scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
                         },
                         // Lasciata: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
                         onDragEnd = {
                             dragging = false
+                            if (closeArmed) {
+                                closeArmed = false
+                                closing = true
+                                view.haptic(Haptic.CONFIRM)
+                                Playback.stop(context)
+                            } else {
                             val v = tracker.calculateVelocity().y / range
                             val moved = cur - start
                             val top = when {
@@ -154,17 +180,47 @@ fun FloatingPlayer(
                             view.haptic(Haptic.SNAP)
                             if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Springs.bouncy(), initialVelocity = v) }
                             atTop = top
+                            }
                         },
                     ) { change, amount ->
                         change.consume()
                         travelled += amount
                         tracker.addPosition(change.uptimeMillis, androidx.compose.ui.geometry.Offset(0f, travelled))
-                        cur = (cur + amount / range).coerceIn(-0.03f, 1.03f)
+                        // Dal basso si può scendere oltre il bordo: è il gesto per chiudere.
+                        val canClose = !atTop && start > 0.9f
+                        cur = (cur + amount / range).coerceIn(-0.03f, if (canClose) 1f + overshootMax else 1.03f)
+                        val armed = canClose && (cur - 1f) * range > closePx
+                        if (armed != closeArmed) {
+                            closeArmed = armed
+                            view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
+                        }
                         scope.launch { y.snapTo(cur) }
                     }
                 },
         ) {
-            MiniPlayer(now, onExpand = { onExpand(now) })
+            Box {
+                MiniPlayer(now, onExpand = { onExpand(now) })
+                // La X sale mentre la si tira giù; diventa rossa quando lasciando si chiude.
+                if (over > 0f) {
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(
+                                (if (closeArmed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant)
+                                    .copy(alpha = 0.92f * over)
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = if (closeArmed) "Lascia per chiudere" else null,
+                            tint = (if (closeArmed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant)
+                                .copy(alpha = over),
+                            modifier = Modifier.size(24.dp + 8.dp * over).graphicsLayer { rotationZ = 90f * (1f - over) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -173,10 +229,13 @@ fun FloatingPlayer(
 @Composable
 private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
     val context = LocalContext.current
+    // Il tocco apre sempre quello che suona adesso: senza questo il gesto restava legato
+    // alla prima cosa partita (es. un video chiuso) anche dopo aver messo una canzone.
+    val expand by androidx.compose.runtime.rememberUpdatedState(onExpand)
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
-                .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
+                .pointerInput(Unit) { detectTapGestures(onTap = { expand() }) }
                 .padding(start = 8.dp, top = 8.dp, end = 4.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -219,14 +278,30 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = { Playback.toggle(context) }) {
+            // Indietro, play/pausa, avanti; niente X: per chiudere la barra si tira giù.
+            val podcast = now.source == PlaySource.PODCAST
+            if (!now.live) {
+                IconButton(onClick = { Playback.previous(context) }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        if (podcast) Icons.Filled.Replay10 else Icons.Filled.SkipPrevious,
+                        contentDescription = if (podcast) "Indietro di 10 secondi" else "Indietro",
+                    )
+                }
+            }
+            IconButton(onClick = { Playback.toggle(context) }, modifier = Modifier.size(44.dp)) {
                 Icon(
                     if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (now.playing) "Pausa" else "Riproduci",
+                    modifier = Modifier.size(30.dp),
                 )
             }
-            IconButton(onClick = { Playback.stop(context) }) {
-                Icon(Icons.Filled.Close, contentDescription = "Chiudi")
+            if (!now.live) {
+                IconButton(onClick = { Playback.next(context) }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        if (podcast) Icons.Filled.Forward30 else Icons.Filled.SkipNext,
+                        contentDescription = if (podcast) "Avanti di 30 secondi" else "Avanti",
+                    )
+                }
             }
         }
         // Il tempo che scorre, sottile sul bordo basso; in diretta niente barra.

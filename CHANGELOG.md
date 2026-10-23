@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.133.0
+## 1.135.0
 **Note in tre tipi: con scadenza, senza scadenza, spese**
 - Promemoria, date da ricordare, pacchi ed eventi del calendario sono ora una cosa sola, "Con scadenza": una lista per giorno (Scaduti, Oggi, Domani, Questa settimana, Più avanti), tutte con quanto manca a destra
 - Gli eventi dei prossimi 14 giorni del calendario compaiono fra le scadenze; si toccano per la loro scheda
@@ -10,6 +10,18 @@
 
 <<<<<<< HEAD
 =======
+
+## 1.134.0
+**Il punto del giorno nel player**
+- La lettura ad alta voce del punto del giorno sta nel player unico e nel mini player come una canzone: play/pausa, tema precedente e successivo, e la barra del tempo da trascinare per scegliere da dove leggere (riparte da inizio parola)
+- Se parte un'altra cosa la lettura va in pausa e resta nel player, invece di fermarsi del tutto
+- Il tasto della cuffia resta solo nella pagina del punto; via quello dalla card in Home e il riquadro "In ascolto" nella pagina (c'è il mini player)
+
+**Mini player: indietro, play/pausa, avanti**
+- Nel mini player ci sono tre tasti: indietro (il brano precedente, o il video da capo), play/pausa in mezzo e avanti. Per i podcast -10 e +30 secondi; per la radio solo play/pausa
+- Niente più X: per chiudere, con la barra in basso la si tira ancora giù. Compare una X che diventa rossa con una vibrazione; lasciandola lì si chiude, tornando su si annulla
+- "Continua" in Media: tessere tutte della stessa altezza (titolo sempre su due righe), così la pagina sotto non si alza e si abbassa; i podcast compaiono appena partono (prima solo dopo la prima pausa) e la fila tiene fino a 12 cose
+- Toccando il mini player si apre sempre quello che suona adesso: prima, dopo un video chiuso e una canzone messa, si apriva ancora il video
 
 ## 1.132.0
 **Finestre di vetro**
