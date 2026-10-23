@@ -497,9 +497,9 @@ private fun StationBubble(station: RadioStation, playing: Boolean, onClick: () -
 internal fun openResumeItem(
     context: android.content.Context,
     item: ResumeItem,
-    openRoute: (String) -> Unit,
     /** Falso: si carica fermo e aspetta il play (aperto da una nota). */
     autoplay: Boolean = true,
+    openRoute: (String) -> Unit,
 ) {
     val from = if (item.unfinished) item.positionMs else 0
     when (item.kind) {
