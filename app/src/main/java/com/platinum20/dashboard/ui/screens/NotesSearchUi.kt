@@ -48,6 +48,8 @@ fun NotesSearchPanel(
     onClose: () -> Unit,
     onOpenNote: (Long) -> Unit,
     onOpenExpenses: () -> Unit,
+    /** Un pacco si vede nelle Note, in "In arrivo": dentro le Note basta chiudere la ricerca. */
+    onOpenParcels: () -> Unit = onClose,
     placeholder: String = "Cerca in promemoria, note, spese, pacchi…",
     /** Gruppi in più (la ricerca ovunque di Oggi): restituisce quanti risultati ha aggiunto. */
     extra: LazyListScope.(query: String) -> Int = { 0 },
@@ -87,7 +89,7 @@ fun NotesSearchPanel(
                             when (hit.kind) {
                                 SearchKind.NOTE -> onOpenNote(hit.id)
                                 SearchKind.EXPENSE -> onOpenExpenses()
-                                SearchKind.PARCEL -> onClose()
+                                SearchKind.PARCEL -> onOpenParcels()
                                 else -> open = hit
                             }
                         }
