@@ -180,7 +180,7 @@ fun MediaScreen(
             state = rememberReselectListState(Routes.MEDIA),
             contentPadding = PaddingValues(
                 top = inner.calculateTopPadding(),
-                bottom = bottomPadding.calculateBottomPadding() + 16.dp,
+                bottom = bottomPadding.calculateBottomPadding() + (if (now != null) 88.dp else 16.dp),
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
