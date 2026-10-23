@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -438,10 +439,14 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** Pacchi in arrivo: cosa aspetti, quando arriva e il tracciamento a un tocco. */
+/**
+ * Pacchi, dentro la scheda "In arrivo": cosa aspetti, quando arriva e il tracciamento a un tocco.
+ * Tiene i suoi dialoghi e restituisce le righe da mettere nella lista della scheda.
+ */
 @Composable
-fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel) -> Unit = {}) {
+fun parcelItems(parcels: List<Parcel>, onDeleted: (Parcel) -> Unit = {}): LazyListScope.() -> Unit {
     var editing by remember { mutableStateOf<Parcel?>(null) }
+    var adding by remember { mutableStateOf(false) }
     val inApp = LocalInAppNav.current
     val today = LocalDate.now()
     val incoming = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
@@ -450,9 +455,20 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
     val context = LocalContext.current
     val autoFillOn by AutoFill.enabled.collectAsStateWithLifecycle()
     var pastedCode by remember { mutableStateOf<String?>(null) }
+    editing?.let { ParcelDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
+    pastedCode?.let { ParcelDialog(null, onDismiss = { pastedCode = null }, initialCode = it) }
+    if (adding) ParcelDialog(null, onDismiss = { adding = false })
 
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(incoming + delivered, key = { it.id }) { parcel ->
+    return {
+        item(key = "parcels-header") {
+            SectionHeader(
+                if (incoming.isEmpty()) "Pacchi" else "Pacchi · ${incoming.size} in arrivo",
+                modifier = Modifier.padding(top = 12.dp),
+                action = "Nuovo pacco",
+                onAction = { adding = true },
+            )
+        }
+        items(incoming + delivered, key = { "parcel-${it.id}" }) { parcel ->
             CanvasCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
                 Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = parcel.delivered, onCheckedChange = {
@@ -492,7 +508,7 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
             }
         }
         if (parcels.isEmpty()) {
-            item {
+            item(key = "parcels-empty") {
                 Text(
                     "Nessun pacco in arrivo. Il giorno della consegna compare in Oggi e il tracciamento si apre con un tocco.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -504,9 +520,9 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
         // Con pochi pacchi, sotto la lista i modi per aggiungerne: la scheda non resta mezza vuota.
         val hints = ParcelHints.suggest(incoming.size, autoFillOn)
         if (hints.isNotEmpty()) {
-            item {
+            item(key = "parcels-hints") {
                 Column(Modifier.padding(top = 8.dp)) {
-                    SectionHeader("Per aggiungerne")
+                    SectionHeader("Per aggiungere un pacco")
                     Spacer(Modifier.height(4.dp))
                     CanvasCard(Modifier.fillMaxWidth()) {
                         hints.forEachIndexed { i, hint ->
@@ -550,8 +566,6 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
             }
         }
     }
-    editing?.let { ParcelDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
-    pastedCode?.let { ParcelDialog(null, onDismiss = { pastedCode = null }, initialCode = it) }
 }
 
 private fun dueDay(date: LocalDate, today: LocalDate): String = when (ChronoUnit.DAYS.between(today, date)) {
