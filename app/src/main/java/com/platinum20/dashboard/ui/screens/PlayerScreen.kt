@@ -42,7 +42,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,6 +63,7 @@ import com.platinum20.dashboard.media.PlaySource
 import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.media.Playing
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -187,8 +191,9 @@ private fun TimeBar(now: Playing) {
     if (now.durationMs <= 0) return
     // Mentre si trascina la barra segue il dito; lasciata, il player salta lì.
     var dragging by remember { mutableStateOf<Float?>(null) }
+    val position = livePosition(now)
     Slider(
-        value = dragging ?: now.progress,
+        value = dragging ?: (position.toFloat() / now.durationMs).coerceIn(0f, 1f),
         enabled = now.canSeek,
         onValueChange = { dragging = it },
         onValueChangeFinished = {
@@ -197,7 +202,7 @@ private fun TimeBar(now: Playing) {
         },
     )
     Row {
-        Text(clockLabel(dragging?.let { (it * now.durationMs).toLong() } ?: now.positionMs), style = MaterialTheme.typography.labelMedium)
+        Text(clockLabel(dragging?.let { (it * now.durationMs).toLong() } ?: position), style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.weight(1f))
         Text(clockLabel(now.durationMs), style = MaterialTheme.typography.labelMedium)
     }
@@ -242,6 +247,27 @@ private fun Controls(now: Playing) {
             }
         }
     }
+}
+
+/**
+ * Dove si è arrivati, che avanza da sola tra un aggiornamento della fonte e l'altro: la barra
+ * scorre fluida anche quando la fonte dà la posizione di rado (Spotify su un altro dispositivo).
+ */
+@Composable
+internal fun livePosition(now: Playing): Long {
+    val latest by rememberUpdatedState(now)
+    var anchor by remember { mutableStateOf(now.positionMs to System.currentTimeMillis()) }
+    LaunchedEffect(now.positionMs, now.title, now.playing) { anchor = now.positionMs to System.currentTimeMillis() }
+    var clock by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(now.playing) {
+        while (latest.playing) {
+            delay(250)
+            clock = System.currentTimeMillis()
+        }
+    }
+    val elapsed = if (now.playing && !now.loading) (clock - anchor.second).coerceAtLeast(0) else 0
+    val end = now.durationMs.takeIf { it > 0 } ?: Long.MAX_VALUE
+    return (anchor.first + elapsed).coerceIn(0, end)
 }
 
 private val sleepOptions = listOf(15 to "15 min", 30 to "30 min", 60 to "1 ora", 90 to "1 ora e mezza")

@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.120.0
+## 1.121.0
 **Salvato, e si vede dove va**
 - Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
 - Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
+
+## 1.120.0
+**Player più fluido**
+- Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato
+- Il video si apre salendo dal basso, e chiudendolo ridiscende
+- La barra del tempo del player grande e del mini player avanza fluida da sola mentre suona, per ogni fonte (anche Spotify su un altro dispositivo); la barra del video segue sempre il player giusto, anche dopo aver chiuso e riaperto un video
 
 ## 1.119.0
 **Note: scrivi e basta**
