@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.109.0
+**Oggi più semplice**
+- "La giornata": Agenda, Da fare e In arrivo diventano una card sola, in ordine di orario. In cima le cose di tutto il giorno e le date di oggi, poi impegni e promemoria mescolati per ora (gli scaduti per primi), poi i promemoria senza ora e infine compleanni e date dei prossimi giorni ("tra 3 giorni"). I promemoria si spuntano da qui con "Annulla", impegni e date si aprono con un tocco
+- Cerca ovunque: la lente in alto in Oggi trova insieme promemoria, note, spese, pacchi, date, abitudini, impegni del calendario (un mese indietro e tre avanti) e notizie già scaricate
+- "Non ora" sull'invito del calendario non nasconde più tutta la card: smette solo di chiederlo
+
+**Il +**
+- Tenendo premuto il + si detta a voce: il testo passa dallo stesso riconoscimento (spesa, pacco, evento, nota o promemoria) e si conferma con Salva
+
+**Sotto il cofano**
+- Test nuovi: DayTimelineTest (ordine della giornata), EverywhereSearchTest (impegni e notizie)
+
 ## 1.108.0
 **Note, in quattro schede invece di sei**
 - **Da fare**: promemoria e, sotto, le abitudini di ogni giorno ("Abitudini · oggi 2 su 4", con "Nuova abitudine"); i completati restano in fondo

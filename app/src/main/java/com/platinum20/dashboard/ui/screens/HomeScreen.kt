@@ -32,6 +32,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.WbSunny
@@ -79,6 +80,7 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.autofill.AutoFill
+import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.today.Invites
 import com.platinum20.dashboard.settings.HomeCard
@@ -120,6 +122,7 @@ fun HomeScreen(
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
     onCustomize: () -> Unit,
+    onSearch: () -> Unit = {},
     onOpenAutoFill: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -219,6 +222,7 @@ fun HomeScreen(
         )
         DashboardWidget.saveBriefing(context, lines)
     }
+    val agendaOff by CalendarAsk.off.collectAsStateWithLifecycle()
     AutoFill.init(context)
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
@@ -226,8 +230,6 @@ fun HomeScreen(
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
-            HomeCard.CALENDAR -> agenda.granted && agenda.hasContent
-            HomeCard.COUNTDOWN -> notes.soon.isNotEmpty()
             else -> true
         }
     }
@@ -268,9 +270,7 @@ fun HomeScreen(
                     }
                 },
             )
-            HomeCard.CALENDAR -> CalendarCard(agenda)
-            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
-            HomeCard.COUNTDOWN -> CountdownCard()
+            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
             HomeCard.RECAP -> RecapCard(
                 state = recap,
                 onOpenTheme = {
@@ -293,6 +293,7 @@ fun HomeScreen(
                 subtitle = today,
                 scrollBehavior = scrollBehavior,
                 actions = {
+                    RoundIconButton(Icons.Outlined.Search, "Cerca ovunque", onClick = onSearch)
                     RoundIconButton(Icons.Outlined.Tune, "Personalizza", onClick = onCustomize)
                 },
             )
@@ -353,7 +354,7 @@ fun HomeScreen(
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(
-                        agendaVisible = HomeCard.CALENDAR in layout.visible,
+                        agendaVisible = !(agendaOff ?: CalendarAsk.isOff(context)),
                         calendarGranted = agenda.granted,
                         autoFillEnabled = autoFillEnabled,
                         autoFillDismissed = autoFillDismissed,
