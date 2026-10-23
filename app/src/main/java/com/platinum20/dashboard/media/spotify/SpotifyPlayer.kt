@@ -70,9 +70,35 @@ object SpotifyPlayer {
         }
     }
 
-    private suspend fun playOn(device: String, contextUri: String?, uris: List<String>, offsetUri: String?) {
+    private suspend fun playOn(device: String, contextUri: String?, uris: List<String>, offsetUri: String?, positionMs: Long = 0) {
         val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
-        SpotifyApi.playOn(token, device, contextUri, uris, offsetUri)
+        SpotifyApi.playOn(token, device, contextUri, uris, offsetUri, positionMs)
+    }
+
+    /**
+     * Riprende [trackUri] (dentro [contextUri], se c'è) da [positionMs] nel riproduttore dell'app.
+     * Serve per "Continua" e quando Spotify ha perso lo stato dopo una pausa lunga.
+     */
+    fun resume(context: Context, trackUri: String, contextUri: String?, positionMs: Long) {
+        _error.value = null
+        NowPlaying.pauseOthers(MediaService.SPOTIFY, radio = true)
+        start(context)
+        scope.launch {
+            val device = withTimeoutOrNull(25_000) { ready.await() }
+            if (device == null) {
+                if (_error.value == null) _error.value = "Il riproduttore di Spotify non si avvia, riprova"
+                return@launch
+            }
+            val ctx = contextUri?.takeIf { it.isNotBlank() && !it.startsWith("spotify:artist") }
+            val uris = if (ctx == null) listOf(trackUri) else emptyList()
+            var result = runCatching { playOn(device, ctx, uris, trackUri.takeIf { ctx != null }, positionMs) }
+            if ((result.exceptionOrNull() as? SpotifyApiException)?.code == 404) {
+                restart(context)
+                val again = withTimeoutOrNull(25_000) { ready.await() }
+                if (again != null) result = runCatching { playOn(again, ctx, uris, trackUri.takeIf { ctx != null }, positionMs) }
+            }
+            result.exceptionOrNull()?.let { _error.value = spotifyMessage(it) }
+        }
     }
 
     private fun restart(context: Context) {
@@ -154,6 +180,8 @@ object SpotifyPlayer {
 <button data-testid="control-button-playpause" onclick="window.cp && cp.togglePlay()"></button>
 <button data-testid="control-button-skip-forward" onclick="window.cp && cp.nextTrack()"></button>
 <button data-testid="control-button-skip-back" onclick="window.cp && cp.previousTrack()"></button>
+<button data-testid="control-button-pause" onclick="window.cp && cp.pause()"></button>
+<button data-testid="control-button-play" onclick="window.cp && cp.resume()"></button>
 <script>
 window.onSpotifyWebPlaybackSDKReady = function () {
   var player = new Spotify.Player({
@@ -171,8 +199,17 @@ window.onSpotifyWebPlaybackSDKReady = function () {
     var ms = navigator.mediaSession;
     if (!ms) return;
     var t = s && s.track_window && s.track_window.current_track;
-    if (!t) { ms.metadata = null; ms.playbackState = 'none'; return; }
-    var images = (t.album && t.album.images) || [];
+    // Spotify a volte "dimentica" lo stato dopo una pausa: il brano resta, solo in pausa,
+    // così il player dell'app non sparisce e "Riproduci" lo fa ripartire da dove era.
+    if (!t) {
+      if (window.cpState) window.cpState.paused = true;
+      if (ms.metadata) ms.playbackState = 'paused';
+      return;
+    }
+    window.cpState = { pos: s.position || 0, dur: s.duration || 0, at: Date.now(), paused: !!s.paused,
+      uri: t.uri || '', ctx: (s.context && s.context.uri) || '' };
+    // Dalla più piccola alla più grande: chi legge prende l'ultima, cioè la copertina più nitida.
+    var images = ((t.album && t.album.images) || []).slice().sort(function (a, b) { return (a.width || 0) - (b.width || 0); });
     ms.metadata = new MediaMetadata({
       title: t.name,
       artist: (t.artists || []).map(function (a) { return a.name; }).join(', '),

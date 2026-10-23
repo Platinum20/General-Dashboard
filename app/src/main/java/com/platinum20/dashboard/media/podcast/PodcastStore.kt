@@ -13,6 +13,9 @@ import androidx.media3.session.SessionToken
 import com.platinum20.dashboard.BuildConfig
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.MediaHistory
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.radio.RadioService
 import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.spotify.SpotifyApi
@@ -378,6 +381,24 @@ object PodcastStore {
 
     private fun savePosition(id: String, positionMs: Long) {
         if (!::prefs.isInitialized) return
+        // Anche in "Continua" di Media, insieme a video, musica e radio.
+        current?.takeIf { it.id == id }?.let { episode ->
+            MediaHistory.init(appContext)
+            MediaHistory.record(
+                ResumeItem(
+                    kind = ResumeKind.PODCAST,
+                    key = episode.id,
+                    title = episode.title,
+                    subtitle = episode.podcastTitle,
+                    image = episode.image,
+                    positionMs = positionMs,
+                    durationMs = (_now.value?.durationMs ?: 0).takeIf { it > 0 } ?: (episode.durationSec * 1000),
+                    at = System.currentTimeMillis(),
+                    link = episode.audioUrl,
+                    feed = episode.feedUrl,
+                )
+            )
+        }
         val map = (_positions.value - id + (id to positionMs)).entries.toList().takeLast(MAX_POSITIONS).associate { it.key to it.value }
         _positions.value = map
         prefs.edit().putString(KEY_POSITIONS, JSONObject(map).toString()).apply()

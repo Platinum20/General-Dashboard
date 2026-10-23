@@ -122,24 +122,33 @@ fun FloatingPlayer(
                 .pointerInput(range) {
                     val tracker = VelocityTracker()
                     var cur = 0f
+                    var start = 0f
+                    // Il dito si misura sullo schermo, non sulla barra (che si muove con lui):
+                    // sulla barra la velocità risulterebbe sempre quasi zero e il lancio non partirebbe.
+                    var travelled = 0f
                     detectVerticalDragGestures(
                         onDragStart = {
                             view.haptic(Haptic.GRAB)
                             dragging = true
                             tracker.resetTracking()
                             cur = y.value
+                            start = cur
+                            travelled = 0f
                         },
                         onDragCancel = {
                             dragging = false
                             scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
                         },
-                        // Lasciata, va in alto o in basso: dove la si lancia, se no al bordo più vicino.
+                        // Lasciata: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
                         onDragEnd = {
                             dragging = false
                             val v = tracker.calculateVelocity().y / range
+                            val moved = cur - start
                             val top = when {
-                                v < -1.5f -> true
-                                v > 1.5f -> false
+                                v < -0.6f -> true
+                                v > 0.6f -> false
+                                moved < -0.1f -> true
+                                moved > 0.1f -> false
                                 else -> cur < 0.5f
                             }
                             view.haptic(Haptic.SNAP)
@@ -148,7 +157,8 @@ fun FloatingPlayer(
                         },
                     ) { change, amount ->
                         change.consume()
-                        tracker.addPosition(change.uptimeMillis, change.position)
+                        travelled += amount
+                        tracker.addPosition(change.uptimeMillis, androidx.compose.ui.geometry.Offset(0f, travelled))
                         cur = (cur + amount / range).coerceIn(-0.03f, 1.03f)
                         scope.launch { y.snapTo(cur) }
                     }

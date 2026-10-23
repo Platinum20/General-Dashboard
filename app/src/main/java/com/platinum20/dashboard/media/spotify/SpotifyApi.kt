@@ -97,7 +97,8 @@ object SpotifyApi {
                     code,
                 )
             }
-            if (text.isBlank()) null else JSONObject(text)
+            // Alcuni comandi (pausa, avanti) rispondono "ok" con un testo che non è JSON: non è un errore.
+            if (text.isBlank()) null else runCatching { JSONObject(text) }.getOrNull()
         } finally {
             conn.disconnect()
         }
@@ -220,10 +221,11 @@ object SpotifyApi {
      * Fa partire la musica sul dispositivo [deviceId] (il riproduttore dentro l'app): un brano,
      * oppure un album/playlist ([contextUri]) a partire da [offsetUri].
      */
-    suspend fun playOn(token: String, deviceId: String, contextUri: String?, uris: List<String>, offsetUri: String? = null) {
+    suspend fun playOn(token: String, deviceId: String, contextUri: String?, uris: List<String>, offsetUri: String? = null, positionMs: Long = 0) {
         val body = JSONObject()
         if (contextUri != null) body.put("context_uri", contextUri) else body.put("uris", JSONArray(uris))
         if (contextUri != null && offsetUri != null) body.put("offset", JSONObject().put("uri", offsetUri))
+        if (positionMs > 0) body.put("position_ms", positionMs)
         request(token, "me/player/play?device_id=" + URLEncoder.encode(deviceId, "UTF-8"), "PUT", body)
     }
 
@@ -231,6 +233,7 @@ object SpotifyApi {
     suspend fun resume(token: String) { request(token, "me/player/play", "PUT") }
     suspend fun next(token: String) { request(token, "me/player/next", "POST") }
     suspend fun previous(token: String) { request(token, "me/player/previous", "POST") }
+    suspend fun seek(token: String, positionMs: Long) { request(token, "me/player/seek?position_ms=${positionMs.coerceAtLeast(0)}", "PUT") }
 
     /** Brani di una playlist: dal 2026 ogni voce ha il brano in "item", prima era in "track". */
     fun parsePlaylistItems(json: JSONObject?): List<SpItem> =
