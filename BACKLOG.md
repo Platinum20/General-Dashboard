@@ -246,14 +246,11 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 
 ## Fatto
 
-<<<<<<< Updated upstream
+- **1.116.0 · 11 Date: compleanni dai contatti:** idea "Compleanni dai contatti" nelle Note, elenco con caselle, anno vero tenuto, niente doppioni, Annulla. Test: ContactDatesTest.
+- **1.116.0 · 12 Spese: foto dello scontrino (passo 1 dell'idea G):** icona scontrino nel campo delle Note, ML Kit sul telefono, `Receipt.parse` (totale, negozio, data). Resta: usare la data dello scontrino se diversa da oggi, foto `24b_scontrino` nel giro. Test: ReceiptTest.
 - **1.114.0 · 19 Widget "Da fare":** nuovo widget con promemoria scaduti/di oggi da spuntare (ricorrenti avanzano), "+ Aggiungi", righe secondo l'altezza, stato vuoto col prossimo promemoria; nel widget principale bottoncino per pacco arrivato e abitudine fatta. Test: TasksWidgetRowsTest, TasksWidgetActionTest, WidgetBriefTest. Foto: il giro fotografico non vede i widget della Home.
 - **1.114.0 · 22 Nuove uscite Spotify (passo 1):** fila in cima a Musica. Test: NewReleasesTest.
 
-=======
-- **1.116.0 · 11 Date: compleanni dai contatti:** idea "Compleanni dai contatti" nelle Note, elenco con caselle, anno vero tenuto, niente doppioni, Annulla. Test: ContactDatesTest.
-- **1.116.0 · 12 Spese: foto dello scontrino (passo 1 dell'idea G):** icona scontrino nel campo delle Note, ML Kit sul telefono, `Receipt.parse` (totale, negozio, data). Resta: usare la data dello scontrino se diversa da oggi, foto `24b_scontrino` nel giro. Test: ReceiptTest.
->>>>>>> Stashed changes
 - **1.106.0 · V25 Spotify:** parsing di playlist (`item`/`track`), album dell'artista e numero di brani (`items.total`) in funzioni pure; l'avviso "playlist bloccata" vale solo per la chiamata corrente e un errore di rete tiene la pagina. Test: SpotifyParseTest.
 - **1.106.0 · 21 La tua settimana (passo 1):** card della domenica sera in Oggi. Test: WeekReviewTest.
 - **1.106.0 · 13 Ascolta da Oggi:** cuffie nella card del punto del giorno.
