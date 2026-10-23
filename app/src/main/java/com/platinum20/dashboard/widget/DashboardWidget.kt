@@ -14,7 +14,7 @@ import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.today.BriefKind
+import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
@@ -35,6 +35,16 @@ class DashboardWidget : AppWidgetProvider() {
         RefreshWorker.schedule(context)
     }
 
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_BRIEF) {
+            val action = runCatching { BriefAction.valueOf(intent.getStringExtra(EXTRA_ACTION).orEmpty()) }.getOrNull()
+            val id = intent.getLongExtra(EXTRA_TARGET, -1L)
+            if (action != null && id >= 0) performBrief(context, action, id)
+            return
+        }
+        super.onReceive(context, intent)
+    }
+
     override fun onEnabled(context: Context) {
         RefreshWorker.schedule(context)
         RefreshWorker.runNow(context)
@@ -49,6 +59,11 @@ class DashboardWidget : AppWidgetProvider() {
         private const val PREFS = "widget"
         private const val KEY_HEADLINES = "headlines"
         private const val KEY_BRIEF = "brief"
+        const val ACTION_BRIEF = "com.platinum20.dashboard.widget.BRIEF_ACTION"
+        const val EXTRA_ACTION = "brief_action"
+        const val EXTRA_TARGET = "brief_target"
+        private val BRIEF_ROWS = listOf(R.id.widget_brief_row1, R.id.widget_brief_row2)
+        private val BRIEF_ACTIONS = listOf(R.id.widget_brief_action1, R.id.widget_brief_action2)
 
         fun hasWidgets(context: Context): Boolean = ids(context).isNotEmpty()
 
@@ -86,16 +101,43 @@ class DashboardWidget : AppWidgetProvider() {
         fun saveBriefing(context: Context, lines: List<BriefLine>) {
             val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             // I promemoria hanno già la loro riga (sempre aggiornata): qui solo il resto.
-            val raw = JSONArray(lines.filter { it.kind != BriefKind.TASK }.take(2).map { it.text }).toString()
+            val raw = WidgetRows.encodeBrief(WidgetRows.briefEntries(lines))
             if (prefs.getString(KEY_BRIEF, null) == raw) return
             prefs.edit().putString(KEY_BRIEF, raw).apply()
             updateAll(context)
         }
 
-        private fun briefing(context: Context): List<String> {
-            val raw = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_BRIEF, null) ?: return emptyList()
-            return runCatching { JSONArray(raw).let { a -> (0 until a.length()).map { a.getString(it) } } }.getOrDefault(emptyList())
+        private fun briefing(context: Context): List<WidgetBrief> =
+            WidgetRows.decodeBrief(
+                context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_BRIEF, null),
+            )
+
+        /** Il bottoncino di una riga di "Adesso": pacco arrivato o abitudine fatta, senza aprire l'app. */
+        internal fun performBrief(context: Context, action: BriefAction, id: Long) {
+            NotesStore.init(context)
+            when (action) {
+                BriefAction.PARCEL_ARRIVED ->
+                    if (NotesStore.data.value.parcels.any { it.id == id && !it.delivered }) NotesStore.toggleDelivered(id)
+                BriefAction.HABIT_DONE -> NotesStore.markHabitDone(id)
+                else -> return
+            }
+            val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val left = WidgetRows.withoutTarget(briefing(context), action, id)
+            prefs.edit().putString(KEY_BRIEF, WidgetRows.encodeBrief(left)).apply()
+            updateAll(context)
+        }
+
+        private fun briefIntent(context: Context, entry: WidgetBrief, index: Int): PendingIntent {
+            val intent = Intent(context, DashboardWidget::class.java)
+                .setAction(ACTION_BRIEF)
+                .putExtra(EXTRA_ACTION, entry.action?.name)
+                .putExtra(EXTRA_TARGET, entry.targetId ?: -1L)
+            return PendingIntent.getBroadcast(
+                context,
+                30 + index,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
         }
 
         data class Headline(val title: String, val link: String, val source: String)
@@ -135,8 +177,14 @@ class DashboardWidget : AppWidgetProvider() {
             val brief = briefing(context)
             listOf(R.id.widget_brief1, R.id.widget_brief2).forEachIndexed { i, id ->
                 val line = brief.getOrNull(i)
-                views.setViewVisibility(id, if (line == null) View.GONE else View.VISIBLE)
-                if (line != null) views.setTextViewText(id, line)
+                val row = BRIEF_ROWS[i]
+                val button = BRIEF_ACTIONS[i]
+                views.setViewVisibility(row, if (line == null) View.GONE else View.VISIBLE)
+                if (line == null) return@forEachIndexed
+                views.setTextViewText(id, line.text)
+                val actionable = line.action != null && line.targetId != null
+                views.setViewVisibility(button, if (actionable) View.VISIBLE else View.GONE)
+                if (actionable) views.setOnClickPendingIntent(button, briefIntent(context, line, i))
             }
 
             val tasks = tasksLine(context)
