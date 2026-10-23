@@ -1,5 +1,11 @@
 package com.platinum20.dashboard
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.runtime.mutableStateListOf
+import kotlinx.coroutines.delay
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
@@ -391,6 +397,8 @@ private fun CanvasNavBar(
     locked: Boolean,
     onLock: () -> Unit,
     onCancelDictation: () -> Unit,
+    heardSound: Boolean,
+    notice: String?,
 ) {
     val haptic = rememberHaptic()
     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
@@ -404,7 +412,7 @@ private fun CanvasNavBar(
             },
         contentAlignment = Alignment.BottomEnd,
     ) {
-        DictationBubble(listening, partial, locked, onCancelDictation)
+        DictationBubble(listening, partial, locked, level, heardSound, notice, onCancelDictation)
     }
     Row(
         modifier = Modifier
@@ -466,7 +474,12 @@ private fun CanvasNavBar(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
-                    .semantics(mergeDescendants = true) {
+                    .semantics {
+                        contentDescription = when {
+                            listening && locked -> "Inserisci"
+                            listening -> "In ascolto"
+                            else -> "Aggiungi"
+                        }
                         onClick(label = "Aggiungi") { onPlus(); true }
                         onLongClick(label = "Detta a voce") { onHoldStart() }
                     }
@@ -524,11 +537,7 @@ private fun CanvasNavBar(
                                 1 -> Icons.Rounded.Mic
                                 else -> Icons.Rounded.Add
                             },
-                            contentDescription = when (i) {
-                                2 -> "Inserisci"
-                                1 -> "In ascolto"
-                                else -> "Aggiungi"
-                            },
+                            contentDescription = null,
                             modifier = Modifier.size(if (i == 2) 24.dp else 28.dp),
                         )
                     }
@@ -570,11 +579,42 @@ private fun CanvasNavBar(
     }
 }
 
-/** Il fumetto sopra la barra mentre si detta tenendo premuto il +. */
+/**
+ * Il fumetto sopra la barra mentre si detta tenendo premuto il +: le barre che seguono la voce
+ * e, sotto, quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
+ */
 @Composable
-private fun DictationBubble(listening: Boolean, partial: String, locked: Boolean, onCancel: () -> Unit) {
+private fun DictationBubble(
+    listening: Boolean,
+    partial: String,
+    locked: Boolean,
+    level: Float,
+    heardSound: Boolean,
+    notice: String?,
+    onCancel: () -> Unit,
+) {
+    // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
+    var silent by remember { mutableStateOf(false) }
+    LaunchedEffect(listening, heardSound) {
+        silent = false
+        if (listening && !heardSound) {
+            delay(2_000)
+            silent = true
+        }
+    }
+    // Le ultime misure del volume, la più nuova a destra: un piccolo visualizzatore.
+    val bars = remember { mutableStateListOf<Float>().apply { repeat(BAR_COUNT) { add(0f) } } }
+    val currentLevel by rememberUpdatedState(level)
+    LaunchedEffect(listening) {
+        while (listening) {
+            bars.removeAt(0)
+            bars.add(currentLevel)
+            delay(70)
+        }
+        for (i in bars.indices) bars[i] = 0f
+    }
     AnimatedVisibility(
-        visible = listening,
+        visible = listening || notice != null,
         enter = fadeIn() + slideInVertically { it / 2 },
         exit = fadeOut(tween(120)),
     ) {
@@ -585,13 +625,37 @@ private fun DictationBubble(listening: Boolean, partial: String, locked: Boolean
             modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                if (listening) {
+                    val barColor = MaterialTheme.colorScheme.primary
+                    Canvas(Modifier.fillMaxWidth().height(28.dp)) {
+                        val gap = 3.dp.toPx()
+                        val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
+                        bars.forEachIndexed { i, v ->
+                            val h = (size.height * (0.12f + 0.88f * v)).coerceAtMost(size.height)
+                            drawRoundRect(
+                                color = barColor.copy(alpha = 0.35f + 0.65f * v),
+                                topLeft = Offset(i * (w + gap), (size.height - h) / 2),
+                                size = Size(w, h),
+                                cornerRadius = CornerRadius(w / 2, w / 2),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+                val shown = when {
+                    !listening && notice != null -> notice
+                    partial.isNotBlank() -> partial
+                    silent -> Dictation.NO_SOUND
+                    else -> "Ti ascolto…"
+                }
                 Text(
-                    partial.ifBlank { "Ti ascolto…" },
+                    shown,
                     style = MaterialTheme.typography.bodyLarge,
+                    color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (locked) "Bloccato · tocca ➤ per inserire" else "Rilascia per finire · trascina su per bloccare",
                         style = MaterialTheme.typography.labelMedium,
@@ -606,6 +670,8 @@ private fun DictationBubble(listening: Boolean, partial: String, locked: Boolean
         }
     }
 }
+
+private const val BAR_COUNT = 28
 
 @Composable
 private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
@@ -785,8 +851,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
         }
         dictation.start { text ->
-            if (text.isNullOrBlank()) {
-                Toast.makeText(context, "Non ho sentito niente", Toast.LENGTH_SHORT).show()
+            // Niente di detto: "Nessun suono rilevato" resta un attimo nel fumetto.
+            if (text.isNullOrBlank()) voiceScope.launch {
+                delay(1_600)
+                dictation.clearNotice()
             } else voiceScope.launch {
                 // Si salva da solo, nel tipo giusto; il dialogo solo se manca qualcosa.
                 when (val outcome = VoiceCapture.save(context, text)) {
@@ -837,6 +905,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     locked = dictation.locked,
                     onLock = dictation::lock,
                     onCancelDictation = dictation::discard,
+                    heardSound = dictation.heardSound,
+                    notice = dictation.notice,
                 )
             }
         },

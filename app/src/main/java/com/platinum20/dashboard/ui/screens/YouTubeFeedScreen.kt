@@ -146,7 +146,8 @@ fun YouTubeFeedScreen(
                 },
                 onBack = { if (openPlaylist != null) openPlaylist = null else onBack() },
             ) {
-                if (!official) RoundIconButton(Icons.Outlined.Key, "Collegamento ufficiale") { setup = !setup }
+                // Senza accesso la pagina di collegamento è già quella mostrata: la chiave servirebbe a nulla.
+                if (connected && !official) RoundIconButton(Icons.Outlined.Key, "Collegamento ufficiale") { setup = !setup }
                 if (connected && openPlaylist == null) {
                     RoundIconButton(Icons.Outlined.Search, "Cerca") { tab = TAB_SEARCH }
                 }
@@ -214,7 +215,11 @@ fun YouTubeFeedScreen(
                 TAB_PLAYLISTS -> PlaylistsTab(onOpen = { openPlaylist = it })
                 TAB_LIKED -> {
                     val liked by YouTubeStore.liked.collectAsState()
-                    SimpleVideos(liked, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
+                    com.platinum20.dashboard.media.youtube.YtFavorites.init(context)
+                    val mine by com.platinum20.dashboard.media.youtube.YtFavorites.items.collectAsState()
+                    // In cima i Mi piace messi dal player dell'app, poi quelli del tuo account YouTube.
+                    val all = liked.copy(data = (mine + liked.data.orEmpty()).distinctBy { it.id }.takeIf { liked.data != null || mine.isNotEmpty() })
+                    SimpleVideos(all, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
                 }
                 TAB_LATER -> {
                     val later by YouTubeStore.watchLater.collectAsState()

@@ -1,5 +1,14 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.outlined.ClosedCaptionOff
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.automirrored.outlined.Comment
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.platinum20.dashboard.media.youtube.YtFavorites
+import com.platinum20.dashboard.media.youtube.YtVideo
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
@@ -155,17 +164,24 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
             )
             if (immersive) return@Column
 
+            val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+            val stream0 = now?.stream
+            // Toccato "Commenti": la lista scorre fino a loro.
+            LaunchedEffect(showComments) {
+                if (showComments && stream0 != null) {
+                    val index = 1 + (if (stream0.description.isNotBlank()) 1 else 0) + (if (stream0.chapters.size > 1) 1 else 0)
+                    listState.animateScrollToItem(index)
+                }
+            }
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 val stream = now?.stream
-                item(key = "title") { TitleBlock(now, stream) }
+                item(key = "title") { TitleBlock(now, stream, showComments, onToggleComments = { showComments = !showComments }) }
                 if (stream != null) {
-                    item(key = "actions") {
-                        Actions(stream, showComments, onToggleComments = { showComments = !showComments })
-                    }
                     if (stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (showComments) {
@@ -225,10 +241,12 @@ private fun VideoArea(
     var flashKey by remember { mutableIntStateOf(0) }
     var drag by remember { mutableFloatStateOf(0f) }
     val playing = now?.playing == true
+    // Menu delle impostazioni aperto sul video (null = chiuso).
+    var menu by remember { mutableStateOf<VideoMenu?>(null) }
 
-    // I comandi spariscono da soli dopo 3 secondi mentre il video va.
-    LaunchedEffect(controls, playing, flashKey) {
-        if (controls && playing) {
+    // I comandi spariscono da soli dopo 3 secondi mentre il video va (non con un menu aperto).
+    LaunchedEffect(controls, playing, flashKey, menu) {
+        if (controls && playing && menu == null) {
             delay(3_000)
             controls = false
         }
@@ -321,7 +339,35 @@ private fun VideoArea(
                             style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
+                    }
+                }
+                // In alto a destra tutto quello che serve mentre si guarda: sottotitoli, impostazioni, prossimo.
+                Row(Modifier.align(Alignment.TopEnd).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    val stream = now?.stream
+                    if (stream != null && stream.subtitles.isNotEmpty()) {
+                        Box {
+                            IconButton(onClick = { menu = VideoMenu.SUBTITLES; flashKey++ }) {
+                                Icon(
+                                    if (now?.subtitle != null) Icons.Filled.ClosedCaption else Icons.Outlined.ClosedCaptionOff,
+                                    contentDescription = "Sottotitoli",
+                                    tint = Color.White,
+                                )
+                            }
+                            if (menu == VideoMenu.SUBTITLES) VideoMenus(stream, now, VideoMenu.SUBTITLES, onPage = { menu = it })
+                        }
+                    }
+                    if (stream != null) {
+                        Box {
+                            IconButton(onClick = { menu = VideoMenu.MAIN; flashKey++ }) {
+                                Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni del video", tint = Color.White)
+                            }
+                            if (menu != null && menu != VideoMenu.SUBTITLES) VideoMenus(stream, now, menu!!, onPage = { menu = it })
+                        }
+                    }
+                    IconButton(onClick = { YtPlayer.next(context) }) {
+                        Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
                     }
                 }
                 Row(
@@ -351,11 +397,19 @@ private fun VideoArea(
                         Icon(Icons.Filled.Forward10, contentDescription = "Avanti di 10 secondi", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
-                IconButton(onClick = { YtPlayer.next(context) }, modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                    Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
-                }
                 Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
-                    TimeBar(live = now?.stream?.hlsUrl != null, knownSec = now?.stream?.durationSec ?: 0, onFullscreen = onToggleFullscreen, fullscreen = fullscreen, onInteract = { flashKey++ })
+                    TimeBar(
+                        live = now?.stream?.hlsUrl != null,
+                        knownSec = now?.stream?.durationSec ?: 0,
+                        onFullscreen = onToggleFullscreen,
+                        fullscreen = fullscreen,
+                        onInteract = { flashKey++ },
+                        quality = now?.stream?.takeIf { it.qualities.isNotEmpty() }?.let { st ->
+                            val h = now?.playingHeight?.takeIf { it > 0 } ?: st.height
+                            (if (YtPlayer.isAuto() && st.dashManifest != null) "Auto · " else "") + "${h}p"
+                        },
+                        onQuality = { menu = VideoMenu.QUALITY; flashKey++ },
+                    )
                 }
             }
         }
@@ -378,7 +432,15 @@ internal fun timeLabel(positionMs: Long, playerDurationMs: Long, knownSec: Long)
 /** Minutaggio sul video: tempo trascorso, durata, barra da trascinare e schermo intero. */
 @OptIn(UnstableApi::class)
 @Composable
-private fun TimeBar(live: Boolean, knownSec: Long, fullscreen: Boolean, onFullscreen: () -> Unit, onInteract: () -> Unit) {
+private fun TimeBar(
+    live: Boolean,
+    knownSec: Long,
+    fullscreen: Boolean,
+    onFullscreen: () -> Unit,
+    onInteract: () -> Unit,
+    quality: String? = null,
+    onQuality: () -> Unit = {},
+) {
     val context = LocalContext.current
     val player = remember { YtPlayer.player(context) }
     var position by remember { mutableLongStateOf(0L) }
@@ -405,6 +467,19 @@ private fun TimeBar(live: Boolean, knownSec: Long, fullscreen: Boolean, onFullsc
             )
         }
         Spacer(Modifier.weight(1f))
+        // La qualità che si vede adesso: un tocco apre la scelta.
+        quality?.let {
+            Text(
+                it,
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.18f))
+                    .clickable(onClick = onQuality)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
         IconButton(onClick = onFullscreen) {
             Icon(
                 if (fullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
@@ -436,7 +511,8 @@ private fun TimeBar(live: Boolean, knownSec: Long, fullscreen: Boolean, onFullsc
 }
 
 @Composable
-private fun TitleBlock(now: YtNow?, stream: YtStream?) {
+private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, onToggleComments: () -> Unit) {
+    val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             stream?.title ?: if (now?.error != null) "Video non disponibile" else "Caricamento…",
@@ -445,10 +521,12 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?) {
             overflow = TextOverflow.Ellipsis,
         )
         if (stream == null) return@Column
+        val dislikes = dislikesFor(stream.id)
         Text(
             listOfNotNull(
                 stream.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
                 stream.uploaded.takeIf { it.isNotBlank() },
+                dislikes?.takeIf { it > 0 }?.let { "${compactCount(it)} non mi piace" },
             ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -467,146 +545,141 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?) {
                         )
                     }
                 }
-                val dislikes = dislikesFor(stream.id)
-                Row(
-                    Modifier
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.card)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Outlined.ThumbUp, contentDescription = "Mi piace", modifier = Modifier.size(16.dp))
-                    stream.likes.takeIf { it > 0 }?.let {
-                        Spacer(Modifier.width(6.dp))
-                        Text(compactCount(it), style = MaterialTheme.typography.labelLarge)
-                    }
-                    Box(
-                        Modifier
-                            .padding(horizontal = 10.dp)
-                            .size(width = 1.dp, height = 16.dp)
-                            .background(MaterialTheme.colorScheme.outlineVariant)
-                    )
-                    Icon(Icons.Outlined.ThumbDown, contentDescription = "Non mi piace", modifier = Modifier.size(16.dp))
-                    dislikes?.takeIf { it > 0 }?.let {
-                        Spacer(Modifier.width(6.dp))
-                        Text(compactCount(it), style = MaterialTheme.typography.labelLarge)
-                    }
-                }
+            }
+        }
+        // Mi piace, commenti e condividi: tastini tondi uno accanto all'altro, tutti da toccare.
+        YtFavorites.init(context)
+        val favorites by YtFavorites.items.collectAsState()
+        val liked = favorites.any { it.id == stream.id }
+        val haptic = rememberHaptic()
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PillButton(
+                icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                label = (stream.likes.takeIf { it > 0 }?.let { compactCount(it) } ?: "Mi piace"),
+                selected = liked,
+                description = if (liked) "Togli Mi piace" else "Mi piace",
+            ) {
+                haptic(if (liked) Haptic.TICK else Haptic.CONFIRM)
+                YtFavorites.toggle(
+                    context,
+                    YtVideo(stream.id, stream.title, stream.channel, "", null, durationSec = stream.durationSec.toInt(), channelAvatar = stream.channelAvatar),
+                )
+            }
+            PillButton(
+                icon = Icons.AutoMirrored.Outlined.Comment,
+                label = "Commenti",
+                selected = showComments,
+                description = if (showComments) "Nascondi i commenti" else "Mostra i commenti",
+                onClick = onToggleComments,
+            )
+            PillButton(icon = Icons.Outlined.Share, label = "Condividi", selected = false, description = "Condividi il video") {
+                val send = android.content.Intent(android.content.Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(android.content.Intent.EXTRA_SUBJECT, stream.title)
+                    .putExtra(android.content.Intent.EXTRA_TEXT, "https://youtu.be/${stream.id}")
+                context.startActivity(android.content.Intent.createChooser(send, "Condividi il video"))
             }
         }
     }
 }
 
-/** Qualità, velocità e commenti: scelte rapide sotto il video. */
 @Composable
-private fun Actions(stream: YtStream, showComments: Boolean, onToggleComments: () -> Unit) {
+private fun PillButton(icon: ImageVector, label: String, selected: Boolean, description: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .clip(CircleShape)
+            .background(if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.card)
+            .bouncyPress()
+            .clickable(onClickLabel = description, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val color = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = color)
+    }
+}
+
+/** Le pagine del menu del video: impostazioni, qualità, velocità, sottotitoli. */
+private enum class VideoMenu { MAIN, QUALITY, SPEED, SUBTITLES }
+
+/**
+ * Menu sul video (come nell'app di YouTube): dalla rotella si sceglie qualità, velocità, ripeti;
+ * dal tasto CC i sottotitoli. Ogni scelta vale subito, dal punto in cui si è.
+ */
+@Composable
+private fun VideoMenus(stream: YtStream, now: YtNow?, page: VideoMenu, onPage: (VideoMenu?) -> Unit) {
     val context = LocalContext.current
-    var qualityMenu by remember { mutableStateOf(false) }
-    var speedMenu by remember { mutableStateOf(false) }
-    var speed by remember { mutableFloatStateOf(YtPlayer.speed()) }
-    val now by YtPlayer.now.collectAsState()
-    var subtitleMenu by remember { mutableStateOf(false) }
-    var loop by remember { mutableStateOf(YtPlayer.loop()) }
     val auto = YtPlayer.isAuto() && stream.dashManifest != null
     val showing = now?.playingHeight?.takeIf { it > 0 } ?: stream.height
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (stream.qualities.isNotEmpty()) item {
-            Box {
-                CanvasChip(
-                    selected = false,
-                    onClick = { qualityMenu = true },
-                    label = if (auto) "Qualità · Auto (${showing}p)" else "Qualità · ${stream.height}p",
+    val speed = YtPlayer.speed()
+    val check = { on: Boolean -> if (on) "  ✓" else "" }
+    DropdownMenu(expanded = true, onDismissRequest = { onPage(null) }) {
+        when (page) {
+            VideoMenu.MAIN -> {
+                if (stream.qualities.isNotEmpty()) DropdownMenuItem(
+                    text = { Text("Qualità · " + if (auto) "Auto (${showing}p)" else "${stream.height}p") },
+                    onClick = { onPage(VideoMenu.QUALITY) },
                 )
-                DropdownMenu(expanded = qualityMenu, onDismissRequest = { qualityMenu = false }) {
-                    if (stream.dashManifest != null) {
-                        DropdownMenuItem(
-                            text = { Text("Automatica (la migliore per la rete)" + if (auto) "  ✓" else "") },
-                            onClick = {
-                                qualityMenu = false
-                                YtPlayer.setQuality(context, 0)
-                            },
-                        )
-                    }
-                    stream.qualities.forEach { q ->
-                        DropdownMenuItem(
-                            text = { Text("${q.height}p" + if (!auto && q.height == stream.height) "  ✓" else "") },
-                            onClick = {
-                                qualityMenu = false
-                                YtPlayer.setQuality(context, q.height)
-                            },
-                        )
-                    }
-                }
+                DropdownMenuItem(text = { Text("Velocità · ${speedLabel(speed)}") }, onClick = { onPage(VideoMenu.SPEED) })
+                if (stream.subtitles.isNotEmpty()) DropdownMenuItem(
+                    text = { Text("Sottotitoli · " + (now?.subtitle?.substringBefore('-')?.uppercase() ?: "no")) },
+                    onClick = { onPage(VideoMenu.SUBTITLES) },
+                )
+                DropdownMenuItem(
+                    text = { Text("Ripeti il video" + check(YtPlayer.loop())) },
+                    onClick = {
+                        YtPlayer.setLoop(context, !YtPlayer.loop())
+                        onPage(null)
+                    },
+                )
             }
-        }
-        if (stream.subtitles.isNotEmpty()) item {
-            val current = now?.subtitle
-            Box {
-                CanvasChip(
-                    selected = current != null,
-                    onClick = { subtitleMenu = true },
-                    label = "Sottotitoli" + (current?.let { " · " + it.substringBefore('-').uppercase() } ?: ""),
+            VideoMenu.QUALITY -> {
+                if (stream.dashManifest != null) DropdownMenuItem(
+                    text = { Text("Automatica" + check(auto)) },
+                    onClick = {
+                        YtPlayer.setQuality(context, 0)
+                        onPage(null)
+                    },
                 )
-                DropdownMenu(expanded = subtitleMenu, onDismissRequest = { subtitleMenu = false }) {
+                stream.qualities.forEach { q ->
                     DropdownMenuItem(
-                        text = { Text("Disattivati" + if (current == null) "  ✓" else "") },
+                        text = { Text("${q.height}p" + check(!auto && q.height == stream.height)) },
                         onClick = {
-                            subtitleMenu = false
-                            YtPlayer.setSubtitle(context, null)
+                            YtPlayer.setQuality(context, q.height)
+                            onPage(null)
                         },
                     )
-                    stream.subtitles.forEach { sub: YtSubtitle ->
-                        DropdownMenuItem(
-                            text = { Text(sub.label + if (sub.language == current) "  ✓" else "") },
-                            onClick = {
-                                subtitleMenu = false
-                                YtPlayer.setSubtitle(context, sub)
-                            },
-                        )
-                    }
                 }
             }
-        }
-        item {
-            Box {
-                CanvasChip(selected = speed != 1f, onClick = { speedMenu = true }, label = "Velocità · ${speedLabel(speed)}")
-                DropdownMenu(expanded = speedMenu, onDismissRequest = { speedMenu = false }) {
-                    speeds.forEach { s ->
-                        DropdownMenuItem(
-                            text = { Text(speedLabel(s) + if (s == speed) "  ✓" else "") },
-                            onClick = {
-                                speedMenu = false
-                                speed = s
-                                YtPlayer.setSpeed(context, s)
-                            },
-                        )
-                    }
+            VideoMenu.SPEED -> speeds.forEach { s ->
+                DropdownMenuItem(
+                    text = { Text(speedLabel(s) + check(s == speed)) },
+                    onClick = {
+                        YtPlayer.setSpeed(context, s)
+                        onPage(null)
+                    },
+                )
+            }
+            VideoMenu.SUBTITLES -> {
+                DropdownMenuItem(
+                    text = { Text("Disattivati" + check(now?.subtitle == null)) },
+                    onClick = {
+                        YtPlayer.setSubtitle(context, null)
+                        onPage(null)
+                    },
+                )
+                stream.subtitles.forEach { sub: YtSubtitle ->
+                    DropdownMenuItem(
+                        text = { Text(sub.label + check(sub.language == now?.subtitle)) },
+                        onClick = {
+                            YtPlayer.setSubtitle(context, sub)
+                            onPage(null)
+                        },
+                    )
                 }
             }
-        }
-        item { CanvasChip(selected = showComments, onClick = onToggleComments, label = "Commenti") }
-        item {
-            CanvasChip(
-                selected = loop,
-                onClick = {
-                    loop = !loop
-                    YtPlayer.setLoop(context, loop)
-                },
-                label = "Ripeti",
-            )
-        }
-        item {
-            CanvasChip(
-                selected = false,
-                onClick = {
-                    val send = android.content.Intent(android.content.Intent.ACTION_SEND)
-                        .setType("text/plain")
-                        .putExtra(android.content.Intent.EXTRA_SUBJECT, stream.title)
-                        .putExtra(android.content.Intent.EXTRA_TEXT, "https://youtu.be/${stream.id}")
-                    context.startActivity(android.content.Intent.createChooser(send, "Condividi il video"))
-                },
-                label = "Condividi",
-            )
         }
     }
 }

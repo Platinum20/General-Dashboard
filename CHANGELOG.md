@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.115.0
+## 1.118.0
 **Il + decide da solo**
 - Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
 - Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
@@ -8,12 +8,44 @@
 **Microfono bloccabile, come WhatsApp**
 - Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
 
+**La voce si vede**
+- Mentre detti, nel fumetto sopra il + ci sono le barre che seguono la voce e sotto il testo che Canvas sta capendo. Se non senti niente dopo un paio di secondi c'è scritto "Nessun suono rilevato", e resta lì un attimo anche quando rilasci senza aver detto niente (niente più avviso a parte)
+
+**Icona**
+- Colori invertiti: fondo arancione e goccia blu
+
 **In alto a destra, solo due cerchi**
 - In ogni sezione (Oggi, News, Note, Media) in alto a destra ci sono sempre e solo la lente di Cerca ovunque e l'ingranaggio delle Impostazioni, nello stesso posto
 - News: niente più pulsante Aggiorna, si aggiorna tirando giù la lista. Oggi: "Personalizza" sta nelle Impostazioni (Card di Oggi). Note: la lente è quella di Cerca ovunque, che trova anche tutto quello che c'è nelle Note
 
 **Sotto il cofano**
 - Il giro fotografico trova di nuovo il + (06_aggiungi) e fotografa Cerca ovunque e Card di Oggi
+
+## 1.117.0
+**Il player di YouTube, con tutto sul video**
+- Le impostazioni stanno nei controlli del video: la rotella apre Qualità, Velocità, Sottotitoli e Ripeti; il tasto CC accende e sceglie i sottotitoli; accanto allo schermo intero la pillola con la qualità attuale ("Auto · 720p") la cambia al volo. Mentre un menu è aperto i controlli non spariscono
+- Sotto il titolo tre tasti: **Mi piace** (con il numero), **Commenti** (apre e scorre ai commenti) e **Condividi**. I Mi piace restano nell'app (il collegamento con YouTube è in sola lettura) e compaiono in cima alla scheda Mi piace di Video
+
+**Mini player a barra**
+- Il mini player è una barra larga quanto la barra in basso più il +: si trascina e si aggancia in alto o in basso, con una spinta veloce va dove lo lanci
+
+**Sotto il cofano**
+- MediaClickTour: nel giro fotografico tocca uno per uno tutti gli elementi di Media, Musica, Video e Radio e podcast e segnala quelli che non fanno niente (build/tour/collaudo-media.md)
+- Il + della barra ha di nuovo nome e tocco sullo stesso elemento (per TalkBack e per il giro fotografico)
+- Test: YtFavoritesTest
+## 1.116.0
+**Note › Date: i compleanni dalla rubrica**
+- Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
+- Se la rubrica sa l'anno di nascita, la data lo tiene e "In arrivo" dice "compie 30 anni"; quelle senza anno (o con l'anno finto 1604 dei telefoni Apple) restano senza età
+- Niente doppioni: un compleanno già scritto a mano ("Compleanno Marta" il 12 marzo) o la stessa persona salvata su due account non si ripetono. L'invito sparisce quando hai almeno tre date di ogni anno
+
+**Note › Spese: la foto dello scontrino**
+- Nel campo in cima alle Note, quando è vuoto, c'è lo scontrino: fai la foto e Canvas legge il totale e il negozio, e scrive nel campo "63,40 Conad Superstore" già come spesa, con la categoria giusta. Controlli e salvi
+- Il testo si legge sul telefono, senza rete e senza servizi esterni; la foto non resta salvata
+- Trova "Totale complessivo", "Importo pagato" e "Totale" anche quando il prezzo sta sulla riga sotto, ignora subtotale, sconti, IVA, contanti dati e resto, toglie "S.p.A." e "Srl" dal nome del negozio
+
+**Sotto il cofano**
+- Test nuovi: ContactDatesTest (formati delle date della rubrica, anno sconosciuto, 29 febbraio, doppioni, lettura dal provider dei contatti), ReceiptTest (supermercato, farmacia, benzinaio, ristorante con migliaia, bar senza totale, data scambiata per prezzo)
 
 ## 1.114.0
 **Widget**

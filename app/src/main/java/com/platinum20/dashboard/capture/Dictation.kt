@@ -27,6 +27,14 @@ class Dictation(private val context: Context) {
     var level by mutableFloatStateOf(0f)
         private set
 
+    /** Si è sentita una voce (non solo il rumore di fondo): altrimenti il fumetto lo dice. */
+    var heardSound by mutableStateOf(false)
+        private set
+
+    /** Messaggio da lasciare un attimo nel fumetto a fine ascolto ("Nessun suono rilevato"). */
+    var notice by mutableStateOf<String?>(null)
+        private set
+
     /** Quello che ha capito finora, mentre si parla. */
     var partial by mutableStateOf("")
         private set
@@ -55,15 +63,20 @@ class Dictation(private val context: Context) {
         locked = false
         heard = ""
         partial = ""
+        heardSound = false
+        notice = null
         level = 0f
         val r = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer = r
         r.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: Bundle?) = Unit
-            override fun onBeginningOfSpeech() = Unit
+            override fun onBeginningOfSpeech() {
+                heardSound = true
+            }
             override fun onRmsChanged(rmsdB: Float) {
                 // Il riconoscitore dà circa da -2 a 10 dB.
                 level = ((rmsdB + 2f) / 12f).coerceIn(0f, 1f)
+                if (level > VOICE_LEVEL) heardSound = true
             }
             override fun onBufferReceived(buffer: ByteArray?) = Unit
             override fun onEndOfSpeech() = Unit
@@ -137,7 +150,21 @@ class Dictation(private val context: Context) {
         val done = onDone
         cancel()
         partial = ""
-        done?.invoke(text?.trim()?.replaceFirstChar { it.uppercase() })
+        val clean = text?.trim()?.replaceFirstChar { it.uppercase() }?.takeIf { it.isNotEmpty() }
+        // Niente da salvare: lo dice il fumetto stesso, non un avviso a parte.
+        if (clean == null) notice = NO_SOUND
+        done?.invoke(clean)
+    }
+
+    /** Il fumetto ha mostrato l'avviso: si può chiudere. */
+    fun clearNotice() {
+        notice = null
+    }
+
+    companion object {
+        const val NO_SOUND = "Nessun suono rilevato"
+        /** Sopra questo volume è voce, sotto è silenzio o rumore di fondo. */
+        const val VOICE_LEVEL = 0.35f
     }
 
     private fun join(a: String, b: String) = if (a.isBlank()) b else "$a $b"
