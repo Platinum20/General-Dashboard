@@ -118,11 +118,11 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            // Il tipo scelto a mano: la pillola "Abitudine" accesa sotto il campo.
-            if (tap("Abitudine")) { settle(500); shot(p + "21_note_tipo"); tap("Abitudine"); settle(300) } else missing += p + "21_note_tipo"
+            // Una pillola in alto accesa: la pagina mostra solo quella parte ("indietro" torna a tutto).
+            visit("In arrivo", p + "21_note_in_arrivo", waitMs = 800, substring = true)
             scroll(down = true)
             shot(p + "22_note_fondo")
-            // Le spese del mese: una pagina dentro le Note.
+            // Le spese del mese: la pillola "Spese" (o "Dettagli" nel riassunto).
             visit("Dettagli", p + "24_spese", waitMs = 1_000)
             // L'editor di una nota.
             visit("Libri da leggere", p + "26_nota", substring = true)
