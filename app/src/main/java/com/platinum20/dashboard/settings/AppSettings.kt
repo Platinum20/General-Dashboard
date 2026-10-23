@@ -15,9 +15,7 @@ enum class AppTheme(val label: String, val description: String) {
 /** Le card della Dashboard, nell'ordine predefinito. */
 enum class HomeCard(val label: String, val description: String) {
     WEATHER("Adesso", "Il meteo e le poche cose da sapere in questo momento: prossimo impegno, pioggia, scadenze"),
-    CALENDAR("Agenda", "Gli impegni di oggi. Sparisce se non ce ne sono (la sera, finiti quelli, domani sta nella card Domani)"),
-    TASKS("Da fare", "Scaduti, di oggi e qualcuno senza scadenza"),
-    COUNTDOWN("In arrivo", "Compleanni, viaggi e scadenze della prossima settimana. Sparisce se non ce ne sono"),
+    DAY("La giornata", "Impegni, promemoria e date dei prossimi giorni in una lista sola, in ordine di orario"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
 }
 

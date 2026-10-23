@@ -123,16 +123,12 @@ fun CustomizeScreen(onBack: () -> Unit) {
 
 private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
-    HomeCard.CALENDAR -> Icons.Outlined.Event
-    HomeCard.TASKS -> Icons.Outlined.TaskAlt
-    HomeCard.COUNTDOWN -> Icons.Outlined.Celebration
+    HomeCard.DAY -> Icons.Outlined.Event
     HomeCard.RECAP -> Icons.Outlined.Newspaper
 }
 
 private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
-    HomeCard.CALENDAR -> TileAccent.BLUE
-    HomeCard.TASKS -> TileAccent.ORANGE
-    HomeCard.COUNTDOWN -> TileAccent.PURPLE
+    HomeCard.DAY -> TileAccent.BLUE
     HomeCard.RECAP -> TileAccent.GREEN
 }

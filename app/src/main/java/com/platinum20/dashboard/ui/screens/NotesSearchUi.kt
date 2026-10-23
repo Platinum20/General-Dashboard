@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
@@ -47,6 +48,9 @@ fun NotesSearchPanel(
     onClose: () -> Unit,
     onOpenNote: (Long) -> Unit,
     onOpenTab: (NotesTabs) -> Unit,
+    placeholder: String = "Cerca in promemoria, note, spese, pacchi…",
+    /** Gruppi in più (la ricerca ovunque di Oggi): restituisce quanti risultati ha aggiunto. */
+    extra: LazyListScope.(query: String) -> Int = { 0 },
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var open by remember { mutableStateOf<SearchHit?>(null) }
@@ -58,7 +62,7 @@ fun NotesSearchPanel(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Cerca in promemoria, note, spese, pacchi…") },
+                placeholder = { Text(placeholder) },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { if (query.isEmpty()) onClose() else query = "" }) {
@@ -91,7 +95,8 @@ fun NotesSearchPanel(
                 }
             }
         }
-        if (query.isNotBlank() && hits.isEmpty()) {
+        val more = extra(query)
+        if (query.isNotBlank() && hits.isEmpty() && more == 0) {
             item(key = "empty") {
                 Text(
                     "Niente trovato per \"${query.trim()}\".",

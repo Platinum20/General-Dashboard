@@ -117,7 +117,10 @@ internal enum class CaptureMode(val label: String, val title: String, val hint: 
 internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: () -> Unit) {
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf(initial) }
-    var mode by rememberSaveable { mutableStateOf(initialMode) }
+    // Un testo già pronto (dettato a voce) parte dal tipo che gli somiglia.
+    var mode by rememberSaveable {
+        mutableStateOf(if (initialMode == CaptureMode.TASK && initial.isNotBlank()) CaptureGuess.guess(initial) else initialMode)
+    }
     // Partendo da "Promemoria" il tipo segue quello che si scrive, finché non lo si sceglie a mano.
     var autoMode by rememberSaveable { mutableStateOf(initialMode == CaptureMode.TASK) }
     val focus = remember { FocusRequester() }

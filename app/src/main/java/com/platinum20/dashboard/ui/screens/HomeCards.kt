@@ -65,6 +65,9 @@ import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.TodayTaskPicker
+import com.platinum20.dashboard.today.DayItem
+import com.platinum20.dashboard.today.DayTimeline
+import androidx.compose.material.icons.outlined.Celebration
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -127,71 +130,10 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
     return AgendaState(granted, today, tomorrow) { launcher.launch(Manifest.permission.READ_CALENDAR) }
 }
 
-/** Toglie l'Agenda da Oggi: resta riaccendibile da Personalizza. */
+/** Niente più inviti per il calendario: si può sempre consentire dal Calendario. */
 internal fun hideAgenda(context: Context) {
-    AppSettings.setCardVisible(HomeCard.CALENDAR, false)
-    Toast.makeText(context, "Agenda nascosta: la riaccendi da Personalizza", Toast.LENGTH_LONG).show()
-}
-
-@Composable
-fun CalendarCard(agenda: AgendaState) {
-    val context = LocalContext.current
-    val inApp = LocalInAppNav.current
-    val granted = agenda.granted
-    val events = if (granted && agenda.today != null) agenda.shown() else null
-
-    Section(
-        title = "Agenda",
-        action = if (granted) "Calendario" else null,
-        onAction = { inApp?.openCalendar?.invoke() },
-        trailing = {
-            if (granted) {
-                IconButton(onClick = { inApp?.newEvent?.invoke(LocalDate.now()) }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Outlined.Add, contentDescription = "Nuovo evento", modifier = Modifier.size(20.dp))
-                }
-            }
-        },
-    ) {
-        Column(Modifier.padding(vertical = 6.dp)) {
-            val list = events
-            when {
-                // Senza permesso: una riga sola con il pulsante a destra, non un blocco di testo.
-                !granted -> Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "Vedi qui gli impegni di oggi",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { hideAgenda(context) }) { Text("Non ora") }
-                    FilledTonalButton(onClick = agenda.requestPermission) { Text("Consenti") }
-                }
-                list == null -> Spacer(Modifier.height(8.dp))
-                list.isEmpty() -> Text(
-                    "Nessun impegno oggi.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                )
-                else -> {
-                    val now = System.currentTimeMillis()
-                    // Gli eventi già finiti restano visibili ma attenuati.
-                    list.take(6).forEach { EventRow(it, past = !it.allDay && it.end < now) { inApp?.openEvent?.invoke(it) } }
-                    if (list.size > 6) {
-                        Text(
-                            "e altri ${list.size - 6}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                        )
-                    }
-                }
-            }
-        }
-    }
+    CalendarAsk.setOff(context)
+    Toast.makeText(context, "Ok, niente agenda: la puoi consentire dal Calendario", Toast.LENGTH_LONG).show()
 }
 
 private val hourFormat = DateTimeFormatter.ofPattern("HH:mm")
@@ -237,15 +179,38 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
     }
 }
 
+/** Scadenza di un promemoria, in rosso se già passata. */
 @Composable
-fun TasksCard(onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
+fun DueText(dueAt: Long, repeat: Repeat? = null) {
+    val overdue = dueAt < System.currentTimeMillis()
+    Text(
+        (if (overdue) "Scaduto · " else "") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
+        style = MaterialTheme.typography.labelMedium,
+        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+    )
+}
+
+/** Per quanto resta visibile "Annulla" dopo una spunta. */
+private const val UNDO_MS = 5_000L
+
+/** In Oggi solo le date vicine: le altre restano in Note > Date. */
+const val SOON_DAYS = 7L
+
+val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
+
+@Composable
+fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
     val haptic = rememberHaptic()
     val context = LocalContext.current
+    val inApp = LocalInAppNav.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
-    // Solo quello che conta adesso: il resto è a un tocco, in Note.
-    val today = remember(open, tomorrowCard) { TodayTaskPicker.pick(open, LocalDateTime.now(), tomorrowCard = tomorrowCard) }
+    // Dei promemoria solo quello che conta adesso: il resto è a un tocco, in Note.
+    val tasks = remember(open, tomorrowCard) { TodayTaskPicker.pick(open, LocalDateTime.now(), tomorrowCard = tomorrowCard) }
+    val events = if (agenda.granted && agenda.today != null) agenda.shown() else emptyList()
+    val soon = data.soon
+    val items = remember(events, tasks, soon) { DayTimeline.build(events, tasks.shown, soon, LocalDate.now()) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
     LaunchedEffect(lastDone) {
@@ -254,51 +219,42 @@ fun TasksCard(onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
             lastDone = null
         }
     }
+    var editing by remember { mutableStateOf<Countdown?>(null) }
 
     Section(
-        title = if (open.isEmpty()) "Da fare" else "Da fare · ${open.size}",
-        action = "Tutte",
-        onAction = onOpenNotes,
+        title = "La giornata",
+        action = if (agenda.granted) "Calendario" else "Note",
+        onAction = { if (agenda.granted) inApp?.openCalendar?.invoke() else onOpenNotes() },
     ) {
         Column(Modifier.animateContentSize(Springs.snappy())) {
-            if (open.isEmpty() && lastDone == null) {
+            if (items.isEmpty() && lastDone == null) {
                 Text(
-                    "Niente da fare. Tocca + in basso per aggiungere un promemoria.",
+                    if (open.isEmpty()) "Niente in programma. Tocca + in basso per aggiungere."
+                    else "Niente in scadenza oggi.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
                 )
             }
-            if (today.shown.isEmpty() && open.isNotEmpty() && lastDone == null) {
-                Text(
-                    "Niente in scadenza oggi.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-            today.shown.forEachIndexed { index, task ->
-                val done = { haptic(Haptic.CONFIRM); lastDone = task; NotesStore.toggleTask(task.id) }
+            val now = System.currentTimeMillis()
+            items.forEachIndexed { index, item ->
                 if (index > 0) RowDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .bouncyPress(0.98f)
-                        .clickable(onClick = done)
-                        .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(checked = task.done, onCheckedChange = { done() })
-                    Column {
-                        Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        task.dueAt?.let { DueText(it, task.repeat) }
+                when (item) {
+                    is DayItem.Event -> EventRow(item.event, past = !item.event.allDay && item.event.end < now) {
+                        inApp?.openEvent?.invoke(item.event)
                     }
+                    is DayItem.Task -> TaskRow(item.task) {
+                        haptic(Haptic.CONFIRM)
+                        lastDone = item.task
+                        NotesStore.toggleTask(item.task.id)
+                    }
+                    is DayItem.Date -> DateRow(item.countdown, item.daysLeft) { editing = item.countdown }
                 }
             }
-            if (today.more > 0) {
+            if (tasks.more > 0) {
                 RowDivider()
                 Text(
-                    "+ altri ${today.more} in Note",
+                    "+ altri ${tasks.more} promemoria in Note",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -333,97 +289,57 @@ fun TasksCard(onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
             }
         }
     }
+    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
 }
 
-/** Scadenza di un promemoria, in rosso se già passata. */
 @Composable
-fun DueText(dueAt: Long, repeat: Repeat? = null) {
-    val overdue = dueAt < System.currentTimeMillis()
-    Text(
-        (if (overdue) "Scaduto · " else "") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
-        style = MaterialTheme.typography.labelMedium,
-        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-    )
-}
-
-/** Per quanto resta visibile "Annulla" dopo una spunta. */
-private const val UNDO_MS = 5_000L
-
-/** In Oggi solo le date vicine: le altre restano in Note > Date. */
-const val SOON_DAYS = 7L
-
-val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
-
-@Composable
-fun CountdownCard() {
-    val context = LocalContext.current
-    NotesStore.init(context)
-    val data by NotesStore.data.collectAsStateWithLifecycle()
-    var editing by remember { mutableStateOf<Countdown?>(null) }
-    var adding by remember { mutableStateOf(false) }
-    var showAll by remember { mutableStateOf(false) }
-    val upcoming = data.soon
-
-    Section(
-        title = "In arrivo",
-        trailing = {
-            IconButton(onClick = { adding = true }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi", modifier = Modifier.size(20.dp))
-            }
-        },
+private fun TaskRow(task: TaskItem, onDone: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onDone)
+            .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.padding(vertical = 4.dp)) {
-            if (upcoming.isEmpty()) {
-                Text(
-                    "Aggiungi un compleanno, un viaggio o una scadenza per vedere quanti giorni mancano.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                )
-            }
-            (if (showAll) upcoming else upcoming.take(4)).forEachIndexed { index, item ->
-                val days = item.daysLeft()
-                if (index > 0) RowDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .bouncyPress(0.98f)
-                        .clickable { editing = item }
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            item.dateLine(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            when (days) {
-                                0L -> "Oggi! 🎉"
-                                1L -> "Domani"
-                                else -> "$days"
-                            },
-                            style = if (days > 1) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        if (days > 1) {
-                            Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-            if (upcoming.size > 4) {
-                TextButton(onClick = { showAll = !showAll }, modifier = Modifier.padding(start = 8.dp)) {
-                    Text(if (showAll) "Mostra meno" else "Mostra tutti (${upcoming.size})")
-                }
-            }
+        Checkbox(checked = task.done, onCheckedChange = { onDone() })
+        Column {
+            Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            task.dueAt?.let { DueText(it, task.repeat) }
         }
     }
+}
 
-    if (adding) CountdownDialog(countdown = null, onDismiss = { adding = false })
-    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
+/** Compleanni, viaggi e scadenze dei prossimi giorni: titolo e quanto manca. */
+@Composable
+private fun DateRow(item: Countdown, days: Long, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Outlined.Celebration,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.dateLine(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(
+            when (days) {
+                0L -> "Oggi"
+                1L -> "Domani"
+                else -> "tra $days giorni"
+            },
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
