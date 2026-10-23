@@ -66,7 +66,7 @@ object RecapSpeaker {
     fun play(context: Context, script: List<String>) {
         if (script.isEmpty()) return
         // Un solo audio alla volta: musica, radio, podcast e video si mettono in pausa.
-        NowPlaying.pauseOthers(null, radio = true)
+        NowPlaying.pauseOthers(null, radio = true, recap = false)
         parts = script
         _state.value = RecapListening(0, script.size, speaking = false)
         val engine = tts

@@ -120,10 +120,17 @@ object NowPlaying {
      * Un solo player alla volta: mette in pausa le pagine che suonano tranne [keep] (null = tutte),
      * e se richiesto la radio, il podcast in ascolto e il player nativo di YouTube.
      */
-    fun pauseOthers(keep: MediaService?, radio: Boolean = keep != null, nativeYouTube: Boolean = true, podcast: Boolean = true) {
+    fun pauseOthers(
+        keep: MediaService?,
+        radio: Boolean = keep != null,
+        nativeYouTube: Boolean = true,
+        podcast: Boolean = true,
+        recap: Boolean = true,
+    ) {
         _tracks.value.values.filter { it.playing && it.service != keep }.forEach { command(it.service, PlayerCommand.TOGGLE) }
         if (radio) com.platinum20.dashboard.media.radio.RadioStore.pause()
         if (podcast) com.platinum20.dashboard.media.podcast.PodcastStore.pause()
+        if (recap) com.platinum20.dashboard.news.RecapSpeaker.stop()
         if (nativeYouTube) com.platinum20.dashboard.media.youtube.player.YtPlayer.pause()
     }
 
