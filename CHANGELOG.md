@@ -1,9 +1,14 @@
 # Changelog
 
-## 1.123.0
+## 1.125.0
 **Salvato, e si vede dove va**
 - Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
 - Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
+
+## 1.123.0
+**Il carattere di Claude**
+- Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
+- Il testo è un filo più grande perché il serif si legga bene anche piccolo
 
 ## 1.122.0
 **Oggi › La tua settimana**
