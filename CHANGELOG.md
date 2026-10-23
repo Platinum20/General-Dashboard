@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.120.0
+**Il + a voce**
+- Dopo aver dettato, il messaggio in basso ("Spesa: 12,50 € · Cibo", "Promemoria: domani 9:00"…) ha sempre "Annulla": se Canvas ha capito male il tipo, un tocco e sparisce
+
 ## 1.119.0
 **Note: scrivi e basta**
 - Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
