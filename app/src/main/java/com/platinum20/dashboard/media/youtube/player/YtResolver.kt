@@ -137,6 +137,16 @@ object YtResolver {
             .mapNotNull(::video)
     }
 
+    /** Brani di YouTube Music (canzoni, non video): la stessa ricerca dell'app YouTube Music. */
+    suspend fun searchMusic(query: String): List<YtVideo> = withContext(Dispatchers.IO) {
+        init()
+        val service = ServiceList.YouTube
+        val handler = service.searchQHFactory.fromQuery(query, listOf(YoutubeSearchQueryHandlerFactory.MUSIC_SONGS), "")
+        SearchInfo.getInfo(service, handler).relatedItems
+            .filterIsInstance<StreamInfoItem>()
+            .mapNotNull(::video)
+    }
+
     /**
      * Commenti del video come li ordina YouTube: senza [page] la prima pagina, con [page] la successiva
      * oppure le risposte a un commento (la pagina presa da [YtComment.repliesPage]).

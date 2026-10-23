@@ -33,6 +33,18 @@ data class SpPlayback(
     val durationMs: Long,
 )
 
+/** Un episodio di un podcast salvato su Spotify, con quello che serve per metterlo tra gli altri. */
+data class SpEpisode(
+    val id: String,
+    val uri: String,
+    val title: String,
+    /** "2026-10-21" (a volte solo l'anno). */
+    val releaseDate: String,
+    val durationMs: Long,
+    val description: String,
+    val image: String,
+)
+
 class SpotifyApiException(message: String, val code: Int) : IOException(message)
 
 /**
@@ -140,6 +152,21 @@ object SpotifyApi {
             .objects().mapNotNull { it.toItem() }
         else -> emptyList()
     }
+
+    /** Gli ultimi episodi di un podcast di Spotify, dal più nuovo. */
+    suspend fun showEpisodes(token: String, showId: String): List<SpEpisode> =
+        request(token, "shows/$showId/episodes?limit=20&market=from_token")?.optJSONArray("items").objects().mapNotNull { e ->
+            val id = e.optString("id").ifBlank { return@mapNotNull null }
+            SpEpisode(
+                id = id,
+                uri = e.optString("uri").ifBlank { "spotify:episode:$id" },
+                title = e.optString("name"),
+                releaseDate = e.optString("release_date"),
+                durationMs = e.optLong("duration_ms"),
+                description = e.optString("description"),
+                image = e.image(),
+            )
+        }
 
     suspend fun search(token: String, query: String): List<SpItem> {
         val q = URLEncoder.encode(query, "UTF-8")

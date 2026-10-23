@@ -128,9 +128,9 @@ import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
 import com.platinum20.dashboard.ui.screens.FloatingPlayer
-import com.platinum20.dashboard.ui.screens.FloatingTarget
-import com.platinum20.dashboard.ui.screens.RadioScreen
-import com.platinum20.dashboard.ui.screens.PodcastScreen
+import com.platinum20.dashboard.ui.screens.ListenScreen
+import com.platinum20.dashboard.ui.screens.ListenTab
+import com.platinum20.dashboard.ui.screens.PlayerScreen
 import com.platinum20.dashboard.media.radio.RadioService
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -139,7 +139,7 @@ import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
 import com.platinum20.dashboard.ui.screens.YouTubeWatchScreen
-import com.platinum20.dashboard.ui.screens.SpotifyFeedScreen
+import com.platinum20.dashboard.ui.screens.MusicScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
@@ -291,18 +291,19 @@ object Routes {
     const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
     const val PODCAST = "media/podcast"
+    /** Il player grande unico (musica, radio, podcast). */
+    const val PLAYER = "media/player"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
     const val LOGIN = "settings/login/{service}"
 
     /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
     fun youtubeWatch(url: String? = null) = "media/watch" + (url?.let { "?url=${Uri.encode(it)}" } ?: "")
 
-    /** YouTube va nel player dell'app, Spotify nel suo web player. */
+    /** I video di YouTube nel loro player (con il video), tutto il resto nel player unico. */
     fun mediaPlayer(service: MediaService, url: String? = null) =
-        when (service) {
-            MediaService.YOUTUBE -> youtubeWatch(url)
-            // Spotify suona nel riproduttore nascosto: si torna alla sua schermata dell'app, mai al sito.
-            MediaService.SPOTIFY -> SPOTIFY_FEED
+        when {
+            service == MediaService.YOUTUBE && (url != null || com.platinum20.dashboard.media.youtube.player.YtPlayer.now.value?.audioOnly != true) -> youtubeWatch(url)
+            else -> PLAYER
         }
 
     fun login(service: MediaService) = "settings/login/${service.name}"
@@ -470,7 +471,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     is LinkTarget.YouTube -> navController.navigate(Routes.youtubeWatch(target.watchUrl))
                     is LinkTarget.Spotify -> {
                         SpotifyPlayer.playLink(context, target.url)
-                        navController.navigate(Routes.SPOTIFY_FEED)
+                        navController.navigate(Routes.PLAYER)
                     }
                     is LinkTarget.Web -> navController.navigate(Routes.webPage(target.url, title))
                     LinkTarget.None -> Unit
@@ -515,7 +516,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
                 }
                 OpenRequest.MEDIA -> if (request.source == RadioService.SOURCE_RADIO) {
-                    navController.navigate(Routes.RADIO) { launchSingleTop = true }
+                    navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                 } else {
                     MediaService.entries.firstOrNull { it.name == request.source }
                         ?.let { navController.navigate(Routes.mediaPlayer(it)) }
@@ -526,7 +527,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         youtube != null -> navController.navigate(Routes.youtubeWatch(youtube))
                         SpotifyPlayer.spotifyUri(request.url) != null -> {
                             SpotifyPlayer.playLink(context, request.url)
-                            navController.navigate(Routes.SPOTIFY_FEED)
+                            navController.navigate(Routes.PLAYER)
                         }
                         else -> navController.navigate(Routes.video(request.url))
                     }
@@ -643,20 +644,25 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.MEDIA) {
                 MediaScreen(
                     bottomPadding = padding,
-                    onOpenVideo = { navController.navigate(Routes.VIDEO) },
-                    onOpenService = {
-                        navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.SPOTIFY_FEED)
-                    },
-                    onOpenRadio = { navController.navigate(Routes.RADIO) },
-                    onOpenPodcast = { navController.navigate(Routes.PODCAST) },
+                    onOpenMusic = { navController.navigate(Routes.SPOTIFY_FEED) },
+                    onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
+                    onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
+                    onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
+            // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
             composable(Routes.RADIO) {
-                RadioScreen(onBack = { navController.popBackStack() })
+                ListenScreen(start = ListenTab.RADIO, onBack = { navController.popBackStack() })
             }
             composable(Routes.PODCAST) {
-                PodcastScreen(onBack = { navController.popBackStack() })
+                ListenScreen(start = ListenTab.PODCAST, onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PLAYER) {
+                PlayerScreen(
+                    onBack = { navController.popBackStack() },
+                    onWatchVideo = { link -> navController.navigate(Routes.youtubeWatch(link)) { popUpTo(Routes.PLAYER) { inclusive = true } } },
+                )
             }
             composable(
                 Routes.YOUTUBE_WATCH,
@@ -672,10 +678,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
+                    onOpenPhone = { navController.navigate(Routes.VIDEO) },
                 )
             }
             composable(Routes.SPOTIFY_FEED) {
-                SpotifyFeedScreen(
+                MusicScreen(
                     onBack = { navController.popBackStack() },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
                 )
@@ -831,11 +838,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Mini player a bolla, sopra tutte le schermate.
         FloatingPlayer(
             currentRoute = currentRoute,
-            onExpand = { target ->
-                when (target) {
-                    is FloatingTarget.Web -> navController.navigate(Routes.mediaPlayer(target.service))
-                    FloatingTarget.Radio -> navController.navigate(Routes.RADIO) { launchSingleTop = true }
-                }
+            onExpand = { playing ->
+                navController.navigate(if (playing.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
             },
             modifier = Modifier.padding(padding),
         )

@@ -15,6 +15,9 @@ import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.radio.RadioService
 import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.spotify.SpotifyApi
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -54,6 +57,8 @@ object PodcastStore {
     private const val KEY_FOLLOWED = "followed"
     private const val KEY_POSITIONS = "positions"
     private const val MAX_POSITIONS = 200
+    private const val KEY_SPOTIFY_FEEDS = "spotify_feeds"
+    private const val ITUNES = "https://itunes.apple.com/search?media=podcast&country=it&limit=30&term="
 
     private val scope = MainScope()
     private lateinit var prefs: SharedPreferences
@@ -71,6 +76,55 @@ object PodcastStore {
 
     private val _followed = MutableStateFlow<List<Podcast>>(emptyList())
     val followed: StateFlow<List<Podcast>> = _followed.asStateFlow()
+
+    private val _spotify = MutableStateFlow<List<Podcast>>(emptyList())
+    /**
+     * I podcast salvati su Spotify, messi insieme agli altri: se lo stesso podcast ha un feed RSS
+     * pubblico si ascolta da lì (nel player dell'app, con il punto salvato), se no con Spotify.
+     */
+    val spotify: StateFlow<List<Podcast>> = _spotify.asStateFlow()
+
+    /** Tutti i podcast che segui, qui e su Spotify, senza doppioni. */
+    fun allFollowed(): List<Podcast> = merge(_followed.value, _spotify.value)
+
+    /** Seguiti nell'app prima, poi quelli di Spotify che non ci sono già (stesso titolo o stesso feed). */
+    fun merge(followed: List<Podcast>, spotify: List<Podcast>): List<Podcast> {
+        val titles = followed.map { PodcastFeed.normalizeTitle(it.title) }.toSet()
+        val feeds = followed.map { it.feedUrl }.toSet()
+        return followed + spotify.filter { PodcastFeed.normalizeTitle(it.title) !in titles && it.feedUrl !in feeds }
+    }
+
+    private var spotifyLoadedAt = 0L
+
+    /** Legge i podcast salvati su Spotify e cerca per ognuno il feed RSS (una volta sola, poi ricordato). */
+    private suspend fun loadSpotify() {
+        if (System.currentTimeMillis() - spotifyLoadedAt < 30 * 60_000L) return
+        SpotifyAuth.init(appContext)
+        val token = runCatching { SpotifyAuth.token() }.getOrNull() ?: return
+        val shows = runCatching { SpotifyApi.savedShows(token) }.getOrNull() ?: return
+        val known = runCatching { JSONObject(prefs.getString(KEY_SPOTIFY_FEEDS, "{}") ?: "{}") }.getOrDefault(JSONObject())
+        val podcasts = shows.map { show ->
+            scope.async {
+                val feed = if (known.has(show.id)) known.optString(show.id) else runCatching {
+                    PodcastFeed.matchFeed(
+                        show.title,
+                        PodcastFeed.parseSearch(get(ITUNES + URLEncoder.encode(show.title, "UTF-8"))),
+                    )?.feedUrl.orEmpty()
+                }.getOrNull()?.also { known.put(show.id, it) }
+                Podcast(
+                    id = show.id,
+                    title = show.title,
+                    author = show.subtitle,
+                    feedUrl = feed?.ifBlank { null } ?: show.uri,
+                    artwork = show.image,
+                    fromSpotify = true,
+                )
+            }
+        }.awaitAll()
+        prefs.edit().putString(KEY_SPOTIFY_FEEDS, known.toString()).apply()
+        _spotify.value = podcasts
+        spotifyLoadedAt = System.currentTimeMillis()
+    }
 
     private val _episodes = MutableStateFlow<Map<String, Loadable<List<Episode>>>>(emptyMap())
     /** Gli episodi di ogni podcast aperto, per indirizzo del feed. */
@@ -107,7 +161,7 @@ object PodcastStore {
         scope.launch {
             _search.value = runCatching {
                 PodcastFeed.parseSearch(
-                    get("https://itunes.apple.com/search?media=podcast&country=it&limit=30&term=" + URLEncoder.encode(query.trim(), "UTF-8"))
+                    get(ITUNES + URLEncoder.encode(query.trim(), "UTF-8"))
                 )
             }.fold({ Loadable(data = it, loadedAt = System.currentTimeMillis()) }, { Loadable(error = "Ricerca non riuscita, riprova") })
         }
@@ -118,6 +172,11 @@ object PodcastStore {
     }
 
     fun isFollowed(podcast: Podcast) = _followed.value.any { it.feedUrl == podcast.feedUrl }
+
+    /** Seguito qui o salvato su Spotify. */
+    fun isInLibrary(podcast: Podcast) = allFollowed().any {
+        it.feedUrl == podcast.feedUrl || PodcastFeed.normalizeTitle(it.title) == PodcastFeed.normalizeTitle(podcast.title)
+    }
 
     fun toggleFollow(podcast: Podcast) {
         val list = if (isFollowed(podcast)) _followed.value.filter { it.feedUrl != podcast.feedUrl } else _followed.value + podcast
@@ -143,13 +202,14 @@ object PodcastStore {
     fun loadLatest(force: Boolean = false) {
         val state = _latest.value
         if (state.loading || (!force && state.data != null)) return
-        val follow = _followed.value
-        if (follow.isEmpty()) {
-            _latest.value = Loadable(data = emptyList(), loadedAt = System.currentTimeMillis())
-            return
-        }
         _latest.update { it.copy(loading = true, error = null) }
         scope.launch {
+            loadSpotify()
+            val follow = allFollowed()
+            if (follow.isEmpty()) {
+                _latest.value = Loadable(data = emptyList(), loadedAt = System.currentTimeMillis())
+                return@launch
+            }
             val lists = follow.map { podcast -> async { runCatching { fetchEpisodes(podcast) }.getOrNull() } }.awaitAll()
             val episodes = latestOf(lists.filterNotNull())
             _latest.value = Loadable(
@@ -168,6 +228,10 @@ object PodcastStore {
             .take(max)
 
     private suspend fun fetchEpisodes(podcast: Podcast): List<Episode> {
+        if (podcast.feedUrl.startsWith("spotify:show:")) {
+            val token = SpotifyAuth.token() ?: throw IOException("Spotify non collegato")
+            return SpotifyApi.showEpisodes(token, podcast.feedUrl.substringAfterLast(':')).map { PodcastFeed.fromSpotify(it, podcast) }
+        }
         val list = PodcastFeed.parse(get(podcast.feedUrl), podcast.feedUrl)
         // Nel feed il titolo è a volte diverso da quello della ricerca: teniamo quello che l'utente ha visto.
         return list.map { if (podcast.title.isNotBlank()) it.copy(podcastTitle = podcast.title) else it }
@@ -175,6 +239,12 @@ object PodcastStore {
     }
 
     fun play(episode: Episode) {
+        // Episodio che c'è solo su Spotify: suona nel riproduttore di Spotify (protetto), sempre nell'app.
+        if (episode.audioUrl.startsWith("spotify:")) {
+            if (current != null) stop()
+            SpotifyPlayer.playLink(appContext, episode.audioUrl)
+            return
+        }
         // Un solo player alla volta: si fermano YouTube, Spotify e la radio (che lascia il player al podcast).
         NowPlaying.pauseOthers(null, podcast = false)
         RadioStore.yieldPlayer()

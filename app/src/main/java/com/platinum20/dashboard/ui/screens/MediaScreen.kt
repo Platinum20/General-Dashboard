@@ -97,51 +97,68 @@ import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.VideoLibrary
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 
-/** Sezione Media: player video, YouTube e Spotify con il blocco pubblicità. */
+import com.platinum20.dashboard.media.PlaySource
+import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.media.Playing
+import com.platinum20.dashboard.media.podcast.Episode
+import com.platinum20.dashboard.media.podcast.EpisodeDate
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LocalContentColor
+
+/**
+ * Media: tre sezioni (Musica, Video, Radio e podcast) e sopra quello che suona adesso, nel player
+ * unico. Sotto, quello che si riprende al volo: dove eri rimasto, nuovi episodi e le tue radio.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaScreen(
     bottomPadding: PaddingValues,
+    onOpenMusic: () -> Unit,
     onOpenVideo: () -> Unit,
-    onOpenService: (MediaService) -> Unit,
-    onOpenRadio: () -> Unit,
-    onOpenPodcast: () -> Unit,
+    onOpenListen: (ListenTab) -> Unit,
+    onOpenPlayer: (Playing) -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
     YouTubeAuth.init(context)
     SpotifyAuth.init(context)
-    val youTubeLinked by YouTubeAuth.connected.collectAsState()
-    val spotifyLinked by SpotifyAuth.connected.collectAsState()
-    val open by MediaWebViews.open.collectAsState()
-    val tracks by NowPlaying.tracks.collectAsState()
-    val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
-    val radio by RadioStore.now.collectAsState()
     PodcastStore.init(context)
-    val podcast by PodcastStore.now.collectAsState()
-    val followedPodcasts by PodcastStore.followed.collectAsState()
-    val youTubeNow by YtPlayer.now.collectAsState()
     MediaHistory.init(context)
     VideoLibrary.init(context)
+    val spotifyLinked by SpotifyAuth.connected.collectAsState()
+    val youTubeLinked by YouTubeAuth.connected.collectAsState()
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    val now by Playback.now.collectAsState()
     val history by MediaHistory.items.collectAsState()
     val videos by VideoLibrary.recent.collectAsState()
-    val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
-    val inApp = LocalInAppNav.current
-    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
-    // Quando nulla suona, la prima cosa è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && podcast == null && youTubeNow == null }
-    val recents = resumable.filter { it != hero }.take(4)
-    // Al primo uso (niente da riprendere) qualche radio da far partire subito.
-    val firstUse = hero == null && recents.isEmpty() && tracks.isEmpty() && radio == null && podcast == null
+    val latest by PodcastStore.latest.collectAsState()
+    val followed by PodcastStore.followed.collectAsState()
+    val spotifyShows by PodcastStore.spotify.collectAsState()
+    val podcastNow by PodcastStore.now.collectAsState()
+    val radioNow by RadioStore.now.collectAsState()
     val popular by RadioStore.popular.collectAsState()
     val recentStations by RadioStore.recent.collectAsState()
     val favoriteStations by RadioStore.favorites.collectAsState()
-    val starters = if (firstUse) MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) else emptyList()
-    LaunchedEffect(firstUse) { if (firstUse) RadioStore.loadPopular() }
-
+    val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
+    val inApp = LocalInAppNav.current
+    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
+    // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata.
+    val hero = resumable.firstOrNull()?.takeIf { now == null }
+    val continueList = resumable.filter { it != hero }.take(8)
+    val stations = remember(favoriteStations, recentStations) { (favoriteStations + recentStations).distinctBy { it.id }.take(10) }
+    // Al primo uso (nessuna radio ascoltata) le più ascoltate, per partire con un tocco.
+    val radioRow = stations.ifEmpty { MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) }
+    LaunchedEffect(stations.isEmpty()) { if (stations.isEmpty()) RadioStore.loadPopular() }
+    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
+    val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
+    val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
+    val podcasts = (followed.size + spotifyShows.size)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -150,11 +167,10 @@ fun MediaScreen(
             TopLevelBar(
                 title = "Media",
                 subtitle = when {
-                    tracks.values.any { it.playing } -> "In riproduzione"
-                    radio != null -> "In ascolto: ${radio?.station?.name}"
-                    podcast != null -> "In ascolto: ${podcast?.episode?.podcastTitle}"
-                    tracks.isNotEmpty() -> "Riprendi da dove eri"
-                    else -> "Video, musica e radio"
+                    now?.playing == true -> "In riproduzione · ${now?.source?.label}"
+                    now != null -> "In pausa · ${now?.source?.label}"
+                    hero != null -> "Riprendi da dove eri"
+                    else -> "Musica, video, radio e podcast"
                 },
                 scrollBehavior = scrollBehavior,
             )
@@ -163,98 +179,89 @@ fun MediaScreen(
         LazyColumn(
             state = rememberReselectListState(Routes.MEDIA),
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
                 top = inner.calculateTopPadding(),
                 bottom = bottomPadding.calculateBottomPadding() + 16.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            tracks.values.forEach { track ->
-                item(key = "playing-${track.service.name}") {
-                    NowPlayingCard(
-                        track = track,
-                        onOpen = { onOpenService(track.service) },
-                        onCommand = { NowPlaying.command(track.service, it) },
+            now?.let { playing ->
+                item(key = "now") {
+                    NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+            hero?.let { last ->
+                item(key = "resume") {
+                    Box(Modifier.padding(horizontal = 16.dp)) { ResumeCard(last, onClick = { openResume(last) }) }
+                }
+            }
+            // Le tre sezioni, una accanto all'altra: il colore dell'icona le distingue a colpo d'occhio.
+            item(key = "sections") {
+                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SectionTile(
+                        icon = Icons.Outlined.GraphicEq,
+                        accent = TileAccent.GREEN,
+                        title = "Musica",
+                        subtitle = if (spotifyOn) "Spotify e YouTube Music" else "YouTube Music",
+                        active = now?.source == PlaySource.SPOTIFY || now?.source == PlaySource.MUSIC,
+                        onClick = onOpenMusic,
+                    )
+                    SectionTile(
+                        icon = Icons.Outlined.OndemandVideo,
+                        accent = TileAccent.ORANGE,
+                        title = "Video",
+                        subtitle = if (youTubeOn) "YouTube e telefono" else "Telefono e link",
+                        active = now?.source == PlaySource.VIDEO,
+                        onClick = onOpenVideo,
+                    )
+                    SectionTile(
+                        icon = Icons.Outlined.Mic,
+                        accent = TileAccent.PURPLE,
+                        title = "Radio e podcast",
+                        subtitle = if (podcasts > 0) "$podcasts podcast" else "In diretta e on demand",
+                        active = now?.source == PlaySource.RADIO || now?.source == PlaySource.PODCAST,
+                        onClick = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) },
                     )
                 }
             }
-            if (tracks.isNotEmpty()) {
-                item(key = "sleep") { SleepTimerRow(sleepAt = sleepAt, onSet = NowPlaying::setSleepTimer) }
-            }
-            hero?.let { last ->
-                item(key = "resume") { ResumeCard(last, onClick = { openResume(last) }) }
-            }
-            // Le fonti in una griglia 2×2 più il podcast in largo: il colore dell'icona le distingue a colpo d'occhio.
-            item(key = "grid") {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MediaTile(
-                            icon = Icons.Outlined.PlayCircle,
-                            accent = TileAccent.BLUE,
-                            title = "Video",
-                            subtitle = "File e link, riprendi da dove eri",
-                            onClick = onOpenVideo,
-                        )
-                        MediaTile(
-                            icon = Icons.Outlined.OndemandVideo,
-                            accent = TileAccent.ORANGE,
-                            title = MediaService.YOUTUBE.label,
-                            subtitle = if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega l'account per il feed",
-                            onClick = { onOpenService(MediaService.YOUTUBE) },
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MediaTile(
-                            icon = Icons.Outlined.GraphicEq,
-                            accent = TileAccent.GREEN,
-                            title = MediaService.SPOTIFY.label,
-                            subtitle = if (spotifyLinked) "Per te, playlist e libreria" else "Collega l'account per il feed",
-                            onClick = { onOpenService(MediaService.SPOTIFY) },
-                            playing = MediaService.SPOTIFY in open,
-                            onStop = { MediaWebViews.release(MediaService.SPOTIFY) },
-                        )
-                        MediaTile(
-                            icon = Icons.Outlined.Radio,
-                            accent = TileAccent.PURPLE,
-                            title = "Radio",
-                            subtitle = radio?.let { "In ascolto: ${it.station.name}" } ?: "Stazioni italiane e del mondo",
-                            onClick = onOpenRadio,
-                            playing = radio != null,
-                            onStop = { RadioStore.stop() },
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        MediaTile(
-                            icon = Icons.Outlined.Mic,
-                            accent = TileAccent.BLUE,
-                            title = "Podcast",
-                            subtitle = podcast?.let { "In ascolto: ${it.episode.title}" }
-                                ?: if (followedPodcasts.isEmpty()) "Cerca, segui e riprendi da dove eri"
-                                else "Nuovi episodi da ${followedPodcasts.size} podcast",
-                            onClick = onOpenPodcast,
-                            playing = podcast != null,
-                            onStop = { PodcastStore.stop() },
-                        )
+            if (continueList.isNotEmpty()) {
+                item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
+                item(key = "continue") {
+                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(continueList, key = { "${it.kind}-${it.key}" }) { item -> ContinueTile(item, onClick = { openResume(item) }) }
                     }
                 }
             }
-            if (recents.isNotEmpty()) {
-                item(key = "recent") {
-                    Section("Recenti") {
-                        recents.forEachIndexed { index, recent ->
+            val episodes = latest.data.orEmpty().take(3)
+            if (episodes.isNotEmpty()) {
+                item(key = "episodes") {
+                    Section(
+                        "Nuovi episodi",
+                        action = "Tutti",
+                        onAction = { onOpenListen(ListenTab.PODCAST) },
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    ) {
+                        episodes.forEachIndexed { index, episode ->
                             if (index > 0) RowDivider()
-                            ResumeRow(recent, onClick = { openResume(recent) })
+                            EpisodeMiniRow(episode, playing = podcastNow?.episode?.id == episode.id && podcastNow?.playing == true)
                         }
                     }
                 }
             }
-            if (starters.isNotEmpty()) {
-                item(key = "starters") {
-                    Section("Per iniziare", action = "Tutte le radio", onAction = onOpenRadio) {
-                        starters.forEachIndexed { index, station ->
-                            if (index > 0) RowDivider()
-                            StarterRow(station, onClick = { RadioStore.play(station) })
+            if (radioRow.isNotEmpty()) {
+                item(key = "radio-h") {
+                    SectionHeader(
+                        if (stations.isEmpty()) "Radio per iniziare" else "Le tue radio",
+                        Modifier.padding(horizontal = 16.dp),
+                        action = "Tutte",
+                        onAction = { onOpenListen(ListenTab.RADIO) },
+                    )
+                }
+                item(key = "radio") {
+                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(radioRow, key = { it.id }) { station ->
+                            StationBubble(station, playing = radioNow?.station?.id == station.id && radioNow?.playing == true) {
+                                if (radioNow?.station?.id == station.id) RadioStore.togglePause() else RadioStore.play(station)
+                            }
                         }
                     }
                 }
@@ -267,6 +274,7 @@ fun MediaScreen(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
+                        .padding(horizontal = 16.dp)
                         .fillMaxWidth()
                         .clip(MaterialTheme.shapes.small)
                         .clickable(onClick = onOpenSettings)
@@ -277,42 +285,222 @@ fun MediaScreen(
     }
 }
 
+/** Una delle tre sezioni: icona colorata, nome e cosa c'è dentro; con un puntino se suona da lì. */
 @Composable
-private fun RowScope.MediaTile(
+private fun RowScope.SectionTile(
     icon: ImageVector,
     accent: TileAccent,
     title: String,
     subtitle: String,
+    active: Boolean,
     onClick: () -> Unit,
-    playing: Boolean = false,
-    onStop: () -> Unit = {},
 ) {
     CanvasCard(
         onClick = onClick,
-        modifier = Modifier.weight(1f).heightIn(min = 128.dp).bouncyPress(),
+        modifier = Modifier.weight(1f).heightIn(min = 124.dp).bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconTile(icon, accent)
+                IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
                 Spacer(Modifier.weight(1f))
-                if (playing) {
-                    // Chiude il player rimasto aperto in sottofondo.
-                    IconButton(onClick = onStop, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Outlined.Close, contentDescription = "Chiudi player", modifier = Modifier.size(18.dp))
-                    }
+                if (active) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                 }
             }
-            Spacer(Modifier.height(14.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                if (playing) "Aperto · $subtitle" else subtitle,
+                subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+/** Il blocco colorato di Media: quello che suona adesso, da qualunque fonte, con i comandi. */
+@Composable
+private fun NowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    CanvasCard(
+        onClick = onOpen,
+        modifier = modifier.fillMaxWidth().bouncyPress(0.98f),
+        shape = MaterialTheme.shapes.extraLarge,
+        // Come "Adesso" in Oggi: il blocco colorato è ciò che sta succedendo ora.
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(width = if (now.isVideo) 112.dp else 72.dp, height = 72.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    IconTile(sourceIcon(now.source), sourceAccent(now.source))
+                    if (now.artwork.isNotBlank()) {
+                        AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                    }
+                }
+                Spacer(Modifier.size(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        (if (now.playing) "IN RIPRODUZIONE" else "IN PAUSA") + " · " + now.source.label.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = LocalContentColor.current.copy(alpha = 0.7f),
+                        maxLines = 1,
+                    )
+                    Text(now.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (now.subtitle.isNotBlank()) {
+                        Text(now.subtitle, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) {
+                    when {
+                        now.live -> Text("● In diretta", style = MaterialTheme.typography.labelMedium)
+                        now.durationMs > 0 -> Column {
+                            LinearProgressIndicator(
+                                progress = { now.progress },
+                                modifier = Modifier.fillMaxWidth().height(3.dp).clip(MaterialTheme.shapes.small),
+                                drawStopIndicator = {},
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "${clockLabel(now.positionMs)} / ${clockLabel(now.durationMs)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LocalContentColor.current.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.size(8.dp))
+                FilledIconButton(onClick = { Playback.toggle(context) }) {
+                    Icon(if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (now.playing) "Pausa" else "Riproduci")
+                }
+                if (now.canSkip) {
+                    IconButton(onClick = { Playback.next(context) }) { Icon(Icons.Filled.SkipNext, contentDescription = "Avanti") }
+                }
+            }
+        }
+    }
+}
+
+/** "Continua": anteprima grande con la barra di dove eri, titolo e fonte. */
+@Composable
+private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .width(168.dp)
+            .clip(MaterialTheme.shapes.large)
+            .bouncyPress()
+            .clickable(onClick = onClick)
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(94.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            IconTile(item.icon(), item.accent())
+            if (item.image.isNotBlank()) {
+                AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            }
+            if (item.unfinished && item.durationMs > 0) {
+                LinearProgressIndicator(
+                    progress = { item.progress },
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                    drawStopIndicator = {},
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(item.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/** Un episodio nuovo: copertina, titolo e podcast; un tocco lo fa partire (o lo mette in pausa). */
+@Composable
+private fun EpisodeMiniRow(episode: Episode, playing: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable { if (playing) PodcastStore.togglePause() else PodcastStore.play(episode) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(44.dp).clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center) {
+            IconTile(Icons.Outlined.Mic, TileAccent.PURPLE, size = 44.dp)
+            if (episode.image.isNotBlank()) {
+                AsyncImage(model = episode.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(44.dp))
+            }
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(episode.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOf(
+                    episode.podcastTitle,
+                    EpisodeDate.label(episode.publishedAt, java.time.ZonedDateTime.now()),
+                    if (episode.audioUrl.startsWith("spotify:")) "Spotify" else "",
+                ).filter { it.isNotBlank() }.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = if (playing) "Pausa" else "Ascolta",
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/** Una radio nella fila: logo tondo e nome, un tocco la fa partire. */
+@Composable
+private fun StationBubble(station: RadioStation, playing: Boolean, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .width(72.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .bouncyPress()
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(if (playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                .padding(if (playing) 3.dp else 0.dp)
+                .clip(CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            StationLogo(station, 64)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(station.name, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -323,7 +511,7 @@ internal fun openResumeItem(item: ResumeItem, openRoute: (String) -> Unit) {
         ResumeKind.YOUTUBE -> openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
         ResumeKind.RADIO -> {
             item.station?.let(RadioStore::play)
-            openRoute(Routes.RADIO)
+            openRoute(Routes.PLAYER)
         }
     }
 }
@@ -381,60 +569,6 @@ private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun ResumeRow(item: ResumeItem, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        ResumeThumb(item, 40)
-        Spacer(Modifier.size(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            val detail = listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · ")
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-    }
-}
-
-/** Una radio di "Per iniziare": logo, nome e genere, un tocco la fa partire. */
-@Composable
-private fun StarterRow(station: RadioStation, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        StationLogo(station, 40)
-        Spacer(Modifier.size(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(station.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                station.tags.split(',').map { it.trim() }.filter { it.isNotBlank() }.take(2).joinToString(" · ").ifBlank { "Radio" },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Icon(Icons.Filled.PlayArrow, contentDescription = "Ascolta ${station.name}", tint = MaterialTheme.colorScheme.primary)
-    }
-}
-
 /** Miniatura (YouTube, logo della radio) o, se manca, l'icona colorata della fonte. */
 @Composable
 private fun ResumeThumb(item: ResumeItem, size: Int) {
@@ -451,94 +585,3 @@ private fun ResumeThumb(item: ResumeItem, size: Int) {
     }
 }
 
-/** Mini player: cosa sta suonando, con i comandi, anche quando la pagina non è a schermo. */
-@Composable
-private fun NowPlayingCard(track: Track, onOpen: () -> Unit, onCommand: (PlayerCommand) -> Unit) {
-    CanvasCard(
-        onClick = onOpen,
-        modifier = Modifier.fillMaxWidth().bouncyPress(),
-        shape = MaterialTheme.shapes.extraLarge,
-        // Come "Adesso" in Oggi: il blocco colorato è ciò che sta succedendo ora.
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .size(64.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (track.artworkUrl.isNotBlank()) {
-                    AsyncImage(
-                        model = track.artworkUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(64.dp),
-                    )
-                }
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    if (track.playing) "In riproduzione su ${track.service.label}" else "In pausa su ${track.service.label}",
-                    style = MaterialTheme.typography.labelMedium,
-                )
-                Text(track.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (track.artist.isNotBlank()) {
-                    Text(track.artist, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            IconButton(onClick = { onCommand(PlayerCommand.PREVIOUS) }) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro")
-            }
-            FilledIconButton(onClick = { onCommand(PlayerCommand.TOGGLE) }) {
-                Icon(
-                    if (track.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (track.playing) "Pausa" else "Riproduci",
-                )
-            }
-            IconButton(onClick = { onCommand(PlayerCommand.NEXT) }) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
-            }
-        }
-    }
-}
-
-private val sleepOptions = listOf(15 to "15 min", 30 to "30 min", 60 to "1 ora", 90 to "1 ora e mezza")
-private val clock = DateTimeFormatter.ofPattern("HH:mm")
-
-/** Timer di spegnimento: mette in pausa la musica dopo il tempo scelto. */
-@Composable
-private fun SleepTimerRow(sleepAt: Long?, onSet: (Int?) -> Unit) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 4.dp)) {
-            Icon(Icons.Outlined.Bedtime, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                sleepAt?.let { "Si ferma alle " + clock.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())) }
-                    ?: "Timer di spegnimento",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-        ) {
-            sleepOptions.forEach { (minutes, label) ->
-                CanvasChip(selected = false, onClick = { onSet(minutes) }, label = label)
-            }
-            if (sleepAt != null) {
-                CanvasChip(selected = true, onClick = { onSet(null) }, label = "Annulla")
-            }
-        }
-    }
-}

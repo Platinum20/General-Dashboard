@@ -533,52 +533,7 @@ private fun WeatherSummary(
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> Row(
-            modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            val content = LocalContentColor.current
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "ADESSO · " + forecast.place.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
-                        color = content.copy(alpha = 0.6f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (state.loading) {
-                        Spacer(Modifier.size(8.dp))
-                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = content.copy(alpha = 0.6f))
-                    }
-                }
-                Text(
-                    forecast.current.temperature.asTemp(),
-                    style = MaterialTheme.typography.displayMedium.copy(fontSize = 52.sp, lineHeight = 58.sp),
-                )
-                val today = forecast.today
-                // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
-                val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
-                Text(
-                    Greeting.adessoWeather(
-                        WeatherCodes.description(forecast.current.code),
-                        if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
-                        rain,
-                        dayCardShown,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = content.copy(alpha = 0.75f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Icon(
-                weatherIcon(forecast.current.code, forecast.current.isDay),
-                contentDescription = null,
-                modifier = Modifier.padding(top = 4.dp).size(44.dp),
-            )
-        }
+        forecast != null -> WeatherNowHeader(forecast, state.loading, dayCardShown)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.110.0
+**Media, rifatta da capo**
+- Tre sezioni: **Musica**, **Video** e **Radio e podcast**. In alto il blocco colorato con quello che suona adesso (qualunque fonte) o da dove riprendere; sotto "Continua" con le anteprime, i nuovi episodi e le tue radio da far partire con un tocco
+- **Musica** mette insieme Spotify e YouTube Music: i "Mi piace" di YouTube Music accanto ai tuoi ascolti di Spotify, e una ricerca sola che cerca su entrambi. I brani di YouTube si ascoltano in solo audio (meno dati), con "Guarda il video" per passare al video dallo stesso punto
+- **Video** è YouTube più i video del telefono, i file e i link ("Sul telefono"), al posto della vecchia sezione Video
+- **Radio e podcast** in una pagina sola, con le pillole Podcast e Radio. I podcast salvati su Spotify arrivano da soli insieme a quelli che segui: se hanno un feed pubblico si ascoltano nel player dell'app (con il punto salvato), se sono solo su Spotify con il riproduttore di Spotify
+
+**Un player solo**
+- Un unico mini player per tutto (YouTube, musica, Spotify, radio, podcast), con il tempo che scorre; toccandolo si apre il player grande, uguale per tutte le fonti: copertina, barra del tempo da trascinare, comandi e timer di spegnimento (che ora ferma qualunque cosa)
+- Le barre del player dentro Radio, Podcast e Spotify sono sparite: c'è solo il mini player
+
+**YouTube**
+- Con i sottotitoli accesi il video ora parte sempre: i sottotitoli si scaricano prima e, se YouTube non li dà, compare un avviso e il video continua senza
+
+**Meteo**
+- La schermata del Meteo si apre con lo stesso blocco di "Adesso" che c'è in Oggi (luogo, temperatura, cielo, massima e minima), così la card e la pagina sono la stessa cosa; sotto, la temperatura percepita
+
+**Sotto il cofano**
+- Test nuovi: MediaUnifiedTest (player unico, podcast di Spotify senza doppioni), YtCaptionsTest; la verifica dal vivo di YouTube controlla anche i sottotitoli
 ## 1.109.0
 **Oggi più semplice**
 - "La giornata": Agenda, Da fare e In arrivo diventano una card sola, in ordine di orario. In cima le cose di tutto il giorno e le date di oggi, poi impegni e promemoria mescolati per ora (gli scaduti per primi), poi i promemoria senza ora e infine compleanni e date dei prossimi giorni ("tra 3 giorni"). I promemoria si spuntano da qui con "Annulla", impegni e date si aprono con un tocco

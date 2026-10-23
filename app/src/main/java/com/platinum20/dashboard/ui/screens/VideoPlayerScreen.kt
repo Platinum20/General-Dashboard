@@ -214,8 +214,8 @@ fun VideoPlayerScreen(
         topBar = {
             if (!immersive) {
                 TopLevelBar(
-                    title = current?.title ?: "Video",
-                    subtitle = if (current != null) "Video" else "File, link e video del telefono",
+                    title = current?.title ?: "Sul telefono",
+                    subtitle = if (current != null) "Video" else "File, link e video registrati",
                     onBack = onBack,
                 )
             }
