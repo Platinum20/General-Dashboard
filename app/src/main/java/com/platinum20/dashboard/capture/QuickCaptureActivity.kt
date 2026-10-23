@@ -160,7 +160,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
             val id = CalendarRepository.save(context, draft.toDraft(calendar.id))
             if (id != null) {
                 val app = context.applicationContext
-                val notice = CaptureNotice(CaptureMode.EVENT, "Evento: ${eventLine(draft)}") { CalendarRepository.delete(app, id) }
+                val notice = CaptureNotice(CaptureMode.EVENT, "Evento: ${eventLine(draft)}", undo = { CalendarRepository.delete(app, id) })
                 if (!CaptureFeedback.show(notice)) toast(notice.message)
                 onClose()
             } else {
