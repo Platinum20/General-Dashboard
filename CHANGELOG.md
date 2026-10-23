@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.124.0
+**Torna il carattere di prima**
+- Via il serif della 1.123.0: titoli e testo tornano in Inter e Inter Display, con le dimensioni di prima
+
 ## 1.123.0
 **Il carattere di Claude**
 - Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
