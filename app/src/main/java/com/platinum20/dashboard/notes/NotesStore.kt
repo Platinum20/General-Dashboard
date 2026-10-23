@@ -3,6 +3,7 @@ package com.platinum20.dashboard.notes
 import android.content.Context
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.TasksWidget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -484,6 +485,17 @@ object NotesStore {
 
     fun deleteCountdown(id: Long) = update { d -> d.copy(countdowns = d.countdowns.filter { it.id != id }) }
 
+    /** Aggiunge le date scelte dalla rubrica come date "ogni anno"; restituisce le nuove, per "Annulla". */
+    fun importContactDates(picked: List<ContactDate>, today: LocalDate = LocalDate.now()): List<Countdown> {
+        val base = newId()
+        val added = picked.mapIndexed { i, c -> Countdown(base + i, c.title, c.date(today), yearly = true) }
+        if (added.isNotEmpty()) update { d -> d.copy(countdowns = d.countdowns + added) }
+        return added
+    }
+
+    /** Toglie le date appena importate: serve ad "Annulla". */
+    fun removeCountdowns(ids: Set<Long>) = update { d -> d.copy(countdowns = d.countdowns.filter { it.id !in ids }) }
+
     fun restoreCountdown(item: Countdown) = update { d ->
         if (d.countdowns.any { it.id == item.id }) d else d.copy(countdowns = d.countdowns + item)
     }
@@ -541,7 +553,10 @@ object NotesStore {
             }
         }
         // Il widget mostra i promemoria di oggi: lo ridisegna a ogni modifica.
-        if (::appContext.isInitialized) runCatching { DashboardWidget.updateAll(appContext) }
+        if (::appContext.isInitialized) {
+            runCatching { DashboardWidget.updateAll(appContext) }
+            runCatching { TasksWidget.updateAll(appContext) }
+        }
     }
 
     internal fun serialize(d: NotesData): String = JSONObject()

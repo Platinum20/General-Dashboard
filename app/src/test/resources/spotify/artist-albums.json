@@ -1,0 +1,70 @@
+{
+  "href": "https://api.spotify.com/v1/artists/0TnOYISbd1XYRBk9myaseg/albums?offset=0&limit=10&include_groups=album,single",
+  "limit": 10,
+  "next": null,
+  "offset": 0,
+  "previous": null,
+  "total": 5,
+  "items": [
+    {
+      "album_type": "single",
+      "total_tracks": 1,
+      "id": "4aawyAB9vmqN3uQ7FjRGTy",
+      "images": [
+        {"url": "https://i.scdn.co/image/ab67616d0000b273big", "height": 640, "width": 640},
+        {"url": "https://i.scdn.co/image/ab67616d00001e02mid", "height": 300, "width": 300}
+      ],
+      "name": "Nuvole d'autunno",
+      "release_date": "2026-10-20",
+      "release_date_precision": "day",
+      "type": "album",
+      "uri": "spotify:album:4aawyAB9vmqN3uQ7FjRGTy",
+      "artists": [{"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist"}]
+    },
+    {
+      "album_type": "album",
+      "total_tracks": 12,
+      "id": "2noRn2Aes5aoNVsU6iWThc",
+      "images": [{"url": "https://i.scdn.co/image/album-big"}, {"url": "https://i.scdn.co/image/album-mid"}],
+      "name": "Materia (Prisma)",
+      "release_date": "2026-10-02",
+      "release_date_precision": "day",
+      "type": "album",
+      "uri": "spotify:album:2noRn2Aes5aoNVsU6iWThc",
+      "artists": [{"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist"}]
+    },
+    {
+      "album_type": "album",
+      "id": "6vV5UrXcfyQD1wu4Qo2I9K",
+      "images": [],
+      "name": "Materia (Terra)",
+      "release_date": "2023-05-26",
+      "release_date_precision": "day",
+      "type": "album",
+      "uri": "spotify:album:6vV5UrXcfyQD1wu4Qo2I9K",
+      "artists": [{"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist"}]
+    },
+    {
+      "album_type": "single",
+      "id": "1oldYearOnly",
+      "images": [],
+      "name": "Demo",
+      "release_date": "2026",
+      "release_date_precision": "year",
+      "type": "album",
+      "uri": "spotify:album:1oldYearOnly",
+      "artists": [{"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist"}]
+    },
+    {
+      "album_type": "single",
+      "id": "7monthPrecision",
+      "images": [],
+      "name": "Live a Roma",
+      "release_date": "2026-10",
+      "release_date_precision": "month",
+      "type": "album",
+      "uri": "spotify:album:7monthPrecision",
+      "artists": [{"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist"}]
+    }
+  ]
+}

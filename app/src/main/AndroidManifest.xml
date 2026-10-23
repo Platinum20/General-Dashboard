@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <!-- Compila da solo: solo per rileggere gli SMS degli ultimi giorni, quando lo chiedi tu. -->
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -99,6 +100,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_dashboard_info" />
+        </receiver>
+
+        <!-- Widget "Da fare": i promemoria di oggi da spuntare dalla schermata Home. -->
+        <receiver
+            android:name=".widget.TasksWidget"
+            android:exported="false"
+            android:label="Canvas · Da fare">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tasks_info" />
         </receiver>
 
         <receiver
