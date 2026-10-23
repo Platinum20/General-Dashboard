@@ -10,6 +10,8 @@ import com.platinum20.dashboard.media.spotify.SpotifyApi
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.youtube.player.YtNow
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
+import com.platinum20.dashboard.news.RecapListening
+import com.platinum20.dashboard.news.RecapSpeaker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -28,6 +30,8 @@ enum class PlaySource(val label: String) {
     SPOTIFY("Spotify"),
     RADIO("Radio"),
     PODCAST("Podcast"),
+    /** Il punto del giorno letto dalla voce del telefono. */
+    SPEECH("Lettura"),
 }
 
 /** Quello che sta suonando, uguale per tutte le fonti: lo mostrano il mini player e il player grande. */
@@ -47,7 +51,7 @@ data class Playing(
     /** Si vede un video (YouTube non in solo audio): il player grande è quello con il video. */
     val isVideo: Boolean get() = source == PlaySource.VIDEO
     val canSeek: Boolean get() = !live && durationMs > 0
-    val canSkip: Boolean get() = source == PlaySource.SPOTIFY || source == PlaySource.MUSIC || source == PlaySource.VIDEO
+    val canSkip: Boolean get() = source == PlaySource.SPOTIFY || source == PlaySource.MUSIC || source == PlaySource.VIDEO || source == PlaySource.SPEECH
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
 
@@ -63,14 +67,21 @@ object Playback {
 
     private val spotify = combine(NowPlaying.tracks, SpotifyStore.playback) { tracks, remote -> tracks[MediaService.SPOTIFY] to remote }
 
-    val now: StateFlow<Playing?> = combine(YtPlayer.now, spotify, RadioStore.now, PodcastStore.now) { yt, sp, radio, podcast ->
-        val candidates = candidates(yt, sp.first, sp.second, radio, podcast)
+    val now: StateFlow<Playing?> = combine(YtPlayer.now, spotify, RadioStore.now, PodcastStore.now, RecapSpeaker.state) { yt, sp, radio, podcast, speech ->
+        val candidates = candidates(yt, sp.first, sp.second, radio, podcast, speech)
         candidates.firstOrNull { it.playing }?.let { lastSource = it.source }
         pick(candidates, lastSource)
     }.stateIn(scope, SharingStarted.Eagerly, null)
 
     /** Tutte le fonti aperte, nello stesso formato. Funzione pura, provata nei test. */
-    internal fun candidates(yt: YtNow?, spotifyTrack: Track?, spotifyRemote: SpPlayback?, radio: RadioNow?, podcast: PodcastNow?): List<Playing> =
+    internal fun candidates(
+        yt: YtNow?,
+        spotifyTrack: Track?,
+        spotifyRemote: SpPlayback?,
+        radio: RadioNow?,
+        podcast: PodcastNow?,
+        speech: RecapListening? = null,
+    ): List<Playing> =
         listOfNotNull(
             yt?.let {
                 val stream = it.stream
@@ -111,6 +122,13 @@ object Playback {
                     loading = it.buffering, positionMs = it.positionMs, durationMs = it.durationMs, error = it.error,
                 )
             },
+            speech?.let {
+                Playing(
+                    PlaySource.SPEECH, "Il punto del giorno",
+                    it.error ?: if (it.part == 0) "Apertura" else "Tema ${it.part} di ${it.total - 1}",
+                    "", it.speaking, positionMs = it.positionMs, durationMs = it.durationMs, error = it.error,
+                )
+            },
         )
 
     /** Quello da mostrare: ciò che suona, se no l'ultima fonte partita, se no la prima aperta. */
@@ -124,6 +142,7 @@ object Playback {
             PlaySource.SPOTIFY -> if (current.playing) spotifyCommand(PlayerCommand.PAUSE) { SpotifyApi.pause(it) } else resumeSpotify(context)
             PlaySource.RADIO -> RadioStore.togglePause()
             PlaySource.PODCAST -> PodcastStore.togglePause()
+            PlaySource.SPEECH -> RecapSpeaker.toggle()
         }
     }
 
@@ -132,6 +151,7 @@ object Playback {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.next(context)
             PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.NEXT) { SpotifyApi.next(it) }
             PlaySource.PODCAST -> PodcastStore.seekBy(30_000)
+            PlaySource.SPEECH -> RecapSpeaker.next()
             else -> Unit
         }
     }
@@ -141,6 +161,7 @@ object Playback {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, 0)
             PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) { SpotifyApi.previous(it) }
             PlaySource.PODCAST -> PodcastStore.seekBy(-10_000)
+            PlaySource.SPEECH -> RecapSpeaker.previous()
             else -> Unit
         }
     }
@@ -158,6 +179,7 @@ object Playback {
         when (current.source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, positionMs)
             PlaySource.PODCAST -> PodcastStore.seekBy(positionMs - current.positionMs)
+            PlaySource.SPEECH -> RecapSpeaker.seekTo(positionMs)
             PlaySource.SPOTIFY -> if (NowPlaying.tracks.value.containsKey(MediaService.SPOTIFY)) NowPlaying.seek(MediaService.SPOTIFY, positionMs)
                 else SpotifyStore.control { SpotifyApi.seek(it, positionMs) }
             else -> Unit
@@ -194,6 +216,7 @@ object Playback {
                 else SpotifyStore.closeRemote()
             PlaySource.RADIO -> RadioStore.stop()
             PlaySource.PODCAST -> PodcastStore.stop()
+            PlaySource.SPEECH -> RecapSpeaker.stop()
             null -> Unit
         }
     }

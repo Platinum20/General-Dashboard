@@ -255,6 +255,8 @@ object PodcastStore {
         current = episode
         val startMs = PodcastProgress.resumeAt(_positions.value[episode.id] ?: 0, episode.durationSec * 1000)
         _now.value = PodcastNow(episode, playing = false, buffering = true, positionMs = startMs, durationMs = episode.durationSec * 1000, error = null)
+        // Subito in "Continua" di Media, senza aspettare la prima pausa.
+        savePosition(episode.id, startMs)
         val ready = controller
         if (ready != null) start(ready, episode, startMs) else {
             pending = episode to startMs
