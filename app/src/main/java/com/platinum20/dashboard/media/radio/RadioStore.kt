@@ -42,7 +42,7 @@ object RadioStore {
     private lateinit var appContext: Context
     private var controller: MediaController? = null
     private var connecting = false
-    private var pending: RadioStation? = null
+    private var pending: Pair<RadioStation, Boolean>? = null
     private var current: RadioStation? = null
 
     private val _popular = MutableStateFlow(Loadable<List<RadioStation>>())
@@ -96,10 +96,12 @@ object RadioStore {
         write(KEY_FAVORITES, list)
     }
 
-    fun play(station: RadioStation) {
+    /** Con [autoplay] falso la stazione si sintonizza ferma e aspetta il play (es. aperta da una nota). */
+    fun play(station: RadioStation, autoplay: Boolean = true) {
         // Un solo player alla volta: YouTube e Spotify si fermano, il podcast lascia il player alla radio.
         NowPlaying.pauseOthers(null, podcast = false)
         com.platinum20.dashboard.media.podcast.PodcastStore.yieldPlayer()
+        com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.RADIO)
         current = station
         _now.value = RadioNow(station, playing = false, buffering = true, track = "", error = null)
         val recent = (listOf(station) + _recent.value.filter { it.id != station.id }).take(10)
@@ -108,8 +110,8 @@ object RadioStore {
         MediaHistory.recordRadio(station)
         scope.launch { RadioApi.click(station) }
         val ready = controller
-        if (ready != null) start(ready, station) else {
-            pending = station
+        if (ready != null) start(ready, station, autoplay) else {
+            pending = station to autoplay
             connect()
         }
     }
@@ -148,7 +150,7 @@ object RadioStore {
         _now.value = null
     }
 
-    private fun start(controller: MediaController, station: RadioStation) {
+    private fun start(controller: MediaController, station: RadioStation, autoplay: Boolean) {
         val item = MediaItem.Builder()
             .setMediaId(station.id)
             .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.parse(station.streamUrl)).build())
@@ -164,7 +166,7 @@ object RadioStore {
             .build()
         controller.setMediaItem(item)
         controller.prepare()
-        controller.play()
+        if (autoplay) controller.play() else controller.pause()
     }
 
     private fun connect() {
@@ -179,7 +181,7 @@ object RadioStore {
             c.addListener(object : Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) = publish(player)
             })
-            pending?.let { start(c, it) }
+            pending?.let { (station, autoplay) -> start(c, station, autoplay) }
             pending = null
         }, ContextCompat.getMainExecutor(appContext))
     }
