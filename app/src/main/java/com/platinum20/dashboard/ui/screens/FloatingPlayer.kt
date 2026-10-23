@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -65,8 +66,9 @@ import kotlin.math.roundToInt
 
 /**
  * Mini player unico sopra tutta l'app, per qualunque cosa suoni (YouTube, musica, Spotify, radio,
- * podcast): copertina (o il video stesso), titolo, play/pausa, chiudi e il tempo che scorre.
- * Si trascina dove si vuole (si aggancia al bordo più vicino) e si tocca per il player grande.
+ * podcast): una barra di vetro larga quanto la barra in basso con il +, con copertina (o il video
+ * stesso), titolo, play/pausa, chiudi e il tempo che scorre. Si trascina e si aggancia solo in alto
+ * o in basso (sopra la barra delle sezioni); un tocco apre il player grande.
  */
 @Composable
 fun FloatingPlayer(
@@ -78,94 +80,77 @@ fun FloatingPlayer(
     RadioStore.init(context)
     val playing by Playback.now.collectAsState()
     val now = playing ?: return
-    // Sulle schermate dei player la bolla non serve: c'è già il player grande.
+    // Sulle schermate dei player la barra non serve: c'è già il player grande.
     if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
     if (now.isVideo && currentRoute?.startsWith("media/watch") == true) return
 
-    BoxWithConstraints(modifier.fillMaxSize()) {
-        val density = LocalDensity.current
-        val margin = with(density) { 12.dp.toPx() }
-        val maxW = constraints.maxWidth.toFloat()
+    BoxWithConstraints(
+        modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
         val maxH = constraints.maxHeight.toFloat()
-        var bubbleW by remember { mutableIntStateOf(0) }
-        var bubbleH by remember { mutableIntStateOf(0) }
-        // Posizione in frazioni dello spazio, così resta sensata anche ruotando lo schermo.
-        // Le frazioni sono Animatable: lasciata la bolla, una molla la porta al bordo con un rimbalzo.
-        var savedX by rememberSaveable { mutableFloatStateOf(1f) }
-        var savedY by rememberSaveable { mutableFloatStateOf(0.85f) }
-        val fx = remember { Animatable(savedX) }
-        val fy = remember { Animatable(savedY) }
+        var barH by remember { mutableIntStateOf(0) }
+        val range = (maxH - barH).coerceAtLeast(1f)
+        // In alto o in basso, ricordato anche ruotando lo schermo; in basso all'inizio.
+        var atTop by rememberSaveable { mutableStateOf(false) }
+        val y = remember { Animatable(1f) }
+        LaunchedEffect(atTop) { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
         val scope = rememberCoroutineScope()
         val view = LocalView.current
         var dragging by remember { mutableStateOf(false) }
-        // Comparsa: la bolla "salta fuori" invece di apparire di colpo.
+        // Comparsa: la barra "salta fuori" invece di apparire di colpo.
         val appear = remember { Animatable(0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
-        val pressScale by animateFloatAsState(if (dragging) 0.94f else 1f, Springs.snappy(), label = "drag")
-
-        val rangeX = (maxW - bubbleW - 2 * margin).coerceAtLeast(1f)
-        val rangeY = (maxH - bubbleH - 2 * margin).coerceAtLeast(1f)
+        val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
 
         Surface(
-            shape = MaterialTheme.shapes.large,
-            // Bolla di vetro: si sposta sopra le pagine e le lascia intravedere sfocate.
-            color = androidx.compose.ui.graphics.Color.Transparent,
+            shape = MaterialTheme.shapes.extraLarge,
+            color = Color.Transparent,
             border = cardBorder(),
             modifier = Modifier
-                .offset { IntOffset((margin + fx.value * rangeX).roundToInt(), (margin + fy.value * rangeY).roundToInt()) }
+                .fillMaxWidth()
+                .offset { IntOffset(0, (y.value * range).roundToInt()) }
                 .graphicsLayer {
-                    val s = (0.6f + 0.4f * appear.value) * pressScale
-                    scaleX = s
-                    scaleY = s
+                    val sc = (0.8f + 0.2f * appear.value) * pressScale
+                    scaleX = sc
+                    scaleY = sc
                     alpha = appear.value.coerceIn(0f, 1f)
                 }
-                .onSizeChanged {
-                    bubbleW = it.width
-                    bubbleH = it.height
-                }
-                .glass(MaterialTheme.shapes.large)
-                .pointerInput(rangeX, rangeY) {
+                .onSizeChanged { barH = it.height }
+                .glass(MaterialTheme.shapes.extraLarge)
+                .pointerInput(range) {
                     val tracker = VelocityTracker()
-                    // Posizione del dito tenuta qui, in modo sincrono: gli snapTo partono in coroutine.
-                    var curX = 0f
-                    var curY = 0f
-                    detectDragGestures(
+                    var cur = 0f
+                    detectVerticalDragGestures(
                         onDragStart = {
                             view.haptic(Haptic.GRAB)
                             dragging = true
                             tracker.resetTracking()
-                            curX = fx.value
-                            curY = fy.value
+                            cur = y.value
                         },
-                        onDragCancel = { dragging = false },
-                        // Lasciata la bolla, si aggancia al bordo verso cui la si lancia (o al più vicino).
+                        onDragCancel = {
+                            dragging = false
+                            scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
+                        },
+                        // Lasciata, va in alto o in basso: dove la si lancia, se no al bordo più vicino.
                         onDragEnd = {
                             dragging = false
-                            val velocity = tracker.calculateVelocity()
-                            val vx = velocity.x / rangeX
-                            val vy = velocity.y / rangeY
-                            val targetX = when {
-                                vx > 1.5f -> 1f
-                                vx < -1.5f -> 0f
-                                else -> if (curX < 0.5f) 0f else 1f
+                            val v = tracker.calculateVelocity().y / range
+                            val top = when {
+                                v < -1.5f -> true
+                                v > 1.5f -> false
+                                else -> cur < 0.5f
                             }
-                            // Un lancio in verticale sposta un po' anche l'altezza, senza uscire dallo schermo.
-                            val targetY = (curY + vy * 0.12f).coerceIn(0f, 1f)
-                            savedX = targetX
-                            savedY = targetY
                             view.haptic(Haptic.SNAP)
-                            scope.launch { fx.animateTo(targetX, Springs.bouncy(), initialVelocity = vx) }
-                            scope.launch { fy.animateTo(targetY, Springs.bouncy(), initialVelocity = vy) }
+                            if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Springs.bouncy(), initialVelocity = v) }
+                            atTop = top
                         },
-                    ) { change, drag ->
+                    ) { change, amount ->
                         change.consume()
                         tracker.addPosition(change.uptimeMillis, change.position)
-                        curX = (curX + drag.x / rangeX).coerceIn(-0.04f, 1.04f)
-                        curY = (curY + drag.y / rangeY).coerceIn(0f, 1f)
-                        scope.launch {
-                            fx.snapTo(curX)
-                            fy.snapTo(curY)
-                        }
+                        cur = (cur + amount / range).coerceIn(-0.03f, 1.03f)
+                        scope.launch { y.snapTo(cur) }
                     }
                 },
         ) {
@@ -178,11 +163,11 @@ fun FloatingPlayer(
 @Composable
 private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
     val context = LocalContext.current
-    Column(Modifier.width(300.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
-                .padding(start = 6.dp, top = 6.dp, end = 2.dp, bottom = 4.dp),
+                .padding(start = 8.dp, top = 8.dp, end = 4.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Il video di YouTube si vede anche in piccolo; per il resto la copertina.

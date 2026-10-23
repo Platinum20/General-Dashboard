@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.117.0
+## 1.118.0
 **Note: scrivi e basta**
 - Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
 - Dopo il salvataggio "Spesa: 12,50 € · Annulla": se Canvas ha capito male, un tocco e sparisce
@@ -12,6 +12,18 @@
 **Sotto il cofano**
 - CaptureResult.undo per l'"Annulla" (lo usano anche il + e la dettatura). Test: notesChips in NotesUiLogicTest
 
+## 1.117.0
+**Il player di YouTube, con tutto sul video**
+- Le impostazioni stanno nei controlli del video: la rotella apre Qualità, Velocità, Sottotitoli e Ripeti; il tasto CC accende e sceglie i sottotitoli; accanto allo schermo intero la pillola con la qualità attuale ("Auto · 720p") la cambia al volo. Mentre un menu è aperto i controlli non spariscono
+- Sotto il titolo tre tasti: **Mi piace** (con il numero), **Commenti** (apre e scorre ai commenti) e **Condividi**. I Mi piace restano nell'app (il collegamento con YouTube è in sola lettura) e compaiono in cima alla scheda Mi piace di Video
+
+**Mini player a barra**
+- Il mini player è una barra larga quanto la barra in basso più il +: si trascina e si aggancia in alto o in basso, con una spinta veloce va dove lo lanci
+
+**Sotto il cofano**
+- MediaClickTour: nel giro fotografico tocca uno per uno tutti gli elementi di Media, Musica, Video e Radio e podcast e segnala quelli che non fanno niente (build/tour/collaudo-media.md)
+- Il + della barra ha di nuovo nome e tocco sullo stesso elemento (per TalkBack e per il giro fotografico)
+- Test: YtFavoritesTest
 ## 1.116.0
 **Note › Date: i compleanni dalla rubrica**
 - Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
