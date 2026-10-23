@@ -9,6 +9,7 @@ import com.platinum20.dashboard.news.reader.WebPageRenderer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -35,10 +36,20 @@ class NewsViewModel : ViewModel() {
     val state: StateFlow<NewsUiState> = _state.asStateFlow()
 
     init {
-        load(initial = true)
         viewModelScope.launch {
             ArticleVerifier.state.collect { v -> _state.update { it.copy(verification = v) } }
         }
+        // Le notizie arrivano dal negozio condiviso: prima quelle salvate, poi man mano quelle nuove.
+        viewModelScope.launch {
+            NewsStore.result.filterNotNull().collect { result ->
+                _state.update { it.copy(items = result.items, failures = result.failures) }
+                // Controlla in anticipo gli articoli più recenti: in lista finiscono solo quelli leggibili.
+                launch {
+                    ArticleVerifier.verify(result.items.take(MAX_VERIFIED).map { it.link }, WebPageRenderer::cookiesFor)
+                }
+            }
+        }
+        load(initial = true)
     }
 
     fun refresh() = load(initial = false)
@@ -51,20 +62,7 @@ class NewsViewModel : ViewModel() {
         viewModelScope.launch {
             _state.update { it.copy(loading = initial, refreshing = !initial, error = null) }
             runCatching { NewsStore.load(force = !initial) }
-                .onSuccess { result ->
-                    _state.update {
-                        it.copy(
-                            items = result.items,
-                            failures = result.failures,
-                            loading = false,
-                            refreshing = false,
-                        )
-                    }
-                    // Controlla in anticipo gli articoli più recenti: in lista finiscono solo quelli leggibili.
-                    launch {
-                        ArticleVerifier.verify(result.items.take(MAX_VERIFIED).map { it.link }, WebPageRenderer::cookiesFor)
-                    }
-                }
+                .onSuccess { _state.update { it.copy(loading = false, refreshing = false) } }
                 .onFailure { e ->
                     _state.update {
                         it.copy(loading = false, refreshing = false, error = e.userMessage("Errore di rete."))

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.104.0
+**Più veloce all'apertura**
+- News e Oggi: le ultime notizie restano salvate sul telefono e si vedono subito appena apri l'app, mentre arrivano quelle nuove. Al primo avvio compaiono fonte per fonte, senza aspettare il sito più lento
+- News: gli articoli già controllati (leggibili o a pagamento) si ricordano per tre giorni, quindi la lista non riparte da "Preparo gli articoli…" a ogni apertura; quelli nuovi si controllano 6 alla volta invece di 4
+- YouTube (Home, Iscrizioni, Cronologia, Playlist, Mi piace, Guarda più tardi) e Spotify (Per te, Playlist, Libreria) mostrano subito l'ultimo feed salvato e si aggiornano in sottofondo. Scollegando l'account i dati salvati si cancellano
+- Spotify: le parti di "Per te" e della Libreria si scaricano tutte insieme, non una dopo l'altra
+
+**Più stabile**
+- Un sito di notizie lento o irraggiungibile non blocca più le altre per decine di secondi (tempi di attesa più brevi, niente secondo tentativo inutile quando manca la rete)
+- L'avvio non programma più i lavori in background sul thread principale: il primo schermo arriva prima
+
+**Sotto il cofano**
+- Test nuovi: OfflineCacheTest. La verifica dal vivo misura i tempi delle notizie (sul server di prova: prime dopo 0,3 s, tutte dopo 1,2 s)
+
 ## 1.103.0
 **News**
 - Niente più riquadri grigi: la prima notizia senza foto (o con la foto che non si carica) diventa una card solo testo, e le miniature che non arrivano spariscono invece di lasciare un quadrato vuoto. Loghi e immagini segnaposto dei feed non si mostrano più come foto
