@@ -1,12 +1,16 @@
 package com.platinum20.dashboard.ui.screens
 
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
+import androidx.core.app.ActivityCompat
 import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,33 +28,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Movie
-import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -132,9 +133,21 @@ fun VideoPlayerScreen(
     // Video del telefono: si leggono solo dopo il tocco su "Mostra i video del telefono".
     var phoneAllowed by remember { mutableStateOf(PhoneVideos.hasPermission(context)) }
     var phoneVideos by remember { mutableStateOf<List<PhoneVideo>?>(null) }
-    val phonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { phoneAllowed = it }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { phoneAllowed = PhoneVideos.hasPermission(context) }
-    LaunchedEffect(phoneAllowed) { phoneVideos = if (phoneAllowed) PhoneVideos.load(context) else null }
+    // Dopo due "Non consentire" Android non chiede più: la card allora porta alle impostazioni dell'app.
+    var phoneInvite by remember { mutableStateOf(PhoneVideos.Invite.ASK) }
+    val phonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        phoneAllowed = granted
+        val activity = context.findActivity()
+        val rationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, PhoneVideos.permission)
+        phoneInvite = PhoneVideos.invite(deniedOnce = !granted, rationale = rationale)
+    }
+    // A ogni ritorno nella pagina si rileggono i video: quelli appena registrati compaiono subito.
+    var resumes by remember { mutableIntStateOf(0) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        phoneAllowed = PhoneVideos.hasPermission(context)
+        resumes++
+    }
+    LaunchedEffect(phoneAllowed, resumes) { phoneVideos = if (phoneAllowed) PhoneVideos.load(context) else null }
     val phoneShown = remember(phoneVideos, recent) { PhoneVideos.forLibrary(phoneVideos.orEmpty(), recent) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -200,19 +213,10 @@ fun VideoPlayerScreen(
     Scaffold(
         topBar = {
             if (!immersive) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            current?.title ?: "Video",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                        }
-                    },
+                TopLevelBar(
+                    title = current?.title ?: "Video",
+                    subtitle = if (current != null) "Video" else "File, link e video del telefono",
+                    onBack = onBack,
                 )
             }
         },
@@ -259,9 +263,7 @@ fun VideoPlayerScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    if (current == null) {
-                        item { EmptyPlayer() }
-                    } else {
+                    if (current != null) {
                         item {
                             PlayerOptions(
                                 speed = speed,
@@ -276,39 +278,16 @@ fun VideoPlayerScreen(
                             )
                         }
                     }
+                    // Un solo posto per aprire qualcosa: un file (anche audio) o un link.
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            FilledTonalButton(
-                                onClick = { picker.launch(arrayOf("video/*", "audio/*")) },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(Icons.Outlined.PhoneAndroid, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Dal telefono")
-                            }
-                            OutlinedButton(
-                                onClick = { showLinkDialog = true },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(Icons.Outlined.Link, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Da un link")
-                            }
-                        }
+                        OpenSources(
+                            onPickFile = { picker.launch(arrayOf("video/*", "audio/*")) },
+                            onOpenLink = { showLinkDialog = true },
+                        )
                     }
                     if (recent.isNotEmpty()) {
                         item {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "Recenti",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 4.dp),
-                                )
-                                TextButton(onClick = { VideoLibrary.clear() }) { Text("Svuota") }
-                            }
+                            SectionHeader("Recenti", modifier = Modifier.padding(top = 4.dp), action = "Svuota", onAction = { VideoLibrary.clear() })
                         }
                         items(recent, key = { it.uri }) { entry ->
                             RecentVideo(
@@ -323,7 +302,19 @@ fun VideoPlayerScreen(
                     item { SectionHeader("Sul telefono", modifier = Modifier.padding(top = 4.dp)) }
                     when {
                         !phoneAllowed -> item {
-                            PhoneVideosInvite(onClick = { phonePermission.launch(PhoneVideos.permission) })
+                            PhoneVideosInvite(
+                                denied = phoneInvite == PhoneVideos.Invite.OPEN_SETTINGS,
+                                onClick = {
+                                    if (phoneInvite == PhoneVideos.Invite.OPEN_SETTINGS) {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                        )
+                                    } else {
+                                        phonePermission.launch(PhoneVideos.permission)
+                                    }
+                                },
+                            )
                         }
                         phoneVideos != null && phoneShown.isEmpty() -> item {
                             Text(
@@ -403,48 +394,47 @@ private fun PlayerOptions(
     }
 }
 
+/** Le due strade per aprire un video che non è nella lista: un file scelto a mano o un link. */
 @Composable
-private fun EmptyPlayer() {
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
-        modifier = Modifier.fillMaxWidth(),
+private fun OpenSources(onPickFile: () -> Unit, onOpenLink: () -> Unit) {
+    CanvasCard(Modifier.fillMaxWidth()) {
+        OpenSourceRow(Icons.Outlined.FolderOpen, TileAccent.BLUE, "Scegli un file", "Video o musica, anche dalle cartelle", onPickFile)
+        RowDivider()
+        OpenSourceRow(Icons.Outlined.Link, TileAccent.ORANGE, "Apri un link", "mp4, streaming; YouTube va nel suo player", onOpenLink)
+    }
+}
+
+@Composable
+private fun OpenSourceRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(
-                Icons.Outlined.PlayCircle,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp),
-            )
-            Spacer(Modifier.height(12.dp))
-            Text("Scegli cosa guardare", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Video e musica del telefono, oppure un link: mp4, webm, streaming m3u8. " +
-                    "I link di YouTube si aprono nel player YouTube senza pubblicità.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
 /** Invito a mostrare i video del telefono: il permesso si chiede solo da qui. */
 @Composable
-private fun PhoneVideosInvite(onClick: () -> Unit) {
+private fun PhoneVideosInvite(denied: Boolean, onClick: () -> Unit) {
     CanvasCard(Modifier.fillMaxWidth(), onClick = onClick) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconTile(Icons.Outlined.VideoLibrary, TileAccent.PURPLE)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("Mostra i video del telefono", style = MaterialTheme.typography.titleSmall)
+                Text(if (denied) "Permesso negato" else "Mostra i video del telefono", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Registrazioni e download, a portata di tocco. Restano sul telefono.",
+                    if (denied) "Tocca per aprire le impostazioni di Canvas e consentire i video."
+                    else "Registrazioni e download, a portata di tocco. Restano sul telefono.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

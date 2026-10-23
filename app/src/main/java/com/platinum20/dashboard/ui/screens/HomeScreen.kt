@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,14 +26,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Euro
 import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Umbrella
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -47,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,7 +57,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -71,13 +65,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.Tomorrow
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
@@ -96,6 +90,7 @@ import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import androidx.compose.animation.animateContentSize
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -118,8 +113,6 @@ fun HomeScreen(
     onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
-    onOpenVideo: () -> Unit,
-    onOpenService: (MediaService) -> Unit,
     onCustomize: () -> Unit,
     onOpenAutoFill: () -> Unit = {},
 ) {
@@ -175,19 +168,37 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos) {
         Resume.forAdesso(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis())
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume) {
-        Briefing.build(
-            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, resume = resume,
-        )
-    }
     // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
     val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Tomorrow.build(
             minute, weather.forecast,
             events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
             tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
+        )
+    }
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume, tomorrowPlan) {
+        Briefing.build(
+            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            fixedExpenses = notes.fixedExpenses, resume = resume, tomorrowCard = tomorrowPlan != null,
+        )
+    }
+    // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
+    val haptic = rememberHaptic()
+    var briefUndo by remember { mutableStateOf<BriefUndo?>(null) }
+    LaunchedEffect(briefUndo) {
+        if (briefUndo != null) {
+            delay(5_000)
+            briefUndo = null
+        }
+    }
+    var habitIds by remember { mutableStateOf<List<Long>?>(null) }
+    habitIds?.let { ids ->
+        HabitsTodayDialog(
+            habits = notes.habits.filter { it.id in ids },
+            today = minute.toLocalDate(),
+            onToggle = { haptic(Haptic.CONFIRM); NotesStore.toggleHabit(it.id, minute.toLocalDate()) },
+            onDismiss = { habitIds = null },
         )
     }
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
@@ -226,6 +237,17 @@ fun HomeScreen(
                 onRetry = { WeatherStore.refresh(context, force = true) },
                 onClick = onOpenWeather,
                 briefing = briefing,
+                onBriefAction = { line ->
+                    haptic(Haptic.CONFIRM)
+                    if (line.action == BriefAction.HABITS) habitIds = line.targetIds
+                    else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
+                },
+                undo = briefUndo,
+                onUndo = {
+                    haptic(Haptic.TICK)
+                    briefUndo?.undo?.invoke()
+                    briefUndo = null
+                },
                 onOpenBrief = { kind ->
                     when (kind) {
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
@@ -237,7 +259,7 @@ fun HomeScreen(
                 },
             )
             HomeCard.CALENDAR -> CalendarCard(agenda)
-            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes)
+            HomeCard.TASKS -> TasksCard(onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
             HomeCard.COUNTDOWN -> CountdownCard()
             HomeCard.RECAP -> RecapCard(
                 state = recap,
@@ -247,12 +269,6 @@ fun HomeScreen(
                     onOpenArticle(it.headline)
                 },
                 onOpenAll = onOpenRecap,
-            )
-            HomeCard.MODULES -> Shortcuts(
-                onOpenWeather = onOpenWeather,
-                onOpenRecap = onOpenRecap,
-                onOpenVideo = onOpenVideo,
-                onOpenService = onOpenService,
             )
         }
     }
@@ -376,6 +392,9 @@ private fun WeatherCard(
     onRetry: () -> Unit,
     onClick: () -> Unit,
     briefing: List<BriefLine>,
+    onBriefAction: (BriefLine) -> Unit,
+    undo: BriefUndo?,
+    onUndo: () -> Unit,
     onOpenBrief: (BriefKind) -> Unit,
 ) {
     val forecast = state.forecast
@@ -390,9 +409,27 @@ private fun WeatherCard(
         ),
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
-        if (briefing.isNotEmpty()) {
-            Column(Modifier.padding(bottom = 10.dp)) {
-                briefing.forEach { line -> BriefRow(line) { onOpenBrief(line.kind) } }
+        if (briefing.isNotEmpty() || undo != null) {
+            Column(Modifier.padding(bottom = 10.dp).animateContentSize()) {
+                briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
+                undo?.let { u ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            u.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = LocalContentColor.current.copy(alpha = 0.8f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onUndo, modifier = Modifier.bouncyPress()) {
+                            Text("Annulla", color = LocalContentColor.current)
+                        }
+                    }
+                }
             }
         }
     }
@@ -419,13 +456,13 @@ internal object Urgent {
 
 /** Una riga di "Adesso": icona, testo, in evidenza se è urgente. */
 @Composable
-private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
+private fun BriefRow(line: BriefLine, onAction: () -> Unit, onClick: () -> Unit) {
     val icon = when (line.kind) {
         BriefKind.EVENT -> Icons.Outlined.Event
         BriefKind.RAIN -> Icons.Outlined.Umbrella
         BriefKind.TASK -> Icons.Outlined.TaskAlt
         BriefKind.DATE -> Icons.Outlined.Celebration
-        BriefKind.WEATHER -> Icons.Outlined.WbSunny
+        BriefKind.WEATHER -> line.weatherCode?.let { weatherIcon(it) } ?: Icons.Outlined.WbSunny
         BriefKind.HABIT -> Icons.Outlined.Autorenew
         BriefKind.PARCEL -> Icons.Outlined.LocalShipping
         BriefKind.MONEY -> Icons.Outlined.Euro
@@ -440,7 +477,7 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
             .fillMaxWidth()
             .then(if (line.kind != BriefKind.FREE) Modifier.bouncyPress(0.98f) else Modifier)
             .clickable(enabled = line.kind != BriefKind.FREE, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 5.dp),
+            .padding(start = 18.dp, end = if (line.action != null) 12.dp else 18.dp, top = 5.dp, bottom = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(17.dp))
@@ -451,7 +488,12 @@ private fun BriefRow(line: BriefLine, onClick: () -> Unit) {
             color = if (line.urgent) content else content.copy(alpha = 0.8f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
+        line.action?.let { action ->
+            Spacer(Modifier.size(8.dp))
+            BriefActionButton(action, onClick = onAction)
+        }
     }
 }
 
@@ -614,53 +656,5 @@ private fun CardMessage(
         }
         Spacer(Modifier.size(8.dp))
         FilledTonalButton(onClick = onAction) { Text(action) }
-    }
-}
-
-/** Scorciatoie a ciò che non sta nella barra in basso: dettaglio meteo, punto del giorno e player. */
-@Composable
-private fun Shortcuts(
-    onOpenWeather: () -> Unit,
-    onOpenRecap: () -> Unit,
-    onOpenVideo: () -> Unit,
-    onOpenService: (MediaService) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ShortcutTile(Icons.Outlined.WbSunny, "Meteo", onOpenWeather)
-        ShortcutTile(Icons.Outlined.AutoAwesome, "Il punto", onOpenRecap)
-        ShortcutTile(Icons.Outlined.PlayCircle, "Video", onOpenVideo)
-        ShortcutTile(Icons.Outlined.OndemandVideo, "YouTube") { onOpenService(MediaService.YOUTUBE) }
-        ShortcutTile(Icons.Outlined.GraphicEq, "Spotify") { onOpenService(MediaService.SPOTIFY) }
-    }
-}
-
-@Composable
-private fun RowScope.ShortcutTile(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .bouncyPress(0.9f)
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(22.dp))
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
-        )
     }
 }

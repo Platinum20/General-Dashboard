@@ -86,15 +86,16 @@ class AgendaState(
     val tomorrow: List<CalendarEvent>?,
     val requestPermission: () -> Unit,
 ) {
-    /** La sera, finiti gli impegni di oggi, l'agenda mostra domani. */
-    fun showsTomorrow(now: LocalDateTime = LocalDateTime.now()): Boolean {
-        if (now.hour < Briefing.EVENING_HOUR) return false
-        val nowMs = System.currentTimeMillis()
-        return today.orEmpty().none { it.allDay || it.end > nowMs } && !tomorrow.isNullOrEmpty()
+    /**
+     * Gli impegni di oggi; vuoto se non c'è niente da dire. La sera, finiti tutti, l'agenda sparisce:
+     * domani lo racconta la card "Domani", non serve una seconda lista.
+     */
+    fun shown(now: LocalDateTime = LocalDateTime.now()): List<CalendarEvent> {
+        val list = today.orEmpty()
+        if (now.hour < Briefing.EVENING_HOUR) return list
+        val nowMs = now.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        return if (list.none { it.allDay || it.end > nowMs }) emptyList() else list
     }
-
-    /** Gli impegni da mostrare ora; vuoto se non c'è niente da dire. */
-    fun shown(): List<CalendarEvent> = if (showsTomorrow()) tomorrow.orEmpty() else today.orEmpty()
 
     /** Con il permesso e nessun impegno la card sparisce: non serve leggere "nessun impegno". */
     val hasContent: Boolean get() = !granted || shown().isNotEmpty()
@@ -137,16 +138,15 @@ fun CalendarCard(agenda: AgendaState) {
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
     val granted = agenda.granted
-    val tomorrow = agenda.showsTomorrow()
     val events = if (granted && agenda.today != null) agenda.shown() else null
 
     Section(
-        title = if (tomorrow) "Domani" else "Agenda",
+        title = "Agenda",
         action = if (granted) "Calendario" else null,
         onAction = { inApp?.openCalendar?.invoke() },
         trailing = {
             if (granted) {
-                IconButton(onClick = { inApp?.newEvent?.invoke(if (tomorrow) LocalDate.now().plusDays(1) else LocalDate.now()) }, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = { inApp?.newEvent?.invoke(LocalDate.now()) }, modifier = Modifier.size(36.dp)) {
                     Icon(Icons.Outlined.Add, contentDescription = "Nuovo evento", modifier = Modifier.size(20.dp))
                 }
             }
@@ -238,14 +238,14 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun TasksCard(onOpenNotes: () -> Unit) {
+fun TasksCard(onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
     val haptic = rememberHaptic()
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
     // Solo quello che conta adesso: il resto è a un tocco, in Note.
-    val today = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
+    val today = remember(open, tomorrowCard) { TodayTaskPicker.pick(open, LocalDateTime.now(), tomorrowCard = tomorrowCard) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
     LaunchedEffect(lastDone) {

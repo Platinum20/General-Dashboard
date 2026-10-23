@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.99.0
+## 1.104.0
 **Più veloce all'apertura**
 - News e Oggi: le ultime notizie restano salvate sul telefono e si vedono subito appena apri l'app, mentre arrivano quelle nuove. Al primo avvio compaiono fonte per fonte, senza aspettare il sito più lento
 - News: gli articoli già controllati (leggibili o a pagamento) si ricordano per tre giorni, quindi la lista non riparte da "Preparo gli articoli…" a ogni apertura; quelli nuovi si controllano 6 alla volta invece di 4
@@ -13,6 +13,90 @@
 
 **Sotto il cofano**
 - Test nuovi: OfflineCacheTest. La verifica dal vivo misura i tempi delle notizie (sul server di prova: prime dopo 0,3 s, tutte dopo 1,2 s)
+
+## 1.103.0
+**News**
+- Niente più riquadri grigi: la prima notizia senza foto (o con la foto che non si carica) diventa una card solo testo, e le miniature che non arrivano spariscono invece di lasciare un quadrato vuoto. Loghi e immagini segnaposto dei feed non si mostrano più come foto
+- La fonte che non risponde non è più una riga in cima a tutto: c'è un chip discreto in coda ai filtri ("1 fonte non risponde"), toccandolo si leggono i nomi
+
+**Note › Pacchi**
+- Con pochi pacchi, sotto la lista c'è "Per aggiungerne": "Incolla un codice di tracciamento" prende il codice dagli appunti (anche da una mail copiata intera) e apre il pacco già compilato col corriere riconosciuto; "Prendili dalle notifiche" porta a Compila da solo se è spento; e come condividere la mail di spedizione verso Canvas
+
+**Media**
+- Al primo uso, quando non c'è niente da riprendere, "Per iniziare" propone quattro radio popolari da far partire con un tocco (mai una che hai già tra recenti o preferite), con "Tutte le radio" per vederne altre
+
+**Widget**
+- Riga del meteo e numero di notizie calcolati a parte e coperti da test
+
+**Sotto il cofano**
+- Il giro fotografico ora fallisce ed elenca le schermate attese che non trova (prima le saltava in silenzio), scorre la lista fino alle voci fuori schermo (Compila da solo, Aggiornamenti), aspetta il punto del giorno anche al buio e fotografa anche i dialoghi, così la foto del + della barra non è più uguale a quella di Oggi
+- Test nuovi: NewsLayoutTest, ParcelHintsTest, MediaStartersTest, WidgetRowsTest
+## 1.102.0
+Revisione dei doppioni: ogni cosa compare in un posto solo.
+
+**Oggi**
+- L'Agenda non si trasforma più in "Domani" la sera: finiti gli impegni di oggi sparisce, perché domani c'è già la sua card
+- Tolta la card "Scorciatoie": ripeteva la barra in basso, il Meteo (si apre toccando Adesso) e "Il punto del giorno" (Tutti)
+
+**Media**
+- Video: al posto del pulsante "Dal telefono", del pulsante "Da un link" e della grande card "Scegli cosa guardare" c'è una sola card con "Scegli un file" e "Apri un link"; "Recenti" ha l'etichetta come le altre sezioni, e la pagina ha l'intestazione grande come Meteo e YouTube
+- Spotify: la pagina di accesso non mostra più il campo "Client ID" da sviluppatore; il collegamento ufficiale è un pulsante discreto, come in YouTube. Intestazione grande come le altre pagine
+- Radio: intestazione grande come le altre pagine
+
+**Sotto il cofano**
+- Tolto il vecchio player web di YouTube e Spotify (la pagina del sito in un riquadro, la sua bolla e l'avvio automatico): non era più raggiungibile da nessuna parte, YouTube suona solo nel player di Canvas e Spotify nel suo riproduttore nascosto
+
+## 1.101.0
+**Media › Podcast (nuovo)**
+- Quinta fonte in Media: cerchi un podcast (ricerca gratuita di iTunes, senza account), lo apri e vedi gli episodi con data, durata e una riga di descrizione, tutto dentro l'app
+- "Segui": i podcast che segui stanno in cima alla pagina e sotto ci sono i loro ultimi episodi tutti insieme, dal più nuovo
+- Un tocco su un episodio lo fa suonare nello stesso player della radio (notifica, schermata di blocco, cuffie), con 10 secondi indietro, 30 avanti e la barra del tempo
+- Ogni episodio riparte dal punto in cui eri, anche dopo aver chiuso l'app; nella lista si vede "restano 12 min" con la barra, e "ascoltato" quando l'hai finito
+- Al primo uso la pagina non è vuota: ricerche pronte ("Il Post", "Muschio Selvaggio", "Geopop"…)
+- Radio e podcast si passano il player senza interrompersi a vicenda per sbaglio
+
+**Media › Radio**
+- Sveglia con la radio: nella pagina Radio scegli ora, giorni (lun-ven o tutti) e la stazione, e la mattina parte da sola anche ad app chiusa. Comincia piano e sale in 30 secondi; se dopo 20 secondi la radio non suona (niente rete) parte la sveglia del telefono, mai una sveglia muta
+- La notifica della sveglia ha "Ferma" e "Ancora 10 min"; la sveglia si vede nella barra di stato come le altre e resta programmata anche dopo il riavvio del telefono
+
+**News › Il punto del giorno**
+- "Ascolta" (icona delle cuffie in alto): la voce italiana del telefono legge il punto come un notiziario breve, un'apertura con l'ora e poi una frase per tema, senza indirizzi né simboli. La card "In ascolto" dice a che tema sei, con Successivo e Ferma
+- Se sul telefono manca la voce italiana, un messaggio dice dove aggiungerla invece di non fare nulla; la voce si ferma da sola quando parte musica, radio, un podcast o un video
+
+**Note › Promemoria**
+- "Ogni mese" il 31 non scivola più al 28 per sempre dopo febbraio: torna al 31 (o all'ultimo giorno del mese); "ogni anno" il 29 febbraio torna al 29 negli anni bisestili
+
+**Widget**
+- La riga dei promemoria indica il primo in ordine di orario
+
+**Sotto il cofano**
+- Test nuovi: PodcastFeedTest (due feed RSS e una risposta di iTunes salvati nei test: durate "1:02:03", "62:03" e secondi, date con fusi diversi, descrizioni HTML, episodi senza audio, doppioni), RecapReaderTest, RadioAlarmTest (anche il cambio dell'ora legale), RepeatEndOfMonthTest, WidgetLinesTest
+- Giro fotografico: nuove foto di Radio e Podcast
+## 1.98.0
+**Oggi › Adesso**
+- Azioni rapide: accanto alle righe di Adesso c'è un bottoncino tondo. "Scaduto: Bolletta" si segna fatto, "Pacco in arrivo: Cuffie" si segna arrivato, un'abitudine che manca si spunta, e con più abitudini si apre l'elenco da spuntare. Tutto senza aprire Note, con la vibrazione e "Annulla" per qualche secondo
+- Un promemoria scaduto da solo dice cos'è ("Scaduto: Bolletta") invece di "1 promemoria scaduto"
+- Le abitudini con nomi lunghi diventano "Ancora da fare: 2 abitudini" invece di un nome tagliato a metà
+- La sera, quando sotto c'è la card Domani, Adesso non ripete più meteo, impegni, date, pacchi e addebiti di domani; e la riga meteo di domani ha l'icona del tempo previsto (pioggia se piove), non sempre il sole
+
+**Oggi › Domani e Da fare**
+- La frase in cima alla card Domani compare anche senza calendario, con il primo promemoria che ha un orario ("Domani 9:00 Chiamare il commercialista")
+- Dopo mezzanotte la card si chiama "Oggi · venerdì 23" e la frase non dice più "Domani" per il giorno già iniziato
+- Da fare non ripete i promemoria di domani quando la card Domani è visibile
+
+**Note › Abitudini**
+- Con poche abitudini compaiono delle idee da aggiungere (Leggere 20 minuti, Palestra 3 volte a settimana, Niente telefono a letto) che aprono il dialogo già compilato: la pagina non resta mezza vuota
+
+**Media**
+- YouTube › Cronologia: "Svuota" chiede conferma, si può annullare e toglie anche i video da Riprendi in Media
+- YouTube: cambiando video mentre suona, quello di prima resta in Riprendi al punto in cui eri; il punto si salva anche ogni 30 secondi e quando chiudi il player
+- Video › Sul telefono: dopo un rifiuto definitivo del permesso la card dice "Permesso negato" e apre le impostazioni di Canvas, invece di non fare nulla; i video appena registrati compaiono tornando nella pagina
+
+**Meteo**
+- L'ultimo dettaglio da solo (Alba · Tramonto) prende tutta la riga, senza il buco accanto
+
+**Sotto il cofano**
+- Test nuovi: YtHistoryTest, HabitIdeasTest, più casi in BriefingTest (azioni rapide, sera con la card Domani, testo delle abitudini), TomorrowTest, TodayTasksTest, PhoneVideosTest e YtPlayerStateTest
 
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore

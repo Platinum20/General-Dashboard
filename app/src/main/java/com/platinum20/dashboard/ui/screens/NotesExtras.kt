@@ -1,6 +1,15 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.Routes
+import android.content.ClipboardManager
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.autofill.AutoFill
+import com.platinum20.dashboard.notes.ParcelHint
+import com.platinum20.dashboard.notes.ParcelHints
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -438,6 +447,9 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
     val incoming = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
     val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
     val haptic = rememberHaptic()
+    val context = LocalContext.current
+    val autoFillOn by AutoFill.enabled.collectAsStateWithLifecycle()
+    var pastedCode by remember { mutableStateOf<String?>(null) }
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(incoming + delivered, key = { it.id }) { parcel ->
@@ -481,22 +493,65 @@ fun ParcelsTab(parcels: List<Parcel>, padding: PaddingValues, onDeleted: (Parcel
         }
         if (parcels.isEmpty()) {
             item {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.LocalShipping, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Nessun pacco in arrivo. Aggiungilo con + (o condividi la mail di spedizione verso \"Salva in Canvas\"): " +
-                                "il giorno della consegna compare in Oggi e il tracciamento si apre con un tocco.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                Text(
+                    "Nessun pacco in arrivo. Il giorno della consegna compare in Oggi e il tracciamento si apre con un tocco.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                )
+            }
+        }
+        // Con pochi pacchi, sotto la lista i modi per aggiungerne: la scheda non resta mezza vuota.
+        val hints = ParcelHints.suggest(incoming.size, autoFillOn)
+        if (hints.isNotEmpty()) {
+            item {
+                Column(Modifier.padding(top = 8.dp)) {
+                    SectionHeader("Per aggiungerne")
+                    Spacer(Modifier.height(4.dp))
+                    CanvasCard(Modifier.fillMaxWidth()) {
+                        hints.forEachIndexed { i, hint ->
+                            if (i > 0) RowDivider()
+                            val onClick: (() -> Unit)? = when (hint) {
+                                ParcelHint.PASTE -> ({
+                                    val clip = runCatching {
+                                        context.getSystemService(ClipboardManager::class.java)
+                                            ?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()
+                                    }.getOrNull()
+                                    pastedCode = ParcelHints.codeFrom(clip)
+                                })
+                                ParcelHint.AUTOFILL -> ({ inApp?.openRoute(Routes.AUTOFILL) })
+                                ParcelHint.SHARE -> null
+                            }
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    when (hint) {
+                                        ParcelHint.PASTE -> Icons.Outlined.ContentPaste
+                                        ParcelHint.AUTOFILL -> Icons.Outlined.AutoAwesome
+                                        ParcelHint.SHARE -> Icons.Outlined.Share
+                                    },
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(Modifier.size(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(hint.title, style = MaterialTheme.typography.bodyLarge)
+                                    Text(hint.subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
     editing?.let { ParcelDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
+    pastedCode?.let { ParcelDialog(null, onDismiss = { pastedCode = null }, initialCode = it) }
 }
 
 private fun dueDay(date: LocalDate, today: LocalDate): String = when (ChronoUnit.DAYS.between(today, date)) {

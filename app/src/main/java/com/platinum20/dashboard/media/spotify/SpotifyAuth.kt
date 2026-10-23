@@ -73,12 +73,6 @@ object SpotifyAuth {
         _connected.value = prefs.getString(KEY_REFRESH, null) != null
     }
 
-    fun setClientId(id: String) {
-        val clean = id.trim()
-        _clientId.value = clean
-        prefs.edit().putString(KEY_CLIENT_ID, clean).apply()
-    }
-
     /** Indirizzo del login di Spotify, da aprire dentro l'app (nessun browser esterno). */
     fun loginUrl(): Uri {
         _error.value = null

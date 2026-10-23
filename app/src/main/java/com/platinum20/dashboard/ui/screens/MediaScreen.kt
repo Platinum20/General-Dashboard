@@ -50,6 +50,11 @@ import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.radio.RadioStation
+import com.platinum20.dashboard.media.MediaStarters
+import androidx.compose.runtime.LaunchedEffect
+import com.platinum20.dashboard.media.podcast.PodcastStore
+import androidx.compose.material.icons.outlined.Mic
 import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.Track
 import androidx.compose.foundation.background
@@ -100,6 +105,7 @@ fun MediaScreen(
     onOpenVideo: () -> Unit,
     onOpenService: (MediaService) -> Unit,
     onOpenRadio: () -> Unit,
+    onOpenPodcast: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -113,6 +119,9 @@ fun MediaScreen(
     val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
     val radio by RadioStore.now.collectAsState()
+    PodcastStore.init(context)
+    val podcast by PodcastStore.now.collectAsState()
+    val followedPodcasts by PodcastStore.followed.collectAsState()
     val youTubeNow by YtPlayer.now.collectAsState()
     MediaHistory.init(context)
     VideoLibrary.init(context)
@@ -122,8 +131,15 @@ fun MediaScreen(
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
     // Quando nulla suona, la prima cosa è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && youTubeNow == null }
+    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && podcast == null && youTubeNow == null }
     val recents = resumable.filter { it != hero }.take(4)
+    // Al primo uso (niente da riprendere) qualche radio da far partire subito.
+    val firstUse = hero == null && recents.isEmpty() && tracks.isEmpty() && radio == null && podcast == null
+    val popular by RadioStore.popular.collectAsState()
+    val recentStations by RadioStore.recent.collectAsState()
+    val favoriteStations by RadioStore.favorites.collectAsState()
+    val starters = if (firstUse) MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) else emptyList()
+    LaunchedEffect(firstUse) { if (firstUse) RadioStore.loadPopular() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -136,6 +152,7 @@ fun MediaScreen(
                 subtitle = when {
                     tracks.values.any { it.playing } -> "In riproduzione"
                     radio != null -> "In ascolto: ${radio?.station?.name}"
+                    podcast != null -> "In ascolto: ${podcast?.episode?.podcastTitle}"
                     tracks.isNotEmpty() -> "Riprendi da dove eri"
                     else -> "Video, musica e radio"
                 },
@@ -168,7 +185,7 @@ fun MediaScreen(
             hero?.let { last ->
                 item(key = "resume") { ResumeCard(last, onClick = { openResume(last) }) }
             }
-            // Le quattro fonti in una griglia 2×2: il colore dell'icona le distingue a colpo d'occhio.
+            // Le fonti in una griglia 2×2 più il podcast in largo: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "grid") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -185,8 +202,6 @@ fun MediaScreen(
                             title = MediaService.YOUTUBE.label,
                             subtitle = if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega l'account per il feed",
                             onClick = { onOpenService(MediaService.YOUTUBE) },
-                            playing = MediaService.YOUTUBE in open,
-                            onStop = { MediaWebViews.release(MediaService.YOUTUBE) },
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -209,6 +224,19 @@ fun MediaScreen(
                             onStop = { RadioStore.stop() },
                         )
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MediaTile(
+                            icon = Icons.Outlined.Mic,
+                            accent = TileAccent.BLUE,
+                            title = "Podcast",
+                            subtitle = podcast?.let { "In ascolto: ${it.episode.title}" }
+                                ?: if (followedPodcasts.isEmpty()) "Cerca, segui e riprendi da dove eri"
+                                else "Nuovi episodi da ${followedPodcasts.size} podcast",
+                            onClick = onOpenPodcast,
+                            playing = podcast != null,
+                            onStop = { PodcastStore.stop() },
+                        )
+                    }
                 }
             }
             if (recents.isNotEmpty()) {
@@ -217,6 +245,16 @@ fun MediaScreen(
                         recents.forEachIndexed { index, recent ->
                             if (index > 0) RowDivider()
                             ResumeRow(recent, onClick = { openResume(recent) })
+                        }
+                    }
+                }
+            }
+            if (starters.isNotEmpty()) {
+                item(key = "starters") {
+                    Section("Per iniziare", action = "Tutte le radio", onAction = onOpenRadio) {
+                        starters.forEachIndexed { index, station ->
+                            if (index > 0) RowDivider()
+                            StarterRow(station, onClick = { RadioStore.play(station) })
                         }
                     }
                 }
@@ -367,6 +405,33 @@ private fun ResumeRow(item: ResumeItem, onClick: () -> Unit) {
             )
         }
         Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** Una radio di "Per iniziare": logo, nome e genere, un tocco la fa partire. */
+@Composable
+private fun StarterRow(station: RadioStation, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StationLogo(station, 40)
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(station.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                station.tags.split(',').map { it.trim() }.filter { it.isNotBlank() }.take(2).joinToString(" · ").ifBlank { "Radio" },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(Icons.Filled.PlayArrow, contentDescription = "Ascolta ${station.name}", tint = MaterialTheme.colorScheme.primary)
     }
 }
 
