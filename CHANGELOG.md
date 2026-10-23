@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.112.0
+**Note, una pagina sola**
+- Niente più schede: promemoria, abitudini, date, pacchi, note e spese stanno in una lista, in ordine di quando contano (Scaduti, Oggi, Abitudini, In arrivo, Prossimi giorni, Senza scadenza, Note, Spese)
+- In cima un campo solo: scrivi e Canvas capisce cos'è ("12,50 pizza" è una spesa, "ogni giorno leggere" un'abitudine, "compleanno di Marta 12 marzo" una data, un codice di tracciamento un pacco, un testo lungo una nota). Se sbaglia, tocchi la pillola del tipo giusto prima di salvare
+- "In arrivo": date e pacchi mescolati dal più vicino; i consegnati in fondo
+- Note: si vedono le fissate e le ultime quattro, "Tutte" per il resto. Spese: il totale del mese e il budget, "Dettagli" apre mese, categorie e spese fisse
+- Il + della barra (e la dettatura) conosce anche Abitudine e Data; "palestra 3 volte a settimana alle 19" diventa un'abitudine con l'avviso alle 19
+
+**Sotto il cofano**
+- CaptureSave: un solo salvataggio per il + e per il campo delle Note. Test nuovi: CaptureSaveTest, CaptureGuessTest (abitudini e date), NotesUiLogicTest (ordine di In arrivo)
+
+## 1.111.0
+**Il + a voce, come i vocali di WhatsApp**
+- Tieni premuto il +: diventa un microfono che si ingrandisce e pulsa con la voce, e sopra la barra compare quello che stai dicendo. Rilasci e si apre il dialogo con il testo e il tipo già riconosciuto (spesa, pacco, evento, nota o promemoria)
+- Niente più finestra di Google: il riconoscimento del telefono lavora nascosto. La prima volta Canvas chiede il permesso del microfono
+
 ## 1.110.0
 **Media, rifatta da capo**
 - Tre sezioni: **Musica**, **Video** e **Radio e podcast**. In alto il blocco colorato con quello che suona adesso (qualunque fonte) o da dove riprendere; sotto "Continua" con le anteprime, i nuovi episodi e le tue radio da far partire con un tocco
