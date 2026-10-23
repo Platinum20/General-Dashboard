@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.113.0
+**Il + decide da solo**
+- Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
+- Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
+
+**Microfono bloccabile, come WhatsApp**
+- Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
+
 ## 1.112.0
 **Note, una pagina sola**
 - Niente più schede: promemoria, abitudini, date, pacchi, note e spese stanno in una lista, in ordine di quando contano (Scaduti, Oggi, Abitudini, In arrivo, Prossimi giorni, Senza scadenza, Note, Spese)

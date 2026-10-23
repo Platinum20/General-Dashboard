@@ -1,5 +1,20 @@
 package com.platinum20.dashboard
 
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.rememberCoroutineScope
+import com.platinum20.dashboard.capture.VoiceCapture
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.offset
+import kotlin.math.roundToInt
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -371,6 +386,10 @@ private fun CanvasNavBar(
     /** Dito tenuto sul +: true se la dettatura è partita. */
     onHoldStart: () -> Boolean,
     onHoldEnd: () -> Unit,
+    /** Trascinato verso l'alto: la dettatura resta accesa senza dito. */
+    locked: Boolean,
+    onLock: () -> Unit,
+    onCancelDictation: () -> Unit,
 ) {
     val haptic = rememberHaptic()
     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
@@ -384,7 +403,7 @@ private fun CanvasNavBar(
             },
         contentAlignment = Alignment.BottomEnd,
     ) {
-        DictationBubble(listening, partial)
+        DictationBubble(listening, partial, locked, onCancelDictation)
     }
     Row(
         modifier = Modifier
@@ -424,6 +443,11 @@ private fun CanvasNavBar(
         val tap by rememberUpdatedState(onPlus)
         val holdStart by rememberUpdatedState(onHoldStart)
         val holdEnd by rememberUpdatedState(onHoldEnd)
+        val isLocked by rememberUpdatedState(locked)
+        val lock by rememberUpdatedState(onLock)
+        // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
+        var drag by remember { mutableFloatStateOf(0f) }
+        val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -447,21 +471,39 @@ private fun CanvasNavBar(
                     }
                     .pointerInput(Unit) {
                         awaitEachGesture {
-                            awaitFirstDown()
+                            val down = awaitFirstDown()
                             var lifted = false
                             val up = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                                 waitForUpOrCancellation().also { lifted = true }
                             }
                             when {
+                                // Microfono bloccato: il tocco inserisce quello che si è detto.
+                                up != null && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
                                 up != null -> { haptic(Haptic.TICK); tap() }
                                 // Annullato (es. il dito è scivolato via): niente.
                                 lifted -> Unit
+                                isLocked -> Unit
                                 else -> {
                                     if (holdStart()) {
                                         haptic(Haptic.CONFIRM)
-                                        waitForUpOrCancellation()
-                                        haptic(Haptic.TICK)
-                                        holdEnd()
+                                        // Come WhatsApp: trascinando in su il microfono si blocca.
+                                        var lockedNow = false
+                                        while (true) {
+                                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                            if (!change.pressed) break
+                                            drag = (down.position.y - change.position.y).coerceAtLeast(0f)
+                                            if (!lockedNow && drag > lockDistance) {
+                                                lockedNow = true
+                                                haptic(Haptic.CONFIRM)
+                                                lock()
+                                            }
+                                            change.consume()
+                                        }
+                                        drag = 0f
+                                        if (!lockedNow) {
+                                            haptic(Haptic.TICK)
+                                            holdEnd()
+                                        }
                                     }
                                 }
                             }
@@ -469,11 +511,55 @@ private fun CanvasNavBar(
                     },
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Crossfade(listening, label = "plusMic") { mic ->
+                    val icon = when {
+                        listening && locked -> 2
+                        listening -> 1
+                        else -> 0
+                    }
+                    Crossfade(icon, label = "plusMic") { i ->
                         Icon(
-                            if (mic) Icons.Rounded.Mic else Icons.Rounded.Add,
-                            contentDescription = if (mic) "In ascolto" else "Aggiungi",
-                            modifier = Modifier.size(28.dp),
+                            when (i) {
+                                2 -> Icons.AutoMirrored.Rounded.Send
+                                1 -> Icons.Rounded.Mic
+                                else -> Icons.Rounded.Add
+                            },
+                            contentDescription = when (i) {
+                                2 -> "Inserisci"
+                                1 -> "In ascolto"
+                                else -> "Aggiungi"
+                            },
+                            modifier = Modifier.size(if (i == 2) 24.dp else 28.dp),
+                        )
+                    }
+                }
+            }
+            // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
+            if (listening && !locked) {
+                val progress = (drag / lockDistance).coerceIn(0f, 1f)
+                Surface(
+                    shape = CircleShape,
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    border = cardBorder(),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset { IntOffset(0, (-62.dp.toPx() - drag * 0.6f).roundToInt()) }
+                        .glass(CircleShape),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            if (progress >= 1f) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                            contentDescription = "Trascina in su per bloccare",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Icon(
+                            Icons.Rounded.KeyboardArrowUp,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 1f - progress * 0.7f),
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
@@ -485,7 +571,7 @@ private fun CanvasNavBar(
 
 /** Il fumetto sopra la barra mentre si detta tenendo premuto il +. */
 @Composable
-private fun DictationBubble(listening: Boolean, partial: String) {
+private fun DictationBubble(listening: Boolean, partial: String, locked: Boolean, onCancel: () -> Unit) {
     AnimatedVisibility(
         visible = listening,
         enter = fadeIn() + slideInVertically { it / 2 },
@@ -504,11 +590,17 @@ private fun DictationBubble(listening: Boolean, partial: String) {
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    "Rilascia per finire",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (locked) "Bloccato · tocca ➤ per inserire" else "Rilascia per finire · trascina su per bloccare",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (locked) {
+                        TextButton(onClick = onCancel) { Text("Annulla") }
+                    }
+                }
             }
         }
     }
@@ -673,6 +765,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
     val dictation = remember { Dictation(context.applicationContext) }
+    val voiceScope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
@@ -691,9 +785,24 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         dictation.start { text ->
             if (text.isNullOrBlank()) {
                 Toast.makeText(context, "Non ho sentito niente", Toast.LENGTH_SHORT).show()
-            } else {
-                dictated = text
-                capturing = true
+            } else voiceScope.launch {
+                // Si salva da solo, nel tipo giusto; il dialogo solo se manca qualcosa.
+                when (val outcome = VoiceCapture.save(context, text)) {
+                    VoiceCapture.Outcome.NeedsDialog -> {
+                        dictated = text
+                        capturing = true
+                    }
+                    is VoiceCapture.Outcome.Saved -> {
+                        val undo = outcome.undo
+                        val answer = snackbar.showSnackbar(
+                            outcome.message,
+                            actionLabel = if (undo != null) "Annulla" else null,
+                            withDismissAction = undo == null,
+                            duration = SnackbarDuration.Short,
+                        )
+                        if (answer == SnackbarResult.ActionPerformed) undo?.invoke()
+                    }
+                }
             }
         }
         true
@@ -723,9 +832,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     partial = dictation.partial,
                     onHoldStart = startDictation,
                     onHoldEnd = dictation::release,
+                    locked = dictation.locked,
+                    onLock = dictation::lock,
+                    onCancelDictation = dictation::discard,
                 )
             }
         },
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
