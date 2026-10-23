@@ -73,6 +73,7 @@ import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.Tomorrow
+import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
@@ -119,18 +120,6 @@ fun HomeScreen(
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    val greeting = remember {
-        when (LocalTime.now().hour) {
-            in 5..12 -> "Buongiorno"
-            in 13..17 -> "Buon pomeriggio"
-            in 18..23 -> "Buonasera"
-            else -> "Buonanotte"
-        }
-    }
-    val today = remember {
-        LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
-            .replaceFirstChar { it.uppercase() }
-    }
 
     WeatherStore.init(context)
     val weather by WeatherStore.state.collectAsStateWithLifecycle()
@@ -160,6 +149,12 @@ fun HomeScreen(
             delay(60_000L - System.currentTimeMillis() % 60_000L)
             value = LocalDateTime.now()
         }
+    }
+    // Saluto e data seguono l'orologio: lasciando l'app aperta la notte, la mattina dice "Buongiorno".
+    val greeting = Greeting.forHour(minute.hour)
+    val today = remember(minute.toLocalDate()) {
+        minute.toLocalDate().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
+            .replaceFirstChar { it.uppercase() }
     }
     MediaHistory.init(context)
     VideoLibrary.init(context)
@@ -243,6 +238,7 @@ fun HomeScreen(
                     else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
                 },
                 undo = briefUndo,
+                dayCardShown = tomorrowPlan?.let { it.day == minute.toLocalDate() } == true,
                 onUndo = {
                     haptic(Haptic.TICK)
                     briefUndo?.undo?.invoke()
@@ -396,6 +392,8 @@ private fun WeatherCard(
     undo: BriefUndo?,
     onUndo: () -> Unit,
     onOpenBrief: (BriefKind) -> Unit,
+    /** true se sotto c'è la card "Oggi · …" della notte: allora qui niente massime, minime e pioggia. */
+    dayCardShown: Boolean = false,
 ) {
     val forecast = state.forecast
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
@@ -534,11 +532,12 @@ private fun WeatherSummary(
                 // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
                 val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
                 Text(
-                    listOfNotNull(
+                    Greeting.adessoWeather(
                         WeatherCodes.description(forecast.current.code),
                         if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
                         rain,
-                    ).joinToString(" · "),
+                        dayCardShown,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = content.copy(alpha = 0.75f),
                     maxLines = 2,
