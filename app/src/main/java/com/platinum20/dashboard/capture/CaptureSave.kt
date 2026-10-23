@@ -11,8 +11,16 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
-/** Com'è andato un salvataggio: [ok] falso se manca qualcosa, e [message] dice cosa. */
-internal data class CaptureResult(val ok: Boolean, val message: String, val dueAt: Long? = null)
+/**
+ * Com'è andato un salvataggio: [ok] falso se manca qualcosa, e [message] dice cosa.
+ * [undo] toglie quello che è appena stato creato: serve all'"Annulla" quando Canvas ha capito male il tipo.
+ */
+internal data class CaptureResult(
+    val ok: Boolean,
+    val message: String,
+    val dueAt: Long? = null,
+    val undo: (() -> Unit)? = null,
+)
 
 /** Un'abitudine scritta a parole: "ogni giorno leggere", "palestra 3 volte a settimana alle 19". */
 internal data class HabitDraft(val title: String, val perWeek: Int, val remindAt: LocalTime?)
@@ -21,7 +29,7 @@ internal data class HabitDraft(val title: String, val perWeek: Int, val remindAt
 internal data class DateDraft(val title: String, val date: LocalDate, val yearly: Boolean)
 
 /**
- * Salva quello che si scrive nel + o in cima alle Note, nel tipo scelto (o indovinato):
+ * Salva quello che si scrive nel + o in cima alle Note, nel tipo indovinato da [CaptureGuess]:
  * lo stesso codice per la finestrella, per il campo delle Note e per la dettatura.
  * Gli eventi no: vanno nel calendario e chiedono il permesso, li salva [CaptureDialog].
  */
@@ -75,17 +83,17 @@ internal object CaptureSave {
         if (text.isBlank()) return CaptureResult(false, "Scrivi qualcosa")
         return when (mode) {
             CaptureMode.NOTE -> {
-                NotesStore.saveNote(null, text.trim())
-                CaptureResult(true, "Nota salvata")
+                val id = NotesStore.saveNote(null, text.trim())
+                CaptureResult(true, "Nota salvata", undo = id?.let { { NotesStore.deleteNote(it) } })
             }
             CaptureMode.EXPENSE -> {
                 // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
                 if (Expenses.parseFixed(text) != null) {
                     val fixed = NotesStore.addFixedExpense(text) ?: return CaptureResult(false, "Manca l'importo")
-                    CaptureResult(true, "Spesa fissa: ${Expenses.format(fixed.cents)} il ${fixed.day} di ogni mese")
+                    CaptureResult(true, "Spesa fissa: ${Expenses.format(fixed.cents)} il ${fixed.day} di ogni mese", undo = { NotesStore.undoFixedExpense(fixed.id) })
                 } else {
                     val saved = NotesStore.addExpense(text) ?: return CaptureResult(false, "Manca l'importo")
-                    CaptureResult(true, "Spesa: ${Expenses.format(saved.cents)} · ${saved.category.label}")
+                    CaptureResult(true, "Spesa: ${Expenses.format(saved.cents)} · ${saved.category.label}", undo = { NotesStore.deleteExpense(saved.id) })
                 }
             }
             CaptureMode.PARCEL -> {
@@ -95,22 +103,23 @@ internal object CaptureSave {
                     .firstOrNull { it.isNotEmpty() }.orEmpty()
                 val entry = QuickParse.parse(firstLine, now)
                 val title = (if (entry.due != null) entry.text else firstLine).take(60)
-                NotesStore.saveParcel(null, title.ifEmpty { "Pacco" }, code, entry.due?.toLocalDate())
-                CaptureResult(true, "Pacco aggiunto" + if (code.isNotEmpty()) " · ${Carrier.detect(code).label}" else "")
+                val id = NotesStore.addParcel(title.ifEmpty { "Pacco" }, code, entry.due?.toLocalDate())
+                CaptureResult(true, "Pacco aggiunto" + if (code.isNotEmpty()) " · ${Carrier.detect(code).label}" else "", undo = { NotesStore.deleteParcel(id) })
             }
             CaptureMode.HABIT -> {
                 val h = habitOf(text, now) ?: return CaptureResult(false, "Scrivi cosa vuoi fare")
-                NotesStore.saveHabit(null, h.title, h.perWeek, h.remindAt)
-                CaptureResult(true, "Abitudine: ${h.title}")
+                val id = NotesStore.saveHabit(null, h.title, h.perWeek, h.remindAt)
+                CaptureResult(true, "Abitudine: ${h.title}", undo = id?.let { { NotesStore.deleteHabit(it) } })
             }
             CaptureMode.DATE -> {
                 val d = dateOf(text, now) ?: return CaptureResult(false, "Scrivi anche il giorno: es. 12 marzo")
-                NotesStore.saveCountdown(null, d.title, d.date, d.yearly)
-                CaptureResult(true, "Data: ${d.title} · ${longDate(d.date)}")
+                val id = NotesStore.saveCountdown(null, d.title, d.date, d.yearly)
+                CaptureResult(true, "Data: ${d.title} · ${longDate(d.date)}", undo = id?.let { { NotesStore.deleteCountdown(it) } })
             }
             CaptureMode.TASK -> {
-                val due = NotesStore.addTask(text)?.dueAt
-                CaptureResult(true, if (due != null) "Promemoria: ${dueLabel(due)}" else "Promemoria salvato", due)
+                val task = NotesStore.addTask(text) ?: return CaptureResult(false, "Scrivi qualcosa")
+                val due = task.dueAt
+                CaptureResult(true, if (due != null) "Promemoria: ${dueLabel(due)}" else "Promemoria salvato", due, undo = { NotesStore.deleteTask(task.id) })
             }
             CaptureMode.EVENT -> CaptureResult(false, "Gli eventi si salvano nel calendario")
         }

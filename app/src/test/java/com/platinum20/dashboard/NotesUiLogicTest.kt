@@ -2,7 +2,12 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Parcel
+import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.NotesData
+import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.screens.comingRows
+import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -38,4 +43,16 @@ class NotesUiLogicTest {
     }
 
     @Test fun senzaNienteListaVuota() = assertEquals(emptyList<Any>(), comingRows(emptyList(), emptyList(), oggi))
+
+    @Test fun pilloleSoloDellePartiPiene() {
+        val data = NotesData(
+            tasks = listOf(TaskItem(1, "Latte"), TaskItem(2, "Pane", done = true)),
+            habits = listOf(Habit(3, "Leggere", done = setOf(oggi)), Habit(4, "Camminare")),
+        )
+        val chips = notesChips(data, oggi)
+        assertEquals(listOf(NotesSection.TASKS, NotesSection.HABITS), chips.map { it.first })
+        assertEquals(listOf("Da fare · 1", "Abitudini · 1/2"), chips.map { it.second })
+    }
+
+    @Test fun senzaNienteNessunaPillola() = assertEquals(emptyList<Any>(), notesChips(NotesData(), oggi))
 }

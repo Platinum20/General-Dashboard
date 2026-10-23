@@ -125,6 +125,8 @@ import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureGuess
 import com.platinum20.dashboard.capture.CaptureSave
+import com.platinum20.dashboard.capture.CaptureResult
+import com.platinum20.dashboard.notes.QuickParse
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.mutableStateMapOf
@@ -147,12 +149,34 @@ internal fun comingRows(upcoming: List<Countdown>, parcels: List<Parcel>, today:
     return open.sortedBy { it.day ?: LocalDate.MAX } + delivered
 }
 
+/** Le pillole in cima alle Note: mostrano una parte sola della pagina (di nuovo per tornare a tutto). */
+enum class NotesSection { TASKS, HABITS, COMING, NOTES, MONEY }
+
+/**
+ * Le pillole con quello che c'è in ciascuna parte ("Da fare · 3", "Abitudini · 1/2", "Spese · 115,90 €"):
+ * solo le parti che hanno qualcosa, così ogni pillola dice qualcosa e porta da qualche parte.
+ */
+internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: LocalDate = LocalDate.now()): List<Pair<NotesSection, String>> {
+    val open = data.tasks.count { !it.done }
+    val coming = data.upcoming.size + data.parcels.count { !it.delivered }
+    val month = com.platinum20.dashboard.notes.Expenses.total(data.expenses, java.time.YearMonth.from(today))
+    return listOfNotNull(
+        data.tasks.takeIf { it.isNotEmpty() }?.let { NotesSection.TASKS to if (open > 0) "Da fare · $open" else "Da fare" },
+        data.habits.takeIf { it.isNotEmpty() }?.let { h -> NotesSection.HABITS to "Abitudini · ${h.count { it.isDone(today) }}/${h.size}" },
+        (coming > 0 || data.parcels.isNotEmpty()).takeIf { it }?.let { NotesSection.COMING to if (coming > 0) "In arrivo · $coming" else "In arrivo" },
+        data.notes.takeIf { it.isNotEmpty() }?.let { NotesSection.NOTES to "Note · ${it.size}" },
+        (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null).takeIf { it }
+            ?.let { NotesSection.MONEY to "Spese · ${com.platinum20.dashboard.notes.Expenses.format(month)}" },
+    )
+}
+
 /** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
 internal const val NOTES_PREVIEW = 4
 
 /**
  * Sezione "Note", in una pagina sola: in cima si scrive e il tipo (promemoria, nota, spesa, abitudine,
- * data, pacco, evento) lo indovina Canvas o lo si sceglie con una pillola; sotto, tutto in ordine di quando conta.
+ * data, pacco, evento) lo sceglie Canvas da solo; sotto, tutto in ordine di quando conta.
+ * Le pillole in alto riassumono ogni parte e la mostrano da sola.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,7 +188,7 @@ fun NotesScreen(
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     var searching by rememberSaveable { mutableStateOf(false) }
-    var showExpenses by rememberSaveable { mutableStateOf(false) }
+    var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
     // Un evento scritto in cima: lo salva la finestrella del +, che sa chiedere il permesso del calendario.
     var event by remember { mutableStateOf<String?>(null) }
@@ -206,29 +230,18 @@ fun NotesScreen(
     proposingDate?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposingDate = null }) }
     event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
 
-    if (showExpenses) {
-        // Le spese del mese, il budget e le fisse: una pagina dentro le Note, con la freccia per tornare.
-        androidx.activity.compose.BackHandler { showExpenses = false }
-        Scaffold(
-            contentWindowInsets = topLevelInsets,
-            snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding())) },
-            topBar = { TopLevelBar(title = "Spese", subtitle = "Note", onBack = { showExpenses = false }) },
-        ) { inner ->
-            ExpensesTab(
-                data,
-                PaddingValues(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 12.dp, bottom = bottomPadding.calculateBottomPadding() + 24.dp),
-                onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } },
-            )
-        }
-        return
-    }
+    // Con una pillola accesa, "indietro" torna a tutta la pagina.
+    androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
+    val chips = notesChips(data)
+    // Se la parte scelta si svuota (es. ultimo pacco eliminato) si torna a tutto.
+    LaunchedEffect(chips.map { it.first }) { if (section != null && chips.none { it.first == section }) section = null }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
         snackbarHost = {
             SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
         },
-        topBar = {
+        topBar = { Column {
             TopLevelBar(
                 title = "Note",
                 subtitle = listOfNotNull(
@@ -248,7 +261,22 @@ fun NotesScreen(
                     }
                 },
             )
-        },
+            if (!searching && chips.size >= 2) {
+                val haptic = rememberHaptic()
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    chips.forEach { (s, label) ->
+                        CanvasChip(
+                            selected = section == s,
+                            onClick = { haptic(Haptic.TICK); section = if (section == s) null else s },
+                            label = label,
+                        )
+                    }
+                }
+            }
+        } },
     ) { inner ->
         val padding = PaddingValues(
             start = 16.dp,
@@ -262,10 +290,16 @@ fun NotesScreen(
                 padding = padding,
                 onClose = { searching = false },
                 onOpenNote = { onOpenNote(it) },
-                onOpenExpenses = { searching = false; showExpenses = true },
+                onOpenExpenses = { searching = false; section = NotesSection.MONEY },
             )
             return@Scaffold
         }
+        if (section == NotesSection.MONEY) {
+            // Le spese del mese, il budget e le fisse, con il loro campo ("12,50 pizza", "ogni mese il 5 affitto 650").
+            ExpensesTab(data, padding, onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } })
+            return@Scaffold
+        }
+        fun show(part: NotesSection) = section == null || section == part
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         // Raggruppati per quando vanno fatti: prima ciò che è scaduto o in scadenza oggi.
         val now = System.currentTimeMillis()
@@ -280,12 +314,24 @@ fun NotesScreen(
         ).filter { it.second.isNotEmpty() }
         val done = data.tasks.filter { it.done }
         val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
-        val shownNotes = if (allNotes) notes else notes.take(NOTES_PREVIEW)
+        val shownNotes = if (allNotes || section == NotesSection.NOTES) notes else notes.take(NOTES_PREVIEW)
         val empty = data.tasks.isEmpty() && data.notes.isEmpty() && data.habits.isEmpty() &&
             data.upcoming.isEmpty() && data.parcels.isEmpty() && data.expenses.isEmpty()
 
         LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            item(key = "composer") { NotesComposer(onEvent = { event = it }) }
+            item(key = "composer") {
+                NotesComposer(
+                    onEvent = { event = it },
+                    onSaved = { result ->
+                        scope.launch {
+                            snackbar.currentSnackbarData?.dismiss()
+                            val undo = result.undo
+                            val r = snackbar.showSnackbar(result.message, actionLabel = if (undo != null) "Annulla" else null, duration = SnackbarDuration.Short)
+                            if (r == SnackbarResult.ActionPerformed) undo?.invoke()
+                        }
+                    },
+                )
+            }
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
@@ -296,21 +342,21 @@ fun NotesScreen(
                 }
             }
             // Ogni gruppo è una card con le sue righe.
-            urgent.forEach { (label, list) ->
+            if (show(NotesSection.TASKS)) urgent.forEach { (label, list) ->
                 item(key = "group-$label") { TaskGroup(label, list, onTaskDeleted, error = label == "Scaduti") }
             }
-            habitRows()
-            coming()
-            later.forEach { (label, list) ->
+            if (show(NotesSection.HABITS)) habitRows()
+            if (show(NotesSection.COMING)) coming()
+            if (show(NotesSection.TASKS)) later.forEach { (label, list) ->
                 item(key = "group-$label") { TaskGroup(label, list, onTaskDeleted) }
             }
-            if (notes.isNotEmpty()) {
+            if (notes.isNotEmpty() && show(NotesSection.NOTES)) {
                 item(key = "notes-header") {
                     SectionHeader(
                         if (notes.size > NOTES_PREVIEW) "Note · ${notes.size}" else "Note",
                         modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
                         action = when {
-                            notes.size <= NOTES_PREVIEW -> null
+                            notes.size <= NOTES_PREVIEW || section == NotesSection.NOTES -> null
                             allNotes -> "Meno"
                             else -> "Tutte"
                         },
@@ -321,16 +367,16 @@ fun NotesScreen(
                     NoteCard(note, onOpen = { onOpenNote(note.id) }, modifier = Modifier.padding(bottom = 4.dp))
                 }
             }
-            if (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null) {
-                item(key = "expenses") { ExpensesSummary(data, onOpen = { showExpenses = true }) }
+            if (section == null && (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null)) {
+                item(key = "expenses") { ExpensesSummary(data, onOpen = { section = NotesSection.MONEY }) }
             }
-            if (done.isNotEmpty()) {
+            if (done.isNotEmpty() && show(NotesSection.TASKS)) {
                 item(key = "group-done") { Column(Modifier.padding(top = 12.dp)) { TaskGroup("Completati", done, onTaskDeleted) } }
             }
             // Con poche abitudini e date, qualche esempio da aggiungere con un tocco.
             val habitIdeas = HabitIdeas.suggest(data.habits)
             val dateIdeas = if (data.upcoming.isEmpty()) DateIdeas.suggest(data.upcoming) else emptyList()
-            if (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty()) {
+            if (section == null && (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty())) {
                 item(key = "ideas") {
                     IdeasSection(
                         habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
@@ -343,15 +389,13 @@ fun NotesScreen(
 }
 
 /**
- * Il campo in cima alle Note: si scrive una volta sola e le pillole sotto dicono che cosa diventa.
- * Finché non se ne tocca una, il tipo lo sceglie Canvas da quello che si scrive (come il +).
+ * Il campo in cima alle Note: si scrive e basta, il tipo lo sceglie Canvas da quello che si scrive
+ * (come il + e la dettatura). Sotto, una riga dice cosa diventerà; se sbaglia, dopo il salvataggio c'è "Annulla".
  */
 @Composable
-private fun NotesComposer(onEvent: (String) -> Unit) {
+private fun NotesComposer(onEvent: (String) -> Unit, onSaved: (CaptureResult) -> Unit) {
     var text by rememberSaveable { mutableStateOf("") }
-    var picked by rememberSaveable { mutableStateOf<CaptureMode?>(null) }
-    val guessed = remember(text) { CaptureGuess.guess(text) }
-    val mode = picked ?: guessed
+    val mode = remember(text) { CaptureGuess.guess(text) }
     val context = LocalContext.current
     val haptic = rememberHaptic()
     val save = {
@@ -359,14 +403,14 @@ private fun NotesComposer(onEvent: (String) -> Unit) {
             if (mode == CaptureMode.EVENT) {
                 onEvent(text)
                 text = ""
-                picked = null
             } else {
                 val result = CaptureSave.save(mode, text)
-                android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_SHORT).show()
                 if (result.ok) {
                     haptic(Haptic.CONFIRM)
                     text = ""
-                    picked = null
+                    onSaved(result)
+                } else {
+                    android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -375,7 +419,7 @@ private fun NotesComposer(onEvent: (String) -> Unit) {
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
-            placeholder = { Text(picked?.hint ?: "Scrivi qualcosa: Canvas capisce cos'è") },
+            placeholder = { Text("Scrivi qualcosa: Canvas capisce cos'è") },
             maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
@@ -392,29 +436,23 @@ private fun NotesComposer(onEvent: (String) -> Unit) {
             colors = canvasFieldColors(),
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            CaptureMode.entries.forEach { m ->
-                CanvasChip(
-                    selected = m == mode && (picked != null || text.isNotBlank()),
-                    onClick = {
-                        haptic(Haptic.TICK)
-                        picked = if (picked == m) null else m
-                    },
-                    label = m.label,
-                )
+        if (text.isNotBlank()) {
+            // Cosa diventerà, detto in una riga: "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00".
+            val detail = when (mode) {
+                CaptureMode.TASK -> QuickParse.parse(text).due
+                    ?.let { dueLabel(it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()) } ?: "senza scadenza"
+                CaptureMode.NOTE -> "si apre dalla lista"
+                CaptureMode.EVENT -> "va nel calendario"
+                else -> CaptureSave.preview(mode, text)
             }
-        }
-        val line = when (mode) {
-            CaptureMode.TASK, CaptureMode.NOTE -> null
-            CaptureMode.EVENT -> if (text.isNotBlank()) "Va nel calendario: tocca + per controllare giorno e ora" else null
-            else -> CaptureSave.preview(mode, text)
-        }
-        if (mode == CaptureMode.TASK) QuickPreview(text, Modifier.padding(start = 12.dp, top = 6.dp))
-        line?.let {
-            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp, top = 6.dp))
+            Text(
+                listOfNotNull(mode.label, detail).joinToString(" · "),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 12.dp, top = 6.dp),
+            )
         }
     }
 }
