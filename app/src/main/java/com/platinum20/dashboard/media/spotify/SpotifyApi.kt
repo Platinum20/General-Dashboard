@@ -168,6 +168,23 @@ object SpotifyApi {
             )
         }
 
+    /** Gli id degli artisti che segui, a pagine da 50 (al massimo [NewReleases.MAX_ARTISTS]). */
+    suspend fun followedArtists(token: String): List<String> {
+        val ids = mutableListOf<String>()
+        var after: String? = null
+        do {
+            val path = "me/following?type=artist&limit=50" + (after?.let { "&after=" + URLEncoder.encode(it, "UTF-8") } ?: "")
+            val (page, next) = NewReleases.parseFollowing(request(token, path))
+            ids += page
+            after = next
+        } while (after != null && page.isNotEmpty() && ids.size < NewReleases.MAX_ARTISTS)
+        return ids.distinct().take(NewReleases.MAX_ARTISTS)
+    }
+
+    /** Gli ultimi album e singoli di un artista, così come arrivano (servono le date di uscita). */
+    suspend fun artistAlbumsRaw(token: String, artistId: String): JSONObject? =
+        request(token, "artists/$artistId/albums?include_groups=album,single&limit=10")
+
     suspend fun search(token: String, query: String): List<SpItem> {
         val q = URLEncoder.encode(query, "UTF-8")
         val result = request(token, "search?q=$q&type=track,artist,album,playlist,show&limit=10&market=from_token") ?: return emptyList()

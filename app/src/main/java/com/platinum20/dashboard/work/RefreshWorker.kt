@@ -17,6 +17,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.TasksWidget
 import java.util.concurrent.TimeUnit
 
 /** Aggiorna meteo, "Adesso" e temi del giorno in background, per il widget. */
@@ -36,6 +37,8 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         }
         runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext, max = 6)) }
         DashboardWidget.updateAll(applicationContext)
+        // Allo scoccare della mezzanotte i promemoria di "oggi" cambiano anche senza modifiche.
+        runCatching { TasksWidget.updateAll(applicationContext) }
         return if (weather.isFailure && news.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }
 

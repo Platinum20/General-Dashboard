@@ -1,12 +1,22 @@
 # Changelog
 
-## 1.113.0
+## 1.115.0
 **Il + decide da solo**
 - Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
 - Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
 
 **Microfono bloccabile, come WhatsApp**
 - Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
+## 1.114.0
+**Widget**
+- Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
+- Nel widget principale le righe di "Adesso" hanno il bottoncino come in Oggi: **pacco arrivato** e **abitudine fatta** con un tocco dalla schermata Home; la riga sparisce subito
+
+**Media › Musica**
+- **Nuove uscite**: in cima a Musica gli album e i singoli usciti nelle ultime 4 settimane dagli artisti che segui su Spotify, con copertina, artista e "3 giorni fa". Un pallino segna quelle che non hai ancora aperto ("Nuove uscite · 2 da ascoltare"); un tocco apre l'album da ascoltare. Si cercano al massimo una volta al giorno e restano salvate per l'apertura successiva
+
+**Sotto il cofano**
+- Test nuovi: TasksWidgetRowsTest e TasksWidgetActionTest (righe del widget, spunta e ricorrenti), WidgetBriefTest (azioni rapide del widget principale, formato vecchio delle righe), NewReleasesTest (date con precisione giorno/mese/anno, doppioni tra artisti, uscite future, pagine degli artisti seguiti, con risposte vere di Spotify salvate)
 
 ## 1.112.0
 **Note, una pagina sola**

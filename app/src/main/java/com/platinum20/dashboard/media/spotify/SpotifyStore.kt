@@ -6,9 +6,11 @@ import android.net.Uri
 import com.platinum20.dashboard.media.FeedCache
 import com.platinum20.dashboard.media.FeedCodec
 import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import java.time.LocalDate
 
 /** Sezioni della pagina "Per te". */
 data class SpHome(
@@ -31,6 +35,9 @@ data class SpLibrary(val liked: List<SpItem>, val albums: List<SpItem>, val show
 object SpotifyStore {
     private val scope = MainScope()
     private const val MAX_AGE = 10 * 60_000L
+    private const val RELEASES_MAX_AGE = 24 * 3_600_000L
+    // Inizia con "sp-": si cancella insieme agli altri dati quando si scollega Spotify.
+    private const val SEEN_FILE = "sp-releases-seen.json"
 
     private val _home = MutableStateFlow(Loadable<SpHome>())
     val home: StateFlow<Loadable<SpHome>> = _home.asStateFlow()
@@ -50,6 +57,15 @@ object SpotifyStore {
     private val _playback = MutableStateFlow<SpPlayback?>(null)
     val playback: StateFlow<SpPlayback?> = _playback.asStateFlow()
 
+    private val _releases = MutableStateFlow(Loadable<List<SpRelease>>())
+    /** Album e singoli usciti nelle ultime 4 settimane dagli artisti che segui. */
+    val releases: StateFlow<Loadable<List<SpRelease>>> = _releases.asStateFlow()
+
+    private val _seenReleases = MutableStateFlow<Set<String>>(emptySet())
+    /** Le uscite già aperte: le altre hanno il pallino "nuovo". */
+    val seenReleases: StateFlow<Set<String>> = _seenReleases.asStateFlow()
+    private var seenLoaded = false
+
     private val _message = MutableStateFlow<String?>(null)
     /** Avviso breve da mostrare (es. serve Premium, nessun dispositivo). */
     val message: StateFlow<String?> = _message.asStateFlow()
@@ -66,6 +82,40 @@ object SpotifyStore {
             val topTracks = async { runCatching { SpotifyApi.topTracks(token) }.getOrDefault(emptyList()) }
             val topArtists = async { runCatching { SpotifyApi.topArtists(token) }.getOrDefault(emptyList()) }
             SpHome(profile.await(), recent.await(), topTracks.await(), topArtists.await())
+        }
+    }
+
+    /** Le nuove uscite si cercano al massimo una volta al giorno: una richiesta per artista seguito. */
+    fun refreshReleases(force: Boolean = false) {
+        loadSeen()
+        load(_releases, force, FeedCache.spReleases, maxAge = RELEASES_MAX_AGE) { token ->
+            val artists = SpotifyApi.followedArtists(token)
+            val responses = coroutineScope {
+                // A gruppi di 6, per non farsi rispondere "troppe richieste".
+                artists.chunked(6).flatMap { group ->
+                    group.map { id -> async { runCatching { SpotifyApi.artistAlbumsRaw(token, id) }.getOrNull() } }.awaitAll()
+                }
+            }
+            NewReleases.pick(responses, LocalDate.now())
+        }
+    }
+
+    /** Aperta un'uscita, il pallino "nuovo" sparisce (anche alle prossime aperture dell'app). */
+    fun markReleaseSeen(id: String) {
+        if (id in _seenReleases.value) return
+        _seenReleases.update { it + id }
+        val text = JSONArray(_seenReleases.value.toList()).toString()
+        scope.launch { DiskCache.write(SEEN_FILE, text) }
+    }
+
+    private fun loadSeen() {
+        if (seenLoaded) return
+        seenLoaded = true
+        scope.launch {
+            val saved = runCatching {
+                DiskCache.read(SEEN_FILE)?.let { raw -> JSONArray(raw).let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } }
+            }.getOrNull().orEmpty()
+            _seenReleases.update { it + saved }
         }
     }
 
@@ -140,14 +190,22 @@ object SpotifyStore {
         _library.value = Loadable()
         _children.value = emptyMap()
         _search.value = Loadable()
+        _releases.value = Loadable()
+        _seenReleases.value = emptySet()
         _playback.value = null
     }
 
-    private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE
+    private fun fresh(state: Loadable<*>, maxAge: Long = MAX_AGE) = state.data != null && System.currentTimeMillis() - state.loadedAt < maxAge
 
-    private fun <T> load(flow: MutableStateFlow<Loadable<T>>, force: Boolean, codec: FeedCodec<T>, block: suspend (String) -> T) {
+    private fun <T> load(
+        flow: MutableStateFlow<Loadable<T>>,
+        force: Boolean,
+        codec: FeedCodec<T>,
+        maxAge: Long = MAX_AGE,
+        block: suspend (String) -> T,
+    ) {
         val state = flow.value
-        if (state.loading || (!force && fresh(state))) return
+        if (state.loading || (!force && fresh(state, maxAge))) return
         flow.update { it.copy(loading = true, error = null) }
         scope.launch {
             var previous = state.data
@@ -156,7 +214,7 @@ object SpotifyStore {
                 FeedCache.restore(codec)?.let { saved ->
                     previous = saved.data
                     flow.update { it.copy(data = saved.data, loadedAt = saved.loadedAt) }
-                    if (!force && fresh(saved)) {
+                    if (!force && fresh(saved, maxAge)) {
                         flow.update { it.copy(loading = false) }
                         return@launch
                     }
