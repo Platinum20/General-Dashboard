@@ -143,6 +143,8 @@ class ScreenshotTour {
             visit("YouTube", p + "31_youtube")
             visit("Spotify", p + "32_spotify")
             visit("Video", p + "33_video")
+            visit("Radio", p + "34_radio", waitMs = 6_000)
+            visit("Podcast", p + "35_podcast")
         } else missing += p + "30_media"
 
         if (tap("Impostazioni")) {

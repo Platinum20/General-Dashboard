@@ -13,6 +13,7 @@ import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.WeatherCodes
@@ -23,6 +24,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 
 /** Widget della schermata Home: meteo, le righe di "Adesso", i promemoria di oggi e i temi del giorno. */
 class DashboardWidget : AppWidgetProvider() {
@@ -165,7 +168,31 @@ class DashboardWidget : AppWidgetProvider() {
         /** Riga con i promemoria scaduti o in scadenza oggi, null se non ce ne sono. */
         private fun tasksLine(context: Context): String? {
             NotesStore.init(context)
-            return WidgetRows.tasksLine(NotesStore.data.value.openTasks, Instant.now(), ZoneId.systemDefault())
+            return tasksLine(NotesStore.data.value.openTasks, System.currentTimeMillis(), ZoneId.systemDefault())
+        }
+
+        /** La riga dei promemoria del widget, calcolata dai promemoria aperti: separata per poterla provare. */
+        internal fun tasksLine(openTasks: List<TaskItem>, now: Long, zone: ZoneId): String? {
+            val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+            val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val due = openTasks.filter { (it.dueAt ?: Long.MAX_VALUE) < endOfToday }.sortedBy { it.dueAt }
+            if (due.isEmpty()) return null
+            val late = due.count { (it.dueAt ?: 0) < now }
+            val next = due.firstOrNull { (it.dueAt ?: 0) >= now } ?: due.first()
+            val count = when {
+                late == due.size -> if (late == 1) "1 promemoria scaduto" else "$late promemoria scaduti"
+                late > 0 -> "${due.size} promemoria oggi ($late ${if (late == 1) "scaduto" else "scaduti"})"
+                due.size == 1 -> "1 promemoria oggi"
+                else -> "${due.size} promemoria oggi"
+            }
+            return "📌 $count · ${next.text} ${timeOf(next, today, zone)}".trim()
+        }
+
+        private fun timeOf(task: TaskItem, today: LocalDate, zone: ZoneId): String {
+            val due = task.dueAt ?: return ""
+            val time = Instant.ofEpochMilli(due).atZone(zone)
+            return if (time.toLocalDate() == today) "alle " + time.format(DateTimeFormatter.ofPattern("HH:mm"))
+            else ""
         }
 
         private fun openApp(context: Context, request: OpenRequest, code: Int): PendingIntent {

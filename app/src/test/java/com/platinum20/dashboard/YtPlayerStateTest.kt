@@ -46,4 +46,19 @@ class YtPlayerStateTest {
         assertFalse(YtPlayer.isLoaded(YtNow(link, stream, loading = false, error = "Video non riproducibile"), link))
         assertFalse(YtPlayer.isLoaded(YtNow(link, stream), "non è un link"))
     }
+
+    @Test
+    fun vocePerRiprendiConIlPuntoGiusto() {
+        // V22: passando da A a B, A resta in Riprendi al punto in cui eri (qui 2:00 su 10:00).
+        val a = YtPlayer.resumeEntry(stream, positionMs = 120_000, playerDurationMs = 600_000, at = 5)
+        assertEquals(id, a.key)
+        assertEquals(120_000L, a.positionMs)
+        assertEquals(600_000L, a.durationMs)
+        // Quasi alla fine: barra piena, la prossima volta riparte da capo.
+        assertEquals(600_000L, YtPlayer.resumeEntry(stream, 597_000, 600_000, 5).positionMs)
+        // Durata non ancora nota al player: quella del video.
+        assertEquals(90_000L, YtPlayer.resumeEntry(stream.copy(durationSec = 90), 10_000, 0, 5).durationMs)
+        // Diretta: nessun punto.
+        assertEquals(0L, YtPlayer.resumeEntry(stream.copy(hlsUrl = "https://x/live.m3u8"), 50_000, 0, 5).positionMs)
+    }
 }

@@ -53,6 +53,8 @@ import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.MediaStarters
 import androidx.compose.runtime.LaunchedEffect
+import com.platinum20.dashboard.media.podcast.PodcastStore
+import androidx.compose.material.icons.outlined.Mic
 import com.platinum20.dashboard.media.PlayerCommand
 import com.platinum20.dashboard.media.Track
 import androidx.compose.foundation.background
@@ -103,6 +105,7 @@ fun MediaScreen(
     onOpenVideo: () -> Unit,
     onOpenService: (MediaService) -> Unit,
     onOpenRadio: () -> Unit,
+    onOpenPodcast: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -116,6 +119,9 @@ fun MediaScreen(
     val sleepAt by NowPlaying.sleepAt.collectAsState()
     RadioStore.init(context)
     val radio by RadioStore.now.collectAsState()
+    PodcastStore.init(context)
+    val podcast by PodcastStore.now.collectAsState()
+    val followedPodcasts by PodcastStore.followed.collectAsState()
     val youTubeNow by YtPlayer.now.collectAsState()
     MediaHistory.init(context)
     VideoLibrary.init(context)
@@ -125,10 +131,10 @@ fun MediaScreen(
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
     // Quando nulla suona, la prima cosa è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && youTubeNow == null }
+    val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && podcast == null && youTubeNow == null }
     val recents = resumable.filter { it != hero }.take(4)
     // Al primo uso (niente da riprendere) qualche radio da far partire subito.
-    val firstUse = hero == null && recents.isEmpty() && tracks.isEmpty() && radio == null
+    val firstUse = hero == null && recents.isEmpty() && tracks.isEmpty() && radio == null && podcast == null
     val popular by RadioStore.popular.collectAsState()
     val recentStations by RadioStore.recent.collectAsState()
     val favoriteStations by RadioStore.favorites.collectAsState()
@@ -146,6 +152,7 @@ fun MediaScreen(
                 subtitle = when {
                     tracks.values.any { it.playing } -> "In riproduzione"
                     radio != null -> "In ascolto: ${radio?.station?.name}"
+                    podcast != null -> "In ascolto: ${podcast?.episode?.podcastTitle}"
                     tracks.isNotEmpty() -> "Riprendi da dove eri"
                     else -> "Video, musica e radio"
                 },
@@ -178,7 +185,7 @@ fun MediaScreen(
             hero?.let { last ->
                 item(key = "resume") { ResumeCard(last, onClick = { openResume(last) }) }
             }
-            // Le quattro fonti in una griglia 2×2: il colore dell'icona le distingue a colpo d'occhio.
+            // Le fonti in una griglia 2×2 più il podcast in largo: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "grid") {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -217,6 +224,19 @@ fun MediaScreen(
                             onClick = onOpenRadio,
                             playing = radio != null,
                             onStop = { RadioStore.stop() },
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        MediaTile(
+                            icon = Icons.Outlined.Mic,
+                            accent = TileAccent.BLUE,
+                            title = "Podcast",
+                            subtitle = podcast?.let { "In ascolto: ${it.episode.title}" }
+                                ?: if (followedPodcasts.isEmpty()) "Cerca, segui e riprendi da dove eri"
+                                else "Nuovi episodi da ${followedPodcasts.size} podcast",
+                            onClick = onOpenPodcast,
+                            playing = podcast != null,
+                            onStop = { PodcastStore.stop() },
                         )
                     }
                 }
