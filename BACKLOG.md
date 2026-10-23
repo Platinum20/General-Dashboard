@@ -13,8 +13,6 @@ _Ultimo aggiornamento: 2026-10-23 ~04:10 UTC (UI prima di tutto), su main 1.98.0
 
 ## In lavorazione
 
-_**Velocità e stabilità** (thread su richiesta di Antonio, 2026-10-23 00:03 UTC, branch `claude/project-thread-wqcw2c`): cache su disco di notizie, giudizi sugli articoli e feed YouTube/Spotify (mostrati subito all'avvio), notizie man mano che arrivano le fonti, tempi di rete più brevi, Spotify in parallelo, avvio più leggero. Tocca `NewsStore`, `NewsRepository`, `NewsViewModel`, `ArticleVerifier`, `YouTubeStore`, `SpotifyStore`, `MainActivity.onCreate`, nuovi `net/DiskCache.kt` e `media/FeedCache.kt`. Il giro non tocchi queste parti finché questa nota c'è._
-
 ---
 
 ## Problemi trovati dal verificatore
@@ -272,6 +270,7 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 
 ## Fatto
 
+- **1.104.0 · Velocità e stabilità:** notizie, giudizi sugli articoli e feed YouTube/Spotify salvati su disco e mostrati subito; notizie fonte per fonte; timeout più brevi; Spotify in parallelo; worker programmati fuori dal thread principale. Test: OfflineCacheTest.
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
 - 1.105.0 · Abitudini: promemoria all'ora scelta con Fatto/Più tardi (ex 15); Oggi di notte guarda alla mattina, card del giorno fino alle 6 (ex 23); parte del 7 (saluto, riga meteo, icona di "Prevalentemente sereno")
 - 1.103.0 · News: card solo testo senza foto, miniature che non si caricano spariscono, chip "1 fonte non risponde" (resto dell'1); Pacchi "Per aggiungerne" con incolla codice e Media "Per iniziare" con radio popolari (parte del 3); WidgetRowsTest e controllo "schermata attesa mancante" nel giro fotografico (parte del 2); V2 (foto del + con il pannello) e V6 (scuro_03_punto ora c'è); parte di V1 (41_aggiornamenti e 43_compila_da_solo ora ci sono)
