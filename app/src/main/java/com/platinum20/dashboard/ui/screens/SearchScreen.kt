@@ -33,6 +33,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -106,6 +107,8 @@ fun SearchScreen(
     var filter by rememberSaveable { mutableStateOf(SearchFilter.ALL) }
     var query by remember { mutableStateOf("") }
     var media by remember { mutableStateOf(MediaHits()) }
+    // Le fonti aperte con "Mostra altri": le altre restano corte.
+    var expanded by remember { mutableStateOf(emptySet<String>()) }
     LaunchedEffect(Unit) {
         if (news == null) NewsStore.restore()
         events = CalendarRepository.eventsFrom(context, today.minusDays(30), 120)
@@ -126,6 +129,7 @@ fun SearchScreen(
             val videos = async { runCatching { YtResolver.search(q) }.getOrDefault(emptyList()) }
             val radio = async { runCatching { RadioApi.search(q) }.getOrDefault(emptyList()) }
             media = MediaHits(q, false, spotify.await(), videos.await().take(MAX_ONLINE), radio.await().take(MAX_ONLINE))
+            expanded = emptySet()
         }
     }
     fun shows(f: SearchFilter) = filter == SearchFilter.ALL || filter == f
@@ -142,8 +146,9 @@ fun SearchScreen(
             onOpenNote = onOpenNote,
             onOpenExpenses = { onOpenNotes() },
             onOpenParcels = { onOpenNotes() },
-            placeholder = "Cerca in tutta l'app, musica e video…",
+            placeholder = "Cerca…",
             showNotes = shows(SearchFilter.NOTES),
+            perGroup = PER_SOURCE,
             onQuery = { query = it },
             header = {
                 Row(
@@ -164,21 +169,15 @@ fun SearchScreen(
                 val foundEvents = if (shows(SearchFilter.AGENDA)) EverywhereSearch.events(events, q, today) else emptyList()
                 val foundNews = if (shows(SearchFilter.NEWS)) EverywhereSearch.news(news?.items.orEmpty(), q) else emptyList()
                 if (foundEvents.isNotEmpty()) item(key = "events") {
-                    Section(title = "Agenda · ${foundEvents.size}") {
-                        foundEvents.forEachIndexed { i, (day, e) ->
-                            if (i > 0) RowDivider()
-                            val time = if (e.allDay) "" else " · " + Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).format(eventHour)
-                            ResultRow(e.title, longDate(day) + time) { inApp?.openEvent?.invoke(e) }
-                        }
+                    SourceSection("Agenda", foundEvents, "events" in expanded, { expanded = expanded + "events" }) { (day, e) ->
+                        val time = if (e.allDay) "" else " · " + Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).format(eventHour)
+                        ResultRow(e.title, longDate(day) + time) { inApp?.openEvent?.invoke(e) }
                     }
                 }
                 if (foundNews.isNotEmpty()) item(key = "news") {
-                    Section(title = "Notizie · ${foundNews.size}") {
-                        foundNews.forEachIndexed { i, n ->
-                            if (i > 0) RowDivider()
-                            val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
-                            ResultRow(n.title, n.source.name + whenText) { onOpenArticle(n) }
-                        }
+                    SourceSection("Notizie", foundNews, "news" in expanded, { expanded = expanded + "news" }) { n ->
+                        val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
+                        ResultRow(n.title, n.source.name + whenText) { onOpenArticle(n) }
                     }
                 }
                 count += foundEvents.size + foundNews.size
@@ -189,51 +188,39 @@ fun SearchScreen(
                 val radio = if (fresh && shows(SearchFilter.RADIO)) media.radio else emptyList()
                 val pods = if (shows(SearchFilter.PODCAST) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
                 if (music.isNotEmpty()) item(key = "music") {
-                    Section(title = "Spotify · ${music.size}") {
-                        music.forEachIndexed { i, item ->
-                            if (i > 0) RowDivider()
-                            ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()) {
-                                SpotifyPlayer.play(context, item)
-                                onOpenPlayer()
-                            }
+                    SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }) { item ->
+                        ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()) {
+                            SpotifyPlayer.play(context, item)
+                            onOpenPlayer()
                         }
                     }
                 }
                 if (videos.isNotEmpty()) item(key = "videos") {
-                    Section(title = "YouTube · ${videos.size}") {
-                        videos.forEachIndexed { i, v ->
-                            if (i > 0) RowDivider()
-                            ResultRow(v.title, v.channel) { onWatch(v.watchUrl) }
-                        }
+                    SourceSection("YouTube", videos, "videos" in expanded, { expanded = expanded + "videos" }) { v ->
+                        ResultRow(v.title, v.channel) { onWatch(v.watchUrl) }
                     }
                 }
                 if (radio.isNotEmpty()) item(key = "radio") {
-                    Section(title = "Radio · ${radio.size}") {
-                        radio.forEachIndexed { i, station ->
-                            if (i > 0) RowDivider()
-                            ResultRow(station.name, listOf(station.country, station.tags.split(',').firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")) {
-                                RadioStore.play(station)
-                                onOpenPlayer()
-                            }
+                    SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }) { station ->
+                        ResultRow(station.name, listOf(station.country, station.tags.split(',').firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")) {
+                            RadioStore.play(station)
+                            onOpenPlayer()
                         }
                     }
                 }
                 if (pods.isNotEmpty()) item(key = "podcasts") {
-                    Section(title = "Podcast · ${pods.size}") {
-                        pods.forEachIndexed { i, podcast ->
-                            if (i > 0) RowDivider()
-                            ResultRow(podcast.title, "Ultimo episodio · ${podcast.author}") {
-                                // Parte l'episodio più recente: gli altri si trovano in Media › Podcast.
-                                scope.launch {
-                                    PodcastStore.loadEpisodes(podcast)
-                                    val episodes = withTimeoutOrNull(15_000) {
-                                        PodcastStore.episodes.first { it[podcast.feedUrl]?.let { s -> !s.loading } == true }
-                                    }?.get(podcast.feedUrl)?.data
-                                    val latest = episodes?.maxByOrNull { it.publishedAt }
-                                    if (latest != null) {
-                                        PodcastStore.play(latest)
-                                        onOpenPlayer()
-                                    }
+                    SourceSection("Podcast", pods, "podcasts" in expanded, { expanded = expanded + "podcasts" }) { podcast ->
+                        ResultRow(podcast.title, "Ultimo episodio · ${podcast.author}") {
+                            // Parte l'episodio più recente: gli altri si trovano in Media › Podcast.
+                            scope.launch {
+                                PodcastStore.loadEpisodes(podcast)
+                                val episodes = withTimeoutOrNull(15_000) {
+                                    PodcastStore.episodes.first { it[podcast.feedUrl]?.let { s -> !s.loading } == true }
+                                }?.get(podcast.feedUrl)?.data
+                                val latest = episodes?.maxByOrNull { it.publishedAt }
+                                if (latest != null) {
+                                    PodcastStore.play(latest)
+                                    onOpenPlayer()
                                 }
                             }
                         }
@@ -263,8 +250,29 @@ private fun kindLabel(kind: SpKind) = when (kind) {
     SpKind.EPISODE -> "Episodio"
 }
 
-/** Risultati in rete per ogni fonte: abbastanza per trovare, non tanti da coprire il resto. */
-private const val MAX_ONLINE = 6
+/** Quanti risultati si scaricano al massimo per fonte in rete. */
+private const val MAX_ONLINE = 20
+
+/** Quanti se ne vedono per fonte prima di "Mostra altri": la pagina resta corta e si vede ogni fonte. */
+private const val PER_SOURCE = 4
+
+/** Una fonte di risultati: i primi [PER_SOURCE] e, se ce ne sono altri, "Mostra altri" per vederli tutti. */
+@Composable
+private fun <T> SourceSection(title: String, items: List<T>, expanded: Boolean, onExpand: () -> Unit, row: @Composable (T) -> Unit) {
+    Section(title = "$title · ${items.size}") {
+        val shown = if (expanded) items else items.take(PER_SOURCE)
+        shown.forEachIndexed { i, item ->
+            if (i > 0) RowDivider()
+            row(item)
+        }
+        if (!expanded && items.size > PER_SOURCE) {
+            RowDivider()
+            TextButton(onClick = onExpand, modifier = Modifier.fillMaxWidth()) {
+                Text("Mostra altri ${items.size - PER_SOURCE}")
+            }
+        }
+    }
+}
 
 @Composable
 private fun ResultRow(title: String, detail: String, onClick: () -> Unit) {

@@ -1,11 +1,24 @@
 # Changelog
 
-## 1.131.0
+## 1.134.0
 **Mini player: indietro, play/pausa, avanti**
 - Nel mini player ci sono tre tasti: indietro (il brano precedente, o il video da capo), play/pausa in mezzo e avanti. Per i podcast -10 e +30 secondi; per la radio solo play/pausa
 - Niente più X: per chiudere, con la barra in basso la si tira ancora giù. Compare una X che diventa rossa con una vibrazione; lasciandola lì si chiude, tornando su si annulla
 - "Continua" in Media: tessere tutte della stessa altezza (titolo sempre su due righe), così la pagina sotto non si alza e si abbassa; i podcast compaiono appena partono (prima solo dopo la prima pausa) e la fila tiene fino a 12 cose
 - Toccando il mini player si apre sempre quello che suona adesso: prima, dopo un video chiuso e una canzone messa, si apriva ancora il video
+
+## 1.131.0
+**Il + più affidabile**
+- Il gesto del + si legge prima che il cerchio si ingrandisca: prima, appena partiva il microfono, il cerchio cresceva e il dito sembrava spostarsi, così il blocco scattava o non scattava a caso
+- Per far partire la voce trascinando serve un trascinamento vero: un tocco un po' mosso apre il fumetto per scrivere, non il microfono
+- Il riconoscimento delle canzoni parte da solo solo dopo almeno 3 secondi di suono senza nessuna parola capita, non quando una frase non viene capita. Mentre ascolta la musica il + non fa nulla e il lucchetto non compare
+- Il fumetto per scrivere apre sempre la tastiera, ha una X accanto all'invio per annullare e anche "indietro" (tasto o gesto) annulla la nota
+- Dopo un vocale salvato il riconoscimento della musica non parte mai: se Canvas ha capito anche una sola parola era voce
+- Il fumetto "Salvato" ha il testo del colore giusto anche nel tema scuro (prima era nero)
+
+**Cerca più ordinata**
+- Nel campo solo "Cerca…", su una riga
+- Al massimo 4 risultati per fonte (promemoria, note, agenda, notizie, Spotify, YouTube, radio, podcast); sotto ognuna "Mostra altri" apre il resto solo di quella
 
 ## 1.130.0
 **Media › Continua**
