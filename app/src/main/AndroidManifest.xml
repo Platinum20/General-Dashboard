@@ -101,6 +101,19 @@
                 android:resource="@xml/widget_dashboard_info" />
         </receiver>
 
+        <!-- Widget "Da fare": i promemoria di oggi da spuntare dalla schermata Home. -->
+        <receiver
+            android:name=".widget.TasksWidget"
+            android:exported="false"
+            android:label="Canvas · Da fare">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tasks_info" />
+        </receiver>
+
         <receiver
             android:name=".media.radio.RadioAlarmReceiver"
             android:exported="false">

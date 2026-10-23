@@ -5,4 +5,5 @@
     <color name="widget_text">#FF1A1B20</color>
     <color name="widget_text_secondary">#FF44474F</color>
     <color name="widget_accent">#FF465D91</color>
+    <color name="widget_late">#FFB3261E</color>
 </resources>
