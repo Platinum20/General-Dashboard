@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.131.0
+## 1.132.0
 **Note in tre tipi: con scadenza, senza scadenza, spese**
 - Promemoria, date da ricordare, pacchi ed eventi del calendario sono ora una cosa sola, "Con scadenza": una lista per giorno (Scaduti, Oggi, Domani, Questa settimana, Più avanti), tutte con quanto manca a destra
 - Gli eventi dei prossimi 14 giorni del calendario compaiono fra le scadenze; si toccano per la loro scheda
@@ -10,6 +10,20 @@
 
 <<<<<<< HEAD
 =======
+
+## 1.131.0
+**Il + più affidabile**
+- Il gesto del + si legge prima che il cerchio si ingrandisca: prima, appena partiva il microfono, il cerchio cresceva e il dito sembrava spostarsi, così il blocco scattava o non scattava a caso
+- Per far partire la voce trascinando serve un trascinamento vero: un tocco un po' mosso apre il fumetto per scrivere, non il microfono
+- Il riconoscimento delle canzoni parte da solo solo dopo almeno 3 secondi di suono senza nessuna parola capita, non quando una frase non viene capita. Mentre ascolta la musica il + non fa nulla e il lucchetto non compare
+- Il fumetto per scrivere apre sempre la tastiera, ha una X accanto all'invio per annullare e anche "indietro" (tasto o gesto) annulla la nota
+- Dopo un vocale salvato il riconoscimento della musica non parte mai: se Canvas ha capito anche una sola parola era voce
+- Il fumetto "Salvato" ha il testo del colore giusto anche nel tema scuro (prima era nero)
+
+**Cerca più ordinata**
+- Nel campo solo "Cerca…", su una riga
+- Al massimo 4 risultati per fonte (promemoria, note, agenda, notizie, Spotify, YouTube, radio, podcast); sotto ognuna "Mostra altri" apre il resto solo di quella
+
 ## 1.130.0
 **Media › Continua**
 - I titoli e le righe sotto delle tessere di "Continua" non vengono più tagliati dagli angoli arrotondati: il testo sta un po' più dentro
@@ -23,7 +37,6 @@
 - La voce parte anche solo trascinando il +, senza tenerlo premuto prima; trascinando subito in su si blocca
 - **Che canzone è?** Dettando con il microfono bloccato c'è "♪ Canzone"; e se tenendo premuto il + si sente musica ma nessuna parola, Canvas prova da solo. Riconosciuta, parte su Spotify nel player dell'app e finisce nella playlist "Sentite da Canvas". Si attiva in Impostazioni › Media › Riconosci canzoni (serve il token di AudD; per la playlist Spotify chiede di accedere di nuovo una volta)
 
->>>>>>> origin/main
 ## 1.128.0
 **Note più pulite**
 - Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta

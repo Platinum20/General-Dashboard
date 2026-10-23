@@ -472,6 +472,7 @@ private fun CanvasNavBar(
         val holdEnd by rememberUpdatedState(onHoldEnd)
         val isLocked by rememberUpdatedState(locked)
         val lock by rememberUpdatedState(onLock)
+        val isMusic by rememberUpdatedState(music)
         // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
         var drag by remember { mutableFloatStateOf(0f) }
         val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
@@ -482,6 +483,59 @@ private fun CanvasNavBar(
                 .drawBehind {
                     // L'alone cresce con la voce.
                     if (grow > 1.01f) drawCircle(ring.copy(alpha = 0.22f), radius = size.minDimension / 2 * (grow + 0.15f + pulse * 0.45f))
+                }
+                // Il gesto si legge prima dell'ingrandimento: con il microfono il cerchio cresce e
+                // le coordinate del dito non devono cambiare (altrimenti il blocco scattava a caso).
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown()
+                        // Fino al tempo del tocco lungo: un tocco, oppure un trascinamento che fa partire subito la voce.
+                        var outcome = PRESS_HOLD
+                        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                            while (outcome == PRESS_HOLD) {
+                                val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
+                                outcome = when {
+                                    change == null -> PRESS_CANCEL
+                                    !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
+                                    (change.position - down.position).getDistance() > viewConfiguration.touchSlop * 2.5f -> PRESS_DRAG
+                                    else -> PRESS_HOLD
+                                }
+                            }
+                        }
+                        when {
+                            // Microfono bloccato: il tocco inserisce quello che si è detto.
+                            outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
+                            // Mentre ascolta una canzone il + non fa altro: finisce da solo.
+                            isMusic -> Unit
+                            outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
+                            // Annullato (es. il dito è scivolato via): niente.
+                            outcome == PRESS_CANCEL -> Unit
+                            isLocked -> Unit
+                            else -> {
+                                if (holdStart()) {
+                                    haptic(Haptic.CONFIRM)
+                                    // Come WhatsApp: trascinando in su il microfono si blocca.
+                                    var lockedNow = false
+                                    while (true) {
+                                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                        if (!change.pressed) break
+                                        drag = (down.position.y - change.position.y).coerceAtLeast(0f)
+                                        if (!lockedNow && drag > lockDistance) {
+                                            lockedNow = true
+                                            haptic(Haptic.CONFIRM)
+                                            lock()
+                                        }
+                                        change.consume()
+                                    }
+                                    drag = 0f
+                                    if (!lockedNow) {
+                                        haptic(Haptic.TICK)
+                                        holdEnd()
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 .graphicsLayer { scaleX = grow; scaleY = grow },
         ) {
@@ -500,55 +554,6 @@ private fun CanvasNavBar(
                         }
                         onClick(label = "Aggiungi") { onPlus(); true }
                         onLongClick(label = "Detta a voce") { onHoldStart() }
-                    }
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            val down = awaitFirstDown()
-                            // Fino al tempo del tocco lungo: un tocco, oppure un trascinamento che fa partire subito la voce.
-                            var outcome = PRESS_HOLD
-                            withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                while (outcome == PRESS_HOLD) {
-                                    val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
-                                    outcome = when {
-                                        change == null -> PRESS_CANCEL
-                                        !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
-                                        (change.position - down.position).getDistance() > viewConfiguration.touchSlop -> PRESS_DRAG
-                                        else -> PRESS_HOLD
-                                    }
-                                }
-                            }
-                            when {
-                                // Microfono bloccato: il tocco inserisce quello che si è detto.
-                                outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
-                                outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
-                                // Annullato (es. il dito è scivolato via): niente.
-                                outcome == PRESS_CANCEL -> Unit
-                                isLocked -> Unit
-                                else -> {
-                                    if (holdStart()) {
-                                        haptic(Haptic.CONFIRM)
-                                        // Come WhatsApp: trascinando in su il microfono si blocca.
-                                        var lockedNow = false
-                                        while (true) {
-                                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                                            if (!change.pressed) break
-                                            drag = (down.position.y - change.position.y).coerceAtLeast(0f)
-                                            if (!lockedNow && drag > lockDistance) {
-                                                lockedNow = true
-                                                haptic(Haptic.CONFIRM)
-                                                lock()
-                                            }
-                                            change.consume()
-                                        }
-                                        drag = 0f
-                                        if (!lockedNow) {
-                                            haptic(Haptic.TICK)
-                                            holdEnd()
-                                        }
-                                    }
-                                }
-                            }
-                        }
                     },
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -571,7 +576,7 @@ private fun CanvasNavBar(
                 }
             }
             // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
-            if (listening && !locked) {
+            if (listening && !locked && !music) {
                 val progress = (drag / lockDistance).coerceIn(0f, 1f)
                 Surface(
                     shape = CircleShape,
@@ -931,7 +936,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
         dictation.start { text ->
             // Nessuna parola ma qualcosa si sentiva: forse è musica, Canvas prova a riconoscerla.
-            if (text.isNullOrBlank() && dictation.heardSound && SongId.ready) identifySong()
+            if (text.isNullOrBlank() && dictation.soundedLikeMusic() && SongId.ready) identifySong()
             // Niente di detto: "Nessun suono rilevato" resta un attimo nel fumetto.
             else if (text.isNullOrBlank()) voiceScope.launch {
                 delay(1_600)
