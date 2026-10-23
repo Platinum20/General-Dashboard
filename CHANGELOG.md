@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.99.0
+**Più veloce all'apertura**
+- News e Oggi: le ultime notizie restano salvate sul telefono e si vedono subito appena apri l'app, mentre arrivano quelle nuove. Al primo avvio compaiono fonte per fonte, senza aspettare il sito più lento
+- News: gli articoli già controllati (leggibili o a pagamento) si ricordano per tre giorni, quindi la lista non riparte da "Preparo gli articoli…" a ogni apertura; quelli nuovi si controllano 6 alla volta invece di 4
+- YouTube (Home, Iscrizioni, Cronologia, Playlist, Mi piace, Guarda più tardi) e Spotify (Per te, Playlist, Libreria) mostrano subito l'ultimo feed salvato e si aggiornano in sottofondo. Scollegando l'account i dati salvati si cancellano
+- Spotify: le parti di "Per te" e della Libreria si scaricano tutte insieme, non una dopo l'altra
+
+**Più stabile**
+- Un sito di notizie lento o irraggiungibile non blocca più le altre per decine di secondi (tempi di attesa più brevi, niente secondo tentativo inutile quando manca la rete)
+- L'avvio non programma più i lavori in background sul thread principale: il primo schermo arriva prima
+
+**Sotto il cofano**
+- Test nuovi: OfflineCacheTest. La verifica dal vivo misura i tempi delle notizie (sul server di prova: prime dopo 0,3 s, tutte dopo 1,2 s)
+
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore
 - Spotify: le tue playlist usano il nuovo indirizzo dell'API di Spotify; la pagina di un artista mostra album e singoli (i "brani più ascoltati" non sono più disponibili per le app personali)
