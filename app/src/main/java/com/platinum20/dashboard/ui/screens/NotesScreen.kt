@@ -250,9 +250,6 @@ fun NotesScreen(
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
                 actions = {
-                    if (!searching) {
-                        RoundIconButton(Icons.Outlined.Search, "Cerca in tutte le Note") { searching = true }
-                    }
                     if (!searching && data.tasks.any { it.done }) {
                         RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
                             val done = data.tasks.filter { it.done }

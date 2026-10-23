@@ -1,10 +1,31 @@
 # Changelog
 
-## 1.118.0
+## 1.119.0
 **Player più fluido**
 - Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato
 - Il video si apre salendo dal basso, e chiudendolo ridiscende
 - La barra del tempo del player grande e del mini player avanza fluida da sola mentre suona, per ogni fonte (anche Spotify su un altro dispositivo); la barra del video segue sempre il player giusto, anche dopo aver chiuso e riaperto un video
+
+## 1.118.0
+**Il + decide da solo**
+- Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
+- Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
+
+**Microfono bloccabile, come WhatsApp**
+- Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
+
+**La voce si vede**
+- Mentre detti, nel fumetto sopra il + ci sono le barre che seguono la voce e sotto il testo che Canvas sta capendo. Se non senti niente dopo un paio di secondi c'è scritto "Nessun suono rilevato", e resta lì un attimo anche quando rilasci senza aver detto niente (niente più avviso a parte)
+
+**Icona**
+- Colori invertiti: fondo arancione e goccia blu
+
+**In alto a destra, solo due cerchi**
+- In ogni sezione (Oggi, News, Note, Media) in alto a destra ci sono sempre e solo la lente di Cerca ovunque e l'ingranaggio delle Impostazioni, nello stesso posto
+- News: niente più pulsante Aggiorna, si aggiorna tirando giù la lista. Oggi: "Personalizza" sta nelle Impostazioni (Card di Oggi). Note: la lente è quella di Cerca ovunque, che trova anche tutto quello che c'è nelle Note
+
+**Sotto il cofano**
+- Il giro fotografico trova di nuovo il + (06_aggiungi) e fotografa Cerca ovunque e Card di Oggi
 
 ## 1.117.0
 **Il player di YouTube, con tutto sul video**
