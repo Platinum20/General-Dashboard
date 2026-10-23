@@ -98,7 +98,8 @@ class Dictation(private val context: Context) {
                 finish(partial.takeIf { it.isNotBlank() })
             }
             override fun onResults(results: Bundle?) {
-                val text = best(results)
+                // Alcuni riconoscitori chiudono senza risultato finale: vale quello che si è visto scrivere.
+                val text = best(results) ?: partial.removePrefix(heard).trim().takeIf { it.isNotBlank() }
                 if (text != null) { heard = join(heard, text); sawWords = true }
                 partial = heard
                 if (keepGoing()) return

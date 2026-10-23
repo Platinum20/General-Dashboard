@@ -35,6 +35,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -85,6 +87,14 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
         if (request != null) text = TextFieldValue(request, TextRange(request.length))
     }
     BackHandler(open) { CaptureComposer.close() }
+    // Il primo "indietro" lo usa la tastiera per chiudersi: anche quello annulla la nota.
+    val imeVisible = WindowInsets.isImeVisible
+    var imeShown by remember { mutableStateOf(false) }
+    LaunchedEffect(imeVisible, open) {
+        if (!open) imeShown = false
+        else if (imeVisible) imeShown = true
+        else if (imeShown) CaptureComposer.close()
+    }
 
     fun send() {
         val value = text.text.trim()
@@ -110,7 +120,7 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
         )
     }
     // Senza tastiera sta sopra la barra, come il fumetto della voce; con la tastiera le sta sopra.
-    val lift by animateDpAsState(if (WindowInsets.isImeVisible) 8.dp else 92.dp, label = "composerLift")
+    val lift by animateDpAsState(if (imeVisible) 8.dp else 92.dp, label = "composerLift")
     AnimatedVisibility(
         open,
         enter = fadeIn() + slideInVertically { it / 2 },
@@ -125,6 +135,7 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
         Surface(
             shape = shape,
             color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             border = cardBorder(),
             modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().glass(shape),
         ) {
@@ -149,7 +160,16 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
                                 .semantics { contentDescription = "Scrivi" },
                         )
                     }
-                    Spacer(Modifier.width(8.dp))
+                    // La X annulla: la nota non si salva.
+                    IconButton(onClick = { haptic(Haptic.TICK); CaptureComposer.close() }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            Icons.Rounded.Close,
+                            contentDescription = "Annulla",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
                     Surface(
                         onClick = ::send,
                         shape = CircleShape,

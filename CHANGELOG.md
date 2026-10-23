@@ -5,7 +5,13 @@
 - Il gesto del + si legge prima che il cerchio si ingrandisca: prima, appena partiva il microfono, il cerchio cresceva e il dito sembrava spostarsi, così il blocco scattava o non scattava a caso
 - Per far partire la voce trascinando serve un trascinamento vero: un tocco un po' mosso apre il fumetto per scrivere, non il microfono
 - Il riconoscimento delle canzoni parte da solo solo dopo almeno 3 secondi di suono senza nessuna parola capita, non quando una frase non viene capita. Mentre ascolta la musica il + non fa nulla e il lucchetto non compare
-- Il fumetto per scrivere apre sempre la tastiera
+- Il fumetto per scrivere apre sempre la tastiera, ha una X accanto all'invio per annullare e anche "indietro" (tasto o gesto) annulla la nota
+- Dopo un vocale salvato il riconoscimento della musica non parte mai: se Canvas ha capito anche una sola parola era voce
+- Il fumetto "Salvato" ha il testo del colore giusto anche nel tema scuro (prima era nero)
+
+**Cerca più ordinata**
+- Nel campo solo "Cerca…", su una riga
+- Al massimo 4 risultati per fonte (promemoria, note, agenda, notizie, Spotify, YouTube, radio, podcast); sotto ognuna "Mostra altri" apre il resto solo di quella
 
 ## 1.130.0
 **Media › Continua**
