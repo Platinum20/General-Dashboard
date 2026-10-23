@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.120.0
+## 1.121.0
 **Oggi › La tua settimana**
 - In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
 - I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
@@ -13,6 +13,24 @@
 - Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
 - Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
 - Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
+
+## 1.120.0
+**Player più fluido**
+- Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato
+- Il video si apre salendo dal basso, e chiudendolo ridiscende
+- La barra del tempo del player grande e del mini player avanza fluida da sola mentre suona, per ogni fonte (anche Spotify su un altro dispositivo); la barra del video segue sempre il player giusto, anche dopo aver chiuso e riaperto un video
+
+## 1.119.0
+**Note: scrivi e basta**
+- Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
+- Dopo il salvataggio "Spesa: 12,50 € · Annulla": se Canvas ha capito male, un tocco e sparisce
+
+**Le pillole in alto hanno un senso**
+- Riassumono ogni parte: "Da fare · 5", "Abitudini · 1/2", "In arrivo · 2", "Note · 4", "Spese · 115,90 €". Compaiono solo le parti che hanno qualcosa
+- Toccandone una la pagina mostra solo quella parte (Spese apre mese, budget e spese fisse); un altro tocco o "indietro" torna a tutto
+
+**Sotto il cofano**
+- CaptureResult.undo per l'"Annulla" (lo usano anche il + e la dettatura). Test: notesChips in NotesUiLogicTest
 
 ## 1.118.0
 **Il + decide da solo**

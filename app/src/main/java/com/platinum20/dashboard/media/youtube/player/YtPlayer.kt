@@ -182,6 +182,9 @@ object YtPlayer {
     // in memoria un'Activity (né usarla dopo che è stata chiusa, a fine video).
     fun player(context: Context): ExoPlayer = exo ?: newPlayer(context.applicationContext)
 
+    /** Il player di adesso, senza crearne uno: chi lo mostra lo rilegge, perché dopo una chiusura ne nasce uno nuovo. */
+    fun current(): ExoPlayer? = exo
+
     private fun newPlayer(context: Context): ExoPlayer = ExoPlayer.Builder(context)
         // Si parte dalla qualità più alta e si scende solo se la rete non regge (stima iniziale alta).
         .setBandwidthMeter(DefaultBandwidthMeter.Builder(context).setInitialBitrateEstimate(20_000_000).build())

@@ -187,6 +187,7 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                                 player = YtPlayer.player(ctx)
                             }
                         },
+                        update = { view -> YtPlayer.current()?.let { if (view.player !== it) view.player = it } },
                         onRelease = { it.player = null },
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -220,8 +221,9 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
         }
         // Il tempo che scorre, sottile sul bordo basso; in diretta niente barra.
         if (now.durationMs > 0 && !now.live) {
+            val position = livePosition(now)
             androidx.compose.material3.LinearProgressIndicator(
-                progress = { now.progress },
+                progress = { (position.toFloat() / now.durationMs).coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp).height(2.dp),
                 drawStopIndicator = {},
             )
