@@ -6,7 +6,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.SaveAlt
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -74,7 +73,7 @@ internal fun BackupSettings() {
     )
 
     pending?.let { content ->
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { pending = null },
             title = { Text("Ripristinare il backup?") },
             text = {

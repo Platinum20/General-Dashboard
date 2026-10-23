@@ -48,7 +48,6 @@ import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Umbrella
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -372,7 +371,7 @@ fun SettingsScreen(
 
     if (editSongToken) {
         var value by remember { mutableStateOf(songToken) }
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { editSongToken = false },
             title = { Text("Riconosci canzoni") },
             text = {
@@ -400,7 +399,7 @@ fun SettingsScreen(
     }
 
     if (showLicenses) {
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { showLicenses = false },
             title = { Text("Licenze") },
             text = {
@@ -583,7 +582,7 @@ private fun MorningSettings() {
 
     if (pickTime) {
         val state = rememberTimePickerState(initialHour = morning.hour, initialMinute = morning.minute, is24Hour = true)
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { pickTime = false },
             title = { Text("Orario della notifica") },
             text = { TimePicker(state = state) },
