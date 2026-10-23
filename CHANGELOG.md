@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.104.0
+## 1.105.0
 **Note › Abitudini**
 - "Ricordamelo alle…" nella scheda dell'abitudine: scegli un'ora e, se a quell'ora non l'hai ancora fatta, arriva una notifica con la serie in gioco ("5 di fila: non perdere la serie") o, per le settimanali, "1 su 3 questa settimana"
 - Dalla notifica "Fatto" la segna senza aprire l'app, "Più tardi" la ripropone tra un'ora. Nessun avviso se è già fatta o se l'obiettivo della settimana è raggiunto (si riparte il lunedì); gli avvisi restano anche dopo il riavvio del telefono
@@ -16,6 +16,20 @@
 
 **Sotto il cofano**
 - Test nuovi: HabitReminderTest, GreetingTest, WeatherCodesTest; TomorrowTest con la mattina presto (3:30, 5:30, 7:00)
+
+## 1.104.0
+**Più veloce all'apertura**
+- News e Oggi: le ultime notizie restano salvate sul telefono e si vedono subito appena apri l'app, mentre arrivano quelle nuove. Al primo avvio compaiono fonte per fonte, senza aspettare il sito più lento
+- News: gli articoli già controllati (leggibili o a pagamento) si ricordano per tre giorni, quindi la lista non riparte da "Preparo gli articoli…" a ogni apertura; quelli nuovi si controllano 6 alla volta invece di 4
+- YouTube (Home, Iscrizioni, Cronologia, Playlist, Mi piace, Guarda più tardi) e Spotify (Per te, Playlist, Libreria) mostrano subito l'ultimo feed salvato e si aggiornano in sottofondo. Scollegando l'account i dati salvati si cancellano
+- Spotify: le parti di "Per te" e della Libreria si scaricano tutte insieme, non una dopo l'altra
+
+**Più stabile**
+- Un sito di notizie lento o irraggiungibile non blocca più le altre per decine di secondi (tempi di attesa più brevi, niente secondo tentativo inutile quando manca la rete)
+- L'avvio non programma più i lavori in background sul thread principale: il primo schermo arriva prima
+
+**Sotto il cofano**
+- Test nuovi: OfflineCacheTest. La verifica dal vivo misura i tempi delle notizie (sul server di prova: prime dopo 0,3 s, tutte dopo 1,2 s)
 
 ## 1.103.0
 **News**

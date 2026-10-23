@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.media.youtube
 
 import android.content.Context
+import com.platinum20.dashboard.media.FeedCache
+import com.platinum20.dashboard.media.FeedCodec
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.userMessage
 import com.platinum20.dashboard.media.youtube.player.YtResolver
@@ -38,7 +40,7 @@ object YouTubeStore {
     val watchLater: StateFlow<Loadable<List<YtVideo>>> = _watchLater.asStateFlow()
 
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
-        load(context, _subscriptions, force, web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
+        load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
             YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
         }
 
@@ -51,19 +53,19 @@ object YouTubeStore {
     val history: StateFlow<Loadable<List<YtVideo>>> = _history.asStateFlow()
 
     fun refreshHistory(context: Context, force: Boolean = false) =
-        load(context, _history, force, web = { YouTubeWeb.history(it) }, api = null)
+        load(context, _history, force, FeedCache.videos("yt-cronologia.json"), web = { YouTubeWeb.history(it) }, api = null)
 
     fun refreshHome(context: Context, force: Boolean = false) =
-        load(context, _home, force, web = { YouTubeWeb.home(it) }, api = null)
+        load(context, _home, force, FeedCache.videos("yt-home.json"), web = { YouTubeWeb.home(it) }, api = null)
 
     fun refreshPlaylists(context: Context, force: Boolean = false) =
-        load(context, _playlists, force, web = { YouTubeWeb.playlists(it) }) { token -> YouTubeApi.playlists(token) }
+        load(context, _playlists, force, FeedCache.playlists, web = { YouTubeWeb.playlists(it) }) { token -> YouTubeApi.playlists(token) }
 
     fun refreshLiked(context: Context, force: Boolean = false) =
-        load(context, _liked, force, web = { YouTubeWeb.liked(it) }) { token -> YouTubeApi.liked(token) }
+        load(context, _liked, force, FeedCache.videos("yt-mi-piace.json"), web = { YouTubeWeb.liked(it) }) { token -> YouTubeApi.liked(token) }
 
     fun refreshWatchLater(context: Context, force: Boolean = false) =
-        load(context, _watchLater, force, web = { YouTubeWeb.watchLater(it) }, api = null)
+        load(context, _watchLater, force, FeedCache.videos("yt-dopo.json"), web = { YouTubeWeb.watchLater(it) }, api = null)
 
     fun loadPlaylist(context: Context, playlistId: String, force: Boolean = false) {
         val state = _playlistItems.value[playlistId]
@@ -92,6 +94,7 @@ object YouTubeStore {
     }
 
     fun clear() {
+        FeedCache.clear("yt-")
         _subscriptions.value = Loadable()
         _playlists.value = Loadable()
         _liked.value = Loadable()
@@ -115,13 +118,30 @@ object YouTubeStore {
         context: Context,
         flow: MutableStateFlow<Loadable<T>>,
         force: Boolean,
+        codec: FeedCodec<T>,
         web: suspend (Context) -> T,
         api: (suspend (String) -> T)?,
     ) {
         val state = flow.value
         if (state.loading || (!force && fresh(state))) return
         flow.update { it.copy(loading = true, error = null) }
-        scope.launch { flow.value = call(context, web, api).let { if (it.data == null) it.copy(data = state.data) else it } }
+        scope.launch {
+            var previous = state.data
+            // All'avvio si vede subito l'ultimo feed salvato, intanto si scarica quello nuovo.
+            if (previous == null) {
+                FeedCache.restore(codec)?.let { saved ->
+                    previous = saved.data
+                    flow.update { it.copy(data = saved.data, loadedAt = saved.loadedAt) }
+                    if (!force && fresh(saved)) {
+                        flow.update { it.copy(loading = false) }
+                        return@launch
+                    }
+                }
+            }
+            val result = call(context, web, api)
+            flow.value = if (result.data == null) result.copy(data = previous) else result
+            result.data?.let { FeedCache.save(codec, it, result.loadedAt) }
+        }
     }
 
     /**
