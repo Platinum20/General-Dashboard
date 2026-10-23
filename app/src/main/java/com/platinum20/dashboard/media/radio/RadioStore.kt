@@ -127,6 +127,11 @@ object RadioStore {
         controller?.takeIf { it.isPlaying }?.pause()
     }
 
+    /** Volume del player (0-1), per la sveglia che parte piano. */
+    fun setVolume(volume: Float) {
+        controller?.volume = volume.coerceIn(0f, 1f)
+    }
+
     /** Il podcast prende il player: smettiamo di seguirlo, senza comandarlo. */
     fun yieldPlayer() {
         current = null

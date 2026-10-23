@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.99.0
+**Media › Podcast (nuovo)**
+- Quinta fonte in Media: cerchi un podcast (ricerca gratuita di iTunes, senza account), lo apri e vedi gli episodi con data, durata e una riga di descrizione, tutto dentro l'app
+- "Segui": i podcast che segui stanno in cima alla pagina e sotto ci sono i loro ultimi episodi tutti insieme, dal più nuovo
+- Un tocco su un episodio lo fa suonare nello stesso player della radio (notifica, schermata di blocco, cuffie), con 10 secondi indietro, 30 avanti e la barra del tempo
+- Ogni episodio riparte dal punto in cui eri, anche dopo aver chiuso l'app; nella lista si vede "restano 12 min" con la barra, e "ascoltato" quando l'hai finito
+- Al primo uso la pagina non è vuota: ricerche pronte ("Il Post", "Muschio Selvaggio", "Geopop"…)
+- Radio e podcast si passano il player senza interrompersi a vicenda per sbaglio
+
+**News › Il punto del giorno**
+- "Ascolta" (icona delle cuffie in alto): la voce italiana del telefono legge il punto come un notiziario breve, un'apertura con l'ora e poi una frase per tema, senza indirizzi né simboli. La card "In ascolto" dice a che tema sei, con Successivo e Ferma
+- Se sul telefono manca la voce italiana, un messaggio dice dove aggiungerla invece di non fare nulla
+
+**Note › Promemoria**
+- "Ogni mese" il 31 non scivola più al 28 per sempre dopo febbraio: torna al 31 (o all'ultimo giorno del mese); "ogni anno" il 29 febbraio torna al 29 negli anni bisestili
+
+**Widget**
+- La riga dei promemoria indica il primo in ordine di orario
+
+**Sotto il cofano**
+- Test nuovi: PodcastFeedTest (due feed RSS e una risposta di iTunes salvati nei test: durate "1:02:03", "62:03" e secondi, date con fusi diversi, descrizioni HTML, episodi senza audio, doppioni), RecapReaderTest, RepeatEndOfMonthTest, WidgetLinesTest
+- Giro fotografico: nuove foto di Radio e Podcast
+
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore
 - Spotify: le tue playlist usano il nuovo indirizzo dell'API di Spotify; la pagina di un artista mostra album e singoli (i "brani più ascoltati" non sono più disponibili per le app personali)
