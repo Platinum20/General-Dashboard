@@ -47,9 +47,12 @@ data class SpEpisode(
 
 class SpotifyApiException(message: String, val code: Int) : IOException(message)
 
-/** Playlist non tua: Spotify non dà l'elenco dei brani alle app personali, ma si può ascoltare. */
+/**
+ * Spotify ha risposto 403 all'elenco dei brani: succede con le playlist che non hai creato tu, ma
+ * anche quando l'account non è tra gli utenti dell'app (User Management). Si può comunque ascoltare.
+ */
 class PlaylistLockedException : IOException(
-    "Spotify non mostra alle app personali i brani delle playlist che non hai creato tu. Puoi comunque ascoltarla: tocca Riproduci."
+    "Spotify non mostra a Canvas i brani di questa playlist: succede con quelle che non hai creato tu. Puoi comunque ascoltarla: tocca Riproduci."
 )
 
 /** Web API di Spotify: libreria, ascolti e, con Premium, comandi della riproduzione. */
@@ -133,8 +136,7 @@ object SpotifyApi {
         // Da febbraio 2026 l'elenco si chiama "items" e Spotify lo dà alle app personali solo per le
         // playlist tue o collaborative: per le altre (es. quelle create da Spotify) risponde 403.
         SpKind.PLAYLIST -> try {
-            request(token, "playlists/${parent.id}/items?limit=100")?.optJSONArray("items")
-                .objects().mapNotNull { (it.optJSONObject("item") ?: it.optJSONObject("track"))?.toItem() }
+            parsePlaylistItems(request(token, "playlists/${parent.id}/items?limit=100"))
         } catch (e: SpotifyApiException) {
             if (e.code == 403) throw PlaylistLockedException() else throw e
         }
@@ -145,8 +147,7 @@ object SpotifyApi {
                 .mapNotNull { it.toItem()?.copy(image = image) }
         }
         // I "brani più ascoltati" dell'artista non ci sono più per le app personali: album e singoli.
-        SpKind.ARTIST -> request(token, "artists/${parent.id}/albums?include_groups=album,single&limit=30")?.optJSONArray("items")
-            .objects().mapNotNull { it.toItem() }
+        SpKind.ARTIST -> parseArtistAlbums(request(token, "artists/${parent.id}/albums?include_groups=album,single&limit=30"))
         SpKind.SHOW -> request(token, "shows/${parent.id}/episodes?limit=50&market=from_token")?.optJSONArray("items")
             .objects().mapNotNull { it.toItem() }
         else -> emptyList()
@@ -214,6 +215,18 @@ object SpotifyApi {
     suspend fun next(token: String) { request(token, "me/player/next", "POST") }
     suspend fun previous(token: String) { request(token, "me/player/previous", "POST") }
 
+    /** Brani di una playlist: dal 2026 ogni voce ha il brano in "item", prima era in "track". */
+    fun parsePlaylistItems(json: JSONObject?): List<SpItem> =
+        json?.optJSONArray("items").objects()
+            .mapNotNull { (it.optJSONObject("item") ?: it.optJSONObject("track"))?.toItem() }
+
+    /** Album e singoli di un artista. */
+    fun parseArtistAlbums(json: JSONObject?): List<SpItem> =
+        json?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+
+    /** Un elemento singolo come arriva dalle API (brano, album, playlist…), o null se non si riconosce. */
+    fun parseItem(json: JSONObject): SpItem? = json.toItem()
+
     private fun JSONArray?.objects(): List<JSONObject> =
         if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it) }
 
@@ -241,7 +254,8 @@ object SpotifyApi {
             SpKind.TRACK -> artists
             SpKind.ALBUM -> listOf(artists, optString("release_date").take(4)).filter { it.isNotBlank() }.joinToString(" · ")
             SpKind.PLAYLIST -> optJSONObject("owner")?.optString("display_name").orEmpty().let { owner ->
-                val total = optJSONObject("tracks")?.optInt("total") ?: 0
+                // Con la nuova API il conteggio sta in "items", prima in "tracks".
+                val total = (optJSONObject("items") ?: optJSONObject("tracks"))?.optInt("total") ?: 0
                 listOf(owner, if (total > 0) "$total brani" else "").filter { it.isNotBlank() }.joinToString(" · ")
             }
             SpKind.ARTIST -> "Artista"

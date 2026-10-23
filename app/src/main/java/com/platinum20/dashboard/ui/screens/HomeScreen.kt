@@ -73,6 +73,7 @@ import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.Tomorrow
+import com.platinum20.dashboard.today.WeekReview
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
@@ -96,6 +97,10 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.Headphones
+import com.platinum20.dashboard.news.RecapReader
+import com.platinum20.dashboard.news.RecapSpeaker
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.material3.CardDefaults
@@ -170,6 +175,15 @@ fun HomeScreen(
             events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
             tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
         )
+    }
+    // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
+    var weekSeen by remember { mutableStateOf(0) }
+    val weekReview = remember(minute, notes, weekSeen) {
+        WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }?.let { monday ->
+            WeekReview.build(
+                monday, notes.tasks, notes.habits, notes.expenses, notes.fixedExpenses, notes.parcels, notes.countdowns,
+            ).takeIf { !it.isEmpty }
+        }
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume, tomorrowPlan) {
         Briefing.build(
@@ -318,6 +332,19 @@ fun HomeScreen(
                         onOpenWeather = onOpenWeather,
                         onOpenCalendar = { inApp?.openCalendar?.invoke() },
                         onOpenNotes = onOpenNotes,
+                    )
+                }
+            }
+            weekReview?.let { review ->
+                item(key = "week") {
+                    WeekReviewCard(
+                        review = review,
+                        onOpenNotes = onOpenNotes,
+                        onDismiss = {
+                            haptic(Haptic.TICK)
+                            WeekReviewSeen.markSeen(context, review.monday)
+                            weekSeen++
+                        },
                     )
                 }
             }
@@ -541,6 +568,27 @@ private fun RecapCard(
         title = "Il punto del giorno",
         action = if (state.themes.isNotEmpty()) "Tutti" else null,
         onAction = onOpenAll,
+        trailing = {
+            // Ascolta il punto anche da Oggi, senza aprire la pagina.
+            if (state.themes.isNotEmpty()) {
+                val context = LocalContext.current
+                val listening by RecapSpeaker.state.collectAsStateWithLifecycle()
+                IconButton(
+                    onClick = {
+                        if (listening != null) RecapSpeaker.stop()
+                        else RecapSpeaker.play(context, RecapReader.script(state.themes, LocalTime.now()))
+                    },
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Icon(
+                        if (listening != null) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                        contentDescription = if (listening != null) "Smetti di ascoltare" else "Ascolta il punto",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        },
     ) {
         Column(Modifier.padding(vertical = 4.dp)) {
             when {

@@ -29,6 +29,8 @@ data class TaskItem(
     val repeat: Repeat? = null,
     /** Scadenza originale di un ricorrente rimandato dalla notifica: la volta dopo si calcola da qui. */
     val snoozedFrom: Long? = null,
+    /** Quando è stato spuntato (millisecondi), per "La tua settimana"; null per i vecchi e gli aperti. */
+    val doneAt: Long? = null,
 )
 
 /** Una data da aspettare: compleanni, viaggi, scadenze. Se [yearly] si ripete ogni anno. */
@@ -278,7 +280,7 @@ object NotesStore {
     fun toggleTask(id: Long) {
         val task = task(id) ?: return
         if (!task.done && advanceRepeat(task)) return
-        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(done = !it.done) else it }) }
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(done = !it.done, doneAt = if (it.done) null else System.currentTimeMillis()) else it }) }
         syncReminder(id)
     }
 
@@ -291,7 +293,7 @@ object NotesStore {
     fun setTaskDone(id: Long) {
         val task = task(id) ?: return
         if (!task.done && advanceRepeat(task)) return
-        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(done = true) else it }) }
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(done = true, doneAt = System.currentTimeMillis()) else it }) }
         syncReminder(id)
     }
 
@@ -539,6 +541,7 @@ object NotesStore {
                         .apply { it.dueAt?.let { due -> put("dueAt", due) } }
                         .apply { it.repeat?.let { r -> put("repeat", r.name) } }
                         .apply { it.snoozedFrom?.let { s -> put("snoozedFrom", s) } }
+                        .apply { it.doneAt?.let { t -> put("doneAt", t) } }
                 )
             }
         })
@@ -619,6 +622,7 @@ object NotesStore {
                     if (o.has("dueAt")) o.optLong("dueAt") else null,
                     runCatching { Repeat.valueOf(o.optString("repeat")) }.getOrNull(),
                     if (o.has("snoozedFrom")) o.optLong("snoozedFrom") else null,
+                    if (o.has("doneAt")) o.optLong("doneAt") else null,
                 )
             },
             notes = (0 until notes.length()).map { i ->
