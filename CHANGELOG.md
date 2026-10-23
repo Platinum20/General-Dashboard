@@ -5,6 +5,10 @@
 - Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
 - Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
 
+## 1.124.0
+**Torna il carattere di prima**
+- Via il serif della 1.123.0: titoli e testo tornano in Inter e Inter Display, con le dimensioni di prima
+
 ## 1.123.0
 **Il carattere di Claude**
 - Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude

@@ -282,7 +282,7 @@ fun SettingsScreen(
                         icon = Icons.Outlined.Info,
                         accent = TileAccent.NEUTRAL,
                         title = "Licenze",
-                        subtitle = "Caratteri Source Serif e Inter, liste del blocco pubblicità",
+                        subtitle = "Caratteri Inter, liste del blocco pubblicità",
                         showChevron = true,
                         onClick = { showLicenses = true },
                     )
@@ -306,7 +306,7 @@ fun SettingsScreen(
             title = { Text("Licenze") },
             text = {
                 Text(
-                    "Caratteri Source Serif 4 di Adobe e Inter di Rasmus Andersson, SIL Open Font License 1.1.\n\n" +
+                    "Caratteri Inter e Inter Display di Rasmus Andersson, SIL Open Font License 1.1.\n\n" +
                         "Liste del blocco pubblicità: EasyList ed EasyPrivacy (CC BY-SA 3.0, GPLv3), " +
                         "filtri di uBlock Origin (GPLv3), scaricate dai loro siti.\n\n" +
                         "Meteo e località: Open-Meteo (CC BY 4.0).",
