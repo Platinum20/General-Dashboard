@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.132.0
+## 1.133.0
 **Note in tre tipi: con scadenza, senza scadenza, spese**
 - Promemoria, date da ricordare, pacchi ed eventi del calendario sono ora una cosa sola, "Con scadenza": una lista per giorno (Scaduti, Oggi, Domani, Questa settimana, Più avanti), tutte con quanto manca a destra
 - Gli eventi dei prossimi 14 giorni del calendario compaiono fra le scadenze; si toccano per la loro scheda
@@ -10,6 +10,11 @@
 
 <<<<<<< HEAD
 =======
+
+## 1.132.0
+**Finestre di vetro**
+- Il vetro della barra arriva anche alle finestre che si aprono sopra la pagina (conferme, scelta di data e ora, token, licenze, backup e le altre): da Android 12 la pagina dietro si sfoca e la finestra la lascia intravedere, con un filo di luce sul bordo alto. Se il telefono spegne la sfocatura (risparmio energetico) la finestra torna piena, sempre leggibile
+- Il vetro che c'era resta dov'era: barra, +, mini player, fumetto del + e della voce
 
 ## 1.131.0
 **Il + più affidabile**

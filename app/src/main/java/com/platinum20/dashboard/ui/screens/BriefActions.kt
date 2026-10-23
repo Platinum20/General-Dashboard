@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Done
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -96,7 +95,7 @@ fun BriefActionButton(action: BriefAction, onClick: () -> Unit) {
 /** Le abitudini che mancano oggi, da spuntare senza aprire Note. */
 @Composable
 fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text("Abitudini di oggi") },
         text = {

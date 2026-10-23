@@ -37,7 +37,6 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Repeat
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -294,7 +293,7 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
 
     if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
     stopping?.let { f ->
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { stopping = null },
             title = { Text(f.text.ifEmpty { "Spesa fissa" }) },
             text = { Text("Smettere di aggiungerla ogni mese? Quelle già aggiunte restano nei mesi passati.") },
@@ -330,7 +329,7 @@ private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
         NotesStore.setBudget(centsOf(text))
         onDismiss()
     }
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text("Budget mensile") },
         text = {
@@ -371,7 +370,7 @@ private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (E
             onDismiss()
         }
     }
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text("Spesa") },
         text = {
@@ -547,7 +546,7 @@ fun ParcelDialog(
     var code by remember { mutableStateOf(parcel?.code ?: initialCode) }
     var expected by remember { mutableStateOf(parcel?.expected) }
     var picking by remember { mutableStateOf(false) }
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (parcel == null) "Nuovo pacco" else "Pacco") },
         text = {

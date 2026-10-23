@@ -55,7 +55,6 @@ import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.radio.RadioAlarm
 import androidx.compose.material.icons.outlined.Alarm
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -221,7 +220,7 @@ private fun AlarmCard(suggested: RadioStation?) {
     if (editing) {
         val time = rememberTimePickerState(initialHour = alarm.hour, initialMinute = alarm.minute, is24Hour = true)
         var weekdays by remember { mutableStateOf(alarm.weekdaysOnly) }
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { editing = false },
             title = { Text("Sveglia con la radio") },
             text = {

@@ -268,7 +268,7 @@ fun NotesScreen(
         habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
         dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" }
     if (showingIdeas) {
-        androidx.compose.material3.AlertDialog(
+        CanvasDialog(
             onDismissRequest = { showingIdeas = false },
             title = { Text("Idee da aggiungere") },
             text = {
