@@ -60,6 +60,7 @@ import com.platinum20.dashboard.work.MorningWorker
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -272,15 +273,39 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
 }
 
 /** Nuova abitudine o modifica (nome, eliminazione) di una esistente. [onDeleted] offre "Annulla". */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit = {}, idea: HabitIdea? = null) {
     var title by remember { mutableStateOf(habit?.title ?: idea?.title.orEmpty()) }
     var perWeek by remember { mutableStateOf(habit?.perWeek ?: idea?.perWeek ?: 0) }
+    var remindAt by remember { mutableStateOf(habit?.remindAt) }
+    var pickingTime by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     val save = {
         if (title.isNotBlank()) {
-            NotesStore.saveHabit(habit?.id, title, perWeek)
+            NotesStore.saveHabit(habit?.id, title, perWeek, remindAt)
             onDismiss()
         }
+    }
+    if (pickingTime) {
+        val start = remindAt ?: LocalTime.of(21, 0)
+        val timeState = rememberTimePickerState(initialHour = start.hour, initialMinute = start.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { pickingTime = false },
+            title = { Text("Ricordamelo alle") },
+            text = { TimePicker(state = timeState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    remindAt = LocalTime.of(timeState.hour, timeState.minute)
+                    pickingTime = false
+                    if (Build.VERSION.SDK_INT >= 33 && !MorningWorker.canNotify(context)) {
+                        permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }) { Text("OK") }
+            },
+            dismissButton = { TextButton(onClick = { pickingTime = false }) { Text("Annulla") } },
+        )
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -310,6 +335,25 @@ fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit
                     selected = perWeek,
                     onSelect = { perWeek = it },
                 )
+                Spacer(Modifier.height(8.dp))
+                // Facoltativo: l'avviso arriva solo se a quell'ora l'abitudine manca ancora.
+                Row(
+                    Modifier.fillMaxWidth().clickable { pickingTime = true }.padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.size(10.dp))
+                    Text(
+                        remindAt?.let { "Ricordamelo alle %d:%02d".format(it.hour, it.minute) } ?: "Ricordamelo a un'ora…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (remindAt != null) {
+                        IconButton(onClick = { remindAt = null }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Outlined.Close, contentDescription = "Togli il promemoria", modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
                 if (habit != null) {
                     Spacer(Modifier.height(12.dp))
                     Text(
