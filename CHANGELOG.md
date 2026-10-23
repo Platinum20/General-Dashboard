@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.109.0
+## 1.110.0
 **Media, rifatta da capo**
 - Tre sezioni: **Musica**, **Video** e **Radio e podcast**. In alto il blocco colorato con quello che suona adesso (qualunque fonte) o da dove riprendere; sotto "Continua" con le anteprime, i nuovi episodi e le tue radio da far partire con un tocco
 - **Musica** mette insieme Spotify e YouTube Music: i "Mi piace" di YouTube Music accanto ai tuoi ascolti di Spotify, e una ricerca sola che cerca su entrambi. I brani di YouTube si ascoltano in solo audio (meno dati), con "Guarda il video" per passare al video dallo stesso punto
