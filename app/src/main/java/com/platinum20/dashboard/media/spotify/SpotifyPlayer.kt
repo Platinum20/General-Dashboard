@@ -6,8 +6,10 @@ import android.webkit.JavascriptInterface
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.PlayerCommand
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,8 +80,10 @@ object SpotifyPlayer {
     /**
      * Riprende [trackUri] (dentro [contextUri], se c'è) da [positionMs] nel riproduttore dell'app.
      * Serve per "Continua" e quando Spotify ha perso lo stato dopo una pausa lunga.
+     * Con [autoplay] falso il brano si carica e si mette subito in pausa (es. aperto da una nota):
+     * Spotify non sa caricare senza suonare.
      */
-    fun resume(context: Context, trackUri: String, contextUri: String?, positionMs: Long) {
+    fun resume(context: Context, trackUri: String, contextUri: String?, positionMs: Long, autoplay: Boolean = true) {
         _error.value = null
         NowPlaying.pauseOthers(MediaService.SPOTIFY, radio = true)
         start(context)
@@ -98,6 +102,12 @@ object SpotifyPlayer {
                 if (again != null) result = runCatching { playOn(again, ctx, uris, trackUri.takeIf { ctx != null }, positionMs) }
             }
             result.exceptionOrNull()?.let { _error.value = spotifyMessage(it) }
+            if (result.isSuccess && !autoplay) {
+                // Il riproduttore parte appena riceve il brano: lo si ferma non appena è suo.
+                delay(400)
+                NowPlaying.command(MediaService.SPOTIFY, PlayerCommand.PAUSE)
+                SpotifyAuth.token()?.let { token -> runCatching { SpotifyApi.pause(token) } }
+            }
         }
     }
 

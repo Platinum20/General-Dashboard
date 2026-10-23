@@ -135,6 +135,58 @@ object Playback {
     internal fun pick(candidates: List<Playing>, last: PlaySource?): Playing? =
         candidates.firstOrNull { it.playing } ?: candidates.firstOrNull { it.source == last } ?: candidates.firstOrNull()
 
+    /**
+     * Quello che suona adesso come voce da riaprire (per "Salva nelle note"), con il punto a cui si è.
+     * Null se non suona nulla o se è la lettura del punto del giorno.
+     */
+    fun currentAsItem(at: Long = System.currentTimeMillis()): ResumeItem? {
+        val source = now.value?.source ?: return null
+        val exo = YtPlayer.current()
+        return itemFor(
+            source, YtPlayer.now.value, exo?.currentPosition ?: 0, exo?.duration ?: 0,
+            NowPlaying.tracks.value[MediaService.SPOTIFY], SpotifyStore.playback.value,
+            RadioStore.now.value, PodcastStore.now.value, at,
+        )
+    }
+
+    /** La voce da riaprire per [source], dagli stati delle fonti. Funzione pura, provata nei test. */
+    internal fun itemFor(
+        source: PlaySource,
+        yt: YtNow?,
+        ytPositionMs: Long,
+        ytDurationMs: Long,
+        spotifyTrack: Track?,
+        spotifyRemote: SpPlayback?,
+        radio: RadioNow?,
+        podcast: PodcastNow?,
+        at: Long,
+    ): ResumeItem? = when (source) {
+        PlaySource.VIDEO, PlaySource.MUSIC -> yt?.stream?.let { YtPlayer.resumeEntry(it, ytPositionMs, ytDurationMs, at, yt.audioOnly) }
+        PlaySource.SPOTIFY -> spotifyTrack?.takeIf { it.uri.isNotBlank() }?.let {
+            ResumeItem(
+                ResumeKind.SPOTIFY, it.uri, it.title, it.artist, it.artworkUrl,
+                positionMs = it.positionMs, durationMs = it.durationMs, at = at, link = it.contextUri,
+            )
+        } ?: spotifyRemote?.item?.let {
+            ResumeItem(
+                ResumeKind.SPOTIFY, it.uri, it.title, it.subtitle, it.image,
+                positionMs = spotifyRemote.progressMs, durationMs = spotifyRemote.durationMs, at = at,
+            )
+        }
+        PlaySource.RADIO -> radio?.station?.let {
+            ResumeItem(ResumeKind.RADIO, it.id, it.name, "Radio", it.logo, at = at, station = it)
+        }
+        PlaySource.PODCAST -> podcast?.episode?.let {
+            ResumeItem(
+                ResumeKind.PODCAST, it.id, it.title, it.podcastTitle, it.image,
+                positionMs = podcast.positionMs,
+                durationMs = podcast.durationMs.takeIf { d -> d > 0 } ?: (it.durationSec * 1000),
+                at = at, link = it.audioUrl, feed = it.feedUrl,
+            )
+        }
+        PlaySource.SPEECH -> null
+    }
+
     fun toggle(context: Context) {
         val current = now.value ?: return
         when (current.source) {

@@ -238,8 +238,9 @@ object YtPlayer {
     /**
      * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
      * video messo in pausa resta in pausa (si riprende con il tasto play).
+     * Con [autoplay] falso il video si carica fermo e aspetta il play (es. aperto da una nota).
      */
-    fun play(context: Context, link: String, audioOnly: Boolean = false) {
+    fun play(context: Context, link: String, audioOnly: Boolean = false, autoplay: Boolean = true) {
         val loaded = _now.value
         if (isLoaded(loaded, link)) {
             // Stesso video: si passa da solo audio a video (o il contrario) dal punto in cui si era.
@@ -267,6 +268,7 @@ object YtPlayer {
                     start(
                         context, it, if (auto) Mode.AUTO else Mode.FIXED,
                         positionMs = if (from > 0) from else YtHistory.resumeMs(it.id),
+                        play = autoplay,
                         subtitle = pickSubtitle(it),
                     )
                     remember(context)
