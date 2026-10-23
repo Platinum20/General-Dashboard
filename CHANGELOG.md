@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.106.0
+**Oggi**
+- Nuova card "La tua settimana", dalla domenica alle 17 al lunedì a mezzogiorno: una frase in cima ("Settimana buona: 12 cose fatte, palestra 3 su 3, spese -18%"), poi "Com'è andata" (promemoria chiusi, ogni abitudine con "5 su 7" o "3 su 3", spese a mano della settimana contro la media delle 4 prima e la categoria cresciuta di più, pacchi arrivati) e "Cosa arriva" (compleanni e date della settimana nuova, addebiti fissi). "Fatto" la chiude fino alla domenica dopo; ogni riga apre Note
+- Il punto del giorno si ascolta anche da Oggi: cuffie accanto a "Tutti" nella card, un altro tocco ferma la lettura
+
+**Note › Da fare**
+- I promemoria ricordano quando li hai spuntati: serve a "La tua settimana" (quelli chiusi prima di questa versione non contano)
+
+**Media › Spotify**
+- Playlist che Spotify non fa elencare: l'avviso vale solo per quel caricamento. Ricaricando senza rete si vede "Spotify non è raggiungibile" e restano copertina, titolo e "Riproduci", invece del vecchio avviso a tutto schermo; se poi i brani arrivano, l'avviso sparisce
+- L'avviso non dice più per certo "non l'hai creata tu": Spotify risponde allo stesso modo anche quando l'account non è tra gli utenti dell'app
+- Il numero di brani sotto le playlist legge anche il nuovo campo di Spotify ("items"), così non sparisce
+
+**Sotto il cofano**
+- Test nuovi: WeekReviewTest (finestra della card, settimana completa, settimana vuota, spese senza storia, frase), SpotifyParseTest (brani in "item" e in "track", album dell'artista, numero di brani, avviso dopo un errore di rete)
+
 ## 1.105.0
 **Note › Abitudini**
 - "Ricordamelo alle…" nella scheda dell'abitudine: scegli un'ora e, se a quell'ora non l'hai ancora fatta, arriva una notifica con la serie in gioco ("5 di fila: non perdere la serie") o, per le settimanali, "1 su 3 questa settimana"
