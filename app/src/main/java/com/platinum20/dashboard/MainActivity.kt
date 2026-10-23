@@ -1,6 +1,12 @@
 package com.platinum20.dashboard
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -62,6 +68,7 @@ import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.ui.screens.Haptic
 import com.platinum20.dashboard.ui.screens.PlusAction
+import com.platinum20.dashboard.ui.screens.SearchScreen
 import com.platinum20.dashboard.ui.screens.Springs
 import com.platinum20.dashboard.ui.screens.bouncyPress
 import com.platinum20.dashboard.ui.screens.card
@@ -272,6 +279,7 @@ object Routes {
     const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
+    const val SEARCH = "home/search"
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}"
     const val MEDIA = "media"
@@ -337,12 +345,14 @@ private val topDestinations = listOf(
  * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
  * e accanto il + tondo per aggiungere al volo. La pillola è di vetro sfocato sopra le liste.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CanvasNavBar(
     currentRoute: String?,
     dueToday: Int,
     onSelect: (TopDestination) -> Unit,
     onPlus: () -> Unit,
+    onPlusLong: () -> Unit,
 ) {
     val haptic = rememberHaptic()
     Row(
@@ -377,13 +387,20 @@ private fun CanvasNavBar(
             }
         }
         Surface(
-            onClick = { haptic(Haptic.TICK); onPlus() },
             shape = CircleShape,
             // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
             color = androidx.compose.ui.graphics.Color.Transparent,
             contentColor = MaterialTheme.colorScheme.onPrimary,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
-            modifier = Modifier.size(60.dp).bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary),
+            modifier = Modifier.size(60.dp).bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
+                .clip(CircleShape)
+                // Tocco: scrivi. Tenuto premuto: detta a voce.
+                .combinedClickable(
+                    onClickLabel = "Aggiungi",
+                    onLongClickLabel = "Detta a voce",
+                    onLongClick = { haptic(Haptic.CONFIRM); onPlusLong() },
+                    onClick = { haptic(Haptic.TICK); onPlus() },
+                ),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Add, contentDescription = "Aggiungi", modifier = Modifier.size(28.dp))
@@ -545,8 +562,29 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
 
     // Il + della barra: cattura veloce, oppure l'azione della sezione aperta (in Note, la scheda scelta).
     var capturing by remember { mutableStateOf(false) }
+    // Il testo dettato tenendo premuto il +: il dialogo lo riceve e ne riconosce il tipo.
+    var dictated by remember { mutableStateOf("") }
     val plusOverride by PlusAction.override
-    if (capturing) CaptureDialog(initial = "", initialMode = CaptureMode.TASK, onClose = { capturing = false })
+    if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
+    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val text = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+        if (!text.isNullOrBlank()) {
+            dictated = text.replaceFirstChar { it.uppercase() }
+            capturing = true
+        }
+    }
+    val dictate = {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "it-IT")
+            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Promemoria, spesa, evento, pacco o nota")
+        try {
+            voice.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(context, "Dettatura non disponibile su questo telefono", Toast.LENGTH_SHORT).show()
+            capturing = true
+        }
+    }
 
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
     val hazeState = remember { HazeState() }
@@ -567,6 +605,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         if (currentRoute == dest.route) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
                     },
                     onPlus = { plusOverride?.invoke() ?: run { capturing = true } },
+                    onPlusLong = dictate,
                 )
             }
         },
@@ -598,6 +637,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                    onSearch = { navController.navigate(Routes.SEARCH) },
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                 )
             }
@@ -664,6 +704,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 val service = MediaService.entries.firstOrNull { it.name == entry.arguments?.getString("service") }
                     ?: MediaService.YOUTUBE
                 LoginScreen(service = service, onDone = { navController.popBackStack() })
+            }
+            composable(Routes.SEARCH) {
+                SearchScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
+                    onOpenNotes = { navController.switchTab(Routes.NOTES) },
+                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                )
             }
             composable(Routes.CUSTOMIZE) {
                 CustomizeScreen(onBack = { navController.popBackStack() })
