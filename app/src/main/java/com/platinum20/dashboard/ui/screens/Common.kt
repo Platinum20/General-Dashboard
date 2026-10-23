@@ -272,9 +272,9 @@ fun TopLevelBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     /** Per le pagine aperte da una sezione (Impostazioni): freccia indietro al posto dell'ingranaggio. */
     onBack: (() -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {},
     /** Senza fondo: per le pagine con un'immagine dietro (il player). */
     transparent: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
     val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
