@@ -23,6 +23,7 @@ import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.news.NewsRecap
+import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
@@ -46,6 +47,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     override suspend fun doWork(): Result {
         val context = applicationContext
         AppSettings.init(context)
+        DiskCache.init(context)
         val test = inputData.getBoolean(KEY_TEST, false)
         val settings = AppSettings.morning.value
         if (!test && !settings.enabled) return Result.success()

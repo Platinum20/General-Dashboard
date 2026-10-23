@@ -11,6 +11,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.platinum20.dashboard.news.NewsRecap
+import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.today.Briefing
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        DiskCache.init(applicationContext)
         // Anche con l'app chiusa da giorni l'affitto del 5 compare il 5 (e nel widget).
         runCatching {
             NotesStore.init(applicationContext)

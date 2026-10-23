@@ -43,9 +43,18 @@ class LiveChecks {
         assumeTrue(System.getProperty("live") == "true")
 
         report.append("## Notizie\n\n")
-        val result = runCatching { NewsRepository().fetchAll() }
+        val started = System.currentTimeMillis()
+        var firstAt = 0L
+        val result = runCatching {
+            NewsRepository().fetchAll(onProgress = { if (firstAt == 0L) firstAt = System.currentTimeMillis() - started })
+        }
+        val elapsed = System.currentTimeMillis() - started
         val news = result.getOrNull()
-        line(news != null && news.items.isNotEmpty(), "Feed: ${news?.items?.size ?: 0} notizie in tutto" + (result.exceptionOrNull()?.let { " ($it)" } ?: ""))
+        line(
+            news != null && news.items.isNotEmpty(),
+            "Feed: ${news?.items?.size ?: 0} notizie in tutto, prime dopo $firstAt ms, tutte dopo $elapsed ms" +
+                (result.exceptionOrNull()?.let { " ($it)" } ?: ""),
+        )
         for (source in NewsSources.all) {
             val items = news?.items.orEmpty().filter { it.source.id == source.id }
             val failure = news?.failures?.firstOrNull { it.source.id == source.id }

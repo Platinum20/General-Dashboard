@@ -71,10 +71,27 @@ object NewsFilter {
 
 class NewsRepository {
 
-    /** Scarica tutti i feed in parallelo e li unisce, dal più recente. */
-    suspend fun fetchAll(sources: List<NewsSource> = NewsSources.all): NewsResult = coroutineScope {
+    /**
+     * Scarica tutti i feed in parallelo e li unisce, dal più recente.
+     * [onProgress] riceve le notizie arrivate finora, fonte per fonte, senza aspettare la più lenta.
+     */
+    suspend fun fetchAll(
+        sources: List<NewsSource> = NewsSources.all,
+        onProgress: (List<NewsItem>) -> Unit = {},
+    ): NewsResult = coroutineScope {
+        val arrived = mutableListOf<NewsItem>()
         val results = sources.map { source ->
-            async(Dispatchers.IO) { source to runCatching { fetch(source) } }
+            async(Dispatchers.IO) {
+                val result = runCatching { fetch(source) }
+                result.getOrNull()?.let { items ->
+                    val partial = synchronized(arrived) {
+                        arrived += items
+                        merge(arrived)
+                    }
+                    onProgress(partial)
+                }
+                source to result
+            }
         }.awaitAll()
 
         val failed = results.mapNotNull { (source, result) ->
@@ -83,12 +100,11 @@ class NewsRepository {
         if (failed.size == sources.size) {
             throw IOException("Impossibile scaricare le notizie. Controlla la connessione.")
         }
-        val items = results
-            .flatMap { it.second.getOrDefault(emptyList()) }
-            .distinctBy { it.link }
-            .sortedByDescending { it.publishedAt ?: Instant.EPOCH }
-        NewsResult(items, failed)
+        NewsResult(merge(results.flatMap { it.second.getOrDefault(emptyList()) }), failed)
     }
+
+    private fun merge(items: List<NewsItem>): List<NewsItem> =
+        items.distinctBy { it.link }.sortedByDescending { it.publishedAt ?: Instant.EPOCH }
 
     /**
      * Alcuni siti rifiutano lo user agent da browser (protezioni anti-bot), altri quello da lettore RSS:
@@ -101,6 +117,9 @@ class NewsRepository {
             val items = result.getOrNull()
             if (!items.isNullOrEmpty()) return@withContext items
             lastError = result.exceptionOrNull() ?: IOException("feed vuoto")
+            // Senza rete o con il sito che non risponde, cambiare user agent non serve: si perde solo tempo.
+            if (lastError is UnknownHostException) throw lastError
+            if (lastError is SocketTimeoutException) break
         }
         // Alcuni siti (Il Post) bloccano le richieste dirette come bot: riproviamo col motore del browser.
         WebFetcher.fetchText(source.feedUrl)
@@ -115,8 +134,9 @@ class NewsRepository {
         // HttpURLConnection non segue i redirect tra http e https: li seguiamo a mano.
         repeat(MAX_REDIRECTS) {
             val conn = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = 15_000
-                readTimeout = 20_000
+                // Tempi brevi: un sito lento non deve far aspettare tutte le notizie.
+                connectTimeout = 8_000
+                readTimeout = 12_000
                 instanceFollowRedirects = false
                 setRequestProperty("User-Agent", userAgent)
                 setRequestProperty("Accept", "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.9, */*;q=0.8")

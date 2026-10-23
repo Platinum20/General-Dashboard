@@ -3,9 +3,13 @@ package com.platinum20.dashboard.media.spotify
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.platinum20.dashboard.media.FeedCache
+import com.platinum20.dashboard.media.FeedCodec
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -54,23 +58,27 @@ object SpotifyStore {
         _message.value = null
     }
 
-    fun refreshHome(force: Boolean = false) = load(_home, force) { token ->
-        SpHome(
-            profile = SpotifyApi.profile(token),
-            recent = SpotifyApi.recentlyPlayed(token),
-            topTracks = runCatching { SpotifyApi.topTracks(token) }.getOrDefault(emptyList()),
-            topArtists = runCatching { SpotifyApi.topArtists(token) }.getOrDefault(emptyList()),
-        )
+    // Le parti di ogni pagina si scaricano insieme, non una dopo l'altra.
+    fun refreshHome(force: Boolean = false) = load(_home, force, FeedCache.spHome) { token ->
+        coroutineScope {
+            val profile = async { SpotifyApi.profile(token) }
+            val recent = async { SpotifyApi.recentlyPlayed(token) }
+            val topTracks = async { runCatching { SpotifyApi.topTracks(token) }.getOrDefault(emptyList()) }
+            val topArtists = async { runCatching { SpotifyApi.topArtists(token) }.getOrDefault(emptyList()) }
+            SpHome(profile.await(), recent.await(), topTracks.await(), topArtists.await())
+        }
     }
 
-    fun refreshPlaylists(force: Boolean = false) = load(_playlists, force) { token -> SpotifyApi.playlists(token) }
+    fun refreshPlaylists(force: Boolean = false) =
+        load(_playlists, force, FeedCache.spItems("sp-playlist.json")) { token -> SpotifyApi.playlists(token) }
 
-    fun refreshLibrary(force: Boolean = false) = load(_library, force) { token ->
-        SpLibrary(
-            liked = SpotifyApi.likedTracks(token),
-            albums = runCatching { SpotifyApi.savedAlbums(token) }.getOrDefault(emptyList()),
-            shows = runCatching { SpotifyApi.savedShows(token) }.getOrDefault(emptyList()),
-        )
+    fun refreshLibrary(force: Boolean = false) = load(_library, force, FeedCache.spLibrary) { token ->
+        coroutineScope {
+            val liked = async { SpotifyApi.likedTracks(token) }
+            val albums = async { runCatching { SpotifyApi.savedAlbums(token) }.getOrDefault(emptyList()) }
+            val shows = async { runCatching { SpotifyApi.savedShows(token) }.getOrDefault(emptyList()) }
+            SpLibrary(liked.await(), albums.await(), shows.await())
+        }
     }
 
     private val lockedMessage = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -116,6 +124,7 @@ object SpotifyStore {
     }
 
     fun clear() {
+        FeedCache.clear("sp-")
         _home.value = Loadable()
         _playlists.value = Loadable()
         _library.value = Loadable()
@@ -124,12 +133,29 @@ object SpotifyStore {
         _playback.value = null
     }
 
-    private fun <T> load(flow: MutableStateFlow<Loadable<T>>, force: Boolean, block: suspend (String) -> T) {
+    private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE
+
+    private fun <T> load(flow: MutableStateFlow<Loadable<T>>, force: Boolean, codec: FeedCodec<T>, block: suspend (String) -> T) {
         val state = flow.value
-        val fresh = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE
-        if (state.loading || (!force && fresh)) return
+        if (state.loading || (!force && fresh(state))) return
         flow.update { it.copy(loading = true, error = null) }
-        scope.launch { flow.value = call(block).let { if (it.data == null) it.copy(data = state.data) else it } }
+        scope.launch {
+            var previous = state.data
+            // All'avvio si vede subito l'ultima pagina salvata, intanto si scarica quella nuova.
+            if (previous == null) {
+                FeedCache.restore(codec)?.let { saved ->
+                    previous = saved.data
+                    flow.update { it.copy(data = saved.data, loadedAt = saved.loadedAt) }
+                    if (!force && fresh(saved)) {
+                        flow.update { it.copy(loading = false) }
+                        return@launch
+                    }
+                }
+            }
+            val result = call(block)
+            flow.value = if (result.data == null) result.copy(data = previous) else result
+            result.data?.let { FeedCache.save(codec, it, result.loadedAt) }
+        }
     }
 
     private suspend fun <T> call(block: suspend (String) -> T): Loadable<T> = try {

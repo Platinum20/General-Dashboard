@@ -111,6 +111,11 @@ import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.youtubeWatchUrl
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
+import com.platinum20.dashboard.net.DiskCache
+import com.platinum20.dashboard.news.NewsStore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import androidx.lifecycle.lifecycleScope
 import com.platinum20.dashboard.net.WebFetcher
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.LoginScreen
@@ -203,14 +208,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
         WebFetcher.init(this)
+        DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
         AdBlocker.init(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
-        if (DashboardWidget.hasWidgets(this)) RefreshWorker.schedule(this)
-        MorningWorker.schedule(this)
-        RainAlertWorker.schedule(this)
-        UpdateCheckWorker.schedule(this)
+        // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
+        val app = applicationContext
+        lifecycleScope.launch(Dispatchers.Default) {
+            runCatching {
+                if (DashboardWidget.hasWidgets(app)) RefreshWorker.schedule(app)
+                MorningWorker.schedule(app)
+                RainAlertWorker.schedule(app)
+                UpdateCheckWorker.schedule(app)
+            }
+        }
+        // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
+        lifecycleScope.launch { NewsStore.restore() }
         enableEdgeToEdge()
         setContent {
             val theme by AppSettings.theme.collectAsState()
