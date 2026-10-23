@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.DateIdea
 import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.HabitIdea
 import com.platinum20.dashboard.notes.QuickParse
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.NotesStore
@@ -272,9 +273,9 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
 
 /** Nuova abitudine o modifica (nome, eliminazione) di una esistente. [onDeleted] offre "Annulla". */
 @Composable
-fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit = {}) {
-    var title by remember { mutableStateOf(habit?.title.orEmpty()) }
-    var perWeek by remember { mutableStateOf(habit?.perWeek ?: 0) }
+fun HabitDialog(habit: Habit?, onDismiss: () -> Unit, onDeleted: (Habit) -> Unit = {}, idea: HabitIdea? = null) {
+    var title by remember { mutableStateOf(habit?.title ?: idea?.title.orEmpty()) }
+    var perWeek by remember { mutableStateOf(habit?.perWeek ?: idea?.perWeek ?: 0) }
     val save = {
         if (title.isNotBlank()) {
             NotesStore.saveHabit(habit?.id, title, perWeek)
