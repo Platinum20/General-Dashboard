@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.115.0
+**Note: scrivi e basta**
+- Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
+- Dopo il salvataggio "Spesa: 12,50 € · Annulla": se Canvas ha capito male, un tocco e sparisce
+
+**Le pillole in alto hanno un senso**
+- Riassumono ogni parte: "Da fare · 5", "Abitudini · 1/2", "In arrivo · 2", "Note · 4", "Spese · 115,90 €". Compaiono solo le parti che hanno qualcosa
+- Toccandone una la pagina mostra solo quella parte (Spese apre mese, budget e spese fisse); un altro tocco o "indietro" torna a tutto
+
+**Sotto il cofano**
+- CaptureResult.undo per l'"Annulla" (lo usano anche il + e la dettatura). Test: notesChips in NotesUiLogicTest
+
 ## 1.114.0
 **Widget**
 - Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
