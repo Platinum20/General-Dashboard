@@ -41,7 +41,8 @@ class DashboardWidget : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        RefreshWorker.cancel(context)
+        // Il widget "Da fare" usa lo stesso aggiornamento: si ferma solo se non c'è più nessuno dei due.
+        if (!TasksWidget.hasWidgets(context)) RefreshWorker.cancel(context)
     }
 
     companion object {
@@ -195,7 +196,7 @@ class DashboardWidget : AppWidgetProvider() {
             else ""
         }
 
-        private fun openApp(context: Context, request: OpenRequest, code: Int): PendingIntent {
+        internal fun openApp(context: Context, request: OpenRequest, code: Int): PendingIntent {
             val intent = Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             request.writeTo(intent)
