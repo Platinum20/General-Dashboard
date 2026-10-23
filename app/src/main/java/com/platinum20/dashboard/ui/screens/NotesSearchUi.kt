@@ -87,7 +87,7 @@ fun NotesSearchPanel(
                             when (hit.kind) {
                                 SearchKind.NOTE -> onOpenNote(hit.id)
                                 SearchKind.EXPENSE -> onOpenTab(NotesTabs.MONEY)
-                                SearchKind.PARCEL -> onOpenTab(NotesTabs.PARCELS)
+                                SearchKind.PARCEL -> onOpenTab(NotesTabs.COMING)
                                 else -> open = hit
                             }
                         }

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.108.0
+## 1.109.0
 **Oggi più semplice**
 - "La giornata": Agenda, Da fare e In arrivo diventano una card sola, in ordine di orario. In cima le cose di tutto il giorno e le date di oggi, poi impegni e promemoria mescolati per ora (gli scaduti per primi), poi i promemoria senza ora e infine compleanni e date dei prossimi giorni ("tra 3 giorni"). I promemoria si spuntano da qui con "Annulla", impegni e date si aprono con un tocco
 - Cerca ovunque: la lente in alto in Oggi trova insieme promemoria, note, spese, pacchi, date, abitudini, impegni del calendario (un mese indietro e tre avanti) e notizie già scaricate
@@ -11,6 +11,16 @@
 
 **Sotto il cofano**
 - Test nuovi: DayTimelineTest (ordine della giornata), EverywhereSearchTest (impegni e notizie)
+
+## 1.108.0
+**Note, in quattro schede invece di sei**
+- **Da fare**: promemoria e, sotto, le abitudini di ogni giorno ("Abitudini · oggi 2 su 4", con "Nuova abitudine"); i completati restano in fondo
+- **In arrivo**: date (compleanni, viaggi, scadenze) e pacchi in una lista sola; se un pacco arriva entro tre giorni o è in ritardo, i pacchi vanno sopra. Il + chiede se aggiungere una data o un pacco
+- **Spese** e **Note** come prima. Le pillole in cima ora stanno tutte in vista, senza scorrere
+- Dalla ricerca, un pacco apre la scheda "In arrivo"
+
+**Sotto il cofano**
+- NotesUiLogicTest: quando i pacchi vanno sopra le date
 
 ## 1.107.0
 **Le funzioni si parlano**
