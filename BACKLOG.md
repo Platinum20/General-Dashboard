@@ -11,6 +11,12 @@ _Ultimo aggiornamento: 2026-10-22 ~23:25 UTC (UI prima di tutto), su main 1.96.0
 
 ---
 
+## In lavorazione
+
+_**Revisione delle ridondanze** (thread su richiesta di Antonio, 2026-10-23 00:05 UTC, branch `claude/project-thread-7wuf5j`): audit di doppioni in UI e codice. Prende V20, la parte "Domani ripete Da fare" della voce 7, i doppioni in Video/Media, le scorciatoie doppie e il Client ID di Spotify (voce 8). Il giro non tocchi queste parti finché questa nota c'è; la toglie il thread quando rilascia._
+
+---
+
 ## Problemi trovati dal verificatore
 
 _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.96.0, giro fotografico `main/53`, 2026-10-22.)_
