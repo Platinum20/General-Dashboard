@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.128.0
+**Note più pulite**
+- Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta
+- A destra delle pillole due tastini: lo scontrino (fotografalo e si apre il + già compilato con totale e negozio) e la lampadina con le idee da aggiungere (compleanni dalla rubrica, abitudini, date), che non occupano più il fondo della pagina
+- I pacchi in arrivo sono conti alla rovescia come i compleanni: a destra "Oggi", "Domani" o quanti giorni mancano (in rosso se è in ritardo). Tieni premuto per segnarlo arrivato
+- Quando salvi dal +, il pallino atterra proprio sulla sezione giusta delle Note (promemoria, note, abitudini, in arrivo, spese)
+
 ## 1.126.0
 **Un player solo, davvero**
 - Suona una cosa alla volta: quando parte un video, una canzone, la radio o un podcast, tutto il resto si mette in pausa, compreso Spotify che suona nell'app di Spotify o su un altro dispositivo

@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -439,45 +441,86 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/** Un pacco in "In arrivo": casella "consegnato", quando arriva e il tracciamento a un tocco. */
+/**
+ * Un pacco in "In arrivo", come un conto alla rovescia: cosa arriva, il corriere e a destra quanto manca
+ * ("Domani", "3 giorni"). Il camioncino apre il tracciamento; tenendo premuto si segna arrivato (o non ancora).
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
     val inApp = LocalInAppNav.current
     val today = LocalDate.now()
     val haptic = rememberHaptic()
-    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
-        Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = parcel.delivered, onCheckedChange = {
-                haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
-                NotesStore.toggleDelivered(parcel.id)
-            })
+    val expected = parcel.expected
+    val late = !parcel.delivered && expected != null && expected.isBefore(today)
+    val days = expected?.let { ChronoUnit.DAYS.between(today, it) }
+    CanvasCard(
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    haptic(if (parcel.delivered) Haptic.TICK else Haptic.CONFIRM)
+                    NotesStore.toggleDelivered(parcel.id)
+                },
+            ),
+    ) {
+        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    parcel.title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        textDecoration = if (parcel.delivered) TextDecoration.LineThrough else null,
-                    ),
+                    parcel.title.trimEnd('"', '“', '”', ' '),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (parcel.delivered) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                val expected = parcel.expected
-                val whenText = when {
-                    parcel.delivered -> "Consegnato"
-                    expected == null -> "Data non nota"
-                    expected.isBefore(today) -> "Atteso ${dueDay(expected, today)}: in ritardo"
-                    else -> "Arriva ${dueDay(expected, today)}"
-                }
                 Text(
-                    whenText + if (parcel.code.isNotEmpty()) " · ${parcel.carrier.label}" else "",
+                    listOfNotNull(
+                        "Pacco",
+                        parcel.carrier.label.takeIf { parcel.code.isNotEmpty() },
+                        when {
+                            parcel.delivered -> "arrivato"
+                            late -> "atteso ${dueDay(expected!!, today)}, in ritardo"
+                            expected != null && days!! > 1 -> longDate(expected).replaceFirstChar { it.lowercase() }
+                            expected == null -> "data non nota"
+                            else -> null
+                        },
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (!parcel.delivered && expected != null && expected.isBefore(today)) MaterialTheme.colorScheme.error
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            parcel.trackingUrl()?.let { url ->
+            parcel.trackingUrl()?.takeIf { !parcel.delivered }?.let { url ->
                 // La pagina del corriere si apre dentro Canvas, non nel browser.
                 IconButton(onClick = { inApp?.openWeb(url, parcel.carrier.label) }) {
-                    Icon(Icons.Outlined.LocalShipping, contentDescription = "Traccia")
+                    Icon(Icons.Outlined.LocalShipping, contentDescription = "Traccia", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            // A destra quanto manca, come per le date: il numero grande e "giorni" sotto.
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(end = 8.dp)) {
+                val big = when {
+                    parcel.delivered -> "✓"
+                    days == null -> "?"
+                    late -> "In ritardo"
+                    days == 0L -> "Oggi"
+                    days == 1L -> "Domani"
+                    else -> "$days"
+                }
+                Text(
+                    big,
+                    style = if (big.length > 3) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineSmall,
+                    color = when {
+                        late -> MaterialTheme.colorScheme.error
+                        parcel.delivered || days == null -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.primary
+                    },
+                )
+                if (!parcel.delivered && days != null && days > 1) {
+                    Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
