@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.113.0
+**Il player di YouTube, con tutto sul video**
+- Le impostazioni stanno nei controlli del video: la rotella apre Qualità, Velocità, Sottotitoli e Ripeti; il tasto CC accende e sceglie i sottotitoli; accanto allo schermo intero la pillola con la qualità attuale ("Auto · 720p") la cambia al volo. Mentre un menu è aperto i controlli non spariscono
+- Sotto il titolo tre tasti: **Mi piace** (con il numero), **Commenti** (apre e scorre ai commenti) e **Condividi**. I Mi piace restano nell'app (il collegamento con YouTube è in sola lettura) e compaiono in cima alla scheda Mi piace di Video
+
+**Mini player a barra**
+- Il mini player è una barra larga quanto la barra in basso più il +: si trascina e si aggancia in alto o in basso, con una spinta veloce va dove lo lanci
+
+**Sotto il cofano**
+- MediaClickTour: nel giro fotografico tocca uno per uno tutti gli elementi di Media, Musica, Video e Radio e podcast e segnala quelli che non fanno niente (build/tour/collaudo-media.md)
+- Il + della barra ha di nuovo nome e tocco sullo stesso elemento (per TalkBack e per il giro fotografico)
+- Test: YtFavoritesTest
+
 ## 1.112.0
 **Note, una pagina sola**
 - Niente più schede: promemoria, abitudini, date, pacchi, note e spese stanno in una lista, in ordine di quando contano (Scaduti, Oggi, Abitudini, In arrivo, Prossimi giorni, Senza scadenza, Note, Spese)

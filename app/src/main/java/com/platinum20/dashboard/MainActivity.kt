@@ -442,6 +442,7 @@ private fun CanvasNavBar(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
                     .semantics {
+                        contentDescription = if (listening) "In ascolto" else "Aggiungi"
                         onClick(label = "Aggiungi") { onPlus(); true }
                         onLongClick(label = "Detta a voce") { onHoldStart() }
                     }
@@ -472,7 +473,7 @@ private fun CanvasNavBar(
                     Crossfade(listening, label = "plusMic") { mic ->
                         Icon(
                             if (mic) Icons.Rounded.Mic else Icons.Rounded.Add,
-                            contentDescription = if (mic) "In ascolto" else "Aggiungi",
+                            contentDescription = null,
                             modifier = Modifier.size(28.dp),
                         )
                     }

@@ -90,6 +90,7 @@ class MediaClickTour {
         for (label in labels) {
             if (!open(path)) break
             settle(1_200)
+            playbackStarted = false
             val before = signature()
             shadowOf(context as Application).clearNextStartedActivities()
             val clicked = runCatching { tap(label) }.getOrDefault(false)
@@ -98,10 +99,12 @@ class MediaClickTour {
                 continue
             }
             settle(1_500)
+            val playback = playbackStarted.also { playbackStarted = false }
             val started = shadowOf(context as Application).nextStartedActivity
             val dialog = ShadowDialog.getLatestDialog()?.isShowing == true
             val changed = signature() != before
             when {
+                playback -> report.append("- ✅ $label → avvia la riproduzione\n")
                 started != null -> report.append("- ✅ $label → apre ${started.action ?: started.component?.shortClassName}\n")
                 dialog -> report.append("- ✅ $label → finestra\n")
                 changed -> report.append("- ✅ $label\n")
@@ -163,11 +166,16 @@ class MediaClickTour {
         return true
     }
 
+    /** Robolectric non sa collegarsi al servizio del player: se ci prova, il tocco ha fatto partire qualcosa. */
+    private var playbackStarted = false
+
     private fun settle(maxMs: Long) {
         val start = System.currentTimeMillis()
         while (System.currentTimeMillis() - start < maxMs) {
             compose.mainClock.advanceTimeBy(100)
-            ShadowLooper.idleMainLooper()
+            runCatching { ShadowLooper.idleMainLooper() }.onFailure { e ->
+                if (e.stackTrace.any { "media3.session" in it.className }) playbackStarted = true else throw e
+            }
             Thread.sleep(30)
         }
     }
