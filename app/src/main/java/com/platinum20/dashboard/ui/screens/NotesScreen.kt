@@ -433,7 +433,6 @@ private fun NotesComposer(onEvent: (String) -> Unit, onSaved: (CaptureResult) ->
             reading = false
             if (guess != null) {
                 text = guess.captureText
-                picked = CaptureMode.EXPENSE
                 haptic(Haptic.CONFIRM)
             } else {
                 android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
