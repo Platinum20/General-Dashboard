@@ -30,6 +30,6 @@ internal object VoiceCapture {
         val result = CaptureSave.save(mode, text)
         if (!result.ok) return Outcome.NeedsDialog
         // "Annulla" toglie quello appena salvato, per quando Canvas ha capito male.
-        return Outcome.Saved(mode, result.message, result.undo?.let { undo -> { undo() } })
+        return Outcome.Saved(mode, result.message, result.undo?.let { undo -> suspend { undo() } })
     }
 }

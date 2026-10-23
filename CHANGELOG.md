@@ -1,8 +1,9 @@
 # Changelog
 
 ## 1.120.0
-**Il + a voce**
-- Dopo aver dettato, il messaggio in basso ("Spesa: 12,50 € · Cibo", "Promemoria: domani 9:00"…) ha sempre "Annulla": se Canvas ha capito male il tipo, un tocco e sparisce
+**Salvato, e si vede dove va**
+- Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
+- Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
 
 ## 1.119.0
 **Note: scrivi e basta**
