@@ -7,6 +7,8 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
+_Giro 2026-10-23 10:30 UTC: 1.106.0 (V25, 21 passo 1, 13 in parte). Nota: le voci 3 (Media "Per iniziare") e 8 (Client ID di Spotify) risultano già fatte nel codice (`MediaStarters`, 1.102-1.103): il regista le verifichi nelle foto e le sposti in Fatto._
+
 _Ultimo aggiornamento: 2026-10-23 ~04:10 UTC (UI prima di tutto), su main 1.98.0, foto: branch `screenshots`, cartella `main/57` (1.98.0 su main, 03:50 UTC, test verdi; prima `claude_project-thread-qvj56k/54` e `main/55`). PR aperta: #80 Velocità e stabilità (1.99.0)._
 
 ---
@@ -57,14 +59,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** fissare l'orologio del tour (con la voce 2, fuso fisso) e fare due giri di Oggi: `01_oggi` alle 19 (card Domani, ✓ sulle righe, nessun doppione in Da fare) e `01b_oggi_notte` alle 0:30 (card "Oggi · …"); `01c_oggi_annulla` dopo il tocco sul ✓ del pacco; `01d_abitudini_oggi` toccando il ✓ della riga abitudini con 2 abitudini mancanti; in `YouTubeTour` `youtube_cronologia_svuota` (dialogo) con 2 video finti in `YtHistory`; `33c_video_negato` con permesso rifiutato. Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
 
-### V25. Spotify: le novità della 1.97 non hanno test, e l'avviso "playlist non tua" può restare o comparire a torto · Media › Spotify › playlist e artisti · gravità bassa
-- **Versione:** 1.97.0 (solo dal codice: Spotify collegato non è nel giro fotografico, `32_spotify` mostra solo "Collega")
-- **Cosa non va:** (1) nessun test copre i cambi della 1.97: lettura di `playlists/{id}/items` con il brano in `item` (o nel vecchio `track`), il 403 trasformato in `PlaylistLockedException`, la pagina artista con album e singoli. Se Spotify cambia di nuovo forma, nessun test se ne accorge. (2) In `SpotifyStore.loadChildren` il messaggio va in `lockedMessage[parent.id]` e non viene mai tolto: se poi la stessa playlist si ricarica senza rete, al posto di "Spotify non è raggiungibile" compare l'avviso "playlist che non hai creato tu"; se la ricarica riesce (es. la playlist diventa collaborativa) l'avviso resta sopra i brani. (3) Ogni 403 sulla playlist diventa "non l'hai creata tu", anche per una playlist tua quando l'account non è tra gli utenti dell'app (User Management): il messaggio dice la cosa sbagliata. (4) Da controllare: il sottotitolo delle playlist ("N brani") legge ancora `tracks.total`; se con la nuova API il campo si chiama `items.total`, il numero sparisce.
-- **Dove:** `media/spotify/SpotifyApi.kt` (`children`, `toItem`), `media/spotify/SpotifyStore.kt` (`loadChildren`, `lockedMessage`). Attenzione: `SpotifyStore` è nella nota "Velocità e stabilità" in lavorazione, aspettare che finisca.
-- **Come riprodurre:** (2) aprire una playlist di Spotify (avviso), togliere la rete, tirare per ricaricare: si vede ancora l'avviso invece dell'errore di rete.
-- **Aggiunta (secondo controllo, 2026-10-23):** in quel caso l'errore di rete ha `data = null`, quindi `FeedList` mostra l'avviso in rosso a tutto schermo e spariscono anche copertina, titolo e "Riproduci": la playlist non si può più far partire finché non si riapre. Va tenuto il risultato di prima (come `load()` fa con `copy(data = state.data)`), e `lockedMessage` va svuotato anche in `clear()` quando si scollega Spotify.
-- **Cosa fare:** estrarre il parsing in funzioni pure (`parsePlaylistItems(json)`, `parseArtistAlbums(json)`) testabili; in `loadChildren` togliere `lockedMessage[parent.id]` prima di ogni chiamata e usarlo solo se la chiamata corrente è finita in `PlaylistLockedException`; nel sottotitolo leggere `items.total` con ripiego su `tracks.total`.
-- **Test che lo impedisce:** `SpotifyParseTest`: un JSON con `item` e uno con `track` danno gli stessi brani; un JSON di `artists/{id}/albums` dà voci di tipo ALBUM; il sottotitolo con `items.total = 12` dice "12 brani". Un test di `loadChildren` (o della funzione che decide il messaggio): dopo un 403 e poi un errore di rete il messaggio è quello di rete.
 
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
@@ -166,6 +160,7 @@ _(primo passo dell'idea grande G)_
 **Test:** `ReceiptTest` con 5-6 scontrini veri trascritti come testo (Conad, Esselunga, farmacia, benzinaio con "IMPORTO", ristorante con coperto e totale), importi con virgola e punto, righe sconto da ignorare.
 
 ### 13. Ascolta il punto del giorno: nel player condiviso · News / Media · S
+_(1.106.0: fatto il pulsante "Ascolta" (cuffie) nella card del punto in Oggi.)_
 _(1.101.0: fatti il copione `RecapReader.script` con i test, il pulsante "Ascolta" in `RecapScreen` e la card "In ascolto" con Successivo/Ferma, con la voce italiana di Android tramite `RecapSpeaker`.)_
 **Resta:** la lettura non passa ancora da `RadioService`/`MediaSession`: niente notifica con pausa e "tema successivo", niente mini player fuori dalla pagina. Pulsante "Ascolta" anche nella card del punto in Oggi.
 **Test:** foto `03_punto` con la card "In ascolto".
@@ -184,6 +179,7 @@ _(era in Dopo; promossa: nessuna voce di In cima toccava i widget, e con le azio
 **Test:** `ParcelStatusTest` con risposte JSON vere di 2-3 corrieri salvate in `src/test/resources` (in transito, in consegna, consegnato, giacenza), date e fusi orari; scelta del tracker dal codice (`Carrier.detect`); limite di 2 ore tra due aggiornamenti; Briefing con un pacco `FERMO` da 3 giorni → riga urgente; foto `25_pacchi` con un pacco in transito e uno arrivato.
 
 ### 21. La tua settimana · Oggi · M
+_(1.106.0: fatti `WeekReview` (funzione pura con `WeekReviewTest`), `doneAt` sui promemoria e la card "La tua settimana" in Oggi (dom 17 → lun 12, "Fatto" la chiude) con "Com'è andata" e "Cosa arriva". **Restano:** gli impegni del calendario della settimana nuova in "Cosa arriva", i ricorrenti spuntati (oggi non lasciano traccia), la schermata intera con le righe che aprono la scheda giusta, la foto `08_settimana` con l'orologio del tour fissato a domenica 19:00.)_
 _(passi 1 e 2 dell'idea grande B, promossi)_
 **Perché:** Canvas raccoglie ogni giorno abitudini, spese, promemoria chiusi, pacchi e notizie lette, ma non restituisce mai un quadro: non c'è un momento in cui Antonio vede "com'è andata" e "cosa arriva". La domenica sera è il momento in cui si guarda indietro e si prepara la settimana, e nessun'altra app sul telefono ha tutti questi dati insieme.
 **Cosa fare:** funzione pura `today/WeekReview.kt` (come `Briefing`/`Tomorrow`): settimana lun-dom; promemoria completati (aggiungere `doneAt` se manca, i vecchi restano senza), percentuale e serie di ogni abitudine (settimanali "3 su 3"), spese variabili della settimana per categoria contro la media delle 4 precedenti (le fisse a parte), pacchi arrivati; per la settimana nuova impegni del calendario, date (compleanni) e addebiti fissi. Schermata `WeekReviewScreen.kt` con `SectionHeader`/`CanvasCard`: in cima una frase ("Settimana buona: 12 cose fatte, palestra 3 su 3, spese -18%"), poi "Com'è andata" e "Cosa arriva"; ogni riga apre la sua scheda. In Oggi una card "La tua settimana" dalla domenica alle 17 al lunedì alle 12, che sparisce dopo averla aperta.
@@ -269,6 +265,10 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 ---
 
 ## Fatto
+
+- **1.106.0 · V25 Spotify:** parsing di playlist (`item`/`track`), album dell'artista e numero di brani (`items.total`) in funzioni pure; l'avviso "playlist bloccata" vale solo per la chiamata corrente e un errore di rete tiene la pagina. Test: SpotifyParseTest.
+- **1.106.0 · 21 La tua settimana (passo 1):** card della domenica sera in Oggi. Test: WeekReviewTest.
+- **1.106.0 · 13 Ascolta da Oggi:** cuffie nella card del punto del giorno.
 
 - **1.104.0 · Velocità e stabilità:** notizie, giudizi sugli articoli e feed YouTube/Spotify salvati su disco e mostrati subito; notizie fonte per fonte; timeout più brevi; Spotify in parallelo; worker programmati fuori dal thread principale. Test: OfflineCacheTest.
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
