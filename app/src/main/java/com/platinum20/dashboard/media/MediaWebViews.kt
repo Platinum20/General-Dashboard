@@ -202,9 +202,6 @@ fun createMediaWebView(
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            if (service == MediaService.SPOTIFY && MediaWebViews.consumeAutoplay(service)) {
-                view.evaluateJavascript(SPOTIFY_AUTOPLAY, null)
-            }
             listener()?.onPageFinished(url)
         }
 
@@ -225,22 +222,3 @@ fun youtubeWatchUrl(link: String): String? {
         else -> null
     }
 }
-
-// Preme "Riproduci" nella pagina del brano/album/playlist appena il web player è pronto (al massimo 20 secondi).
-private const val SPOTIFY_AUTOPLAY = """
-(function () {
-  var tries = 0;
-  var timer = setInterval(function () {
-    tries++;
-    var button = document.querySelector('[data-testid="action-bar-row"] [data-testid="play-button"]') ||
-                 document.querySelector('main [data-testid="play-button"]');
-    if (button) {
-      clearInterval(timer);
-      if (button.getAttribute('aria-label') && /pausa|pause/i.test(button.getAttribute('aria-label'))) return;
-      button.click();
-    } else if (tries > 40) {
-      clearInterval(timer);
-    }
-  }, 500);
-})();
-"""
