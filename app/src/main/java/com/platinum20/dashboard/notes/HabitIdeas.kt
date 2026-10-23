@@ -22,8 +22,8 @@ object HabitIdeas {
     )
 
     /** Gli esempi da mostrare: nessuno da [UNTIL] abitudini in su, e mai uno simile a una che c'è già. */
-    fun suggest(existing: List<Habit>, max: Int = 3): List<HabitIdea> {
-        if (existing.size >= UNTIL) return emptyList()
+    fun suggest(existing: List<Habit>, max: Int = 3, until: Int = UNTIL): List<HabitIdea> {
+        if (existing.size >= until) return emptyList()
         val titles = existing.map { key(it.title) }
         return all.filter { idea ->
             val k = key(idea.title)

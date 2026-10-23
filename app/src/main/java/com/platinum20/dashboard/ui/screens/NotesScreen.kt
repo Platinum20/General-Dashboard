@@ -36,6 +36,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -126,6 +129,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
+import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureGuess
@@ -195,8 +199,6 @@ fun NotesScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
-    // Un evento scritto in cima: lo salva la finestrella del +, che sa chiedere il permesso del calendario.
-    var event by remember { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -242,7 +244,54 @@ fun NotesScreen(
             }
         }
     }
-    event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
+
+    // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
+    // Lo scontrino fotografato apre lo stesso pannello del +, già scritto, da controllare e salvare.
+    var receiptText by remember { mutableStateOf<String?>(null) }
+    receiptText?.let { CaptureDialog(initial = it, initialMode = CaptureMode.TASK, onClose = { receiptText = null }) }
+    val listState = rememberReselectListState(Routes.NOTES)
+
+    // Foto dello scontrino.
+    var readingReceipt by remember { mutableStateOf(false) }
+    val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (!ok) return@rememberLauncherForActivityResult
+        readingReceipt = true
+        scope.launch {
+            val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
+            readingReceipt = false
+            if (guess != null) receiptText = guess.captureText
+            else android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // La lampadina: esempi da aggiungere con un tocco (compleanni dalla rubrica, abitudini, date).
+    var showingIdeas by remember { mutableStateOf(false) }
+    val habitIdeas = HabitIdeas.suggest(data.habits, max = 5, until = Int.MAX_VALUE)
+    val dateIdeas = DateIdeas.suggest(data.countdowns, max = 4, until = Int.MAX_VALUE)
+    val contacts = showContactImport(data.countdowns)
+    val ideaRows = listOfNotNull(("Compleanni dai contatti" to "Importa dalla rubrica, una volta sola").takeIf { contacts }) +
+        habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
+        dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" }
+    if (showingIdeas) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showingIdeas = false },
+            title = { Text("Idee da aggiungere") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    IdeasSection(ideaRows, header = false) { i ->
+                        showingIdeas = false
+                        val offset = if (contacts) 1 else 0
+                        when {
+                            i < offset -> importingContacts = true
+                            i - offset < habitIdeas.size -> proposingHabit = habitIdeas[i - offset]
+                            else -> proposingDate = dateIdeas[i - offset - habitIdeas.size]
+                        }
+                    }
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { showingIdeas = false }) { Text("Chiudi") } },
+        )
+    }
 
     // Con una pillola accesa, "indietro" torna a tutta la pagina.
     androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
@@ -272,18 +321,31 @@ fun NotesScreen(
                     }
                 },
             )
-            if (!searching && chips.size >= 2) {
+            if (!searching) {
                 val haptic = rememberHaptic()
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    chips.forEach { (s, label) ->
-                        CanvasChip(
-                            selected = section == s,
-                            onClick = { haptic(Haptic.TICK); section = if (section == s) null else s },
-                            label = label,
-                        )
+                // Le pillole scorrono; a destra, fissi, i due tastini: scontrino e idee.
+                Row(Modifier.fillMaxWidth().padding(end = 12.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.weight(1f).horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (chips.size >= 2) chips.forEach { (s, label) ->
+                            CanvasChip(
+                                selected = section == s,
+                                onClick = { haptic(Haptic.TICK); section = if (section == s) null else s },
+                                label = label,
+                            )
+                        }
+                    }
+                    if (readingReceipt) {
+                        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
+                    } else {
+                        RoundIconButton(Icons.AutoMirrored.Outlined.ReceiptLong, "Fotografa uno scontrino") {
+                            runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) }
+                        }
+                    }
+                    if (ideaRows.isNotEmpty()) {
+                        RoundIconButton(Icons.Outlined.Lightbulb, "Idee da aggiungere") { showingIdeas = true }
                     }
                 }
             }
@@ -329,26 +391,13 @@ fun NotesScreen(
         val empty = data.tasks.isEmpty() && data.notes.isEmpty() && data.habits.isEmpty() &&
             data.upcoming.isEmpty() && data.parcels.isEmpty() && data.expenses.isEmpty()
 
-        LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            item(key = "composer") {
-                NotesComposer(
-                    onEvent = { event = it },
-                    onSaved = { result ->
-                        scope.launch {
-                            snackbar.currentSnackbarData?.dismiss()
-                            val undo = result.undo
-                            val r = snackbar.showSnackbar(result.message, actionLabel = if (undo != null) "Annulla" else null, duration = SnackbarDuration.Short)
-                            if (r == SnackbarResult.ActionPerformed) undo?.invoke()
-                        }
-                    },
-                )
-            }
+        LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
-                        "Scrivi come parli e Canvas capisce cos'è: \"venerdì alle 18 palestra\" è un promemoria, " +
+                        "Tocca + e scrivi come parli: Canvas capisce cos'è. \"venerdì alle 18 palestra\" è un promemoria, " +
                             "\"12,50 pizza\" una spesa, \"ogni giorno leggere\" un'abitudine, \"compleanno di Marta 12 marzo\" " +
-                            "una data. Se sbaglia, tocca il tipo giusto prima di salvare."
+                            "una data. Lo scontrino si fotografa col tastino in alto, la lampadina ha qualche idea."
                     )
                 }
             }
@@ -365,7 +414,7 @@ fun NotesScreen(
                 item(key = "notes-header") {
                     SectionHeader(
                         if (notes.size > NOTES_PREVIEW) "Note · ${notes.size}" else "Note",
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.NOTE),
                         action = when {
                             notes.size <= NOTES_PREVIEW || section == NotesSection.NOTES -> null
                             allNotes -> "Meno"
@@ -384,118 +433,6 @@ fun NotesScreen(
             if (done.isNotEmpty() && show(NotesSection.TASKS)) {
                 item(key = "group-done") { Column(Modifier.padding(top = 12.dp)) { TaskGroup("Completati", done, onTaskDeleted) } }
             }
-            // Con poche abitudini e date, qualche esempio da aggiungere con un tocco.
-            val habitIdeas = HabitIdeas.suggest(data.habits)
-            val dateIdeas = if (data.upcoming.isEmpty()) DateIdeas.suggest(data.upcoming) else emptyList()
-            // In cima alle idee, finché le date di ogni anno sono poche: i compleanni sono già nella rubrica.
-            val contacts = showContactImport(data.countdowns)
-            if (section == null && (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty() || contacts)) {
-                item(key = "ideas") {
-                    val offset = if (contacts) 1 else 0
-                    IdeasSection(
-                        listOfNotNull(("Compleanni dai contatti" to "Importa dalla rubrica, una volta sola").takeIf { contacts }) +
-                            habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
-                            dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" },
-                    ) { i ->
-                        when {
-                            i < offset -> importingContacts = true
-                            i - offset < habitIdeas.size -> proposingHabit = habitIdeas[i - offset]
-                            else -> proposingDate = dateIdeas[i - offset - habitIdeas.size]
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Il campo in cima alle Note: si scrive e basta, il tipo lo sceglie Canvas da quello che si scrive
- * (come il + e la dettatura). Sotto, una riga dice cosa diventerà; se sbaglia, dopo il salvataggio c'è "Annulla".
- */
-@Composable
-private fun NotesComposer(onEvent: (String) -> Unit, onSaved: (CaptureResult) -> Unit) {
-    var text by rememberSaveable { mutableStateOf("") }
-    val mode = remember(text) { CaptureGuess.guess(text) }
-    val context = LocalContext.current
-    val haptic = rememberHaptic()
-    val scope = rememberCoroutineScope()
-    var reading by remember { mutableStateOf(false) }
-    // Foto dello scontrino: il totale e il negozio finiscono nel campo come spesa, da controllare e salvare.
-    val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (!ok) return@rememberLauncherForActivityResult
-        reading = true
-        scope.launch {
-            val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
-            reading = false
-            if (guess != null) {
-                text = guess.captureText
-                haptic(Haptic.CONFIRM)
-            } else {
-                android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-    val save = {
-        if (text.isNotBlank()) {
-            if (mode == CaptureMode.EVENT) {
-                onEvent(text)
-                text = ""
-            } else {
-                val result = CaptureSave.save(mode, text)
-                if (result.ok) {
-                    haptic(Haptic.CONFIRM)
-                    text = ""
-                    onSaved(result)
-                } else {
-                    android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-    Column(Modifier.padding(bottom = 8.dp)) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            placeholder = { Text("Scrivi qualcosa: Canvas capisce cos'è") },
-            maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                // Una nota può andare a capo; il resto si salva con Invio.
-                imeAction = if (mode == CaptureMode.NOTE) ImeAction.Default else ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { save() }),
-            trailingIcon = {
-                when {
-                    reading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    text.isNotBlank() ->
-                        IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
-                    else -> IconButton(onClick = { runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) } }) {
-                        Icon(Icons.AutoMirrored.Outlined.ReceiptLong, contentDescription = "Fotografa uno scontrino")
-                    }
-                }
-            },
-            shape = MaterialTheme.shapes.large,
-            colors = canvasFieldColors(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (text.isNotBlank()) {
-            // Cosa diventerà, detto in una riga: "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00".
-            val detail = when (mode) {
-                CaptureMode.TASK -> QuickParse.parse(text).due
-                    ?.let { dueLabel(it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()) } ?: "senza scadenza"
-                CaptureMode.NOTE -> "si apre dalla lista"
-                CaptureMode.EVENT -> "va nel calendario"
-                else -> CaptureSave.preview(mode, text)
-            }
-            Text(
-                listOfNotNull(mode.label, detail).joinToString(" · "),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 12.dp, top = 6.dp),
-            )
         }
     }
 }
@@ -507,7 +444,7 @@ private fun ExpensesSummary(data: com.platinum20.dashboard.notes.NotesData, onOp
     val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
     val budget = data.budgetCents
     Column(Modifier.padding(top = 12.dp)) {
-        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp))
+        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp).captureTarget(CaptureMode.EXPENSE))
         CanvasCard(onClick = onOpen, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -549,7 +486,11 @@ private fun comingItems(
     return {
         if (rows.isNotEmpty()) {
             item(key = "coming-header") {
-                SectionHeader("In arrivo", modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                SectionHeader(
+                    "In arrivo",
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+                        .captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL),
+                )
             }
         }
         items(rows, key = { it.key }) { row ->
@@ -613,7 +554,7 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                 val done = habits.count { it.isDone(today) }
                 SectionHeader(
                     if (done == habits.size) "Abitudini · tutte fatte oggi" else "Abitudini · oggi $done su ${habits.size}",
-                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.HABIT),
                 )
             }
         }
@@ -700,10 +641,12 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
 
 /** "Idee da aggiungere": esempi tappabili (titolo e riga piccola) sotto una lista corta. */
 @Composable
-private fun IdeasSection(ideas: List<Pair<String, String>>, onPick: (Int) -> Unit) {
-    Column(Modifier.padding(top = 8.dp)) {
-        SectionHeader("Idee da aggiungere")
-        Spacer(Modifier.height(4.dp))
+private fun IdeasSection(ideas: List<Pair<String, String>>, header: Boolean = true, onPick: (Int) -> Unit) {
+    Column(Modifier.padding(top = if (header) 8.dp else 0.dp)) {
+        if (header) {
+            SectionHeader("Idee da aggiungere")
+            Spacer(Modifier.height(4.dp))
+        }
         CanvasCard(Modifier.fillMaxWidth()) {
             ideas.forEachIndexed { i, (title, detail) ->
                 if (i > 0) RowDivider()
@@ -729,7 +672,7 @@ private fun IdeasSection(ideas: List<Pair<String, String>>, onPick: (Int) -> Uni
 private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskItem) -> Unit, error: Boolean = false) {
     Column(Modifier.padding(bottom = 8.dp)) {
         if (label != null) {
-            SectionHeader(label, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            SectionHeader(label, modifier = Modifier.captureTarget(CaptureMode.TASK), color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
         }
         CanvasCard(Modifier.fillMaxWidth().animateContentSize(Springs.snappy())) {

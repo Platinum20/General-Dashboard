@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.127.0
+## 1.129.0
 **Niente pulsanti in alto, tutto a portata di gesto**
 - Via la lente e l'ingranaggio in alto. Trascinando giù dalla cima di Oggi, News, Note o Media scende una lente: lasciando, si apre Cerca ovunque. Le pagine si aggiornano da sole (all'ingresso, al ritorno nell'app e ogni pochi minuti), non serve più tirare per ricaricare
 - Impostazioni divise come la barra in basso: Oggi, News, Note, Media e Tutta l'app, con i chip in alto per saltare a una parte. Si aprono tenendo premuta una sezione della barra, già alla sua parte
@@ -8,6 +8,13 @@
 - Il + toccato apre lo stesso fumetto di vetro della voce, con dentro il campo per scrivere: sale con la tastiera, mostra cosa diventerà ("Diventa: spesa · 12,50 €") e, inviato, vola alle Note come le cose dette a voce
 - La voce parte anche solo trascinando il +, senza tenerlo premuto prima; trascinando subito in su si blocca
 - **Che canzone è?** Dettando con il microfono bloccato c'è "♪ Canzone"; e se tenendo premuto il + si sente musica ma nessuna parola, Canvas prova da solo. Riconosciuta, parte su Spotify nel player dell'app e finisce nella playlist "Sentite da Canvas". Si attiva in Impostazioni › Media › Riconosci canzoni (serve il token di AudD; per la playlist Spotify chiede di accedere di nuovo una volta)
+
+## 1.128.0
+**Note più pulite**
+- Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta
+- A destra delle pillole due tastini: lo scontrino (fotografalo e si apre il + già compilato con totale e negozio) e la lampadina con le idee da aggiungere (compleanni dalla rubrica, abitudini, date), che non occupano più il fondo della pagina
+- I pacchi in arrivo sono conti alla rovescia come i compleanni: a destra "Oggi", "Domani" o quanti giorni mancano (in rosso se è in ritardo). Tieni premuto per segnarlo arrivato
+- Quando salvi dal +, il pallino atterra proprio sulla sezione giusta delle Note (promemoria, note, abitudini, in arrivo, spese)
 
 ## 1.126.0
 **Un player solo, davvero**
