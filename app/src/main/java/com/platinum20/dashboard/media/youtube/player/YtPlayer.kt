@@ -28,6 +28,8 @@ import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.PlaySource
+import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YtWatched
 import com.platinum20.dashboard.media.ResumeItem
@@ -162,6 +164,18 @@ object YtPlayer {
         player(context).seekTo(positionMs)
     }
 
+    /**
+     * Tasto indietro: torna all'inizio; se si è già nei primi secondi va al video prima della coda
+     * (se c'è, se no resta all'inizio).
+     */
+    fun previous(context: Context) {
+        val p = player(context)
+        val current = _now.value?.stream?.id
+        val index = queue.indexOfFirst { YtResolver.videoId(it) == current }
+        val before = queue.getOrNull(index - 1)?.takeIf { index > 0 }
+        if (p.currentPosition > Playback.RESTART_MS || before == null) p.seekTo(0) else play(context, before, _now.value?.audioOnly == true)
+    }
+
     /** Avanti o indietro di [deltaMs] (doppio tocco sul video). */
     fun seekBy(context: Context, deltaMs: Long) {
         val p = player(context)
@@ -238,9 +252,11 @@ object YtPlayer {
     /**
      * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
      * video messo in pausa resta in pausa (si riprende con il tasto play).
+     * Con [autoplay] falso il video si carica fermo e aspetta il play (es. aperto da una nota).
      */
-    fun play(context: Context, link: String, audioOnly: Boolean = false) {
+    fun play(context: Context, link: String, audioOnly: Boolean = false, autoplay: Boolean = true) {
         val loaded = _now.value
+        Playback.starting(if (audioOnly) PlaySource.MUSIC else PlaySource.VIDEO)
         if (isLoaded(loaded, link)) {
             // Stesso video: si passa da solo audio a video (o il contrario) dal punto in cui si era.
             val stream = loaded?.stream
@@ -267,6 +283,7 @@ object YtPlayer {
                     start(
                         context, it, if (auto) Mode.AUTO else Mode.FIXED,
                         positionMs = if (from > 0) from else YtHistory.resumeMs(it.id),
+                        play = autoplay,
                         subtitle = pickSubtitle(it),
                     )
                     remember(context)

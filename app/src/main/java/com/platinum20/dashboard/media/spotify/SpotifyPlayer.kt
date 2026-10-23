@@ -6,8 +6,12 @@ import android.webkit.JavascriptInterface
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.PlaySource
+import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.media.PlayerCommand
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,12 +41,15 @@ object SpotifyPlayer {
     /** Fa partire un brano, o un album/playlist dall'inizio o da [startAt]. */
     fun play(context: Context, item: SpItem, startAt: SpItem? = null) {
         val contextUri = item.uri.takeIf { item.kind != SpKind.TRACK && item.kind != SpKind.EPISODE }
+        val shown = startAt ?: item
+        Playback.starting(PlaySource.SPOTIFY, shown.title, shown.subtitle, shown.image)
         play(context, contextUri, if (contextUri == null) listOf(item.uri) else emptyList(), startAt?.uri)
     }
 
     /** Link di Spotify (open.spotify.com/track/..., spotify:album:...) suonato nell'app. */
-    fun playLink(context: Context, link: String): Boolean {
+    fun playLink(context: Context, link: String, title: String = "", subtitle: String = "", artwork: String = ""): Boolean {
         val uri = spotifyUri(link) ?: return false
+        Playback.starting(PlaySource.SPOTIFY, title.ifBlank { "Spotify" }, subtitle, artwork)
         val kind = uri.split(":").getOrNull(1)
         if (kind == "track" || kind == "episode") play(context, null, listOf(uri), null) else play(context, uri, emptyList(), null)
         return true
@@ -78,9 +85,21 @@ object SpotifyPlayer {
     /**
      * Riprende [trackUri] (dentro [contextUri], se c'è) da [positionMs] nel riproduttore dell'app.
      * Serve per "Continua" e quando Spotify ha perso lo stato dopo una pausa lunga.
+     * Con [autoplay] falso il brano si carica e si mette subito in pausa (es. aperto da una nota):
+     * Spotify non sa caricare senza suonare.
      */
-    fun resume(context: Context, trackUri: String, contextUri: String?, positionMs: Long) {
+    fun resume(
+        context: Context,
+        trackUri: String,
+        contextUri: String?,
+        positionMs: Long,
+        autoplay: Boolean = true,
+        title: String = "",
+        subtitle: String = "",
+        artwork: String = "",
+    ) {
         _error.value = null
+        Playback.starting(PlaySource.SPOTIFY, title.ifBlank { "Spotify" }, subtitle, artwork)
         NowPlaying.pauseOthers(MediaService.SPOTIFY, radio = true)
         start(context)
         scope.launch {
@@ -98,6 +117,13 @@ object SpotifyPlayer {
                 if (again != null) result = runCatching { playOn(again, ctx, uris, trackUri.takeIf { ctx != null }, positionMs) }
             }
             result.exceptionOrNull()?.let { _error.value = spotifyMessage(it) }
+            if (result.isSuccess && !autoplay) {
+                // Il riproduttore parte appena riceve il brano: lo si ferma non appena è suo.
+                delay(400)
+                NowPlaying.command(MediaService.SPOTIFY, PlayerCommand.PAUSE)
+                SpotifyAuth.token()?.let { token -> runCatching { SpotifyApi.pause(token) } }
+                Playback.settle(PlaySource.SPOTIFY)
+            }
         }
     }
 
@@ -135,6 +161,10 @@ object SpotifyPlayer {
 
         @JavascriptInterface
         fun onNotReady() = forget()
+
+        /** Il riproduttore ha cambiato brano o stato: il player dell'app si aggiorna subito, senza aspettare il giro. */
+        @JavascriptInterface
+        fun onState() = NowPlaying.refresh(MediaService.SPOTIFY)
 
         @JavascriptInterface
         fun onError(kind: String, message: String) {
@@ -179,7 +209,7 @@ object SpotifyPlayer {
 <body style="background:#000">
 <button data-testid="control-button-playpause" onclick="window.cp && cp.togglePlay()"></button>
 <button data-testid="control-button-skip-forward" onclick="window.cp && cp.nextTrack()"></button>
-<button data-testid="control-button-skip-back" onclick="window.cp && cp.previousTrack()"></button>
+<button data-testid="control-button-skip-back" onclick="window.cp && cp.getCurrentState().then(function (s) { if (s && s.position > 3000) cp.seek(0); else cp.previousTrack(); })"></button>
 <button data-testid="control-button-pause" onclick="window.cp && cp.pause()"></button>
 <button data-testid="control-button-play" onclick="window.cp && cp.resume()"></button>
 <script>
@@ -217,6 +247,7 @@ window.onSpotifyWebPlaybackSDKReady = function () {
       artwork: images.map(function (i) { return { src: i.url }; })
     });
     ms.playbackState = s.paused ? 'paused' : 'playing';
+    CanvasSpotify.onState();
   });
   if (player.activateElement) player.activateElement();
   player.connect();

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.136.0
+**Mini player più affidabile**
+- Quando fai partire qualcosa il mini player passa subito a quello, con titolo e copertina, anche mentre Spotify si sta ancora collegando; se Spotify non parte lo dice lì
+- Una sola cosa nel mini player: quello che c'era prima va in pausa ed esce, e chiudendo il mini player non ricompare un video vecchio in pausa
+- Spotify aggiorna il mini player nell'istante in cui cambia brano o stato, senza ritardi
+- Il tasto indietro riporta all'inizio di quello che sta suonando; premuto di nuovo nei primi 3 secondi va al brano o video precedente (YouTube, musica, Spotify)
+- Prepara "Salva nelle note": i media si possono riaprire fermi, in attesa del play
+
 ## 1.135.0
 **Note in tre tipi: con scadenza, senza scadenza, spese**
 - Promemoria, date da ricordare, pacchi ed eventi del calendario sono ora una cosa sola, "Con scadenza": una lista per giorno (Scaduti, Oggi, Domani, Questa settimana, Più avanti), tutte con quanto manca a destra
@@ -7,9 +15,6 @@
 - Le abitudini stanno sotto "Oggi", perché si fanno oggi
 - "Senza scadenza" raccoglie appunti e cose da fare prima o poi; le Spese restano a parte
 - Le pillole in alto sono solo tre, una per tipo; il + continua a scegliere da solo dove mettere quello che scrivi
-
-<<<<<<< HEAD
-=======
 
 ## 1.134.0
 **Il punto del giorno nel player**

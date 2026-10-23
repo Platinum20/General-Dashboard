@@ -68,7 +68,7 @@ object PodcastStore {
     private lateinit var appContext: Context
     private var controller: MediaController? = null
     private var connecting = false
-    private var pending: Pair<Episode, Long>? = null
+    private var pending: Triple<Episode, Long, Boolean>? = null
     private var current: Episode? = null
     private var ticker: Job? = null
     /** L'episodio appena chiesto al player, finché il player non lo carica. */
@@ -241,16 +241,18 @@ object PodcastStore {
             .map { if (it.image.isBlank()) it.copy(image = podcast.artwork) else it }
     }
 
-    fun play(episode: Episode) {
+    /** Con [autoplay] falso l'episodio si carica fermo e aspetta il play (es. aperto da una nota). */
+    fun play(episode: Episode, autoplay: Boolean = true) {
         // Episodio che c'è solo su Spotify: suona nel riproduttore di Spotify (protetto), sempre nell'app.
         if (episode.audioUrl.startsWith("spotify:")) {
             if (current != null) stop()
-            SpotifyPlayer.playLink(appContext, episode.audioUrl)
+            SpotifyPlayer.playLink(appContext, episode.audioUrl, episode.title, episode.podcastTitle, episode.image)
             return
         }
         // Un solo player alla volta: si fermano YouTube, Spotify e la radio (che lascia il player al podcast).
         NowPlaying.pauseOthers(null, podcast = false)
         RadioStore.yieldPlayer()
+        com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.PODCAST)
         saveCurrentPosition()
         current = episode
         val startMs = PodcastProgress.resumeAt(_positions.value[episode.id] ?: 0, episode.durationSec * 1000)
@@ -258,8 +260,8 @@ object PodcastStore {
         // Subito in "Continua" di Media, senza aspettare la prima pausa.
         savePosition(episode.id, startMs)
         val ready = controller
-        if (ready != null) start(ready, episode, startMs) else {
-            pending = episode to startMs
+        if (ready != null) start(ready, episode, startMs, autoplay) else {
+            pending = Triple(episode, startMs, autoplay)
             connect()
         }
     }
@@ -299,7 +301,7 @@ object PodcastStore {
         _now.value = null
     }
 
-    private fun start(controller: MediaController, episode: Episode, startMs: Long) {
+    private fun start(controller: MediaController, episode: Episode, startMs: Long, autoplay: Boolean) {
         awaiting = episode.id
         val item = MediaItem.Builder()
             .setMediaId(episode.id)
@@ -314,7 +316,7 @@ object PodcastStore {
             .build()
         controller.setMediaItem(item, startMs)
         controller.prepare()
-        controller.play()
+        if (autoplay) controller.play() else controller.pause()
     }
 
     private fun connect() {
@@ -329,7 +331,7 @@ object PodcastStore {
             c.addListener(object : Player.Listener {
                 override fun onEvents(player: Player, events: Player.Events) = publish(player)
             })
-            pending?.let { (episode, startMs) -> start(c, episode, startMs) }
+            pending?.let { (episode, startMs, autoplay) -> start(c, episode, startMs, autoplay) }
             pending = null
         }, ContextCompat.getMainExecutor(appContext))
     }

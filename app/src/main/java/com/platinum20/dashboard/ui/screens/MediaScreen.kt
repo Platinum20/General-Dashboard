@@ -494,21 +494,34 @@ private fun StationBubble(station: RadioStation, playing: Boolean, onClick: () -
 }
 
 /** Apre la cosa da riprendere dal punto lasciato: i video nel loro player, tutto il resto nel player unico. */
-internal fun openResumeItem(context: android.content.Context, item: ResumeItem, openRoute: (String) -> Unit) {
+internal fun openResumeItem(
+    context: android.content.Context,
+    item: ResumeItem,
+    /** Falso: si carica fermo e aspetta il play (aperto da una nota). */
+    autoplay: Boolean = true,
+    openRoute: (String) -> Unit,
+) {
     val from = if (item.unfinished) item.positionMs else 0
     when (item.kind) {
         ResumeKind.VIDEO -> openRoute(Routes.video(item.key))
-        ResumeKind.YOUTUBE -> openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
+        ResumeKind.YOUTUBE -> {
+            // Caricato prima di aprire la schermata: lì il video già nel player non riparte da solo.
+            if (!autoplay) YtPlayer.play(context, Resume.youtubeLink(item), autoplay = false)
+            openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
+        }
         ResumeKind.MUSIC -> {
-            YtPlayer.play(context, Resume.youtubeLink(item), audioOnly = true)
+            YtPlayer.play(context, Resume.youtubeLink(item), audioOnly = true, autoplay = autoplay)
             openRoute(Routes.PLAYER)
         }
         ResumeKind.SPOTIFY -> {
-            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(context, item.key, item.link, from)
+            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(
+                context, item.key, item.link, from, autoplay,
+                title = item.title, subtitle = item.subtitle, artwork = item.image,
+            )
             openRoute(Routes.PLAYER)
         }
         ResumeKind.RADIO -> {
-            item.station?.let(RadioStore::play)
+            item.station?.let { RadioStore.play(it, autoplay) }
             openRoute(Routes.PLAYER)
         }
         ResumeKind.PODCAST -> {
@@ -518,7 +531,8 @@ internal fun openResumeItem(context: android.content.Context, item: ResumeItem, 
                     id = item.key, title = item.title, audioUrl = item.link, publishedAt = 0,
                     durationSec = item.durationMs / 1000, description = "", image = item.image,
                     podcastTitle = item.subtitle, feedUrl = item.feed,
-                )
+                ),
+                autoplay,
             )
             openRoute(Routes.PLAYER)
         }
