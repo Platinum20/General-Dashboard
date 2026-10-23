@@ -52,48 +52,6 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Cosa fare:** nei dati finti una nota "Spesa" con `[x] latte`, `[ ] pane`, `[ ] uova`; una spesa fissa ("ogni mese il 5 affitto 650") e una abitudine "Palestra 3 volte a settimana"; nuove foto `27_cerca` (lente, cerca "latte"), `28_lista` (editor della nota lista), `07_da_attivare` (riga aperta). Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
 
-### V20. La sera "Adesso" e la card "Domani" dicono le stesse cose · Oggi · gravità media
-- **Versione:** 1.93.0 (foto `01_oggi`, `05_oggi_fondo`, `scuro_01_oggi`, `scuro_05_oggi_fondo` di `main/50`)
-- **Cosa non va:** dalle 18 "Adesso" continua ad aggiungere le sue righe su domani (`Briefing.kt` ~righe 100-160: "Domani 22° / 10°, pioggia 60%", "Domani alle …", "Domani: compleanno", "Domani arriva", "Domani addebito") e subito sotto la nuova card "Domani" ripete meteo, impegni, date e addebiti. Nel giro: "Domani 22° / 10°, pioggia 60%" in Adesso e "Rovesci · Pioggia 60% · 22° / 10°" nella card; "Chiamare il commercialista" compare tre volte (card Domani, Da fare con "Domani 09:00"). In più la riga meteo di Adesso usa l'icona del sole anche con pioggia al 60%.
-- **Dove:** `today/Briefing.kt` (parte serale), `ui/screens/HomeScreen.kt` (dove si mostrano Adesso e TomorrowCard).
-- **Come riprodurre:** aprire Oggi dopo le 18 con le previsioni di domani e un promemoria per domani.
-- **Cosa fare:** quando la card Domani c'è (`Tomorrow.build` non null), togliere da Adesso le righe "Domani …" che la card già mostra (meteo, impegni, date, addebiti, pacchi se aggiunti alla card); l'icona della riga meteo deve venire dal codice meteo (`weatherIcon(code)`), non sempre il sole.
-- **Test che lo impedisce:** in `BriefingTest`, `build(...)` alle 19 con `tomorrowCard = true` non contiene righe che iniziano con "Domani"; un test che con pioggia ≥ 50% la riga meteo non ha l'icona del sole; foto `01_oggi` di sera.
-
-### V21. Card "Domani": frase in cima quasi mai visibile, e dopo mezzanotte dice "Domani" per oggi · Oggi › Domani · gravità bassa
-- **Versione:** 1.93.0 (foto `01_oggi` di `main/50`)
-- **Cosa non va:** (1) la frase in cima ("Domani 8:30 Dentista, pioggia dalle 10") la costruisce `Tomorrow.headline` solo con un evento del calendario o con `rainFrom`: un promemoria con orario (come "9:00 Chiamare il commercialista" nel giro) non conta, e la pioggia al 60% del giorno senza un'ora ≥ 50% non conta, quindi nel giro la frase non c'è. (2) Tra mezzanotte e le 3 `targetDay` è oggi, ma il titolo della sezione resta "Domani · venerdì 23" e la frase inizia con "Domani".
-- **Dove:** `today/Tomorrow.kt` (`headline`, `targetDay`), `ui/screens/TomorrowCard.kt` (titolo `"Domani · $dayName"`).
-- **Come riprodurre:** (1) dopo le 18 senza calendario collegato e un promemoria per domani alle 9: nessuna frase in cima; (2) all'1 di notte: la card dice "Domani · venerdì 23" ma venerdì 23 è oggi.
-- **Cosa fare:** nella frase usare anche il primo promemoria con orario se non c'è un evento; dopo mezzanotte titolo "Oggi · …" (o "Più tardi"), frase senza "Domani".
-- **Test che lo impedisce:** `TomorrowTest`: con solo un promemoria alle 9 la frase è "Domani 9:00 …"; alle 1:00 il titolo/frase non contengono "Domani".
-
-### V22. YouTube: cambiando video mentre suona, il punto del video di prima si perde · Media › Riprendi, Adesso · gravità bassa
-- **Versione:** 1.93.0
-- **Aggiornamento 1.96.0:** in parte attenuato dalla 1.95: `YtHistory` salva il punto ogni 5 secondi, quindi riaprendo il video A riparte da dove eri. Ma la voce di A in Media › Riprendi e in Adesso (`MediaHistory`) resta quella scritta all'avvio (posizione 0, barra vuota) perché `remember()` continua a non salvare il video vecchio quando si cambia video. Ora ci sono due cronologie (`MediaHistory` e `YtHistory`) che dicono cose diverse sullo stesso video: Riprendi dovrebbe prendere posizione e durata da `YtHistory` per i video YouTube. Gravità abbassata a bassa.
-- **Cosa non va:** `YtPlayer.remember()` salva il punto solo quando il player smette di suonare (`onIsPlayingChanged(false)`) e prende il video da `_now.value`. Ma `play()` mette subito `_now.value = YtNow(link nuovo, stream = null)` e `start()` lo sostituisce con lo stream nuovo prima di `setMediaSource`: quando il video vecchio si ferma, `_now` parla già del nuovo, quindi il vecchio non viene salvato (o viene salvato col nome del nuovo). Si perde anche se il processo viene chiuso mentre il video suona (nessun salvataggio periodico). È il caso tipico: guardi 20 minuti di A, tocchi un video in "Prossimi" o un altro link, e in Riprendi A non c'è o riparte da capo.
-- **Dove:** `media/youtube/player/YtPlayer.kt` (`play`, `start`, `remember`, listener `onIsPlayingChanged`).
-- **Come riprodurre:** aprire un video, lasciarlo suonare due minuti senza pausa, aprire un altro video da "Prossimi"; tornare in Media: il primo non è in Riprendi (o è al punto 0).
-- **Cosa fare:** in `play()` chiamare `remember(context)` per il video corrente prima di cambiare `_now`; salvare anche ogni 30 s mentre suona e in `stop()`/`release()`.
-- **Test che lo impedisce:** test di `YtPlayer` (o di una funzione estratta) che, passando da A a 2:00 a B, lascia in `MediaHistory` A con posizione 120 000 ms.
-
-
-### V23. Video del telefono: se il permesso è negato per sempre il tocco non fa nulla · Media › Video › Sul telefono · gravità bassa
-- **Versione:** 1.96.0 (foto `33_video`, `scuro_33_video` di `main/53`: l'invito si vede bene, chiaro e scuro)
-- **Cosa non va:** (1) dopo due "Non consentire" Android non mostra più la richiesta: `phonePermission.launch(...)` torna subito con false e la card "Mostra i video del telefono" resta lì senza dire niente, all'infinito. (2) Con il permesso già dato, la lista si legge una volta sola (`LaunchedEffect(phoneAllowed)`): un video registrato mentre l'app è in sottofondo non compare tornando nella pagina finché non la si chiude e riapre.
-- **Dove:** `ui/screens/VideoPlayerScreen.kt` (blocco "Video del telefono", `PhoneVideosInvite`).
-- **Come riprodurre:** (1) toccare "Mostra i video del telefono" e rifiutare due volte, poi toccare ancora: non succede nulla. (2) Aprire Video, registrare un video con la fotocamera, tornare: non c'è.
-- **Cosa fare:** se il permesso viene negato e `shouldShowRequestPermissionRationale` è false, cambiare il testo della card in "Permesso negato: aprilo nelle impostazioni" e aprire `Settings.ACTION_APPLICATION_DETAILS_SETTINGS`; ricaricare `PhoneVideos.load` anche a ogni `ON_RESUME` quando il permesso c'è.
-- **Test che lo impedisce:** test di una funzione pura (es. `phoneInviteState(granted, askedBefore, rationale)`) che restituisce "apri impostazioni" dopo un rifiuto definitivo; foto `33b_video_telefono` (vedi V8).
-
-### V24. YouTube › Cronologia: "Svuota" cancella tutto con un tocco, senza conferma né Annulla · YouTube › Cronologia · gravità bassa
-- **Versione:** 1.95.0 (solo dal codice: la scheda non è nel giro fotografico)
-- **Cosa non va:** `TextButton(onClick = { YtHistory.clear() })` in `HistoryTab` cancella fino a 300 video guardati, con i punti in cui eri, al primo tocco; nel resto dell'app le eliminazioni hanno "Annulla" (Da fare, Note). Svuota inoltre non tocca `MediaHistory`, quindi gli stessi video restano in Media › Riprendi.
-- **Dove:** `ui/screens/YouTubeFeedScreen.kt` (`HistoryTab`), `media/youtube/YtHistory.kt`.
-- **Come riprodurre:** YouTube › Cronologia › Svuota: tutto sparisce senza modo di tornare indietro.
-- **Cosa fare:** snackbar "Cronologia svuotata · Annulla" (tenere la mappa vecchia e rimetterla), oppure un dialogo di conferma; decidere se svuotare anche le voci YouTube di `MediaHistory`.
-- **Test che lo impedisce:** `YtHistoryTest`: dopo `clear()` e `restore(previous)` gli elementi e le posizioni sono gli stessi.
-
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
 - **Cosa non va:** `06_aggiungi.png` è identica byte per byte a `05_oggi_fondo.png` (stesso md5): il tocco su "Aggiungi" non apre la cattura veloce (o la apre in un'altra Activity che Robolectric non fotografa), quindi il pannello del "+" non è mai stato controllato.
@@ -141,7 +99,8 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 **Fatto quando:** i test nuovi girano in `build.yml`; un giro con una foto mancante o doppia fallisce.
 **Test:** sono la voce stessa.
 
-### 3. Pacchi, Abitudini e Media: niente mezze pagine vuote · Note, Media · S
+### 3. Pacchi e Media: niente mezze pagine vuote · Note, Media · S
+_(1.98.0: fatte le "Idee da aggiungere" in Abitudini. Restano Pacchi e Media al primo uso.)_
 _(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `main/53` restano `25_pacchi` (un pacco e poi tutto vuoto), `23_abitudini` (due card e metà schermo vuoto) e `30_media` (4 riquadri e due terzi vuoti). Per Abitudini usare lo stesso schema delle idee di Date: "Idee da aggiungere" con "Leggere 20 minuti", "Palestra 3 volte a settimana", "Niente telefono a letto" che aprono il dialogo già compilato.)_
 **Perché:** ancora nella 1.91 Date (22_date) ha un compleanno e poi tre quarti di schermo vuoto, e lo stesso in Pacchi (25_pacchi, un pacco), Video (33_video) e Media (30_media). Una pagina mezza vuota sembra rotta o inutile.
 **Cosa fare:** uno stato vuoto curato e utile in fondo alle liste corte: in Date una riga "Importa i compleanni dai contatti" + esempi tappabili ("Anniversario", "Scadenza passaporto") che aprono il dialog già compilato; in Pacchi "Arrivati di recente" (voce di Dopo) o un suggerimento "Incolla un codice di tracciamento" + invito a Compila da solo se spento; in Video la libreria del telefono (voce sotto); in Media il blocco Riprendi è uscito in 1.93 ma compare solo se c'è qualcosa da riprendere: in `main/50/tour/30_media` (primo uso) la pagina ha 4 riquadri e poi due terzi vuoti. Al primo uso mostrare "Per iniziare": 3-4 stazioni radio italiane tappabili (Radio 2, RTL 102.5, Radio Deejay: partono in un tocco) e, se YouTube è collegato, gli ultimi 3 video dalle iscrizioni. Stile `CanvasCard` con `IconTile`, testo breve.
@@ -149,6 +108,7 @@ _(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `ma
 **Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci); funzione che sceglie le stazioni "Per iniziare" (niente doppioni con le recenti).
 
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
+_(1.98.0: fatti "Alba · Tramonto" a tutta riga, "Ancora da fare: N abitudini" e Da fare senza i promemoria di domani quando c'è la card. Restano indicatore fermo, icona Località, Punto del giorno lento, sfondo dell'ombrello nella card Domani.)_
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
 **Cosa fare:** ~~Aggiornamenti: avviso nuove versioni solo in Impostazioni~~ (fatto in 1.93.0). Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno. Da `main/50` (1.93): la card Domani mostra "9:00 · Chiamare il commercialista" e subito sotto Da fare ripete "Chiamare il commercialista · Domani 09:00": quando la card Domani è visibile, in Da fare tenere solo scaduti e oggi (i promemoria di domani stanno nella card), oppure togliere dalla card i promemoria già elencati sotto; e nella card Domani l'icona dell'ombrello sul meteo "Rovesci" ha uno sfondo diverso dalle altre `IconTile`: uniformare.
 **Fatto quando:** nelle foto nessuno dei difetti.
@@ -160,12 +120,6 @@ _(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `ma
 Da `main/53`: stessa cosa per YouTube, dove sotto "Accedi a YouTube" c'è "Oppure collega l'API ufficiale di Google" (anche quello in Avanzate); in Video il pulsante "Dal telefono" in alto e la card "Mostra i video del telefono" sotto fanno la stessa cosa: tenerne uno solo (la card) e rendere più bassa la card "Scegli cosa guardare", che occupa un terzo di schermo per una frase tecnica ("mp4, webm, streaming m3u8").
 **Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nelle pagine di accesso di Spotify e YouTube c'è solo il pulsante; in Video un solo modo di aprire i video del telefono.
 **Test:** foto del giro (aggiungere `34_radio` se manca).
-
-### 17. Adesso: chiudere le cose con un tocco · Oggi · M
-**Perché:** in `main/53` Adesso dice "Pacco in arrivo: Cuffie" e "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…", ma per segnare l'abitudine fatta o il pacco arrivato bisogna andare in Note, trovare la scheda e toccare lì: tre tocchi e un cambio di pagina per una cosa che Oggi già sa. Oggi deve servire a *fare* in 5 secondi, non solo a sapere.
-**Cosa fare:** in `HomeScreen.kt`/`Briefing.kt` dare a ogni riga di Adesso un'azione rapida a destra (piccolo bottone tondo, stile `RoundIconButton`): abitudini mancanti → si apre un mini elenco con un cerchio per abitudine da toccare (al posto dei nomi tagliati, "Ancora da fare: 2 abitudini"); pacco in arrivo/in ritardo → "Arrivato"; promemoria scaduto → "Fatto" e "Domani"; addebito di domani → nessuna azione. Ogni azione con vibrazione e snackbar "Annulla" come in Note. `Briefing` restituisce già righe tipizzate: aggiungere un campo `action` (enum) e un `targetId`.
-**Fatto quando:** da Oggi si segna un'abitudine fatta e un pacco arrivato senza aprire Note, e Adesso si aggiorna subito togliendo la riga.
-**Test:** `BriefingTest`: le righe di abitudini, pacchi e promemoria scaduti portano l'azione e l'id giusti; dopo `markHabitDone` la riga abitudini sparisce o scende a "1 abitudine"; testo "Ancora da fare: N abitudini" quando i nomi superano la larghezza (funzione pura sul numero di caratteri).
 
 ### 11. Date: compleanni dai contatti · Note › Date · M
 _(primo passo dell'idea grande E)_
@@ -283,6 +237,7 @@ _(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pa
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.98.0 · Adesso: azioni rapide con Annulla (ex 17); idee in Abitudini (parte del 3); Meteo senza buchi e abitudini non tagliate (parte del 7); V20, V21, V22, V23, V24 del verificatore
 - 1.96.0 · Video: libreria "Sul telefono" da MediaStore (ex 5); Date: idee tappabili con poche voci (parte del 3); V14, V15, V16, V17, V18, V19 del verificatore
 - 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
