@@ -4,4 +4,5 @@
     <color name="widget_text">#FFE2E2E9</color>
     <color name="widget_text_secondary">#FFC4C6D0</color>
     <color name="widget_accent">#FFAEC6FF</color>
+    <color name="widget_late">#FFF2B8B5</color>
 </resources>

@@ -1,0 +1,13 @@
+{
+  "artists": {
+    "href": "https://api.spotify.com/v1/me/following?type=artist&limit=50",
+    "limit": 50,
+    "next": "https://api.spotify.com/v1/me/following?type=artist&limit=50&after=5abc",
+    "cursors": {"after": "5abc"},
+    "total": 51,
+    "items": [
+      {"id": "0TnOYISbd1XYRBk9myaseg", "name": "Marco Mengoni", "type": "artist", "uri": "spotify:artist:0TnOYISbd1XYRBk9myaseg"},
+      {"id": "5abc", "name": "Elisa", "type": "artist", "uri": "spotify:artist:5abc"}
+    ]
+  }
+}

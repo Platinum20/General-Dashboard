@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cerchio di un promemoria scaduto: stesso disegno, colore di avviso. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <stroke android:width="2dp" android:color="@color/widget_late" />
+    <size android:width="20dp" android:height="20dp" />
+</shape>
