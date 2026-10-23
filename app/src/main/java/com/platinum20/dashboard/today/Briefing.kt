@@ -102,7 +102,7 @@ object Briefing {
             val text = when {
                 relative && minutes < 60 -> "Tra ${minutes.coerceAtLeast(1)} min: ${next.title}"
                 else -> "Alle ${next.begin.at(zone)}: ${next.title}"
-            } + if (next.location.isNotBlank()) " · ${next.location}" else ""
+            } + (if (next.location.isNotBlank()) " · ${next.location}" else "") + rainNote(forecast, next.begin, zone)
             lines += BriefLine(BriefKind.EVENT, text, urgent = minutes < 60)
         }
 
@@ -199,7 +199,8 @@ object Briefing {
             if (first != null) {
                 lines += BriefLine(
                     BriefKind.EVENT,
-                    if (first.allDay) "Domani: ${first.title}" else "Domani alle ${first.begin.at(zone)}: ${first.title}",
+                    if (first.allDay) "Domani: ${first.title}"
+                    else "Domani alle ${first.begin.at(zone)}: ${first.title}" + rainNote(forecast, first.begin, zone),
                 )
             }
         } else if (!evening) {
@@ -227,6 +228,19 @@ object Briefing {
         }
         // Le urgenze in cima, poi l'ordine in cui le abbiamo pensate.
         return lines.withIndex().sortedWith(compareBy({ !it.value.urgent }, { it.index })).map { it.value }.take(max)
+    }
+
+    /** Da questa probabilità la pioggia si segnala sull'impegno. */
+    const val EVENT_RAIN_PERCENT = 50
+
+    /**
+     * " · pioggia 70%" quando all'ora dell'impegno è probabile che piova, così si sa
+     * se serve l'ombrello per quella cosa lì e non in generale. Vuoto altrimenti.
+     */
+    fun rainNote(forecast: Forecast?, beginMs: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+        val at = Instant.ofEpochMilli(beginMs).atZone(zone).toLocalDateTime().withMinute(0).withSecond(0).withNano(0)
+        val p = forecast?.hourly?.firstOrNull { it.time == at }?.precipitationProbability ?: return ""
+        return if (p >= EVENT_RAIN_PERCENT) " · pioggia $p%" else ""
     }
 
     /** Quanti caratteri ci stanno in una riga di "Adesso" su un telefono normale. */

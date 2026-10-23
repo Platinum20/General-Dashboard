@@ -118,8 +118,7 @@ class ScreenshotTour {
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
             for ((tab, name) in listOf(
-                "Abitudini" to "23_abitudini", "Spese" to "24_spese", "Note" to "21_note_libere",
-                "Pacchi" to "25_pacchi", "Date" to "22_date",
+                "Spese" to "24_spese", "Note" to "21_note_libere", "In arrivo" to "22_in_arrivo",
             )) {
                 // Il primo nodo è la scheda in alto; "Note" compare anche nella barra in basso.
                 val nodes = compose.onAllNodes(hasText(tab) and hasClickAction())

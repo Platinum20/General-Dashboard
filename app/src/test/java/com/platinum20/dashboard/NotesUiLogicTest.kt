@@ -1,6 +1,11 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
+import com.platinum20.dashboard.ui.screens.parcelsFirst
+import java.time.LocalDate
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import com.platinum20.dashboard.ui.screens.stripScrollTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,4 +34,22 @@ class NotesUiLogicTest {
         assertEquals(0, noteTitleEnd("\nsenza titolo"))
         assertEquals(0, noteTitleEnd(""))
     }
+
+    // "In arrivo": i pacchi vanno sopra le date solo se uno arriva a giorni.
+    private val oggi = LocalDate.of(2026, 10, 23)
+
+    @Test fun paccoDiDopodomaniSopra() = assertTrue(parcelsFirst(listOf(Parcel(1, "Scarpe", expected = oggi.plusDays(2))), oggi))
+
+    @Test fun paccoInRitardoSopra() = assertTrue(parcelsFirst(listOf(Parcel(1, "Libro", expected = oggi.minusDays(1))), oggi))
+
+    @Test fun paccoLontanoOConsegnatoSotto() = assertFalse(
+        parcelsFirst(
+            listOf(
+                Parcel(1, "Divano", expected = oggi.plusDays(10)),
+                Parcel(2, "Cuffie", expected = oggi, deliveredOn = oggi),
+                Parcel(3, "Senza data"),
+            ),
+            oggi,
+        )
+    )
 }
