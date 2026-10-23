@@ -23,9 +23,9 @@ import com.platinum20.dashboard.work.RefreshWorker
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.LocalDate
 
 /** Widget della schermata Home: meteo, le righe di "Adesso", i promemoria di oggi e i temi del giorno. */
 class DashboardWidget : AppWidgetProvider() {
@@ -126,9 +126,7 @@ class DashboardWidget : AppWidgetProvider() {
                 val today = forecast.today
                 views.setTextViewText(
                     R.id.widget_desc,
-                    WeatherCodes.description(c.code) +
-                        (today?.let { " · ${it.max.asTemp()}/${it.min.asTemp()}" } ?: "") +
-                        (today?.takeIf { it.precipitationProbability >= 30 }?.let { " · pioggia ${it.precipitationProbability}%" } ?: ""),
+                    WidgetRows.weatherLine(WeatherCodes.description(c.code), today?.max?.asTemp(), today?.min?.asTemp(), today?.precipitationProbability),
                 )
             }
 
@@ -148,7 +146,7 @@ class DashboardWidget : AppWidgetProvider() {
             }
 
             // Con le righe sopra le notizie scendono a due, per stare nello stesso spazio.
-            val news = headlines(context).take(if (brief.isEmpty() && tasks == null) 3 else 2)
+            val news = headlines(context).take(WidgetRows.newsCount(brief.size, tasks != null))
             val rows = listOf(R.id.widget_news1, R.id.widget_news2, R.id.widget_news3)
             views.setViewVisibility(R.id.widget_recap_title, if (news.isEmpty()) View.GONE else View.VISIBLE)
             rows.forEachIndexed { i, id ->

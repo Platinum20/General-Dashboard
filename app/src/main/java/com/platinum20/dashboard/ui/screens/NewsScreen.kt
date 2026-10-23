@@ -24,6 +24,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +42,9 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
@@ -57,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
+import com.platinum20.dashboard.news.NewsLayout
 import com.platinum20.dashboard.news.NewsSources
 import com.platinum20.dashboard.news.NewsViewModel
 
@@ -110,6 +116,7 @@ fun NewsScreen(
                 SourceChips(
                     selected = state.selectedSource,
                     onSelect = viewModel::selectSource,
+                    failed = state.failures.map { it.source.name },
                 )
             }
         },
@@ -161,19 +168,6 @@ fun NewsScreen(
                             )
                         }
                     }
-                    if (state.failures.isNotEmpty()) {
-                        item {
-                            Text(
-                                // Solo i nomi: il codice d'errore non dice niente a chi legge.
-                                state.failures.joinToString { it.source.name } +
-                                    if (state.failures.size == 1) " non risponde, riprovo al prossimo aggiornamento"
-                                    else " non rispondono, riprovo al prossimo aggiornamento",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            )
-                        }
-                    }
                     // La prima notizia in grande, le altre come righe compatte con la miniatura.
                     itemsIndexed(items, key = { _, it -> it.link }) { index, item ->
                         Column {
@@ -202,7 +196,8 @@ fun NewsScreen(
 const val READ_ALPHA = 0.55f
 
 @Composable
-private fun SourceChips(selected: String?, onSelect: (String?) -> Unit) {
+private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: List<String>) {
+    var showFailed by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -214,6 +209,28 @@ private fun SourceChips(selected: String?, onSelect: (String?) -> Unit) {
         NewsSources.all.forEach { source ->
             CanvasChip(selected = selected == source.id, onClick = { onSelect(source.id) }, label = source.name)
         }
+        // Una fonte ferma non merita una riga in cima a tutto: un chip in coda ai filtri, i nomi al tocco.
+        NewsLayout.failureChip(failed.size)?.let { label ->
+            AssistChip(
+                onClick = { showFailed = !showFailed },
+                label = { Text(label, style = MaterialTheme.typography.labelLarge) },
+                leadingIcon = { Icon(Icons.Outlined.CloudOff, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                shape = CircleShape,
+                colors = AssistChipDefaults.assistChipColors(
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = MaterialTheme.colorScheme.outlineVariant),
+            )
+        }
+    }
+    if (showFailed && failed.isNotEmpty()) {
+        Text(
+            NewsLayout.failureDetail(failed),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
     }
 }
 
@@ -225,11 +242,15 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
-        if (item.imageUrl != null) {
+        // Senza foto, o se non si carica, la card resta solo testo: niente riquadro grigio vuoto.
+        val image = NewsLayout.usableImage(item.imageUrl)
+        var imageFailed by remember(image) { mutableStateOf(false) }
+        if (image != null && !imageFailed) {
             AsyncImage(
-                model = item.imageUrl,
+                model = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                onError = { imageFailed = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
@@ -304,12 +325,16 @@ private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (item.imageUrl != null) {
+            // La miniatura che non si carica sparisce invece di lasciare un quadrato grigio.
+            val image = NewsLayout.usableImage(item.imageUrl)
+            var imageFailed by remember(image) { mutableStateOf(false) }
+            if (image != null && !imageFailed) {
                 Spacer(Modifier.size(12.dp))
                 AsyncImage(
-                    model = item.imageUrl,
+                    model = image,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    onError = { imageFailed = true },
                     modifier = Modifier
                         .size(84.dp)
                         .clip(MaterialTheme.shapes.medium)

@@ -50,6 +50,9 @@ import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.radio.RadioStation
+import com.platinum20.dashboard.media.MediaStarters
+import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.podcast.PodcastStore
 import androidx.compose.material.icons.outlined.Mic
 import com.platinum20.dashboard.media.PlayerCommand
@@ -130,6 +133,13 @@ fun MediaScreen(
     // Quando nulla suona, la prima cosa è l'ultima cosa vista o ascoltata.
     val hero = resumable.firstOrNull()?.takeIf { tracks.isEmpty() && radio == null && podcast == null && youTubeNow == null }
     val recents = resumable.filter { it != hero }.take(4)
+    // Al primo uso (niente da riprendere) qualche radio da far partire subito.
+    val firstUse = hero == null && recents.isEmpty() && tracks.isEmpty() && radio == null && podcast == null
+    val popular by RadioStore.popular.collectAsState()
+    val recentStations by RadioStore.recent.collectAsState()
+    val favoriteStations by RadioStore.favorites.collectAsState()
+    val starters = if (firstUse) MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) else emptyList()
+    LaunchedEffect(firstUse) { if (firstUse) RadioStore.loadPopular() }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
 
@@ -235,6 +245,16 @@ fun MediaScreen(
                         recents.forEachIndexed { index, recent ->
                             if (index > 0) RowDivider()
                             ResumeRow(recent, onClick = { openResume(recent) })
+                        }
+                    }
+                }
+            }
+            if (starters.isNotEmpty()) {
+                item(key = "starters") {
+                    Section("Per iniziare", action = "Tutte le radio", onAction = onOpenRadio) {
+                        starters.forEachIndexed { index, station ->
+                            if (index > 0) RowDivider()
+                            StarterRow(station, onClick = { RadioStore.play(station) })
                         }
                     }
                 }
@@ -385,6 +405,33 @@ private fun ResumeRow(item: ResumeItem, onClick: () -> Unit) {
             )
         }
         Icon(Icons.Outlined.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+    }
+}
+
+/** Una radio di "Per iniziare": logo, nome e genere, un tocco la fa partire. */
+@Composable
+private fun StarterRow(station: RadioStation, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StationLogo(station, 40)
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(station.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                station.tags.split(',').map { it.trim() }.filter { it.isNotBlank() }.take(2).joinToString(" · ").ifBlank { "Radio" },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(Icons.Filled.PlayArrow, contentDescription = "Ascolta ${station.name}", tint = MaterialTheme.colorScheme.primary)
     }
 }
 
