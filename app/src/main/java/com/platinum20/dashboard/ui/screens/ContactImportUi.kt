@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,7 +68,7 @@ fun ContactImportDialog(existing: List<Countdown>, onDismiss: () -> Unit, onImpo
     }
 
     val list = candidates
-    AlertDialog(
+    CanvasDialog(
         onDismissRequest = onDismiss,
         title = { Text("Compleanni dai contatti") },
         text = {

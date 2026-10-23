@@ -38,7 +38,6 @@ import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -432,7 +431,7 @@ fun EventDetailScreen(
     }
 
     if (confirmDelete && current != null) {
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Eliminare l'evento?") },
             text = {

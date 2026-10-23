@@ -45,7 +45,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -644,7 +643,7 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
         }
     }
     if (confirmClear) {
-        AlertDialog(
+        CanvasDialog(
             onDismissRequest = { confirmClear = false },
             title = { Text("Svuotare la cronologia?") },
             text = { Text("${watched.size} video guardati qui e i punti in cui eri. Spariscono anche da Riprendi in Media.") },

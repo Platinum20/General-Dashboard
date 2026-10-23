@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.132.0
+**Finestre di vetro**
+- Il vetro della barra arriva anche alle finestre che si aprono sopra la pagina (conferme, scelta di data e ora, token, licenze, backup e le altre): da Android 12 la pagina dietro si sfoca e la finestra la lascia intravedere, con un filo di luce sul bordo alto. Se il telefono spegne la sfocatura (risparmio energetico) la finestra torna piena, sempre leggibile
+- Il vetro che c'era resta dov'era: barra, +, mini player, fumetto del + e della voce
+
 ## 1.130.0
 **Media › Continua**
 - I titoli e le righe sotto delle tessere di "Continua" non vengono più tagliati dagli angoli arrotondati: il testo sta un po' più dentro
