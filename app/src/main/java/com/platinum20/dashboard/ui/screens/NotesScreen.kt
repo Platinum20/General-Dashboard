@@ -198,8 +198,6 @@ fun NotesScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
-    // Un evento scritto in cima: lo salva la finestrella del +, che sa chiedere il permesso del calendario.
-    var event by remember { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -245,22 +243,14 @@ fun NotesScreen(
             }
         }
     }
-    event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
 
-    // Il campo per scrivere compare solo col + della barra, già pronto con la tastiera aperta.
-    var composing by rememberSaveable { mutableStateOf(false) }
-    var draft by rememberSaveable { mutableStateOf("") }
+    // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
+    // Lo scontrino fotografato apre lo stesso pannello del +, già scritto, da controllare e salvare.
+    var receiptText by remember { mutableStateOf<String?>(null) }
+    receiptText?.let { CaptureDialog(initial = it, initialMode = CaptureMode.TASK, onClose = { receiptText = null }) }
     val listState = rememberReselectListState(Routes.NOTES)
-    val openComposer: (String) -> Unit = { text ->
-        draft = text
-        composing = true
-        section = null
-        scope.launch { listState.animateScrollToItem(0) }
-    }
-    ProvidePlusAction { openComposer(draft) }
-    androidx.activity.compose.BackHandler(enabled = composing) { composing = false; draft = "" }
 
-    // Foto dello scontrino: totale e negozio aprono il campo già scritto, da controllare e salvare.
+    // Foto dello scontrino.
     var readingReceipt by remember { mutableStateOf(false) }
     val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (!ok) return@rememberLauncherForActivityResult
@@ -268,7 +258,7 @@ fun NotesScreen(
         scope.launch {
             val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
             readingReceipt = false
-            if (guess != null) openComposer(guess.captureText)
+            if (guess != null) receiptText = guess.captureText
             else android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
         }
     }
@@ -401,24 +391,6 @@ fun NotesScreen(
             data.upcoming.isEmpty() && data.parcels.isEmpty() && data.expenses.isEmpty()
 
         LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            if (composing) item(key = "composer") {
-                NotesComposer(
-                    text = draft,
-                    onText = { draft = it },
-                    onClose = { composing = false; draft = "" },
-                    onEvent = { event = it; composing = false; draft = "" },
-                    onSaved = { result ->
-                        composing = false
-                        draft = ""
-                        scope.launch {
-                            snackbar.currentSnackbarData?.dismiss()
-                            val undo = result.undo
-                            val r = snackbar.showSnackbar(result.message, actionLabel = if (undo != null) "Annulla" else null, duration = SnackbarDuration.Short)
-                            if (r == SnackbarResult.ActionPerformed) undo?.invoke()
-                        }
-                    },
-                )
-            }
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
@@ -460,82 +432,6 @@ fun NotesScreen(
             if (done.isNotEmpty() && show(NotesSection.TASKS)) {
                 item(key = "group-done") { Column(Modifier.padding(top = 12.dp)) { TaskGroup("Completati", done, onTaskDeleted) } }
             }
-        }
-    }
-}
-
-/**
- * Il campo che apre il + nelle Note: si scrive e basta, il tipo lo sceglie Canvas da quello che si scrive
- * (come la dettatura). Sotto, una riga dice cosa diventerà; se sbaglia, dopo il salvataggio c'è "Annulla".
- */
-@Composable
-private fun NotesComposer(
-    text: String,
-    onText: (String) -> Unit,
-    onClose: () -> Unit,
-    onEvent: (String) -> Unit,
-    onSaved: (CaptureResult) -> Unit,
-) {
-    val mode = remember(text) { CaptureGuess.guess(text) }
-    val context = LocalContext.current
-    val haptic = rememberHaptic()
-    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    val save = {
-        if (text.isNotBlank()) {
-            if (mode == CaptureMode.EVENT) {
-                onEvent(text)
-            } else {
-                val result = CaptureSave.save(mode, text)
-                if (result.ok) {
-                    haptic(Haptic.CONFIRM)
-                    onSaved(result)
-                } else {
-                    android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-    Column(Modifier.padding(bottom = 8.dp)) {
-        OutlinedTextField(
-            value = text,
-            onValueChange = onText,
-            placeholder = { Text("Scrivi qualcosa: Canvas capisce cos'è") },
-            maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences,
-                // Una nota può andare a capo; il resto si salva con Invio.
-                imeAction = if (mode == CaptureMode.NOTE) ImeAction.Default else ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(onDone = { save() }),
-            trailingIcon = {
-                if (text.isNotBlank()) {
-                    IconButton(onClick = save) { Icon(Icons.Outlined.Check, contentDescription = "Salva come ${mode.label.lowercase()}") }
-                } else {
-                    IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = "Chiudi") }
-                }
-            },
-            shape = MaterialTheme.shapes.large,
-            colors = canvasFieldColors(),
-            modifier = Modifier.fillMaxWidth().focusRequester(focus),
-        )
-        if (text.isNotBlank()) {
-            // Cosa diventerà, detto in una riga: "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00".
-            val detail = when (mode) {
-                CaptureMode.TASK -> QuickParse.parse(text).due
-                    ?.let { dueLabel(it.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()) } ?: "senza scadenza"
-                CaptureMode.NOTE -> "si apre dalla lista"
-                CaptureMode.EVENT -> "va nel calendario"
-                else -> CaptureSave.preview(mode, text)
-            }
-            Text(
-                listOfNotNull(mode.label, detail).joinToString(" · "),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 12.dp, top = 6.dp),
-            )
         }
     }
 }
