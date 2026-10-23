@@ -118,6 +118,7 @@ _(1.93.0: fatti "Aggiornate X min fa" e lo scarto delle voci non-articolo; resta
 **Test:** testo dell'intestazione per prima visita / 0 nuove / N nuove; filtro delle voci non-articolo con 3-4 esempi veri; scelta del layout della card (con foto / solo testo).
 
 ### 2. Test automatici: quello che manca · robustezza · S
+_(1.101.0: fatti `WidgetLinesTest` (riga dei promemoria del widget, ora funzione pura) e `RepeatEndOfMonthTest`, che ha trovato e corretto lo scivolamento del 31 al 28 di "ogni mese". Restano `NewsHistoryTest` e il controllo "foto attesa mancante o doppia" nel tour.)_
 **Perché:** la 1.88 ha coperto i dati delle Note (NotesStore, abitudini, spese fisse, ricerca, backup). Restano senza test il widget, le news "dall'ultima visita" e il giro fotografico non si accorge quando una schermata manca (vedi V1, V2, V6: `06_aggiungi` è ancora identica a `05_oggi_fondo` in `main/41`, `scuro_03_punto` manca ancora).
 **Cosa fare:** estrarre in funzione pura le righe del widget (`DashboardWidget`) e testarle; `NewsHistoryTest` (nuove/già viste, prima visita); `RepeatTest` (31 del mese, 29 febbraio, ogni settimana) se non già coperto; nel `ScreenshotTour` un elenco delle foto attese che fa fallire il giro se una manca o è identica alla precedente.
 Da `main/55`: anche `44_localita` è ora identica a `42_impostazioni_fondo` (e `scuro_44_localita` a `scuro_42_impostazioni_fondo`): il tocco sulla località non apre più la pagina nel giro. Il controllo "foto identica alla precedente" l'avrebbe preso subito.
@@ -165,11 +166,10 @@ _(primo passo dell'idea grande G)_
 **Fatto quando:** fotografando uno scontrino del supermercato l'anteprima ha totale e negozio giusti e un tocco salva la spesa.
 **Test:** `ReceiptTest` con 5-6 scontrini veri trascritti come testo (Conad, Esselunga, farmacia, benzinaio con "IMPORTO", ristorante con coperto e totale), importi con virgola e punto, righe sconto da ignorare.
 
-### 13. Ascolta il punto del giorno · News / Media · M
-**Perché:** il punto del giorno (`03_punto`) è il riassunto più utile dell'app, ma si legge solo guardando lo schermo. In macchina, mentre si cucina o si cammina, Canvas può leggerlo ad alta voce come un notiziario di 3 minuti, tutto sul telefono e gratis (sintesi vocale di Android, italiano offline sui telefoni Google). È "avvia in un tocco" applicato alle notizie.
-**Cosa fare:** in `RecapScreen.kt` e nella card di Oggi un pulsante "Ascolta"; un `RecapReader` costruisce il copione (apertura "Il punto delle 18:00, 4 temi"; per ogni tema il titolo + la prima frase pulita dell'articolo centrale, già scelto da `NewsRecap`) e lo legge con `TextToSpeech` dentro il player condiviso (`MediaPlaybackService` / `NowPlaying`): notifica con pausa e "tema successivo", mini player col tema in corso, si ferma se parte un altro media. Senza voce italiana installata: messaggio con cosa fare, nessun crash.
-**Fatto quando:** un tocco su "Ascolta" legge i temi uno dopo l'altro, "successivo" salta al tema dopo e il mini player mostra il tema in corso.
-**Test:** funzione pura `RecapReader.script(recap, now)` (apertura con ora e numero di temi, una frase per tema, niente URL, sigle e virgolette ripulite, massimo 6 temi, recap vuoto → nessun copione).
+### 13. Ascolta il punto del giorno: nel player condiviso · News / Media · S
+_(1.101.0: fatti il copione `RecapReader.script` con i test, il pulsante "Ascolta" in `RecapScreen` e la card "In ascolto" con Successivo/Ferma, con la voce italiana di Android tramite `RecapSpeaker`.)_
+**Resta:** la lettura non passa ancora da `RadioService`/`MediaSession`: niente notifica con pausa e "tema successivo", niente mini player fuori dalla pagina. Pulsante "Ascolta" anche nella card del punto in Oggi.
+**Test:** foto `03_punto` con la card "In ascolto".
 
 ### 15. Abitudini: promemoria all'ora scelta · Note › Abitudini · M
 _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca oggi" alle 20 e l'app non lo dice finché non la apri)_
@@ -178,6 +178,7 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 **Fatto quando:** con "alle 21" e l'abitudine non fatta arriva la notifica, "Fatto" la segna senza aprire l'app e la serie nella scheda sale.
 **Test:** `HabitReminderTest`: prossimo avviso (oggi se non ancora passato, sennò domani), già fatta → nessun avviso, settimanale a obiettivo raggiunto → nessun avviso fino a lunedì, abitudini salvate da una versione vecchia senza ora.
 
+<<<<<<< Updated upstream
 ### 16. Radio come sveglia · Media / Oggi · M
 **Perché:** la mattina Antonio ha già la notifica del mattino e il player della radio; manca il legame. Svegliarsi con la propria stazione (e dopo la musica il riepilogo di Oggi) è il gesto quotidiano che rende Canvas la prima app della giornata, tutto sul telefono e gratis. Il timer di spegnimento esiste già in Media: la sveglia è la sua metà mancante.
 **Cosa fare:** in Media, sotto il timer di spegnimento, "Sveglia con la radio": orario, giorni (lun-ven / tutti), stazione (ultima ascoltata o una dalle preferite), volume che sale in 30 s. `AlarmManager.setAlarmClock` (esatta, si vede nella barra di stato; permesso `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` chiesto solo qui) che avvia `MediaPlaybackService` con la stazione; notifica a schermo intero con "Stop" e "Ancora 10 min". Se la rete non c'è dopo 20 s, suono di sveglia di sistema come riserva (mai sveglia muta). In Adesso la sera "Sveglia alle 7:00 · Radio Deejay". Riprogrammare dopo il riavvio (`BOOT_COMPLETED`) e dopo un ripristino del backup.
@@ -225,6 +226,8 @@ _(passi 1 e 2 dell'idea grande B, promossi)_
 
 ---
 
+=======
+>>>>>>> Stashed changes
 ## Dopo
 
 - **Scorciatoia "Radio" sull'icona** · Cattura al volo · S. Le scorciatoie Promemoria/Nota/Spesa e il riquadro rapido esistono già; manca una quarta scorciatoia dinamica (`ShortcutManagerCompat.pushDynamicShortcut`) "Radio Deejay" con l'ultima stazione ascoltata, che parte senza aprire Media. Test: l'intent porta la stazione giusta; nessuna scorciatoia se non c'è una stazione recente.
@@ -279,7 +282,8 @@ _(passi 1 e 2 dell'idea grande B, promossi)_
 ### F. Podcast nel player di Canvas · Media · L
 **Perché:** Media ha video, YouTube, Spotify e radio, ma non i podcast, che sono l'ascolto quotidiano più "da riprendere" che ci sia. Si fanno tutti in modo nativo e gratis: ricerca con l'API pubblica di iTunes Search (nessuna chiave), episodi dai feed RSS, audio nel player condiviso (`MediaPlaybackService`). Niente siti, niente Spotify DRM.
 **Passi:**
-1. (M) È la voce 18 di In cima. Quinta fonte "Podcast" in Media: cerca (iTunes Search API `entity=podcast`), segui, elenco episodi dal feed RSS (titolo, data, durata, descrizione). Test: parser RSS con 2 feed veri salvati come risorsa (itunes:duration "1:02:03" e "3723").
+_(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s, notifica del player della radio; mancano velocità e "Riprendi" in Media) e la prima metà del 3 (ultimi episodi in cima alla fonte; manca la riga in Adesso).)_
+1. ~~(M) È la voce 18 di In cima.~~ Quinta fonte "Podcast" in Media: cerca (iTunes Search API `entity=podcast`), segui, elenco episodi dal feed RSS (titolo, data, durata, descrizione). Test: parser RSS con 2 feed veri salvati come risorsa (itunes:duration "1:02:03" e "3723").
 2. (M) Riproduzione nel player condiviso con posizione ricordata per episodio, velocità 1×/1,25×/1,5×, salta ±15/30 s, notifica e bolla. Entra in "Riprendi" (voce 1).
 3. (S) "Nuovi episodi" dei podcast seguiti in cima alla fonte e una riga in Adesso al mattino ("2 nuovi episodi: …"), aggiornati dal `RefreshWorker`.
 4. (S) Scarica per l'ascolto offline (WorkManager, solo Wi-Fi), cancellati da soli dopo l'ascolto.
@@ -297,8 +301,12 @@ _(passi 1 e 2 dell'idea grande B, promossi)_
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+<<<<<<< Updated upstream
 - 1.98.0 · Adesso: azioni rapide con Annulla (ex 17); idee in Abitudini (parte del 3); Meteo senza buchi e abitudini non tagliate (parte del 7); V20, V21, V22, V23, V24 del verificatore
 - 1.97.0 · Spotify: playlist non tue con avviso e Riproduci, nuovi indirizzi dell'API
+=======
+- 1.101.0 · Podcast in Media (ex 18): ricerca iTunes, Segui, ultimi episodi, ascolto nel player della radio dal punto in cui eri; Sveglia con la radio (ex 16); Ascolta il punto del giorno con la voce del telefono (parte del 13); "ogni mese" il 31 e "ogni anno" il 29 febbraio senza scivolare; riga del widget provata (parte del 2); foto `34_radio` e `35_podcast` nel giro
+>>>>>>> Stashed changes
 - 1.96.0 · Video: libreria "Sul telefono" da MediaStore (ex 5); Date: idee tappabili con poche voci (parte del 3); V14, V15, V16, V17, V18, V19 del verificatore
 - 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
