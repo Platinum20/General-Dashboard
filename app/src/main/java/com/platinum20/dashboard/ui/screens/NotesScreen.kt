@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.SwipeToDismissBox
@@ -81,6 +82,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.notes.DateIdeas
+import com.platinum20.dashboard.notes.ReceiptReader
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import com.platinum20.dashboard.notes.HabitIdea
 import com.platinum20.dashboard.notes.HabitIdeas
 import com.platinum20.dashboard.notes.DateIdea
@@ -373,6 +378,24 @@ private fun NotesComposer(onEvent: (String) -> Unit) {
     val mode = picked ?: guessed
     val context = LocalContext.current
     val haptic = rememberHaptic()
+    val scope = rememberCoroutineScope()
+    var reading by remember { mutableStateOf(false) }
+    // Foto dello scontrino: il totale e il negozio finiscono nel campo come spesa, da controllare e salvare.
+    val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (!ok) return@rememberLauncherForActivityResult
+        reading = true
+        scope.launch {
+            val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
+            reading = false
+            if (guess != null) {
+                text = guess.captureText
+                picked = CaptureMode.EXPENSE
+                haptic(Haptic.CONFIRM)
+            } else {
+                android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val save = {
         if (text.isNotBlank()) {
             if (mode == CaptureMode.EVENT) {
@@ -403,8 +426,13 @@ private fun NotesComposer(onEvent: (String) -> Unit) {
             ),
             keyboardActions = KeyboardActions(onDone = { save() }),
             trailingIcon = {
-                if (text.isNotBlank()) {
-                    IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
+                when {
+                    reading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    text.isNotBlank() ->
+                        IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
+                    else -> IconButton(onClick = { runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) } }) {
+                        Icon(Icons.AutoMirrored.Outlined.ReceiptLong, contentDescription = "Fotografa uno scontrino")
+                    }
                 }
             },
             shape = MaterialTheme.shapes.large,

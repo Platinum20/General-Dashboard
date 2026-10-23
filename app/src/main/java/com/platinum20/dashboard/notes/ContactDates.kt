@@ -2,6 +2,7 @@ package com.platinum20.dashboard.notes
 
 import android.content.Context
 import android.provider.ContactsContract
+import android.provider.ContactsContract.CommonDataKinds.Event
 import java.text.Normalizer
 import java.time.LocalDate
 import java.time.MonthDay
@@ -82,10 +83,9 @@ object ContactDates {
 
     /** Legge compleanni e anniversari dalla rubrica. Serve il permesso READ_CONTACTS. */
     fun read(context: Context): List<ContactDate> {
-        val event = ContactsContract.CommonDataKinds.Event
-        val projection = arrayOf(ContactsContract.Data.DISPLAY_NAME, event.START_DATE, event.TYPE)
-        val selection = "${ContactsContract.Data.MIMETYPE} = ? AND ${event.TYPE} IN (?, ?)"
-        val args = arrayOf(event.CONTENT_ITEM_TYPE, event.TYPE_BIRTHDAY.toString(), event.TYPE_ANNIVERSARY.toString())
+        val projection = arrayOf(ContactsContract.Data.DISPLAY_NAME, Event.START_DATE, Event.TYPE)
+        val selection = "${ContactsContract.Data.MIMETYPE} = ? AND ${Event.TYPE} IN (?, ?)"
+        val args = arrayOf(Event.CONTENT_ITEM_TYPE, Event.TYPE_BIRTHDAY.toString(), Event.TYPE_ANNIVERSARY.toString())
         val out = mutableListOf<ContactDate>()
         runCatching {
             context.contentResolver.query(ContactsContract.Data.CONTENT_URI, projection, selection, args, null)?.use { c ->
@@ -94,7 +94,7 @@ object ContactDates {
                     val parsed = parseDate(c.getString(1).orEmpty())
                     if (name.isEmpty() || parsed == null) continue
                     val (md, year) = parsed
-                    out += ContactDate(name, anniversary = c.getInt(2) == event.TYPE_ANNIVERSARY, monthDay = md, year = year)
+                    out += ContactDate(name, anniversary = c.getInt(2) == Event.TYPE_ANNIVERSARY, monthDay = md, year = year)
                 }
             }
         }
