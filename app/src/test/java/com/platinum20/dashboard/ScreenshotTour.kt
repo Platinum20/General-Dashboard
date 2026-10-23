@@ -101,7 +101,8 @@ class ScreenshotTour {
         // Le scorciatoie sono nascoste: si entra dalle card (il testo del luogo è dentro la card del meteo).
         // "Adesso · Roma": il luogo è dentro la riga in maiuscoletto della card scura.
         visit("Roma", p + "02_meteo", substring = true)
-        visit("Tutti", p + "03_punto")
+        // Il punto del giorno si prepara dopo le notizie: al primo giro (al buio) può volerci di più.
+        visit("Tutti", p + "03_punto", appearMs = 40_000)
         visit("Personalizza", p + "04_personalizza")
         scroll(down = true)
         shot(p + "05_oggi_fondo")
@@ -160,8 +161,8 @@ class ScreenshotTour {
      * Apre una schermata toccando [label], la fotografa e torna indietro. Se la voce non è a schermo
      * aspetta che compaia (il punto del giorno carica) e scorre la lista fino a lei; se non c'è, la foto risulta mancante.
      */
-    private fun visit(label: String, name: String, waitMs: Long = 3_000, substring: Boolean = false) {
-        if (!exists(label, substring)) settle(6_000) { exists(label, substring) }
+    private fun visit(label: String, name: String, waitMs: Long = 3_000, substring: Boolean = false, appearMs: Long = 6_000) {
+        if (!exists(label, substring)) settle(appearMs) { exists(label, substring) }
         if (!exists(label, substring)) reveal(label, substring)
         if (!tap(label, substring)) {
             missing += name
