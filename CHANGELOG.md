@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.99.0
+## 1.101.0
 **Media › Podcast (nuovo)**
 - Quinta fonte in Media: cerchi un podcast (ricerca gratuita di iTunes, senza account), lo apri e vedi gli episodi con data, durata e una riga di descrizione, tutto dentro l'app
 - "Segui": i podcast che segui stanno in cima alla pagina e sotto ci sono i loro ultimi episodi tutti insieme, dal più nuovo
