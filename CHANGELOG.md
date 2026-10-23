@@ -1,22 +1,45 @@
 # Changelog
 
-## 1.98.0
+## 1.100.0
 Revisione dei doppioni: ogni cosa compare in un posto solo.
 
 **Oggi**
-- La sera "Adesso" non ripete più meteo, impegni, compleanni, pacchi e addebiti di domani: li dice solo la card "Domani" subito sotto (il widget, che non ha la card, continua a mostrarli)
-- La sera "Da fare" tiene scaduti e promemoria di oggi; quelli di domani stanno nella card "Domani", non più in due posti
 - L'Agenda non si trasforma più in "Domani" la sera: finiti gli impegni di oggi sparisce, perché domani c'è già la sua card
-- Card "Domani": ora mostra anche i pacchi in arrivo, e la frase in cima usa il primo promemoria con l'ora quando non ci sono impegni in calendario. Dopo mezzanotte non compare più (diceva "Domani" per il giorno già iniziato)
-- Tolta la card "Scorciatoie": ripeteva la barra in basso, Meteo (tocca Adesso) e "Il punto del giorno" (Tutti)
+- Tolta la card "Scorciatoie": ripeteva la barra in basso, il Meteo (si apre toccando Adesso) e "Il punto del giorno" (Tutti)
 
 **Media**
 - Video: al posto del pulsante "Dal telefono", del pulsante "Da un link" e della grande card "Scegli cosa guardare" c'è una sola card con "Scegli un file" e "Apri un link"; "Recenti" ha l'etichetta come le altre sezioni, e la pagina ha l'intestazione grande come Meteo e YouTube
 - Spotify: la pagina di accesso non mostra più il campo "Client ID" da sviluppatore; il collegamento ufficiale è un pulsante discreto, come in YouTube. Intestazione grande come le altre pagine
 - Radio: intestazione grande come le altre pagine
 
-**Dentro l'app**
-- Tolto il vecchio player web di YouTube (la pagina del sito in un riquadro e la sua bolla): non era più raggiungibile da nessuna parte, YouTube suona solo nel player di Canvas
+**Sotto il cofano**
+- Tolto il vecchio player web di YouTube e Spotify (la pagina del sito in un riquadro, la sua bolla e l'avvio automatico): non era più raggiungibile da nessuna parte, YouTube suona solo nel player di Canvas e Spotify nel suo riproduttore nascosto
+
+## 1.98.0
+**Oggi › Adesso**
+- Azioni rapide: accanto alle righe di Adesso c'è un bottoncino tondo. "Scaduto: Bolletta" si segna fatto, "Pacco in arrivo: Cuffie" si segna arrivato, un'abitudine che manca si spunta, e con più abitudini si apre l'elenco da spuntare. Tutto senza aprire Note, con la vibrazione e "Annulla" per qualche secondo
+- Un promemoria scaduto da solo dice cos'è ("Scaduto: Bolletta") invece di "1 promemoria scaduto"
+- Le abitudini con nomi lunghi diventano "Ancora da fare: 2 abitudini" invece di un nome tagliato a metà
+- La sera, quando sotto c'è la card Domani, Adesso non ripete più meteo, impegni, date, pacchi e addebiti di domani; e la riga meteo di domani ha l'icona del tempo previsto (pioggia se piove), non sempre il sole
+
+**Oggi › Domani e Da fare**
+- La frase in cima alla card Domani compare anche senza calendario, con il primo promemoria che ha un orario ("Domani 9:00 Chiamare il commercialista")
+- Dopo mezzanotte la card si chiama "Oggi · venerdì 23" e la frase non dice più "Domani" per il giorno già iniziato
+- Da fare non ripete i promemoria di domani quando la card Domani è visibile
+
+**Note › Abitudini**
+- Con poche abitudini compaiono delle idee da aggiungere (Leggere 20 minuti, Palestra 3 volte a settimana, Niente telefono a letto) che aprono il dialogo già compilato: la pagina non resta mezza vuota
+
+**Media**
+- YouTube › Cronologia: "Svuota" chiede conferma, si può annullare e toglie anche i video da Riprendi in Media
+- YouTube: cambiando video mentre suona, quello di prima resta in Riprendi al punto in cui eri; il punto si salva anche ogni 30 secondi e quando chiudi il player
+- Video › Sul telefono: dopo un rifiuto definitivo del permesso la card dice "Permesso negato" e apre le impostazioni di Canvas, invece di non fare nulla; i video appena registrati compaiono tornando nella pagina
+
+**Meteo**
+- L'ultimo dettaglio da solo (Alba · Tramonto) prende tutta la riga, senza il buco accanto
+
+**Sotto il cofano**
+- Test nuovi: YtHistoryTest, HabitIdeasTest, più casi in BriefingTest (azioni rapide, sera con la card Domani, testo delle abitudini), TomorrowTest, TodayTasksTest, PhoneVideosTest e YtPlayerStateTest
 
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore

@@ -36,6 +36,16 @@ object PhoneVideos {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
 
+    /** Cosa fa la card d'invito: chiedere il permesso o, dopo un rifiuto definitivo, aprire le impostazioni. */
+    enum class Invite { ASK, OPEN_SETTINGS }
+
+    /**
+     * Dopo un rifiuto, se Android non mostrerebbe più la richiesta ([rationale] false),
+     * il tocco deve portare alle impostazioni dell'app, altrimenti non succederebbe niente.
+     */
+    fun invite(deniedOnce: Boolean, rationale: Boolean): Invite =
+        if (deniedOnce && !rationale) Invite.OPEN_SETTINGS else Invite.ASK
+
     fun hasPermission(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 

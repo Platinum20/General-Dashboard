@@ -4,7 +4,6 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.FixedExpense
-import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.Forecast
 import java.time.Instant
@@ -23,13 +22,15 @@ data class TomorrowWeather(
     val rainFrom: String?,
 )
 
-enum class TomorrowKind { EVENT, TASK, DATE, PARCEL, MONEY }
+enum class TomorrowKind { EVENT, TASK, DATE, MONEY }
 
 data class TomorrowLine(val kind: TomorrowKind, val text: String)
 
 /** La card "Domani" della sera: meteo, impegni e cose da fare del giorno dopo. */
 data class TomorrowPlan(
     val day: LocalDate,
+    /** "Domani" la sera, "Oggi" dopo mezzanotte (il giorno di cui si parla è già iniziato). */
+    val label: String,
     val weather: TomorrowWeather?,
     /** La frase più importante, per la prima riga ("Domani 8:30 dentista, pioggia dalle 10"). */
     val headline: String?,
@@ -38,16 +39,20 @@ data class TomorrowPlan(
 )
 
 object Tomorrow {
-    /** Dalle 18 si guarda a domani. Dopo mezzanotte il giorno è già "oggi": lo dicono Adesso e Da fare. */
+    /** Dalle 18 si guarda a domani; fino alle 3 di notte "domani" è il giorno che sta per iniziare. */
     const val FROM_HOUR = 18
-    const val MAX_LINES = 6
+    const val UNTIL_HOUR = 3
+    const val MAX_LINES = 5
 
     /** Il giorno di cui parlare a quest'ora, null se è troppo presto per la card. */
-    fun targetDay(now: LocalDateTime): LocalDate? =
-        if (now.hour >= FROM_HOUR) now.toLocalDate().plusDays(1) else null
+    fun targetDay(now: LocalDateTime): LocalDate? = when {
+        now.hour >= FROM_HOUR -> now.toLocalDate().plusDays(1)
+        now.hour < UNTIL_HOUR -> now.toLocalDate()
+        else -> null
+    }
 
     /**
-     * [events] sono gli impegni di domani.
+     * [events] sono gli impegni del giorno [targetDay] (domani la sera, oggi dopo mezzanotte).
      * Restituisce null fuori orario o se non c'è niente da dire.
      */
     fun build(
@@ -58,7 +63,6 @@ object Tomorrow {
         countdowns: List<Countdown>,
         fixed: List<FixedExpense> = emptyList(),
         zone: ZoneId = ZoneId.systemDefault(),
-        parcels: List<Parcel> = emptyList(),
     ): TomorrowPlan? {
         val day = targetDay(now) ?: return null
         val weather = forecast?.let { weatherFor(it, day) }
@@ -71,18 +75,14 @@ object Tomorrow {
         }
         if (sorted.size > 2) lines += TomorrowLine(TomorrowKind.EVENT, if (sorted.size == 3) "…e un altro impegno" else "…e altri ${sorted.size - 2} impegni")
 
-        val dueTasks = tasks.filter { !it.done }
+        tasks.filter { !it.done }
             .filter { t -> t.dueAt?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == day } == true }
             .sortedBy { it.dueAt }
-        dueTasks.forEach { t -> lines += TomorrowLine(TomorrowKind.TASK, "${time(t.dueAt!!, zone)} · ${t.text}") }
+            .forEach { t -> lines += TomorrowLine(TomorrowKind.TASK, "${time(t.dueAt!!, zone)} · ${t.text}") }
 
         countdowns.filter { it.nextDate(day) == day }.forEach { c ->
             val years = c.yearsAtNext(day)?.let { " (compie $it anni)" }.orEmpty()
             lines += TomorrowLine(TomorrowKind.DATE, c.title + years)
-        }
-
-        parcels.filter { !it.delivered && it.expected == day }.takeIf { it.isNotEmpty() }?.let { list ->
-            lines += TomorrowLine(TomorrowKind.PARCEL, "Arriva " + list.joinToString(", ") { it.title })
         }
 
         fixed.filter { it.dateIn(YearMonth.from(day)) == day }.forEach { f ->
@@ -90,10 +90,15 @@ object Tomorrow {
         }
 
         if (weather == null && lines.isEmpty()) return null
+        val label = if (day == now.toLocalDate()) "Oggi" else "Domani"
+        val firstTask = tasks.filter { !it.done && it.dueAt != null }
+            .filter { Instant.ofEpochMilli(it.dueAt!!).atZone(zone).toLocalDate() == day }
+            .minByOrNull { it.dueAt!! }
         return TomorrowPlan(
             day = day,
+            label = label,
             weather = weather,
-            headline = headline(sorted.firstOrNull { !it.allDay }, dueTasks.firstOrNull(), weather, zone),
+            headline = headline(label, sorted.firstOrNull { !it.allDay }, firstTask, weather, zone),
             eventCount = sorted.size,
             lines = lines.take(MAX_LINES),
         )
@@ -114,16 +119,16 @@ object Tomorrow {
         )
     }
 
-    private fun headline(first: CalendarEvent?, task: TaskItem?, weather: TomorrowWeather?, zone: ZoneId): String? {
+    /** Il primo impegno (o, senza calendario, il primo promemoria con l'orario) e la pioggia. */
+    private fun headline(label: String, first: CalendarEvent?, task: TaskItem?, weather: TomorrowWeather?, zone: ZoneId): String? {
         val parts = mutableListOf<String>()
-        // Senza impegni in calendario, il primo promemoria con l'ora.
         when {
             first != null -> parts += "${time(first.begin, zone)} ${first.title}"
             task != null -> parts += "${time(task.dueAt!!, zone)} ${task.text}"
         }
         weather?.rainFrom?.let { parts += "pioggia $it" }
         if (parts.isEmpty()) return null
-        return "Domani " + parts.joinToString(", ")
+        return "$label " + parts.joinToString(", ")
     }
 
     private fun time(ms: Long, zone: ZoneId): String = Instant.ofEpochMilli(ms).atZone(zone).toLocalTime().let {

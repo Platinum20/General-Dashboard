@@ -238,14 +238,14 @@ private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun TasksCard(onOpenNotes: () -> Unit) {
+fun TasksCard(onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
     val haptic = rememberHaptic()
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
     // Solo quello che conta adesso: il resto è a un tocco, in Note.
-    val today = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
+    val today = remember(open, tomorrowCard) { TodayTaskPicker.pick(open, LocalDateTime.now(), tomorrowCard = tomorrowCard) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }
     LaunchedEffect(lastDone) {

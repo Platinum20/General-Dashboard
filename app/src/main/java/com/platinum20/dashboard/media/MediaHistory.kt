@@ -84,9 +84,30 @@ object MediaHistory {
     }
 
     fun record(item: ResumeItem) {
-        val list = (listOf(item) + _items.value.filterNot { it.kind == item.kind && it.key == item.key }).take(MAX_ITEMS)
+        save((listOf(item) + _items.value.filterNot { it.kind == item.kind && it.key == item.key }).take(MAX_ITEMS))
+    }
+
+    /** Toglie le voci di un tipo (es. YouTube quando si svuota la sua cronologia) e restituisce le tolte. */
+    fun removeKind(kind: ResumeKind): List<ResumeItem> {
+        val (removed, kept) = _items.value.partition { it.kind == kind }
+        save(kept)
+        return removed
+    }
+
+    /** Rimette le voci tolte con [removeKind], dal più recente, senza doppioni. */
+    fun restore(items: List<ResumeItem>) {
+        val merged = (_items.value + items).distinctBy { it.kind to it.key }.sortedByDescending { it.at }.take(MAX_ITEMS)
+        save(merged)
+    }
+
+    private fun save(list: List<ResumeItem>) {
         _items.value = list
         prefs?.edit()?.putString(KEY_ITEMS, JSONArray(list.map { it.toJson() }).toString())?.apply()
+    }
+
+    /** Dati finti per i test. */
+    internal fun preview(items: List<ResumeItem>) {
+        _items.value = items
     }
 
     fun recordRadio(station: RadioStation, at: Long = System.currentTimeMillis()) = record(
