@@ -17,6 +17,7 @@ import java.time.ZoneId
 import com.platinum20.dashboard.weather.CurrentWeather
 import com.platinum20.dashboard.weather.DailyPoint
 import com.platinum20.dashboard.weather.Forecast
+import com.platinum20.dashboard.weather.HourlyPoint
 import org.junit.Assert.assertFalse
 
 class BriefingTest {
@@ -212,5 +213,24 @@ class BriefingTest {
         assertEquals("Ancora da fare: 2 abitudini", Briefing.habitsText(listOf("Bere 2 litri d'acqua", "Camminare 30 minuti")))
         assertEquals("Ancora da fare: 1 abitudine", Briefing.habitsText(listOf("Meditare dieci minuti prima di dormire")))
         assertEquals("Ancora da fare: 3 abitudini", Briefing.habitsText(listOf("A", "B", "C")))
+    }
+
+    @Test
+    fun pioggiaSullImpegno() {
+        // Integrazione meteo + agenda: la riga dell'impegno dice se a quell'ora piove.
+        val start = morning.plusHours(3)
+        val forecast = rainyTomorrow(morning.toLocalDate()).copy(
+            hourly = listOf(
+                HourlyPoint(start, 15.0, 61, 70, true),
+                HourlyPoint(start.plusHours(1), 15.0, 3, 10, true),
+            ),
+        )
+        fun line(at: LocalDateTime) = Briefing.build(
+            now = morning, forecast = forecast,
+            today = listOf(event("Calcetto", at, at.plusHours(1))),
+            tomorrow = null, tasks = emptyList(), countdowns = emptyList(), zone = zone,
+        ).first { it.kind == BriefKind.EVENT }.text
+        assertEquals("Alle 12:00: Calcetto · pioggia 70%", line(start))
+        assertEquals("Alle 13:30: Calcetto", line(start.plusMinutes(90)))
     }
 }

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.107.0
+## 1.108.0
 **Note, in quattro schede invece di sei**
 - **Da fare**: promemoria e, sotto, le abitudini di ogni giorno ("Abitudini · oggi 2 su 4", con "Nuova abitudine"); i completati restano in fondo
 - **In arrivo**: date (compleanni, viaggi, scadenze) e pacchi in una lista sola; se un pacco arriva entro tre giorni o è in ritardo, i pacchi vanno sopra. Il + chiede se aggiungere una data o un pacco
@@ -9,6 +9,12 @@
 
 **Sotto il cofano**
 - NotesUiLogicTest: quando i pacchi vanno sopra le date
+
+## 1.107.0
+**Le funzioni si parlano**
+- Il "+" capisce da solo cosa scrivi: "12,50 pizza" diventa una spesa, un codice di tracciamento un pacco, "venerdì alle 20 cena da Luca" un evento, un testo lungo una nota; il resto resta un promemoria. Toccando un tipo lo scegli tu e non cambia più
+- Meteo dentro gli impegni: se all'ora di un impegno è probabile la pioggia, la riga lo dice ("Alle 18:00: Calcetto · pioggia 70%"), in Adesso e nella card di domani
+- Nel lettore delle News c'è "Leggi dopo": salva l'articolo in Note con titolo e link
 
 ## 1.106.0
 **Oggi**

@@ -74,7 +74,8 @@ object Tomorrow {
         val sorted = events.orEmpty().sortedWith(compareBy({ !it.allDay }, { it.begin }))
         sorted.take(2).forEach { e ->
             val at = if (e.allDay) "tutto il giorno" else time(e.begin, zone)
-            lines += TomorrowLine(TomorrowKind.EVENT, "$at · ${e.title}")
+            val rain = if (e.allDay) "" else Briefing.rainNote(forecast, e.begin, zone)
+            lines += TomorrowLine(TomorrowKind.EVENT, "$at · ${e.title}$rain")
         }
         if (sorted.size > 2) lines += TomorrowLine(TomorrowKind.EVENT, if (sorted.size == 3) "…e un altro impegno" else "…e altri ${sorted.size - 2} impegni")
 

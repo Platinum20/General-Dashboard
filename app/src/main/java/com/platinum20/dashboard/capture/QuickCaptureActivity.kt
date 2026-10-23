@@ -118,6 +118,8 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf(initial) }
     var mode by rememberSaveable { mutableStateOf(initialMode) }
+    // Partendo da "Promemoria" il tipo segue quello che si scrive, finché non lo si sceglie a mano.
+    var autoMode by rememberSaveable { mutableStateOf(initialMode == CaptureMode.TASK) }
     val focus = remember { FocusRequester() }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onClose() }
     val scope = rememberCoroutineScope()
@@ -194,13 +196,19 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 ChipRow(
                     options = CaptureMode.entries.map { it.label },
                     selected = mode.ordinal,
-                    onSelect = { mode = CaptureMode.entries[it] },
+                    onSelect = {
+                        mode = CaptureMode.entries[it]
+                        autoMode = false
+                    },
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = text,
-                    onValueChange = { text = it },
-                    placeholder = { Text(mode.hint) },
+                    onValueChange = {
+                        text = it
+                        if (autoMode) mode = CaptureGuess.guess(it)
+                    },
+                    placeholder = { Text(if (autoMode && text.isEmpty()) AUTO_HINT else mode.hint) },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
                     modifier = Modifier
@@ -236,6 +244,9 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         dismissButton = { TextButton(onClick = onClose) { Text("Annulla") } },
     )
 }
+
+/** Con il tipo automatico il suggerimento mostra che si può scrivere di tutto. */
+private const val AUTO_HINT = "Promemoria, spesa, evento, pacco o nota: scrivi e Canvas capisce"
 
 private val eventDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
 private val eventHour = DateTimeFormatter.ofPattern("H:mm")
