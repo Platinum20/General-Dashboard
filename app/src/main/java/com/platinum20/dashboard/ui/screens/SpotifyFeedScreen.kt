@@ -13,7 +13,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.CookieManager
 import android.annotation.SuppressLint
 import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material3.OutlinedButton
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.Accounts
@@ -40,7 +39,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -59,6 +57,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -66,7 +65,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -153,13 +151,10 @@ fun SpotifyFeedScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text(opened?.title ?: "Spotify", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = { if (opened != null) opened = null else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
+            TopLevelBar(
+                title = opened?.title ?: "Spotify",
+                subtitle = if (opened != null) "Spotify" else "Il tuo Spotify",
+                onBack = { if (opened != null) opened = null else onBack() },
                 actions = {
                     if (!official) {
                         IconButton(onClick = { setup = !setup }) {
@@ -233,9 +228,7 @@ fun SpotifyFeedScreen(
 @Composable
 private fun ConnectSpotify(onLogin: () -> Unit) {
     val context = LocalContext.current
-    val clientId by SpotifyAuth.clientId.collectAsState()
     val error by SpotifyAuth.error.collectAsState()
-    var draft by rememberSaveable { mutableStateOf(clientId) }
 
     Column(
         Modifier
@@ -258,30 +251,12 @@ private fun ConnectSpotify(onLogin: () -> Unit) {
         )
         Spacer(Modifier.height(20.dp))
         Button(onClick = onLogin) { Text("Accedi a Spotify") }
-        Spacer(Modifier.height(32.dp))
-        Text(
-            "In alternativa, se hai creato un'app su developer.spotify.com, incolla qui il suo Client ID.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = draft,
-            onValueChange = { draft = it.trim() },
-            label = { Text("Client ID dell'app Spotify") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
+        // Come in YouTube: il collegamento ufficiale è un'alternativa discreta, senza codici da incollare.
         var authUrl by remember { mutableStateOf<String?>(null) }
-        OutlinedButton(
-            enabled = draft.length >= 20,
-            onClick = {
-                SpotifyAuth.setClientId(draft)
-                authUrl = SpotifyAuth.loginUrl().toString()
-            },
-        ) { Text("Collega con il Client ID") }
+        TextButton(onClick = { authUrl = SpotifyAuth.loginUrl().toString() }) {
+            Text("Oppure usa il collegamento ufficiale di Spotify")
+        }
         authUrl?.let { url -> SpotifyAuthDialog(url, onDone = { authUrl = null }) }
         error?.let {
             Spacer(Modifier.height(12.dp))

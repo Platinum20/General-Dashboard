@@ -192,8 +192,6 @@ fun MediaScreen(
                             title = MediaService.YOUTUBE.label,
                             subtitle = if (youTubeLinked) "Iscrizioni, playlist e Mi piace" else "Collega l'account per il feed",
                             onClick = { onOpenService(MediaService.YOUTUBE) },
-                            playing = MediaService.YOUTUBE in open,
-                            onStop = { MediaWebViews.release(MediaService.YOUTUBE) },
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

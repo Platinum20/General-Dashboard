@@ -40,7 +40,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.WbSunny
-import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Celebration
@@ -124,7 +123,6 @@ fun CustomizeScreen(onBack: () -> Unit) {
 
 private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
-    HomeCard.MODULES -> Icons.Outlined.Apps
     HomeCard.CALENDAR -> Icons.Outlined.Event
     HomeCard.TASKS -> Icons.Outlined.TaskAlt
     HomeCard.COUNTDOWN -> Icons.Outlined.Celebration
@@ -133,7 +131,6 @@ private fun HomeCard.icon(): ImageVector = when (this) {
 
 private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
-    HomeCard.MODULES -> TileAccent.NEUTRAL
     HomeCard.CALENDAR -> TileAccent.BLUE
     HomeCard.TASKS -> TileAccent.ORANGE
     HomeCard.COUNTDOWN -> TileAccent.PURPLE
