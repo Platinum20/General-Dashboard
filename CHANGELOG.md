@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.113.0
+**Widget**
+- Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
+- Nel widget principale le righe di "Adesso" hanno il bottoncino come in Oggi: **pacco arrivato** e **abitudine fatta** con un tocco dalla schermata Home; la riga sparisce subito
+
+**Media › Musica**
+- **Nuove uscite**: in cima a Musica gli album e i singoli usciti nelle ultime 4 settimane dagli artisti che segui su Spotify, con copertina, artista e "3 giorni fa". Un pallino segna quelle che non hai ancora aperto ("Nuove uscite · 2 da ascoltare"); un tocco apre l'album da ascoltare. Si cercano al massimo una volta al giorno e restano salvate per l'apertura successiva
+
+**Sotto il cofano**
+- Test nuovi: TasksWidgetRowsTest e TasksWidgetActionTest (righe del widget, spunta e ricorrenti), WidgetBriefTest (azioni rapide del widget principale, formato vecchio delle righe), NewReleasesTest (date con precisione giorno/mese/anno, doppioni tra artisti, uscite future, pagine degli artisti seguiti, con risposte vere di Spotify salvate)
+
 ## 1.112.0
 **Note, una pagina sola**
 - Niente più schede: promemoria, abitudini, date, pacchi, note e spese stanno in una lista, in ordine di quando contano (Scaduti, Oggi, Abitudini, In arrivo, Prossimi giorni, Senza scadenza, Note, Spese)
