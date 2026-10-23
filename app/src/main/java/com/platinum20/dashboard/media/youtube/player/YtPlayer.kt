@@ -67,6 +67,7 @@ object YtPlayer {
     private var subtitleLanguage: String? = null
     private var appContext: Context? = null
     private var lastSaved = 0L
+    private var lastRemembered = 0L
 
     private val _now = MutableStateFlow<YtNow?>(null)
     val now: StateFlow<YtNow?> = _now.asStateFlow()
@@ -202,6 +203,8 @@ object YtPlayer {
         if (isLoaded(_now.value, link)) return
         NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
         job?.cancel()
+        // Il video di prima va in "Riprendi" con il suo punto, prima che _now parli del nuovo.
+        remember(context)
         _now.value = YtNow(link = link, stream = null)
         context.startService(Intent(context, YtPlaybackService::class.java))
         job = scope.launch {
@@ -233,6 +236,7 @@ object YtPlayer {
 
     fun stop(context: Context) {
         job?.cancel()
+        remember(context)
         exo?.stop()
         exo?.clearMediaItems()
         _now.value = null
@@ -317,22 +321,28 @@ object YtPlayer {
 
     private fun remember(context: Context) {
         val stream = _now.value?.stream ?: return
+        // Il player sta ancora caricando questo video: la posizione è quella del video di prima.
+        if (exo?.currentMediaItem?.mediaId != stream.id) return
         MediaHistory.init(context)
+        lastRemembered = System.currentTimeMillis()
+        MediaHistory.record(resumeEntry(stream, exo?.currentPosition ?: 0, exo?.duration ?: 0, lastRemembered))
+    }
+
+    /** La voce di "Riprendi" per [stream] arrivato a [positionMs]: funzione pura, provata nei test. */
+    internal fun resumeEntry(stream: YtStream, positionMs: Long, playerDurationMs: Long, at: Long): ResumeItem {
         val live = stream.hlsUrl != null
-        val duration = exo?.duration?.takeIf { it > 0 } ?: (stream.durationSec * 1000)
-        val position = if (live) 0 else exo?.currentPosition ?: 0
-        MediaHistory.record(
-            ResumeItem(
-                kind = ResumeKind.YOUTUBE,
-                key = stream.id,
-                title = stream.title,
-                subtitle = stream.channel,
-                image = stream.thumbnail,
-                // Arrivato quasi in fondo: la prossima volta riparte dall'inizio.
-                positionMs = if (duration > 0 && duration - position < 5_000) duration else position,
-                durationMs = if (live) 0 else duration,
-                at = System.currentTimeMillis(),
-            ),
+        val duration = playerDurationMs.takeIf { it > 0 } ?: (stream.durationSec * 1000)
+        val position = if (live) 0 else positionMs.coerceAtLeast(0)
+        return ResumeItem(
+            kind = ResumeKind.YOUTUBE,
+            key = stream.id,
+            title = stream.title,
+            subtitle = stream.channel,
+            image = stream.thumbnail,
+            // Arrivato quasi in fondo: la prossima volta riparte dall'inizio.
+            positionMs = if (duration > 0 && duration - position < 5_000) duration else position,
+            durationMs = if (live) 0 else duration,
+            at = at,
         )
     }
 
@@ -340,6 +350,9 @@ object YtPlayer {
         val p = exo ?: return
         val current = _now.value ?: return
         saveProgress(p, current.stream)
+        // Anche mentre suona, ogni 30 secondi: se il telefono chiude l'app il punto non si perde.
+        val context = appContext
+        if (context != null && p.isPlaying && System.currentTimeMillis() - lastRemembered > 30_000) remember(context)
         _now.value = current.copy(
             playingHeight = p.videoFormat?.height ?: current.playingHeight,
             playing = p.isPlaying,

@@ -253,8 +253,8 @@ private fun DetailsGrid(forecast: Forecast) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         cells.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // L'ultimo da solo prende tutta la riga: niente buco accanto ad "Alba · Tramonto".
                 row.forEach { (icon, label, value) -> DetailCell(icon, label, value, Modifier.weight(1f)) }
-                if (row.size == 1) Spacer(Modifier.weight(1f))
             }
         }
     }

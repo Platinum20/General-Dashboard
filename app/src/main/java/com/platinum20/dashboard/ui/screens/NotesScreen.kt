@@ -80,6 +80,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.notes.DateIdeas
+import com.platinum20.dashboard.notes.HabitIdea
+import com.platinum20.dashboard.notes.HabitIdeas
 import com.platinum20.dashboard.notes.DateIdea
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.TransformedText
@@ -348,32 +350,7 @@ private fun DatesTab(upcoming: List<Countdown>, padding: PaddingValues, onDelete
         val ideas = DateIdeas.suggest(upcoming)
         if (ideas.isNotEmpty()) {
             item {
-                Column(Modifier.padding(top = 8.dp)) {
-                    SectionHeader("Idee da aggiungere")
-                    Spacer(Modifier.height(4.dp))
-                    CanvasCard(Modifier.fillMaxWidth()) {
-                        ideas.forEachIndexed { i, idea ->
-                            if (i > 0) RowDivider()
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clickable { proposing = idea }
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(idea.title.trim(), style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        if (idea.yearly) "Ogni anno" else "Una volta",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Icon(Icons.Outlined.Add, contentDescription = "Aggiungi ${idea.title.trim()}", tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
+                IdeasSection(ideas.map { it.title.trim() to if (it.yearly) "Ogni anno" else "Una volta" }) { proposing = ideas[it] }
             }
         }
     }
@@ -439,6 +416,7 @@ private fun TasksTab(tasks: List<TaskItem>, padding: PaddingValues, onDeleted: (
 @Composable
 private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (Habit) -> Unit) {
     var editing by remember { mutableStateOf<Habit?>(null) }
+    var proposing by remember { mutableStateOf<HabitIdea?>(null) }
     val today = LocalDate.now()
     val haptic = rememberHaptic()
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -535,8 +513,40 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                 )
             }
         }
+        val ideas = HabitIdeas.suggest(habits)
+        if (ideas.isNotEmpty()) {
+            item { IdeasSection(ideas.map { it.title to it.frequency }) { proposing = ideas[it] } }
+        }
     }
     editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
+    proposing?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposing = null }) }
+}
+
+/** "Idee da aggiungere": esempi tappabili (titolo e riga piccola) sotto una lista corta. */
+@Composable
+private fun IdeasSection(ideas: List<Pair<String, String>>, onPick: (Int) -> Unit) {
+    Column(Modifier.padding(top = 8.dp)) {
+        SectionHeader("Idee da aggiungere")
+        Spacer(Modifier.height(4.dp))
+        CanvasCard(Modifier.fillMaxWidth()) {
+            ideas.forEachIndexed { i, (title, detail) ->
+                if (i > 0) RowDivider()
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onPick(i) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(title, style = MaterialTheme.typography.bodyLarge)
+                        Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Icon(Icons.Outlined.Add, contentDescription = "Aggiungi $title", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+    }
 }
 
 @Composable

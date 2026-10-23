@@ -109,4 +109,23 @@ class TomorrowTest {
         assertEquals(4, plan.eventCount)
         assertEquals(listOf("9:00 · E0", "10:00 · E1", "…e altri 2 impegni"), plan.lines.map { it.text })
     }
+
+    @Test
+    fun fraseColPrimoPromemoriaSenzaCalendario() {
+        // V21: senza eventi del calendario la frase parte dal primo promemoria con l'orario.
+        val tasks = listOf(
+            TaskItem(1, "Ritirare la giacca", dueAt = ms(tomorrow, 17)),
+            TaskItem(2, "Chiamare il commercialista", dueAt = ms(tomorrow, 9)),
+        )
+        val plan = Tomorrow.build(today.atTime(19, 0), null, null, tasks, emptyList(), zone = zone)!!
+        assertEquals("Domani", plan.label)
+        assertEquals("Domani 9:00 Chiamare il commercialista", plan.headline)
+    }
+
+    @Test
+    fun dopoMezzanotteSiChiamaOggi() {
+        val plan = Tomorrow.build(tomorrow.atTime(1, 0), forecast(rainHour = 10), listOf(dentist), emptyList(), emptyList(), zone = zone)!!
+        assertEquals("Oggi", plan.label)
+        assertEquals("Oggi 8:30 Dentista, pioggia dalle 10", plan.headline)
+    }
 }

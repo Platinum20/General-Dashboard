@@ -74,8 +74,16 @@ object YtHistory {
         persist()
     }
 
-    fun clear() {
+    /** Svuota tutto e restituisce quello che c'era, per poterlo rimettere con [restore]. */
+    fun clear(): Map<String, YtWatched> {
+        val previous = _items.value
         _items.value = emptyMap()
+        persist()
+        return previous
+    }
+
+    fun restore(previous: Map<String, YtWatched>) {
+        _items.value = previous + _items.value
         persist()
     }
 
@@ -85,6 +93,7 @@ object YtHistory {
     }
 
     private fun persist() {
+        val p = prefs ?: return
         val array = JSONArray()
         _items.value.values.forEach { w ->
             array.put(
@@ -92,6 +101,6 @@ object YtHistory {
                     .put("pos", w.positionMs).put("dur", w.durationMs).put("at", w.watchedAt)
             )
         }
-        prefs?.edit()?.putString(KEY, array.toString())?.apply()
+        p.edit().putString(KEY, array.toString()).apply()
     }
 }
