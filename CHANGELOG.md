@@ -5,7 +5,7 @@
 - **Da fare**: promemoria e, sotto, le abitudini di ogni giorno ("Abitudini · oggi 2 su 4", con "Nuova abitudine"); i completati restano in fondo
 - **In arrivo**: date (compleanni, viaggi, scadenze) e pacchi in una lista sola; se un pacco arriva entro tre giorni o è in ritardo, i pacchi vanno sopra. Il + chiede se aggiungere una data o un pacco
 - **Spese** e **Note** come prima. Le pillole in cima ora stanno tutte in vista, senza scorrere
-- La ricerca apre la scheda giusta anche per pacchi e abitudini
+- Dalla ricerca, un pacco apre la scheda "In arrivo"
 
 **Sotto il cofano**
 - NotesUiLogicTest: quando i pacchi vanno sopra le date
