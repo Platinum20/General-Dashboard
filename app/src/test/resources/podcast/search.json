@@ -1,0 +1,5 @@
+{"resultCount":3,"results":[
+{"wrapperType":"track","kind":"podcast","collectionId":1450853855,"artistName":"Il Post","collectionName":"Morning","feedUrl":"http://feeds.example.org/morning","artworkUrl100":"https://is1.example.org/100.jpg","artworkUrl600":"https://is1.example.org/600.jpg"},
+{"wrapperType":"track","kind":"podcast","collectionId":222,"artistName":"Senza feed","collectionName":"Esclusiva di un'app"},
+{"wrapperType":"track","kind":"podcast","collectionId":333,"artistName":"Doppione","collectionName":"Morning (copia)","feedUrl":"https://feeds.example.org/morning","artworkUrl100":"https://is1.example.org/b.jpg"}
+]}

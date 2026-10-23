@@ -1,0 +1,17 @@
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<channel>
+<title>Storie</title>
+<image><url>https://example.org/storie.png</url></image>
+<item>
+<title>Puntata 1</title>
+<pubDate>Sun, 5 Oct 2025 10:00:00 PDT</pubDate>
+<itunes:duration>45:30</itunes:duration>
+<enclosure url="https://example.org/storie-1.mp3" type="audio/mpeg"/>
+</item>
+<item>
+<title>Puntata 1</title>
+<pubDate>Sun, 5 Oct 2025 10:00:00 PDT</pubDate>
+<enclosure url="https://example.org/storie-1.mp3" type="audio/mpeg"/>
+</item>
+</channel>
+</rss>
