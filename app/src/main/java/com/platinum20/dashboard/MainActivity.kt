@@ -1,5 +1,26 @@
 package com.platinum20.dashboard
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.runtime.mutableStateListOf
+import kotlinx.coroutines.delay
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.rememberCoroutineScope
+import com.platinum20.dashboard.capture.VoiceCapture
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.offset
+import kotlin.math.roundToInt
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -106,6 +127,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import com.platinum20.dashboard.ui.screens.LocalOpenSearch
 import com.platinum20.dashboard.ui.screens.CalendarScreen
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
@@ -371,6 +393,12 @@ private fun CanvasNavBar(
     /** Dito tenuto sul +: true se la dettatura è partita. */
     onHoldStart: () -> Boolean,
     onHoldEnd: () -> Unit,
+    /** Trascinato verso l'alto: la dettatura resta accesa senza dito. */
+    locked: Boolean,
+    onLock: () -> Unit,
+    onCancelDictation: () -> Unit,
+    heardSound: Boolean,
+    notice: String?,
 ) {
     val haptic = rememberHaptic()
     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
@@ -384,7 +412,7 @@ private fun CanvasNavBar(
             },
         contentAlignment = Alignment.BottomEnd,
     ) {
-        DictationBubble(listening, partial)
+        DictationBubble(listening, partial, locked, level, heardSound, notice, onCancelDictation)
     }
     Row(
         modifier = Modifier
@@ -424,6 +452,11 @@ private fun CanvasNavBar(
         val tap by rememberUpdatedState(onPlus)
         val holdStart by rememberUpdatedState(onHoldStart)
         val holdEnd by rememberUpdatedState(onHoldEnd)
+        val isLocked by rememberUpdatedState(locked)
+        val lock by rememberUpdatedState(onLock)
+        // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
+        var drag by remember { mutableFloatStateOf(0f) }
+        val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -442,26 +475,49 @@ private fun CanvasNavBar(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
                     .semantics {
+                        contentDescription = when {
+                            listening && locked -> "Inserisci"
+                            listening -> "In ascolto"
+                            else -> "Aggiungi"
+                        }
                         onClick(label = "Aggiungi") { onPlus(); true }
                         onLongClick(label = "Detta a voce") { onHoldStart() }
                     }
                     .pointerInput(Unit) {
                         awaitEachGesture {
-                            awaitFirstDown()
+                            val down = awaitFirstDown()
                             var lifted = false
                             val up = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
                                 waitForUpOrCancellation().also { lifted = true }
                             }
                             when {
+                                // Microfono bloccato: il tocco inserisce quello che si è detto.
+                                up != null && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
                                 up != null -> { haptic(Haptic.TICK); tap() }
                                 // Annullato (es. il dito è scivolato via): niente.
                                 lifted -> Unit
+                                isLocked -> Unit
                                 else -> {
                                     if (holdStart()) {
                                         haptic(Haptic.CONFIRM)
-                                        waitForUpOrCancellation()
-                                        haptic(Haptic.TICK)
-                                        holdEnd()
+                                        // Come WhatsApp: trascinando in su il microfono si blocca.
+                                        var lockedNow = false
+                                        while (true) {
+                                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                                            if (!change.pressed) break
+                                            drag = (down.position.y - change.position.y).coerceAtLeast(0f)
+                                            if (!lockedNow && drag > lockDistance) {
+                                                lockedNow = true
+                                                haptic(Haptic.CONFIRM)
+                                                lock()
+                                            }
+                                            change.consume()
+                                        }
+                                        drag = 0f
+                                        if (!lockedNow) {
+                                            haptic(Haptic.TICK)
+                                            holdEnd()
+                                        }
                                     }
                                 }
                             }
@@ -469,11 +525,51 @@ private fun CanvasNavBar(
                     },
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Crossfade(listening, label = "plusMic") { mic ->
+                    val icon = when {
+                        listening && locked -> 2
+                        listening -> 1
+                        else -> 0
+                    }
+                    Crossfade(icon, label = "plusMic") { i ->
                         Icon(
-                            if (mic) Icons.Rounded.Mic else Icons.Rounded.Add,
-                            contentDescription = if (mic) "In ascolto" else "Aggiungi",
-                            modifier = Modifier.size(28.dp),
+                            when (i) {
+                                2 -> Icons.AutoMirrored.Rounded.Send
+                                1 -> Icons.Rounded.Mic
+                                else -> Icons.Rounded.Add
+                            },
+                            contentDescription = null,
+                            modifier = Modifier.size(if (i == 2) 24.dp else 28.dp),
+                        )
+                    }
+                }
+            }
+            // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
+            if (listening && !locked) {
+                val progress = (drag / lockDistance).coerceIn(0f, 1f)
+                Surface(
+                    shape = CircleShape,
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    border = cardBorder(),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset { IntOffset(0, (-62.dp.toPx() - drag * 0.6f).roundToInt()) }
+                        .glass(CircleShape),
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            if (progress >= 1f) Icons.Rounded.Lock else Icons.Rounded.LockOpen,
+                            contentDescription = "Trascina in su per bloccare",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Icon(
+                            Icons.Rounded.KeyboardArrowUp,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 1f - progress * 0.7f),
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
@@ -483,11 +579,42 @@ private fun CanvasNavBar(
     }
 }
 
-/** Il fumetto sopra la barra mentre si detta tenendo premuto il +. */
+/**
+ * Il fumetto sopra la barra mentre si detta tenendo premuto il +: le barre che seguono la voce
+ * e, sotto, quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
+ */
 @Composable
-private fun DictationBubble(listening: Boolean, partial: String) {
+private fun DictationBubble(
+    listening: Boolean,
+    partial: String,
+    locked: Boolean,
+    level: Float,
+    heardSound: Boolean,
+    notice: String?,
+    onCancel: () -> Unit,
+) {
+    // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
+    var silent by remember { mutableStateOf(false) }
+    LaunchedEffect(listening, heardSound) {
+        silent = false
+        if (listening && !heardSound) {
+            delay(2_000)
+            silent = true
+        }
+    }
+    // Le ultime misure del volume, la più nuova a destra: un piccolo visualizzatore.
+    val bars = remember { mutableStateListOf<Float>().apply { repeat(BAR_COUNT) { add(0f) } } }
+    val currentLevel by rememberUpdatedState(level)
+    LaunchedEffect(listening) {
+        while (listening) {
+            bars.removeAt(0)
+            bars.add(currentLevel)
+            delay(70)
+        }
+        for (i in bars.indices) bars[i] = 0f
+    }
     AnimatedVisibility(
-        visible = listening,
+        visible = listening || notice != null,
         enter = fadeIn() + slideInVertically { it / 2 },
         exit = fadeOut(tween(120)),
     ) {
@@ -498,21 +625,53 @@ private fun DictationBubble(listening: Boolean, partial: String) {
             modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
         ) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                if (listening) {
+                    val barColor = MaterialTheme.colorScheme.primary
+                    Canvas(Modifier.fillMaxWidth().height(28.dp)) {
+                        val gap = 3.dp.toPx()
+                        val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
+                        bars.forEachIndexed { i, v ->
+                            val h = (size.height * (0.12f + 0.88f * v)).coerceAtMost(size.height)
+                            drawRoundRect(
+                                color = barColor.copy(alpha = 0.35f + 0.65f * v),
+                                topLeft = Offset(i * (w + gap), (size.height - h) / 2),
+                                size = Size(w, h),
+                                cornerRadius = CornerRadius(w / 2, w / 2),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+                val shown = when {
+                    !listening && notice != null -> notice
+                    partial.isNotBlank() -> partial
+                    silent -> Dictation.NO_SOUND
+                    else -> "Ti ascolto…"
+                }
                 Text(
-                    partial.ifBlank { "Ti ascolto…" },
+                    shown,
                     style = MaterialTheme.typography.bodyLarge,
+                    color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    "Rilascia per finire",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (locked) "Bloccato · tocca ➤ per inserire" else "Rilascia per finire · trascina su per bloccare",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (locked) {
+                        TextButton(onClick = onCancel) { Text("Annulla") }
+                    }
+                }
             }
         }
     }
 }
+
+private const val BAR_COUNT = 28
 
 @Composable
 private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
@@ -590,6 +749,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     }
     CompositionLocalProvider(
         LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
+        LocalOpenSearch provides { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
         LocalInAppNav provides inApp,
     ) {
         AppContent(navController, openRequest, onOpenHandled)
@@ -673,6 +833,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
     val dictation = remember { Dictation(context.applicationContext) }
+    val voiceScope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
@@ -689,11 +851,28 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
         }
         dictation.start { text ->
-            if (text.isNullOrBlank()) {
-                Toast.makeText(context, "Non ho sentito niente", Toast.LENGTH_SHORT).show()
-            } else {
-                dictated = text
-                capturing = true
+            // Niente di detto: "Nessun suono rilevato" resta un attimo nel fumetto.
+            if (text.isNullOrBlank()) voiceScope.launch {
+                delay(1_600)
+                dictation.clearNotice()
+            } else voiceScope.launch {
+                // Si salva da solo, nel tipo giusto; il dialogo solo se manca qualcosa.
+                when (val outcome = VoiceCapture.save(context, text)) {
+                    VoiceCapture.Outcome.NeedsDialog -> {
+                        dictated = text
+                        capturing = true
+                    }
+                    is VoiceCapture.Outcome.Saved -> {
+                        val undo = outcome.undo
+                        val answer = snackbar.showSnackbar(
+                            outcome.message,
+                            actionLabel = if (undo != null) "Annulla" else null,
+                            withDismissAction = undo == null,
+                            duration = SnackbarDuration.Short,
+                        )
+                        if (answer == SnackbarResult.ActionPerformed) undo?.invoke()
+                    }
+                }
             }
         }
         true
@@ -723,9 +902,15 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     partial = dictation.partial,
                     onHoldStart = startDictation,
                     onHoldEnd = dictation::release,
+                    locked = dictation.locked,
+                    onLock = dictation::lock,
+                    onCancelDictation = dictation::discard,
+                    heardSound = dictation.heardSound,
+                    notice = dictation.notice,
                 )
             }
         },
+        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Box(Modifier.fillMaxSize()) {

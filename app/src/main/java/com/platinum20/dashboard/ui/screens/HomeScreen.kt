@@ -300,10 +300,6 @@ fun HomeScreen(
                 title = greeting,
                 subtitle = today,
                 scrollBehavior = scrollBehavior,
-                actions = {
-                    RoundIconButton(Icons.Outlined.Search, "Cerca ovunque", onClick = onSearch)
-                    RoundIconButton(Icons.Outlined.Tune, "Personalizza", onClick = onCustomize)
-                },
             )
         },
     ) { inner ->

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.117.0
+## 1.120.0
 **Oggi › La tua settimana**
 - In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
 - I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
@@ -11,8 +11,42 @@
 
 **Sotto il cofano**
 - Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
 - Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
 
+## 1.118.0
+**Il + decide da solo**
+- Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
+- Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
+
+**Microfono bloccabile, come WhatsApp**
+- Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
+
+**La voce si vede**
+- Mentre detti, nel fumetto sopra il + ci sono le barre che seguono la voce e sotto il testo che Canvas sta capendo. Se non senti niente dopo un paio di secondi c'è scritto "Nessun suono rilevato", e resta lì un attimo anche quando rilasci senza aver detto niente (niente più avviso a parte)
+
+**Icona**
+- Colori invertiti: fondo arancione e goccia blu
+
+**In alto a destra, solo due cerchi**
+- In ogni sezione (Oggi, News, Note, Media) in alto a destra ci sono sempre e solo la lente di Cerca ovunque e l'ingranaggio delle Impostazioni, nello stesso posto
+- News: niente più pulsante Aggiorna, si aggiorna tirando giù la lista. Oggi: "Personalizza" sta nelle Impostazioni (Card di Oggi). Note: la lente è quella di Cerca ovunque, che trova anche tutto quello che c'è nelle Note
+
+**Sotto il cofano**
+- Il giro fotografico trova di nuovo il + (06_aggiungi) e fotografa Cerca ovunque e Card di Oggi
+
+## 1.117.0
+**Il player di YouTube, con tutto sul video**
+- Le impostazioni stanno nei controlli del video: la rotella apre Qualità, Velocità, Sottotitoli e Ripeti; il tasto CC accende e sceglie i sottotitoli; accanto allo schermo intero la pillola con la qualità attuale ("Auto · 720p") la cambia al volo. Mentre un menu è aperto i controlli non spariscono
+- Sotto il titolo tre tasti: **Mi piace** (con il numero), **Commenti** (apre e scorre ai commenti) e **Condividi**. I Mi piace restano nell'app (il collegamento con YouTube è in sola lettura) e compaiono in cima alla scheda Mi piace di Video
+
+**Mini player a barra**
+- Il mini player è una barra larga quanto la barra in basso più il +: si trascina e si aggancia in alto o in basso, con una spinta veloce va dove lo lanci
+
+**Sotto il cofano**
+- MediaClickTour: nel giro fotografico tocca uno per uno tutti gli elementi di Media, Musica, Video e Radio e podcast e segnala quelli che non fanno niente (build/tour/collaudo-media.md)
+- Il + della barra ha di nuovo nome e tocco sullo stesso elemento (per TalkBack e per il giro fotografico)
+- Test: YtFavoritesTest
 ## 1.116.0
 **Note › Date: i compleanni dalla rubrica**
 - Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
