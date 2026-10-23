@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.130.0
+**Media › Continua**
+- I titoli e le righe sotto delle tessere di "Continua" non vengono più tagliati dagli angoli arrotondati: il testo sta un po' più dentro
+
 ## 1.129.0
 **Niente pulsanti in alto, tutto a portata di gesto**
 - Via la lente e l'ingranaggio in alto. Trascinando giù dalla cima di Oggi, News, Note o Media scende una lente: lasciando, si apre Cerca ovunque. Le pagine si aggiornano da sole (all'ingresso, al ritorno nell'app e ogni pochi minuti), non serve più tirare per ricaricare
