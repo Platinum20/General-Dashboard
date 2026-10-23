@@ -4,6 +4,7 @@
 **Mini player: indietro, play/pausa, avanti**
 - Nel mini player ci sono tre tasti: indietro (il brano precedente, o il video da capo), play/pausa in mezzo e avanti. Per i podcast -10 e +30 secondi; per la radio solo play/pausa
 - Niente più X: per chiudere, con la barra in basso la si tira ancora giù. Compare una X che diventa rossa con una vibrazione; lasciandola lì si chiude, tornando su si annulla
+- Toccando il mini player si apre sempre quello che suona adesso: prima, dopo un video chiuso e una canzone messa, si apriva ancora il video
 
 ## 1.130.0
 **Media › Continua**

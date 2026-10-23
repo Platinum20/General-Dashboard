@@ -229,10 +229,13 @@ fun FloatingPlayer(
 @Composable
 private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
     val context = LocalContext.current
+    // Il tocco apre sempre quello che suona adesso: senza questo il gesto restava legato
+    // alla prima cosa partita (es. un video chiuso) anche dopo aver messo una canzone.
+    val expand by androidx.compose.runtime.rememberUpdatedState(onExpand)
     Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
-                .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
+                .pointerInput(Unit) { detectTapGestures(onTap = { expand() }) }
                 .padding(start = 8.dp, top = 8.dp, end = 4.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
