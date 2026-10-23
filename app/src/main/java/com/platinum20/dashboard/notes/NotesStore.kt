@@ -31,7 +31,17 @@ data class TaskItem(
     val snoozedFrom: Long? = null,
     /** Quando è stato spuntato (millisecondi), per "La tua settimana"; null per i vecchi e gli aperti. */
     val doneAt: Long? = null,
-)
+    /** Le volte in cui un ricorrente è stato spuntato (millisecondi, le più recenti): non si chiude mai, ma conta. */
+    val doneTimes: List<Long> = emptyList(),
+) {
+    /** Segna una spunta del ricorrente, tenendo solo le ultime [MAX_DONE_TIMES]. */
+    fun withDoneTime(at: Long): TaskItem = copy(doneTimes = (doneTimes + at).takeLast(MAX_DONE_TIMES))
+
+    companion object {
+        /** Bastano per qualche mese di un ricorrente di ogni giorno: servono solo a "La tua settimana". */
+        const val MAX_DONE_TIMES = 60
+    }
+}
 
 /** Una data da aspettare: compleanni, viaggi, scadenze. Se [yearly] si ripete ogni anno. */
 data class Countdown(
@@ -304,7 +314,8 @@ object NotesStore {
         val zone = ZoneId.systemDefault()
         val from = Instant.ofEpochMilli(due).atZone(zone).toLocalDateTime()
         val next = repeat.nextAfter(from, LocalDateTime.now()).atZone(zone).toInstant().toEpochMilli()
-        update { d -> d.copy(tasks = d.tasks.map { if (it.id == task.id) it.copy(dueAt = next, snoozedFrom = null) else it }) }
+        val now = System.currentTimeMillis()
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == task.id) it.copy(dueAt = next, snoozedFrom = null).withDoneTime(now) else it }) }
         syncReminder(task.id)
         return true
     }
@@ -542,6 +553,7 @@ object NotesStore {
                         .apply { it.repeat?.let { r -> put("repeat", r.name) } }
                         .apply { it.snoozedFrom?.let { s -> put("snoozedFrom", s) } }
                         .apply { it.doneAt?.let { t -> put("doneAt", t) } }
+                        .apply { if (it.doneTimes.isNotEmpty()) put("doneTimes", JSONArray(it.doneTimes)) }
                 )
             }
         })
@@ -623,6 +635,7 @@ object NotesStore {
                     runCatching { Repeat.valueOf(o.optString("repeat")) }.getOrNull(),
                     if (o.has("snoozedFrom")) o.optLong("snoozedFrom") else null,
                     if (o.has("doneAt")) o.optLong("doneAt") else null,
+                    o.optJSONArray("doneTimes")?.let { a -> (0 until a.length()).map { a.optLong(it) }.filter { it > 0 } }.orEmpty(),
                 )
             },
             notes = (0 until notes.length()).map { i ->
