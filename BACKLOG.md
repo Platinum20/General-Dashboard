@@ -178,20 +178,6 @@ _(era in Dopo; promossa perché in `main/50` entrambe le abitudini sono "Manca o
 **Fatto quando:** con "alle 21" e l'abitudine non fatta arriva la notifica, "Fatto" la segna senza aprire l'app e la serie nella scheda sale.
 **Test:** `HabitReminderTest`: prossimo avviso (oggi se non ancora passato, sennò domani), già fatta → nessun avviso, settimanale a obiettivo raggiunto → nessun avviso fino a lunedì, abitudini salvate da una versione vecchia senza ora.
 
-<<<<<<< Updated upstream
-### 16. Radio come sveglia · Media / Oggi · M
-**Perché:** la mattina Antonio ha già la notifica del mattino e il player della radio; manca il legame. Svegliarsi con la propria stazione (e dopo la musica il riepilogo di Oggi) è il gesto quotidiano che rende Canvas la prima app della giornata, tutto sul telefono e gratis. Il timer di spegnimento esiste già in Media: la sveglia è la sua metà mancante.
-**Cosa fare:** in Media, sotto il timer di spegnimento, "Sveglia con la radio": orario, giorni (lun-ven / tutti), stazione (ultima ascoltata o una dalle preferite), volume che sale in 30 s. `AlarmManager.setAlarmClock` (esatta, si vede nella barra di stato; permesso `SCHEDULE_EXACT_ALARM`/`USE_EXACT_ALARM` chiesto solo qui) che avvia `MediaPlaybackService` con la stazione; notifica a schermo intero con "Stop" e "Ancora 10 min". Se la rete non c'è dopo 20 s, suono di sveglia di sistema come riserva (mai sveglia muta). In Adesso la sera "Sveglia alle 7:00 · Radio Deejay". Riprogrammare dopo il riavvio (`BOOT_COMPLETED`) e dopo un ripristino del backup.
-**Fatto quando:** impostata per tra 2 minuti, la radio parte da sola a volume crescente con l'app chiusa; senza rete suona la sveglia di sistema; "Ancora 10 min" la rimanda.
-**Test:** funzione pura `nextAlarm(now, ora, giorni)` (oggi già passata → domani, venerdì sera con lun-ven → lunedì, cambio dell'ora legale); persistenza delle impostazioni; test Robolectric che l'allarme programmato porta l'intent con la stazione giusta.
-
-### 18. Podcast in Media · Media · M
-_(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pagina più vuota dell'app, e i podcast sono l'ascolto quotidiano "da riprendere" che manca)_
-**Perché:** Antonio vuole tutto dentro l'app e un solo player. I podcast si possono fare in modo completamente nativo e gratis: ricerca con l'API pubblica di iTunes Search (nessuna chiave), episodi dai feed RSS, audio nel player condiviso. Niente siti, niente DRM.
-**Cosa fare:** quinta fonte "Podcast" in Media (`MediaScreen.kt`, riquadro con `IconTile` come gli altri quattro, la griglia diventa 2+2+1 o una riga larga); `media/podcast/PodcastRepository.kt` con ricerca (`https://itunes.apple.com/search?media=podcast&country=it&term=…`), "Segui" salvato in prefs/JSON, `PodcastFeed.parse()` per l'RSS (titolo, data, durata, descrizione pulita, enclosure); pagina del podcast con l'elenco episodi e pagina "I tuoi podcast" con gli ultimi episodi di quelli seguiti. Il tocco su un episodio lo fa suonare in `MediaPlaybackService`/`NowPlaying` con posizione ricordata (`MediaHistory`, così entra in Riprendi), velocità e ±15/30 s.
-**Fatto quando:** cerco "il post" o "muschio selvaggio", lo seguo, tocco un episodio e suona nel mini player; chiudendo e riaprendo riparte dal punto.
-**Test:** `PodcastFeedTest` con 2 feed RSS veri salvati in `src/test/resources` (`itunes:duration` "1:02:03", "3723" e assente; descrizione HTML ripulita; episodi senza enclosure scartati); parsing della risposta di iTunes Search; foto `35_podcast` nel giro.
-
 ### 19. Widget "Da fare" da spuntare senza aprire l'app · Widget · M
 _(era in Dopo; promossa: nessuna voce di In cima toccava i widget, e con le azioni rapide di Adesso della 1.98 la stessa logica si porta sulla schermata Home)_
 **Perché:** il widget di oggi (`DashboardWidget`) mostra righe ma non si tocca: per segnare "Pagare la bolletta della luce" bisogna aprire Canvas, Note, Da fare. Il gesto più frequente della giornata si può fare dalla schermata Home, come in Google Tasks o TickTick.
@@ -226,8 +212,6 @@ _(passi 1 e 2 dell'idea grande B, promossi)_
 
 ---
 
-=======
->>>>>>> Stashed changes
 ## Dopo
 
 - **Scorciatoia "Radio" sull'icona** · Cattura al volo · S. Le scorciatoie Promemoria/Nota/Spesa e il riquadro rapido esistono già; manca una quarta scorciatoia dinamica (`ShortcutManagerCompat.pushDynamicShortcut`) "Radio Deejay" con l'ultima stazione ascoltata, che parte senza aprire Media. Test: l'intent porta la stazione giusta; nessuna scorciatoia se non c'è una stazione recente.
@@ -301,12 +285,9 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
-<<<<<<< Updated upstream
+- 1.101.0 · Podcast in Media (ex 18): ricerca iTunes, Segui, ultimi episodi, ascolto nel player della radio dal punto in cui eri; Sveglia con la radio (ex 16); Ascolta il punto del giorno con la voce del telefono (parte del 13); "ogni mese" il 31 e "ogni anno" il 29 febbraio senza scivolare; riga del widget provata (parte del 2); foto `34_radio` e `35_podcast` nel giro
 - 1.98.0 · Adesso: azioni rapide con Annulla (ex 17); idee in Abitudini (parte del 3); Meteo senza buchi e abitudini non tagliate (parte del 7); V20, V21, V22, V23, V24 del verificatore
 - 1.97.0 · Spotify: playlist non tue con avviso e Riproduci, nuovi indirizzi dell'API
-=======
-- 1.101.0 · Podcast in Media (ex 18): ricerca iTunes, Segui, ultimi episodi, ascolto nel player della radio dal punto in cui eri; Sveglia con la radio (ex 16); Ascolta il punto del giorno con la voce del telefono (parte del 13); "ogni mese" il 31 e "ogni anno" il 29 febbraio senza scivolare; riga del widget provata (parte del 2); foto `34_radio` e `35_podcast` nel giro
->>>>>>> Stashed changes
 - 1.96.0 · Video: libreria "Sul telefono" da MediaStore (ex 5); Date: idee tappabili con poche voci (parte del 3); V14, V15, V16, V17, V18, V19 del verificatore
 - 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
