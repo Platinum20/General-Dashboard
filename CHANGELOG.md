@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.131.0
+**Il + più affidabile**
+- Il gesto del + si legge prima che il cerchio si ingrandisca: prima, appena partiva il microfono, il cerchio cresceva e il dito sembrava spostarsi, così il blocco scattava o non scattava a caso
+- Per far partire la voce trascinando serve un trascinamento vero: un tocco un po' mosso apre il fumetto per scrivere, non il microfono
+- Il riconoscimento delle canzoni parte da solo solo dopo almeno 3 secondi di suono senza nessuna parola capita, non quando una frase non viene capita. Mentre ascolta la musica il + non fa nulla e il lucchetto non compare
+- Il fumetto per scrivere apre sempre la tastiera
+
 ## 1.130.0
 **Media › Continua**
 - I titoli e le righe sotto delle tessere di "Continua" non vengono più tagliati dagli angoli arrotondati: il testo sta un po' più dentro

@@ -49,6 +49,16 @@ class Dictation(private val context: Context) {
     private var heard = ""
     private var onDone: ((String?) -> Unit)? = null
     private var released = false
+    private var startedAt = 0L
+    /** Ha capito almeno una parola: allora era voce, non musica. */
+    private var sawWords = false
+
+    /**
+     * Suono per qualche secondo ma nessuna parola: probabilmente musica. Solo allora si prova a
+     * riconoscere la canzone, così una frase non capita non fa partire l'ascolto della musica.
+     */
+    fun soundedLikeMusic(): Boolean =
+        heardSound && !sawWords && System.currentTimeMillis() - startedAt >= MUSIC_MIN_MS
 
     val available: Boolean get() = SpeechRecognizer.isRecognitionAvailable(context)
 
@@ -58,6 +68,8 @@ class Dictation(private val context: Context) {
     /** Parte l'ascolto; [done] riceve il testo (null se non ha capito niente). */
     fun start(done: (String?) -> Unit) {
         cancel()
+        startedAt = System.currentTimeMillis()
+        sawWords = false
         onDone = done
         released = false
         locked = false
@@ -87,13 +99,13 @@ class Dictation(private val context: Context) {
             }
             override fun onResults(results: Bundle?) {
                 val text = best(results)
-                if (text != null) heard = join(heard, text)
+                if (text != null) { heard = join(heard, text); sawWords = true }
                 partial = heard
                 if (keepGoing()) return
                 finish(heard.takeIf { it.isNotBlank() })
             }
             override fun onPartialResults(partialResults: Bundle?) {
-                best(partialResults)?.let { partial = join(heard, it) }
+                best(partialResults)?.takeIf { it.isNotBlank() }?.let { partial = join(heard, it); sawWords = true }
             }
             override fun onEvent(eventType: Int, params: Bundle?) = Unit
         })
@@ -170,6 +182,7 @@ class Dictation(private val context: Context) {
         const val NO_SOUND = "Nessun suono rilevato"
         /** Sopra questo volume è voce, sotto è silenzio o rumore di fondo. */
         const val VOICE_LEVEL = 0.35f
+        private const val MUSIC_MIN_MS = 3_000L
     }
 
     private fun join(a: String, b: String) = if (a.isBlank()) b else "$a $b"

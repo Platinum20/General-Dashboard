@@ -47,8 +47,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
@@ -123,8 +121,6 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
             .padding(bottom = lift),
     ) {
         val mode = remember(text.text) { CaptureGuess.guess(text.text) }
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         val shape = RoundedCornerShape(22.dp)
         Surface(
             shape = shape,
@@ -149,7 +145,7 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 24.dp)
-                                .focusRequester(focus)
+                                .autoFocus()
                                 .semantics { contentDescription = "Scrivi" },
                         )
                     }
