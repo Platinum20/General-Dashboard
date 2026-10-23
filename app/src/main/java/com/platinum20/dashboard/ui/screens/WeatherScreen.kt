@@ -65,6 +65,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.platinum20.dashboard.today.Greeting
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,7 +148,25 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { CurrentSection(forecast) }
+            item {
+                // Lo stesso blocco colorato di "Adesso" in Oggi: chi tocca la card ritrova la stessa cosa.
+                CanvasCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = androidx.compose.material3.CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    WeatherNowHeader(forecast, state.loading)
+                    Text(
+                        "Percepita ${forecast.current.apparent.asTemp()}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.75f),
+                        modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 16.dp),
+                    )
+                }
+            }
             forecast.rainAlert?.let { alert ->
                 item {
                     Surface(
@@ -196,36 +219,6 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                 )
             }
         }
-        }
-    }
-}
-
-@Composable
-private fun CurrentSection(forecast: Forecast) {
-    val c = forecast.current
-    Surface(
-        shape = MaterialTheme.shapes.extraLarge,
-        // Il blocco colorato come "Adesso" in Oggi.
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp))
-                Text(" " + forecast.place, style = MaterialTheme.typography.titleSmall)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(c.temperature.asTemp(), style = MaterialTheme.typography.displayMedium, modifier = Modifier.weight(1f))
-                Icon(weatherIcon(c.code, c.isDay), contentDescription = null, modifier = Modifier.size(56.dp))
-            }
-            Text(WeatherCodes.description(c.code), style = MaterialTheme.typography.titleLarge)
-            forecast.today?.let {
-                Text(
-                    "Percepita ${c.apparent.asTemp()} · Max ${it.max.asTemp()} · Min ${it.min.asTemp()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
         }
     }
 }
@@ -357,5 +350,59 @@ private fun TempBar(min: Double, max: Double, low: Double, high: Double, modifie
             )
             if (end < 1f) Spacer(Modifier.weight(1f - end))
         }
+    }
+}
+
+/**
+ * La parte alta di "Adesso": luogo, temperatura grande, cielo con massima e minima, icona.
+ * È la stessa nella card di Oggi e in cima alla schermata Meteo, così le due si riconoscono.
+ */
+@Composable
+internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, dayCardShown: Boolean = false) {
+    Row(
+        modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        val content = LocalContentColor.current
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "ADESSO · " + forecast.place.uppercase(),
+                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                    color = content.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (loading) {
+                    Spacer(Modifier.size(8.dp))
+                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = content.copy(alpha = 0.6f))
+                }
+            }
+            Text(
+                forecast.current.temperature.asTemp(),
+                style = MaterialTheme.typography.displayMedium.copy(fontSize = 52.sp, lineHeight = 58.sp),
+            )
+            val today = forecast.today
+            // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
+            val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
+            Text(
+                Greeting.adessoWeather(
+                    WeatherCodes.description(forecast.current.code),
+                    if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
+                    rain,
+                    dayCardShown,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = content.copy(alpha = 0.75f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            weatherIcon(forecast.current.code, forecast.current.isDay),
+            contentDescription = null,
+            modifier = Modifier.padding(top = 4.dp).size(44.dp),
+        )
     }
 }

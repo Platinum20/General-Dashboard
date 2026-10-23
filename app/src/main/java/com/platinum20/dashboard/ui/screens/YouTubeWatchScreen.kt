@@ -112,6 +112,13 @@ private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
     val context = LocalContext.current
     val now by YtPlayer.now.collectAsState()
+    // Avvisi brevi del player (es. sottotitoli che YouTube non dà): il video intanto continua.
+    androidx.compose.runtime.LaunchedEffect(now?.notice) {
+        now?.notice?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+            YtPlayer.consumeNotice()
+        }
+    }
     val feed by YouTubeStore.subscriptions.collectAsState()
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var showComments by rememberSaveable { mutableStateOf(false) }

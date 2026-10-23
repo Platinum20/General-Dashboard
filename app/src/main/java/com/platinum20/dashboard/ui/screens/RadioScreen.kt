@@ -63,10 +63,9 @@ import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.heightIn
 
-/** Radio in streaming: le più ascoltate in Italia, ricerca in tutto il mondo e preferite. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** La parte Radio di "Radio e podcast": le più ascoltate in Italia, ricerca nel mondo, preferite e sveglia. */
 @Composable
-fun RadioScreen(onBack: () -> Unit) {
+internal fun RadioBody() {
     val context = LocalContext.current
     RadioStore.init(context)
     val popular by RadioStore.popular.collectAsState()
@@ -79,45 +78,36 @@ fun RadioScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) { RadioStore.loadPopular() }
 
-    Scaffold(
-        topBar = {
-            TopLevelBar(title = "Radio", subtitle = "Stazioni italiane e del mondo", onBack = onBack)
-        },
-        bottomBar = { now?.let { RadioNowBar(it) } },
-    ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = {
-                    query = it
-                    if (it.isBlank()) searching = false
-                },
-                placeholder = { Text("Cerca una radio in tutto il mondo") },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {
-                    searching = true
-                    RadioStore.search(query)
-                }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            val list: Loadable<List<RadioStation>> = if (searching) search else popular
-            FeedList(list, empty = "Nessuna radio trovata") {
-                if (!searching) {
-                    item(key = "alarm") { AlarmCard(suggested = now?.station ?: recent.firstOrNull() ?: favorites.firstOrNull()) }
-                    stationSection("Preferite", favorites, now)
-                    stationSection("Ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
-                    item(key = "popular-header") { SectionTitle("Le più ascoltate in Italia") }
-                }
-                items(list.data.orEmpty(), key = { "list-${it.id}" }) { StationRow(it, now) }
+    Column(Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                if (it.isBlank()) searching = false
+            },
+            placeholder = { Text("Cerca una radio in tutto il mondo") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            singleLine = true,
+            colors = canvasFieldColors(),
+            shape = MaterialTheme.shapes.large,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = {
+                searching = true
+                RadioStore.search(query)
+            }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        val list: Loadable<List<RadioStation>> = if (searching) search else popular
+        FeedList(list, empty = "Nessuna radio trovata") {
+            if (!searching) {
+                item(key = "alarm") { AlarmCard(suggested = now?.station ?: recent.firstOrNull() ?: favorites.firstOrNull()) }
+                stationSection("Preferite", favorites, now)
+                stationSection("Ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
+                item(key = "popular-header") { SectionTitle("Le più ascoltate in Italia") }
             }
+            items(list.data.orEmpty(), key = { "list-${it.id}" }) { StationRow(it, now) }
         }
     }
 }
@@ -130,12 +120,7 @@ private fun LazyListScope.stationSection(title: String, stations: List<RadioStat
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp),
-    )
+    SectionHeader(text, Modifier.padding(top = 8.dp))
 }
 
 @Composable
@@ -191,38 +176,6 @@ fun StationLogo(station: RadioStation, sizeDp: Int) {
         Icon(Icons.Outlined.Radio, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         if (station.logo.isNotBlank()) {
             AsyncImage(model = station.logo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
-        }
-    }
-}
-
-@Composable
-private fun RadioNowBar(now: RadioNow) {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, tonalElevation = 3.dp) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StationLogo(now.station, 44)
-            Column(Modifier.weight(1f)) {
-                Text(now.station.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    now.error ?: now.track.ifBlank { if (now.buffering) "Collegamento…" else "In diretta" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (now.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (now.buffering) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            FilledIconButton(onClick = { RadioStore.togglePause() }) {
-                Icon(if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (now.playing) "Pausa" else "Riproduci")
-            }
-            IconButton(onClick = { RadioStore.stop() }) {
-                Icon(Icons.Filled.Stop, contentDescription = "Ferma")
-            }
         }
     }
 }

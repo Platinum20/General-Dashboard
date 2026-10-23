@@ -51,6 +51,12 @@ class YouTubeNativeCheck {
         runCatching { YtResolver.resolve("https://www.youtube.com/watch?v=0e3GPea1Tyg") }
             .onSuccess { out.append("- audio multilingua: ${Regex("[?&]xtags=[^&]*").find(it.audioUrl.orEmpty())?.value ?: "nessun tag"}\n") }
             .onFailure { out.append("- ❌ audio multilingua: $it\n") }
+        // Sottotitoli: devono arrivare come WebVTT (o json3 convertito), se no il video partirebbe senza.
+        runCatching { YtResolver.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ") }.getOrNull()?.subtitles?.let { subs ->
+            val first = subs.firstOrNull { !it.auto } ?: subs.firstOrNull()
+            val vtt = first?.let { com.platinum20.dashboard.media.youtube.player.YtCaptions.fetchVtt(it) }
+            out.append(if (vtt != null) "- ✅ sottotitoli ${first.language}: ${vtt.lines().size} righe\n" else "- ❌ sottotitoli: ${subs.size} lingue, nessun testo scaricato\n")
+        }
         val comments = runCatching { YtResolver.comments("dQw4w9WgXcQ") }
         comments.getOrNull()?.let { page ->
             val withReplies = page.comments.firstOrNull { it.repliesPage != null }

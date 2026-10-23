@@ -109,6 +109,8 @@ fun YouTubeFeedScreen(
     onBack: () -> Unit,
     onPlay: (String) -> Unit,
     onLogin: () -> Unit,
+    /** I video del telefono, i file e i link: stanno anche loro in Video. */
+    onOpenPhone: () -> Unit,
 ) {
     val context = LocalContext.current
     YouTubeAuth.init(context)
@@ -136,11 +138,11 @@ fun YouTubeFeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopLevelBar(
-                title = openPlaylist?.title ?: "YouTube",
+                title = openPlaylist?.title ?: "Video",
                 subtitle = when {
                     openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
                     fresh > 0 -> "$fresh video nuovi oggi"
-                    else -> "Il tuo YouTube"
+                    else -> "YouTube e i video del telefono"
                 },
                 onBack = { if (openPlaylist != null) openPlaylist = null else onBack() },
             ) {
@@ -170,7 +172,7 @@ fun YouTubeFeedScreen(
                 .padding(inner)
         ) {
             if (!connected || (setup && !official)) {
-                ConnectYouTube(onLogin = onLogin)
+                ConnectYouTube(onLogin = onLogin, onOpenPhone = onOpenPhone)
                 return@Column
             }
             val playlist = openPlaylist
@@ -187,6 +189,8 @@ fun YouTubeFeedScreen(
                 items(youTubeTabs.size) { index ->
                     CanvasChip(selected = tab == index, onClick = { tab = index }, label = youTubeTabs[index])
                 }
+                // Il vecchio "Video": file, link e video registrati, a un tocco dalle schede di YouTube.
+                item(key = "phone") { CanvasChip(selected = false, onClick = onOpenPhone, label = "Sul telefono ›") }
                 if (feedTab) {
                     item(key = "divider") {
                         Box(
@@ -224,7 +228,7 @@ fun YouTubeFeedScreen(
 }
 
 @Composable
-private fun ConnectYouTube(onLogin: () -> Unit) {
+private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -283,6 +287,7 @@ private fun ConnectYouTube(onLogin: () -> Unit) {
             }
             Text("Oppure collega l'API ufficiale di Google")
         }
+        TextButton(onClick = onOpenPhone) { Text("Guarda i video del telefono") }
         problem?.let {
             Spacer(Modifier.height(16.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)

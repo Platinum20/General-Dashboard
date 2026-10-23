@@ -54,50 +54,33 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
-import com.platinum20.dashboard.media.NowPlaying
-import com.platinum20.dashboard.media.PlayerCommand
+import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.media.Playing
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-/** Dove porta il tocco sul mini player. */
-sealed interface FloatingTarget {
-    data class Web(val service: MediaService) : FloatingTarget
-    data object Radio : FloatingTarget
-}
-
 /**
- * Mini player a bolla sopra tutta l'app: il video di YouTube, oppure copertina e comandi di Spotify
- * o della radio. Si trascina dove si vuole (si aggancia al bordo più vicino), si tocca per aprire
- * il player completo, la X ferma la riproduzione.
+ * Mini player unico sopra tutta l'app, per qualunque cosa suoni (YouTube, musica, Spotify, radio,
+ * podcast): copertina (o il video stesso), titolo, play/pausa, chiudi e il tempo che scorre.
+ * Si trascina dove si vuole (si aggancia al bordo più vicino) e si tocca per il player grande.
  */
 @Composable
 fun FloatingPlayer(
     currentRoute: String?,
-    onExpand: (FloatingTarget) -> Unit,
+    onExpand: (Playing) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     RadioStore.init(context)
-    val tracks by NowPlaying.tracks.collectAsState()
-    // Di pagine nascoste ne resta una sola: il riproduttore di Spotify.
-    val open by MediaWebViews.open.collectAsState()
-    val radio by RadioStore.now.collectAsState()
-    val nativeYt by YtPlayer.now.collectAsState()
-
+    val playing by Playback.now.collectAsState()
+    val now = playing ?: return
     // Sulle schermate dei player la bolla non serve: c'è già il player grande.
-    val onWebPlayer = currentRoute?.startsWith("media/watch") == true
-    val onRadio = currentRoute?.startsWith("media/radio") == true
-    // Nella schermata di Spotify c'è già la barra con il brano in corso.
-    val onSpotify = currentRoute == "media/spotify"
-    val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer && !onSpotify }
-    val radioNow = radio.takeIf { !onRadio }
-    val ytNow = nativeYt.takeIf { !onWebPlayer }
-
-    if (ytNow == null && spotify == null && radioNow == null) return
+    if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
+    if (now.isVideo && currentRoute?.startsWith("media/watch") == true) return
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -186,119 +169,77 @@ fun FloatingPlayer(
                     }
                 },
         ) {
-            when {
-                ytNow != null -> NativeYouTubeBubble(
-                    title = ytNow.stream?.title ?: "YouTube",
-                    playing = ytNow.playing,
-                    onExpand = { onExpand(FloatingTarget.Web(MediaService.YOUTUBE)) },
-                )
-                spotify != null -> AudioBubble(
-                    image = spotify.artworkUrl,
-                    title = spotify.title,
-                    subtitle = spotify.artist.ifBlank { "Spotify" },
-                    playing = spotify.playing,
-                    onToggle = { NowPlaying.command(MediaService.SPOTIFY, PlayerCommand.TOGGLE) },
-                    onClose = { MediaWebViews.release(MediaService.SPOTIFY) },
-                    onExpand = { onExpand(FloatingTarget.Web(MediaService.SPOTIFY)) },
-                )
-                radioNow != null -> AudioBubble(
-                    image = radioNow.station.logo,
-                    title = radioNow.station.name,
-                    subtitle = radioNow.track.ifBlank { "Radio" },
-                    playing = radioNow.playing,
-                    onToggle = { RadioStore.togglePause() },
-                    onClose = { RadioStore.stop() },
-                    onExpand = { onExpand(FloatingTarget.Radio) },
-                )
-            }
+            MiniPlayer(now, onExpand = { onExpand(now) })
         }
     }
 }
 
-@Composable
-private fun AudioBubble(
-    image: String,
-    title: String,
-    subtitle: String,
-    playing: Boolean,
-    onToggle: () -> Unit,
-    onClose: () -> Unit,
-    onExpand: () -> Unit,
-) {
-    Row(
-        Modifier
-            .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
-            .padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .size(48.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (image.isNotBlank()) {
-                AsyncImage(model = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(48.dp))
-            }
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.widthIn(max = 150.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        IconButton(onClick = onToggle) {
-            Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (playing) "Pausa" else "Riproduci")
-        }
-        IconButton(onClick = onClose) {
-            Icon(Icons.Filled.Close, contentDescription = "Chiudi")
-        }
-    }
-}
-
-/** Bolla del player nativo di YouTube: il video stesso, in piccolo, con play/pausa e chiusura. */
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
-private fun NativeYouTubeBubble(title: String, playing: Boolean, onExpand: () -> Unit) {
+private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
     val context = LocalContext.current
-    Column {
-        Box(
+    Column(Modifier.width(300.dp)) {
+        Row(
             Modifier
-                .size(width = 224.dp, height = 126.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(Color.Black)
+                .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
+                .padding(start = 6.dp, top = 6.dp, end = 2.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            AndroidView(
-                factory = { ctx ->
-                    androidx.media3.ui.PlayerView(ctx).apply {
-                        useController = false
-                        player = YtPlayer.player(ctx)
-                    }
-                },
-                onRelease = { it.player = null },
-                modifier = Modifier.fillMaxSize(),
-            )
+            // Il video di YouTube si vede anche in piccolo; per il resto la copertina.
+            val thumbWidth = if (now.isVideo) 84.dp else 48.dp
             Box(
                 Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.width(224.dp)) {
-            IconButton(onClick = { YtPlayer.toggle(context) }) {
-                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (playing) "Pausa" else "Riproduci")
+                    .size(width = thumbWidth, height = 48.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(if (now.isVideo) Color.Black else MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (now.isVideo) {
+                    AndroidView(
+                        factory = { ctx ->
+                            androidx.media3.ui.PlayerView(ctx).apply {
+                                useController = false
+                                player = YtPlayer.player(ctx)
+                            }
+                        },
+                        onRelease = { it.player = null },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(sourceIcon(now.source), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (now.artwork.isNotBlank()) {
+                        AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    }
+                }
             }
-            Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            IconButton(onClick = { YtPlayer.stop(context) }) {
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(now.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOf(now.source.label, now.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (now.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            IconButton(onClick = { Playback.toggle(context) }) {
+                Icon(
+                    if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (now.playing) "Pausa" else "Riproduci",
+                )
+            }
+            IconButton(onClick = { Playback.stop(context) }) {
                 Icon(Icons.Filled.Close, contentDescription = "Chiudi")
             }
+        }
+        // Il tempo che scorre, sottile sul bordo basso; in diretta niente barra.
+        if (now.durationMs > 0 && !now.live) {
+            androidx.compose.material3.LinearProgressIndicator(
+                progress = { now.progress },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp).height(2.dp),
+                drawStopIndicator = {},
+            )
         }
     }
 }

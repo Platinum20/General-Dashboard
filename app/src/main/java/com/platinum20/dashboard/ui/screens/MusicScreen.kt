@@ -92,17 +92,28 @@ import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.spotify.SpPlayback
 import com.platinum20.dashboard.media.spotify.SpotifyApi
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
+import com.platinum20.dashboard.media.youtube.YouTubeStore
+import com.platinum20.dashboard.media.youtube.YtMusic
+import com.platinum20.dashboard.media.youtube.YtVideo
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.CircularProgressIndicator
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.delay
 
-private val spotifyTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
+private val musicTabs = listOf("Per te", "Playlist", "Libreria", "Cerca")
 
-/** Il tuo Spotify in versione nativa, con le API ufficiali. */
+/**
+ * Musica: Spotify (con le API ufficiali, suona nel suo riproduttore dentro l'app) e YouTube Music
+ * insieme, nelle stesse liste e nella stessa ricerca. I podcast stanno in "Radio e podcast".
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SpotifyFeedScreen(
+fun MusicScreen(
     onBack: () -> Unit,
     onLogin: () -> Unit,
 ) {
@@ -152,8 +163,8 @@ fun SpotifyFeedScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopLevelBar(
-                title = opened?.title ?: "Spotify",
-                subtitle = if (opened != null) "Spotify" else "Il tuo Spotify",
+                title = opened?.title ?: "Musica",
+                subtitle = if (opened != null) "Spotify" else "Spotify e YouTube Music",
                 onBack = { if (opened != null) opened = null else onBack() },
                 actions = {
                     if (!official) {
@@ -180,17 +191,13 @@ fun SpotifyFeedScreen(
                 },
             )
         },
-        bottomBar = {
-            val state = playback
-            if (connected && state?.item != null) NowPlayingBar(state)
-        },
     ) { inner ->
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(inner)
         ) {
-            if (!connected || (setup && !official)) {
+            if (setup && !official) {
                 ConnectSpotify(onLogin)
                 return@Column
             }
@@ -206,20 +213,21 @@ fun SpotifyFeedScreen(
                 })
                 return@Column
             }
-            // Scorrevole: con cinque schede le etichette non vengono più tagliate.
-            ScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp) {
-                spotifyTabs.forEachIndexed { index, label ->
-                    Tab(selected = tab == index, onClick = { tab = index }, text = { Text(label, maxLines = 1) })
-                }
+            // Pillole come in Video e in Radio e podcast.
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                musicTabs.forEachIndexed { index, label -> CanvasChip(selected = tab == index, onClick = { tab = index }, label = label) }
             }
             val onItem: (SpItem) -> Unit = { item ->
                 if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) SpotifyPlayer.play(context, item) else opened = item
             }
             when (tab) {
-                0 -> HomeTab(onItem)
-                1 -> PlaylistsTab(onItem)
-                2 -> LibraryTab(onItem)
-                else -> SearchTab(onItem)
+                0 -> HomeTab(connected, onItem, onLogin)
+                1 -> if (connected) PlaylistsTab(onItem) else ConnectSpotify(onLogin)
+                2 -> if (connected) LibraryTab(onItem) else ConnectSpotify(onLogin)
+                else -> SearchTab(connected, onItem)
             }
         }
     }
@@ -266,21 +274,95 @@ private fun ConnectSpotify(onLogin: () -> Unit) {
 }
 
 @Composable
-private fun HomeTab(onItem: (SpItem) -> Unit) {
+private fun HomeTab(connected: Boolean, onItem: (SpItem) -> Unit, onLogin: () -> Unit) {
+    val context = LocalContext.current
     val state by SpotifyStore.home.collectAsState()
-    LaunchedEffect(Unit) { SpotifyStore.refreshHome() }
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    val ytOfficial by YouTubeAuth.connected.collectAsState()
+    val youTube = ytOfficial || MediaService.YOUTUBE in loggedIn
+    val ytLists by YouTubeStore.playlistItems.collectAsState()
+    LaunchedEffect(connected) { if (connected) SpotifyStore.refreshHome() }
+    LaunchedEffect(youTube) { if (youTube) YouTubeStore.loadPlaylist(context, YtMusic.LIKED) }
+    val ytLiked = ytLists[YtMusic.LIKED]?.data.orEmpty()
     val home = state.data
-    FeedList(state, empty = "") {
-        home ?: return@FeedList
-        item {
+    LazyColumn(
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (!connected) item(key = "connect") { ConnectCard(onLogin) }
+        else if (home == null && state.loading) item(key = "loading") {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
+        }
+        state.error?.takeIf { connected }?.let { error -> item(key = "error") { Text(error, color = MaterialTheme.colorScheme.error) } }
+        if (home != null && connected) {
+            section("Ascoltati di recente", home.recent.take(10), onItem)
+        }
+        // YouTube Music accanto a Spotify: i brani con il "Mi piace", in solo audio nel player dell'app.
+        if (ytLiked.isNotEmpty()) ytSection("Mi piace su YouTube Music", ytLiked.take(15), ytLiked)
+        if (home != null && connected) {
+            section("I tuoi brani del mese", home.topTracks.take(15), onItem)
+            section("Artisti che ascolti di più", home.topArtists, onItem)
+        }
+        if (!connected && !youTube) item(key = "yt-hint") {
             Text(
-                "Ciao ${home.profile.name}" + if (home.profile.premium) " · Premium" else "",
-                style = MaterialTheme.typography.titleLarge,
+                "Cerca un brano: lo trovi anche su YouTube Music, senza account.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        section("Ascoltati di recente", home.recent.take(15), onItem)
-        section("I tuoi brani del mese", home.topTracks.take(15), onItem)
-        section("Artisti che ascolti di più", home.topArtists, onItem)
+    }
+}
+
+/** Invito discreto a collegare Spotify: la musica di YouTube intanto c'è già. */
+@Composable
+private fun ConnectCard(onLogin: () -> Unit) {
+    CanvasCard(onClick = onLogin, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f), shape = MaterialTheme.shapes.extraLarge) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconTile(Icons.Outlined.GraphicEq, TileAccent.GREEN)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Collega Spotify", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Playlist, libreria e ascolti recenti accanto alla musica di YouTube.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+private fun LazyListScope.ytSection(title: String, list: List<YtVideo>, queue: List<YtVideo>) {
+    if (list.isEmpty()) return
+    item(key = "header-$title") { SectionHeader(title, Modifier.padding(top = 8.dp)) }
+    items(list, key = { "$title-${it.id}" }) { video -> YtSongRow(video, queue) }
+}
+
+/** Un brano di YouTube Music: copertina, titolo e artista, con il marchio della fonte. */
+@Composable
+private fun YtSongRow(video: YtVideo, queue: List<YtVideo>) {
+    val context = LocalContext.current
+    Surface(
+        onClick = { YtMusic.play(context, video, queue) },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Cover(video.thumbnail, MaterialTheme.shapes.small, 56)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(video.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    listOfNotNull(video.channel.removeSuffix(" - Topic").ifBlank { null }, "YouTube Music").joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
@@ -302,30 +384,52 @@ private fun LibraryTab(onItem: (SpItem) -> Unit) {
         library ?: return@FeedList
         section("Brani che ti piacciono", library.liked, onItem)
         section("Album salvati", library.albums, onItem)
-        section("Podcast", library.shows, onItem)
     }
 }
 
+/** Una ricerca sola per Spotify e YouTube Music: risultati di entrambi, uno sotto l'altro. */
 @Composable
-private fun SearchTab(onItem: (SpItem) -> Unit) {
-    val state by SpotifyStore.search.collectAsState()
+private fun SearchTab(connected: Boolean, onItem: (SpItem) -> Unit) {
+    val spotify by SpotifyStore.search.collectAsState()
+    val youTube by YtMusic.search.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     Column {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Artisti, brani, album, podcast") },
+            placeholder = { Text("Brani, artisti, album") },
             leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
+            colors = canvasFieldColors(),
+            shape = MaterialTheme.shapes.large,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { SpotifyStore.search(query) }),
+            keyboardActions = KeyboardActions(onSearch = {
+                if (connected) SpotifyStore.search(query)
+                YtMusic.search(query)
+            }),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         )
-        if (state.data == null && !state.loading && state.error == null) return@Column
-        FeedList(state, empty = "Nessun risultato") {
-            items(state.data.orEmpty(), key = { it.uri }) { ItemRow(it, onClick = { onItem(it) }) }
+        val sp = spotify.data.orEmpty().filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE }
+        val yt = youTube.data.orEmpty()
+        val loading = (connected && spotify.loading) || youTube.loading
+        if (sp.isEmpty() && yt.isEmpty() && !loading && youTube.error == null && spotify.error == null) return@Column
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (loading) item(key = "loading") {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
+            }
+            if (connected) section("Su Spotify", sp, onItem)
+            ytSection("Su YouTube Music", yt, yt)
+            listOfNotNull(spotify.error.takeIf { connected }, youTube.error).forEach { error ->
+                item(key = "err-$error") { Text(error, color = MaterialTheme.colorScheme.error) }
+            }
+            if (!loading && sp.isEmpty() && yt.isEmpty()) item(key = "empty") {
+                Text("Nessun risultato", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -374,14 +478,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
 
 private fun LazyListScope.section(title: String, list: List<SpItem>, onItem: (SpItem) -> Unit) {
     if (list.isEmpty()) return
-    item(key = "header-$title") {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-    }
+    item(key = "header-$title") { SectionHeader(title, Modifier.padding(top = 8.dp)) }
     items(list, key = { "$title-${it.uri}" }) { ItemRow(it, onClick = { onItem(it) }) }
 }
 
@@ -423,42 +520,6 @@ private fun Cover(url: String, shape: Shape, sizeDp: Int) {
         Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         if (url.isNotBlank()) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
-        }
-    }
-}
-
-@Composable
-private fun NowPlayingBar(state: SpPlayback) {
-    val item = state.item ?: return
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, tonalElevation = 3.dp) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Cover(item.image, MaterialTheme.shapes.small, 44)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    listOf(item.subtitle, state.device).filter { it.isNotBlank() }.joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            IconButton(onClick = { SpotifyStore.control(SpotifyApi::previous) }) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro")
-            }
-            FilledIconButton(onClick = {
-                SpotifyStore.control(if (state.playing) SpotifyApi::pause else SpotifyApi::resume)
-            }) {
-                Icon(if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (state.playing) "Pausa" else "Riproduci")
-            }
-            IconButton(onClick = { SpotifyStore.control(SpotifyApi::next) }) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
-            }
         }
     }
 }
