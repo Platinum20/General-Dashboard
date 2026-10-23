@@ -53,6 +53,15 @@ import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.radio.RadioNow
 import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.radio.RadioAlarm
+import androidx.compose.material.icons.outlined.Alarm
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.heightIn
 
 /** Radio in streaming: le più ascoltate in Italia, ricerca in tutto il mondo e preferite. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,6 +111,7 @@ fun RadioScreen(onBack: () -> Unit) {
             val list: Loadable<List<RadioStation>> = if (searching) search else popular
             FeedList(list, empty = "Nessuna radio trovata") {
                 if (!searching) {
+                    item(key = "alarm") { AlarmCard(suggested = now?.station ?: recent.firstOrNull() ?: favorites.firstOrNull()) }
                     stationSection("Preferite", favorites, now)
                     stationSection("Ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
                     item(key = "popular-header") { SectionTitle("Le più ascoltate in Italia") }
@@ -214,5 +224,75 @@ private fun RadioNowBar(now: RadioNow) {
                 Icon(Icons.Filled.Stop, contentDescription = "Ferma")
             }
         }
+    }
+}
+
+/** Sveglia con la radio: ora, giorni e stazione (quella in ascolto o l'ultima ascoltata). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AlarmCard(suggested: RadioStation?) {
+    val context = LocalContext.current
+    remember { RadioAlarm.init(context) }
+    val alarm by RadioAlarm.settings.collectAsState()
+    var editing by rememberSaveable { mutableStateOf(false) }
+    val haptic = rememberHaptic()
+    val station = alarm.station ?: suggested
+    CanvasCard(onClick = { editing = true }, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f), shape = MaterialTheme.shapes.extraLarge) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconTile(Icons.Outlined.Alarm, TileAccent.ORANGE)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Sveglia con la radio", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    when {
+                        station == null -> "Ascolta una stazione per sceglierla"
+                        alarm.enabled -> "${alarm.timeLabel} · ${alarm.daysLabel} · ${station.name}"
+                        else -> "Spenta · ${station.name}"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Switch(
+                checked = alarm.enabled,
+                enabled = station != null,
+                onCheckedChange = { on ->
+                    haptic(if (on) Haptic.CONFIRM else Haptic.TICK)
+                    RadioAlarm.update(context, alarm.copy(enabled = on, station = station))
+                },
+            )
+        }
+    }
+    if (editing) {
+        val time = rememberTimePickerState(initialHour = alarm.hour, initialMinute = alarm.minute, is24Hour = true)
+        var weekdays by remember { mutableStateOf(alarm.weekdaysOnly) }
+        AlertDialog(
+            onDismissRequest = { editing = false },
+            title = { Text("Sveglia con la radio") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    TimePicker(state = time)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CanvasChip(selected = weekdays, onClick = { weekdays = true }, label = "Lun-ven")
+                        CanvasChip(selected = !weekdays, onClick = { weekdays = false }, label = "Tutti i giorni")
+                    }
+                    Text(
+                        station?.let { "Stazione: ${it.name}. Parte piano e sale in 30 secondi; se non c'è rete suona la sveglia del telefono." }
+                            ?: "Ascolta prima una stazione: la sveglia userà quella.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = station != null, onClick = {
+                    RadioAlarm.update(context, alarm.copy(enabled = true, hour = time.hour, minute = time.minute, weekdaysOnly = weekdays, station = station))
+                    editing = false
+                }) { Text("Attiva") }
+            },
+            dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
+        )
     }
 }

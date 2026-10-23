@@ -118,6 +118,7 @@ import com.platinum20.dashboard.ui.screens.MediaScreen
 import com.platinum20.dashboard.ui.screens.FloatingPlayer
 import com.platinum20.dashboard.ui.screens.FloatingTarget
 import com.platinum20.dashboard.ui.screens.RadioScreen
+import com.platinum20.dashboard.ui.screens.PodcastScreen
 import com.platinum20.dashboard.media.radio.RadioService
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -267,6 +268,7 @@ object Routes {
     const val YOUTUBE_FEED = "media/youtube"
     const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
+    const val PODCAST = "media/podcast"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
     const val LOGIN = "settings/login/{service}"
 
@@ -592,11 +594,15 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         navController.navigate(if (it == MediaService.YOUTUBE) Routes.YOUTUBE_FEED else Routes.SPOTIFY_FEED)
                     },
                     onOpenRadio = { navController.navigate(Routes.RADIO) },
+                    onOpenPodcast = { navController.navigate(Routes.PODCAST) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 )
             }
             composable(Routes.RADIO) {
                 RadioScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PODCAST) {
+                PodcastScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.YOUTUBE_WATCH,

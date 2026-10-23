@@ -32,6 +32,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.news.NewsHistory
+import com.platinum20.dashboard.news.RecapListening
+import com.platinum20.dashboard.news.RecapReader
+import com.platinum20.dashboard.news.RecapSpeaker
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material3.CardDefaults
+import java.time.LocalTime
 import com.platinum20.dashboard.news.NewsItem
 
 /** Tutti i temi del giorno, ciascuno con gli articoli delle varie testate. */
@@ -46,6 +57,7 @@ fun RecapScreen(
     NewsHistory.init(context)
     // Come in News: gli articoli già aperti restano attenuati.
     val read by NewsHistory.read.collectAsStateWithLifecycle()
+    val listening by RecapSpeaker.state.collectAsStateWithLifecycle()
     val open = { item: NewsItem ->
         NewsHistory.markRead(item.link)
         onOpenArticle(item)
@@ -56,6 +68,17 @@ fun RecapScreen(
             TopLevelBar(
                 title = "Il punto del giorno",
                 onBack = onBack,
+                actions = {
+                    if (state.themes.isNotEmpty()) {
+                        RoundIconButton(
+                            if (listening != null) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                            if (listening != null) "Smetti di ascoltare" else "Ascolta",
+                        ) {
+                            if (listening != null) RecapSpeaker.stop()
+                            else RecapSpeaker.play(context, RecapReader.script(state.themes, LocalTime.now()))
+                        }
+                    }
+                },
             )
         },
     ) { inner ->
@@ -69,6 +92,9 @@ fun RecapScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                listening?.let { now ->
+                    item(key = "listening") { ListeningCard(now, themeCount = minOf(state.themes.size, RecapReader.MAX_THEMES)) }
+                }
                 item {
                     Text(
                         "I temi di cui parlano più testate nelle ultime 24 ore, raggruppati in automatico.",
@@ -126,6 +152,42 @@ fun RecapScreen(
             }
             else -> Box(Modifier.fillMaxSize().padding(inner), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        }
+    }
+}
+
+/** Mentre la voce legge: quale tema, "Successivo" e "Ferma". */
+@Composable
+private fun ListeningCard(now: RecapListening, themeCount: Int) {
+    CanvasCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Outlined.Headphones, contentDescription = null, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("In ascolto", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    now.error ?: if (now.part == 0) "Apertura" else "Tema ${now.part} di $themeCount",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (now.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (now.error == null) {
+                IconButton(onClick = { RecapSpeaker.next() }) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = "Tema successivo")
+                }
+            }
+            IconButton(onClick = { RecapSpeaker.stop() }) {
+                Icon(Icons.Filled.Stop, contentDescription = "Ferma")
             }
         }
     }

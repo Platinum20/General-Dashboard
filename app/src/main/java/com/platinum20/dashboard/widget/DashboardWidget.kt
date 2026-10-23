@@ -170,11 +170,15 @@ class DashboardWidget : AppWidgetProvider() {
         /** Riga con i promemoria scaduti o in scadenza oggi, null se non ce ne sono. */
         private fun tasksLine(context: Context): String? {
             NotesStore.init(context)
-            val zone = ZoneId.systemDefault()
-            val endOfToday = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val due = NotesStore.data.value.openTasks.filter { (it.dueAt ?: Long.MAX_VALUE) < endOfToday }
+            return tasksLine(NotesStore.data.value.openTasks, System.currentTimeMillis(), ZoneId.systemDefault())
+        }
+
+        /** La riga dei promemoria del widget, calcolata dai promemoria aperti: separata per poterla provare. */
+        internal fun tasksLine(openTasks: List<TaskItem>, now: Long, zone: ZoneId): String? {
+            val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+            val endOfToday = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            val due = openTasks.filter { (it.dueAt ?: Long.MAX_VALUE) < endOfToday }.sortedBy { it.dueAt }
             if (due.isEmpty()) return null
-            val now = System.currentTimeMillis()
             val late = due.count { (it.dueAt ?: 0) < now }
             val next = due.firstOrNull { (it.dueAt ?: 0) >= now } ?: due.first()
             val count = when {
@@ -183,13 +187,13 @@ class DashboardWidget : AppWidgetProvider() {
                 due.size == 1 -> "1 promemoria oggi"
                 else -> "${due.size} promemoria oggi"
             }
-            return "📌 $count · ${next.text} ${timeOf(next, zone)}".trim()
+            return "📌 $count · ${next.text} ${timeOf(next, today, zone)}".trim()
         }
 
-        private fun timeOf(task: TaskItem, zone: ZoneId): String {
+        private fun timeOf(task: TaskItem, today: LocalDate, zone: ZoneId): String {
             val due = task.dueAt ?: return ""
             val time = Instant.ofEpochMilli(due).atZone(zone)
-            return if (time.toLocalDate() == LocalDate.now(zone)) "alle " + time.format(DateTimeFormatter.ofPattern("HH:mm"))
+            return if (time.toLocalDate() == today) "alle " + time.format(DateTimeFormatter.ofPattern("HH:mm"))
             else ""
         }
 
