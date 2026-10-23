@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.115.0
+## 1.116.0
 **Note › Date: i compleanni dalla rubrica**
 - Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
 - Se la rubrica sa l'anno di nascita, la data lo tiene e "In arrivo" dice "compie 30 anni"; quelle senza anno (o con l'anno finto 1604 dei telefoni Apple) restano senza età
