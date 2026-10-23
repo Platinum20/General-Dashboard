@@ -1,9 +1,23 @@
 # Changelog
 
-## 1.121.0
+## 1.123.0
 **Salvato, e si vede dove va**
 - Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
 - Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
+
+## 1.122.0
+**Oggi › La tua settimana**
+- In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
+- I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
+
+**Meteo**
+- La rotella dell'aggiornamento accanto a "ADESSO · ROMA" resta al massimo 10 secondi: poi, e quando i dati sono vecchi, la riga dice da quando sono ("· 5 MIN FA", "· ALLE 9:40"), anche in Oggi
+- Al posto dell'icona che non si capiva, in alto c'è il pulsante "Località"
+
+**Sotto il cofano**
+- Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
+- Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
 
 ## 1.120.0
 **Player più fluido**
