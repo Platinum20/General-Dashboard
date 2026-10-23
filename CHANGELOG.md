@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.116.0
+**Note › Date: i compleanni dalla rubrica**
+- Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
+- Se la rubrica sa l'anno di nascita, la data lo tiene e "In arrivo" dice "compie 30 anni"; quelle senza anno (o con l'anno finto 1604 dei telefoni Apple) restano senza età
+- Niente doppioni: un compleanno già scritto a mano ("Compleanno Marta" il 12 marzo) o la stessa persona salvata su due account non si ripetono. L'invito sparisce quando hai almeno tre date di ogni anno
+
+**Note › Spese: la foto dello scontrino**
+- Nel campo in cima alle Note, quando è vuoto, c'è lo scontrino: fai la foto e Canvas legge il totale e il negozio, e scrive nel campo "63,40 Conad Superstore" già come spesa, con la categoria giusta. Controlli e salvi
+- Il testo si legge sul telefono, senza rete e senza servizi esterni; la foto non resta salvata
+- Trova "Totale complessivo", "Importo pagato" e "Totale" anche quando il prezzo sta sulla riga sotto, ignora subtotale, sconti, IVA, contanti dati e resto, toglie "S.p.A." e "Srl" dal nome del negozio
+
+**Sotto il cofano**
+- Test nuovi: ContactDatesTest (formati delle date della rubrica, anno sconosciuto, 29 febbraio, doppioni, lettura dal provider dei contatti), ReceiptTest (supermercato, farmacia, benzinaio, ristorante con migliaia, bar senza totale, data scambiata per prezzo)
+
 ## 1.114.0
 **Widget**
 - Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
