@@ -1,0 +1,1161 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 59,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 74,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1538,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 77,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1493,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 74,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1417,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1372,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 221,
+    "blocked": 0,
+    "wouldBlock": 45,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 6,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "www.datadoghq-browser-agent.com": 1,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 5,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "browser-intake-datadoghq.com": 9,
+     "secure-it.imrworldwide.com": 2,
+     "5y8pnfrfxcftqjgn1rx0ntvjcmbix1792714418.nuid.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 30317,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 184,
+    "blocked": 8,
+    "wouldBlock": 8,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 3,
+     "sb.scorecardresearch.com": 1,
+     "www.datadoghq-browser-agent.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 30317,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/22/autotrasporto-il-garante-degli-scioperi-chiede-la-precettazione_e4b778ed-6e52-4fe4-803f-9327d22b604c.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 3093,
+    "blocked": 0,
+    "wouldBlock": 2740,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "t.seedtag.com": 3,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.ansa.it": 1,
+     "www.google-analytics.com": 1,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "v1xamhjuacg9nu2zquuh1dl53whup1792714442.nuid.imrworldwide.com": 1,
+     "s.seedtag.com": 53,
+     "cs.seedtag.com": 9,
+     "csync.smartadserver.com": 3,
+     "ad.360yield.com": 34,
+     "onetag-sys.com": 102,
+     "match.sharethrough.com": 18,
+     "u.openx.net": 9,
+     "secure-assets.rubiconproject.com": 47,
+     "sync.ipredictive.com": 4,
+     "sync.1rx.io": 82,
+     "cs.admanmedia.com": 48,
+     "sync.srv.stackadapt.com": 19,
+     "match.prod.bidr.io": 10,
+     "ib.adnxs.com": 30,
+     "sync.smartadserver.com": 13,
+     "b1sync.outbrain.com": 18,
+     "match.adsrvr.org": 34,
+     "x.bidswitch.net": 50,
+     "c1.adform.net": 18,
+     "ap.lijit.com": 53,
+     "creativecdn.com": 47,
+     "t.adx.opera.com": 14,
+     "match.deepintent.com": 11,
+     "id5-sync.com": 7,
+     "ups.analytics.yahoo.com": 11,
+     "pixel-sync.sitescout.com": 24,
+     "ads.pubmatic.com": 35,
+     "visitor.omnitagjs.com": 3,
+     "csync.loopme.me": 35,
+     "beachfront-match.dotomi.com": 1,
+     "ced-ns.sascdn.com": 1,
+     "csync.smilewanted.com": 18,
+     "hb.trustedstack.com": 6,
+     "measureadv.com": 1,
+     "rtb.mfadsrvr.com": 4,
+     "ssum-sec.casalemedia.com": 9,
+     "prebid.a-mo.net": 19,
+     "cs.media.net": 13,
+     "id.rlcdn.com": 12,
+     "sync.richaudience.com": 27,
+     "image8.pubmatic.com": 50,
+     "s.ad.smaato.net": 54,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "eb2.3lift.com": 37,
+     "public.servenobid.com": 1,
+     "cpm.vistarsagency.com": 1,
+     "cs-server-s2s.yellowblue.io": 13,
+     "sync.adkernel.com": 75,
+     "tr.blismedia.com": 6,
+     "cm.g.doubleclick.net": 6,
+     "ad.turn.com": 2,
+     "ssc-cms.33across.com": 72,
+     "ittpx.eskimi.com": 27,
+     "eus.rubiconproject.com": 88,
+     "ssbsync.smartadserver.com": 36,
+     "dis.criteo.com": 1,
+     "bttrack.com": 2,
+     "rtb-csync.smartadserver.com": 6,
+     "sync-tm.everesttech.net": 6,
+     "ads.yieldmo.com": 18,
+     "prebid-match.dotomi.com": 7,
+     "visitor.us-east4.gcp.omnitagjs.com": 4,
+     "ssbsync-global.smartadserver.com": 12,
+     "hbx.media.net": 30,
+     "secure.adnxs.com": 7,
+     "us-u.openx.net": 17,
+     "sync.go.sonobi.com": 39,
+     "ssp-sync.criteo.com": 30,
+     "cm.adform.net": 23,
+     "bh.contextweb.com": 23,
+     "token.rubiconproject.com": 68,
+     "jadserve.postrelease.com": 22,
+     "sync.ingage.tech": 2,
+     "rtb.gumgum.com": 5,
+     "rtb.openx.net": 9,
+     "ms-cookie-sync.presage.io": 10,
+     "sync.rbstsystems.live": 16,
+     "sync.a-mo.net": 2,
+     "cookies.nextmillmedia.com": 32,
+     "dsp-service.admatic.de": 12,
+     "us-east-1-cs-rtb.openwebmp.com": 5,
+     "p.rfihub.com": 17,
+     "ce.lijit.com": 20,
+     "ads.servenobid.com": 8,
+     "pixel.33across.com": 1,
+     "sync.kueezrtb.com": 14,
+     "prebidsrvr.cootlogix.com": 1,
+     "dsp-cookie.adfarm1.adition.com": 2,
+     "pixel-eu.rubiconproject.com": 5,
+     "a.amxrtb.com": 27,
+     "user-sync.fwmrm.net": 11,
+     "visitor-ow.omnitagjs.com": 2,
+     "dsum-sec.casalemedia.com": 1,
+     "www.temu.com": 15,
+     "casale-match.dotomi.com": 1,
+     "cm.adgrx.com": 1,
+     "capi.connatix.com": 4,
+     "cs.openwebmp.com": 5,
+     "sync.cootlogix.com": 64,
+     "pbs-cs.yellowblue.io": 7,
+     "cs.iqzone.com": 21,
+     "openweb-match.dotomi.com": 2,
+     "syncingbridge.com": 12,
+     "usync.ingage.tech": 18,
+     "rt.marphezis.com": 1,
+     "u-las.4dex.io": 5,
+     "visitor-px.omnitagjs.com": 6,
+     "visitor-programmaticx.omnitagjs.com": 6,
+     "sync.sparteo.com": 19,
+     "dsp-service.pixad.com.tr": 3,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "s.console.adtarget.com.tr": 2,
+     "sync.technoratimedia.com": 5,
+     "ortb.vdo.ai": 14,
+     "dsp-service.adtarget.biz": 3,
+     "33across-match.dotomi.com": 1,
+     "u-ams.4dex.io": 17,
+     "static.cloudflareinsights.com": 10,
+     "ittpx-us-e.eskimi.com": 4,
+     "visitor-adpone.omnitagjs.com": 1,
+     "pixel.rubiconproject.com": 34,
+     "idpix.media6degrees.com": 1,
+     "usync.4dex.io": 9,
+     "prebid.admatic.de": 8,
+     "visitor-33across.omnitagjs.com": 1,
+     "ads.betweendigital.com": 1,
+     "et-c-ash.33across.com": 1,
+     "pixel.tapad.com": 14,
+     "rtb.adentifi.com": 1,
+     "px.mountain.com": 2,
+     "aa.agkn.com": 33,
+     "dp1.33across.com": 2,
+     "ps.eyeota.net": 27,
+     "px.ads.linkedin.com": 3,
+     "gumgum-match.dotomi.com": 2,
+     "i.w55c.net": 2,
+     "um.simpli.fi": 2,
+     "gw-iad-bid.ymmobi.com": 31,
+     "cms.quantserve.com": 2,
+     "s.amazon-adsystem.com": 3,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "pixel-us-east.rubiconproject.com": 11,
+     "i.liadm.com": 3,
+     "thrtle.com": 1,
+     "elb.the-ozone-project.com": 2,
+     "su.semasio.net": 6,
+     "openx-ums.acuityplatform.com": 6,
+     "cs.yellowblue.io": 2,
+     "dsp.360yield.com": 3,
+     "contextual.media.net": 1,
+     "aorta.clickagy.com": 2,
+     "openx2-match.dotomi.com": 2,
+     "oxp.mxptint.net": 2,
+     "pxl.iqm.com": 4,
+     "cs.ingage.tech": 1,
+     "vop.sundaysky.com": 4,
+     "cdn.undertone.com": 5,
+     "b1sync.zemanta.com": 2,
+     "ogury-match.dotomi.com": 3,
+     "prebid.pixad.com.tr": 4,
+     "static.cdn.admatic.de": 5,
+     "prebid.adtarget.biz": 1,
+     "id.a-mx.com": 14,
+     "evt.undertone.com": 1,
+     "ads183.console.adtarget.com.tr": 4,
+     "sync.crwdcntrl.net": 5,
+     "sync.intentiq.com": 4,
+     "dpm.demdex.net": 4,
+     "idsync.rlcdn.com": 8,
+     "sync.colossusssp.com": 20,
+     "stx-match.dotomi.com": 1,
+     "data.adsrvr.org": 1,
+     "sync.ottadvisors.com": 3,
+     "sync.serverbid.com": 1,
+     "us.ck-ie.com": 26,
+     "inv-nets.admixer.net": 4,
+     "krush-match.dotomi.com": 11,
+     "sync.aniview.com": 22,
+     "i.ctnsnet.com": 1,
+     "sync.bfmio.com": 11,
+     "ads.stickyadstv.com": 11,
+     "eu-rtbstack-cm.admixer.net": 11,
+     "sync-km.ads.yieldmo.com": 11,
+     "player.aniview.com": 11,
+     "visitor-krushmedia_video.omnitagjs.com": 11,
+     "usersync.gumgum.com": 11,
+     "match.sync.ad.cpe.dotomi.com": 11,
+     "visitor-krushmedia.omnitagjs.com": 11,
+     "image2.pubmatic.com": 11,
+     "sync.mathtag.com": 11,
+     "dmp.brand-display.com": 1,
+     "bpi.rtactivate.com": 1,
+     "inmobi-match.dotomi.com": 5,
+     "cs.playdigo.com": 4,
+     "tracker-shr.ortb.net": 4,
+     "sync.pinklion.io": 4,
+     "ice.360yield.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Autotrasporto: il Garante degli scioperi chiede la precettazione - Ultima ora - Ansa.it",
+    "textLength": 7525,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Autotrasporto: il Garante degli scioperi chiede la precettazione - Ultima ora - Ansa.it",
+    "textLength": 7525,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 192,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/sport/motori/motogp-gp-australia-2026-orari-su-tv8-e-sky-e-dove-vedere-phillip-island-in-diretta-tv-e-streaming/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 306,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 306,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 369,
+    "blocked": 0,
+    "wouldBlock": 107,
+    "blockedHosts": {
+     "ua.realtimely.io": 1,
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 2,
+     "carbon-cdn.ccgateway.net": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "applets.ebxcdn.com": 2,
+     "assets.evolutionadv.it": 1,
+     "api.realtimely.io": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 20,
+     "secure-it.imrworldwide.com": 2,
+     "fllhgahnwp9gujrbvhb5guysgruba1792714528.nuid.imrworldwide.com": 1,
+     "dpm.demdex.net": 1,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "cdn.confiant-integrations.net": 2,
+     "smetrics.rcsmetrics.it": 1,
+     "cm.everesttech.net": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cdn.permutive.app": 1,
+     "services.insurads.com": 4,
+     "googleads.g.doubleclick.net": 2,
+     "ep1.adtrafficquality.google": 2,
+     "ep2.adtrafficquality.google": 3,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "static.criteo.net": 1,
+     "oa.openxcdn.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "id5-sync.com": 1,
+     "esp.rtbhouse.com": 1,
+     "39582707c8bdce64a67223bb8cd97de4.safeframe.googlesyndication.com": 2,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 3,
+     "gum.criteo.com": 2,
+     "p.typekit.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21815,
+    "adFrames": 1,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 263,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 21807,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/22/guadagna-milione-sterline-vendendo-carte-pokemon-asta/"
+  },
+  "before": {
+   "ok": false,
+   "stats": {
+    "requests": 11,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": [
+     "caricamento: TimeoutError: page.goto: Timeout 45000ms exceeded.\nCall log:\n  - navigating to \"https://www.open.online/2026/10/22/guada"
+    ]
+   },
+   "info": {
+    "title": "",
+    "textLength": 0,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 63,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined",
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Vende le carte Pokémon comprate 15 anni fa, il pensionato lancia l'asta su tutta la sua collezione: così è diventato milionario - Open",
+    "textLength": 5143,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/video/2026/10/rivolta-tir-carburanti-proteste-napoli-voci-blocchi-cointinuano-vendemmia-f5cb2a02-bbd7-46cb-96da-c2738b92736e.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 325,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 325,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 169,
+    "blocked": 0,
+    "wouldBlock": 54,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 17,
+     "8fb1520518cd4131a220e7f339dc7031.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "tpc.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15234,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 112,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14617,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/cronaca/news/2026-10-22/ia-salute-terapie-neurologia-39661197/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 204,
+    "blocked": 0,
+    "wouldBlock": 82,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "pagead2.googlesyndication.com": 6,
+     "s0.2mdn.net": 1,
+     "pubads.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "9daaa95d2812d3154a4ebf803602be17.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 3,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "beacon.taboola.com": 2,
+     "ch-trc-events.taboola.com": 3,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Dall'IA alle terapie geniche, nuove frontiere per la neurologia",
+    "textLength": 8938,
+    "adFrames": 1,
+    "adBoxes": 10
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 122,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')"
+    ]
+   },
+   "info": {
+    "title": "Dall'IA alle terapie geniche, nuove frontiere per la neurologia",
+    "textLength": 6786,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 206,
+    "blocked": 0,
+    "wouldBlock": 64,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 10,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "29329d8a7f666e17b9ef50f5339e6b7b.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 15,
+     "tpc.googlesyndication.com": 6,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "e.clarity.ms": 2,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11271,
+    "adFrames": 0,
+    "adBoxes": 20
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 149,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11216,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/2026/10/22/articoli-online-1688"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 167,
+    "blocked": 0,
+    "wouldBlock": 62,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 9,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 2,
+     "google-analytics.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "ep2.adtrafficquality.google": 3,
+     "cbed59416ac29d57a7e467dc4041643b.safeframe.googlesyndication.com": 1,
+     "pagead2.googlesyndication.com": 11,
+     "tpc.googlesyndication.com": 4,
+     "www.google.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "r.clarity.ms": 2,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Dalla redazione di Internazionale - Internazionale",
+    "textLength": 1179,
+    "adFrames": 0,
+    "adBoxes": 8
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 103,
+    "blocked": 10,
+    "wouldBlock": 10,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Dalla redazione di Internazionale - Internazionale",
+    "textLength": 840,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]

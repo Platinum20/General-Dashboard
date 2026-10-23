@@ -1,0 +1,45 @@
+https://www.agi.it/cronaca/news/2026-10-22/ia-salute-terapie-neurologia-39661197/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AGMNXqb+vVP2S5HDawg0LFAAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMw+dRS3o0mWTGKdplAgEQgDupJ44uBpsKm4akV3bM2Qp3g4Ce8qeUOqpDEONfL20/caZ70yIgmTrn7iw2LE+RQeNniwpzqxfVVX0TnQ==",
+          "iv":"D57+0ACNXAAAOxKu",
+          "context":"EXaPoE031LU7ROLcTMGRMzptgc1ADGF8hPOYCvR0f2GnRo1XD4+TlbJHn59QZ3WuWZCw7VyVgUxp9+s1I2rWNnsMqU0vFdT46XfSqXE3FjHnOgStIEH0UAUHdgBRF3azQHIEAwcFaZLEwEvjrsdk/+BUNi9tTa540s/wyFnHBpXGqEwKZBuVZTeVnSoW+S0HBGSeKTglAzh7orXpl9HzvvIvbb6eA6/JoG3T5FIEs/PT8UkgNuFnQFV86mDbVhYPkW+upB5CX4+CsiH+cKMKjLSqH2iTAVd2bvkGYuUHij9BocLy40qywN0M4anUw0jFq512EMt2k1gJoHAWYo2u1rL9ub1ZHEro7DMLNuwtZtsuijrlzRNsVpVJmfPaWfXc47zlM/3n54MiDmffx8nJy7CLa1qdhwJR1LBDkEAUZ3XUaLHK94R0YFfxdCRsa6+2ktEx1QVDEiB61sLl/ChiYf00ZjNM8C5MFGzg6kPyutXjBvWPRVcSLUTR/6lB9yWbgiDWlWrD9lH+W6YyIhNgJzAy2dCIBqXjnIUjJnRA9cOXElrGQLT7XphtkEZHs/phn5u38zOOpcLvgiD3WSL0o2jIneta+HVjy+0B5QhssHePCK7CYMA348RoyGqeodDnWwZkgxXewqqTpQdL5V2CZi5uufAoSwLSZSI2CjVEyqXGr5ZwYF009EniiYbPXRL9OSs1W5zO8vsa+WZF7NyrDrP1p0XgDR25/MsN+4MRUrlHnEUvwojpfjaY1v1y50Cb94E="
+};
+    </script>
+  <script src="https://a49c870577a3.38f2a8b0.us-east-1.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>
