@@ -91,6 +91,10 @@ class MediaClickTour {
             if (!open(path)) break
             settle(1_200)
             playbackStarted = false
+            when (kindOf(label)) {
+                "selected" -> { report.append("- ⚪ $label (già selezionata)\n"); continue }
+                "field" -> { report.append("- ✅ $label → campo di testo\n"); continue }
+            }
             val before = signature()
             shadowOf(context as Application).clearNextStartedActivities()
             val clicked = runCatching { tap(label) }.getOrDefault(false)
@@ -153,6 +157,16 @@ class MediaClickTour {
         }
         runCatching { compose.onAllNodes(isRoot(), useUnmergedTree = true).fetchSemanticsNodes().forEach(::walk) }
         return out.toString()
+    }
+
+    /** Schede già scelte e campi di testo: toccarli non cambia lo schermo, ma funzionano. */
+    private fun kindOf(label: String): String? {
+        val node = compose.onAllNodes(matcher(label)).fetchSemanticsNodes().firstOrNull() ?: return null
+        return when {
+            node.config.getOrNull(SemanticsProperties.Selected) == true -> "selected"
+            node.config.getOrNull(SemanticsProperties.EditableText) != null -> "field"
+            else -> null
+        }
     }
 
     private fun matcher(label: String) = (hasText(label) or hasContentDescription(label)) and hasClickAction()

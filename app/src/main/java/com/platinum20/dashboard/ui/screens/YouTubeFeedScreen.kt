@@ -146,7 +146,8 @@ fun YouTubeFeedScreen(
                 },
                 onBack = { if (openPlaylist != null) openPlaylist = null else onBack() },
             ) {
-                if (!official) RoundIconButton(Icons.Outlined.Key, "Collegamento ufficiale") { setup = !setup }
+                // Senza accesso la pagina di collegamento è già quella mostrata: la chiave servirebbe a nulla.
+                if (connected && !official) RoundIconButton(Icons.Outlined.Key, "Collegamento ufficiale") { setup = !setup }
                 if (connected && openPlaylist == null) {
                     RoundIconButton(Icons.Outlined.Search, "Cerca") { tab = TAB_SEARCH }
                 }
