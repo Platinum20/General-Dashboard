@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.113.0
+## 1.115.0
 **Note › Date: i compleanni dalla rubrica**
 - Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
 - Se la rubrica sa l'anno di nascita, la data lo tiene e "In arrivo" dice "compie 30 anni"; quelle senza anno (o con l'anno finto 1604 dei telefoni Apple) restano senza età
@@ -13,6 +13,16 @@
 
 **Sotto il cofano**
 - Test nuovi: ContactDatesTest (formati delle date della rubrica, anno sconosciuto, 29 febbraio, doppioni, lettura dal provider dei contatti), ReceiptTest (supermercato, farmacia, benzinaio, ristorante con migliaia, bar senza totale, data scambiata per prezzo)
+## 1.114.0
+**Widget**
+- Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
+- Nel widget principale le righe di "Adesso" hanno il bottoncino come in Oggi: **pacco arrivato** e **abitudine fatta** con un tocco dalla schermata Home; la riga sparisce subito
+
+**Media › Musica**
+- **Nuove uscite**: in cima a Musica gli album e i singoli usciti nelle ultime 4 settimane dagli artisti che segui su Spotify, con copertina, artista e "3 giorni fa". Un pallino segna quelle che non hai ancora aperto ("Nuove uscite · 2 da ascoltare"); un tocco apre l'album da ascoltare. Si cercano al massimo una volta al giorno e restano salvate per l'apertura successiva
+
+**Sotto il cofano**
+- Test nuovi: TasksWidgetRowsTest e TasksWidgetActionTest (righe del widget, spunta e ricorrenti), WidgetBriefTest (azioni rapide del widget principale, formato vecchio delle righe), NewReleasesTest (date con precisione giorno/mese/anno, doppioni tra artisti, uscite future, pagine degli artisti seguiti, con risposte vere di Spotify salvate)
 
 ## 1.112.0
 **Note, una pagina sola**

@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget "Da fare": i promemoria di oggi, ognuno con il suo cerchio da spuntare. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tasks_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:id="@+id/tasks_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tasks_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="DA FARE"
+            android:textColor="@color/widget_accent"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tasks_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:text="+ Aggiungi"
+            android:textColor="@color/widget_accent"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tasks_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/tasks_row1"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check1"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text1"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time1"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tasks_row2"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check2"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text2"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time2"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tasks_row3"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check3"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text3"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time3"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tasks_row4"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check4"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text4"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time4"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tasks_row5"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check5"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text5"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time5"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/tasks_row6"
+        style="@style/WidgetTaskRow">
+
+        <ImageView
+            android:id="@+id/tasks_check6"
+            style="@style/WidgetTaskCheck"
+            android:contentDescription="Segna come fatto" />
+
+        <TextView
+            android:id="@+id/tasks_text6"
+            style="@style/WidgetTaskText" />
+
+        <TextView
+            android:id="@+id/tasks_time6"
+            style="@style/WidgetTaskTime" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tasks_more"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/widget_text_secondary"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

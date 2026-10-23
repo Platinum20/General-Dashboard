@@ -90,6 +90,11 @@ import coil3.compose.AsyncImage
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
+import com.platinum20.dashboard.media.spotify.NewReleases
+import com.platinum20.dashboard.media.spotify.SpRelease
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyRow
+import java.time.LocalDate
 import com.platinum20.dashboard.media.spotify.SpPlayback
 import com.platinum20.dashboard.media.spotify.SpotifyApi
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
@@ -285,6 +290,10 @@ private fun HomeTab(connected: Boolean, onItem: (SpItem) -> Unit, onLogin: () ->
     LaunchedEffect(youTube) { if (youTube) YouTubeStore.loadPlaylist(context, YtMusic.LIKED) }
     val ytLiked = ytLists[YtMusic.LIKED]?.data.orEmpty()
     val home = state.data
+    val releases by SpotifyStore.releases.collectAsState()
+    val seen by SpotifyStore.seenReleases.collectAsState()
+    LaunchedEffect(connected) { if (connected) SpotifyStore.refreshReleases() }
+    val recentReleases = releases.data.orEmpty().takeIf { connected }.orEmpty()
     LazyColumn(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -294,6 +303,13 @@ private fun HomeTab(connected: Boolean, onItem: (SpItem) -> Unit, onLogin: () ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
         }
         state.error?.takeIf { connected }?.let { error -> item(key = "error") { Text(error, color = MaterialTheme.colorScheme.error) } }
+        // In cima quello che è uscito da poco: lo scopo di News, applicato alla musica.
+        if (recentReleases.isNotEmpty()) item(key = "releases") {
+            ReleasesRow(recentReleases, seen) { release ->
+                SpotifyStore.markReleaseSeen(release.item.id)
+                onItem(release.item)
+            }
+        }
         if (home != null && connected) {
             section("Ascoltati di recente", home.recent.take(10), onItem)
         }
@@ -309,6 +325,50 @@ private fun HomeTab(connected: Boolean, onItem: (SpItem) -> Unit, onLogin: () ->
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** "Nuove uscite": copertine in fila, con il pallino finché non le apri. */
+@Composable
+private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRelease) -> Unit) {
+    val today = LocalDate.now()
+    val fresh = NewReleases.unseen(list, seen)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader(if (fresh > 0) "Nuove uscite · $fresh da ascoltare" else "Nuove uscite", Modifier.padding(top = 8.dp))
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(list, key = { "release-${it.item.id}" }) { release ->
+                Column(
+                    Modifier
+                        .width(128.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .bouncyPress(0.96f)
+                        .clickable { onOpen(release) },
+                ) {
+                    Box {
+                        Cover(release.item.image, MaterialTheme.shapes.medium, 128)
+                        if (release.item.id !in seen) {
+                            Box(
+                                Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(6.dp)
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(release.item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
