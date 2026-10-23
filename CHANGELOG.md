@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.123.0
+**Il carattere di Claude**
+- Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
+- Il testo è un filo più grande perché il serif si legga bene anche piccolo
+
 ## 1.122.0
 **Oggi › La tua settimana**
 - In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
