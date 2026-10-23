@@ -19,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,7 +61,10 @@ fun NotesSearchPanel(
     showNotes: Boolean = true,
     /** Avvisa a ogni lettera: chi cerca anche in rete parte da qui. */
     onQuery: (String) -> Unit = {},
+    /** Quanti risultati per gruppo prima di "Mostra altri" (Cerca ovunque ne mostra pochi per fonte). */
+    perGroup: Int = Int.MAX_VALUE,
 ) {
+    var more by remember { mutableStateOf(emptySet<SearchKind>()) }
     var query by rememberSaveable { mutableStateOf("") }
     var open by remember { mutableStateOf<SearchHit?>(null) }
     BackHandler(onBack = onClose)
@@ -92,7 +96,8 @@ fun NotesSearchPanel(
         hits.groupBy { it.kind }.forEach { (kind, group) ->
             item(key = kind.name) {
                 Section(title = "${kind.label} · ${group.size}") {
-                    group.forEachIndexed { i, hit ->
+                    val shown = if (kind in more) group else group.take(perGroup)
+                    shown.forEachIndexed { i, hit ->
                         if (i > 0) RowDivider()
                         HitRow(hit, data) {
                             when (hit.kind) {
@@ -101,6 +106,12 @@ fun NotesSearchPanel(
                                 SearchKind.PARCEL -> onOpenParcels()
                                 else -> open = hit
                             }
+                        }
+                    }
+                    if (kind !in more && group.size > perGroup) {
+                        RowDivider()
+                        TextButton(onClick = { more = more + kind }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Mostra altri ${group.size - perGroup}")
                         }
                     }
                 }

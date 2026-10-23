@@ -35,6 +35,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,8 +49,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
@@ -87,6 +87,14 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
         if (request != null) text = TextFieldValue(request, TextRange(request.length))
     }
     BackHandler(open) { CaptureComposer.close() }
+    // Il primo "indietro" lo usa la tastiera per chiudersi: anche quello annulla la nota.
+    val imeVisible = WindowInsets.isImeVisible
+    var imeShown by remember { mutableStateOf(false) }
+    LaunchedEffect(imeVisible, open) {
+        if (!open) imeShown = false
+        else if (imeVisible) imeShown = true
+        else if (imeShown) CaptureComposer.close()
+    }
 
     fun send() {
         val value = text.text.trim()
@@ -112,7 +120,7 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
         )
     }
     // Senza tastiera sta sopra la barra, come il fumetto della voce; con la tastiera le sta sopra.
-    val lift by animateDpAsState(if (WindowInsets.isImeVisible) 8.dp else 92.dp, label = "composerLift")
+    val lift by animateDpAsState(if (imeVisible) 8.dp else 92.dp, label = "composerLift")
     AnimatedVisibility(
         open,
         enter = fadeIn() + slideInVertically { it / 2 },
@@ -123,12 +131,11 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
             .padding(bottom = lift),
     ) {
         val mode = remember(text.text) { CaptureGuess.guess(text.text) }
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         val shape = RoundedCornerShape(22.dp)
         Surface(
             shape = shape,
             color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurface,
             border = cardBorder(),
             modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().glass(shape),
         ) {
@@ -149,11 +156,20 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 24.dp)
-                                .focusRequester(focus)
+                                .autoFocus()
                                 .semantics { contentDescription = "Scrivi" },
                         )
                     }
-                    Spacer(Modifier.width(8.dp))
+                    // La X annulla: la nota non si salva.
+                    IconButton(onClick = { haptic(Haptic.TICK); CaptureComposer.close() }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            Icons.Rounded.Close,
+                            contentDescription = "Annulla",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
                     Surface(
                         onClick = ::send,
                         shape = CircleShape,
