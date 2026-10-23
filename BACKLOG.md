@@ -7,7 +7,7 @@ Ogni voce: sezione · dimensione (S = una sessione corta, M = una sessione piena
 Regole fisse: niente paywall né fonti a pagamento, niente server o costi, testi e commenti in italiano, stile condiviso dell'app (TopLevelBar, Theme compatto, bouncyPress, vibrazioni; dopo il nuovo design, PR #56, CanvasCard / SectionHeader / Section e niente FAB per schermata: non proporre altro su tema, navigazione e layout finché quella PR è aperta).
 Ogni voce dice anche quali **test** scrivere: nessuna voce è fatta senza.
 
-_Ultimo aggiornamento: 2026-10-22 ~23:25 UTC (UI prima di tutto), su main 1.96.0, foto: branch `screenshots`, cartella `main/53` (giro del verificatore sulla 1.96.0, 292 test verdi). Nessuna PR aperta._
+_Ultimo aggiornamento: 2026-10-23 ~03:55 UTC (UI prima di tutto), su main 1.98.0 (PR #79 unita alle 03:44), foto: branch `screenshots`, cartella `claude_project-thread-qvj56k/54` (giro della 1.98.0 fatto sulla PR). Nessuna PR aperta._
 
 ---
 
@@ -80,6 +80,8 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ## In cima
 
+_Giro fotografico della 1.98.0 (`claude_project-thread-qvj56k/54`): Abitudini ora ha le "Idee da aggiungere", in Adesso il pacco ha il bottone tondo "Arrivato". **Ancora uguali da `main/50`:** in News riquadro grigio di un terzo di schermo, tre miniature grigie e la riga "Fanpage non risponde…" in cima (1: è la voce UI più vecchia, farla per prima); Media al primo uso con due terzi vuoti e Pacchi con un pacco e tutto vuoto (3); Spotify con titolo piccolo e il Client ID in chiaro, Video con titolo piccolo, "Dal telefono" doppio e la card tecnica "mp4, webm, m3u8" (8); Punto del giorno fermo su "Raccolgo le notizie di oggi…" (7). **Nuovo:** dopo mezzanotte Adesso dice "Sereno · 22° / 10° · pioggia 48%" e subito sotto la card "Oggi · venerdì 23" dice "Rovesci · Pioggia 48% · 22° / 10°": stessi numeri due volte e due cieli diversi (7). Nuova voce 19 (widget Da fare spuntabile): nessuna voce di In cima toccava i widget._
+
 _Giro fotografico della 1.96.0 (`main/53`): Date ora ha le "Idee da aggiungere" e non è più mezza vuota, Video ha "Sul telefono", la barra rossa di YouTube si vede. **Ancora uguali a `main/50`:** riquadro grigio e riga "Fanpage non risponde" in News (1), Media al primo uso con due terzi vuoti, Pacchi con un pacco e il resto vuoto, Abitudini a metà (3), Client ID in Spotify e titoli piccoli in Spotify/Video (8), "Alba · Tramonto" da solo e riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" tagliata, la card Domani che ripete il promemoria di Da fare (7), la riga "Domani 22° / 10°, pioggia 48%" col sole in Adesso (V20). Le voci 1, 3, 7, 8 sono UI e vanno fatte prima delle funzioni nuove. Voce 14 (scorciatoie) tolta: le 3 scorciatoie e il riquadro rapido esistono già (`res/xml/shortcuts.xml`, `QuickCaptureTile`)._
 
 _Foto `main/50` (2026-10-22 18:13). La 1.93 ha tolto "Niente di nuovo" dalle News e la X in Da fare, ma in `main/50` si vedono ancora: riquadro grigio al posto della foto e riga "Fanpage non risponde" in News (1), mezze pagine vuote in Date, Pacchi, Abitudini, Media e Video (3, 5), Client ID in Spotify (8), cerchio fermo e "Alba · Tramonto" da solo nel Meteo (7). Nuovo: la card Domani ripete il promemoria che c'è già sotto in Da fare (7)._
@@ -111,8 +113,9 @@ _(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `ma
 _(1.98.0: fatti "Alba · Tramonto" a tutta riga, "Ancora da fare: N abitudini" e Da fare senza i promemoria di domani quando c'è la card. Restano indicatore fermo, icona Località, Punto del giorno lento, sfondo dell'ombrello nella card Domani.)_
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
 **Cosa fare:** ~~Aggiornamenti: avviso nuove versioni solo in Impostazioni~~ (fatto in 1.93.0). Meteo (02) e Adesso (01): il "(" accanto a "ADESSO · ROMA" e il cerchio in alto a destra del Meteo sono l'indicatore di aggiornamento fermo a metà nel giro fotografico (al buio in `scuro_01_oggi` non c'è): sul telefono controllare che sparisca a dati arrivati; se resta più di 10 s mostrare "aggiornato 5 min fa" al suo posto. Meteo: l'icona a sinistra dell'aggiornamento (spunta con stella) non si capisce cosa fa: dare un'etichetta o un'icona chiara (es. "Località"). Oggi (01_oggi, 1.91): il Punto del giorno resta su "Raccolgo le notizie di oggi…" mentre News ha già gli articoli di 8 minuti fa: se la raccolta dura, mostrare subito i 3 titoli più recenti e sostituirli quando il punto è pronto (oltre al problema del giro fotografico in V6). Da `main/46`: nel Meteo i dettagli sono 7 riquadri e "Alba · Tramonto" resta da solo con un buco accanto: farlo largo quanto la riga o aggiungere un ottavo dato già scaricato (visibilità o punto di rugiada); in Adesso la riga "Ancora da fare oggi: Bere 2 litri d'acqua, Cammi…" è tagliata a metà parola: scrivere "Ancora da fare: 2 abitudini" quando i nomi non ci stanno. Da `main/50` (1.93): la card Domani mostra "9:00 · Chiamare il commercialista" e subito sotto Da fare ripete "Chiamare il commercialista · Domani 09:00": quando la card Domani è visibile, in Da fare tenere solo scaduti e oggi (i promemoria di domani stanno nella card), oppure togliere dalla card i promemoria già elencati sotto; e nella card Domani l'icona dell'ombrello sul meteo "Rovesci" ha uno sfondo diverso dalle altre `IconTile`: uniformare.
+Da `claude_project-thread-qvj56k/54` (1.98, dopo mezzanotte): Adesso scrive "Sereno · 22° / 10° · pioggia 48%" e la card "Oggi · venerdì 23" sotto ripete "Rovesci · Pioggia 48% · 22° / 10°". Quando la card del giorno è visibile, Adesso tenga solo il cielo e la temperatura di adesso ("Sereno"), senza minime/massime e pioggia del giorno; la card del giorno dica da quando ("Rovesci dalle 10"). Tra la card del giorno e "Da fare" c'è uno spazio più alto degli altri: uniformare.
 **Fatto quando:** nelle foto nessuno dei difetti.
-**Test:** foto del giro; in `TomorrowTest`/`TodayTasksTest` un caso "promemoria di domani con la card Domani visibile" che compare una volta sola.
+**Test:** foto del giro; funzione che sceglie le parti della riga meteo di Adesso con e senza card del giorno visibile; in `TomorrowTest`/`TodayTasksTest` un caso "promemoria di domani con la card Domani visibile" che compare una volta sola.
 
 ### 8. Spotify, Video e Radio come le altre pagine; via il Client ID · Media · S
 **Perché:** la 1.91 ha dato il titolo grande a tutte le pagine interne, ma Spotify (32_spotify) e Video (33_video) hanno ancora il titolo piccolo da barra vecchia. In Spotify, sotto "Accedi a Spotify", c'è ancora il campo "Client ID dell'app Spotify" con il codice esadecimale in chiaro e "Collega con il Client ID": dalla 1.90 l'accesso ufficiale funziona e quel blocco è solo rumore tecnico da sviluppatore.
@@ -161,6 +164,13 @@ _(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pa
 **Fatto quando:** cerco "il post" o "muschio selvaggio", lo seguo, tocco un episodio e suona nel mini player; chiudendo e riaprendo riparte dal punto.
 **Test:** `PodcastFeedTest` con 2 feed RSS veri salvati in `src/test/resources` (`itunes:duration` "1:02:03", "3723" e assente; descrizione HTML ripulita; episodi senza enclosure scartati); parsing della risposta di iTunes Search; foto `35_podcast` nel giro.
 
+### 19. Widget "Da fare" da spuntare senza aprire l'app · Widget · M
+_(era in Dopo; promossa: nessuna voce di In cima toccava i widget, e con le azioni rapide di Adesso della 1.98 la stessa logica si porta sulla schermata Home)_
+**Perché:** il widget di oggi (`DashboardWidget`) mostra righe ma non si tocca: per segnare "Pagare la bolletta della luce" bisogna aprire Canvas, Note, Da fare. Il gesto più frequente della giornata si può fare dalla schermata Home, come in Google Tasks o TickTick.
+**Cosa fare:** secondo widget ridimensionabile (2x2 fino a 4x4) "Da fare" con i promemoria scaduti e di oggi (stessa scelta di `TodayTasks`), ognuno con un cerchio da toccare; con Glance (`androidx.glance:glance-appwidget`) o `RemoteViews` con collezione e, da Android 12, le checkbox native. Il tocco segna fatto con un `BroadcastReceiver`/`ActionCallback` che usa lo stesso `NotesStore` di Note (ricorrenti: passa alla prossima scadenza come nell'app), poi aggiorna questo widget, Oggi e il widget principale. In fondo "+ Aggiungi" apre direttamente il "+" (`CaptureDialog`). Vuoto: "Niente da fare oggi" con il prossimo promemoria. Colori del tema (Material You da Android 12) e angoli come le `CanvasCard`.
+**Fatto quando:** messo sulla Home, spuntando un promemoria quello sparisce dal widget e da Oggi senza aprire l'app; un ricorrente passa alla prossima data; il widget si aggiorna a mezzanotte e dopo un riavvio.
+**Test:** funzione pura delle righe del widget (stessa di `TodayTasks`, massimo N righe per la dimensione, "+ altri 3"); Robolectric: l'azione di spunta con l'id giusto segna il promemoria e il ricorrente avanza; testo dello stato vuoto con e senza prossimo promemoria.
+
 ---
 
 ## Dopo
@@ -178,7 +188,6 @@ _(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pa
 - **Spese: esporta CSV del mese** · Note > Spese · S. Dal menu del mese "Esporta CSV" (data;descrizione;categoria;importo;fissa) con condivisione.
 - **Pacchi: "arrivato" in un tocco e storico** · Note > Pacchi · S. Oggi il pacco si spunta e sparisce; tenere gli ultimi 10 arrivati in una sezione chiusa "Arrivati", e in Adesso "Pacco in arrivo: Cuffie" (si vede in `main/41`) con l'azione "Arrivato".
 - **Calendario in Adesso: "Esci alle…"** · Oggi · M. Per il prossimo evento con un luogo, stimare il tempo di viaggio (distanza in linea d'aria dalla posizione del meteo, senza servizi a pagamento) e scrivere "Dentista alle 15 · esci verso le 14:35"; notifica facoltativa 10 minuti prima.
-- **Widget piccolo "Da fare"** · Widget · M. Secondo widget 2x2 con i promemoria di oggi spuntabili direttamente (RemoteViews con collezione o checkbox API 31+), senza aprire l'app.
 - **News: segui un tema** · News · M. "Segui" su un tema del punto del giorno o una parola ("sciopero", "Roma") e una notifica silenziosa quando esce un articolo nuovo che la contiene (dal `RefreshWorker`, senza server). Max 5 temi.
 
 ---
@@ -238,6 +247,7 @@ _(passo 1 dell'idea grande F, promosso: in `main/53` Media al primo uso è la pa
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
 - 1.98.0 · Adesso: azioni rapide con Annulla (ex 17); idee in Abitudini (parte del 3); Meteo senza buchi e abitudini non tagliate (parte del 7); V20, V21, V22, V23, V24 del verificatore
+- 1.97.0 · Spotify: playlist non tue con avviso e Riproduci, nuovi indirizzi dell'API
 - 1.96.0 · Video: libreria "Sul telefono" da MediaStore (ex 5); Date: idee tappabili con poche voci (parte del 3); V14, V15, V16, V17, V18, V19 del verificatore
 - 1.94.0 · Vetro della barra e del + più morbido (sotto si vedono colori e forme, non il testo sbavato)
 - 1.93.0 · Card "Domani" dalle 18 (ex 10, passo 1 dell'idea A); Avviso pioggia (ex 9); Media "Riprendi" e Recenti (ex 4); Da fare: scorri per eliminare (ex 6); News "Aggiornate X min fa" e via le voci non-articolo (parte dell'1); avviso versioni solo in Impostazioni (parte del 7); V9, V10, V11, V12 del verificatore
