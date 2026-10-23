@@ -82,8 +82,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     fun target(n: CaptureNotice): Pair<String, Rect>? {
         n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
         val mode = n.mode
-        val section = CaptureTargets.rects[mode.name]
-        if (inNotes && section != null && section.height > 0f) return mode.name to section
+        // Sempre sulla scheda in basso, anche se le Note sono già aperte (come vuole Antonio).
         val key = if (mode == CaptureMode.EVENT) CaptureTargets.HOME_TAB else CaptureTargets.NOTES_TAB
         return CaptureTargets.rects[key]?.let { key to it }
     }

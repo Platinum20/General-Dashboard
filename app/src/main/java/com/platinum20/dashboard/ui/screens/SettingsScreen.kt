@@ -198,6 +198,68 @@ fun SettingsScreen(
             ),
         ) {
             // Ogni parte sono due righe, intestazione e gruppo: i chip saltano a parte × 2.
+            item { SettingsHeader(SettingsPart.APP.title) }
+            // Tutta l'app in una riga sola della lista: i chip saltano a parte × 2.
+            item {
+                Column {
+                    SettingsGroup {
+                        // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                                AppTheme.entries.forEachIndexed { index, option ->
+                                    SegmentedButton(
+                                        selected = theme == option,
+                                        onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
+                                        shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
+                                        icon = {},
+                                    ) {
+                                        Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+                                    }
+                                }
+                            }
+                            Text(
+                                theme.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    SettingsGroup { BackupSettings() }
+                    Spacer(Modifier.height(12.dp))
+                    SettingsGroup {
+                        UpdateNotifySetting()
+                        RowDivider()
+                        SettingsItem(
+                            icon = Icons.Outlined.SystemUpdate,
+                            accent = TileAccent.BLUE,
+                            title = "Aggiornamenti",
+                            subtitle = "Novità di ogni versione e aggiornamento",
+                            showChevron = true,
+                            onClick = onOpenUpdates,
+                        )
+                        RowDivider()
+                        SettingsItem(
+                            icon = Icons.Outlined.Code,
+                            accent = TileAccent.NEUTRAL,
+                            title = "Codice sorgente",
+                            subtitle = BuildConfig.GITHUB_REPO,
+                            showChevron = true,
+                            onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
+                        )
+                        RowDivider()
+                        SettingsItem(
+                            icon = Icons.Outlined.Info,
+                            accent = TileAccent.NEUTRAL,
+                            title = "Licenze",
+                            subtitle = "Caratteri Source Serif e Inter, liste del blocco pubblicità",
+                            showChevron = true,
+                            onClick = { showLicenses = true },
+                        )
+                    }
+                }
+            }
             item { SettingsHeader(SettingsPart.HOME.title) }
             item {
                 SettingsGroup {
@@ -294,67 +356,6 @@ fun SettingsScreen(
                 }
             }
 
-            item { SettingsHeader(SettingsPart.APP.title) }
-            item {
-                SettingsGroup {
-                    // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
-                    Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            AppTheme.entries.forEachIndexed { index, option ->
-                                SegmentedButton(
-                                    selected = theme == option,
-                                    onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
-                                    shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
-                                    icon = {},
-                                ) {
-                                    Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-                                }
-                            }
-                        }
-                        Text(
-                            theme.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                        )
-                    }
-                }
-            }
-            item { Spacer(Modifier.height(12.dp)) }
-            item { SettingsGroup { BackupSettings() } }
-            item { Spacer(Modifier.height(12.dp)) }
-            item {
-                SettingsGroup {
-                    UpdateNotifySetting()
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.SystemUpdate,
-                        accent = TileAccent.BLUE,
-                        title = "Aggiornamenti",
-                        subtitle = "Novità di ogni versione e aggiornamento",
-                        showChevron = true,
-                        onClick = onOpenUpdates,
-                    )
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.Code,
-                        accent = TileAccent.NEUTRAL,
-                        title = "Codice sorgente",
-                        subtitle = BuildConfig.GITHUB_REPO,
-                        showChevron = true,
-                        onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
-                    )
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.Info,
-                        accent = TileAccent.NEUTRAL,
-                        title = "Licenze",
-                        subtitle = "Caratteri Source Serif e Inter, liste del blocco pubblicità",
-                        showChevron = true,
-                        onClick = { showLicenses = true },
-                    )
-                }
-            }
             item {
                 Text(
                     "Canvas ${BuildConfig.VERSION_NAME}",
@@ -418,11 +419,11 @@ fun SettingsScreen(
 
 /** Le parti delle Impostazioni: una per sezione della barra, più quella di tutta l'app. */
 private enum class SettingsPart(val key: String, val label: String, val title: String, val icon: ImageVector) {
+    APP("app", "App", "Tutta l'app", Icons.Outlined.Tune),
     HOME("home", "Home", "Home e notifiche", Icons.Outlined.Dashboard),
     NOTES("notes", "Note", "Note", Icons.Outlined.EditNote),
     NEWS("news", "News", "News e lettura", Icons.Outlined.Newspaper),
     MEDIA("media", "Media", "Media", Icons.Outlined.PlayCircle),
-    APP("app", "App", "Tutta l'app", Icons.Outlined.Tune),
 }
 
 @Composable
