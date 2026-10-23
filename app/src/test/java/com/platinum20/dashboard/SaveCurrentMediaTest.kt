@@ -12,8 +12,13 @@ import com.platinum20.dashboard.media.youtube.player.YtStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** "Salva nelle note": quello che suona diventa una voce da riaprire, ferma al punto giusto. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class SaveCurrentMediaTest {
     private val stream = YtStream(
         id = "abcdefghijk", title = "Video", channel = "Canale", thumbnail = "",
