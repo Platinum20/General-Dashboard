@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.121.0
+## 1.122.0
 **Oggi › La tua settimana**
 - In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
 - I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
