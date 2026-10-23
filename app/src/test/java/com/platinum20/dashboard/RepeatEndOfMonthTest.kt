@@ -6,7 +6,7 @@ import org.junit.Test
 import java.time.LocalDateTime
 
 /** Le ripetizioni dei promemoria: fine mese, anni bisestili, settimane. */
-class RepeatTest {
+class RepeatEndOfMonthTest {
     private fun at(y: Int, m: Int, d: Int, h: Int = 9) = LocalDateTime.of(y, m, d, h, 0)
 
     @Test fun ogniMeseIl31NonScivolaAl28() {
