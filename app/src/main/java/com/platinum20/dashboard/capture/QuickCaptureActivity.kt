@@ -109,6 +109,8 @@ internal enum class CaptureMode(val label: String, val title: String, val hint: 
     TASK("Promemoria", "Promemoria al volo", "Es. domani alle 9 chiamare il dentista"),
     NOTE("Nota", "Nuova nota", "Scrivi… la prima riga fa da titolo"),
     EXPENSE("Spesa", "Nuova spesa", "Es. 12,50 pizza"),
+    HABIT("Abitudine", "Nuova abitudine", "Es. ogni giorno leggere 20 pagine"),
+    DATE("Data", "Data da ricordare", "Es. compleanno di Marta 12 marzo"),
     PARCEL("Pacco", "Pacco in arrivo", "Cosa arriva e il codice di tracciamento"),
     EVENT("Evento", "Nuovo evento", "Es. venerdì alle 20 cena da Luca"),
 }
@@ -148,26 +150,14 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         if (result.values.all { it }) saveEvent() else toast("Serve il permesso del calendario per salvare l'evento")
     }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-    val expense = remember(text, mode) { if (mode == CaptureMode.EXPENSE) Expenses.parse(text) else null }
 
     val save = save@{
         if (text.isBlank()) return@save onClose()
         when (mode) {
-            CaptureMode.NOTE -> {
-                NotesStore.saveNote(null, text.trim())
-                toast("Nota salvata")
-            }
-            CaptureMode.EXPENSE -> {
-                val saved = NotesStore.addExpense(text) ?: return@save toast("Manca l'importo")
-                toast("Spesa: ${Expenses.format(saved.cents)} · ${saved.category.label}")
-            }
-            CaptureMode.PARCEL -> {
-                val code = Carrier.findCode(text).orEmpty()
-                // Il titolo è la prima riga senza il codice, accorciata.
-                val title = text.lineSequence().map { it.replace(code, "", ignoreCase = true).trim() }
-                    .firstOrNull { it.isNotEmpty() }.orEmpty().take(60)
-                NotesStore.saveParcel(null, title.ifEmpty { "Pacco" }, code, null)
-                toast("Pacco aggiunto" + if (code.isNotEmpty()) " · ${Carrier.detect(code).label}" else "")
+            CaptureMode.NOTE, CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> {
+                val result = CaptureSave.save(mode, text)
+                toast(result.message)
+                if (!result.ok) return@save
             }
             CaptureMode.EVENT -> {
                 if (CalendarRepository.canWrite(context)) {
@@ -179,8 +169,9 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 return@save
             }
             CaptureMode.TASK -> {
-                val due = NotesStore.addTask(text)?.dueAt
-                toast(if (due != null) "Promemoria: ${dueLabel(due)}" else "Promemoria salvato")
+                val result = CaptureSave.save(mode, text)
+                val due = result.dueAt
+                toast(result.message)
                 // Senza permesso l'avviso non suonerebbe: lo chiediamo qui, una volta.
                 if (due != null && Build.VERSION.SDK_INT >= 33 && !MorningWorker.canNotify(context)) {
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -222,15 +213,8 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 Spacer(Modifier.height(6.dp))
                 when (mode) {
                     CaptureMode.TASK -> QuickPreview(text)
-                    CaptureMode.EXPENSE -> if (text.isNotBlank()) {
-                        Text(
-                            expense?.let { "${Expenses.format(it.cents)} · ${it.category.label}" } ?: "Scrivi anche l'importo",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    CaptureMode.PARCEL -> Carrier.findCode(text)?.let {
-                        Text("$it · ${Carrier.detect(it).label}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
+                        Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     }
                     CaptureMode.EVENT -> if (text.isNotBlank()) {
                         Text(
@@ -249,7 +233,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
 }
 
 /** Con il tipo automatico il suggerimento mostra che si può scrivere di tutto. */
-private const val AUTO_HINT = "Promemoria, spesa, evento, pacco o nota: scrivi e Canvas capisce"
+internal const val AUTO_HINT = "Promemoria, spesa, abitudine, data, pacco o nota: scrivi e Canvas capisce"
 
 private val eventDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
 private val eventHour = DateTimeFormatter.ofPattern("H:mm")

@@ -123,6 +123,8 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.CaptureGuess
+import com.platinum20.dashboard.capture.CaptureSave
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.mutableStateMapOf
@@ -132,68 +134,26 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
 /**
- * Le schede della sezione Note, nell'ordine in cui si usano di più. Erano sei: le abitudini stanno
- * con i promemoria (sono le cose da fare ogni giorno), pacchi e date insieme in "In arrivo".
+ * In "In arrivo" date e pacchi stanno in una lista sola, dal più vicino: prima quello che arriva
+ * (le date e i pacchi senza data in fondo), poi i pacchi già consegnati.
  */
-enum class NotesTabs(val label: String) {
-    TASKS("Da fare"),
-    MONEY("Spese"),
-    NOTES("Note"),
-    COMING("In arrivo"),
+internal data class ComingRow(val key: String, val day: LocalDate?, val countdown: Countdown? = null, val parcel: Parcel? = null)
+
+internal fun comingRows(upcoming: List<Countdown>, parcels: List<Parcel>, today: LocalDate = LocalDate.now()): List<ComingRow> {
+    val open = upcoming.map { ComingRow("date-${it.id}", it.nextDate(today), countdown = it) } +
+        parcels.filter { !it.delivered }.map { ComingRow("parcel-${it.id}", it.expected, parcel = it) }
+    val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
+        .map { ComingRow("parcel-${it.id}", it.deliveredOn, parcel = it) }
+    return open.sortedBy { it.day ?: LocalDate.MAX } + delivered
 }
+
+/** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
+internal const val NOTES_PREVIEW = 4
 
 /**
- * Dove far scorrere la fila di pillole perché quella aperta stia intera con un margine:
- * null se è già tutta in vista (così la fila non si muove e non lascia pezzi tagliati).
- * Le posizioni sono in pixel dall'inizio della fila, [scroll] è lo scorrimento attuale.
+ * Sezione "Note", in una pagina sola: in cima si scrive e il tipo (promemoria, nota, spesa, abitudine,
+ * data, pacco, evento) lo indovina Canvas o lo si sceglie con una pillola; sotto, tutto in ordine di quando conta.
  */
-internal fun stripScrollTarget(chipStart: Int, chipEnd: Int, viewport: Int, scroll: Int, margin: Int): Int? = when {
-    viewport <= 0 -> null
-    chipStart - margin < scroll -> (chipStart - margin).coerceAtLeast(0)
-    chipEnd + margin > scroll + viewport -> chipEnd + margin - viewport
-    else -> null
-}
-
-/**
- * Le schede delle Note come pillole, uguali ai filtri delle News: stanno in una riga che scorre
- * e la riga si sposta da sola per tenere in vista la scheda attiva.
- */
-@Composable
-private fun NotesTabStrip(selected: NotesTabs, onSelect: (NotesTabs) -> Unit) {
-    val haptic = rememberHaptic()
-    val scroll = rememberScrollState()
-    val chipBounds = remember { mutableStateMapOf<NotesTabs, IntRange>() }
-    var viewport by remember { mutableStateOf(0) }
-    val margin = with(LocalDensity.current) { 16.dp.roundToPx() }
-    LaunchedEffect(selected, viewport) {
-        val bounds = chipBounds[selected] ?: return@LaunchedEffect
-        // Le posizioni delle pillole non contano i 16 dp di bordo della fila: li aggiungo.
-        stripScrollTarget(bounds.first + margin, bounds.last + margin, viewport, scroll.value, margin)
-            ?.let { scroll.animateScrollTo(it.coerceIn(0, scroll.maxValue)) }
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onSizeChanged { viewport = it.width }
-            .horizontalScroll(scroll)
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        NotesTabs.entries.forEach { t ->
-            CanvasChip(
-                selected = selected == t,
-                onClick = { if (selected != t) haptic(Haptic.TICK); onSelect(t) },
-                label = t.label,
-                modifier = Modifier.onGloballyPositioned {
-                    val x = it.positionInParent().x.toInt()
-                    chipBounds[t] = x..(x + it.size.width)
-                },
-            )
-        }
-    }
-}
-
-/** Sezione "Note": promemoria e abitudini, spese, note libere, pacchi e date in arrivo. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
@@ -203,10 +163,11 @@ fun NotesScreen(
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableStateOf(NotesTabs.TASKS) }
-    var adding by remember { mutableStateOf(false) }
-    var choosing by remember { mutableStateOf(false) }
     var searching by rememberSaveable { mutableStateOf(false) }
+    var showExpenses by rememberSaveable { mutableStateOf(false) }
+    var allNotes by rememberSaveable { mutableStateOf(false) }
+    // Un evento scritto in cima: lo salva la finestrella del +, che sa chiedere il permesso del calendario.
+    var event by remember { mutableStateOf<String?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -228,17 +189,39 @@ fun NotesScreen(
         DeletedNote.take()?.let { note -> offerUndo("Nota eliminata") { NotesStore.restoreNote(note) } }
     }
 
-    // Il + della barra in basso aggiunge alla scheda aperta: promemoria, spesa, nota; in "In arrivo" chiede cosa.
-    ProvidePlusAction {
-        when (tab) {
-            NotesTabs.NOTES -> onOpenNote(null)
-            NotesTabs.COMING -> choosing = true
-            else -> adding = true
-        }
-    }
     val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
     val overdue = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < System.currentTimeMillis() }
     val dueToday = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay } - overdue
+
+    val habitRows = habitItems(data.habits, onDeleted = { h -> offerUndo("Abitudine eliminata") { NotesStore.restoreHabit(h) } })
+    val coming = comingItems(
+        data.upcoming,
+        data.parcels,
+        onDateDeleted = { c -> offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) } },
+        onParcelDeleted = { p -> offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) } },
+    )
+    var proposingHabit by remember { mutableStateOf<HabitIdea?>(null) }
+    var proposingDate by remember { mutableStateOf<DateIdea?>(null) }
+    proposingHabit?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposingHabit = null }) }
+    proposingDate?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposingDate = null }) }
+    event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
+
+    if (showExpenses) {
+        // Le spese del mese, il budget e le fisse: una pagina dentro le Note, con la freccia per tornare.
+        androidx.activity.compose.BackHandler { showExpenses = false }
+        Scaffold(
+            contentWindowInsets = topLevelInsets,
+            snackbarHost = { SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding())) },
+            topBar = { TopLevelBar(title = "Spese", subtitle = "Note", onBack = { showExpenses = false }) },
+        ) { inner ->
+            ExpensesTab(
+                data,
+                PaddingValues(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 12.dp, bottom = bottomPadding.calculateBottomPadding() + 24.dp),
+                onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } },
+            )
+        }
+        return
+    }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
@@ -246,28 +229,25 @@ fun NotesScreen(
             SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
         },
         topBar = {
-            Column {
-                TopLevelBar(
-                    title = "Note",
-                    subtitle = listOfNotNull(
-                        dueToday.takeIf { it > 0 }?.let { "$it oggi" },
-                        overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
-                    ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
-                    actions = {
-                        if (!searching) {
-                            RoundIconButton(Icons.Outlined.Search, "Cerca in tutte le Note") { searching = true }
+            TopLevelBar(
+                title = "Note",
+                subtitle = listOfNotNull(
+                    dueToday.takeIf { it > 0 }?.let { "$it oggi" },
+                    overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
+                ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
+                actions = {
+                    if (!searching) {
+                        RoundIconButton(Icons.Outlined.Search, "Cerca in tutte le Note") { searching = true }
+                    }
+                    if (!searching && data.tasks.any { it.done }) {
+                        RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
+                            val done = data.tasks.filter { it.done }
+                            NotesStore.clearDone()
+                            offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
                         }
-                        if (!searching && tab == NotesTabs.TASKS && data.tasks.any { it.done }) {
-                            RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
-                                val done = data.tasks.filter { it.done }
-                                NotesStore.clearDone()
-                                offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
-                            }
-                        }
-                    },
-                )
-                if (!searching) NotesTabStrip(selected = tab, onSelect = { tab = it })
-            }
+                    }
+                },
+            )
         },
     ) { inner ->
         val padding = PaddingValues(
@@ -282,249 +262,279 @@ fun NotesScreen(
                 padding = padding,
                 onClose = { searching = false },
                 onOpenNote = { onOpenNote(it) },
-                onOpenTab = { searching = false; tab = it },
+                onOpenExpenses = { searching = false; showExpenses = true },
             )
             return@Scaffold
         }
-        when (tab) {
-            NotesTabs.TASKS -> TasksTab(
-                data.tasks,
-                data.habits,
-                padding,
-                onDeleted = { offerUndo(listOf(it), "Promemoria eliminato") },
-                onHabitDeleted = { h -> offerUndo("Abitudine eliminata") { NotesStore.restoreHabit(h) } },
-            )
-            NotesTabs.MONEY -> ExpensesTab(data, padding, onDeleted = { e ->
-                offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) }
-            })
-            NotesTabs.NOTES -> NotesTab(data.notes, padding, onOpenNote)
-            NotesTabs.COMING -> ComingTab(
-                data.upcoming,
-                data.parcels,
-                padding,
-                onDateDeleted = { c -> offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) } },
-                onParcelDeleted = { p -> offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) } },
-            )
-        }
-    }
-    if (adding) {
-        val close = { adding = false }
-        when (tab) {
-            NotesTabs.TASKS -> CaptureDialog(initial = "", initialMode = CaptureMode.TASK, onClose = close)
-            NotesTabs.MONEY -> CaptureDialog(initial = "", initialMode = CaptureMode.EXPENSE, onClose = close)
-            NotesTabs.NOTES, NotesTabs.COMING -> adding = false
-        }
-    }
-    if (choosing) ComingAddDialog(onDismiss = { choosing = false })
-}
-
-/** Il + di "In arrivo": una data (compleanno, viaggio, scadenza) o un pacco. */
-@Composable
-private fun ComingAddDialog(onDismiss: () -> Unit) {
-    var picked by remember { mutableStateOf<String?>(null) }
-    when (picked) {
-        "date" -> CountdownDialog(countdown = null, onDismiss = onDismiss)
-        "parcel" -> ParcelDialog(parcel = null, onDismiss = onDismiss)
-        else -> androidx.compose.material3.AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Cosa aspetti?") },
-            text = {
-                CanvasCard(Modifier.fillMaxWidth()) {
-                    listOf(
-                        Triple("date", "Una data", "Compleanno, viaggio, scadenza"),
-                        Triple("parcel", "Un pacco", "Con il codice di tracciamento"),
-                    ).forEachIndexed { i, (id, title, detail) ->
-                        if (i > 0) RowDivider()
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { picked = id }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                        ) {
-                            Text(title, style = MaterialTheme.typography.bodyLarge)
-                            Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annulla") } },
-        )
-    }
-}
-
-/** Un pacco atteso entro tre giorni (o in ritardo) è più urgente di un compleanno: allora i pacchi vanno sopra le date. */
-internal fun parcelsFirst(parcels: List<Parcel>, today: LocalDate): Boolean =
-    parcels.any { !it.delivered && it.expected?.isAfter(today.plusDays(3)) == false }
-
-/** "In arrivo": le date che si avvicinano e i pacchi da ricevere, in una lista sola. */
-@Composable
-private fun ComingTab(
-    upcoming: List<Countdown>,
-    parcels: List<Parcel>,
-    padding: PaddingValues,
-    onDateDeleted: (Countdown) -> Unit,
-    onParcelDeleted: (Parcel) -> Unit,
-) {
-    val dates = dateItems(upcoming, onDateDeleted)
-    val parcelRows = parcelItems(parcels, onParcelDeleted)
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (parcelsFirst(parcels, LocalDate.now())) {
-            parcelRows(); dates()
-        } else {
-            dates(); parcelRows()
-        }
-    }
-}
-
-/** Conti alla rovescia (compleanni, viaggi e scadenze, dal più vicino): le righe "Date" di "In arrivo". */
-@Composable
-private fun dateItems(upcoming: List<Countdown>, onDeleted: (Countdown) -> Unit): LazyListScope.() -> Unit {
-    var editing by remember { mutableStateOf<Countdown?>(null) }
-    var proposing by remember { mutableStateOf<DateIdea?>(null) }
-    var adding by remember { mutableStateOf(false) }
-    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
-    proposing?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposing = null }) }
-    if (adding) CountdownDialog(countdown = null, onDismiss = { adding = false })
-    return {
-        item(key = "dates-header") {
-            SectionHeader("Date", modifier = Modifier.padding(top = 12.dp), action = "Nuova data", onAction = { adding = true })
-        }
-        items(upcoming, key = { "date-${it.id}" }) { item ->
-            val days = item.daysLeft()
-            CanvasCard(
-                onClick = { editing = item },
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth().bouncyPress(),
-            ) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            item.dateLine(),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            when (days) {
-                                0L -> "Oggi"
-                                1L -> "Domani"
-                                else -> "$days"
-                            },
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        if (days > 1) {
-                            Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-        }
-        if (upcoming.isEmpty()) {
-            item(key = "dates-empty") { EmptyHint("Nessuna data. Aggiungi un compleanno, un viaggio o una scadenza con il pulsante +.") }
-        }
-        val ideas = DateIdeas.suggest(upcoming)
-        if (ideas.isNotEmpty()) {
-            item(key = "dates-ideas") {
-                IdeasSection(ideas.map { it.title.trim() to if (it.yearly) "Ogni anno" else "Una volta" }) { proposing = ideas[it] }
-            }
-        }
-    }
-}
-
-/** "Da fare": i promemoria per scadenza e, prima dei completati, le abitudini di ogni giorno. */
-@Composable
-private fun TasksTab(
-    tasks: List<TaskItem>,
-    habits: List<Habit>,
-    padding: PaddingValues,
-    onDeleted: (TaskItem) -> Unit,
-    onHabitDeleted: (Habit) -> Unit,
-) {
-    val habitRows = habitItems(habits, onHabitDeleted)
-    var draft by rememberSaveable { mutableStateOf("") }
-    val haptic = rememberHaptic()
-    val add = {
-        if (NotesStore.addTask(draft) != null) haptic(Haptic.CONFIRM)
-        draft = ""
-    }
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        item {
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                placeholder = { Text("Es. domani alle 9 chiamare il dentista") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { add() }),
-                trailingIcon = {
-                    if (draft.isNotBlank()) {
-                        IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
-                    }
-                },
-                shape = MaterialTheme.shapes.large,
-                colors = canvasFieldColors(),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            )
-            QuickPreview(draft, Modifier.padding(start = 12.dp, bottom = 8.dp))
-        }
+        val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         // Raggruppati per quando vanno fatti: prima ciò che è scaduto o in scadenza oggi.
         val now = System.currentTimeMillis()
-        val endOfDay = LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val open = tasks.filter { !it.done }.sortedBy { it.dueAt ?: Long.MAX_VALUE }
-        val groups = listOf(
+        val open = data.tasks.filter { !it.done }.sortedBy { it.dueAt ?: Long.MAX_VALUE }
+        val urgent = listOf(
             "Scaduti" to open.filter { it.dueAt != null && it.dueAt < now },
             "Oggi" to open.filter { it.dueAt != null && it.dueAt in now until endOfDay },
+        ).filter { it.second.isNotEmpty() }
+        val later = listOf(
             "Prossimi giorni" to open.filter { it.dueAt != null && it.dueAt >= endOfDay },
             "Senza scadenza" to open.filter { it.dueAt == null },
         ).filter { it.second.isNotEmpty() }
-        val done = tasks.filter { it.done }
-        // Ogni gruppo è una card con le sue righe; con un gruppo solo l'intestazione non dice niente.
-        groups.forEach { (label, list) ->
-            item(key = "group-$label") {
-                TaskGroup(label.takeIf { groups.size > 1 }, list, onDeleted, error = label == "Scaduti")
+        val done = data.tasks.filter { it.done }
+        val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+        val shownNotes = if (allNotes) notes else notes.take(NOTES_PREVIEW)
+        val empty = data.tasks.isEmpty() && data.notes.isEmpty() && data.habits.isEmpty() &&
+            data.upcoming.isEmpty() && data.parcels.isEmpty() && data.expenses.isEmpty()
+
+        LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            item(key = "composer") { NotesComposer(onEvent = { event = it }) }
+            if (empty) {
+                item(key = "empty") {
+                    EmptyHint(
+                        "Scrivi come parli e Canvas capisce cos'è: \"venerdì alle 18 palestra\" è un promemoria, " +
+                            "\"12,50 pizza\" una spesa, \"ogni giorno leggere\" un'abitudine, \"compleanno di Marta 12 marzo\" " +
+                            "una data. Se sbaglia, tocca il tipo giusto prima di salvare."
+                    )
+                }
             }
-        }
-        if (tasks.isEmpty()) {
-            item(key = "tasks-empty") { EmptyHint("Nessun promemoria. Scrivi come parli: \"venerdì alle 18 palestra\", \"ogni mese il 5 affitto\", \"tra 20 minuti forno\". Giorno, ora e ripetizione si impostano da soli.") }
-        }
-        habitRows()
-        if (done.isNotEmpty()) {
-            item(key = "group-done") { Column(Modifier.padding(top = 12.dp)) { TaskGroup("Completati", done, onDeleted) } }
+            // Ogni gruppo è una card con le sue righe.
+            urgent.forEach { (label, list) ->
+                item(key = "group-$label") { TaskGroup(label, list, onTaskDeleted, error = label == "Scaduti") }
+            }
+            habitRows()
+            coming()
+            later.forEach { (label, list) ->
+                item(key = "group-$label") { TaskGroup(label, list, onTaskDeleted) }
+            }
+            if (notes.isNotEmpty()) {
+                item(key = "notes-header") {
+                    SectionHeader(
+                        if (notes.size > NOTES_PREVIEW) "Note · ${notes.size}" else "Note",
+                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                        action = when {
+                            notes.size <= NOTES_PREVIEW -> null
+                            allNotes -> "Meno"
+                            else -> "Tutte"
+                        },
+                        onAction = { allNotes = !allNotes },
+                    )
+                }
+                items(shownNotes, key = { "note-${it.id}" }) { note ->
+                    NoteCard(note, onOpen = { onOpenNote(note.id) }, modifier = Modifier.padding(bottom = 4.dp))
+                }
+            }
+            if (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null) {
+                item(key = "expenses") { ExpensesSummary(data, onOpen = { showExpenses = true }) }
+            }
+            if (done.isNotEmpty()) {
+                item(key = "group-done") { Column(Modifier.padding(top = 12.dp)) { TaskGroup("Completati", done, onTaskDeleted) } }
+            }
+            // Con poche abitudini e date, qualche esempio da aggiungere con un tocco.
+            val habitIdeas = HabitIdeas.suggest(data.habits)
+            val dateIdeas = if (data.upcoming.isEmpty()) DateIdeas.suggest(data.upcoming) else emptyList()
+            if (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty()) {
+                item(key = "ideas") {
+                    IdeasSection(
+                        habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
+                            dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" },
+                    ) { i -> if (i < habitIdeas.size) proposingHabit = habitIdeas[i] else proposingDate = dateIdeas[i - habitIdeas.size] }
+                }
+            }
         }
     }
 }
 
 /**
- * Abitudini di ogni giorno, dentro "Da fare": un tocco per spuntare oggi, la serie di giorni di fila,
- * l'ultima settimana. Tiene i suoi dialoghi e restituisce le righe della lista.
+ * Il campo in cima alle Note: si scrive una volta sola e le pillole sotto dicono che cosa diventa.
+ * Finché non se ne tocca una, il tipo lo sceglie Canvas da quello che si scrive (come il +).
+ */
+@Composable
+private fun NotesComposer(onEvent: (String) -> Unit) {
+    var text by rememberSaveable { mutableStateOf("") }
+    var picked by rememberSaveable { mutableStateOf<CaptureMode?>(null) }
+    val guessed = remember(text) { CaptureGuess.guess(text) }
+    val mode = picked ?: guessed
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    val save = {
+        if (text.isNotBlank()) {
+            if (mode == CaptureMode.EVENT) {
+                onEvent(text)
+                text = ""
+                picked = null
+            } else {
+                val result = CaptureSave.save(mode, text)
+                android.widget.Toast.makeText(context, result.message, android.widget.Toast.LENGTH_SHORT).show()
+                if (result.ok) {
+                    haptic(Haptic.CONFIRM)
+                    text = ""
+                    picked = null
+                }
+            }
+        }
+    }
+    Column(Modifier.padding(bottom = 8.dp)) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = { Text(picked?.hint ?: "Scrivi qualcosa: Canvas capisce cos'è") },
+            maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                // Una nota può andare a capo; il resto si salva con Invio.
+                imeAction = if (mode == CaptureMode.NOTE) ImeAction.Default else ImeAction.Done,
+            ),
+            keyboardActions = KeyboardActions(onDone = { save() }),
+            trailingIcon = {
+                if (text.isNotBlank()) {
+                    IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
+                }
+            },
+            shape = MaterialTheme.shapes.large,
+            colors = canvasFieldColors(),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            CaptureMode.entries.forEach { m ->
+                CanvasChip(
+                    selected = m == mode && (picked != null || text.isNotBlank()),
+                    onClick = {
+                        haptic(Haptic.TICK)
+                        picked = if (picked == m) null else m
+                    },
+                    label = m.label,
+                )
+            }
+        }
+        val line = when (mode) {
+            CaptureMode.TASK, CaptureMode.NOTE -> null
+            CaptureMode.EVENT -> if (text.isNotBlank()) "Va nel calendario: tocca + per controllare giorno e ora" else null
+            else -> CaptureSave.preview(mode, text)
+        }
+        if (mode == CaptureMode.TASK) QuickPreview(text, Modifier.padding(start = 12.dp, top = 6.dp))
+        line?.let {
+            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp, top = 6.dp))
+        }
+    }
+}
+
+/** La riga delle spese in fondo alle Note: il totale del mese e il budget; si tocca per i dettagli. */
+@Composable
+private fun ExpensesSummary(data: com.platinum20.dashboard.notes.NotesData, onOpen: () -> Unit) {
+    val month = java.time.YearMonth.now()
+    val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
+    val budget = data.budgetCents
+    Column(Modifier.padding(top = 12.dp)) {
+        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp))
+        CanvasCard(onClick = onOpen, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        month.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(com.platinum20.dashboard.notes.Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
+                    if (budget != null) {
+                        val over = total > budget
+                        Text(
+                            if (over) "Budget superato di ${com.platinum20.dashboard.notes.Expenses.format(total - budget)}"
+                            else "Restano ${com.platinum20.dashboard.notes.Expenses.format(budget - total)} del budget",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Text("Dettagli", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+/** "In arrivo": date e pacchi in una lista sola, dal più vicino. Tiene i dialoghi per modificarli. */
+@Composable
+private fun comingItems(
+    upcoming: List<Countdown>,
+    parcels: List<Parcel>,
+    onDateDeleted: (Countdown) -> Unit,
+    onParcelDeleted: (Parcel) -> Unit,
+): LazyListScope.() -> Unit {
+    var editingDate by remember { mutableStateOf<Countdown?>(null) }
+    var editingParcel by remember { mutableStateOf<Parcel?>(null) }
+    editingDate?.let { CountdownDialog(countdown = it, onDismiss = { editingDate = null }, onDeleted = onDateDeleted) }
+    editingParcel?.let { ParcelDialog(it, onDismiss = { editingParcel = null }, onDeleted = onParcelDeleted) }
+    val rows = comingRows(upcoming, parcels)
+    return {
+        if (rows.isNotEmpty()) {
+            item(key = "coming-header") {
+                SectionHeader("In arrivo", modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+            }
+        }
+        items(rows, key = { it.key }) { row ->
+            Box(Modifier.padding(bottom = 4.dp)) {
+                row.countdown?.let { DateCard(it, onClick = { editingDate = it }) }
+                row.parcel?.let { ParcelCard(it, onClick = { editingParcel = it }) }
+            }
+        }
+    }
+}
+
+/** Un conto alla rovescia: compleanno, viaggio o scadenza, con i giorni che mancano. */
+@Composable
+private fun DateCard(item: Countdown, onClick: () -> Unit) {
+    val days = item.daysLeft()
+    CanvasCard(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth().bouncyPress(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    item.dateLine(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    when (days) {
+                        0L -> "Oggi"
+                        1L -> "Domani"
+                        else -> "$days"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (days > 1) {
+                    Text("giorni", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Abitudini di ogni giorno: un tocco per spuntare oggi, la serie di giorni di fila, l'ultima settimana.
+ * Tiene il dialogo per modificarle e restituisce le righe della lista (niente se non ce ne sono).
  */
 @Composable
 private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyListScope.() -> Unit {
     var editing by remember { mutableStateOf<Habit?>(null) }
-    var proposing by remember { mutableStateOf<HabitIdea?>(null) }
-    var adding by remember { mutableStateOf(false) }
     val today = LocalDate.now()
     val haptic = rememberHaptic()
     editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
-    proposing?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposing = null }) }
-    if (adding) HabitDialog(habit = null, onDismiss = { adding = false })
     return {
-        item(key = "habits-header") {
-            val done = habits.count { it.isDone(today) }
-            SectionHeader(
-                when {
-                    habits.isEmpty() -> "Abitudini"
-                    done == habits.size -> "Abitudini · tutte fatte oggi"
-                    else -> "Abitudini · oggi $done su ${habits.size}"
-                },
-                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
-                action = "Nuova abitudine",
-                onAction = { adding = true },
-            )
+        if (habits.isNotEmpty()) {
+            item(key = "habits-header") {
+                val done = habits.count { it.isDone(today) }
+                SectionHeader(
+                    if (done == habits.size) "Abitudini · tutte fatte oggi" else "Abitudini · oggi $done su ${habits.size}",
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                )
+            }
         }
         items(habits, key = { "habit-${it.id}" }) { habit ->
             val doneToday = habit.isDone(today)
@@ -603,18 +613,6 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                     }
                 }
             }
-        }
-        if (habits.isEmpty()) {
-            item(key = "habits-empty") {
-                EmptyHint(
-                    "Quello che vuoi fare ogni giorno (bere 2 litri d'acqua, camminare, leggere): la spunti e vedi " +
-                        "quanti giorni di fila tieni. La sera, in Oggi, ti ricorda quelle che mancano."
-                )
-            }
-        }
-        val ideas = HabitIdeas.suggest(habits)
-        if (ideas.isNotEmpty()) {
-            item(key = "habits-ideas") { IdeasSection(ideas.map { it.title to it.frequency }) { proposing = ideas[it] } }
         }
     }
 }
@@ -730,95 +728,60 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit) {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
+/** Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto si fissa in alto. */
 @Composable
-private fun NotesTab(notes: List<Note>, padding: PaddingValues, onOpenNote: (Long?) -> Unit) {
-    var query by rememberSaveable { mutableStateOf("") }
-    val sorted = notes
-        .filter { query.isBlank() || it.text.contains(query.trim(), ignoreCase = true) }
-        .sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+private fun NoteCard(note: Note, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Con poche note la ricerca è solo ingombro: compare quando la lista si allunga.
-        if (notes.size >= SEARCH_FROM || query.isNotEmpty()) {
-            item(key = "search") {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    placeholder = { Text("Cerca nelle note") },
-                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Cancella ricerca")
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.large,
-                    colors = canvasFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    modifier = Modifier.fillMaxWidth(),
+    CanvasCard(
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = modifier
+            .fillMaxWidth()
+            .bouncyPress()
+            .combinedClickable(
+                onClick = onOpen,
+                onLongClick = { haptic(Haptic.LONG_PRESS); NotesStore.togglePin(note.id) },
+            ),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    note.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
-            }
-        }
-        items(sorted, key = { it.id }) { note ->
-            CanvasCard(
-                shape = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .bouncyPress()
-                    .combinedClickable(
-                        onClick = { onOpenNote(note.id) },
-                        onLongClick = { haptic(Haptic.LONG_PRESS); NotesStore.togglePin(note.id) },
-                    ),
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            note.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (note.pinned) {
-                            Icon(
-                                Icons.Outlined.PushPin,
-                                contentDescription = "Fissata",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    Checklist.progressLabel(note.text)?.let { progress ->
-                        Text(
-                            progress,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    if (note.body.isNotBlank()) {
-                        Text(
-                            Checklist.preview(note.body),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        relativeTime(Instant.ofEpochMilli(note.updatedAt)),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (note.pinned) {
+                    Icon(
+                        Icons.Outlined.PushPin,
+                        contentDescription = "Fissata",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
-        }
-        if (notes.isEmpty()) {
-            item { EmptyHint("Nessuna nota. Tocca + per scriverne una; tieni premuto una nota per fissarla in alto.") }
-        } else if (sorted.isEmpty()) {
-            item { EmptyHint("Nessuna nota contiene \"${query.trim()}\".") }
+            Checklist.progressLabel(note.text)?.let { progress ->
+                Text(
+                    progress,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (note.body.isNotBlank()) {
+                Text(
+                    Checklist.preview(note.body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                relativeTime(Instant.ofEpochMilli(note.updatedAt)),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -829,8 +792,6 @@ fun Countdown.dateLine(): String = longDate(nextDate()) + when {
     else -> yearsAtNext()?.let { " · compie $it anni" } ?: " · ogni anno"
 }
 
-/** Da quante note in su compare il campo di ricerca. */
-private const val SEARCH_FROM = 6
 
 @Composable
 private fun EmptyHint(text: String) {
