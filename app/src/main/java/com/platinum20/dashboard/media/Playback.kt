@@ -7,6 +7,7 @@ import com.platinum20.dashboard.media.radio.RadioNow
 import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.spotify.SpPlayback
 import com.platinum20.dashboard.media.spotify.SpotifyApi
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.youtube.player.YtNow
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
@@ -62,16 +63,90 @@ data class Playing(
  */
 object Playback {
     private val scope = MainScope()
-    /** L'ultima fonte che ha cominciato a suonare: vince quando tutte sono in pausa. */
+    /** L'ultima fonte chiesta o partita: vince quando tutte sono in pausa. */
     private var lastSource: PlaySource? = null
 
-    private val spotify = combine(NowPlaying.tracks, SpotifyStore.playback) { tracks, remote -> tracks[MediaService.SPOTIFY] to remote }
+    /**
+     * La fonte appena chiesta, con quello che si sa già (titolo, copertina) finché il suo motore non
+     * risponde: Spotify ci mette qualche secondo, e intanto il mini player deve già mostrarlo.
+     */
+    internal data class Claim(val source: PlaySource, val placeholder: Playing?)
 
-    val now: StateFlow<Playing?> = combine(YtPlayer.now, spotify, RadioStore.now, PodcastStore.now, RecapSpeaker.state) { yt, sp, radio, podcast, speech ->
-        val candidates = candidates(yt, sp.first, sp.second, radio, podcast, speech)
-        candidates.firstOrNull { it.playing }?.let { lastSource = it.source }
-        pick(candidates, lastSource)
+    private val claim = MutableStateFlow<Claim?>(null)
+    /** Fonti messe da parte (è partita un'altra, o sono state chiuse): pronte, ma fuori dal mini player. */
+    private val dismissed = MutableStateFlow<Set<PlaySource>>(emptySet())
+    private var wasPlaying: Set<PlaySource> = emptySet()
+    private var placeholderJob: Job? = null
+
+    private val spotify = combine(NowPlaying.tracks, SpotifyStore.playback) { tracks, remote -> tracks[MediaService.SPOTIFY] to remote }
+    private val shared = combine(RecapSpeaker.state, claim, dismissed, SpotifyPlayer.error) { speech, claim, dismissed, error ->
+        Shared(speech, claim, dismissed, error)
+    }
+
+    private data class Shared(val speech: RecapListening?, val claim: Claim?, val dismissed: Set<PlaySource>, val spotifyError: String?)
+
+    val now: StateFlow<Playing?> = combine(YtPlayer.now, spotify, RadioStore.now, PodcastStore.now, shared) { yt, sp, radio, podcast, shared ->
+        val all = candidates(yt, sp.first, sp.second, radio, podcast, shared.speech)
+        val playingNow = all.filter { it.playing }.map { family(it.source) }.toSet()
+        val started = (playingNow - wasPlaying).firstOrNull()
+        wasPlaying = playingNow
+        var current = shared.claim
+        var hidden = shared.dismissed
+        if (started != null) {
+            // Partita (anche da sola, es. Spotify dal telefono): è lei quella del mini player.
+            lastSource = all.first { family(it.source) == started }.source
+            hidden = PlaySource.entries.filter { family(it) != started }.toSet()
+            if (current?.placeholder != null && family(current.source) == started) current = current.copy(placeholder = null)
+            if (current != shared.claim) claim.value = current
+            if (hidden != shared.dismissed) dismissed.value = hidden
+        }
+        choose(all, lastSource, current, hidden, shared.spotifyError)
     }.stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** VIDEO e MUSIC sono lo stesso player di YouTube. */
+    internal fun family(source: PlaySource): PlaySource = if (source == PlaySource.MUSIC) PlaySource.VIDEO else source
+
+    /**
+     * Quello da mostrare tenendo conto della fonte appena chiesta e di quelle messe da parte.
+     * Funzione pura, provata nei test.
+     */
+    internal fun choose(all: List<Playing>, last: PlaySource?, claim: Claim?, dismissed: Set<PlaySource>, spotifyError: String? = null): Playing? {
+        val visible = all.filter { family(it.source) !in dismissed }
+        claim?.placeholder?.let { placeholder ->
+            val real = visible.firstOrNull { family(it.source) == family(placeholder.source) }
+            if (real?.playing != true) {
+                return if (placeholder.source == PlaySource.SPOTIFY && spotifyError != null)
+                    placeholder.copy(loading = false, subtitle = spotifyError, error = spotifyError)
+                else placeholder
+            }
+        }
+        return pick(visible, last)
+    }
+
+    /**
+     * Una fonte sta per partire: il mini player passa subito a lei (con [title] e [artwork] se si
+     * sanno già) e le altre, messe in pausa, escono dal mini player.
+     */
+    fun starting(source: PlaySource, title: String = "", subtitle: String = "", artwork: String = "") {
+        val placeholder = title.takeIf { it.isNotBlank() }?.let {
+            Playing(source, it, subtitle.ifBlank { "Caricamento…" }, artwork, playing = false, loading = true)
+        }
+        lastSource = source
+        claim.value = Claim(source, placeholder)
+        dismissed.value = PlaySource.entries.filter { family(it) != family(source) }.toSet()
+        placeholderJob?.cancel()
+        // Se il motore non risponde, dopo un po' si torna allo stato vero (anche vuoto).
+        if (placeholder != null) placeholderJob = scope.launch {
+            delay(25_000)
+            settle(source)
+        }
+    }
+
+    /** La fonte ha risposto (o è stata caricata ferma): si toglie il segnaposto. */
+    fun settle(source: PlaySource) {
+        val current = claim.value ?: return
+        if (family(current.source) == family(source) && current.placeholder != null) claim.value = current.copy(placeholder = null)
+    }
 
     /** Tutte le fonti aperte, nello stesso formato. Funzione pura, provata nei test. */
     internal fun candidates(
@@ -210,13 +285,20 @@ object Playback {
 
     fun previous(context: Context) {
         when (now.value?.source) {
-            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, 0)
-            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) { SpotifyApi.previous(it) }
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.previous(context)
+            // Il riproduttore nell'app decide da sé (all'inizio, o al brano prima nei primi secondi).
+            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) {
+                val remote = SpotifyStore.playback.value
+                if (remote != null && remote.progressMs > RESTART_MS) SpotifyApi.seek(it, 0) else SpotifyApi.previous(it)
+            }
             PlaySource.PODCAST -> PodcastStore.seekBy(-10_000)
             PlaySource.SPEECH -> RecapSpeaker.previous()
             else -> Unit
         }
     }
+
+    /** Il tasto indietro riporta all'inizio; entro questi primi millisecondi va a quello prima. */
+    const val RESTART_MS = 3_000L
 
     fun seekBy(context: Context, deltaMs: Long) {
         when (now.value?.source) {
@@ -255,14 +337,19 @@ object Playback {
         scope.launch {
             delay(1_500)
             if (NowPlaying.tracks.value[MediaService.SPOTIFY]?.playing != true) {
-                com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(context, local.uri, local.contextUri, local.positionMs)
+                SpotifyPlayer.resume(context, local.uri, local.contextUri, local.positionMs, title = local.title, subtitle = local.artist, artwork = local.artworkUrl)
             }
         }
     }
 
     /** Ferma e chiude quello che suona (il mini player sparisce). */
     fun stop(context: Context) {
-        when (now.value?.source) {
+        val source = now.value?.source
+        if (source != null) {
+            settle(source)
+            dismissed.value = dismissed.value + family(source) + source
+        }
+        when (source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.stop(context)
             PlaySource.SPOTIFY -> if (MediaService.SPOTIFY in MediaWebViews.openServices()) MediaWebViews.release(MediaService.SPOTIFY)
                 else SpotifyStore.closeRemote()

@@ -514,7 +514,10 @@ internal fun openResumeItem(
             openRoute(Routes.PLAYER)
         }
         ResumeKind.SPOTIFY -> {
-            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(context, item.key, item.link, from, autoplay)
+            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(
+                context, item.key, item.link, from, autoplay,
+                title = item.title, subtitle = item.subtitle, artwork = item.image,
+            )
             openRoute(Routes.PLAYER)
         }
         ResumeKind.RADIO -> {

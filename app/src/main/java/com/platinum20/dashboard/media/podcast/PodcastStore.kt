@@ -246,12 +246,13 @@ object PodcastStore {
         // Episodio che c'è solo su Spotify: suona nel riproduttore di Spotify (protetto), sempre nell'app.
         if (episode.audioUrl.startsWith("spotify:")) {
             if (current != null) stop()
-            SpotifyPlayer.playLink(appContext, episode.audioUrl)
+            SpotifyPlayer.playLink(appContext, episode.audioUrl, episode.title, episode.podcastTitle, episode.image)
             return
         }
         // Un solo player alla volta: si fermano YouTube, Spotify e la radio (che lascia il player al podcast).
         NowPlaying.pauseOthers(null, podcast = false)
         RadioStore.yieldPlayer()
+        com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.PODCAST)
         saveCurrentPosition()
         current = episode
         val startMs = PodcastProgress.resumeAt(_positions.value[episode.id] ?: 0, episode.durationSec * 1000)
