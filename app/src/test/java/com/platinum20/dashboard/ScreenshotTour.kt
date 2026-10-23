@@ -134,6 +134,8 @@ class ScreenshotTour {
             visit("YouTube", p + "31_youtube")
             visit("Spotify", p + "32_spotify")
             visit("Video", p + "33_video")
+            visit("Radio", p + "34_radio", waitMs = 6_000)
+            visit("Podcast", p + "35_podcast")
         }
         if (tap("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
