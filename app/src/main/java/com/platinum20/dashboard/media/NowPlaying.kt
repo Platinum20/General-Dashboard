@@ -22,9 +22,15 @@ data class Track(
     val artist: String,
     val artworkUrl: String,
     val playing: Boolean,
+    /** Solo Spotify nell'app: dove si è e quanto dura (0 se non si sa). */
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    /** Solo Spotify nell'app: il brano e l'album/playlist da cui viene, per riprenderlo dopo. */
+    val uri: String = "",
+    val contextUri: String = "",
 )
 
-enum class PlayerCommand(val js: String) { TOGGLE("toggle"), NEXT("next"), PREVIOUS("prev") }
+enum class PlayerCommand(val js: String) { TOGGLE("toggle"), NEXT("next"), PREVIOUS("prev"), PAUSE("pause"), PLAY("play") }
 
 /**
  * Legge cosa stanno suonando YouTube e Spotify (dai dati che le pagine danno al sistema
@@ -91,6 +97,15 @@ object NowPlaying {
         }
     }
 
+    /** Salta a [positionMs] nel player della pagina (Spotify nell'app). */
+    fun seek(service: MediaService, positionMs: Long) {
+        MediaWebViews.webViewFor(service)?.evaluateJavascript("window.cp && cp.seek(${positionMs.coerceAtLeast(0)})", null)
+        scope.launch {
+            delay(300)
+            poll(service)
+        }
+    }
+
     private fun poll(service: MediaService) {
         val webView = MediaWebViews.webViewFor(service) ?: return
         webView.evaluateJavascript(STATE_SCRIPT) { raw ->
@@ -107,9 +122,18 @@ object NowPlaying {
                 artist = json.optString("artist"),
                 artworkUrl = json.optString("art"),
                 playing = json.optBoolean("playing"),
+                positionMs = json.optLong("pos"),
+                durationMs = json.optLong("dur"),
+                uri = json.optString("uri"),
+                contextUri = json.optString("ctx"),
             )
-            val wasPlaying = _tracks.value[service]?.playing == true
+            val before = _tracks.value[service]
+            val wasPlaying = before?.playing == true
             _tracks.update { it + (service to track) }
+            // Spotify finisce in "Continua" come gli altri: a ogni brano nuovo e a ogni pausa.
+            if (service == MediaService.SPOTIFY && track.uri.isNotBlank() &&
+                (before?.uri != track.uri || before.playing != track.playing)
+            ) rememberSpotify(track)
             if (track.playing) ensureService()
             // Un solo player alla volta: quando questo parte, gli altri si mettono in pausa.
             if (track.playing && !wasPlaying) pauseOthers(service)
@@ -127,11 +151,33 @@ object NowPlaying {
         podcast: Boolean = true,
         recap: Boolean = true,
     ) {
-        _tracks.value.values.filter { it.playing && it.service != keep }.forEach { command(it.service, PlayerCommand.TOGGLE) }
+        // "Pausa" e non "play/pausa": va mandata a tutte le pagine aperte senza fidarsi dello stato
+        // letto (che può essere vecchio di un secondo e mezzo), e non fa ripartire chi era già fermo.
+        MediaWebViews.openServices().filter { it != keep }.forEach { command(it, PlayerCommand.PAUSE) }
+        // Spotify che suona nell'app di Spotify o su un altro dispositivo: si ferma anche quello.
+        if (keep != MediaService.SPOTIFY) com.platinum20.dashboard.media.spotify.SpotifyStore.pauseRemote()
         if (radio) com.platinum20.dashboard.media.radio.RadioStore.pause()
         if (podcast) com.platinum20.dashboard.media.podcast.PodcastStore.pause()
         if (recap) com.platinum20.dashboard.news.RecapSpeaker.stop()
         if (nativeYouTube) com.platinum20.dashboard.media.youtube.player.YtPlayer.pause()
+    }
+
+    private fun rememberSpotify(track: Track) {
+        if (!::appContext.isInitialized) return
+        MediaHistory.init(appContext)
+        MediaHistory.record(
+            ResumeItem(
+                kind = ResumeKind.SPOTIFY,
+                key = track.uri,
+                title = track.title,
+                subtitle = track.artist,
+                image = track.artworkUrl,
+                positionMs = track.positionMs,
+                durationMs = track.durationMs,
+                at = System.currentTimeMillis(),
+                link = track.contextUri,
+            )
+        )
     }
 
     private fun ensureService() {
@@ -160,19 +206,25 @@ object NowPlaying {
             : !!(v && !v.paused && !v.ended);
           var art = m && m.artwork && m.artwork.length ? m.artwork[m.artwork.length - 1].src : '';
           var title = m && m.title ? m.title : (v && v.currentSrc ? document.title : '');
-          return JSON.stringify({ title: title, artist: m ? m.artist : '', art: art, playing: playing });
+          var cs = window.cpState;
+          var pos = cs ? (cs.paused ? cs.pos : cs.pos + (Date.now() - cs.at)) : 0;
+          return JSON.stringify({ title: title, artist: m ? m.artist : '', art: art, playing: playing,
+            pos: cs ? Math.min(pos, cs.dur || pos) : 0, dur: cs ? cs.dur : 0, uri: cs ? cs.uri : '', ctx: cs ? cs.ctx : '' });
         })()
     """
 
     // Spotify ha i suoi tasti; per YouTube si comanda direttamente il video.
     private const val COMMAND_SCRIPT = """
         function (cmd) {
-          var ids = { toggle: 'control-button-playpause', next: 'control-button-skip-forward', prev: 'control-button-skip-back' };
+          var ids = { toggle: 'control-button-playpause', next: 'control-button-skip-forward', prev: 'control-button-skip-back',
+            pause: 'control-button-pause', play: 'control-button-play' };
           var button = document.querySelector('[data-testid="' + ids[cmd] + '"]');
           if (button) { button.click(); return; }
           var v = document.querySelector('video, audio');
           if (!v) return;
           if (cmd === 'toggle') { if (v.paused) v.play(); else v.pause(); }
+          else if (cmd === 'pause') { v.pause(); }
+          else if (cmd === 'play') { v.play(); }
           else if (cmd === 'prev') { v.currentTime = 0; }
           else if (cmd === 'next') {
             var n = document.querySelector('.ytp-next-button, .player-controls-next-button, button[aria-label*="successivo" i], button[aria-label*="next" i]');

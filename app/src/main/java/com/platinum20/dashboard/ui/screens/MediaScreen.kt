@@ -146,7 +146,7 @@ fun MediaScreen(
     val favoriteStations by RadioStore.favorites.collectAsState()
     val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
     val inApp = LocalInAppNav.current
-    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
+    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
     // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata.
     val hero = resumable.firstOrNull()?.takeIf { now == null }
     val continueList = resumable.filter { it != hero }.take(8)
@@ -265,21 +265,6 @@ fun MediaScreen(
                         }
                     }
                 }
-            }
-            // Il blocco pubblicità si regola nelle Impostazioni: qui solo una riga che dice se è attivo.
-            item(key = "adblock") {
-                val adBlock by AppSettings.adBlock.collectAsState()
-                Text(
-                    if (adBlock) "Pubblicità bloccata nei player · Impostazioni" else "Blocco pubblicità spento · Impostazioni",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = 4.dp, vertical = 8.dp),
-                )
             }
         }
     }
@@ -504,13 +489,33 @@ private fun StationBubble(station: RadioStation, playing: Boolean, onClick: () -
     }
 }
 
-/** Apre la cosa da riprendere: il video dal punto lasciato, la radio subito in ascolto. */
-internal fun openResumeItem(item: ResumeItem, openRoute: (String) -> Unit) {
+/** Apre la cosa da riprendere dal punto lasciato: i video nel loro player, tutto il resto nel player unico. */
+internal fun openResumeItem(context: android.content.Context, item: ResumeItem, openRoute: (String) -> Unit) {
+    val from = if (item.unfinished) item.positionMs else 0
     when (item.kind) {
         ResumeKind.VIDEO -> openRoute(Routes.video(item.key))
         ResumeKind.YOUTUBE -> openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
+        ResumeKind.MUSIC -> {
+            YtPlayer.play(context, Resume.youtubeLink(item), audioOnly = true)
+            openRoute(Routes.PLAYER)
+        }
+        ResumeKind.SPOTIFY -> {
+            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(context, item.key, item.link, from)
+            openRoute(Routes.PLAYER)
+        }
         ResumeKind.RADIO -> {
             item.station?.let(RadioStore::play)
+            openRoute(Routes.PLAYER)
+        }
+        ResumeKind.PODCAST -> {
+            PodcastStore.init(context)
+            PodcastStore.play(
+                Episode(
+                    id = item.key, title = item.title, audioUrl = item.link, publishedAt = 0,
+                    durationSec = item.durationMs / 1000, description = "", image = item.image,
+                    podcastTitle = item.subtitle, feedUrl = item.feed,
+                )
+            )
             openRoute(Routes.PLAYER)
         }
     }
@@ -519,14 +524,22 @@ internal fun openResumeItem(item: ResumeItem, openRoute: (String) -> Unit) {
 private fun ResumeItem.icon(): ImageVector = when (kind) {
     ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
     ResumeKind.YOUTUBE -> Icons.Outlined.OndemandVideo
+    ResumeKind.MUSIC -> Icons.Outlined.MusicNote
+    ResumeKind.SPOTIFY -> Icons.Outlined.GraphicEq
     ResumeKind.RADIO -> Icons.Outlined.Radio
+    ResumeKind.PODCAST -> Icons.Outlined.Mic
 }
 
 private fun ResumeItem.accent(): TileAccent = when (kind) {
     ResumeKind.VIDEO -> TileAccent.BLUE
     ResumeKind.YOUTUBE -> TileAccent.ORANGE
-    ResumeKind.RADIO -> TileAccent.PURPLE
+    ResumeKind.MUSIC, ResumeKind.SPOTIFY -> TileAccent.GREEN
+    ResumeKind.RADIO, ResumeKind.PODCAST -> TileAccent.PURPLE
 }
+
+/** Si ascolta (musica, radio, podcast) o si guarda (video)? Decide "Ascolta di nuovo" o "Guarda di nuovo". */
+private val ResumeItem.listened: Boolean
+    get() = kind == ResumeKind.MUSIC || kind == ResumeKind.SPOTIFY || kind == ResumeKind.RADIO || kind == ResumeKind.PODCAST
 
 /** "Riprendi": il blocco colorato di Media quando nulla suona, con il punto in cui eri rimasto. */
 @Composable
@@ -545,7 +558,7 @@ private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
             Spacer(Modifier.size(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    if (item.unfinished) "Riprendi" else if (item.kind == ResumeKind.RADIO) "Ascolta di nuovo" else "Guarda di nuovo",
+                    if (item.unfinished) "Riprendi" else if (item.listened) "Ascolta di nuovo" else "Guarda di nuovo",
                     style = MaterialTheme.typography.labelMedium,
                 )
                 Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)

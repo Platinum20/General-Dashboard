@@ -1,6 +1,14 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -92,12 +100,29 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
     val sleepAt by Playback.sleepAt.collectAsState()
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    // Dietro a tutto la copertina sfocata, che sfuma nello sfondo: il player prende i colori di quello che suona.
+    now?.artwork?.takeIf { it.isNotBlank() }?.let { art ->
+        AsyncImage(
+            model = art,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.7f).blur(72.dp).alpha(0.55f),
+        )
+        Box(
+            Modifier.fillMaxWidth().fillMaxHeight(0.7f).background(
+                Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.background))
+            )
+        )
+    }
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopLevelBar(
                 title = "In ascolto",
                 subtitle = now?.source?.label?.uppercase(),
                 onBack = onBack,
+                transparent = true,
             )
         },
     ) { inner ->
@@ -129,6 +154,8 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
             Artwork(current)
             Spacer(Modifier.height(24.dp))
             Column(Modifier.fillMaxWidth().widthIn(max = 420.dp)) {
+                SourcePill(current.source)
+                Spacer(Modifier.height(8.dp))
                 Text(current.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(
                     current.subtitle,
@@ -156,6 +183,23 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
             }
         }
     }
+    }
+}
+
+/** Da dove arriva quello che suona, con l'icona e il colore della sezione. */
+@Composable
+private fun SourcePill(source: PlaySource) {
+    Row(
+        Modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(sourceIcon(source), contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(6.dp))
+        Text(source.label, style = MaterialTheme.typography.labelMedium)
+    }
 }
 
 @Composable
@@ -165,6 +209,7 @@ private fun Artwork(now: Playing) {
             .fillMaxWidth()
             .widthIn(max = 420.dp)
             .aspectRatio(1f)
+            .shadow(24.dp, MaterialTheme.shapes.extraLarge)
             .clip(MaterialTheme.shapes.extraLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
