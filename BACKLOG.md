@@ -180,7 +180,7 @@ _(passi 1 e 2 dell'idea grande B, promossi)_
 **Test:** `WeekReviewTest` con una settimana finta (5 promemoria chiusi di cui 1 della settimana prima, abitudine giornaliera 5/7 e settimanale 3/3, spese +30% su una categoria, una spesa fissa esclusa dal confronto, un compleanno mercoledì prossimo); frase di sintesi per settimana buona / vuota / senza dati; finestra della card (dom 16:59 no, dom 17:00 sì, lun 12:00 no); foto `08_settimana` nel giro.
 
 ### 22. Spotify: le nuove uscite degli artisti che segui · Media › Spotify / Oggi · M
-_(1.113.0: fatti `NewReleases` con `NewReleasesTest`, la fila "Nuove uscite" in cima a Musica con pallino "nuovo" e cache di un giorno. **Restano:** la riga "2 nuove uscite: …" nella pagina Media e la riga del venerdì mattina in Adesso.)_
+_(1.114.0: fatti `NewReleases` con `NewReleasesTest`, la fila "Nuove uscite" in cima a Musica con pallino "nuovo" e cache di un giorno. **Restano:** la riga "2 nuove uscite: …" nella pagina Media e la riga del venerdì mattina in Adesso.)_
 **Perché:** dalla 1.97 i brani delle playlist editoriali di Spotify (Release Radar compreso) non arrivano più alle app personali, ma gli artisti seguiti e i loro album sì (la pagina artista della 1.97 li mostra già). "Cosa è uscito dall'ultima volta" è lo scopo di News applicato alla musica, e dà a Spotify e Media qualcosa di nuovo ogni settimana.
 **Cosa fare:** in `media/spotify/` una funzione che legge gli artisti seguiti (`/me/following?type=artist`, a pagine) e per ognuno gli ultimi album e singoli (`/artists/{id}/albums?include_groups=album,single`), tiene quelli usciti negli ultimi 28 giorni, ordina per data; in cache su disco (stesso schema di `FeedCache` del thread Velocità, quando esce) e aggiornati al massimo una volta al giorno. In Spotify una fila "Nuove uscite" in cima con copertina, artista e "3 giorni fa"; un tocco suona l'album nel player condiviso; pallino "nuovo" finché non lo apri. In Media, sotto le fonti, "2 nuove uscite: …" se ce ne sono non viste; il venerdì mattina una riga in Adesso.
 **Fatto quando:** con un account che segue 20 artisti la fila mostra le uscite delle ultime 4 settimane, si suonano con un tocco, e Media dice quante sono nuove.
@@ -260,8 +260,8 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 
 ## Fatto
 
-- **1.113.0 · 19 Widget "Da fare":** nuovo widget con promemoria scaduti/di oggi da spuntare (ricorrenti avanzano), "+ Aggiungi", righe secondo l'altezza, stato vuoto col prossimo promemoria; nel widget principale bottoncino per pacco arrivato e abitudine fatta. Test: TasksWidgetRowsTest, TasksWidgetActionTest, WidgetBriefTest. Foto: il giro fotografico non vede i widget della Home.
-- **1.113.0 · 22 Nuove uscite Spotify (passo 1):** fila in cima a Musica. Test: NewReleasesTest.
+- **1.114.0 · 19 Widget "Da fare":** nuovo widget con promemoria scaduti/di oggi da spuntare (ricorrenti avanzano), "+ Aggiungi", righe secondo l'altezza, stato vuoto col prossimo promemoria; nel widget principale bottoncino per pacco arrivato e abitudine fatta. Test: TasksWidgetRowsTest, TasksWidgetActionTest, WidgetBriefTest. Foto: il giro fotografico non vede i widget della Home.
+- **1.114.0 · 22 Nuove uscite Spotify (passo 1):** fila in cima a Musica. Test: NewReleasesTest.
 
 - **1.106.0 · V25 Spotify:** parsing di playlist (`item`/`track`), album dell'artista e numero di brani (`items.total`) in funzioni pure; l'avviso "playlist bloccata" vale solo per la chiamata corrente e un errore di rete tiene la pagina. Test: SpotifyParseTest.
 - **1.106.0 · 21 La tua settimana (passo 1):** card della domenica sera in Oggi. Test: WeekReviewTest.
