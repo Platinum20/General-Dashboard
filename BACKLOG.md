@@ -145,20 +145,6 @@ Da `main/53`: stessa cosa per YouTube, dove sotto "Accedi a YouTube" c'è "Oppur
 **Fatto quando:** nelle foto 31/32/33 e Radio le intestazioni sono uguali; nelle pagine di accesso di Spotify e YouTube c'è solo il pulsante; in Video un solo modo di aprire i video del telefono.
 **Test:** foto del giro (aggiungere `34_radio` se manca).
 
-### 11. Date: compleanni dai contatti · Note › Date · M
-_(primo passo dell'idea grande E)_
-**Perché:** nella foto 22_date (`main/41`) c'è un solo compleanno e metà schermo vuoto: la scheda si riempie a mano una data alla volta e quindi nessuno la usa. I compleanni sono già nella rubrica del telefono.
-**Cosa fare:** in `NotesScreen.kt` › Date, quando la lista è corta, una riga "Importa i compleanni dai contatti"; al tocco chiede `READ_CONTACTS` (solo lì), legge `ContactsContract.CommonDataKinds.Event` (TYPE_BIRTHDAY e TYPE_ANNIVERSARY), mostra un elenco con caselle (già spuntate quelle non presenti) e crea le date "ogni anno" con l'anno di nascita se c'è. Nessun doppione se riimporto.
-**Fatto quando:** importo da una rubrica con 5 compleanni e in Date ne compaiono 5 con "compie N anni" dove l'anno è noto; reimportando non si duplicano.
-**Test:** conversione riga contatto → data (`1990-03-12`, `--03-12` senza anno, formato non valido scartato), riconoscimento doppioni per nome + giorno.
-
-### 12. Spese: foto dello scontrino · Note › Spese · M
-_(primo passo dell'idea grande G)_
-**Perché:** la spesa si segna quando si paga, e lì scrivere "63,40 spesa conad" è il passo che fa saltare l'abitudine. Lo scontrino è già in mano: una foto basta.
-**Cosa fare:** nel campo delle Spese e nel "+" un'icona fotocamera: `ActivityResultContracts.TakePicture` (nessun permesso fotocamera da chiedere) e lettura del testo sul telefono con ML Kit Text Recognition (modello incluso nell'app, gratis, senza rete). Una funzione pura `Receipt.parse(righe)` trova il totale ("TOTALE", "TOTALE COMPLESSIVO", "IMPORTO PAGATO", il numero più grande vicino a "EUR"), il negozio (prima riga in maiuscolo) e la data; mostra l'anteprima "Conad · 63,40 € · Spesa" da confermare. Categoria dal nome del negozio con le stesse regole di Compila da solo. La foto non si salva (o si salva solo se l'utente lo chiede).
-**Fatto quando:** fotografando uno scontrino del supermercato l'anteprima ha totale e negozio giusti e un tocco salva la spesa.
-**Test:** `ReceiptTest` con 5-6 scontrini veri trascritti come testo (Conad, Esselunga, farmacia, benzinaio con "IMPORTO", ristorante con coperto e totale), importi con virgola e punto, righe sconto da ignorare.
-
 ### 13. Ascolta il punto del giorno: nel player condiviso · News / Media · S
 _(1.106.0: fatto il pulsante "Ascolta" (cuffie) nella card del punto in Oggi.)_
 _(1.101.0: fatti il copione `RecapReader.script` con i test, il pulsante "Ascolta" in `RecapScreen` e la card "In ascolto" con Successivo/Ferma, con la voce italiana di Android tramite `RecapSpeaker`.)_
@@ -260,9 +246,14 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 
 ## Fatto
 
+<<<<<<< Updated upstream
 - **1.114.0 · 19 Widget "Da fare":** nuovo widget con promemoria scaduti/di oggi da spuntare (ricorrenti avanzano), "+ Aggiungi", righe secondo l'altezza, stato vuoto col prossimo promemoria; nel widget principale bottoncino per pacco arrivato e abitudine fatta. Test: TasksWidgetRowsTest, TasksWidgetActionTest, WidgetBriefTest. Foto: il giro fotografico non vede i widget della Home.
 - **1.114.0 · 22 Nuove uscite Spotify (passo 1):** fila in cima a Musica. Test: NewReleasesTest.
 
+=======
+- **1.116.0 · 11 Date: compleanni dai contatti:** idea "Compleanni dai contatti" nelle Note, elenco con caselle, anno vero tenuto, niente doppioni, Annulla. Test: ContactDatesTest.
+- **1.116.0 · 12 Spese: foto dello scontrino (passo 1 dell'idea G):** icona scontrino nel campo delle Note, ML Kit sul telefono, `Receipt.parse` (totale, negozio, data). Resta: usare la data dello scontrino se diversa da oggi, foto `24b_scontrino` nel giro. Test: ReceiptTest.
+>>>>>>> Stashed changes
 - **1.106.0 · V25 Spotify:** parsing di playlist (`item`/`track`), album dell'artista e numero di brani (`items.total`) in funzioni pure; l'avviso "playlist bloccata" vale solo per la chiamata corrente e un errore di rete tiene la pagina. Test: SpotifyParseTest.
 - **1.106.0 · 21 La tua settimana (passo 1):** card della domenica sera in Oggi. Test: WeekReviewTest.
 - **1.106.0 · 13 Ascolta da Oggi:** cuffie nella card del punto del giorno.
