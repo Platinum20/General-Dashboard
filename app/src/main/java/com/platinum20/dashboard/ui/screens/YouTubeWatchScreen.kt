@@ -12,6 +12,14 @@ import com.platinum20.dashboard.media.youtube.YtVideo
 import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -75,7 +83,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -91,7 +98,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
@@ -106,7 +112,6 @@ import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.media.youtube.player.YtStream
 import kotlinx.coroutines.delay
-import kotlin.math.roundToInt
 
 private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
@@ -151,7 +156,26 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
     val immersive = fullscreen || inPip
-    Surface(color = if (immersive) Color.Black else MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+    // Trascinando giù il video tutta la pagina scende con il dito e rimpicciolisce, come una carta;
+    // lasciata abbastanza in basso scivola via e il video resta nel mini player.
+    val dismiss = remember { Animatable(0f) }
+    var screenHeight by remember { mutableIntStateOf(1) }
+    Surface(
+        color = if (immersive) Color.Black else MaterialTheme.colorScheme.background,
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { screenHeight = it.height.coerceAtLeast(1) }
+            .graphicsLayer {
+                val f = (dismiss.value / screenHeight).coerceIn(0f, 1f)
+                translationY = dismiss.value
+                scaleX = 1f - 0.12f * f
+                scaleY = scaleX
+                transformOrigin = TransformOrigin(0.5f, 0f)
+                alpha = 1f - 0.5f * f
+                shape = RoundedCornerShape((32 * f).dp)
+                clip = f > 0f
+            },
+    ) {
         Column(if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()) {
             VideoArea(
                 now = now,
@@ -160,6 +184,17 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                 onBack = onBack,
                 onToggleFullscreen = { fullscreen = !fullscreen },
                 onRetry = { (now?.link ?: url)?.let { YtPlayer.play(context, it) } },
+                onDragBy = { amount -> scope.launch { dismiss.snapTo((dismiss.value + amount).coerceAtLeast(0f)) } },
+                onDragEnd = { velocity ->
+                    scope.launch {
+                        if (dismiss.value > screenHeight * 0.15f || velocity > 1_200f) {
+                            dismiss.animateTo(screenHeight.toFloat(), tween(220, easing = FastOutLinearInEasing))
+                            onBack()
+                        } else {
+                            dismiss.animateTo(0f, Springs.bouncy())
+                        }
+                    }
+                },
                 modifier = if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f),
             )
             if (immersive) return@Column
@@ -232,6 +267,8 @@ private fun VideoArea(
     onBack: () -> Unit,
     onToggleFullscreen: () -> Unit,
     onRetry: () -> Unit,
+    onDragBy: (Float) -> Unit,
+    onDragEnd: (velocity: Float) -> Unit,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -239,7 +276,6 @@ private fun VideoArea(
     var controls by remember { mutableStateOf(true) }
     var seekFlash by remember { mutableIntStateOf(0) }
     var flashKey by remember { mutableIntStateOf(0) }
-    var drag by remember { mutableFloatStateOf(0f) }
     val playing = now?.playing == true
     // Menu delle impostazioni aperto sul video (null = chiuso).
     var menu by remember { mutableStateOf<VideoMenu?>(null) }
@@ -261,7 +297,6 @@ private fun VideoArea(
     Box(
         modifier
             .background(Color.Black)
-            .offset { IntOffset(0, drag.roundToInt()) }
             .pointerInput(inPip) {
                 if (inPip) return@pointerInput
                 detectTapGestures(
@@ -276,13 +311,15 @@ private fun VideoArea(
             }
             .pointerInput(fullscreen, inPip) {
                 if (fullscreen || inPip) return@pointerInput
+                val tracker = VelocityTracker()
                 detectVerticalDragGestures(
-                    onDragEnd = {
-                        if (drag > 160f) onBack()
-                        drag = 0f
+                    onDragStart = { tracker.resetTracking() },
+                    onDragEnd = { onDragEnd(tracker.calculateVelocity().y) },
+                    onDragCancel = { onDragEnd(0f) },
+                    onVerticalDrag = { change, amount ->
+                        tracker.addPosition(change.uptimeMillis, change.position)
+                        onDragBy(amount)
                     },
-                    onDragCancel = { drag = 0f },
-                    onVerticalDrag = { _, amount -> drag = (drag + amount).coerceAtLeast(0f) },
                 )
             },
     ) {
@@ -295,6 +332,8 @@ private fun VideoArea(
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
+            // Se il player è stato ricreato (dopo una chiusura) lo schermo passa a quello nuovo.
+            update = { view -> YtPlayer.current()?.let { if (view.player !== it) view.player = it } },
             onRelease = { it.player = null },
             modifier = Modifier.fillMaxSize(),
         )
@@ -442,13 +481,18 @@ private fun TimeBar(
     onQuality: () -> Unit = {},
 ) {
     val context = LocalContext.current
-    val player = remember { YtPlayer.player(context) }
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var buffered by remember { mutableLongStateOf(0L) }
     var dragging by remember { mutableStateOf<Float?>(null) }
-    LaunchedEffect(player) {
+    LaunchedEffect(Unit) {
         while (true) {
+            // Riletto ogni volta: se il player è stato chiuso e ricreato la barra segue quello nuovo.
+            val player = YtPlayer.current()
+            if (player == null) {
+                delay(250)
+                continue
+            }
             position = player.currentPosition
             buffered = player.bufferedPosition
             duration = player.duration.takeIf { it > 0 } ?: 0L

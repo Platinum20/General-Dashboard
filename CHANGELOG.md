@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.118.0
+**Player più fluido**
+- Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato
+- Il video si apre salendo dal basso, e chiudendolo ridiscende
+- La barra del tempo del player grande e del mini player avanza fluida da sola mentre suona, per ogni fonte (anche Spotify su un altro dispositivo); la barra del video segue sempre il player giusto, anche dopo aver chiuso e riaperto un video
+
 ## 1.117.0
 **Il player di YouTube, con tutto sul video**
 - Le impostazioni stanno nei controlli del video: la rotella apre Qualità, Velocità, Sottotitoli e Ripeti; il tasto CC accende e sceglie i sottotitoli; accanto allo schermo intero la pillola con la qualità attuale ("Auto · 720p") la cambia al volo. Mentre un menu è aperto i controlli non spariscono

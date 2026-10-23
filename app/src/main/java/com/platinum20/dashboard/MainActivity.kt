@@ -785,6 +785,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(
                 Routes.YOUTUBE_WATCH,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                // Il video sale dal basso e, chiuso (anche trascinandolo giù), ridiscende verso il mini player.
+                enterTransition = { slideInVertically(pageSpring) { it / 3 } + fadeIn(tween(200)) },
+                popExitTransition = { slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200)) },
             ) { entry ->
                 YouTubeWatchScreen(
                     url = entry.arguments?.getString("url"),
