@@ -266,21 +266,6 @@ fun MediaScreen(
                     }
                 }
             }
-            // Il blocco pubblicità si regola nelle Impostazioni: qui solo una riga che dice se è attivo.
-            item(key = "adblock") {
-                val adBlock by AppSettings.adBlock.collectAsState()
-                Text(
-                    if (adBlock) "Pubblicità bloccata nei player · Impostazioni" else "Blocco pubblicità spento · Impostazioni",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable(onClick = onOpenSettings)
-                        .padding(horizontal = 4.dp, vertical = 8.dp),
-                )
-            }
         }
     }
 }
