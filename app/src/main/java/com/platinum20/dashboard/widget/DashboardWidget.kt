@@ -13,7 +13,6 @@ import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.WeatherCodes
@@ -23,9 +22,7 @@ import com.platinum20.dashboard.work.RefreshWorker
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** Widget della schermata Home: meteo, le righe di "Adesso", i promemoria di oggi e i temi del giorno. */
 class DashboardWidget : AppWidgetProvider() {
@@ -126,9 +123,7 @@ class DashboardWidget : AppWidgetProvider() {
                 val today = forecast.today
                 views.setTextViewText(
                     R.id.widget_desc,
-                    WeatherCodes.description(c.code) +
-                        (today?.let { " · ${it.max.asTemp()}/${it.min.asTemp()}" } ?: "") +
-                        (today?.takeIf { it.precipitationProbability >= 30 }?.let { " · pioggia ${it.precipitationProbability}%" } ?: ""),
+                    WidgetRows.weatherLine(WeatherCodes.description(c.code), today?.max?.asTemp(), today?.min?.asTemp(), today?.precipitationProbability),
                 )
             }
 
@@ -148,7 +143,7 @@ class DashboardWidget : AppWidgetProvider() {
             }
 
             // Con le righe sopra le notizie scendono a due, per stare nello stesso spazio.
-            val news = headlines(context).take(if (brief.isEmpty() && tasks == null) 3 else 2)
+            val news = headlines(context).take(WidgetRows.newsCount(brief.size, tasks != null))
             val rows = listOf(R.id.widget_news1, R.id.widget_news2, R.id.widget_news3)
             views.setViewVisibility(R.id.widget_recap_title, if (news.isEmpty()) View.GONE else View.VISIBLE)
             rows.forEachIndexed { i, id ->
@@ -170,27 +165,7 @@ class DashboardWidget : AppWidgetProvider() {
         /** Riga con i promemoria scaduti o in scadenza oggi, null se non ce ne sono. */
         private fun tasksLine(context: Context): String? {
             NotesStore.init(context)
-            val zone = ZoneId.systemDefault()
-            val endOfToday = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-            val due = NotesStore.data.value.openTasks.filter { (it.dueAt ?: Long.MAX_VALUE) < endOfToday }
-            if (due.isEmpty()) return null
-            val now = System.currentTimeMillis()
-            val late = due.count { (it.dueAt ?: 0) < now }
-            val next = due.firstOrNull { (it.dueAt ?: 0) >= now } ?: due.first()
-            val count = when {
-                late == due.size -> if (late == 1) "1 promemoria scaduto" else "$late promemoria scaduti"
-                late > 0 -> "${due.size} promemoria oggi ($late ${if (late == 1) "scaduto" else "scaduti"})"
-                due.size == 1 -> "1 promemoria oggi"
-                else -> "${due.size} promemoria oggi"
-            }
-            return "📌 $count · ${next.text} ${timeOf(next, zone)}".trim()
-        }
-
-        private fun timeOf(task: TaskItem, zone: ZoneId): String {
-            val due = task.dueAt ?: return ""
-            val time = Instant.ofEpochMilli(due).atZone(zone)
-            return if (time.toLocalDate() == LocalDate.now(zone)) "alle " + time.format(DateTimeFormatter.ofPattern("HH:mm"))
-            else ""
+            return WidgetRows.tasksLine(NotesStore.data.value.openTasks, Instant.now(), ZoneId.systemDefault())
         }
 
         private fun openApp(context: Context, request: OpenRequest, code: Int): PendingIntent {
