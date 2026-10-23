@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.117.0
+**Oggi › La tua settimana**
+- In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
+- I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
+
+**Meteo**
+- La rotella dell'aggiornamento accanto a "ADESSO · ROMA" resta al massimo 10 secondi: poi, e quando i dati sono vecchi, la riga dice da quando sono ("· 5 MIN FA", "· ALLE 9:40"), anche in Oggi
+- Al posto dell'icona che non si capiva, in alto c'è il pulsante "Località"
+
+**Sotto il cofano**
+- Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
+
 ## 1.116.0
 **Note › Date: i compleanni dalla rubrica**
 - Tra le idee delle Note c'è "Compleanni dai contatti": Canvas chiede il permesso della rubrica solo lì, legge compleanni e anniversari e li mostra in un elenco con le caselle, già spuntate quelle che mancano. Un tocco su "Importa" e diventano date "ogni anno"; con "Annulla" si tolgono tutte
