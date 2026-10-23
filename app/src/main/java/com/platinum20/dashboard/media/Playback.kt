@@ -1,0 +1,200 @@
+package com.platinum20.dashboard.media
+
+import android.content.Context
+import com.platinum20.dashboard.media.podcast.PodcastNow
+import com.platinum20.dashboard.media.podcast.PodcastStore
+import com.platinum20.dashboard.media.radio.RadioNow
+import com.platinum20.dashboard.media.radio.RadioStore
+import com.platinum20.dashboard.media.spotify.SpPlayback
+import com.platinum20.dashboard.media.spotify.SpotifyApi
+import com.platinum20.dashboard.media.spotify.SpotifyStore
+import com.platinum20.dashboard.media.youtube.player.YtNow
+import com.platinum20.dashboard.media.youtube.player.YtPlayer
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/** Da dove arriva quello che suona: decide colore, icona e comandi del player unico. */
+enum class PlaySource(val label: String) {
+    VIDEO("YouTube"),
+    MUSIC("YouTube Music"),
+    SPOTIFY("Spotify"),
+    RADIO("Radio"),
+    PODCAST("Podcast"),
+}
+
+/** Quello che sta suonando, uguale per tutte le fonti: lo mostrano il mini player e il player grande. */
+data class Playing(
+    val source: PlaySource,
+    val title: String,
+    val subtitle: String,
+    val artwork: String,
+    val playing: Boolean,
+    val loading: Boolean = false,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    val error: String? = null,
+    /** In diretta (radio, dirette di YouTube): niente barra del tempo. */
+    val live: Boolean = false,
+) {
+    /** Si vede un video (YouTube non in solo audio): il player grande è quello con il video. */
+    val isVideo: Boolean get() = source == PlaySource.VIDEO
+    val canSeek: Boolean get() = !live && durationMs > 0 && source != PlaySource.SPOTIFY
+    val canSkip: Boolean get() = source == PlaySource.SPOTIFY || source == PlaySource.MUSIC || source == PlaySource.VIDEO
+    val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+}
+
+/**
+ * Il player unico dell'app: mette insieme YouTube (video e musica), Spotify, radio e podcast in
+ * un solo "in riproduzione", con gli stessi comandi. Ognuno continua a suonare con il suo motore
+ * (Spotify è protetto e resta nel suo riproduttore ufficiale), ma per chi usa l'app è un player solo.
+ */
+object Playback {
+    private val scope = MainScope()
+    /** L'ultima fonte che ha cominciato a suonare: vince quando tutte sono in pausa. */
+    private var lastSource: PlaySource? = null
+
+    private val spotify = combine(NowPlaying.tracks, SpotifyStore.playback) { tracks, remote -> tracks[MediaService.SPOTIFY] to remote }
+
+    val now: StateFlow<Playing?> = combine(YtPlayer.now, spotify, RadioStore.now, PodcastStore.now) { yt, sp, radio, podcast ->
+        val candidates = candidates(yt, sp.first, sp.second, radio, podcast)
+        candidates.firstOrNull { it.playing }?.let { lastSource = it.source }
+        pick(candidates, lastSource)
+    }.stateIn(scope, SharingStarted.Eagerly, null)
+
+    /** Tutte le fonti aperte, nello stesso formato. Funzione pura, provata nei test. */
+    internal fun candidates(yt: YtNow?, spotifyTrack: Track?, spotifyRemote: SpPlayback?, radio: RadioNow?, podcast: PodcastNow?): List<Playing> =
+        listOfNotNull(
+            yt?.let {
+                val stream = it.stream
+                Playing(
+                    source = if (it.audioOnly) PlaySource.MUSIC else PlaySource.VIDEO,
+                    title = stream?.title ?: "YouTube",
+                    subtitle = it.error ?: stream?.channel.orEmpty(),
+                    artwork = stream?.thumbnail.orEmpty(),
+                    playing = it.playing,
+                    loading = it.loading,
+                    positionMs = it.positionMs,
+                    durationMs = it.durationMs.takeIf { d -> d > 0 } ?: ((stream?.durationSec ?: 0) * 1000L),
+                    error = it.error,
+                    live = stream?.hlsUrl != null,
+                )
+            },
+            spotifyTrack?.let {
+                Playing(PlaySource.SPOTIFY, it.title, it.artist, it.artworkUrl, it.playing)
+            } ?: spotifyRemote?.takeIf { it.playing && it.item != null }?.let {
+                // Spotify che suona su un altro dispositivo (telefono, casse): si comanda da qui.
+                val item = it.item!!
+                Playing(
+                    PlaySource.SPOTIFY, item.title,
+                    listOf(item.subtitle, it.device).filter(String::isNotBlank).joinToString(" · "),
+                    item.image, it.playing, positionMs = it.progressMs, durationMs = it.durationMs,
+                )
+            },
+            radio?.let {
+                Playing(
+                    PlaySource.RADIO, it.station.name,
+                    it.error ?: it.track.ifBlank { if (it.buffering) "Collegamento…" else "In diretta" },
+                    it.station.logo, it.playing, loading = it.buffering, error = it.error, live = true,
+                )
+            },
+            podcast?.let {
+                Playing(
+                    PlaySource.PODCAST, it.episode.title, it.error ?: it.episode.podcastTitle, it.episode.image, it.playing,
+                    loading = it.buffering, positionMs = it.positionMs, durationMs = it.durationMs, error = it.error,
+                )
+            },
+        )
+
+    /** Quello da mostrare: ciò che suona, se no l'ultima fonte partita, se no la prima aperta. */
+    internal fun pick(candidates: List<Playing>, last: PlaySource?): Playing? =
+        candidates.firstOrNull { it.playing } ?: candidates.firstOrNull { it.source == last } ?: candidates.firstOrNull()
+
+    fun toggle(context: Context) {
+        val current = now.value ?: return
+        when (current.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.toggle(context)
+            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.TOGGLE) { if (current.playing) SpotifyApi.pause(it) else SpotifyApi.resume(it) }
+            PlaySource.RADIO -> RadioStore.togglePause()
+            PlaySource.PODCAST -> PodcastStore.togglePause()
+        }
+    }
+
+    fun next(context: Context) {
+        when (now.value?.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.next(context)
+            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.NEXT) { SpotifyApi.next(it) }
+            PlaySource.PODCAST -> PodcastStore.seekBy(30_000)
+            else -> Unit
+        }
+    }
+
+    fun previous(context: Context) {
+        when (now.value?.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, 0)
+            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) { SpotifyApi.previous(it) }
+            PlaySource.PODCAST -> PodcastStore.seekBy(-10_000)
+            else -> Unit
+        }
+    }
+
+    fun seekBy(context: Context, deltaMs: Long) {
+        when (now.value?.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekBy(context, deltaMs)
+            PlaySource.PODCAST -> PodcastStore.seekBy(deltaMs)
+            else -> Unit
+        }
+    }
+
+    fun seekTo(context: Context, positionMs: Long) {
+        val current = now.value ?: return
+        when (current.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, positionMs)
+            PlaySource.PODCAST -> PodcastStore.seekBy(positionMs - current.positionMs)
+            else -> Unit
+        }
+    }
+
+    /** Ferma e chiude quello che suona (il mini player sparisce). */
+    fun stop(context: Context) {
+        when (now.value?.source) {
+            PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.stop(context)
+            PlaySource.SPOTIFY -> if (MediaService.SPOTIFY in MediaWebViews.openServices()) MediaWebViews.release(MediaService.SPOTIFY)
+                else SpotifyStore.control { SpotifyApi.pause(it) }
+            PlaySource.RADIO -> RadioStore.stop()
+            PlaySource.PODCAST -> PodcastStore.stop()
+            null -> Unit
+        }
+    }
+
+    /** Spotify nell'app si comanda dal suo riproduttore; quello su un altro dispositivo con la Web API. */
+    private fun spotifyCommand(local: PlayerCommand, remote: suspend (String) -> Unit) {
+        if (NowPlaying.tracks.value.containsKey(MediaService.SPOTIFY)) NowPlaying.command(MediaService.SPOTIFY, local)
+        else SpotifyStore.control(remote)
+    }
+
+    private var sleepJob: Job? = null
+    private val _sleepAt = MutableStateFlow<Long?>(null)
+    /** Quando il timer di spegnimento metterà in pausa tutto (millisecondi), o null. */
+    val sleepAt: StateFlow<Long?> = _sleepAt.asStateFlow()
+
+    /** Timer di spegnimento per qualunque fonte: allo scadere si mette in pausa tutto. */
+    fun setSleepTimer(minutes: Int?) {
+        sleepJob?.cancel()
+        _sleepAt.value = null
+        if (minutes == null) return
+        _sleepAt.value = System.currentTimeMillis() + minutes * 60_000L
+        sleepJob = scope.launch {
+            delay(minutes * 60_000L)
+            NowPlaying.pauseOthers(null, radio = true)
+            _sleepAt.value = null
+        }
+    }
+}

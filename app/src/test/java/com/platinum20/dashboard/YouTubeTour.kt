@@ -68,7 +68,7 @@ class YouTubeTour {
     @Test
     fun feed() {
         compose.setContent {
-            GeneralDashboardTheme(AppTheme.CANVAS) { YouTubeFeedScreen(onBack = {}, onPlay = {}, onLogin = {}) }
+            GeneralDashboardTheme(AppTheme.CANVAS) { YouTubeFeedScreen(onBack = {}, onPlay = {}, onLogin = {}, onOpenPhone = {}) }
         }
         settle()
         shot("youtube_iscrizioni")

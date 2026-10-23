@@ -139,11 +139,9 @@ class ScreenshotTour {
 
         if (tap("Media")) {
             settle(2_000); shot(p + "30_media")
-            visit("YouTube", p + "31_youtube")
-            visit("Spotify", p + "32_spotify")
-            visit("Video", p + "33_video")
-            visit("Radio", p + "34_radio", waitMs = 6_000)
-            visit("Podcast", p + "35_podcast")
+            visit("Musica", p + "31_musica")
+            visit("Video", p + "32_video")
+            visit("Radio e podcast", p + "33_radio_podcast", waitMs = 6_000)
         } else missing += p + "30_media"
 
         if (tap("Impostazioni")) {

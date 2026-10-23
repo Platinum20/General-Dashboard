@@ -12,6 +12,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.ExoPlayer
@@ -49,6 +50,13 @@ data class YtNow(
     val playingHeight: Int = 0,
     /** Lingua dei sottotitoli accesi, null se spenti. */
     val subtitle: String? = null,
+    /** Solo audio (la musica di YouTube in Musica): niente video da scaricare né da mostrare. */
+    val audioOnly: Boolean = false,
+    /** Avviso breve da mostrare sotto il video (es. sottotitoli non disponibili). */
+    val notice: String? = null,
+    /** Punto e durata in millisecondi, per la barra del tempo del player unico. */
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
 )
 
 /**
@@ -96,12 +104,41 @@ object YtPlayer {
         restart(context, stream.copy(videoUrl = quality.url, height = quality.height), Mode.FIXED)
     }
 
-    /** Accende i sottotitoli in quella lingua (null = spenti), dal punto in cui si era. */
+    /**
+     * Accende i sottotitoli in quella lingua (null = spenti), dal punto in cui si era. Il file si
+     * scarica prima: se YouTube non lo dà il video continua senza e compare un avviso.
+     */
     fun setSubtitle(context: Context, subtitle: YtSubtitle?) {
-        subtitleLanguage = subtitle?.language
         val stream = _now.value?.stream ?: return
-        restart(context, stream, mode, subtitle)
+        if (subtitle == null) {
+            subtitleLanguage = null
+            restart(context, stream, mode, null)
+            return
+        }
+        scope.launch {
+            if (prepareCaption(context, subtitle) == null) {
+                _now.value = _now.value?.copy(notice = "Sottotitoli non disponibili per questo video")
+                return@launch
+            }
+            subtitleLanguage = subtitle.language
+            if (_now.value?.stream?.id == stream.id) restart(context, stream, mode, subtitle)
+        }
     }
+
+    fun consumeNotice() {
+        _now.value = _now.value?.copy(notice = null)
+    }
+
+    /** I sottotitoli in un file locale (scaricati una volta per video e lingua), o null se mancano. */
+    private suspend fun prepareCaption(context: Context, subtitle: YtSubtitle): Uri? {
+        captionFiles[subtitle.url]?.let { return it }
+        val text = YtCaptions.fetchVtt(subtitle) ?: return null
+        val file = java.io.File(context.cacheDir, "yt-sub-${subtitle.url.hashCode().toUInt()}.vtt")
+        runCatching { file.writeText(text) }.getOrElse { return null }
+        return Uri.fromFile(file).also { captionFiles[subtitle.url] = it }
+    }
+
+    private val captionFiles = mutableMapOf<String, Uri>()
 
     private fun restart(context: Context, stream: YtStream, newMode: Mode, subtitle: YtSubtitle? = pickSubtitle(stream)) {
         val position = exo?.currentPosition ?: 0L
@@ -199,19 +236,29 @@ object YtPlayer {
      * Apre [link] nel player. Se è il video già caricato non fa nulla: tornando sulla schermata di un
      * video messo in pausa resta in pausa (si riprende con il tasto play).
      */
-    fun play(context: Context, link: String) {
-        if (isLoaded(_now.value, link)) return
+    fun play(context: Context, link: String, audioOnly: Boolean = false) {
+        val loaded = _now.value
+        if (isLoaded(loaded, link)) {
+            // Stesso video: si passa da solo audio a video (o il contrario) dal punto in cui si era.
+            val stream = loaded?.stream
+            if (stream != null && loaded.audioOnly != audioOnly) {
+                _now.value = loaded.copy(audioOnly = audioOnly)
+                restart(context, stream, mode)
+            }
+            return
+        }
         NowPlaying.pauseOthers(null, radio = true, nativeYouTube = false)
         job?.cancel()
         // Il video di prima va in "Riprendi" con il suo punto, prima che _now parli del nuovo.
         remember(context)
-        _now.value = YtNow(link = link, stream = null)
+        _now.value = YtNow(link = link, stream = null, audioOnly = audioOnly)
         context.startService(Intent(context, YtPlaybackService::class.java))
         job = scope.launch {
             runCatching { YtResolver.resolve(link, preferredHeight(context)) }
                 .onSuccess {
                     val auto = preferredHeight(context) == 0 && it.dashManifest != null
                     YtHistory.init(context)
+                    if (!audioOnly) pickSubtitle(it)?.let { sub -> prepareCaption(context, sub) }
                     // Un link con t=... (anche quello di "Riprendi") parte da quel punto, se no da dove eri rimasto.
                     val from = YtResolver.startSeconds(link) * 1000
                     start(
@@ -221,7 +268,7 @@ object YtPlayer {
                     )
                     remember(context)
                 }
-                .onFailure { _now.value = YtNow(link, null, loading = false, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
+                .onFailure { _now.value = YtNow(link, null, loading = false, audioOnly = audioOnly, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
     }
 
@@ -284,7 +331,10 @@ object YtPlayer {
             .build()
         val item = { url: String -> MediaItem.Builder().setUri(url).setMediaId(stream.id).setMediaMetadata(metadata).build() }
         val muxed = newMode == Mode.MUXED
+        val audioOnly = _now.value?.audioOnly == true
         val video: MediaSource = when {
+            audioOnly && stream.hlsUrl == null && stream.audioUrl != null ->
+                ProgressiveMediaSource.Factory(factory(stream.audioUrl)).createMediaSource(item(stream.audioUrl))
             stream.hlsUrl != null -> HlsMediaSource.Factory(factory(stream.hlsUrl)).createMediaSource(item(stream.hlsUrl))
             newMode == Mode.AUTO && stream.dashManifest != null && stream.videoUrl != null -> {
                 val base = Uri.parse("https://www.youtube.com/watch?v=${stream.id}")
@@ -299,10 +349,14 @@ object YtPlayer {
             stream.muxedUrl != null -> ProgressiveMediaSource.Factory(factory(stream.muxedUrl)).createMediaSource(item(stream.muxedUrl))
             else -> ProgressiveMediaSource.Factory(factory(stream.audioUrl!!)).createMediaSource(item(stream.audioUrl))
         }
-        val source = if (subtitle == null) video else MergingMediaSource(
+        // Solo il file già scaricato: un sottotitolo che non si carica non deve fermare il video.
+        val caption = subtitle?.let { captionFiles[it.url] }?.takeIf { !audioOnly }
+        val source = if (subtitle == null || caption == null) video else MergingMediaSource(
             video,
-            SingleSampleMediaSource.Factory(factory(subtitle.url)).createMediaSource(
-                MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
+            SingleSampleMediaSource.Factory(DefaultDataSource.Factory(context))
+                .setTreatLoadErrorsAsEndOfStream(true)
+                .createMediaSource(
+                MediaItem.SubtitleConfiguration.Builder(caption)
                     .setMimeType(MimeTypes.TEXT_VTT)
                     .setLanguage(subtitle.language)
                     .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
@@ -310,9 +364,19 @@ object YtPlayer {
                 C.TIME_UNSET,
             ),
         )
-        _now.value = YtNow(link = _now.value?.link ?: stream.id, stream = stream, loading = true, subtitle = subtitle?.language)
+        _now.value = YtNow(
+            link = _now.value?.link ?: stream.id,
+            stream = stream,
+            loading = true,
+            subtitle = subtitle?.language?.takeIf { caption != null },
+            audioOnly = audioOnly,
+        )
         player(context).apply {
-            trackSelectionParameters = trackSelectionParameters.buildUpon().setPreferredTextLanguage(subtitle?.language).build()
+            trackSelectionParameters = trackSelectionParameters.buildUpon()
+                .setPreferredTextLanguage(subtitle?.language?.takeIf { caption != null })
+                // In solo audio il player non scarica il video.
+                .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, audioOnly)
+                .build()
             setMediaSource(source, positionMs)
             prepare()
             playWhenReady = play
@@ -353,11 +417,29 @@ object YtPlayer {
         // Anche mentre suona, ogni 30 secondi: se il telefono chiude l'app il punto non si perde.
         val context = appContext
         if (context != null && p.isPlaying && System.currentTimeMillis() - lastRemembered > 30_000) remember(context)
+        if (p.isPlaying) startTicker() else ticker?.cancel()
         _now.value = current.copy(
+            positionMs = p.currentPosition.coerceAtLeast(0),
+            durationMs = p.duration.takeIf { it > 0 } ?: current.durationMs,
             playingHeight = p.videoFormat?.height ?: current.playingHeight,
             playing = p.isPlaying,
             loading = p.playbackState == Player.STATE_BUFFERING || (current.stream == null && current.error == null),
         )
+    }
+
+    private var ticker: Job? = null
+
+    // Mentre suona la barra del tempo del mini player scorre (una volta al secondo basta).
+    private fun startTicker() {
+        if (ticker?.isActive == true) return
+        ticker = scope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1_000)
+                val p = exo ?: break
+                if (!p.isPlaying) break
+                _now.value = _now.value?.copy(positionMs = p.currentPosition.coerceAtLeast(0))
+            }
+        }
     }
 
     /** Segna nella cronologia dove sei arrivato: ogni 5 secondi mentre guardi e a ogni pausa. */

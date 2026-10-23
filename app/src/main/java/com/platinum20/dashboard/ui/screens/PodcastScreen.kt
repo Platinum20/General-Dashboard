@@ -71,22 +71,24 @@ import java.time.ZonedDateTime
 /** Ricerche già pronte per chi non segue ancora nessun podcast. */
 internal val podcastIdeas = listOf("Il Post", "Muschio Selvaggio", "Geopop", "Tintoria", "Storia")
 
-/** Podcast: quelli seguiti con gli ultimi episodi, la ricerca e la pagina di ogni podcast. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * La parte Podcast di "Radio e podcast": quelli seguiti qui e quelli salvati su Spotify insieme,
+ * con gli ultimi episodi, la ricerca e la pagina di ogni podcast ([open], gestita da chi la contiene).
+ */
 @Composable
-fun PodcastScreen(onBack: () -> Unit) {
+internal fun PodcastBody(open: Podcast?, onOpen: (Podcast?) -> Unit) {
     val context = LocalContext.current
     PodcastStore.init(context)
     val search by PodcastStore.search.collectAsState()
-    val followed by PodcastStore.followed.collectAsState()
+    val followedHere by PodcastStore.followed.collectAsState()
+    val spotify by PodcastStore.spotify.collectAsState()
+    val followed = remember(followedHere, spotify) { PodcastStore.merge(followedHere, spotify) }
     val latest by PodcastStore.latest.collectAsState()
     val now by PodcastStore.now.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var searching by rememberSaveable { mutableStateOf(false) }
-    var open by remember { mutableStateOf<Podcast?>(null) }
 
     LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-    BackHandler(enabled = open != null) { open = null }
 
     val runSearch: (String) -> Unit = { text ->
         query = text
@@ -94,74 +96,54 @@ fun PodcastScreen(onBack: () -> Unit) {
         PodcastStore.search(text)
     }
 
-    Scaffold(
-        topBar = {
-            TopLevelBar(
-                title = open?.title ?: "Podcast",
-                subtitle = when {
-                    open != null -> open?.author
-                    followed.isNotEmpty() -> "Ne segui ${followed.size}"
-                    else -> "Ascolta e riprendi da dove eri"
-                },
-                onBack = { if (open != null) open = null else onBack() },
-            )
-        },
-        bottomBar = { now?.let { PodcastNowBar(it) } },
-    ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-        ) {
-            val podcast = open
-            if (podcast != null) {
-                PodcastPage(podcast, now)
-                return@Column
-            }
-            OutlinedTextField(
-                value = query,
-                onValueChange = {
-                    query = it
-                    if (it.isBlank()) {
+    Column(Modifier.fillMaxSize()) {
+        if (open != null) {
+            PodcastPage(open, now)
+            return@Column
+        }
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                if (it.isBlank()) {
+                    searching = false
+                    PodcastStore.clearSearch()
+                }
+            },
+            placeholder = { Text("Cerca un podcast") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            trailingIcon = if (query.isNotEmpty()) {
+                {
+                    IconButton(onClick = {
+                        query = ""
                         searching = false
                         PodcastStore.clearSearch()
-                    }
-                },
-                placeholder = { Text("Cerca un podcast") },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                trailingIcon = if (query.isNotEmpty()) {
-                    {
-                        IconButton(onClick = {
-                            query = ""
-                            searching = false
-                            PodcastStore.clearSearch()
-                        }) { Icon(Icons.Outlined.Close, contentDescription = "Cancella") }
-                    }
-                } else null,
-                singleLine = true,
-                colors = canvasFieldColors(),
-                shape = MaterialTheme.shapes.large,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { runSearch(query) }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            if (searching) {
-                FeedList(search, empty = "Nessun podcast trovato") {
-                    items(search.data.orEmpty(), key = { "search-${it.feedUrl}" }) { result ->
-                        PodcastRow(result, onOpen = { open = result })
-                    }
+                    }) { Icon(Icons.Outlined.Close, contentDescription = "Cancella") }
                 }
-            } else {
-                HomeList(
-                    followed = followed,
-                    latest = latest,
-                    now = now,
-                    onOpen = { open = it },
-                    onIdea = runSearch,
-                )
+            } else null,
+            singleLine = true,
+            colors = canvasFieldColors(),
+            shape = MaterialTheme.shapes.large,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { runSearch(query) }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        if (searching) {
+            FeedList(search, empty = "Nessun podcast trovato") {
+                items(search.data.orEmpty(), key = { "search-${it.feedUrl}" }) { result ->
+                    PodcastRow(result, onOpen = { onOpen(result) })
+                }
             }
+        } else {
+            HomeList(
+                followed = followed,
+                latest = latest,
+                now = now,
+                onOpen = { onOpen(it) },
+                onIdea = runSearch,
+            )
         }
     }
 }
@@ -222,6 +204,8 @@ private fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
     val positions by PodcastStore.positions.collectAsState()
     val haptic = rememberHaptic()
     val isFollowed = followed.any { it.feedUrl == podcast.feedUrl }
+    val spotifyShows by PodcastStore.spotify.collectAsState()
+    val onSpotify = podcast.fromSpotify || spotifyShows.any { it.feedUrl == podcast.feedUrl }
     LaunchedEffect(podcast.feedUrl) { PodcastStore.loadEpisodes(podcast) }
     val state = all[podcast.feedUrl] ?: Loadable(loading = true)
     FeedList(state, empty = "Questo podcast non ha episodi da ascoltare") {
@@ -239,7 +223,10 @@ private fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
                         haptic(if (isFollowed) Haptic.TICK else Haptic.CONFIRM)
                         PodcastStore.toggleFollow(podcast)
                     }
-                    if (isFollowed) {
+                    if (onSpotify && !isFollowed) {
+                        // Salvato su Spotify: si segue (e si toglie) da lì, qui arriva da solo.
+                        Text("Nella tua libreria di Spotify", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    } else if (isFollowed) {
                         OutlinedButton(onClick = toggle) {
                             Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
@@ -260,7 +247,8 @@ private fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
 @Composable
 private fun PodcastRow(podcast: Podcast, onOpen: () -> Unit) {
     val followed by PodcastStore.followed.collectAsState()
-    val isFollowed = followed.any { it.feedUrl == podcast.feedUrl }
+    val spotify by PodcastStore.spotify.collectAsState()
+    val isFollowed = remember(followed, spotify, podcast) { PodcastStore.isInLibrary(podcast) }
     Surface(
         onClick = onOpen,
         shape = MaterialTheme.shapes.large,
@@ -366,51 +354,6 @@ private fun Artwork(url: String, sizeDp: Int) {
         Icon(Icons.Outlined.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         if (url.isNotBlank()) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
-        }
-    }
-}
-
-/** Mini player dell'episodio: tempo che scorre, 10 secondi indietro, 30 avanti. */
-@Composable
-private fun PodcastNowBar(now: PodcastNow) {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, tonalElevation = 3.dp) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Artwork(now.episode.image, 44)
-                Column(Modifier.weight(1f)) {
-                    Text(now.episode.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        now.error ?: if (now.buffering) "Caricamento…" else listOf(
-                            clockLabel(now.positionMs),
-                            if (now.durationMs > 0) clockLabel(now.durationMs) else "",
-                        ).filter { it.isNotBlank() }.joinToString(" / "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (now.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (now.buffering) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                IconButton(onClick = { PodcastStore.seekBy(-10_000) }) {
-                    Icon(Icons.Filled.Replay10, contentDescription = "Indietro di 10 secondi")
-                }
-                FilledIconButton(onClick = { PodcastStore.togglePause() }) {
-                    Icon(if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (now.playing) "Pausa" else "Riproduci")
-                }
-                IconButton(onClick = { PodcastStore.seekBy(30_000) }) {
-                    Icon(Icons.Filled.Forward30, contentDescription = "Avanti di 30 secondi")
-                }
-                IconButton(onClick = { PodcastStore.stop() }) {
-                    Icon(Icons.Filled.Stop, contentDescription = "Ferma")
-                }
-            }
-            if (now.durationMs > 0) {
-                Spacer(Modifier.height(6.dp))
-                LinearProgressIndicator(
-                    progress = { (now.positionMs.toFloat() / now.durationMs).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(3.dp).clip(MaterialTheme.shapes.small),
-                )
-            }
         }
     }
 }

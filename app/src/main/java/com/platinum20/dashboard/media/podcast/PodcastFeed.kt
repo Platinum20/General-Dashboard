@@ -17,6 +17,8 @@ data class Podcast(
     val author: String,
     val feedUrl: String,
     val artwork: String,
+    /** Salvato nella tua libreria di Spotify (si segue e si toglie da lì). */
+    val fromSpotify: Boolean = false,
 ) {
     fun toJson(): JSONObject = JSONObject()
         .put("id", id).put("title", title).put("author", author).put("feed", feedUrl).put("art", artwork)
@@ -128,6 +130,45 @@ object PodcastFeed {
     }
 
     /** Il telefono non scarica in chiaro: gli indirizzi http passano a https (i servizi di podcast lo reggono). */
+    /** Titolo confrontabile: minuscolo, senza accenti, punteggiatura e "podcast" finale. */
+    fun normalizeTitle(title: String): String =
+        java.text.Normalizer.normalize(title.lowercase(Locale.ROOT), java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .trim()
+            .removeSuffix(" podcast")
+            .trim()
+
+    /** Tra i risultati di iTunes, il feed RSS dello stesso podcast di Spotify (stesso titolo), se c'è. */
+    fun matchFeed(showTitle: String, results: List<Podcast>): Podcast? {
+        val key = normalizeTitle(showTitle)
+        if (key.isBlank()) return null
+        return results.firstOrNull { normalizeTitle(it.title) == key }
+    }
+
+    /** "2026-10-21", "2026-10" o "2026" di Spotify in millisecondi (mezzogiorno UTC), 0 se non si capisce. */
+    fun spotifyDate(date: String): Long {
+        val parts = date.split('-').mapNotNull { it.toIntOrNull() }
+        if (parts.isEmpty()) return 0
+        return runCatching {
+            java.time.LocalDate.of(parts[0], parts.getOrElse(1) { 1 }, parts.getOrElse(2) { 1 })
+                .atTime(12, 0).toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+        }.getOrDefault(0)
+    }
+
+    /** Un episodio di Spotify come gli altri: l'"indirizzo" è spotify:episode:…, che suona nel riproduttore di Spotify. */
+    fun fromSpotify(e: com.platinum20.dashboard.media.spotify.SpEpisode, podcast: Podcast): Episode = Episode(
+        id = e.uri,
+        title = cleanText(e.title).ifBlank { "Episodio senza titolo" },
+        audioUrl = e.uri,
+        publishedAt = spotifyDate(e.releaseDate),
+        durationSec = e.durationMs / 1000,
+        description = cleanText(e.description).take(MAX_DESCRIPTION),
+        image = e.image.ifBlank { podcast.artwork },
+        podcastTitle = podcast.title,
+        feedUrl = podcast.feedUrl,
+    )
+
     fun secure(url: String): String {
         val trimmed = url.trim()
         return if (trimmed.startsWith("http://", ignoreCase = true)) "https://" + trimmed.substring(7) else trimmed
