@@ -6,8 +6,6 @@ import android.graphics.Canvas
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
-import androidx.compose.ui.test.hasScrollToNodeAction
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
@@ -181,14 +179,17 @@ class ScreenshotTour {
     private fun exists(label: String, substring: Boolean = false): Boolean =
         compose.onAllNodes(matcher(label, substring)).fetchSemanticsNodes().isNotEmpty()
 
-    /** Porta a schermo una voce fuori dalla parte composta della lista (es. "Compila da solo" dopo lo scorrimento). */
+    /**
+     * Porta a schermo una voce fuori dalla parte composta della lista (es. "Aggiornamenti" in fondo alle Impostazioni).
+     * Riga per riga con ScrollToIndex, come [scroll]: performScrollToNode col clock fermo aspetta un frame che non arriva.
+     */
     private fun reveal(label: String, substring: Boolean) {
-        val lists = compose.onAllNodes(hasScrollToNodeAction())
-        for (i in 0 until lists.fetchSemanticsNodes().size) {
-            if (runCatching { lists[i].performScrollToNode(hasText(label, substring = substring, ignoreCase = substring)) }.isSuccess) {
-                settle(1_000)
-                return
-            }
+        val list = compose.onAllNodes(hasScrollToIndexAction())
+        if (list.fetchSemanticsNodes().isEmpty()) return
+        for (index in 0..40) {
+            if (runCatching { list.onFirst().performScrollToIndex(index) }.isFailure) break
+            settle(300)
+            if (exists(label, substring)) return
         }
     }
 
