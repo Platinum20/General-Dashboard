@@ -13,17 +13,25 @@ enum class Repeat(val label: String) {
     MONTHLY("ogni mese"),
     YEARLY("ogni anno");
 
-    fun next(from: LocalDateTime): LocalDateTime = when (this) {
-        DAILY -> from.plusDays(1)
-        WEEKLY -> from.plusWeeks(1)
-        MONTHLY -> from.plusMonths(1)
-        YEARLY -> from.plusYears(1)
+    fun next(from: LocalDateTime): LocalDateTime = step(from, 1)
+
+    /** La [times]-esima occorrenza dopo [from], contata sempre da [from]. */
+    private fun step(from: LocalDateTime, times: Long): LocalDateTime = when (this) {
+        DAILY -> from.plusDays(times)
+        WEEKLY -> from.plusWeeks(times)
+        MONTHLY -> from.plusMonths(times)
+        YEARLY -> from.plusYears(times)
     }
 
-    /** La prima occorrenza dopo [now], partendo da [from]. */
+    /**
+     * La prima occorrenza dopo [now], partendo da [from]. Si conta da [from] e non dall'occorrenza
+     * precedente: il 31 gennaio "ogni mese" passa per il 28 febbraio ma poi torna al 31 marzo,
+     * e il 29 febbraio "ogni anno" torna al 29 nel bisestile.
+     */
     fun nextAfter(from: LocalDateTime, now: LocalDateTime): LocalDateTime {
-        var next = next(from)
-        while (!next.isAfter(now)) next = next(next)
+        var times = 1L
+        var next = step(from, times)
+        while (!next.isAfter(now)) next = step(from, ++times)
         return next
     }
 }
