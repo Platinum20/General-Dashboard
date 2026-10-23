@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.102.0
+## 1.103.0
 **News**
 - Niente più riquadri grigi: la prima notizia senza foto (o con la foto che non si carica) diventa una card solo testo, e le miniature che non arrivano spariscono invece di lasciare un quadrato vuoto. Loghi e immagini segnaposto dei feed non si mostrano più come foto
 - La fonte che non risponde non è più una riga in cima a tutto: c'è un chip discreto in coda ai filtri ("1 fonte non risponde"), toccandolo si leggono i nomi
@@ -17,6 +17,21 @@
 **Sotto il cofano**
 - Il giro fotografico ora fallisce ed elenca le schermate attese che non trova (prima le saltava in silenzio), scorre la lista fino alle voci fuori schermo (Compila da solo, Aggiornamenti), aspetta il punto del giorno anche al buio e fotografa anche i dialoghi, così la foto del + della barra non è più uguale a quella di Oggi
 - Test nuovi: NewsLayoutTest, ParcelHintsTest, MediaStartersTest, WidgetRowsTest
+## 1.102.0
+Revisione dei doppioni: ogni cosa compare in un posto solo.
+
+**Oggi**
+- L'Agenda non si trasforma più in "Domani" la sera: finiti gli impegni di oggi sparisce, perché domani c'è già la sua card
+- Tolta la card "Scorciatoie": ripeteva la barra in basso, il Meteo (si apre toccando Adesso) e "Il punto del giorno" (Tutti)
+
+**Media**
+- Video: al posto del pulsante "Dal telefono", del pulsante "Da un link" e della grande card "Scegli cosa guardare" c'è una sola card con "Scegli un file" e "Apri un link"; "Recenti" ha l'etichetta come le altre sezioni, e la pagina ha l'intestazione grande come Meteo e YouTube
+- Spotify: la pagina di accesso non mostra più il campo "Client ID" da sviluppatore; il collegamento ufficiale è un pulsante discreto, come in YouTube. Intestazione grande come le altre pagine
+- Radio: intestazione grande come le altre pagine
+
+**Sotto il cofano**
+- Tolto il vecchio player web di YouTube e Spotify (la pagina del sito in un riquadro, la sua bolla e l'avvio automatico): non era più raggiungibile da nessuna parte, YouTube suona solo nel player di Canvas e Spotify nel suo riproduttore nascosto
+
 ## 1.101.0
 **Media › Podcast (nuovo)**
 - Quinta fonte in Media: cerchi un podcast (ricerca gratuita di iTunes, senza account), lo apri e vedi gli episodi con data, durata e una riga di descrizione, tutto dentro l'app

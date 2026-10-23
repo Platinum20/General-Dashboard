@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,14 +26,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Euro
 import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Umbrella
-import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.PlayCircle
@@ -47,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -62,7 +57,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -71,7 +65,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.notes.NotesStore
@@ -120,8 +113,6 @@ fun HomeScreen(
     onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
-    onOpenVideo: () -> Unit,
-    onOpenService: (MediaService) -> Unit,
     onCustomize: () -> Unit,
     onOpenAutoFill: () -> Unit = {},
 ) {
@@ -278,12 +269,6 @@ fun HomeScreen(
                     onOpenArticle(it.headline)
                 },
                 onOpenAll = onOpenRecap,
-            )
-            HomeCard.MODULES -> Shortcuts(
-                onOpenWeather = onOpenWeather,
-                onOpenRecap = onOpenRecap,
-                onOpenVideo = onOpenVideo,
-                onOpenService = onOpenService,
             )
         }
     }
@@ -671,53 +656,5 @@ private fun CardMessage(
         }
         Spacer(Modifier.size(8.dp))
         FilledTonalButton(onClick = onAction) { Text(action) }
-    }
-}
-
-/** Scorciatoie a ciò che non sta nella barra in basso: dettaglio meteo, punto del giorno e player. */
-@Composable
-private fun Shortcuts(
-    onOpenWeather: () -> Unit,
-    onOpenRecap: () -> Unit,
-    onOpenVideo: () -> Unit,
-    onOpenService: (MediaService) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ShortcutTile(Icons.Outlined.WbSunny, "Meteo", onOpenWeather)
-        ShortcutTile(Icons.Outlined.AutoAwesome, "Il punto", onOpenRecap)
-        ShortcutTile(Icons.Outlined.PlayCircle, "Video", onOpenVideo)
-        ShortcutTile(Icons.Outlined.OndemandVideo, "YouTube") { onOpenService(MediaService.YOUTUBE) }
-        ShortcutTile(Icons.Outlined.GraphicEq, "Spotify") { onOpenService(MediaService.SPOTIFY) }
-    }
-}
-
-@Composable
-private fun RowScope.ShortcutTile(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .weight(1f)
-            .bouncyPress(0.9f)
-            .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.padding(12.dp).size(22.dp))
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
-        )
     }
 }
