@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_description">Meteo e temi del giorno</string>
+    <string name="widget_tasks_description">I promemoria di oggi, da spuntare senza aprire Canvas</string>
 
     <style name="WidgetHeadline">
         <item name="android:layout_width">match_parent</item>
@@ -21,5 +22,43 @@
         <item name="android:maxLines">1</item>
         <item name="android:textColor">@color/widget_accent</item>
         <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Widget "Da fare": una riga per promemoria, alta abbastanza da toccare il cerchio. -->
+    <style name="WidgetTaskRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
+    <style name="WidgetTaskCheck">
+        <item name="android:layout_width">36dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:layout_marginStart">-8dp</item>
+        <item name="android:src">@drawable/widget_check</item>
+    </style>
+
+    <style name="WidgetTaskText">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="WidgetTaskTime">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/widget_text_secondary</item>
+        <item name="android:textSize">12sp</item>
     </style>
 </resources>

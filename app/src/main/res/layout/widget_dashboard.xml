@@ -60,16 +60,56 @@
         </LinearLayout>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/widget_brief1"
-        style="@style/WidgetBrief"
+    <LinearLayout
+        android:id="@+id/widget_brief_row1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:visibility="gone" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
 
-    <TextView
-        android:id="@+id/widget_brief2"
-        style="@style/WidgetBrief"
-        android:visibility="gone" />
+        <TextView
+            android:id="@+id/widget_brief1"
+            style="@style/WidgetBrief"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+
+        <!-- Azione rapida della riga: pacco arrivato o abitudine fatta. -->
+        <ImageView
+            android:id="@+id/widget_brief_action1"
+            style="@style/WidgetTaskCheck"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="0dp"
+            android:contentDescription="Fatto"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_brief_row2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/widget_brief2"
+            style="@style/WidgetBrief"
+            android:layout_width="0dp"
+            android:layout_weight="1" />
+
+        <!-- Azione rapida della riga: pacco arrivato o abitudine fatta. -->
+        <ImageView
+            android:id="@+id/widget_brief_action2"
+            style="@style/WidgetTaskCheck"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="0dp"
+            android:contentDescription="Fatto"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/widget_tasks"
