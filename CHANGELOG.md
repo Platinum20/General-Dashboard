@@ -13,6 +13,7 @@
 
 **Sotto il cofano**
 - Test nuovi: ContactDatesTest (formati delle date della rubrica, anno sconosciuto, 29 febbraio, doppioni, lettura dal provider dei contatti), ReceiptTest (supermercato, farmacia, benzinaio, ristorante con migliaia, bar senza totale, data scambiata per prezzo)
+
 ## 1.114.0
 **Widget**
 - Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria
