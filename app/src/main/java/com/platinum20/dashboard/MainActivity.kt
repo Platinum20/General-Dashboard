@@ -384,32 +384,7 @@ private fun CanvasNavBar(
             },
         contentAlignment = Alignment.BottomEnd,
     ) {
-        AnimatedVisibility(
-            visible = listening,
-            enter = fadeIn() + slideInVertically { it / 2 },
-            exit = fadeOut(tween(120)),
-        ) {
-            Surface(
-                shape = RoundedCornerShape(22.dp),
-                color = androidx.compose.ui.graphics.Color.Transparent,
-                border = cardBorder(),
-                modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
-            ) {
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(
-                        partial.ifBlank { "Ti ascolto…" },
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        "Rilascia per finire",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
+        DictationBubble(listening, partial)
     }
     Row(
         modifier = Modifier
@@ -505,6 +480,37 @@ private fun CanvasNavBar(
             }
         }
     }
+    }
+}
+
+/** Il fumetto sopra la barra mentre si detta tenendo premuto il +. */
+@Composable
+private fun DictationBubble(listening: Boolean, partial: String) {
+    AnimatedVisibility(
+        visible = listening,
+        enter = fadeIn() + slideInVertically { it / 2 },
+        exit = fadeOut(tween(120)),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            border = cardBorder(),
+            modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Text(
+                    partial.ifBlank { "Ti ascolto…" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "Rilascia per finire",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
