@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.98.0
+Revisione dei doppioni: ogni cosa compare in un posto solo.
+
+**Oggi**
+- La sera "Adesso" non ripete più meteo, impegni, compleanni, pacchi e addebiti di domani: li dice solo la card "Domani" subito sotto (il widget, che non ha la card, continua a mostrarli)
+- La sera "Da fare" tiene scaduti e promemoria di oggi; quelli di domani stanno nella card "Domani", non più in due posti
+- L'Agenda non si trasforma più in "Domani" la sera: finiti gli impegni di oggi sparisce, perché domani c'è già la sua card
+- Card "Domani": ora mostra anche i pacchi in arrivo, e la frase in cima usa il primo promemoria con l'ora quando non ci sono impegni in calendario. Dopo mezzanotte non compare più (diceva "Domani" per il giorno già iniziato)
+- Tolta la card "Scorciatoie": ripeteva la barra in basso, Meteo (tocca Adesso) e "Il punto del giorno" (Tutti)
+
+**Media**
+- Video: al posto del pulsante "Dal telefono", del pulsante "Da un link" e della grande card "Scegli cosa guardare" c'è una sola card con "Scegli un file" e "Apri un link"; "Recenti" ha l'etichetta come le altre sezioni, e la pagina ha l'intestazione grande come Meteo e YouTube
+- Spotify: la pagina di accesso non mostra più il campo "Client ID" da sviluppatore; il collegamento ufficiale è un pulsante discreto, come in YouTube. Intestazione grande come le altre pagine
+- Radio: intestazione grande come le altre pagine
+
+**Dentro l'app**
+- Tolto il vecchio player web di YouTube (la pagina del sito in un riquadro e la sua bolla): non era più raggiungibile da nessuna parte, YouTube suona solo nel player di Canvas
+
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore
 - Spotify: le tue playlist usano il nuovo indirizzo dell'API di Spotify; la pagina di un artista mostra album e singoli (i "brani più ascoltati" non sono più disponibili per le app personali)

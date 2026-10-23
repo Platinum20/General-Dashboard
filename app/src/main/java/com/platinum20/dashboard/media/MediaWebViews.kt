@@ -43,35 +43,10 @@ interface MediaPageListener {
  */
 object MediaWebViews {
     private val views = mutableMapOf<MediaService, WebView>()
-    private val listeners = mutableMapOf<MediaService, MediaPageListener>()
-    private val autoplay = mutableSetOf<MediaService>()
-
-    /** Chiamato a pagina caricata: true una volta sola dopo un'apertura con un brano da far partire. */
-    fun consumeAutoplay(service: MediaService): Boolean = autoplay.remove(service)
 
     private val _open = MutableStateFlow<Set<MediaService>>(emptySet())
     /** Player aperti, anche se non sono a schermo. */
     val open: StateFlow<Set<MediaService>> = _open.asStateFlow()
-
-    /** Restituisce la pagina del servizio, creandola se serve, pronta da mettere a schermo. */
-    fun obtain(context: Context, service: MediaService, startUrl: String? = null): WebView {
-        // Su Spotify un brano, album o playlist aperto dal feed parte da solo, come nell'app ufficiale.
-        if (service == MediaService.SPOTIFY && startUrl != null) autoplay += service
-        views[service]?.let { existing ->
-            (existing.context as? MutableContextWrapper)?.baseContext = context
-            (existing.parent as? ViewGroup)?.removeView(existing)
-            if (startUrl != null) existing.loadUrl(startUrl)
-            return existing
-        }
-        val webView = createMediaWebView(MutableContextWrapper(context), service, blockAds = AppSettings.adBlock.value) {
-            listeners[service]
-        }
-        webView.loadUrl(startUrl ?: service.homeUrl)
-        views[service] = webView
-        _open.update { it + service }
-        NowPlaying.start(context)
-        return webView
-    }
 
     /**
      * Pagina nascosta fatta dall'app (mai a schermo), per esempio il riproduttore di Spotify:
@@ -97,37 +72,8 @@ object MediaWebViews {
 
     fun openServices(): Set<MediaService> = views.keys.toSet()
 
-    fun setListener(service: MediaService, listener: MediaPageListener?) {
-        if (listener == null) listeners.remove(service) else listeners[service] = listener
-    }
-
-    /**
-     * La schermata è chiusa: la pagina resta in vita ma senza riferimenti all'Activity.
-     * Con [fromParent] si stacca solo se è ancora lì: nel frattempo può averla presa il mini player.
-     */
-    fun detach(service: MediaService, fromParent: ViewParent? = null) {
-        val webView = views[service] ?: return
-        if (fromParent != null && webView.parent !== fromParent) return
-        (webView.parent as? ViewGroup)?.removeView(webView)
-        (webView.context as? MutableContextWrapper)?.let { it.baseContext = it.applicationContext }
-    }
-
-    /** Nel mini player la pagina mostra solo il video, a tutto riquadro. */
-    fun setMiniMode(service: MediaService, mini: Boolean) {
-        views[service]?.evaluateJavascript(
-            "(function(){var d=document.documentElement;if(!d)return;" +
-                "if(!document.getElementById('gd-mini-style')){var s=document.createElement('style');s.id='gd-mini-style';" +
-                "s.textContent='.gd-mini video{position:fixed!important;top:0!important;left:0!important;width:100vw!important;" +
-                "height:100vh!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}" +
-                ".gd-mini body{overflow:hidden!important}';(document.head||d).appendChild(s);}" +
-                "d.classList.toggle('gd-mini',$mini);})()",
-            null,
-        )
-    }
-
     fun release(service: MediaService) {
         val webView = views.remove(service) ?: return
-        listeners.remove(service)
         (webView.parent as? ViewGroup)?.removeView(webView)
         webView.stopLoading()
         webView.loadUrl("about:blank")

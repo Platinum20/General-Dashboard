@@ -27,10 +27,10 @@ class TodayTasksTest {
         assertEquals(5, pick.more)
     }
 
-    @Test fun dalleDiciottoAncheDomani() {
+    @Test fun laSeraDomaniStaSoloNellaCardDomani() {
         val pick = TodayTaskPicker.pick(listOf(overdue, today, tomorrow, nextWeek), evening, zone)
-        assertEquals(listOf(1L, 2L, 3L), pick.shown.map { it.id })
-        assertEquals(1, pick.more)
+        assertEquals(listOf(1L, 2L), pick.shown.map { it.id })
+        assertEquals(2, pick.more)
     }
 
     @Test fun maiPiuDiCinqueRighe() {

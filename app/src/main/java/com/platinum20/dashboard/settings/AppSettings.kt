@@ -15,9 +15,8 @@ enum class AppTheme(val label: String, val description: String) {
 /** Le card della Dashboard, nell'ordine predefinito. */
 enum class HomeCard(val label: String, val description: String) {
     WEATHER("Adesso", "Il meteo e le poche cose da sapere in questo momento: prossimo impegno, pioggia, scadenze"),
-    MODULES("Scorciatoie", "Meteo, punto del giorno, video, YouTube e Spotify a un tocco"),
-    CALENDAR("Agenda", "Gli impegni di oggi; la sera, finiti quelli, quelli di domani. Sparisce se non ce ne sono"),
-    TASKS("Da fare", "I promemoria ancora aperti"),
+    CALENDAR("Agenda", "Gli impegni di oggi. Sparisce se non ce ne sono (la sera, finiti quelli, domani sta nella card Domani)"),
+    TASKS("Da fare", "Scaduti, di oggi e qualcuno senza scadenza"),
     COUNTDOWN("In arrivo", "Compleanni, viaggi e scadenze della prossima settimana. Sparisce se non ce ne sono"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
 }
@@ -26,8 +25,7 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
     val visible: List<HomeCard> get() = order.filter { it !in hidden }
 
     companion object {
-        /** Le scorciatoie ripetono la barra in basso e le card: si accendono da Personalizza. */
-        val DEFAULT = HomeLayout(HomeCard.entries, setOf(HomeCard.MODULES))
+        val DEFAULT = HomeLayout(HomeCard.entries, emptySet())
     }
 }
 
@@ -44,8 +42,6 @@ object AppSettings {
     private const val THEME_VERSION = 2
     private const val KEY_CARD_ORDER = "home_card_order"
     private const val KEY_CARD_HIDDEN = "home_card_hidden"
-    private const val KEY_LAYOUT_VERSION = "home_layout_version"
-    private const val LAYOUT_VERSION = 2
     private const val KEY_MORNING_ENABLED = "morning_enabled"
     private const val KEY_MORNING_HOUR = "morning_hour"
     private const val KEY_MORNING_MINUTE = "morning_minute"
@@ -108,11 +104,6 @@ object AppSettings {
             savedTheme ?: AppTheme.CANVAS
         }
         _homeLayout.value = readLayout()
-        if (prefs.getInt(KEY_LAYOUT_VERSION, 1) < LAYOUT_VERSION) {
-            // 1.19: Oggi diventa "cosa serve adesso", le scorciatoie si nascondono una volta sola.
-            if (prefs.contains(KEY_CARD_ORDER)) saveLayout(_homeLayout.value.let { it.copy(hidden = it.hidden + HomeCard.MODULES) })
-            prefs.edit().putInt(KEY_LAYOUT_VERSION, LAYOUT_VERSION).apply()
-        }
         _morning.value = MorningBrief(
             enabled = prefs.getBoolean(KEY_MORNING_ENABLED, false),
             hour = prefs.getInt(KEY_MORNING_HOUR, 7),

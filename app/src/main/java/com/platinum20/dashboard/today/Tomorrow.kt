@@ -4,6 +4,7 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.FixedExpense
+import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.Forecast
 import java.time.Instant
@@ -22,7 +23,7 @@ data class TomorrowWeather(
     val rainFrom: String?,
 )
 
-enum class TomorrowKind { EVENT, TASK, DATE, MONEY }
+enum class TomorrowKind { EVENT, TASK, DATE, PARCEL, MONEY }
 
 data class TomorrowLine(val kind: TomorrowKind, val text: String)
 
@@ -37,20 +38,16 @@ data class TomorrowPlan(
 )
 
 object Tomorrow {
-    /** Dalle 18 si guarda a domani; fino alle 3 di notte "domani" è il giorno che sta per iniziare. */
+    /** Dalle 18 si guarda a domani. Dopo mezzanotte il giorno è già "oggi": lo dicono Adesso e Da fare. */
     const val FROM_HOUR = 18
-    const val UNTIL_HOUR = 3
-    const val MAX_LINES = 5
+    const val MAX_LINES = 6
 
     /** Il giorno di cui parlare a quest'ora, null se è troppo presto per la card. */
-    fun targetDay(now: LocalDateTime): LocalDate? = when {
-        now.hour >= FROM_HOUR -> now.toLocalDate().plusDays(1)
-        now.hour < UNTIL_HOUR -> now.toLocalDate()
-        else -> null
-    }
+    fun targetDay(now: LocalDateTime): LocalDate? =
+        if (now.hour >= FROM_HOUR) now.toLocalDate().plusDays(1) else null
 
     /**
-     * [events] sono gli impegni del giorno [targetDay] (domani la sera, oggi dopo mezzanotte).
+     * [events] sono gli impegni di domani.
      * Restituisce null fuori orario o se non c'è niente da dire.
      */
     fun build(
@@ -61,6 +58,7 @@ object Tomorrow {
         countdowns: List<Countdown>,
         fixed: List<FixedExpense> = emptyList(),
         zone: ZoneId = ZoneId.systemDefault(),
+        parcels: List<Parcel> = emptyList(),
     ): TomorrowPlan? {
         val day = targetDay(now) ?: return null
         val weather = forecast?.let { weatherFor(it, day) }
@@ -73,14 +71,18 @@ object Tomorrow {
         }
         if (sorted.size > 2) lines += TomorrowLine(TomorrowKind.EVENT, if (sorted.size == 3) "…e un altro impegno" else "…e altri ${sorted.size - 2} impegni")
 
-        tasks.filter { !it.done }
+        val dueTasks = tasks.filter { !it.done }
             .filter { t -> t.dueAt?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() == day } == true }
             .sortedBy { it.dueAt }
-            .forEach { t -> lines += TomorrowLine(TomorrowKind.TASK, "${time(t.dueAt!!, zone)} · ${t.text}") }
+        dueTasks.forEach { t -> lines += TomorrowLine(TomorrowKind.TASK, "${time(t.dueAt!!, zone)} · ${t.text}") }
 
         countdowns.filter { it.nextDate(day) == day }.forEach { c ->
             val years = c.yearsAtNext(day)?.let { " (compie $it anni)" }.orEmpty()
             lines += TomorrowLine(TomorrowKind.DATE, c.title + years)
+        }
+
+        parcels.filter { !it.delivered && it.expected == day }.takeIf { it.isNotEmpty() }?.let { list ->
+            lines += TomorrowLine(TomorrowKind.PARCEL, "Arriva " + list.joinToString(", ") { it.title })
         }
 
         fixed.filter { it.dateIn(YearMonth.from(day)) == day }.forEach { f ->
@@ -91,7 +93,7 @@ object Tomorrow {
         return TomorrowPlan(
             day = day,
             weather = weather,
-            headline = headline(sorted.firstOrNull { !it.allDay }, weather, zone),
+            headline = headline(sorted.firstOrNull { !it.allDay }, dueTasks.firstOrNull(), weather, zone),
             eventCount = sorted.size,
             lines = lines.take(MAX_LINES),
         )
@@ -112,9 +114,13 @@ object Tomorrow {
         )
     }
 
-    private fun headline(first: CalendarEvent?, weather: TomorrowWeather?, zone: ZoneId): String? {
+    private fun headline(first: CalendarEvent?, task: TaskItem?, weather: TomorrowWeather?, zone: ZoneId): String? {
         val parts = mutableListOf<String>()
-        first?.let { parts += "${time(it.begin, zone)} ${it.title}" }
+        // Senza impegni in calendario, il primo promemoria con l'ora.
+        when {
+            first != null -> parts += "${time(first.begin, zone)} ${first.title}"
+            task != null -> parts += "${time(task.dueAt!!, zone)} ${task.text}"
+        }
         weather?.rainFrom?.let { parts += "pioggia $it" }
         if (parts.isEmpty()) return null
         return "Domani " + parts.joinToString(", ")

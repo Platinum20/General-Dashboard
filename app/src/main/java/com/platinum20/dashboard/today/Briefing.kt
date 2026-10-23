@@ -61,9 +61,16 @@ object Briefing {
         fixedExpenses: List<FixedExpense> = emptyList(),
         /** Video lasciato a metà nelle ultime 24 ore (vedi Resume.forAdesso). */
         resume: ResumeItem? = null,
+        /**
+         * true quando sotto c'è la card "Domani" (in Oggi la sera): meteo, impegni, date, pacchi e
+         * addebiti di domani li dice già lei, quindi qui non si ripetono. Il widget non ha la card.
+         */
+        tomorrowCard: Boolean = false,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
+        // Le righe su domani: solo se non c'è già la card che ne parla.
+        val aboutTomorrow = evening && !tomorrowCard
         val lines = mutableListOf<BriefLine>()
 
         // Agenda: quello che è in corso, poi il prossimo impegno di oggi.
@@ -102,19 +109,19 @@ object Briefing {
         // Per compleanni e anniversari con l'anno vero, anche quanti anni compie.
         fun Countdown.label() = title + (yearsAtNext(date)?.let { " ($it anni)" } ?: "")
         countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}") }
-        if (evening) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
+        if (aboutTomorrow) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
 
         // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
         val waiting = parcels.filter { !it.delivered && it.expected != null }
         waiting.filter { !it.expected!!.isAfter(date) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(BriefKind.PARCEL, "Pacco in arrivo: " + list.joinToString(", ") { it.title })
         }
-        if (evening) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        if (aboutTomorrow) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
         // Spese fisse: il giorno prima, per non trovarsi l'addebito a sorpresa.
-        fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        if (!tomorrowCard) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(
                 BriefKind.MONEY,
                 "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
@@ -145,7 +152,7 @@ object Briefing {
             }
         }
 
-        if (evening) {
+        if (aboutTomorrow) {
             // La sera interessa com'è domani e a che ora si comincia.
             forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.let { d ->
                 lines += BriefLine(
@@ -161,7 +168,7 @@ object Briefing {
                     if (first.allDay) "Domani: ${first.title}" else "Domani alle ${first.begin.at(zone)}: ${first.title}",
                 )
             }
-        } else {
+        } else if (!evening) {
             // Di giorno: avviso UV solo quando serve davvero.
             forecast?.today?.takeIf { it.uvMax >= 6 && now.hour < 16 }?.let {
                 lines += BriefLine(BriefKind.WEATHER, "UV alto (${Math.round(it.uvMax)}): meglio la crema")

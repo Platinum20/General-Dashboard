@@ -1,6 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.view.ViewGroup
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -28,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,21 +83,21 @@ fun FloatingPlayer(
     val context = LocalContext.current
     RadioStore.init(context)
     val tracks by NowPlaying.tracks.collectAsState()
+    // Di pagine nascoste ne resta una sola: il riproduttore di Spotify.
     val open by MediaWebViews.open.collectAsState()
     val radio by RadioStore.now.collectAsState()
     val nativeYt by YtPlayer.now.collectAsState()
 
     // Sulle schermate dei player la bolla non serve: c'è già il player grande.
-    val onWebPlayer = currentRoute?.startsWith("media/web") == true || currentRoute?.startsWith("media/watch") == true
+    val onWebPlayer = currentRoute?.startsWith("media/watch") == true
     val onRadio = currentRoute?.startsWith("media/radio") == true
-    val youTube = tracks[MediaService.YOUTUBE].takeIf { MediaService.YOUTUBE in open && !onWebPlayer }
     // Nella schermata di Spotify c'è già la barra con il brano in corso.
     val onSpotify = currentRoute == "media/spotify"
     val spotify = tracks[MediaService.SPOTIFY].takeIf { MediaService.SPOTIFY in open && !onWebPlayer && !onSpotify }
     val radioNow = radio.takeIf { !onRadio }
     val ytNow = nativeYt.takeIf { !onWebPlayer }
 
-    if (ytNow == null && youTube == null && spotify == null && radioNow == null) return
+    if (ytNow == null && spotify == null && radioNow == null) return
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         val density = LocalDensity.current
@@ -194,10 +192,6 @@ fun FloatingPlayer(
                     playing = ytNow.playing,
                     onExpand = { onExpand(FloatingTarget.Web(MediaService.YOUTUBE)) },
                 )
-                youTube != null -> YouTubeBubble(
-                    playing = youTube.playing,
-                    onExpand = { onExpand(FloatingTarget.Web(MediaService.YOUTUBE)) },
-                )
                 spotify != null -> AudioBubble(
                     image = spotify.artworkUrl,
                     title = spotify.title,
@@ -216,52 +210,6 @@ fun FloatingPlayer(
                     onClose = { RadioStore.stop() },
                     onExpand = { onExpand(FloatingTarget.Radio) },
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun YouTubeBubble(playing: Boolean, onExpand: () -> Unit) {
-    val context = LocalContext.current
-    val webView = remember { MediaWebViews.obtain(context, MediaService.YOUTUBE) }
-    val hostParent = remember { arrayOfNulls<android.view.ViewParent>(1) }
-    DisposableEffect(Unit) {
-        MediaWebViews.setMiniMode(MediaService.YOUTUBE, true)
-        onDispose {
-            MediaWebViews.setMiniMode(MediaService.YOUTUBE, false)
-            MediaWebViews.detach(MediaService.YOUTUBE, hostParent[0])
-        }
-    }
-    Column {
-        Box(
-            Modifier
-                .size(width = 224.dp, height = 126.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(Color.Black)
-        ) {
-            AndroidView(
-                factory = {
-                    (webView.parent as? ViewGroup)?.removeView(webView)
-                    webView
-                },
-                update = { hostParent[0] = it.parent },
-                modifier = Modifier.fillMaxSize(),
-            )
-            // Strato sopra la pagina: i tocchi aprono il player invece di finire nel sito.
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) { detectTapGestures(onTap = { onExpand() }) }
-            )
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { NowPlaying.command(MediaService.YOUTUBE, PlayerCommand.TOGGLE) }) {
-                Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (playing) "Pausa" else "Riproduci")
-            }
-            Text("YouTube", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-            IconButton(onClick = { MediaWebViews.release(MediaService.YOUTUBE) }) {
-                Icon(Icons.Filled.Close, contentDescription = "Chiudi")
             }
         }
     }

@@ -4,6 +4,7 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.FixedExpense
+import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Tomorrow
 import com.platinum20.dashboard.today.TomorrowKind
@@ -55,7 +56,8 @@ class TomorrowTest {
     @Test
     fun orariDiConfine() {
         assertEquals(tomorrow, Tomorrow.targetDay(today.atTime(18, 0)))
-        assertEquals(tomorrow, Tomorrow.targetDay(tomorrow.atTime(2, 59)))
+        // Dopo mezzanotte niente card: il giorno nuovo lo raccontano Adesso e Da fare.
+        assertNull(Tomorrow.targetDay(tomorrow.atTime(2, 59)))
     }
 
     @Test
@@ -102,11 +104,20 @@ class TomorrowTest {
     }
 
     @Test
-    fun dopoMezzanotteParlaDelGiornoCheIniziaETantiImpegni() {
+    fun tantiImpegni() {
         val events = (0 until 4).map { CalendarEvent(it.toLong(), "E$it", ms(tomorrow, 9 + it), ms(tomorrow, 10 + it), false, "", 0) }
-        val plan = Tomorrow.build(tomorrow.atTime(1, 0), null, events, emptyList(), emptyList(), zone = zone)!!
+        val plan = Tomorrow.build(today.atTime(21, 0), null, events, emptyList(), emptyList(), zone = zone)!!
         assertEquals(tomorrow, plan.day)
         assertEquals(4, plan.eventCount)
         assertEquals(listOf("9:00 · E0", "10:00 · E1", "…e altri 2 impegni"), plan.lines.map { it.text })
+    }
+
+    @Test
+    fun fraseColPromemoriaEPacchi() {
+        val tasks = listOf(TaskItem(1, "Chiamare il commercialista", dueAt = ms(tomorrow, 9)))
+        val parcels = listOf(Parcel(2, "Cuffie", expected = tomorrow))
+        val plan = Tomorrow.build(today.atTime(19, 0), null, emptyList(), tasks, emptyList(), zone = zone, parcels = parcels)!!
+        assertEquals("Domani 9:00 Chiamare il commercialista", plan.headline)
+        assertEquals("Arriva Cuffie", plan.lines.single { it.kind == TomorrowKind.PARCEL }.text)
     }
 }

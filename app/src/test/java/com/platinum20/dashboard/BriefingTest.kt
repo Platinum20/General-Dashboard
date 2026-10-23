@@ -70,6 +70,24 @@ class BriefingTest {
     }
 
     @Test
+    fun conLaCardDomaniNienteRipetizioni() {
+        val evening = LocalDateTime.of(2026, 10, 22, 21, 0)
+        val tomorrow = evening.toLocalDate().plusDays(1)
+        val lines = Briefing.build(
+            now = evening,
+            forecast = null,
+            today = emptyList(),
+            tomorrow = listOf(event("Treno", tomorrow.atTime(9, 30), tomorrow.atTime(11, 30))),
+            tasks = emptyList(),
+            countdowns = listOf(Countdown(2, "Compleanno di Marta", tomorrow)),
+            zone = zone,
+            parcels = listOf(Parcel(3, "Cuffie", expected = tomorrow)),
+            tomorrowCard = true,
+        )
+        assertTrue(lines.none { it.text.startsWith("Domani") })
+    }
+
+    @Test
     fun compleannoConGliAnni() {
         val lines = Briefing.build(
             now = morning,

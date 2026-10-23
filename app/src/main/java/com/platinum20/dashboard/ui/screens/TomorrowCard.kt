@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Euro
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -94,6 +95,7 @@ fun TomorrowCard(
                             TomorrowKind.EVENT -> Icons.Outlined.Event
                             TomorrowKind.TASK -> Icons.Outlined.TaskAlt
                             TomorrowKind.DATE -> Icons.Outlined.Celebration
+                            TomorrowKind.PARCEL -> Icons.Outlined.LocalShipping
                             TomorrowKind.MONEY -> Icons.Outlined.Euro
                         },
                         contentDescription = null,
