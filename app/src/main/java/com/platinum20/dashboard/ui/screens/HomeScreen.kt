@@ -406,7 +406,7 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, dayCardShown)
         if (briefing.isNotEmpty() || undo != null) {
             Column(Modifier.padding(bottom = 10.dp).animateContentSize()) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
@@ -501,6 +501,7 @@ private fun WeatherSummary(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
+    dayCardShown: Boolean,
 ) {
     val forecast = state.forecast
     when {
