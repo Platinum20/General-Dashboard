@@ -97,8 +97,9 @@ object RadioStore {
     }
 
     fun play(station: RadioStation) {
-        // Un solo player alla volta: YouTube e Spotify si fermano.
-        NowPlaying.pauseOthers(null)
+        // Un solo player alla volta: YouTube e Spotify si fermano, il podcast lascia il player alla radio.
+        NowPlaying.pauseOthers(null, podcast = false)
+        com.platinum20.dashboard.media.podcast.PodcastStore.yieldPlayer()
         current = station
         _now.value = RadioNow(station, playing = false, buffering = true, track = "", error = null)
         val recent = (listOf(station) + _recent.value.filter { it.id != station.id }).take(10)
@@ -122,12 +123,27 @@ object RadioStore {
     }
 
     fun pause() {
+        if (current == null) return
         controller?.takeIf { it.isPlaying }?.pause()
     }
 
+    /** Volume del player (0-1), per la sveglia che parte piano. */
+    fun setVolume(volume: Float) {
+        controller?.volume = volume.coerceIn(0f, 1f)
+    }
+
+    /** Il podcast prende il player: smettiamo di seguirlo, senza comandarlo. */
+    fun yieldPlayer() {
+        current = null
+        _now.value = null
+    }
+
     fun stop() {
-        controller?.stop()
-        controller?.clearMediaItems()
+        // Se nel player c'è un podcast, non è la radio a fermarlo.
+        if (current != null) {
+            controller?.stop()
+            controller?.clearMediaItems()
+        }
         current = null
         _now.value = null
     }
@@ -170,6 +186,9 @@ object RadioStore {
 
     private fun publish(player: Player) {
         val station = current ?: return
+        // Il podcast ha messo il suo episodio: la stazione non è più nel player.
+        val mediaId = player.currentMediaItem?.mediaId
+        if (mediaId != null && mediaId != station.id) return
         val meta = player.mediaMetadata
         // Molte radio mandano "Artista - Titolo" nel titolo del flusso.
         val track = meta.title?.toString()?.trim()?.takeIf { it.isNotBlank() && it != station.name }.orEmpty()

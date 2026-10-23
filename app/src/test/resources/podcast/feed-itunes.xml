@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Morning &amp; Notizie</title>
+    <link>https://example.org/morning</link>
+    <itunes:author>Redazione</itunes:author>
+    <itunes:image href="http://cdn.example.org/morning.jpg"/>
+    <item>
+      <title>Mercoledì 22 ottobre</title>
+      <guid isPermaLink="false">morning-2026-10-22</guid>
+      <pubDate>Thu, 22 Oct 2026 06:00:00 +0200</pubDate>
+      <itunes:duration>1:02:03</itunes:duration>
+      <description><![CDATA[<p>Le notizie del giorno, <b>in breve</b>.</p><p>Con&nbsp;ospiti &amp; rubriche.</p>]]></description>
+      <enclosure url="http://audio.example.org/morning-1022.mp3" length="1234" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Martedì 21 ottobre</title>
+      <guid>morning-2026-10-21</guid>
+      <pubDate>Wed, 21 Oct 2026 06:00:00 GMT</pubDate>
+      <itunes:duration>3723</itunes:duration>
+      <itunes:image href="https://cdn.example.org/ep21.jpg"/>
+      <description>Episodio di martedì</description>
+      <enclosure url="https://audio.example.org/morning-1021.mp3" type="audio/mpeg"/>
+    </item>
+    <item>
+      <title>Solo testo, nessun audio</title>
+      <guid>morning-note</guid>
+      <pubDate>Tue, 20 Oct 2026 06:00:00 GMT</pubDate>
+      <description>Un avviso agli ascoltatori</description>
+    </item>
+    <item>
+      <title>Speciale</title>
+      <guid>morning-special</guid>
+      <pubDate>Fri, 23 Oct 2026 18:30:00 +0200</pubDate>
+      <description>Senza durata</description>
+      <enclosure url="https://audio.example.org/special.m4a" type="audio/x-m4a"/>
+    </item>
+  </channel>
+</rss>

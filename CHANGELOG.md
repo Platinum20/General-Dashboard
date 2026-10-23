@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.101.0
+**Media › Podcast (nuovo)**
+- Quinta fonte in Media: cerchi un podcast (ricerca gratuita di iTunes, senza account), lo apri e vedi gli episodi con data, durata e una riga di descrizione, tutto dentro l'app
+- "Segui": i podcast che segui stanno in cima alla pagina e sotto ci sono i loro ultimi episodi tutti insieme, dal più nuovo
+- Un tocco su un episodio lo fa suonare nello stesso player della radio (notifica, schermata di blocco, cuffie), con 10 secondi indietro, 30 avanti e la barra del tempo
+- Ogni episodio riparte dal punto in cui eri, anche dopo aver chiuso l'app; nella lista si vede "restano 12 min" con la barra, e "ascoltato" quando l'hai finito
+- Al primo uso la pagina non è vuota: ricerche pronte ("Il Post", "Muschio Selvaggio", "Geopop"…)
+- Radio e podcast si passano il player senza interrompersi a vicenda per sbaglio
+
+**Media › Radio**
+- Sveglia con la radio: nella pagina Radio scegli ora, giorni (lun-ven o tutti) e la stazione, e la mattina parte da sola anche ad app chiusa. Comincia piano e sale in 30 secondi; se dopo 20 secondi la radio non suona (niente rete) parte la sveglia del telefono, mai una sveglia muta
+- La notifica della sveglia ha "Ferma" e "Ancora 10 min"; la sveglia si vede nella barra di stato come le altre e resta programmata anche dopo il riavvio del telefono
+
+**News › Il punto del giorno**
+- "Ascolta" (icona delle cuffie in alto): la voce italiana del telefono legge il punto come un notiziario breve, un'apertura con l'ora e poi una frase per tema, senza indirizzi né simboli. La card "In ascolto" dice a che tema sei, con Successivo e Ferma
+- Se sul telefono manca la voce italiana, un messaggio dice dove aggiungerla invece di non fare nulla; la voce si ferma da sola quando parte musica, radio, un podcast o un video
+
+**Note › Promemoria**
+- "Ogni mese" il 31 non scivola più al 28 per sempre dopo febbraio: torna al 31 (o all'ultimo giorno del mese); "ogni anno" il 29 febbraio torna al 29 negli anni bisestili
+
+**Widget**
+- La riga dei promemoria indica il primo in ordine di orario
+
+**Sotto il cofano**
+- Test nuovi: PodcastFeedTest (due feed RSS e una risposta di iTunes salvati nei test: durate "1:02:03", "62:03" e secondi, date con fusi diversi, descrizioni HTML, episodi senza audio, doppioni), RecapReaderTest, RadioAlarmTest (anche il cambio dell'ora legale), RepeatEndOfMonthTest, WidgetLinesTest
+- Giro fotografico: nuove foto di Radio e Podcast
 ## 1.98.0
 **Oggi › Adesso**
 - Azioni rapide: accanto alle righe di Adesso c'è un bottoncino tondo. "Scaduto: Bolletta" si segna fatto, "Pacco in arrivo: Cuffie" si segna arrivato, un'abitudine che manca si spunta, e con più abitudini si apre l'elenco da spuntare. Tutto senza aprire Note, con la vibrazione e "Annulla" per qualche secondo
