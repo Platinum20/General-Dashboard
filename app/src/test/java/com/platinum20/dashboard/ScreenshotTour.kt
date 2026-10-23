@@ -14,6 +14,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
@@ -228,7 +229,9 @@ class ScreenshotTour {
         val text = hasText(label, substring = substring, ignoreCase = substring)
         val nodes = compose.onAllNodes((text or hasContentDescription(label)) and hasClickAction())
         if (nodes.fetchSemanticsNodes().isEmpty()) return false
-        nodes.onFirst().performClick()
+        // L'azione di clic, non un tocco: una voce scorsa sotto la barra in alto (titolo e chip
+        // delle Impostazioni) col tocco colpirebbe la barra.
+        nodes.onFirst().performSemanticsAction(SemanticsActions.OnClick)
         return true
     }
 
