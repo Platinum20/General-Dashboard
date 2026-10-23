@@ -258,6 +258,11 @@ object NotesStore {
     /** Smette di aggiungerla; quelle già aggiunte restano nei mesi passati. */
     fun deleteFixedExpense(id: Long) = update { d -> d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }) }
 
+    /** "Annulla" subito dopo averla scritta: via la spesa fissa e anche quelle che ha già aggiunto. */
+    fun undoFixedExpense(id: Long) = update { d ->
+        d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }, expenses = d.expenses.filter { it.fixedId != id })
+    }
+
     fun restoreFixedExpense(item: FixedExpense) = update { d ->
         if (d.fixedExpenses.any { it.id == item.id }) d else d.copy(fixedExpenses = d.fixedExpenses + item)
     }
@@ -351,14 +356,17 @@ object NotesStore {
 
     fun clearDone() = update { d -> d.copy(tasks = d.tasks.filter { !it.done }) }
 
-    fun saveCountdown(id: Long?, title: String, date: LocalDate, yearly: Boolean) {
-        val clean = title.trim().ifEmpty { return }
+    /** Restituisce l'id della data salvata (per l'"Annulla"), null se il titolo è vuoto. */
+    fun saveCountdown(id: Long?, title: String, date: LocalDate, yearly: Boolean): Long? {
+        val clean = title.trim().ifEmpty { return null }
         val item = Countdown(id ?: newId(), clean, date, yearly)
         update { d -> d.copy(countdowns = d.countdowns.filter { it.id != item.id } + item) }
+        return item.id
     }
 
-    fun saveHabit(id: Long?, title: String, perWeek: Int = 0, remindAt: LocalTime? = null) {
-        val clean = title.trim().ifEmpty { return }
+    /** Restituisce l'id dell'abitudine salvata (per l'"Annulla"), null se il titolo è vuoto. */
+    fun saveHabit(id: Long?, title: String, perWeek: Int = 0, remindAt: LocalTime? = null): Long? {
+        val clean = title.trim().ifEmpty { return null }
         val target = perWeek.coerceIn(0, 6)
         val habitId = id ?: newId()
         update { d ->
@@ -366,6 +374,7 @@ object NotesStore {
             else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean, perWeek = target, remindAt = remindAt) else it })
         }
         syncHabitReminder(habitId)
+        return habitId
     }
 
     fun deleteHabit(id: Long) {

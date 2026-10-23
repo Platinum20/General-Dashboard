@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.119.0
+**Note: scrivi e basta**
+- Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
+- Dopo il salvataggio "Spesa: 12,50 € · Annulla": se Canvas ha capito male, un tocco e sparisce
+
+**Le pillole in alto hanno un senso**
+- Riassumono ogni parte: "Da fare · 5", "Abitudini · 1/2", "In arrivo · 2", "Note · 4", "Spese · 115,90 €". Compaiono solo le parti che hanno qualcosa
+- Toccandone una la pagina mostra solo quella parte (Spese apre mese, budget e spese fisse); un altro tocco o "indietro" torna a tutto
+
+**Sotto il cofano**
+- CaptureResult.undo per l'"Annulla" (lo usano anche il + e la dettatura). Test: notesChips in NotesUiLogicTest
+
 ## 1.118.0
 **Il + decide da solo**
 - Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
