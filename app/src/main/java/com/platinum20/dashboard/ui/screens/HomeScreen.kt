@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.calendar.CalendarEvent
+import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.media.VideoLibrary
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.Resume
@@ -181,10 +183,16 @@ fun HomeScreen(
     }
     // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
     var weekSeen by remember { mutableStateOf(0) }
-    val weekReview = remember(minute, notes, weekSeen) {
-        WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }?.let { monday ->
+    val weekMonday = WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }
+    // Gli impegni della settimana nuova si leggono solo quando la card c'è.
+    val weekEvents by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), weekMonday, agenda.granted, calendarRefresh) {
+        value = if (weekMonday != null && agenda.granted) CalendarRepository.eventsFrom(context, weekMonday.plusWeeks(1), 7) else emptyMap()
+    }
+    val weekReview = remember(weekMonday, notes, weekSeen, weekEvents) {
+        weekMonday?.let { monday ->
             WeekReview.build(
                 monday, notes.tasks, notes.habits, notes.expenses, notes.fixedExpenses, notes.parcels, notes.countdowns,
+                events = weekEvents,
             ).takeIf { !it.isEmpty }
         }
     }
@@ -337,6 +345,7 @@ fun HomeScreen(
                     WeekReviewCard(
                         review = review,
                         onOpenNotes = onOpenNotes,
+                        onOpenCalendar = { inApp?.openCalendar?.invoke() },
                         onDismiss = {
                             haptic(Haptic.TICK)
                             WeekReviewSeen.markSeen(context, review.monday)

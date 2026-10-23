@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.121.0
+## 1.123.0
 **Un player solo, davvero**
 - Suona una cosa alla volta: quando parte un video, una canzone, la radio o un podcast, tutto il resto si mette in pausa, compreso Spotify che suona nell'app di Spotify o su un altro dispositivo
 - Spotify: la pausa non dà più errore e il brano non sparisce dal player; "Riproduci" lo fa ripartire dal punto esatto anche se Spotify nel frattempo l'aveva dimenticato
@@ -14,11 +14,26 @@
 - Il blocco in cima a Media e la fila "Continua" tengono l'ultimo media di qualunque tipo: video, musica di YouTube, brani di Spotify (con l'album o la playlist da cui venivano), podcast e radio. Un tocco li fa ripartire dal punto in cui eri
 
 **Video e mini player**
+- In fondo a Media non c'è più la riga del blocco pubblicità: si regola nelle Impostazioni
 - Nei controlli del video restano la rotella (qualità, velocità, sottotitoli, ripeti) e il prossimo video: via il tasto CC e la pillola della qualità, che erano doppioni
 - Il mini player si lancia: uno scatto verso l'altro lato (o un piccolo spostamento) basta per mandarlo in alto o in basso. Prima la velocità del lancio veniva misurata male e bisognava trascinarlo fino in fondo; stesso problema corretto per il video trascinato giù
 
 **Sotto il cofano**
 - Test: ResumeAnyMediaTest, YtPlayerStateTest (musica che riparte come musica)
+
+## 1.122.0
+**Oggi › La tua settimana**
+- In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
+- I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
+
+**Meteo**
+- La rotella dell'aggiornamento accanto a "ADESSO · ROMA" resta al massimo 10 secondi: poi, e quando i dati sono vecchi, la riga dice da quando sono ("· 5 MIN FA", "· ALLE 9:40"), anche in Oggi
+- Al posto dell'icona che non si capiva, in alto c'è il pulsante "Località"
+
+**Sotto il cofano**
+- Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
+- Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
 
 ## 1.120.0
 **Player più fluido**
