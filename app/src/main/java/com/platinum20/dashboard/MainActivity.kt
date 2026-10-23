@@ -971,7 +971,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         LocalHazeState provides hazeState,
         LocalBackdrop provides backdrop,
         LocalOpenSearch provides { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
-        LocalOpenSettings provides { navController.navigate(Routes.settings(currentRoute)) { launchSingleTop = true } },
+        LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
     ) {
     // La conferma dei salvataggi vive sopra tutto, barra compresa: il pallino vola fino alle schede.
     LifecycleResumeEffect(Unit) {
