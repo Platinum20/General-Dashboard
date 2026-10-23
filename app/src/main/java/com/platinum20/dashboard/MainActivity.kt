@@ -2,6 +2,9 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
+import com.platinum20.dashboard.capture.CaptureComposer
+import com.platinum20.dashboard.media.songid.SongId
+import com.platinum20.dashboard.ui.screens.CaptureComposerLayer
 import com.platinum20.dashboard.capture.CaptureTargets
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
@@ -35,9 +38,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.foundation.layout.Column
 import com.platinum20.dashboard.capture.Dictation
@@ -85,7 +88,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -129,8 +133,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import com.platinum20.dashboard.ui.screens.PullToSearchIndicator
 import com.platinum20.dashboard.ui.screens.LocalOpenSearch
+import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import com.platinum20.dashboard.ui.screens.rememberPullToSearch
 import com.platinum20.dashboard.ui.screens.CalendarScreen
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
@@ -312,6 +318,9 @@ object Routes {
     const val HOME = "home"
     const val NEWS = "news"
     const val SETTINGS = "settings"
+    const val SETTINGS_PATTERN = "settings?section={section}"
+    /** Le Impostazioni aperte alla parte di una sezione della barra ([HOME], [NEWS], [NOTES], [MEDIA]). */
+    fun settings(section: String? = null) = if (section == null) SETTINGS else "settings?section=$section"
     const val UPDATES = "settings/updates"
     const val AUTOFILL = "settings/autofill"
     const val WEATHER = "home/weather"
@@ -378,7 +387,7 @@ private val topDestinations = listOf(
     TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
     TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
 )
-// Le Impostazioni non stanno nella barra: si aprono dall'ingranaggio in alto in ogni sezione.
+// Le Impostazioni non stanno nella barra: si aprono tenendo premuta una sezione, alla sua parte.
 
 /**
  * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
@@ -389,6 +398,8 @@ private fun CanvasNavBar(
     currentRoute: String?,
     dueToday: Int,
     onSelect: (TopDestination) -> Unit,
+    /** Sezione tenuta premuta: le sue impostazioni. */
+    onLongSelect: (TopDestination) -> Unit,
     onPlus: () -> Unit,
     listening: Boolean,
     level: Float,
@@ -402,6 +413,9 @@ private fun CanvasNavBar(
     onCancelDictation: () -> Unit,
     heardSound: Boolean,
     notice: String?,
+    /** Sta ascoltando la musica per riconoscerla, non la voce. */
+    music: Boolean,
+    onIdentifySong: () -> Unit,
 ) {
     val haptic = rememberHaptic()
     Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
@@ -415,7 +429,7 @@ private fun CanvasNavBar(
             },
         contentAlignment = Alignment.BottomEnd,
     ) {
-        DictationBubble(listening, partial, locked, level, heardSound, notice, onCancelDictation)
+        DictationBubble(listening, partial, locked, level, heardSound || music, notice, music, onCancelDictation, onIdentifySong)
     }
     Row(
         modifier = Modifier
@@ -443,11 +457,12 @@ private fun CanvasNavBar(
                         selected = currentRoute == dest.route,
                         badge = if (dest.route == Routes.NOTES) dueToday else 0,
                         onClick = { haptic(Haptic.TICK); onSelect(dest) },
+                        onLongClick = { haptic(Haptic.LONG_PRESS); onLongSelect(dest) },
                     )
                 }
             }
         }
-        // Il +: tocco = scrivi; tenuto premuto = diventa un microfono e detta, come i vocali di WhatsApp.
+        // Il +: tocco = scrivi; tenuto premuto o trascinato = diventa un microfono e detta, come i vocali di WhatsApp.
         val grow by animateFloatAsState(if (listening) 1.18f else 1f, Springs.snappy(), label = "micGrow")
         val pulse by animateFloatAsState(if (listening) level else 0f, tween(90), label = "micLevel")
         val ring = MaterialTheme.colorScheme.primary
@@ -489,16 +504,25 @@ private fun CanvasNavBar(
                     .pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown()
-                            var lifted = false
-                            val up = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                                waitForUpOrCancellation().also { lifted = true }
+                            // Fino al tempo del tocco lungo: un tocco, oppure un trascinamento che fa partire subito la voce.
+                            var outcome = PRESS_HOLD
+                            withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                while (outcome == PRESS_HOLD) {
+                                    val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id }
+                                    outcome = when {
+                                        change == null -> PRESS_CANCEL
+                                        !change.pressed -> if (change.isConsumed) PRESS_CANCEL else PRESS_TAP
+                                        (change.position - down.position).getDistance() > viewConfiguration.touchSlop -> PRESS_DRAG
+                                        else -> PRESS_HOLD
+                                    }
+                                }
                             }
                             when {
                                 // Microfono bloccato: il tocco inserisce quello che si è detto.
-                                up != null && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
-                                up != null -> { haptic(Haptic.TICK); tap() }
+                                outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
+                                outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
                                 // Annullato (es. il dito è scivolato via): niente.
-                                lifted -> Unit
+                                outcome == PRESS_CANCEL -> Unit
                                 isLocked -> Unit
                                 else -> {
                                     if (holdStart()) {
@@ -594,7 +618,9 @@ private fun DictationBubble(
     level: Float,
     heardSound: Boolean,
     notice: String?,
+    music: Boolean,
     onCancel: () -> Unit,
+    onIdentifySong: () -> Unit,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -655,17 +681,23 @@ private fun DictationBubble(
                     shown,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 3,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (locked) "Bloccato · tocca ➤ per inserire" else "Rilascia per finire · trascina su per bloccare",
+                        when {
+                            music -> "Qualche secondo e te la trovo su Spotify"
+                            locked -> "Bloccato · tocca ➤ per inserire"
+                            else -> "Rilascia per finire · trascina su per bloccare"
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    if (locked) {
+                    if (locked && !music) {
+                        // Bloccato il dito è libero: si può chiedere che canzone sta suonando.
+                        TextButton(onClick = onIdentifySong) { Text("♪ Canzone") }
                         TextButton(onClick = onCancel) { Text("Annulla") }
                     }
                 }
@@ -676,8 +708,15 @@ private fun DictationBubble(
 
 private const val BAR_COUNT = 28
 
+// Come finisce la prima parte del gesto sul +.
+private const val PRESS_HOLD = 0
+private const val PRESS_TAP = 1
+private const val PRESS_CANCEL = 2
+private const val PRESS_DRAG = 3
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
+private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit, onLongClick: () -> Unit) {
     // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
     val targetKey = when (dest.route) {
         Routes.NOTES -> CaptureTargets.NOTES_TAB
@@ -705,7 +744,7 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
             .bouncyPress(0.9f)
             .clip(CircleShape)
             .background(container)
-            .clickable(onClick = onClick)
+            .combinedClickable(onLongClickLabel = "Impostazioni di ${dest.label}", onLongClick = onLongClick, onClick = onClick)
             .semantics { contentDescription = dest.label }
             .animateContentSize(Springs.snappy())
             .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -767,8 +806,6 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
         )
     }
     CompositionLocalProvider(
-        LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
-        LocalOpenSearch provides { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
         LocalInAppNav provides inApp,
     ) {
         AppContent(navController, openRequest, onOpenHandled)
@@ -857,6 +894,30 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
     }
+    SongId.init(context)
+    // "Che canzone è?": ascolta la musica intorno, la fa partire su Spotify e la mette in "Sentite da Canvas".
+    val identifySong: () -> Unit = {
+        dictation.discard()
+        dictation.clearNotice()
+        voiceScope.launch {
+            when (val outcome = SongId.identify(context)) {
+                is SongId.Outcome.Failed -> dictation.show(outcome.message)
+                is SongId.Outcome.Found -> {
+                    val song = outcome.song
+                    dictation.show(
+                        "♪ ${song.title} · ${song.artist}" + when {
+                            outcome.inPlaylist -> "\nAggiunta a ${SongId.PLAYLIST_NAME}"
+                            song.spotifyUri != null -> "\nPer la playlist accedi di nuovo a Spotify nelle Impostazioni"
+                            else -> ""
+                        },
+                    )
+                    if (outcome.playing) navController.navigate(Routes.PLAYER) { launchSingleTop = true }
+                }
+            }
+            delay(4_500)
+            dictation.clearNotice()
+        }
+    }
     val startDictation: () -> Boolean = start@{
         when {
             !dictation.hasPermission() -> {
@@ -869,8 +930,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
         }
         dictation.start { text ->
+            // Nessuna parola ma qualcosa si sentiva: forse è musica, Canvas prova a riconoscerla.
+            if (text.isNullOrBlank() && dictation.heardSound && SongId.ready) identifySong()
             // Niente di detto: "Nessun suono rilevato" resta un attimo nel fumetto.
-            if (text.isNullOrBlank()) voiceScope.launch {
+            else if (text.isNullOrBlank()) voiceScope.launch {
                 delay(1_600)
                 dictation.clearNotice()
             } else voiceScope.launch {
@@ -891,7 +954,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
     val hazeState = remember { HazeState() }
     val backdrop = remember { Backdrop() }
-    CompositionLocalProvider(LocalHazeState provides hazeState, LocalBackdrop provides backdrop) {
+    CompositionLocalProvider(
+        LocalHazeState provides hazeState,
+        LocalBackdrop provides backdrop,
+        LocalOpenSearch provides { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
+        LocalOpenSettings provides { navController.navigate(Routes.settings(currentRoute)) { launchSingleTop = true } },
+    ) {
     // La conferma dei salvataggi vive sopra tutto, barra compresa: il pallino vola fino alle schede.
     LifecycleResumeEffect(Unit) {
         CaptureFeedback.active = true
@@ -912,10 +980,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         // Toccare la scheda già aperta riporta la lista in cima.
                         if (currentRoute == dest.route) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
                     },
-                    onPlus = { plusOverride?.invoke() ?: run { capturing = true } },
-                    listening = dictation.listening,
-                    level = dictation.level,
-                    partial = dictation.partial,
+                    onLongSelect = { dest -> navController.navigate(Routes.settings(dest.route)) { launchSingleTop = true } },
+                    onPlus = { plusOverride?.invoke() ?: CaptureComposer.open() },
+                    listening = dictation.listening || SongId.listening,
+                    level = if (SongId.listening) SongId.level else dictation.level,
+                    partial = if (SongId.listening) "Ascolto la musica…" else dictation.partial,
+                    music = SongId.listening,
+                    onIdentifySong = identifySong,
                     onHoldStart = startDictation,
                     onHoldEnd = dictation::release,
                     locked = dictation.locked,
@@ -928,7 +999,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        Box(Modifier.fillMaxSize()) {
+        // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque.
+        val pullSearch = rememberPullToSearch(enabled = showBottomBar) {
+            navController.navigate(Routes.SEARCH) { launchSingleTop = true }
+        }
+        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
         NavHost(
             modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,
@@ -965,7 +1040,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
                     onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    onOpenSettings = { navController.navigate(Routes.settings(Routes.MEDIA)) },
                 )
             }
             // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
@@ -1031,6 +1106,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                    onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
+                    onWatch = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(Routes.CUSTOMIZE) {
@@ -1072,8 +1149,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                 )
             }
-            composable(Routes.SETTINGS) {
+            composable(
+                Routes.SETTINGS_PATTERN,
+                arguments = listOf(navArgument("section") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
                 SettingsScreen(
+                    initialSection = entry.arguments?.getString("section"),
                     onBack = { navController.popBackStack() },
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
@@ -1163,8 +1244,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             },
             modifier = Modifier.padding(padding),
         )
+        PullToSearchIndicator(pullSearch)
         }
     }
+    CaptureComposerLayer(onNeedsDialog = { dictated = it; capturing = true })
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
     }

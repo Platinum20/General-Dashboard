@@ -20,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,11 +54,18 @@ fun NotesSearchPanel(
     placeholder: String = "Cerca in promemoria, note, spese, pacchi…",
     /** Gruppi in più (la ricerca ovunque di Oggi): restituisce quanti risultati ha aggiunto. */
     extra: LazyListScope.(query: String) -> Int = { 0 },
+    /** Sotto il campo (i filtri di Cerca ovunque). */
+    header: (@Composable () -> Unit)? = null,
+    /** False per nascondere i risultati delle Note (un filtro diverso è acceso). */
+    showNotes: Boolean = true,
+    /** Avvisa a ogni lettera: chi cerca anche in rete parte da qui. */
+    onQuery: (String) -> Unit = {},
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var open by remember { mutableStateOf<SearchHit?>(null) }
     BackHandler(onBack = onClose)
-    val hits = NotesSearch.search(data, query)
+    LaunchedEffect(query) { onQuery(query) }
+    val hits = if (showNotes) NotesSearch.search(data, query) else emptyList()
 
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "field") {
@@ -80,6 +88,7 @@ fun NotesSearchPanel(
                     .autoFocus(),
             )
         }
+        if (header != null) item(key = "header") { header() }
         hits.groupBy { it.kind }.forEach { (kind, group) ->
             item(key = kind.name) {
                 Section(title = "${kind.label} · ${group.size}") {

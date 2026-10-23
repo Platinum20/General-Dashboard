@@ -52,6 +52,10 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.runtime.withFrameNanos
@@ -88,8 +92,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -253,16 +255,34 @@ fun rememberReselectListState(route: String): LazyListState {
     return state
 }
 
-/** Apre le Impostazioni: le sezioni principali la usano per l'icona in alto a destra. */
+/** Apre "Cerca ovunque": nelle sezioni si trascina giù dalla cima (qui l'azione per TalkBack). */
+val LocalOpenSearch = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/** Apre le Impostazioni della sezione: si tiene premuta la sezione nella barra (qui l'azione per TalkBack). */
 val LocalOpenSettings = staticCompositionLocalOf<(() -> Unit)?> { null }
 
-/** Apre "Cerca ovunque": la lente sta in alto in ogni sezione, sempre nello stesso posto. */
-val LocalOpenSearch = staticCompositionLocalOf<(() -> Unit)?> { null }
+/**
+ * Le sezioni si aggiornano da sole: all'ingresso, al ritorno nell'app e poi ogni [everyMs]
+ * finché restano aperte. Trascinare dall'alto apre la ricerca, non serve più per ricaricare.
+ */
+@Composable
+fun AutoRefresh(everyMs: Long = 5 * 60_000L, refresh: suspend () -> Unit) {
+    val current by rememberUpdatedState(refresh)
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            while (true) {
+                current()
+                kotlinx.coroutines.delay(everyMs)
+            }
+        }
+    }
+}
 
 /**
  * Intestazione delle sezioni principali (Oggi, News, Note, Media): una riga piccola sopra
- * (la data, "8 nuove dall'ultima visita") e il titolo grande. A destra le azioni della sezione
- * e, per ultimi, la lente di Cerca ovunque e l'ingranaggio delle Impostazioni in un cerchio.
+ * (la data, "8 nuove dall'ultima visita") e il titolo grande. Niente pulsanti fissi: la ricerca
+ * si apre trascinando dall'alto, le Impostazioni tenendo premuta una sezione della barra in basso.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -270,14 +290,12 @@ fun TopLevelBar(
     title: String,
     subtitle: String? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null,
-    /** Per le pagine aperte da una sezione (Impostazioni): freccia indietro al posto dell'ingranaggio. */
+    /** Per le pagine aperte da una sezione (Impostazioni): la freccia indietro. */
     onBack: (() -> Unit)? = null,
     /** Senza fondo: per le pagine con un'immagine dietro (il player). */
     transparent: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
-    val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
     TopAppBar(
         navigationIcon = {
             if (onBack != null) {
@@ -287,7 +305,17 @@ fun TopLevelBar(
             }
         },
         title = {
-            Column {
+            // Niente pulsanti, ma chi usa TalkBack trova ricerca e impostazioni tra le azioni del titolo.
+            val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
+            val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
+            Column(
+                Modifier.semantics {
+                    customActions = listOfNotNull(
+                        openSearch?.let { CustomAccessibilityAction("Cerca ovunque") { it(); true } },
+                        openSettings?.let { CustomAccessibilityAction("Impostazioni") { it(); true } },
+                    )
+                },
+            ) {
                 if (subtitle != null) {
                     Text(
                         subtitle.uppercase(),
@@ -302,13 +330,6 @@ fun TopLevelBar(
         },
         actions = {
             actions()
-            // Nelle sezioni in alto a destra solo due cerchi, uguali ovunque: cerca e impostazioni.
-            if (openSearch != null) {
-                RoundIconButton(Icons.Outlined.Search, "Cerca ovunque", onClick = openSearch)
-            }
-            if (openSettings != null) {
-                RoundIconButton(Icons.Outlined.Settings, "Impostazioni", onClick = openSettings)
-            }
             Spacer(Modifier.width(8.dp))
         },
         expandedHeight = 76.dp,

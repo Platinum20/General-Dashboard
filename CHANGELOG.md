@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.129.0
+**Niente pulsanti in alto, tutto a portata di gesto**
+- Via la lente e l'ingranaggio in alto. Trascinando giù dalla cima di Oggi, News, Note o Media scende una lente: lasciando, si apre Cerca ovunque. Le pagine si aggiornano da sole (all'ingresso, al ritorno nell'app e ogni pochi minuti), non serve più tirare per ricaricare
+- Impostazioni divise come la barra in basso: Oggi, News, Note, Media e Tutta l'app, con i chip in alto per saltare a una parte. Si aprono tenendo premuta una sezione della barra, già alla sua parte
+- Cerca ovunque cerca davvero dappertutto: oltre a note, agenda e notizie anche brani, album, artisti e playlist di Spotify, video di YouTube, radio e podcast. I chip in alto restringono a una parte; toccando un brano, una radio o un podcast parte nel player dell'app, un video si apre nel suo player
+- Il + toccato apre lo stesso fumetto di vetro della voce, con dentro il campo per scrivere: sale con la tastiera, mostra cosa diventerà ("Diventa: spesa · 12,50 €") e, inviato, vola alle Note come le cose dette a voce
+- La voce parte anche solo trascinando il +, senza tenerlo premuto prima; trascinando subito in su si blocca
+- **Che canzone è?** Dettando con il microfono bloccato c'è "♪ Canzone"; e se tenendo premuto il + si sente musica ma nessuna parola, Canvas prova da solo. Riconosciuta, parte su Spotify nel player dell'app e finisce nella playlist "Sentite da Canvas". Si attiva in Impostazioni › Media › Riconosci canzoni (serve il token di AudD; per la playlist Spotify chiede di accedere di nuovo una volta)
+
 ## 1.128.0
 **Note più pulite**
 - Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta

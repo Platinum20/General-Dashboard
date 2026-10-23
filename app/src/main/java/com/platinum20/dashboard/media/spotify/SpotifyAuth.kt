@@ -44,7 +44,7 @@ object SpotifyAuth {
 
     private val SCOPES = listOf(
         "user-read-private", "user-read-recently-played", "user-top-read",
-        "playlist-read-private", "playlist-read-collaborative", "user-library-read", "user-follow-read",
+        "playlist-read-private", "playlist-read-collaborative", "playlist-modify-private", "playlist-modify-public", "user-library-read", "user-follow-read",
         "user-read-playback-state", "user-modify-playback-state", "user-read-currently-playing",
         // Per ascoltare dentro l'app (Web Playback SDK, serve Premium).
         "streaming", "user-read-email",

@@ -54,6 +54,12 @@ class NewsViewModel : ViewModel() {
 
     fun refresh() = load(initial = false)
 
+    /** Aggiornamento automatico: scarica solo se le notizie in memoria sono vecchie, senza indicatori. */
+    suspend fun refreshIfStale() {
+        if (_state.value.loading) return
+        runCatching { NewsStore.load() }
+    }
+
     fun selectSource(id: String?) = _state.update { it.copy(selectedSource = id) }
 
     private fun load(initial: Boolean) {

@@ -224,20 +224,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 // Non una scelta ma una risposta: che cosa diventa quello che hai scritto.
                 if (text.isNotBlank()) CaptureKindTag(mode)
                 Spacer(Modifier.height(4.dp))
-                when (mode) {
-                    CaptureMode.TASK -> QuickPreview(text)
-                    CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
-                        Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    }
-                    CaptureMode.EVENT -> if (text.isNotBlank()) {
-                        Text(
-                            event?.let { "${eventLine(it)} · ${it.title}" } ?: "Scrivi anche quando: es. domani alle 15",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    CaptureMode.NOTE -> Unit
-                }
+                CapturePreview(mode, text)
             }
         },
         confirmButton = { TextButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
@@ -257,9 +244,29 @@ internal val CaptureMode.icon: ImageVector
         CaptureMode.EVENT -> Icons.Outlined.Event
     }
 
+/** Che cosa ha capito Canvas: la scadenza, l'importo, il giorno dell'evento. */
+@Composable
+internal fun CapturePreview(mode: CaptureMode, text: String) {
+    when (mode) {
+        CaptureMode.TASK -> QuickPreview(text)
+        CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
+            Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        CaptureMode.EVENT -> if (text.isNotBlank()) {
+            val event = remember(text) { QuickEvent.parse(text) }
+            Text(
+                event?.let { "${eventLine(it)} · ${it.title}" } ?: "Scrivi anche quando: es. domani alle 15",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        CaptureMode.NOTE -> Unit
+    }
+}
+
 /** "Diventa: Spesa", con l'icona: cambia da solo mentre si scrive. */
 @Composable
-private fun CaptureKindTag(mode: CaptureMode) {
+internal fun CaptureKindTag(mode: CaptureMode) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
