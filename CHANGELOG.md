@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.124.0
+## 1.126.0
 **Un player solo, davvero**
 - Suona una cosa alla volta: quando parte un video, una canzone, la radio o un podcast, tutto il resto si mette in pausa, compreso Spotify che suona nell'app di Spotify o su un altro dispositivo
 - Spotify: la pausa non dà più errore e il brano non sparisce dal player; "Riproduci" lo fa ripartire dal punto esatto anche se Spotify nel frattempo l'aveva dimenticato
@@ -20,6 +20,15 @@
 
 **Sotto il cofano**
 - Test: ResumeAnyMediaTest, YtPlayerStateTest (musica che riparte come musica)
+
+## 1.125.0
+**Salvato, e si vede dove va**
+- Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
+- Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
+
+## 1.124.0
+**Torna il carattere di prima**
+- Via il serif della 1.123.0: titoli e testo tornano in Inter e Inter Display, con le dimensioni di prima
 
 ## 1.123.0
 **Il carattere di Claude**
