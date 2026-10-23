@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.106.0
+**Le funzioni si parlano**
+- Il "+" capisce da solo cosa scrivi: "12,50 pizza" diventa una spesa, un codice di tracciamento un pacco, "venerdì alle 20 cena da Luca" un evento, un testo lungo una nota; il resto resta un promemoria. Toccando un tipo lo scegli tu e non cambia più
+- Meteo dentro gli impegni: se all'ora di un impegno è probabile la pioggia, la riga lo dice ("Alle 18:00: Calcetto · pioggia 70%"), in Adesso e nella card di domani
+- Nel lettore delle News c'è "Leggi dopo": salva l'articolo in Note con titolo e link
+
 ## 1.105.0
 **Note › Abitudini**
 - "Ricordamelo alle…" nella scheda dell'abitudine: scegli un'ora e, se a quell'ora non l'hai ancora fatta, arriva una notifica con la serie in gioco ("5 di fila: non perdere la serie") o, per le settimanali, "1 su 3 questa settimana"
