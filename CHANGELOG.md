@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.107.0
+**Le funzioni si parlano**
+- Il "+" capisce da solo cosa scrivi: "12,50 pizza" diventa una spesa, un codice di tracciamento un pacco, "venerdì alle 20 cena da Luca" un evento, un testo lungo una nota; il resto resta un promemoria. Toccando un tipo lo scegli tu e non cambia più
+- Meteo dentro gli impegni: se all'ora di un impegno è probabile la pioggia, la riga lo dice ("Alle 18:00: Calcetto · pioggia 70%"), in Adesso e nella card di domani
+- Nel lettore delle News c'è "Leggi dopo": salva l'articolo in Note con titolo e link
+
 ## 1.106.0
 **Oggi**
 - Nuova card "La tua settimana", dalla domenica alle 17 al lunedì a mezzogiorno: una frase in cima ("Settimana buona: 12 cose fatte, palestra 3 su 3, spese -18%"), poi "Com'è andata" (promemoria chiusi, ogni abitudine con "5 su 7" o "3 su 3", spese a mano della settimana contro la media delle 4 prima e la categoria cresciuta di più, pacchi arrivati) e "Cosa arriva" (compleanni e date della settimana nuova, addebiti fissi). "Fatto" la chiude fino alla domenica dopo; ogni riga apre Note

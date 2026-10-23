@@ -2,6 +2,7 @@ package com.platinum20.dashboard.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.widget.Toast
 import android.content.Intent
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -28,7 +29,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material.icons.outlined.Language
@@ -122,6 +125,13 @@ fun ReaderScreen(
                 actions = {
                     IconButton(onClick = { scaleIndex = (scaleIndex + 1) % textScales.size }) {
                         Icon(Icons.Outlined.FormatSize, contentDescription = "Dimensione testo")
+                    }
+                    // Integrazione News → Note: l'articolo resta in Note con il link, da leggere dopo.
+                    IconButton(onClick = {
+                        val title = (state as? ReaderUiState.Loaded)?.article?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
+                        saveForLater(context, title, viewModel.url)
+                    }) {
+                        Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Leggi dopo")
                     }
                     IconButton(onClick = { shareArticle(context, viewModel.url, fallbackTitle) }) {
                         Icon(Icons.Outlined.Share, contentDescription = "Condividi")
@@ -411,6 +421,16 @@ private fun List<TextRun>.toAnnotated(linkColor: Color, onOpenLink: (String) -> 
             }
         }
     }
+
+/** Salva l'articolo come nota "Da leggere: titolo" con il link sotto. */
+private fun saveForLater(context: Context, title: String, url: String) {
+    NotesStore.init(context)
+    NotesStore.saveNote(null, readLaterText(title, url))
+    Toast.makeText(context, "Salvato in Note, da leggere dopo", Toast.LENGTH_SHORT).show()
+}
+
+internal fun readLaterText(title: String, url: String): String =
+    "Da leggere: ${title.trim().ifEmpty { "articolo" }}\n$url"
 
 private fun shareArticle(context: Context, url: String, title: String) {
     val send = Intent(Intent.ACTION_SEND).apply {
