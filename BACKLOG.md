@@ -127,6 +127,7 @@ _(1.96.0: fatte Date con "Idee da aggiungere" e Video con "Sul telefono". In `ma
 **Test:** le foto del giro; funzione che decide quando mostrare lo stato vuoto (meno di 3 voci); funzione che sceglie le stazioni "Per iniziare" (niente doppioni con le recenti).
 
 ### 7. Rifiniture viste nelle foto · Aggiornamenti, Meteo, Oggi · S
+_(1.117.0: fatti indicatore fermo (rotella al massimo 10 s, poi "5 min fa") e pulsante "Località" con etichetta. Restano Punto del giorno lento e sfondo dell'ombrello nella card Domani.)_
 _(1.105.0: fatti saluto ricalcolato (`Greeting.forHour`), riga meteo di Adesso senza a capo e senza doppioni con la card del giorno, "Prevalentemente sereno" col sole/luna. Restano indicatore fermo, icona Località, Punto del giorno lento, sfondo dell'ombrello nella card Domani.)_
 _(1.98.0: fatti "Alba · Tramonto" a tutta riga, "Ancora da fare: N abitudini" e Da fare senza i promemoria di domani quando c'è la card. Restano indicatore fermo, icona Località, Punto del giorno lento, sfondo dell'ombrello nella card Domani.)_
 **Perché:** piccole cose che fanno sembrare l'app non finita (foto 1.91).
@@ -158,6 +159,7 @@ _(1.101.0: fatti il copione `RecapReader.script` con i test, il pulsante "Ascolt
 **Test:** `ParcelStatusTest` con risposte JSON vere di 2-3 corrieri salvate in `src/test/resources` (in transito, in consegna, consegnato, giacenza), date e fusi orari; scelta del tracker dal codice (`Carrier.detect`); limite di 2 ore tra due aggiornamenti; Briefing con un pacco `FERMO` da 3 giorni → riga urgente; foto `25_pacchi` con un pacco in transito e uno arrivato.
 
 ### 21. La tua settimana · Oggi · M
+_(1.117.0: fatti gli impegni del calendario della settimana nuova in "Cosa arriva" (aprono il Calendario) e i ricorrenti spuntati che contano (`TaskItem.doneTimes`). **Restano:** la schermata intera e la foto `08_settimana` con l'orologio del tour fissato a domenica 19:00 (il fuso Europe/Rome nel tour c'è già).)_
 _(1.106.0: fatti `WeekReview` (funzione pura con `WeekReviewTest`), `doneAt` sui promemoria e la card "La tua settimana" in Oggi (dom 17 → lun 12, "Fatto" la chiude) con "Com'è andata" e "Cosa arriva". **Restano:** gli impegni del calendario della settimana nuova in "Cosa arriva", i ricorrenti spuntati (oggi non lasciano traccia), la schermata intera con le righe che aprono la scheda giusta, la foto `08_settimana` con l'orologio del tour fissato a domenica 19:00.)_
 _(passi 1 e 2 dell'idea grande B, promossi)_
 **Perché:** Canvas raccoglie ogni giorno abitudini, spese, promemoria chiusi, pacchi e notizie lette, ma non restituisce mai un quadro: non c'è un momento in cui Antonio vede "com'è andata" e "cosa arriva". La domenica sera è il momento in cui si guarda indietro e si prepara la settimana, e nessun'altra app sul telefono ha tutti questi dati insieme.
@@ -245,6 +247,10 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 ---
 
 ## Fatto
+
+- **1.117.0 · 21 La tua settimana (passo 2):** impegni della settimana nuova in "Cosa arriva", ricorrenti spuntati contati. Test: WeekReviewEventsTest.
+- **1.117.0 · 7 (parte):** Meteo con "5 min fa" al posto della rotella ferma, pulsante "Località". Test: FreshnessTest.
+- **1.117.0 · 2 (parte):** giro fotografico col fuso Europe/Rome.
 
 - **1.116.0 · 11 Date: compleanni dai contatti:** idea "Compleanni dai contatti" nelle Note, elenco con caselle, anno vero tenuto, niente doppioni, Annulla. Test: ContactDatesTest.
 - **1.116.0 · 12 Spese: foto dello scontrino (passo 1 dell'idea G):** icona scontrino nel campo delle Note, ML Kit sul telefono, `Receipt.parse` (totale, negozio, data). Resta: usare la data dello scontrino se diversa da oggi, foto `24b_scontrino` nel giro. Test: ReceiptTest.
