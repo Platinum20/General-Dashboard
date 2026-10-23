@@ -5,12 +5,14 @@ import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.spotify.SpLibrary
 import com.platinum20.dashboard.media.spotify.SpProfile
+import com.platinum20.dashboard.media.spotify.SpRelease
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.net.DiskCache
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
+import java.time.LocalDate
 
 /** Come salvare su file un tipo di feed: nome del file e conversione in testo e ritorno. */
 class FeedCodec<T>(val file: String, val write: (T) -> JSONArray, val read: (JSONArray) -> T)
@@ -100,6 +102,13 @@ object FeedCache {
     private fun items(array: JSONArray) = array.objects(::item)
 
     fun spItems(file: String) = FeedCodec<List<SpItem>>(file, ::items, ::items)
+
+    /** Le nuove uscite degli artisti seguiti, con la data di uscita. */
+    val spReleases = FeedCodec<List<SpRelease>>(
+        "sp-releases.json",
+        { list -> list.toArray { item(it.item).put("d", it.released.toString()) } },
+        { array -> array.objects { SpRelease(item(it), LocalDate.parse(it.getString("d"))) } },
+    )
 
     /** "Per te": quattro parti, salvate come elenchi uno dopo l'altro. */
     val spHome = FeedCodec<SpHome>(
