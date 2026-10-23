@@ -103,7 +103,8 @@ class ScreenshotTour {
         visit("Roma", p + "02_meteo", substring = true)
         // Il punto del giorno si prepara dopo le notizie: al primo giro (al buio) può volerci di più.
         visit("Tutti", p + "03_punto", appearMs = 40_000)
-        visit("Personalizza", p + "04_personalizza")
+        // In alto a destra solo la lente e l'ingranaggio: Personalizza sta nelle Impostazioni.
+        visit("Cerca ovunque", p + "04_cerca")
         scroll(down = true)
         shot(p + "05_oggi_fondo")
         // Il + della barra in basso: la cattura veloce. "Aggiungi" c'è anche nelle card: il + della barra è il più in basso.
@@ -140,6 +141,7 @@ class ScreenshotTour {
             shot(p + "42_impostazioni_fondo")
             visit("Compila da solo", p + "43_compila_da_solo")
             visit("Località", p + "44_localita")
+            visit("Card di Oggi", p + "45_personalizza")
             visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
         } else missing += p + "40_impostazioni"
         assertTrue("Schermate attese che il giro non ha fotografato: ${missing.joinToString()}", missing.isEmpty())

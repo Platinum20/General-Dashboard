@@ -103,14 +103,6 @@ fun NewsScreen(
                 TopLevelBar(
                     title = "News",
                     subtitle = NewsHistory.headline(items.size, newCount, items.mapNotNull { it.publishedAt }.maxOrNull()),
-                    actions = {
-                        RoundIconButton(
-                            Icons.Outlined.Refresh,
-                            "Aggiorna",
-                            enabled = !state.loading && !state.refreshing,
-                            onClick = viewModel::refresh,
-                        )
-                    },
                     scrollBehavior = scrollBehavior,
                 )
                 SourceChips(

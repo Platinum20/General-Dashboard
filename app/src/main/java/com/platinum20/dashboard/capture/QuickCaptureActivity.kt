@@ -1,5 +1,19 @@
 package com.platinum20.dashboard.capture
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.automirrored.outlined.StickyNote2
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.Cake
+import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
 import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
@@ -47,7 +61,6 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.ui.screens.ChipRow
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.QuickPreview
 import com.platinum20.dashboard.ui.screens.dueLabel
@@ -119,12 +132,10 @@ internal enum class CaptureMode(val label: String, val title: String, val hint: 
 internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: () -> Unit) {
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf(initial) }
-    // Un testo già pronto (dettato a voce) parte dal tipo che gli somiglia.
-    var mode by rememberSaveable {
-        mutableStateOf(if (initialMode == CaptureMode.TASK && initial.isNotBlank()) CaptureGuess.guess(initial) else initialMode)
-    }
-    // Partendo da "Promemoria" il tipo segue quello che si scrive, finché non lo si sceglie a mano.
-    var autoMode by rememberSaveable { mutableStateOf(initialMode == CaptureMode.TASK) }
+    // Niente da scegliere: partendo da "Promemoria" il tipo lo decide Canvas da quello che si scrive
+    // (o si detta). Solo le scorciatoie dirette (nuova nota, nuova spesa, evento dalle Note) lo fissano.
+    val auto = initialMode == CaptureMode.TASK
+    val mode = remember(text) { if (auto) CaptureGuess.guess(text) else initialMode }
     val focus = remember { FocusRequester() }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onClose() }
     val scope = rememberCoroutineScope()
@@ -184,25 +195,13 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
 
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(mode.title) },
+        title = { Text(if (auto) "Aggiungi" else mode.title) },
         text = {
             Column {
-                ChipRow(
-                    options = CaptureMode.entries.map { it.label },
-                    selected = mode.ordinal,
-                    onSelect = {
-                        mode = CaptureMode.entries[it]
-                        autoMode = false
-                    },
-                )
-                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = text,
-                    onValueChange = {
-                        text = it
-                        if (autoMode) mode = CaptureGuess.guess(it)
-                    },
-                    placeholder = { Text(if (autoMode && text.isEmpty()) AUTO_HINT else mode.hint) },
+                    onValueChange = { text = it },
+                    placeholder = { Text(if (auto) AUTO_HINT else mode.hint) },
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     maxLines = if (mode == CaptureMode.NOTE) 8 else 3,
                     modifier = Modifier
@@ -210,7 +209,10 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                         .heightIn(min = if (mode == CaptureMode.NOTE) 120.dp else 56.dp)
                         .focusRequester(focus),
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
+                // Non una scelta ma una risposta: che cosa diventa quello che hai scritto.
+                if (text.isNotBlank()) CaptureKindTag(mode)
+                Spacer(Modifier.height(4.dp))
                 when (mode) {
                     CaptureMode.TASK -> QuickPreview(text)
                     CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
@@ -230,6 +232,32 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         confirmButton = { TextButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
         dismissButton = { TextButton(onClick = onClose) { Text("Annulla") } },
     )
+}
+
+/** L'icona di ogni tipo: la stessa nell'etichetta del + e nel messaggio dopo il salvataggio. */
+internal val CaptureMode.icon: ImageVector
+    get() = when (this) {
+        CaptureMode.TASK -> Icons.Outlined.TaskAlt
+        CaptureMode.NOTE -> Icons.AutoMirrored.Outlined.StickyNote2
+        CaptureMode.EXPENSE -> Icons.Outlined.Payments
+        CaptureMode.HABIT -> Icons.Outlined.Autorenew
+        CaptureMode.DATE -> Icons.Outlined.Cake
+        CaptureMode.PARCEL -> Icons.Outlined.LocalShipping
+        CaptureMode.EVENT -> Icons.Outlined.Event
+    }
+
+/** "Diventa: Spesa", con l'icona: cambia da solo mentre si scrive. */
+@Composable
+private fun CaptureKindTag(mode: CaptureMode) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            "Diventa: " + mode.label.lowercase().let { if (mode == CaptureMode.EVENT) "evento in calendario" else it },
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
 }
 
 /** Con il tipo automatico il suggerimento mostra che si può scrivere di tutto. */

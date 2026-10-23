@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.118.0
+## 1.119.0
 **Note: scrivi e basta**
 - Niente più pillole per scegliere il tipo: Canvas decide da solo se è un promemoria, una spesa, un'abitudine, una data, un pacco, un evento o una nota. Sotto il campo una riga dice cosa diventerà ("Spesa · 12,50 € · Cibo", "Promemoria · domani 09:00")
 - Dopo il salvataggio "Spesa: 12,50 € · Annulla": se Canvas ha capito male, un tocco e sparisce
@@ -11,6 +11,27 @@
 
 **Sotto il cofano**
 - CaptureResult.undo per l'"Annulla" (lo usano anche il + e la dettatura). Test: notesChips in NotesUiLogicTest
+
+## 1.118.0
+**Il + decide da solo**
+- Niente più pillole da scegliere nel +: scrivi e sotto compare "Diventa: spesa" (o promemoria, nota, abitudine, data, pacco, evento in calendario) con la sua icona, che cambia mentre scrivi. Salva e finisce al posto giusto
+- Detto a voce, si salva da solo nel tipo giusto, senza finestre: in basso compare cosa è stato salvato ("Spesa: 12,50 € · Cibo"); per gli eventi c'è anche "Annulla". Il dialogo si apre solo se manca qualcosa (l'importo, il giorno, il permesso del calendario)
+
+**Microfono bloccabile, come WhatsApp**
+- Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
+
+**La voce si vede**
+- Mentre detti, nel fumetto sopra il + ci sono le barre che seguono la voce e sotto il testo che Canvas sta capendo. Se non senti niente dopo un paio di secondi c'è scritto "Nessun suono rilevato", e resta lì un attimo anche quando rilasci senza aver detto niente (niente più avviso a parte)
+
+**Icona**
+- Colori invertiti: fondo arancione e goccia blu
+
+**In alto a destra, solo due cerchi**
+- In ogni sezione (Oggi, News, Note, Media) in alto a destra ci sono sempre e solo la lente di Cerca ovunque e l'ingranaggio delle Impostazioni, nello stesso posto
+- News: niente più pulsante Aggiorna, si aggiorna tirando giù la lista. Oggi: "Personalizza" sta nelle Impostazioni (Card di Oggi). Note: la lente è quella di Cerca ovunque, che trova anche tutto quello che c'è nelle Note
+
+**Sotto il cofano**
+- Il giro fotografico trova di nuovo il + (06_aggiungi) e fotografa Cerca ovunque e Card di Oggi
 
 ## 1.117.0
 **Il player di YouTube, con tutto sul video**
