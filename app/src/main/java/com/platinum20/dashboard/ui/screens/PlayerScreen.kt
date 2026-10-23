@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.OndemandVideo
@@ -82,12 +83,14 @@ internal fun sourceIcon(source: PlaySource): ImageVector = when (source) {
     PlaySource.SPOTIFY -> Icons.Outlined.GraphicEq
     PlaySource.RADIO -> Icons.Outlined.Radio
     PlaySource.PODCAST -> Icons.Outlined.Mic
+    PlaySource.SPEECH -> Icons.Outlined.Headphones
 }
 
 internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
     PlaySource.VIDEO -> TileAccent.ORANGE
     PlaySource.MUSIC, PlaySource.SPOTIFY -> TileAccent.GREEN
     PlaySource.RADIO, PlaySource.PODCAST -> TileAccent.PURPLE
+    PlaySource.SPEECH -> TileAccent.BLUE
 }
 
 /**

@@ -571,27 +571,6 @@ private fun RecapCard(
         title = "Il punto del giorno",
         action = if (state.themes.isNotEmpty()) "Tutti" else null,
         onAction = onOpenAll,
-        trailing = {
-            // Ascolta il punto anche da Oggi, senza aprire la pagina.
-            if (state.themes.isNotEmpty()) {
-                val context = LocalContext.current
-                val listening by RecapSpeaker.state.collectAsStateWithLifecycle()
-                IconButton(
-                    onClick = {
-                        if (listening != null) RecapSpeaker.stop()
-                        else RecapSpeaker.play(context, RecapReader.script(state.themes, LocalTime.now()))
-                    },
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        if (listening != null) Icons.Filled.Stop else Icons.Outlined.Headphones,
-                        contentDescription = if (listening != null) "Smetti di ascoltare" else "Ascolta il punto",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-        },
     ) {
         Column(Modifier.padding(vertical = 4.dp)) {
             when {

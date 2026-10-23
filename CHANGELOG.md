@@ -1,6 +1,11 @@
 # Changelog
 
 ## 1.134.0
+**Il punto del giorno nel player**
+- La lettura ad alta voce del punto del giorno sta nel player unico e nel mini player come una canzone: play/pausa, tema precedente e successivo, e la barra del tempo da trascinare per scegliere da dove leggere (riparte da inizio parola)
+- Se parte un'altra cosa la lettura va in pausa e resta nel player, invece di fermarsi del tutto
+- Il tasto della cuffia resta solo nella pagina del punto; via quello dalla card in Home e il riquadro "In ascolto" nella pagina (c'è il mini player)
+
 **Mini player: indietro, play/pausa, avanti**
 - Nel mini player ci sono tre tasti: indietro (il brano precedente, o il video da capo), play/pausa in mezzo e avanti. Per i podcast -10 e +30 secondi; per la radio solo play/pausa
 - Niente più X: per chiudere, con la barra in basso la si tira ancora giù. Compare una X che diventa rossa con una vibrazione; lasciandola lì si chiude, tornando su si annulla

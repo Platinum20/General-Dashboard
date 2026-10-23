@@ -158,7 +158,8 @@ object NowPlaying {
         if (keep != MediaService.SPOTIFY) com.platinum20.dashboard.media.spotify.SpotifyStore.pauseRemote()
         if (radio) com.platinum20.dashboard.media.radio.RadioStore.pause()
         if (podcast) com.platinum20.dashboard.media.podcast.PodcastStore.pause()
-        if (recap) com.platinum20.dashboard.news.RecapSpeaker.stop()
+        // La lettura si mette in pausa come le altre: resta nel player e riparte da dove era.
+        if (recap) com.platinum20.dashboard.news.RecapSpeaker.pause()
         if (nativeYouTube) com.platinum20.dashboard.media.youtube.player.YtPlayer.pause()
     }
 
