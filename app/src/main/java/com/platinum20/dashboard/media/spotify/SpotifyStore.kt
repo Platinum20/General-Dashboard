@@ -174,6 +174,30 @@ object SpotifyStore {
         }
     }
 
+    /**
+     * Mette in pausa Spotify se suona fuori dall'app (app di Spotify, casse, computer): quando
+     * parte qualcos'altro nell'app suona una cosa sola. Chiede lo stato fresco, non quello vecchio.
+     */
+    fun pauseRemote() {
+        scope.launch {
+            val token = runCatching { SpotifyAuth.token() }.getOrNull() ?: return@launch
+            val state = runCatching { SpotifyApi.playback(token) }.getOrNull() ?: return@launch
+            if (!state.playing) return@launch
+            runCatching { SpotifyApi.pause(token) }
+            // Solo se il player dell'app lo mostrava già: altrimenti non deve comparire all'improvviso.
+            if (_playback.value != null) _playback.value = state.copy(playing = false)
+        }
+    }
+
+    /** Chiude dal player dell'app lo Spotify che suona altrove: pausa e il mini player lo dimentica. */
+    fun closeRemote() {
+        _playback.value = null
+        scope.launch {
+            val token = runCatching { SpotifyAuth.token() }.getOrNull() ?: return@launch
+            runCatching { SpotifyApi.pause(token) }
+        }
+    }
+
     fun control(action: suspend (String) -> Unit) {
         scope.launch {
             val token = SpotifyAuth.token() ?: return@launch

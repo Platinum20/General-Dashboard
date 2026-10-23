@@ -21,6 +21,9 @@ class YtPlaybackService : MediaSessionService() {
             .setId("youtube")
             .setSessionActivity(PendingIntent.getActivity(this, 310, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .build()
+            // L'app comanda il player direttamente, senza collegarsi alla sessione: senza questa riga
+            // il servizio non conosce la sessione e la notifica con copertina e comandi non compare mai.
+            .also(::addSession)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session

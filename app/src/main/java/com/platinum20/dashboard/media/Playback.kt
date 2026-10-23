@@ -46,7 +46,7 @@ data class Playing(
 ) {
     /** Si vede un video (YouTube non in solo audio): il player grande è quello con il video. */
     val isVideo: Boolean get() = source == PlaySource.VIDEO
-    val canSeek: Boolean get() = !live && durationMs > 0 && source != PlaySource.SPOTIFY
+    val canSeek: Boolean get() = !live && durationMs > 0
     val canSkip: Boolean get() = source == PlaySource.SPOTIFY || source == PlaySource.MUSIC || source == PlaySource.VIDEO
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
@@ -88,9 +88,9 @@ object Playback {
                 )
             },
             spotifyTrack?.let {
-                Playing(PlaySource.SPOTIFY, it.title, it.artist, it.artworkUrl, it.playing)
-            } ?: spotifyRemote?.takeIf { it.playing && it.item != null }?.let {
-                // Spotify che suona su un altro dispositivo (telefono, casse): si comanda da qui.
+                Playing(PlaySource.SPOTIFY, it.title, it.artist, it.artworkUrl, it.playing, positionMs = it.positionMs, durationMs = it.durationMs)
+            } ?: spotifyRemote?.takeIf { it.item != null }?.let {
+                // Spotify su un altro dispositivo (app di Spotify, casse): si comanda da qui, e in pausa resta.
                 val item = it.item!!
                 Playing(
                     PlaySource.SPOTIFY, item.title,
@@ -121,7 +121,7 @@ object Playback {
         val current = now.value ?: return
         when (current.source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.toggle(context)
-            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.TOGGLE) { if (current.playing) SpotifyApi.pause(it) else SpotifyApi.resume(it) }
+            PlaySource.SPOTIFY -> if (current.playing) spotifyCommand(PlayerCommand.PAUSE) { SpotifyApi.pause(it) } else resumeSpotify(context)
             PlaySource.RADIO -> RadioStore.togglePause()
             PlaySource.PODCAST -> PodcastStore.togglePause()
         }
@@ -158,7 +158,31 @@ object Playback {
         when (current.source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.seekTo(context, positionMs)
             PlaySource.PODCAST -> PodcastStore.seekBy(positionMs - current.positionMs)
+            PlaySource.SPOTIFY -> if (NowPlaying.tracks.value.containsKey(MediaService.SPOTIFY)) NowPlaying.seek(MediaService.SPOTIFY, positionMs)
+                else SpotifyStore.control { SpotifyApi.seek(it, positionMs) }
             else -> Unit
+        }
+    }
+
+    /**
+     * Fa ripartire Spotify. Nell'app prima il tasto del riproduttore; se Spotify nel frattempo ha
+     * perso il brano (succede dopo pause lunghe) lo si riprende da dov'era con la Web API.
+     */
+    private fun resumeSpotify(context: Context) {
+        val local = NowPlaying.tracks.value[MediaService.SPOTIFY]
+        if (local == null) {
+            NowPlaying.pauseOthers(MediaService.SPOTIFY, radio = true)
+            SpotifyStore.control { SpotifyApi.resume(it) }
+            return
+        }
+        NowPlaying.pauseOthers(MediaService.SPOTIFY, radio = true)
+        NowPlaying.command(MediaService.SPOTIFY, PlayerCommand.PLAY)
+        if (local.uri.isBlank()) return
+        scope.launch {
+            delay(1_500)
+            if (NowPlaying.tracks.value[MediaService.SPOTIFY]?.playing != true) {
+                com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(context, local.uri, local.contextUri, local.positionMs)
+            }
         }
     }
 
@@ -167,7 +191,7 @@ object Playback {
         when (now.value?.source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.stop(context)
             PlaySource.SPOTIFY -> if (MediaService.SPOTIFY in MediaWebViews.openServices()) MediaWebViews.release(MediaService.SPOTIFY)
-                else SpotifyStore.control { SpotifyApi.pause(it) }
+                else SpotifyStore.closeRemote()
             PlaySource.RADIO -> RadioStore.stop()
             PlaySource.PODCAST -> PodcastStore.stop()
             null -> Unit
