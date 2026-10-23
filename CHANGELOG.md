@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.122.0
+**Oggi › La tua settimana**
+- In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
+- I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
+
+**Meteo**
+- La rotella dell'aggiornamento accanto a "ADESSO · ROMA" resta al massimo 10 secondi: poi, e quando i dati sono vecchi, la riga dice da quando sono ("· 5 MIN FA", "· ALLE 9:40"), anche in Oggi
+- Al posto dell'icona che non si capiva, in alto c'è il pulsante "Località"
+
+**Sotto il cofano**
+- Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
+- Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
+
 ## 1.120.0
 **Player più fluido**
 - Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato
