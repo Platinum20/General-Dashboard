@@ -68,7 +68,8 @@ fun SearchScreen(
             ),
             onClose = onBack,
             onOpenNote = onOpenNote,
-            onOpenTab = { onOpenNotes() },
+            onOpenExpenses = { onOpenNotes() },
+            onOpenParcels = { onOpenNotes() },
             placeholder = "Cerca in note, agenda, notizie…",
             extra = { query ->
                 val foundEvents = EverywhereSearch.events(events, query, today)

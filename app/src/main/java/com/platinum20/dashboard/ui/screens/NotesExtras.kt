@@ -439,129 +439,45 @@ fun ChipRow(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-/**
- * Pacchi, dentro la scheda "In arrivo": cosa aspetti, quando arriva e il tracciamento a un tocco.
- * Tiene i suoi dialoghi e restituisce le righe da mettere nella lista della scheda.
- */
+/** Un pacco in "In arrivo": casella "consegnato", quando arriva e il tracciamento a un tocco. */
 @Composable
-fun parcelItems(parcels: List<Parcel>, onDeleted: (Parcel) -> Unit = {}): LazyListScope.() -> Unit {
-    var editing by remember { mutableStateOf<Parcel?>(null) }
-    var adding by remember { mutableStateOf(false) }
+fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
     val inApp = LocalInAppNav.current
     val today = LocalDate.now()
-    val incoming = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
-    val delivered = parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
     val haptic = rememberHaptic()
-    val context = LocalContext.current
-    val autoFillOn by AutoFill.enabled.collectAsStateWithLifecycle()
-    var pastedCode by remember { mutableStateOf<String?>(null) }
-    editing?.let { ParcelDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
-    pastedCode?.let { ParcelDialog(null, onDismiss = { pastedCode = null }, initialCode = it) }
-    if (adding) ParcelDialog(null, onDismiss = { adding = false })
-
-    return {
-        item(key = "parcels-header") {
-            SectionHeader(
-                if (incoming.isEmpty()) "Pacchi" else "Pacchi · ${incoming.size} in arrivo",
-                modifier = Modifier.padding(top = 12.dp),
-                action = "Nuovo pacco",
-                onAction = { adding = true },
-            )
-        }
-        items(incoming + delivered, key = { "parcel-${it.id}" }) { parcel ->
-            CanvasCard(onClick = { editing = parcel }, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
-                Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = parcel.delivered, onCheckedChange = {
-                        haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
-                        NotesStore.toggleDelivered(parcel.id)
-                    })
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            parcel.title,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                textDecoration = if (parcel.delivered) TextDecoration.LineThrough else null,
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        val expected = parcel.expected
-                        val whenText = when {
-                            parcel.delivered -> "Consegnato"
-                            expected == null -> "Data non nota"
-                            expected.isBefore(today) -> "Atteso ${dueDay(expected, today)}: in ritardo"
-                            else -> "Arriva ${dueDay(expected, today)}"
-                        }
-                        Text(
-                            whenText + if (parcel.code.isNotEmpty()) " · ${parcel.carrier.label}" else "",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (!parcel.delivered && expected != null && expected.isBefore(today)) MaterialTheme.colorScheme.error
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    parcel.trackingUrl()?.let { url ->
-                        // La pagina del corriere si apre dentro Canvas, non nel browser.
-                        IconButton(onClick = { inApp?.openWeb(url, parcel.carrier.label) }) {
-                            Icon(Icons.Outlined.LocalShipping, contentDescription = "Traccia")
-                        }
-                    }
-                }
-            }
-        }
-        if (parcels.isEmpty()) {
-            item(key = "parcels-empty") {
+    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
+        Row(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = parcel.delivered, onCheckedChange = {
+                haptic(if (it) Haptic.CONFIRM else Haptic.TICK)
+                NotesStore.toggleDelivered(parcel.id)
+            })
+            Column(Modifier.weight(1f)) {
                 Text(
-                    "Nessun pacco in arrivo. Il giorno della consegna compare in Oggi e il tracciamento si apre con un tocco.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                    parcel.title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        textDecoration = if (parcel.delivered) TextDecoration.LineThrough else null,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val expected = parcel.expected
+                val whenText = when {
+                    parcel.delivered -> "Consegnato"
+                    expected == null -> "Data non nota"
+                    expected.isBefore(today) -> "Atteso ${dueDay(expected, today)}: in ritardo"
+                    else -> "Arriva ${dueDay(expected, today)}"
+                }
+                Text(
+                    whenText + if (parcel.code.isNotEmpty()) " · ${parcel.carrier.label}" else "",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (!parcel.delivered && expected != null && expected.isBefore(today)) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        }
-        // Con pochi pacchi, sotto la lista i modi per aggiungerne: la scheda non resta mezza vuota.
-        val hints = ParcelHints.suggest(incoming.size, autoFillOn)
-        if (hints.isNotEmpty()) {
-            item(key = "parcels-hints") {
-                Column(Modifier.padding(top = 8.dp)) {
-                    SectionHeader("Per aggiungere un pacco")
-                    Spacer(Modifier.height(4.dp))
-                    CanvasCard(Modifier.fillMaxWidth()) {
-                        hints.forEachIndexed { i, hint ->
-                            if (i > 0) RowDivider()
-                            val onClick: (() -> Unit)? = when (hint) {
-                                ParcelHint.PASTE -> ({
-                                    val clip = runCatching {
-                                        context.getSystemService(ClipboardManager::class.java)
-                                            ?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(context)?.toString()
-                                    }.getOrNull()
-                                    pastedCode = ParcelHints.codeFrom(clip)
-                                })
-                                ParcelHint.AUTOFILL -> ({ inApp?.openRoute(Routes.AUTOFILL) })
-                                ParcelHint.SHARE -> null
-                            }
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(
-                                    when (hint) {
-                                        ParcelHint.PASTE -> Icons.Outlined.ContentPaste
-                                        ParcelHint.AUTOFILL -> Icons.Outlined.AutoAwesome
-                                        ParcelHint.SHARE -> Icons.Outlined.Share
-                                    },
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                                Spacer(Modifier.size(12.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(hint.title, style = MaterialTheme.typography.bodyLarge)
-                                    Text(hint.subtitle, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
+            parcel.trackingUrl()?.let { url ->
+                // La pagina del corriere si apre dentro Canvas, non nel browser.
+                IconButton(onClick = { inApp?.openWeb(url, parcel.carrier.label) }) {
+                    Icon(Icons.Outlined.LocalShipping, contentDescription = "Traccia")
                 }
             }
         }

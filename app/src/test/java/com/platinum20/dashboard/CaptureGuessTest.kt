@@ -40,4 +40,19 @@ class CaptureGuessTest {
         assertEquals(CaptureMode.TASK, guess(""))
         assertEquals(CaptureMode.TASK, guess("Chiamare la mamma"))
     }
+
+    @Test fun abitudini() {
+        assertEquals(CaptureMode.HABIT, guess("ogni giorno leggere 20 pagine"))
+        assertEquals(CaptureMode.HABIT, guess("palestra 3 volte a settimana"))
+        // Con l'ora resta un promemoria che si ripete.
+        assertEquals(CaptureMode.TASK, guess("ogni giorno alle 8 pillola"))
+    }
+
+    @Test fun dateDaRicordare() {
+        assertEquals(CaptureMode.DATE, guess("compleanno di Marta 12 marzo"))
+        assertEquals(CaptureMode.DATE, guess("anniversario 3 giugno"))
+        // Senza giorno non è una data; con l'ora è un evento.
+        assertEquals(CaptureMode.TASK, guess("regalo per il compleanno di Marta"))
+        assertEquals(CaptureMode.EVENT, guess("sabato alle 20 festa di compleanno"))
+    }
 }

@@ -117,23 +117,14 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            for ((tab, name) in listOf(
-                "Spese" to "24_spese", "Note" to "21_note_libere", "In arrivo" to "22_in_arrivo",
-            )) {
-                // Il primo nodo è la scheda in alto; "Note" compare anche nella barra in basso.
-                val nodes = compose.onAllNodes(hasText(tab) and hasClickAction())
-                val count = nodes.fetchSemanticsNodes().size
-                if (count > 0) {
-                    nodes[0].performClick()
-                    settle(1_000); shot(p + name)
-                } else missing += p + name
-            }
-            // L'editor di una nota, dalla scheda Note.
-            compose.onAllNodes(hasText("Note") and hasClickAction()).fetchSemanticsNodes().takeIf { it.isNotEmpty() }?.let {
-                compose.onAllNodes(hasText("Note") and hasClickAction())[0].performClick()
-                settle(1_000)
-                visit("Libri da leggere", p + "26_nota", substring = true)
-            } ?: run { missing += p + "26_nota" }
+            // Il tipo scelto a mano: la pillola "Abitudine" accesa sotto il campo.
+            if (tap("Abitudine")) { settle(500); shot(p + "21_note_tipo"); tap("Abitudine"); settle(300) } else missing += p + "21_note_tipo"
+            scroll(down = true)
+            shot(p + "22_note_fondo")
+            // Le spese del mese: una pagina dentro le Note.
+            visit("Dettagli", p + "24_spese", waitMs = 1_000)
+            // L'editor di una nota.
+            visit("Libri da leggere", p + "26_nota", substring = true)
         } else missing += p + "20_note"
 
         if (tap("Media")) {
