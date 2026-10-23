@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -187,7 +188,10 @@ class ScreenshotTour {
 
     /** Tocca, fra gli elementi cliccabili con quella descrizione, quello più in basso nello schermo. */
     private fun tapLowest(label: String): Boolean {
-        val nodes = compose.onAllNodes(hasContentDescription(label) and hasClickAction())
+        // Il + della barra (dalla 1.111) ha la descrizione sull'icona dentro, non sul cerchio che si tocca.
+        val direct = compose.onAllNodes(hasContentDescription(label) and hasClickAction())
+        val nodes = if (direct.fetchSemanticsNodes().isNotEmpty()) direct
+        else compose.onAllNodes(hasClickAction() and hasAnyChild(hasContentDescription(label)))
         val all = nodes.fetchSemanticsNodes()
         if (all.isEmpty()) return false
         val index = all.indices.maxBy { all[it].boundsInRoot.bottom }
