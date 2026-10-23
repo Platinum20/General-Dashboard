@@ -134,7 +134,8 @@ class ScreenshotTour {
             // La lampadina: le idee da aggiungere.
             if (tap("Idee da aggiungere")) { settle(800); shot(p + "25_note_idee"); tap("Chiudi"); settle(500) } else missing += p + "25_note_idee"
             // Una pillola in alto accesa: la pagina mostra solo quella parte ("indietro" torna a tutto).
-            visit("In arrivo", p + "21_note_in_arrivo", waitMs = 800, substring = true)
+            visit("Con scadenza", p + "21_note_con_scadenza", waitMs = 800, substring = true)
+            visit("Senza scadenza ·", p + "23_note_senza_scadenza", waitMs = 800, substring = true)
             scroll(down = true)
             shot(p + "22_note_fondo")
             // Le spese del mese: la pillola "Spese" (o "Dettagli" nel riassunto).

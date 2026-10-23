@@ -1130,6 +1130,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 NotesScreen(
                     bottomPadding = padding,
                     onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
+                    onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
                 )
             }
             composable(
@@ -1253,7 +1254,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         FloatingPlayer(
             currentRoute = currentRoute,
             onExpand = { playing ->
-                navController.navigate(if (playing.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
+                // Quello che suona al momento del tocco, non quello di quando la barra è comparsa.
+                val current = com.platinum20.dashboard.media.Playback.now.value ?: playing
+                navController.navigate(if (current.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
             },
             modifier = Modifier.padding(padding),
         )
