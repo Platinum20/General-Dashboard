@@ -9,9 +9,13 @@
 - Al primo uso la pagina non è vuota: ricerche pronte ("Il Post", "Muschio Selvaggio", "Geopop"…)
 - Radio e podcast si passano il player senza interrompersi a vicenda per sbaglio
 
+**Media › Radio**
+- Sveglia con la radio: nella pagina Radio scegli ora, giorni (lun-ven o tutti) e la stazione, e la mattina parte da sola anche ad app chiusa. Comincia piano e sale in 30 secondi; se dopo 20 secondi la radio non suona (niente rete) parte la sveglia del telefono, mai una sveglia muta
+- La notifica della sveglia ha "Ferma" e "Ancora 10 min"; la sveglia si vede nella barra di stato come le altre e resta programmata anche dopo il riavvio del telefono
+
 **News › Il punto del giorno**
 - "Ascolta" (icona delle cuffie in alto): la voce italiana del telefono legge il punto come un notiziario breve, un'apertura con l'ora e poi una frase per tema, senza indirizzi né simboli. La card "In ascolto" dice a che tema sei, con Successivo e Ferma
-- Se sul telefono manca la voce italiana, un messaggio dice dove aggiungerla invece di non fare nulla
+- Se sul telefono manca la voce italiana, un messaggio dice dove aggiungerla invece di non fare nulla; la voce si ferma da sola quando parte musica, radio, un podcast o un video
 
 **Note › Promemoria**
 - "Ogni mese" il 31 non scivola più al 28 per sempre dopo febbraio: torna al 31 (o all'ultimo giorno del mese); "ogni anno" il 29 febbraio torna al 29 negli anni bisestili
@@ -20,7 +24,7 @@
 - La riga dei promemoria indica il primo in ordine di orario
 
 **Sotto il cofano**
-- Test nuovi: PodcastFeedTest (due feed RSS e una risposta di iTunes salvati nei test: durate "1:02:03", "62:03" e secondi, date con fusi diversi, descrizioni HTML, episodi senza audio, doppioni), RecapReaderTest, RepeatEndOfMonthTest, WidgetLinesTest
+- Test nuovi: PodcastFeedTest (due feed RSS e una risposta di iTunes salvati nei test: durate "1:02:03", "62:03" e secondi, date con fusi diversi, descrizioni HTML, episodi senza audio, doppioni), RecapReaderTest, RadioAlarmTest (anche il cambio dell'ora legale), RepeatEndOfMonthTest, WidgetLinesTest
 - Giro fotografico: nuove foto di Radio e Podcast
 
 ## 1.97.0
