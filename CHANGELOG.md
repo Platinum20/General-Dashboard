@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.121.0
+**Il carattere di Claude**
+- Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
+- Il testo è un filo più grande perché il serif si legga bene anche piccolo
+
 ## 1.120.0
 **Player più fluido**
 - Trascinando giù un video di YouTube tutta la pagina scende con il dito, si rimpicciolisce e si arrotonda; lasciata (o lanciata) in basso scivola via e il video continua nel mini player, altrimenti torna su con una molla. Prima il video scendeva da solo e poi la pagina usciva di lato

@@ -141,42 +141,47 @@ private fun ColorScheme.toAmoled(): ColorScheme = copy(
     surfaceVariant = Color(0xFF1A1A1A),
 )
 
-/** Inter per il testo, Inter Display (più stretto) per i titoli grandi: inclusi nell'app. */
+/**
+ * Come nell'app di Claude: un serif per titoli e testo (Source Serif 4, il carattere libero più
+ * vicino), un sans pulito per pulsanti, etichette e chip (Inter). Tutti inclusi nell'app.
+ */
+private val Serif = FontFamily(
+    Font(R.font.serif_regular, FontWeight.Normal),
+    Font(R.font.serif_semibold, FontWeight.SemiBold),
+    Font(R.font.serif_bold, FontWeight.Bold),
+)
+private val SerifDisplay = FontFamily(
+    Font(R.font.serif_display_light, FontWeight.Light),
+    Font(R.font.serif_display_semibold, FontWeight.SemiBold),
+    Font(R.font.serif_display_bold, FontWeight.Bold),
+)
 private val Inter = FontFamily(
     Font(R.font.inter_regular, FontWeight.Normal),
     Font(R.font.inter_medium, FontWeight.Medium),
     Font(R.font.inter_semibold, FontWeight.SemiBold),
     Font(R.font.inter_bold, FontWeight.Bold),
 )
-private val InterDisplay = FontFamily(
-    Font(R.font.inter_display_light, FontWeight.Light),
-    Font(R.font.inter_display_semibold, FontWeight.SemiBold),
-    Font(R.font.inter_display_bold, FontWeight.Bold),
-)
 
-/**
- * Caratteri compatti: titoli decisi e stretti, testo piccolo ma leggibile.
- * Con i caratteri grandi del telefono le schermate restano ordinate senza diventare enormi.
- */
 private val AppTypography = Typography().let { base ->
-    val text = { style: TextStyle -> style.copy(fontFamily = Inter) }
-    val title = { style: TextStyle -> style.copy(fontFamily = InterDisplay) }
+    val display = { style: TextStyle -> style.copy(fontFamily = SerifDisplay) }
+    val serif = { style: TextStyle -> style.copy(fontFamily = Serif) }
+    val label = { style: TextStyle -> style.copy(fontFamily = Inter) }
     base.copy(
-        displayLarge = title(base.displayLarge).copy(fontWeight = FontWeight.Light, letterSpacing = (-1.5).sp),
-        displayMedium = title(base.displayMedium).copy(fontWeight = FontWeight.Light, letterSpacing = (-1).sp),
-        displaySmall = title(base.displaySmall).copy(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Light, letterSpacing = (-0.8).sp),
-        headlineLarge = title(base.headlineLarge).copy(fontSize = 30.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.6).sp),
-        headlineMedium = title(base.headlineMedium).copy(fontSize = 24.sp, lineHeight = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp),
-        headlineSmall = title(base.headlineSmall).copy(fontSize = 21.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.3).sp),
-        titleLarge = title(base.titleLarge).copy(fontSize = 19.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
-        titleMedium = text(base.titleMedium).copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        titleSmall = text(base.titleSmall).copy(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        bodyLarge = text(base.bodyLarge).copy(fontSize = 15.sp, lineHeight = 21.sp, letterSpacing = 0.sp),
-        bodyMedium = text(base.bodyMedium).copy(fontSize = 13.5.sp, lineHeight = 19.sp, letterSpacing = 0.sp),
-        bodySmall = text(base.bodySmall).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
-        labelLarge = text(base.labelLarge).copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        labelMedium = text(base.labelMedium).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
-        labelSmall = text(base.labelSmall).copy(fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
+        displayLarge = display(base.displayLarge).copy(fontWeight = FontWeight.Light, letterSpacing = (-1).sp),
+        displayMedium = display(base.displayMedium).copy(fontWeight = FontWeight.Light, letterSpacing = (-0.6).sp),
+        displaySmall = display(base.displaySmall).copy(fontSize = 34.sp, lineHeight = 40.sp, fontWeight = FontWeight.Light, letterSpacing = (-0.5).sp),
+        headlineLarge = display(base.headlineLarge).copy(fontSize = 30.sp, lineHeight = 35.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.4).sp),
+        headlineMedium = display(base.headlineMedium).copy(fontSize = 25.sp, lineHeight = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.3).sp),
+        headlineSmall = serif(base.headlineSmall).copy(fontSize = 21.sp, lineHeight = 27.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.2).sp),
+        titleLarge = serif(base.titleLarge).copy(fontSize = 19.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.1).sp),
+        titleMedium = serif(base.titleMedium).copy(fontSize = 16.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        titleSmall = serif(base.titleSmall).copy(fontSize = 14.5.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        bodyLarge = serif(base.bodyLarge).copy(fontSize = 16.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
+        bodyMedium = serif(base.bodyMedium).copy(fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+        bodySmall = serif(base.bodySmall).copy(fontSize = 12.5.sp, lineHeight = 17.sp, letterSpacing = 0.sp),
+        labelLarge = label(base.labelLarge).copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        labelMedium = label(base.labelMedium).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
+        labelSmall = label(base.labelSmall).copy(fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
     )
 }
 
