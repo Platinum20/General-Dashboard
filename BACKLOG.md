@@ -21,7 +21,7 @@ _**Revisione delle ridondanze** (thread su richiesta di Antonio, 2026-10-23 00:0
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.96.0, giro fotografico `main/53`, 2026-10-22.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.97.0, giro fotografico `main/55`, 2026-10-23.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
@@ -35,6 +35,7 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 
 ### V8. Il giro fotografico non vede il nuovo player di YouTube né Spotify che suona · giro fotografico · gravità media
 - **Versione:** 1.82.0-1.86.0 (giro `main/41`)
+- **Aggiornamento 1.97.0 (`main/55`):** Spotify collegato non ha nessuna foto: aggiungere `32b_spotify_playlist` con una playlist finta e `32c_spotify_bloccata` con l'avviso "playlist non tua" sotto il titolo e "Riproduci" (Loadable con `data = emptyList()` ed `error` valorizzato), anche al buio.
 - **Aggiornamento 1.96.0 (`main/53`):** `youtube_iscrizioni` ora mostra la barra rossa di quanto hai visto e `youtube_player` il "Non mi piace" e la durata mentre carica: bene. Restano senza foto la scheda **Cronologia** ("Guardati qui" + "Dalla tua cronologia di YouTube"), i **commenti** nuovi (Mi piace/Non mi piace, fissato, cuore, risposte, "Altri commenti"), il tasto **sottotitoli**, i **correlati** con Ripeti/Condividi e la pagina **Video** con dei video in "Sul telefono" (`33_video` mostra solo l'invito, perché il tour non concede `READ_MEDIA_VIDEO`). Aggiungere `youtube_cronologia`, `youtube_commenti` e `33b_video_telefono` (permesso concesso con `ShadowApplication.grantPermissions` e 3 video finti in `PhoneVideos`, o una lista iniettata).
 - **Aggiornamento 1.93.0 (`main/50`):** mancano anche "Riprendi" in cima a Media (`30_media` è senza cronologia, quindi la sezione non si vede mai) e la riga "Riprendi: …" in Adesso; la card "Domani" si vede solo perché il giro gira dopo le 18 (aggiungere un orario fisso alle 19 per il giro, altrimenti sparisce nei giri del mattino). L'avviso pioggia è solo una notifica: verificato dal codice e da `RainAlertTest`. Aggiungere `30b_media_riprendi` con un video e una radio finti in `MediaHistory`.
 - **Aggiornamento 1.90.0 (`main/46`):** il player e il feed di YouTube ora sono fotografati da `YouTubeTour` (`youtube_iscrizioni`, `youtube_player`: IN DIRETTA, Short, capitoli, qualità, velocità, si vedono bene). Restano da fare: stato di errore del player con "Riprova", `30b_media_in_corso`, riga urgente in Adesso, e le due foto YouTube anche al buio.
@@ -51,6 +52,14 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Come riprodurre:** in `main/46/tour/` nessuna di queste schermate; `24_spese` e `23_abitudini` hanno solo spese variabili e abitudini giornaliere.
 - **Cosa fare:** nei dati finti una nota "Spesa" con `[x] latte`, `[ ] pane`, `[ ] uova`; una spesa fissa ("ogni mese il 5 affitto 650") e una abitudine "Palestra 3 volte a settimana"; nuove foto `27_cerca` (lente, cerca "latte"), `28_lista` (editor della nota lista), `07_da_attivare` (riga aperta). Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
+
+### V25. Spotify: le novità della 1.97 non hanno test, e l'avviso "playlist non tua" può restare o comparire a torto · Media › Spotify › playlist e artisti · gravità bassa
+- **Versione:** 1.97.0 (solo dal codice: Spotify collegato non è nel giro fotografico, `32_spotify` mostra solo "Collega")
+- **Cosa non va:** (1) nessun test copre i cambi della 1.97: lettura di `playlists/{id}/items` con il brano in `item` (o nel vecchio `track`), il 403 trasformato in `PlaylistLockedException`, la pagina artista con album e singoli. Se Spotify cambia di nuovo forma, nessun test se ne accorge. (2) In `SpotifyStore.loadChildren` il messaggio va in `lockedMessage[parent.id]` e non viene mai tolto: se poi la stessa playlist si ricarica senza rete, al posto di "Spotify non è raggiungibile" compare l'avviso "playlist che non hai creato tu"; se la ricarica riesce (es. la playlist diventa collaborativa) l'avviso resta sopra i brani. (3) Ogni 403 sulla playlist diventa "non l'hai creata tu", anche per una playlist tua quando l'account non è tra gli utenti dell'app (User Management): il messaggio dice la cosa sbagliata. (4) Da controllare: il sottotitolo delle playlist ("N brani") legge ancora `tracks.total`; se con la nuova API il campo si chiama `items.total`, il numero sparisce.
+- **Dove:** `media/spotify/SpotifyApi.kt` (`children`, `toItem`), `media/spotify/SpotifyStore.kt` (`loadChildren`, `lockedMessage`). Attenzione: `SpotifyStore` è nella nota "Velocità e stabilità" in lavorazione, aspettare che finisca.
+- **Come riprodurre:** (2) aprire una playlist di Spotify (avviso), togliere la rete, tirare per ricaricare: si vede ancora l'avviso invece dell'errore di rete.
+- **Cosa fare:** estrarre il parsing in funzioni pure (`parsePlaylistItems(json)`, `parseArtistAlbums(json)`) testabili; in `loadChildren` togliere `lockedMessage[parent.id]` prima di ogni chiamata e usarlo solo se la chiamata corrente è finita in `PlaylistLockedException`; nel sottotitolo leggere `items.total` con ripiego su `tracks.total`.
+- **Test che lo impedisce:** `SpotifyParseTest`: un JSON con `item` e uno con `track` danno gli stessi brani; un JSON di `artists/{id}/albums` dà voci di tipo ALBUM; il sottotitolo con `items.total = 12` dice "12 brani". Un test di `loadChildren` (o della funzione che decide il messaggio): dopo un 403 e poi un errore di rete il messaggio è quello di rete.
 
 ### V2. "06_aggiungi" non fotografa il "+" · giro fotografico · gravità bassa
 - **Versione:** 1.81.0 (giro `main/29`)
