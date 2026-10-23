@@ -81,24 +81,34 @@ object SpotifyStore {
         }
     }
 
-    private val lockedMessage = java.util.concurrent.ConcurrentHashMap<String, String>()
-
     fun loadChildren(parent: SpItem, force: Boolean = false) {
         val state = _children.value[parent.id]
         if (!force && state != null && (state.loading || state.data != null)) return
         _children.update { it + (parent.id to (state ?: Loadable()).copy(loading = true, error = null)) }
         scope.launch {
+            // L'avviso "playlist bloccata" vale solo per questa chiamata: niente ricordi di quelle prima.
+            var locked: String? = null
             val result = call { token ->
                 try {
                     SpotifyApi.children(token, parent)
                 } catch (e: PlaylistLockedException) {
-                    // Il titolo e "Riproduci" restano: la playlist suona lo stesso, manca solo l'elenco.
-                    lockedMessage[parent.id] = e.message.orEmpty()
+                    locked = e.message.orEmpty()
                     emptyList()
                 }
             }
-            _children.update { it + (parent.id to (lockedMessage[parent.id]?.let { msg -> result.copy(error = msg) } ?: result)) }
+            _children.update { it + (parent.id to childrenState(state?.data, result, locked)) }
         }
+    }
+
+    /**
+     * Stato della lista dopo una chiamata: se la chiamata fallisce si tiene l'elenco di prima (così
+     * copertina, titolo e "Riproduci" restano); con la playlist bloccata si mostra l'avviso sopra
+     * un elenco vuoto, ma il titolo e "Riproduci" restano perché la playlist suona lo stesso.
+     */
+    internal fun childrenState(previous: List<SpItem>?, result: Loadable<List<SpItem>>, locked: String?): Loadable<List<SpItem>> = when {
+        locked != null && result.error == null -> result.copy(error = locked)
+        result.data == null -> result.copy(data = previous)
+        else -> result
     }
 
     fun search(query: String) {
