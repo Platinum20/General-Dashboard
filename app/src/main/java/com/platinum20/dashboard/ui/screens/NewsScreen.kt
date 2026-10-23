@@ -37,7 +37,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -113,10 +112,9 @@ fun NewsScreen(
             }
         },
     ) { inner ->
-        PullToRefreshBox(
-            isRefreshing = state.refreshing,
-            state = rememberHapticPullState(state.refreshing),
-            onRefresh = viewModel::refresh,
+        // Le notizie si aggiornano da sole; trascinare dall'alto apre la ricerca.
+        AutoRefresh { viewModel.refreshIfStale() }
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = inner.calculateTopPadding()),

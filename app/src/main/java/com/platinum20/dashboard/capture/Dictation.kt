@@ -156,6 +156,11 @@ class Dictation(private val context: Context) {
         done?.invoke(clean)
     }
 
+    /** Un messaggio nel fumetto anche fuori dalla dettatura (la canzone riconosciuta). */
+    fun show(message: String) {
+        notice = message
+    }
+
     /** Il fumetto ha mostrato l'avviso: si può chiudere. */
     fun clearNotice() {
         notice = null

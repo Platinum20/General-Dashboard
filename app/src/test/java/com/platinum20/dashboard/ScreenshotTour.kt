@@ -3,6 +3,9 @@ package com.platinum20.dashboard
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
@@ -107,16 +110,21 @@ class ScreenshotTour {
         visit("Roma", p + "02_meteo", substring = true)
         // Il punto del giorno si prepara dopo le notizie: al primo giro (al buio) può volerci di più.
         visit("Tutti", p + "03_punto", appearMs = 40_000)
-        // In alto a destra solo la lente e l'ingranaggio: Personalizza sta nelle Impostazioni.
-        visit("Cerca ovunque", p + "04_cerca")
+        // Niente pulsanti in alto: la ricerca si apre trascinando giù (qui l'azione del titolo, come TalkBack).
+        if (action("Cerca ovunque")) {
+            settle(1_500); shot(p + "04_cerca")
+            scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            settle(1_000)
+        } else missing += p + "04_cerca"
         scroll(down = true)
         shot(p + "05_oggi_fondo")
         // Il + della barra in basso: la cattura veloce. "Aggiungi" c'è anche nelle card: il + della barra è il più in basso.
         if (tapLowest("Aggiungi")) {
             settle(1_000); shot(p + "06_aggiungi")
-            // Senza il pannello aperto la foto sarebbe uguale a quella di prima (come per mesi): conta come mancante.
-            if (!exists("Annulla")) missing += p + "06_aggiungi (il pannello del + non si è aperto)"
-            tap("Annulla"); settle(500)
+            // Il + apre il fumetto per scrivere, con il suo tasto per inserire.
+            if (!exists("Inserisci")) missing += p + "06_aggiungi (il fumetto del + non si è aperto)"
+            scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+            settle(500)
         } else missing += p + "06_aggiungi"
 
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
@@ -139,12 +147,13 @@ class ScreenshotTour {
             visit("Radio e podcast", p + "33_radio_podcast", waitMs = 6_000)
         } else missing += p + "30_media"
 
-        if (tap("Impostazioni")) {
+        // Le Impostazioni si aprono tenendo premuta una sezione della barra (qui l'azione del titolo).
+        if (action("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
             scroll(down = true)
             shot(p + "42_impostazioni_fondo")
             visit("Compila da solo", p + "43_compila_da_solo")
-            visit("Località", p + "44_localita")
+            visit("Località del meteo", p + "44_localita")
             visit("Card di Oggi", p + "45_personalizza")
             visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
         } else missing += p + "40_impostazioni"
@@ -166,6 +175,17 @@ class ScreenshotTour {
         shot(name)
         scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         settle(1_000)
+    }
+
+    /** Esegue un'azione di accessibilità (es. "Cerca ovunque" del titolo delle sezioni). */
+    private fun action(label: String): Boolean {
+        val withAction = SemanticsMatcher("azione $label") { node ->
+            node.config.getOrNull(SemanticsActions.CustomActions)?.any { it.label == label } == true
+        }
+        val nodes = compose.onAllNodes(withAction).fetchSemanticsNodes()
+        val custom = nodes.firstOrNull()?.config?.get(SemanticsActions.CustomActions)?.first { it.label == label } ?: return false
+        scenario?.onActivity { custom.action() }
+        return true
     }
 
     private fun matcher(label: String, substring: Boolean) =

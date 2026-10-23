@@ -49,7 +49,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -303,16 +302,13 @@ fun HomeScreen(
             )
         },
     ) { inner ->
-        val pull = rememberPullRefresh(weather.loading || recap.refreshing)
-        PullToRefreshBox(
-            isRefreshing = pull.showing,
-            state = rememberHapticPullState(pull.showing),
-            onRefresh = {
-                pull.start()
-                if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context, force = true)
-                recap.retry()
-                calendarRefresh++
-            },
+        // Si aggiorna da sola (meteo, notizie del riepilogo, agenda); trascinare dall'alto apre la ricerca.
+        AutoRefresh {
+            if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context)
+            runCatching { NewsStore.load() }
+            calendarRefresh++
+        }
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = inner.calculateTopPadding()),
