@@ -128,6 +128,8 @@ dependencies {
     // Accesso Google per le API di YouTube (solo lettura)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
+    // Lettura degli scontrini sul telefono (modello incluso nell'app, senza rete)
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

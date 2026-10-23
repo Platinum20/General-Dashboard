@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.SwipeToDismissBox
@@ -81,6 +82,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.notes.DateIdeas
+import com.platinum20.dashboard.notes.ReceiptReader
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import com.platinum20.dashboard.notes.HabitIdea
 import com.platinum20.dashboard.notes.HabitIdeas
 import com.platinum20.dashboard.notes.DateIdea
@@ -228,6 +233,15 @@ fun NotesScreen(
     var proposingDate by remember { mutableStateOf<DateIdea?>(null) }
     proposingHabit?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposingHabit = null }) }
     proposingDate?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposingDate = null }) }
+    var importingContacts by remember { mutableStateOf(false) }
+    if (importingContacts) {
+        ContactImportDialog(data.countdowns, onDismiss = { importingContacts = false }) { added ->
+            if (added.isNotEmpty()) {
+                val ids = added.map { it.id }.toSet()
+                offerUndo(if (added.size == 1) "Importata 1 data" else "Importate ${added.size} date") { NotesStore.removeCountdowns(ids) }
+            }
+        }
+    }
     event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
 
     // Con una pillola accesa, "indietro" torna a tutta la pagina.
@@ -376,12 +390,22 @@ fun NotesScreen(
             // Con poche abitudini e date, qualche esempio da aggiungere con un tocco.
             val habitIdeas = HabitIdeas.suggest(data.habits)
             val dateIdeas = if (data.upcoming.isEmpty()) DateIdeas.suggest(data.upcoming) else emptyList()
-            if (section == null && (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty())) {
+            // In cima alle idee, finché le date di ogni anno sono poche: i compleanni sono già nella rubrica.
+            val contacts = showContactImport(data.countdowns)
+            if (section == null && (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty() || contacts)) {
                 item(key = "ideas") {
+                    val offset = if (contacts) 1 else 0
                     IdeasSection(
-                        habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
+                        listOfNotNull(("Compleanni dai contatti" to "Importa dalla rubrica, una volta sola").takeIf { contacts }) +
+                            habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
                             dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" },
-                    ) { i -> if (i < habitIdeas.size) proposingHabit = habitIdeas[i] else proposingDate = dateIdeas[i - habitIdeas.size] }
+                    ) { i ->
+                        when {
+                            i < offset -> importingContacts = true
+                            i - offset < habitIdeas.size -> proposingHabit = habitIdeas[i - offset]
+                            else -> proposingDate = dateIdeas[i - offset - habitIdeas.size]
+                        }
+                    }
                 }
             }
         }
@@ -398,6 +422,24 @@ private fun NotesComposer(onEvent: (String) -> Unit, onSaved: (CaptureResult) ->
     val mode = remember(text) { CaptureGuess.guess(text) }
     val context = LocalContext.current
     val haptic = rememberHaptic()
+    val scope = rememberCoroutineScope()
+    var reading by remember { mutableStateOf(false) }
+    // Foto dello scontrino: il totale e il negozio finiscono nel campo come spesa, da controllare e salvare.
+    val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (!ok) return@rememberLauncherForActivityResult
+        reading = true
+        scope.launch {
+            val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
+            reading = false
+            if (guess != null) {
+                text = guess.captureText
+                picked = CaptureMode.EXPENSE
+                haptic(Haptic.CONFIRM)
+            } else {
+                android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
     val save = {
         if (text.isNotBlank()) {
             if (mode == CaptureMode.EVENT) {
@@ -428,8 +470,13 @@ private fun NotesComposer(onEvent: (String) -> Unit, onSaved: (CaptureResult) ->
             ),
             keyboardActions = KeyboardActions(onDone = { save() }),
             trailingIcon = {
-                if (text.isNotBlank()) {
-                    IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
+                when {
+                    reading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    text.isNotBlank() ->
+                        IconButton(onClick = save) { Icon(Icons.Outlined.Add, contentDescription = "Salva come ${mode.label.lowercase()}") }
+                    else -> IconButton(onClick = { runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) } }) {
+                        Icon(Icons.AutoMirrored.Outlined.ReceiptLong, contentDescription = "Fotografa uno scontrino")
+                    }
                 }
             },
             shape = MaterialTheme.shapes.large,
