@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.135.0
+**Note in tre tipi: con scadenza, senza scadenza, spese**
+- Promemoria, date da ricordare, pacchi ed eventi del calendario sono ora una cosa sola, "Con scadenza": una lista per giorno (Scaduti, Oggi, Domani, Questa settimana, Più avanti), tutte con quanto manca a destra
+- Gli eventi dei prossimi 14 giorni del calendario compaiono fra le scadenze; si toccano per la loro scheda
+- Le abitudini stanno sotto "Oggi", perché si fanno oggi
+- "Senza scadenza" raccoglie appunti e cose da fare prima o poi; le Spese restano a parte
+- Le pillole in alto sono solo tre, una per tipo; il + continua a scegliere da solo dove mettere quello che scrivi
+
+<<<<<<< HEAD
+=======
+
 ## 1.134.0
 **Il punto del giorno nel player**
 - La lettura ad alta voce del punto del giorno sta nel player unico e nel mini player come una canzone: play/pausa, tema precedente e successivo, e la barra del tempo da trascinare per scegliere da dove leggere (riparte da inizio parola)
