@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.99.0
+**News**
+- Niente più riquadri grigi: la prima notizia senza foto (o con la foto che non si carica) diventa una card solo testo, e le miniature che non arrivano spariscono invece di lasciare un quadrato vuoto. Loghi e immagini segnaposto dei feed non si mostrano più come foto
+- La fonte che non risponde non è più una riga in cima a tutto: c'è un chip discreto in coda ai filtri ("1 fonte non risponde"), toccandolo si leggono i nomi
+
+**Note › Pacchi**
+- Con pochi pacchi, sotto la lista c'è "Per aggiungerne": "Incolla un codice di tracciamento" prende il codice dagli appunti (anche da una mail copiata intera) e apre il pacco già compilato col corriere riconosciuto; "Prendili dalle notifiche" porta a Compila da solo se è spento; e come condividere la mail di spedizione verso Canvas
+
+**Media**
+- Al primo uso, quando non c'è niente da riprendere, "Per iniziare" propone quattro radio popolari da far partire con un tocco (mai una che hai già tra recenti o preferite), con "Tutte le radio" per vederne altre
+
+**Widget**
+- Il promemoria mostrato accanto al conteggio è davvero il più vicino, anche se li hai aggiunti in un altro ordine
+
+**Sotto il cofano**
+- Il giro fotografico ora fallisce ed elenca le schermate attese che non trova (prima le saltava in silenzio), scorre la lista fino alle voci fuori schermo (Compila da solo, Aggiornamenti), aspetta il punto del giorno anche al buio e fotografa anche i dialoghi, così la foto del + della barra non è più uguale a quella di Oggi
+- Test nuovi: NewsLayoutTest, ParcelHintsTest, MediaStartersTest, WidgetRowsTest
+
 ## 1.97.0
 - Spotify: aprendo una playlist creata da Spotify (o da altri) compariva "Spotify non permette questa richiesta". Da febbraio 2026 Spotify non mostra alle app personali i brani delle playlist che non sono tue: ora resta il titolo con "Riproduci" (suona normalmente) e un avviso chiaro al posto dell'errore
 - Spotify: le tue playlist usano il nuovo indirizzo dell'API di Spotify; la pagina di un artista mostra album e singoli (i "brani più ascoltati" non sono più disponibili per le app personali)
