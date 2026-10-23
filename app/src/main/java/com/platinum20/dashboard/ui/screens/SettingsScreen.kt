@@ -228,9 +228,6 @@ fun SettingsScreen(
                 }
             }
 
-            item { SettingsHeader(SettingsPart.NEWS.title) }
-            item { SettingsGroup { AdBlockSettings() } }
-
             item { SettingsHeader(SettingsPart.NOTES.title) }
             item {
                 SettingsGroup {
@@ -245,6 +242,9 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            item { SettingsHeader(SettingsPart.NEWS.title) }
+            item { SettingsGroup { AdBlockSettings() } }
 
             item { SettingsHeader(SettingsPart.MEDIA.title) }
             item {
@@ -419,9 +419,9 @@ fun SettingsScreen(
 
 /** Le parti delle Impostazioni: una per sezione della barra, più quella di tutta l'app. */
 private enum class SettingsPart(val key: String, val label: String, val title: String, val icon: ImageVector) {
-    HOME("home", "Oggi", "Oggi e notifiche", Icons.Outlined.Dashboard),
-    NEWS("news", "News", "News e lettura", Icons.Outlined.Newspaper),
+    HOME("home", "Home", "Home e notifiche", Icons.Outlined.Dashboard),
     NOTES("notes", "Note", "Note", Icons.Outlined.EditNote),
+    NEWS("news", "News", "News e lettura", Icons.Outlined.Newspaper),
     MEDIA("media", "Media", "Media", Icons.Outlined.PlayCircle),
     APP("app", "App", "Tutta l'app", Icons.Outlined.Tune),
 }

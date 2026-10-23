@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -16,6 +17,9 @@ internal data class CaptureNotice(
     val mode: CaptureMode,
     val message: String,
     val undo: (suspend () -> Unit)?,
+    /** Per ciò che non è una nota (una canzone riconosciuta): l'icona e la scheda dove vola il pallino. */
+    val icon: ImageVector = mode.icon,
+    val target: String? = null,
 )
 
 /**
@@ -47,6 +51,7 @@ internal object CaptureTargets {
 
     const val NOTES_TAB = "tab:notes"
     const val HOME_TAB = "tab:home"
+    const val MEDIA_TAB = "tab:media"
 
     fun arrived(key: String) {
         arrivals[key] = (arrivals[key] ?: 0) + 1

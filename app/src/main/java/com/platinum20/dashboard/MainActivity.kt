@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.platinum20.dashboard.capture.VoiceCapture
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.ui.platform.LocalDensity
@@ -382,9 +383,9 @@ private data class TopDestination(
 )
 
 private val topDestinations = listOf(
-    TopDestination(Routes.HOME, "Oggi", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
-    TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
+    TopDestination(Routes.HOME, "Home", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
     TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
+    TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
     TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
 )
 // Le Impostazioni non stanno nella barra: si aprono tenendo premuta una sezione, alla sua parte.
@@ -701,8 +702,6 @@ private fun DictationBubble(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (locked && !music) {
-                        // Bloccato il dito è libero: si può chiedere che canzone sta suonando.
-                        TextButton(onClick = onIdentifySong) { Text("♪ Canzone") }
                         TextButton(onClick = onCancel) { Text("Annulla") }
                     }
                 }
@@ -726,6 +725,7 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
     val targetKey = when (dest.route) {
         Routes.NOTES -> CaptureTargets.NOTES_TAB
         Routes.HOME -> CaptureTargets.HOME_TAB
+        Routes.MEDIA -> CaptureTargets.MEDIA_TAB
         else -> null
     }
     val bump = remember { Animatable(1f) }
@@ -900,7 +900,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
     }
     SongId.init(context)
-    // "Che canzone è?": ascolta la musica intorno, la fa partire su Spotify e la mette in "Sentite da Canvas".
+    // Un vocale senza parole ma con suono è musica: Canvas la riconosce, la fa partire su Spotify e la mette in "Sentite da Canvas".
     val identifySong: () -> Unit = {
         dictation.discard()
         dictation.clearNotice()
@@ -908,15 +908,17 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             when (val outcome = SongId.identify(context)) {
                 is SongId.Outcome.Failed -> dictation.show(outcome.message)
                 is SongId.Outcome.Found -> {
+                    // Come una nota: il fumetto con la canzone, poi il pallino vola alla scheda Media.
                     val song = outcome.song
-                    dictation.show(
-                        "♪ ${song.title} · ${song.artist}" + when {
-                            outcome.inPlaylist -> "\nAggiunta a ${SongId.PLAYLIST_NAME}"
-                            song.spotifyUri != null -> "\nPer la playlist accedi di nuovo a Spotify nelle Impostazioni"
-                            else -> ""
-                        },
+                    val message = "${song.title} · ${song.artist}" + when {
+                        outcome.inPlaylist -> " · in ${SongId.PLAYLIST_NAME}"
+                        song.spotifyUri == null -> " · non è su Spotify"
+                        else -> ""
+                    }
+                    CaptureFeedback.show(
+                        CaptureNotice(CaptureMode.NOTE, message, undo = null, icon = Icons.Rounded.MusicNote, target = CaptureTargets.MEDIA_TAB),
                     )
-                    if (outcome.playing) navController.navigate(Routes.PLAYER) { launchSingleTop = true }
+                    return@launch
                 }
             }
             delay(4_500)
