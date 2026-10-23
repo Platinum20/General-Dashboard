@@ -204,6 +204,15 @@ fun NotesScreen(
     var proposingDate by remember { mutableStateOf<DateIdea?>(null) }
     proposingHabit?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposingHabit = null }) }
     proposingDate?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposingDate = null }) }
+    var importingContacts by remember { mutableStateOf(false) }
+    if (importingContacts) {
+        ContactImportDialog(data.countdowns, onDismiss = { importingContacts = false }) { added ->
+            if (added.isNotEmpty()) {
+                val ids = added.map { it.id }.toSet()
+                offerUndo(if (added.size == 1) "Importata 1 data" else "Importate ${added.size} date") { NotesStore.removeCountdowns(ids) }
+            }
+        }
+    }
     event?.let { CaptureDialog(initial = it, initialMode = CaptureMode.EVENT, onClose = { event = null }) }
 
     if (showExpenses) {
@@ -330,12 +339,22 @@ fun NotesScreen(
             // Con poche abitudini e date, qualche esempio da aggiungere con un tocco.
             val habitIdeas = HabitIdeas.suggest(data.habits)
             val dateIdeas = if (data.upcoming.isEmpty()) DateIdeas.suggest(data.upcoming) else emptyList()
-            if (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty()) {
+            // In cima alle idee, finché le date di ogni anno sono poche: i compleanni sono già nella rubrica.
+            val contacts = showContactImport(data.countdowns)
+            if (habitIdeas.isNotEmpty() || dateIdeas.isNotEmpty() || contacts) {
                 item(key = "ideas") {
+                    val offset = if (contacts) 1 else 0
                     IdeasSection(
-                        habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
+                        listOfNotNull(("Compleanni dai contatti" to "Importa dalla rubrica, una volta sola").takeIf { contacts }) +
+                            habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
                             dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" },
-                    ) { i -> if (i < habitIdeas.size) proposingHabit = habitIdeas[i] else proposingDate = dateIdeas[i - habitIdeas.size] }
+                    ) { i ->
+                        when {
+                            i < offset -> importingContacts = true
+                            i - offset < habitIdeas.size -> proposingHabit = habitIdeas[i - offset]
+                            else -> proposingDate = dateIdeas[i - offset - habitIdeas.size]
+                        }
+                    }
                 }
             }
         }
