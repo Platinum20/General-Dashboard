@@ -5,6 +5,7 @@ I problemi trovati sono in BACKLOG.md, sezione "Problemi trovati dal verificator
 
 | Versione | Data | Giro fotografico | Esito |
 |---|---|---|---|
+| 1.98.0 | 2026-10-23 | `main/59` | Funziona: bottone tondo ✓ sul pacco in Adesso (chiaro e scuro, leggibile), Abitudini con "Idee da aggiungere" (anche al buio), Meteo con "Alba · Tramonto" su tutta la riga. Annulla delle azioni rapide, elenco delle abitudini da spuntare, card "Oggi · venerdì 23" dopo mezzanotte, Svuota della Cronologia con conferma e Annulla, "Permesso negato" in Video: solo dal codice e dai test (nuovi test verdi), non fotografati. Problemi: V26 media |
 | 1.97.0 | 2026-10-23 | `main/55` | Solo Spotify, dal codice (Spotify collegato non è nel giro): playlist non tue con avviso e Riproduci al posto dell'errore, nuovo indirizzo `items`, artista con album e singoli. Giro senza regressioni (foto cambiate solo per l'ora: giro alle 5:41, niente card Domani). Problemi: V25 bassa (nessun test, avviso che resta), foto Spotify mancanti (V8) |
 | 1.96.0 | 2026-10-22 | `main/53` | Funziona: pagina Video con "Sul telefono" e l'invito "Mostra i video del telefono" (chiaro e scuro), Date con "Idee da aggiungere" (Compleanno nascosto perché c'è già Marco), titolo della nota grande e in grassetto, player YouTube con la durata mentre carica (0:00 / 3:33). Spese fisse al ritorno e dopo un ripristino, file delle Note rovinato copiato, Rimanda stamattina dopo le 5, backup su Drive: dal codice e dai test (nuovi test verdi). Problemi: V23 bassa; video del telefono non fotografati (V8) |
 | 1.95.0 | 2026-10-22 | `main/53` | Funziona: barra rossa del visto sulle anteprime, "Non mi piace" accanto ai Mi piace nel player. Cronologia, commenti nuovi, sottotitoli, qualità automatica, audio originale e accesso Spotify solo dal codice (non fotografati, V8). Problemi: V24 bassa; V22 in parte attenuato (si riprende dal punto giusto, ma Riprendi in Media mostra ancora 0) |
@@ -31,3 +32,4 @@ Test del giro `main/46` (main 1.91.0): 225, 0 falliti, 2 ignorati (`YouTubeNativ
 Test del giro `main/50` (main 1.93.0): 262, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).
 Test del giro `main/53` (main 1.96.0): 292, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).
 Test del giro `main/55` (main 1.97.0): 292, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).
+Test del giro `main/59` (main 1.98.0): 309, 0 falliti, 2 ignorati (`YouTubeNativeCheck`, `LiveChecks`).

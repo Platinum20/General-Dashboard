@@ -21,7 +21,7 @@ _**Revisione delle ridondanze** (thread su richiesta di Antonio, 2026-10-23 00:0
 
 ## Problemi trovati dal verificatore
 
-_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.97.0, giro fotografico `main/55`, 2026-10-23.)_
+_(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ultima verifica: 1.98.0, giro fotografico `main/59`, 2026-10-23.)_
 
 ### V1. Il giro fotografico non vede le novità più grandi · giro fotografico · gravità media
 - **Versione:** 1.72.0 e 1.81.0 (anche 1.80.0)
@@ -51,6 +51,14 @@ _(Le scrive il "verificatore": vanno fatte per prime. Ordinate per gravità. Ult
 - **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt` (dati finti e visite).
 - **Come riprodurre:** in `main/46/tour/` nessuna di queste schermate; `24_spese` e `23_abitudini` hanno solo spese variabili e abitudini giornaliere.
 - **Cosa fare:** nei dati finti una nota "Spesa" con `[x] latte`, `[ ] pane`, `[ ] uova`; una spesa fissa ("ogni mese il 5 affitto 650") e una abitudine "Palestra 3 volte a settimana"; nuove foto `27_cerca` (lente, cerca "latte"), `28_lista` (editor della nota lista), `07_da_attivare` (riga aperta). Tutto anche al buio.
+- **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
+
+### V26. Le novità della 1.98 non si vedono nel giro fotografico · giro fotografico · gravità media
+- **Versione:** 1.98.0 (giro `main/59`, 03:58 UTC = 5:58 a Roma)
+- **Cosa non va:** si vede solo il bottone ✓ sul pacco in Adesso. Non hanno foto: la riga "Fatto: … · Annulla" dopo un'azione rapida, il dialogo "Abitudini di oggi" (azione con più abitudini: alle 6 di mattina la riga abitudini non c'è proprio), "Scaduto: Bolletta" col suo ✓, la card del giorno dopo mezzanotte ("Oggi · venerdì 23", frase senza "Domani"), la sera senza doppioni tra Adesso, Domani e Da fare, il dialogo "Svuotare la cronologia?" e la riga "Cronologia svuotata · Annulla" in YouTube, la card "Permesso negato" in Video › Sul telefono. Il tour usa l'orologio vero: a seconda dell'ora la card Domani/Oggi c'è (`main/53`, sera) o sparisce (`main/59`, mattina), quindi le foto non sono confrontabili tra un giro e l'altro.
+- **Dove:** `app/src/test/java/com/platinum20/dashboard/ScreenshotTour.kt`, `YouTubeTour`.
+- **Come riprodurre:** confrontare `main/53/tour/01_oggi.png` (card "Domani · venerdì 23", "Ancora da fare oggi…") con `main/59/tour/01_oggi.png` (né card né abitudini).
+- **Cosa fare:** fissare l'orologio del tour (con la voce 2, fuso fisso) e fare due giri di Oggi: `01_oggi` alle 19 (card Domani, ✓ sulle righe, nessun doppione in Da fare) e `01b_oggi_notte` alle 0:30 (card "Oggi · …"); `01c_oggi_annulla` dopo il tocco sul ✓ del pacco; `01d_abitudini_oggi` toccando il ✓ della riga abitudini con 2 abitudini mancanti; in `YouTubeTour` `youtube_cronologia_svuota` (dialogo) con 2 video finti in `YtHistory`; `33c_video_negato` con permesso rifiutato. Tutto anche al buio.
 - **Test che lo impedisce:** le schermate stesse, con il controllo "schermata attesa mancante" di V1.
 
 ### V25. Spotify: le novità della 1.97 non hanno test, e l'avviso "playlist non tua" può restare o comparire a torto · Media › Spotify › playlist e artisti · gravità bassa
