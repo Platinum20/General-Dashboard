@@ -89,6 +89,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -255,10 +256,13 @@ fun rememberReselectListState(route: String): LazyListState {
 /** Apre le Impostazioni: le sezioni principali la usano per l'icona in alto a destra. */
 val LocalOpenSettings = staticCompositionLocalOf<(() -> Unit)?> { null }
 
+/** Apre "Cerca ovunque": la lente sta in alto in ogni sezione, sempre nello stesso posto. */
+val LocalOpenSearch = staticCompositionLocalOf<(() -> Unit)?> { null }
+
 /**
  * Intestazione delle sezioni principali (Oggi, News, Note, Media): una riga piccola sopra
  * (la data, "8 nuove dall'ultima visita") e il titolo grande. A destra le azioni della sezione
- * e, per ultimo, l'ingranaggio delle Impostazioni in un cerchio.
+ * e, per ultimi, la lente di Cerca ovunque e l'ingranaggio delle Impostazioni in un cerchio.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -271,6 +275,7 @@ fun TopLevelBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
+    val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
     TopAppBar(
         navigationIcon = {
             if (onBack != null) {
@@ -295,6 +300,10 @@ fun TopLevelBar(
         },
         actions = {
             actions()
+            // Nelle sezioni in alto a destra solo due cerchi, uguali ovunque: cerca e impostazioni.
+            if (openSearch != null) {
+                RoundIconButton(Icons.Outlined.Search, "Cerca ovunque", onClick = openSearch)
+            }
             if (openSettings != null) {
                 RoundIconButton(Icons.Outlined.Settings, "Impostazioni", onClick = openSettings)
             }

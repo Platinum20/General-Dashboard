@@ -8,6 +8,13 @@
 **Microfono bloccabile, come WhatsApp**
 - Mentre tieni premuto il +, sopra compare un lucchetto: trascina il dito verso l'alto per bloccare il microfono e puoi lasciare. Continua ad ascoltare anche con le pause; il + diventa ➤ e un tocco inserisce quello che hai detto. "Annulla" nel fumetto butta tutto
 
+**In alto a destra, solo due cerchi**
+- In ogni sezione (Oggi, News, Note, Media) in alto a destra ci sono sempre e solo la lente di Cerca ovunque e l'ingranaggio delle Impostazioni, nello stesso posto
+- News: niente più pulsante Aggiorna, si aggiorna tirando giù la lista. Oggi: "Personalizza" sta nelle Impostazioni (Card di Oggi). Note: la lente è quella di Cerca ovunque, che trova anche tutto quello che c'è nelle Note
+
+**Sotto il cofano**
+- Il giro fotografico trova di nuovo il + (06_aggiungi) e fotografa Cerca ovunque e Card di Oggi
+
 ## 1.114.0
 **Widget**
 - Nuovo widget **"Canvas · Da fare"**: i promemoria scaduti e di oggi, poi quelli senza scadenza, ognuno con un cerchio da toccare. Il tocco lo segna fatto senza aprire l'app (i ricorrenti passano alla volta dopo, come in Note) e sparisce anche da Oggi. Gli scaduti hanno il cerchio e l'ora in rosso, "+ Aggiungi" apre il + al volo, "+ altri 3 in Note" dice quanti non stanno. Si ridimensiona: più è alto, più righe mostra. Vuoto dice "Niente da fare oggi" con il prossimo promemoria

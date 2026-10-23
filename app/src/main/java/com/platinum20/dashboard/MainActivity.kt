@@ -121,6 +121,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
+import com.platinum20.dashboard.ui.screens.LocalOpenSearch
 import com.platinum20.dashboard.ui.screens.CalendarScreen
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
@@ -465,7 +466,7 @@ private fun CanvasNavBar(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
-                    .semantics {
+                    .semantics(mergeDescendants = true) {
                         onClick(label = "Aggiungi") { onPlus(); true }
                         onLongClick(label = "Detta a voce") { onHoldStart() }
                     }
@@ -682,6 +683,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     }
     CompositionLocalProvider(
         LocalOpenSettings provides { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
+        LocalOpenSearch provides { navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
         LocalInAppNav provides inApp,
     ) {
         AppContent(navController, openRequest, onOpenHandled)
