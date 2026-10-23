@@ -19,6 +19,7 @@ import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.weather.GeoPlace
 import com.platinum20.dashboard.weather.WeatherStore
+import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -53,6 +54,8 @@ class ScreenshotTour {
     @Before
     fun setUp() {
         assumeTrue(System.getProperty("tour") == "true")
+        // Il giro gira in UTC: con il fuso di Antonio saluto, card del giorno e "Domani" sono quelli veri.
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Rome"))
         runCatching { WorkManagerTestInitHelper.initializeTestWorkManager(context) }
         // Dati di esempio: una città fissa (il GPS non c'è) e qualche promemoria.
         WeatherStore.setManualPlace(context, GeoPlace("Roma", "Lazio, Italia", 41.89, 12.48))
