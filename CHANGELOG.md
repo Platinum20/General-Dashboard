@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.123.0
+## 1.124.0
 **Un player solo, davvero**
 - Suona una cosa alla volta: quando parte un video, una canzone, la radio o un podcast, tutto il resto si mette in pausa, compreso Spotify che suona nell'app di Spotify o su un altro dispositivo
 - Spotify: la pausa non dà più errore e il brano non sparisce dal player; "Riproduci" lo fa ripartire dal punto esatto anche se Spotify nel frattempo l'aveva dimenticato
@@ -20,6 +20,11 @@
 
 **Sotto il cofano**
 - Test: ResumeAnyMediaTest, YtPlayerStateTest (musica che riparte come musica)
+
+## 1.123.0
+**Il carattere di Claude**
+- Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
+- Il testo è un filo più grande perché il serif si legga bene anche piccolo
 
 ## 1.122.0
 **Oggi › La tua settimana**
