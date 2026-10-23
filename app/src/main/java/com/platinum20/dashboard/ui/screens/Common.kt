@@ -272,6 +272,8 @@ fun TopLevelBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     /** Per le pagine aperte da una sezione (Impostazioni): freccia indietro al posto dell'ingranaggio. */
     onBack: (() -> Unit)? = null,
+    /** Senza fondo: per le pagine con un'immagine dietro (il player). */
+    transparent: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
@@ -311,8 +313,8 @@ fun TopLevelBar(
         },
         expandedHeight = 76.dp,
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
+            containerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
+            scrolledContainerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
         ),
         scrollBehavior = scrollBehavior,
     )

@@ -1,7 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.outlined.ClosedCaptionOff
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.filled.ThumbUp
@@ -312,12 +310,18 @@ private fun VideoArea(
             .pointerInput(fullscreen, inPip) {
                 if (fullscreen || inPip) return@pointerInput
                 val tracker = VelocityTracker()
+                // Misurato sullo schermo: la pagina scende con il dito, quindi la posizione sul video resta ferma.
+                var travelled = 0f
                 detectVerticalDragGestures(
-                    onDragStart = { tracker.resetTracking() },
+                    onDragStart = {
+                        tracker.resetTracking()
+                        travelled = 0f
+                    },
                     onDragEnd = { onDragEnd(tracker.calculateVelocity().y) },
                     onDragCancel = { onDragEnd(0f) },
                     onVerticalDrag = { change, amount ->
-                        tracker.addPosition(change.uptimeMillis, change.position)
+                        travelled += amount
+                        tracker.addPosition(change.uptimeMillis, androidx.compose.ui.geometry.Offset(0f, travelled))
                         onDragBy(amount)
                     },
                 )
@@ -382,27 +386,15 @@ private fun VideoArea(
                         )
                     }
                 }
-                // In alto a destra tutto quello che serve mentre si guarda: sottotitoli, impostazioni, prossimo.
+                // In alto a destra: la rotella (qualità, velocità, sottotitoli, ripeti) e il prossimo video.
                 Row(Modifier.align(Alignment.TopEnd).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val stream = now?.stream
-                    if (stream != null && stream.subtitles.isNotEmpty()) {
-                        Box {
-                            IconButton(onClick = { menu = VideoMenu.SUBTITLES; flashKey++ }) {
-                                Icon(
-                                    if (now?.subtitle != null) Icons.Filled.ClosedCaption else Icons.Outlined.ClosedCaptionOff,
-                                    contentDescription = "Sottotitoli",
-                                    tint = Color.White,
-                                )
-                            }
-                            if (menu == VideoMenu.SUBTITLES) VideoMenus(stream, now, VideoMenu.SUBTITLES, onPage = { menu = it })
-                        }
-                    }
                     if (stream != null) {
                         Box {
                             IconButton(onClick = { menu = VideoMenu.MAIN; flashKey++ }) {
                                 Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni del video", tint = Color.White)
                             }
-                            if (menu != null && menu != VideoMenu.SUBTITLES) VideoMenus(stream, now, menu!!, onPage = { menu = it })
+                            if (menu != null) VideoMenus(stream, now, menu!!, onPage = { menu = it })
                         }
                     }
                     IconButton(onClick = { YtPlayer.next(context) }) {
@@ -443,11 +435,6 @@ private fun VideoArea(
                         onFullscreen = onToggleFullscreen,
                         fullscreen = fullscreen,
                         onInteract = { flashKey++ },
-                        quality = now?.stream?.takeIf { it.qualities.isNotEmpty() }?.let { st ->
-                            val h = now?.playingHeight?.takeIf { it > 0 } ?: st.height
-                            (if (YtPlayer.isAuto() && st.dashManifest != null) "Auto · " else "") + "${h}p"
-                        },
-                        onQuality = { menu = VideoMenu.QUALITY; flashKey++ },
                     )
                 }
             }
@@ -477,8 +464,6 @@ private fun TimeBar(
     fullscreen: Boolean,
     onFullscreen: () -> Unit,
     onInteract: () -> Unit,
-    quality: String? = null,
-    onQuality: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var position by remember { mutableLongStateOf(0L) }
@@ -511,19 +496,6 @@ private fun TimeBar(
             )
         }
         Spacer(Modifier.weight(1f))
-        // La qualità che si vede adesso: un tocco apre la scelta.
-        quality?.let {
-            Text(
-                it,
-                color = Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.18f))
-                    .clickable(onClick = onQuality)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
         IconButton(onClick = onFullscreen) {
             Icon(
                 if (fullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
@@ -649,8 +621,8 @@ private fun PillButton(icon: ImageVector, label: String, selected: Boolean, desc
 private enum class VideoMenu { MAIN, QUALITY, SPEED, SUBTITLES }
 
 /**
- * Menu sul video (come nell'app di YouTube): dalla rotella si sceglie qualità, velocità, ripeti;
- * dal tasto CC i sottotitoli. Ogni scelta vale subito, dal punto in cui si è.
+ * Menu sul video (come nell'app di YouTube): dalla rotella si sceglie qualità, velocità, sottotitoli
+ * e ripeti. Ogni scelta vale subito, dal punto in cui si è.
  */
 @Composable
 private fun VideoMenus(stream: YtStream, now: YtNow?, page: VideoMenu, onPage: (VideoMenu?) -> Unit) {

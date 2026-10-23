@@ -1,15 +1,18 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.capture.CaptureNotice
+import com.platinum20.dashboard.capture.CaptureTargets
+import com.platinum20.dashboard.capture.captureTarget
+import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.runtime.mutableStateListOf
 import kotlinx.coroutines.delay
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.rememberCoroutineScope
 import com.platinum20.dashboard.capture.VoiceCapture
 import androidx.compose.material.icons.automirrored.rounded.Send
@@ -675,6 +678,20 @@ private const val BAR_COUNT = 28
 
 @Composable
 private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
+    // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
+    val targetKey = when (dest.route) {
+        Routes.NOTES -> CaptureTargets.NOTES_TAB
+        Routes.HOME -> CaptureTargets.HOME_TAB
+        else -> null
+    }
+    val bump = remember { Animatable(1f) }
+    val arrivals = targetKey?.let { CaptureTargets.arrivals[it] } ?: 0
+    LaunchedEffect(arrivals) {
+        if (arrivals > 0) {
+            bump.animateTo(1.25f, tween(110))
+            bump.animateTo(1f, Springs.snappy())
+        }
+    }
     val container by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent, label = "pill",
     )
@@ -683,6 +700,8 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
     )
     Row(
         modifier = Modifier
+            .then(if (targetKey != null) Modifier.captureTarget(targetKey) else Modifier)
+            .graphicsLayer { scaleX = bump.value; scaleY = bump.value }
             .bouncyPress(0.9f)
             .clip(CircleShape)
             .background(container)
@@ -834,7 +853,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
     val dictation = remember { Dictation(context.applicationContext) }
     val voiceScope = rememberCoroutineScope()
-    val snackbar = remember { SnackbarHostState() }
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
@@ -862,16 +880,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         dictated = text
                         capturing = true
                     }
-                    is VoiceCapture.Outcome.Saved -> {
-                        val undo = outcome.undo
-                        val answer = snackbar.showSnackbar(
-                            outcome.message,
-                            actionLabel = if (undo != null) "Annulla" else null,
-                            withDismissAction = undo == null,
-                            duration = SnackbarDuration.Short,
-                        )
-                        if (answer == SnackbarResult.ActionPerformed) undo?.invoke()
-                    }
+                    is VoiceCapture.Outcome.Saved ->
+                        CaptureFeedback.show(CaptureNotice(outcome.mode, outcome.message, outcome.undo))
                 }
             }
         }
@@ -882,6 +892,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val hazeState = remember { HazeState() }
     val backdrop = remember { Backdrop() }
     CompositionLocalProvider(LocalHazeState provides hazeState, LocalBackdrop provides backdrop) {
+    // La conferma dei salvataggi vive sopra tutto, barra compresa: il pallino vola fino alle schede.
+    LifecycleResumeEffect(Unit) {
+        CaptureFeedback.active = true
+        onPauseOrDispose { CaptureFeedback.active = false }
+    }
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
@@ -910,7 +926,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
@@ -1149,6 +1164,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             modifier = Modifier.padding(padding),
         )
         }
+    }
+    CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
     }
 }

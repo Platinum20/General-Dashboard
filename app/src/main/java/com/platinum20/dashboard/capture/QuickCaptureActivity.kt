@@ -142,6 +142,11 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
     val event = remember(text, mode) { if (mode == CaptureMode.EVENT) QuickEvent.parse(text) else null }
 
     fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    // Salvato: nell'app il fumetto di Canvas che vola dove è finito; fuori (condivisione) un avviso normale.
+    fun saved(mode: CaptureMode, message: String, undo: (() -> Unit)? = null) {
+        val notice = CaptureNotice(mode, message, undo?.let { u -> suspend { u() } })
+        if (!CaptureFeedback.show(notice)) toast(message)
+    }
 
     // L'evento va nel calendario principale del telefono: lo vedono Oggi, Adesso, il widget e Calendario.
     fun saveEvent() {
@@ -153,8 +158,14 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 return@launch
             }
             val id = CalendarRepository.save(context, draft.toDraft(calendar.id))
-            toast(if (id != null) "Evento: ${eventLine(draft)}" else "Il calendario non ha accettato l'evento")
-            if (id != null) onClose()
+            if (id != null) {
+                val app = context.applicationContext
+                val notice = CaptureNotice(CaptureMode.EVENT, "Evento: ${eventLine(draft)}") { CalendarRepository.delete(app, id) }
+                if (!CaptureFeedback.show(notice)) toast(notice.message)
+                onClose()
+            } else {
+                toast("Il calendario non ha accettato l'evento")
+            }
         }
     }
     val calendarPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -167,8 +178,8 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
         when (mode) {
             CaptureMode.NOTE, CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> {
                 val result = CaptureSave.save(mode, text)
-                toast(result.message)
-                if (!result.ok) return@save
+                if (!result.ok) return@save toast(result.message)
+                saved(mode, result.message, result.undo)
             }
             CaptureMode.EVENT -> {
                 if (CalendarRepository.canWrite(context)) {
@@ -182,7 +193,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
             CaptureMode.TASK -> {
                 val result = CaptureSave.save(mode, text)
                 val due = result.dueAt
-                toast(result.message)
+                saved(mode, result.message, result.undo)
                 // Senza permesso l'avviso non suonerebbe: lo chiediamo qui, una volta.
                 if (due != null && Build.VERSION.SDK_INT >= 33 && !MorningWorker.canNotify(context)) {
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS)

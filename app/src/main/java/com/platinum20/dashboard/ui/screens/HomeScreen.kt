@@ -273,7 +273,7 @@ fun HomeScreen(
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
                         BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
-                        BriefKind.MEDIA -> resume?.let { item -> openResumeItem(item) { route -> inApp?.openRoute?.invoke(route) } }
+                        BriefKind.MEDIA -> resume?.let { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
                         BriefKind.FREE -> Unit
                     }
                 },

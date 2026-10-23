@@ -1,10 +1,37 @@
 # Changelog
 
-## 1.126.0
+## 1.128.0
 **Note più pulite**
 - Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta
 - A destra delle pillole due tastini: lo scontrino (fotografalo e si apre il + già compilato con totale e negozio) e la lampadina con le idee da aggiungere (compleanni dalla rubrica, abitudini, date), che non occupano più il fondo della pagina
 - I pacchi in arrivo sono conti alla rovescia come i compleanni: a destra "Oggi", "Domani" o quanti giorni mancano (in rosso se è in ritardo). Tieni premuto per segnarlo arrivato
+- Quando salvi dal +, il pallino atterra proprio sulla sezione giusta delle Note (promemoria, note, abitudini, in arrivo, spese)
+
+## 1.126.0
+**Un player solo, davvero**
+- Suona una cosa alla volta: quando parte un video, una canzone, la radio o un podcast, tutto il resto si mette in pausa, compreso Spotify che suona nell'app di Spotify o su un altro dispositivo
+- Spotify: la pausa non dà più errore e il brano non sparisce dal player; "Riproduci" lo fa ripartire dal punto esatto anche se Spotify nel frattempo l'aveva dimenticato
+- Notifica con copertina e comandi anche per i video e la musica di YouTube (prima non compariva)
+
+**Player più bello**
+- Dietro al player la copertina sfocata che sfuma nello sfondo, copertina grande con ombra e la pillola della fonte (Spotify, YouTube Music, Radio, Podcast)
+- Spotify nell'app ha la copertina nitida (prima prendeva la più piccola), la barra del tempo che scorre e si può trascinare per saltare
+
+**Continua da dove eri, per tutto**
+- Il blocco in cima a Media e la fila "Continua" tengono l'ultimo media di qualunque tipo: video, musica di YouTube, brani di Spotify (con l'album o la playlist da cui venivano), podcast e radio. Un tocco li fa ripartire dal punto in cui eri
+
+**Video e mini player**
+- In fondo a Media non c'è più la riga del blocco pubblicità: si regola nelle Impostazioni
+- Nei controlli del video restano la rotella (qualità, velocità, sottotitoli, ripeti) e il prossimo video: via il tasto CC e la pillola della qualità, che erano doppioni
+- Il mini player si lancia: uno scatto verso l'altro lato (o un piccolo spostamento) basta per mandarlo in alto o in basso. Prima la velocità del lancio veniva misurata male e bisognava trascinarlo fino in fondo; stesso problema corretto per il video trascinato giù
+
+**Sotto il cofano**
+- Test: ResumeAnyMediaTest, YtPlayerStateTest (musica che riparte come musica)
+
+## 1.125.0
+**Salvato, e si vede dove va**
+- Dopo aver salvato dal + (scritto o detto) compare un fumetto di vetro nello stile di Canvas, con l'icona del tipo, cosa è stato salvato ("Spesa: 12,50 € · Cibo") e "Annulla" se Canvas ha capito male
+- Dopo un attimo il fumetto diventa un pallino che vola ad arco fin dove la cosa è finita: la scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda), che fa un piccolo sobbalzo quando arriva. Se sei già nelle Note vola alla sezione giusta
 
 ## 1.124.0
 **Torna il carattere di prima**

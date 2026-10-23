@@ -9,12 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class ResumeKind { VIDEO, YOUTUBE, RADIO }
+/** VIDEO: video del telefono o da link; YOUTUBE: video; MUSIC: YouTube in solo audio; SPOTIFY; RADIO; PODCAST. */
+enum class ResumeKind { VIDEO, YOUTUBE, MUSIC, SPOTIFY, RADIO, PODCAST }
 
 /** Una cosa vista o ascoltata di recente, da riprendere in un tocco. */
 data class ResumeItem(
     val kind: ResumeKind,
-    /** Video: uri; YouTube: id del video; radio: id della stazione. */
+    /** Video: uri; YouTube e musica: id del video; Spotify: uri del brano; radio: id della stazione; podcast: id dell'episodio. */
     val key: String,
     val title: String,
     val subtitle: String = "",
@@ -24,6 +25,10 @@ data class ResumeItem(
     val at: Long,
     /** Solo radio: la stazione, per farla ripartire senza cercarla. */
     val station: RadioStation? = null,
+    /** Spotify: l'album o la playlist da cui veniva il brano; podcast: l'audio dell'episodio. */
+    val link: String = "",
+    /** Solo podcast: il feed, per ritrovare l'episodio. */
+    val feed: String = "",
 ) {
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 
@@ -34,6 +39,7 @@ data class ResumeItem(
         .put("kind", kind.name).put("key", key).put("title", title).put("subtitle", subtitle).put("image", image)
         .put("position", positionMs).put("duration", durationMs).put("at", at)
         .apply { station?.let { put("station", it.toJson()) } }
+        .put("link", link).put("feed", feed)
 
     companion object {
         fun fromJson(o: JSONObject) = ResumeItem(
@@ -46,6 +52,8 @@ data class ResumeItem(
             durationMs = o.optLong("duration"),
             at = o.optLong("at"),
             station = o.optJSONObject("station")?.let(RadioStation::fromJson),
+            link = o.optString("link"),
+            feed = o.optString("feed"),
         )
 
         fun fromVideo(v: VideoEntry) = ResumeItem(
@@ -79,7 +87,8 @@ object MediaHistory {
         prefs = p
         _items.value = runCatching {
             val array = JSONArray(p.getString(KEY_ITEMS, "[]"))
-            List(array.length()) { ResumeItem.fromJson(array.getJSONObject(it)) }
+            // Una voce illeggibile (es. di una versione futura) si salta, non svuota tutta la cronologia.
+            List(array.length()) { runCatching { ResumeItem.fromJson(array.getJSONObject(it)) }.getOrNull() }.filterNotNull()
         }.getOrDefault(emptyList())
     }
 

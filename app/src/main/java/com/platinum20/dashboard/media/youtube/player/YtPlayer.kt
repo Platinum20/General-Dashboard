@@ -392,16 +392,17 @@ object YtPlayer {
         if (exo?.currentMediaItem?.mediaId != stream.id) return
         MediaHistory.init(context)
         lastRemembered = System.currentTimeMillis()
-        MediaHistory.record(resumeEntry(stream, exo?.currentPosition ?: 0, exo?.duration ?: 0, lastRemembered))
+        MediaHistory.record(resumeEntry(stream, exo?.currentPosition ?: 0, exo?.duration ?: 0, lastRemembered, _now.value?.audioOnly == true))
     }
 
     /** La voce di "Riprendi" per [stream] arrivato a [positionMs]: funzione pura, provata nei test. */
-    internal fun resumeEntry(stream: YtStream, positionMs: Long, playerDurationMs: Long, at: Long): ResumeItem {
+    internal fun resumeEntry(stream: YtStream, positionMs: Long, playerDurationMs: Long, at: Long, audioOnly: Boolean = false): ResumeItem {
         val live = stream.hlsUrl != null
         val duration = playerDurationMs.takeIf { it > 0 } ?: (stream.durationSec * 1000)
         val position = if (live) 0 else positionMs.coerceAtLeast(0)
         return ResumeItem(
-            kind = ResumeKind.YOUTUBE,
+            // Ascoltato come musica: in "Continua" riparte in solo audio, nel player della musica.
+            kind = if (audioOnly) ResumeKind.MUSIC else ResumeKind.YOUTUBE,
             key = stream.id,
             title = stream.title,
             subtitle = stream.channel,

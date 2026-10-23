@@ -61,4 +61,10 @@ class YtPlayerStateTest {
         // Diretta: nessun punto.
         assertEquals(0L, YtPlayer.resumeEntry(stream.copy(hlsUrl = "https://x/live.m3u8"), 50_000, 0, 5).positionMs)
     }
+
+    @Test
+    fun ascoltatoComeMusicaRiparteComeMusica() {
+        assertEquals(com.platinum20.dashboard.media.ResumeKind.MUSIC, YtPlayer.resumeEntry(stream, 1_000, 600_000, 5, audioOnly = true).kind)
+        assertEquals(com.platinum20.dashboard.media.ResumeKind.YOUTUBE, YtPlayer.resumeEntry(stream, 1_000, 600_000, 5).kind)
+    }
 }

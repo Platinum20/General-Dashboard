@@ -129,6 +129,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
+import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureGuess
@@ -413,7 +414,7 @@ fun NotesScreen(
                 item(key = "notes-header") {
                     SectionHeader(
                         if (notes.size > NOTES_PREVIEW) "Note · ${notes.size}" else "Note",
-                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.NOTE),
                         action = when {
                             notes.size <= NOTES_PREVIEW || section == NotesSection.NOTES -> null
                             allNotes -> "Meno"
@@ -443,7 +444,7 @@ private fun ExpensesSummary(data: com.platinum20.dashboard.notes.NotesData, onOp
     val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
     val budget = data.budgetCents
     Column(Modifier.padding(top = 12.dp)) {
-        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp))
+        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp).captureTarget(CaptureMode.EXPENSE))
         CanvasCard(onClick = onOpen, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -485,7 +486,11 @@ private fun comingItems(
     return {
         if (rows.isNotEmpty()) {
             item(key = "coming-header") {
-                SectionHeader("In arrivo", modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                SectionHeader(
+                    "In arrivo",
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+                        .captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL),
+                )
             }
         }
         items(rows, key = { it.key }) { row ->
@@ -549,7 +554,7 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
                 val done = habits.count { it.isDone(today) }
                 SectionHeader(
                     if (done == habits.size) "Abitudini · tutte fatte oggi" else "Abitudini · oggi $done su ${habits.size}",
-                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.HABIT),
                 )
             }
         }
@@ -667,7 +672,7 @@ private fun IdeasSection(ideas: List<Pair<String, String>>, header: Boolean = tr
 private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskItem) -> Unit, error: Boolean = false) {
     Column(Modifier.padding(bottom = 8.dp)) {
         if (label != null) {
-            SectionHeader(label, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+            SectionHeader(label, modifier = Modifier.captureTarget(CaptureMode.TASK), color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
         }
         CanvasCard(Modifier.fillMaxWidth().animateContentSize(Springs.snappy())) {
