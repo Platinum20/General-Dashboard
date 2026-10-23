@@ -411,14 +411,17 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text(item.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(
-            listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        // Il testo sta un po' dentro: gli angoli arrotondati della tessera non devono mangiarne i bordi.
+        Column(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp)) {
+            Text(item.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

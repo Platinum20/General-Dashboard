@@ -1,5 +1,24 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import com.platinum20.dashboard.media.songid.SongId
+import kotlinx.coroutines.launch
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -98,6 +117,8 @@ fun SettingsScreen(
     onLogin: (MediaService) -> Unit,
     onPickPlace: () -> Unit,
     onOpenAutoFill: () -> Unit = {},
+    /** La parte da cui partire: la sezione della barra tenuta premuta (Routes.HOME, NEWS, NOTES, MEDIA). */
+    initialSection: String? = null,
 ) {
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
@@ -114,20 +135,62 @@ fun SettingsScreen(
         place = WeatherStore.manualPlace(context)
     }
     var showLicenses by remember { mutableStateOf(false) }
+    var editSongToken by remember { mutableStateOf(false) }
+    SongId.init(context)
+    val songToken by SongId.token.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // Tenendo premuta una sezione della barra si arriva qui, già alla sua parte.
+    LaunchedEffect(Unit) {
+        val start = SettingsPart.entries.indexOfFirst { it.key == initialSection }
+        if (start > 0) listState.scrollToItem(start * 2)
+    }
+    // Il chip acceso segue lo scorrimento: è la parte che si sta guardando.
+    val current by remember {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val atEnd = info.visibleItemsInfo.lastOrNull()?.index == info.totalItemsCount - 1 && listState.canScrollForward.not()
+            if (atEnd && listState.firstVisibleItemIndex > 0) SettingsPart.entries.last()
+            else SettingsPart.entries[(listState.firstVisibleItemIndex / 2).coerceAtMost(SettingsPart.entries.size - 1)]
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopLevelBar(
-                title = "Impostazioni",
-                subtitle = "Canvas ${BuildConfig.VERSION_NAME}",
-                scrollBehavior = scrollBehavior,
-                onBack = onBack,
-            )
+            Column(Modifier.background(MaterialTheme.colorScheme.background)) {
+                TopLevelBar(
+                    title = "Impostazioni",
+                    subtitle = "Canvas ${BuildConfig.VERSION_NAME}",
+                    scrollBehavior = scrollBehavior,
+                    onBack = onBack,
+                )
+                // Una parte per ogni sezione della barra in basso, più quelle di tutta l'app.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SettingsPart.entries.forEachIndexed { index, part ->
+                        FilterChip(
+                            selected = current == part,
+                            onClick = {
+                                haptic(Haptic.TICK)
+                                scope.launch { listState.animateScrollToItem(index * 2) }
+                            },
+                            label = { Text(part.label) },
+                            leadingIcon = { Icon(part.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        )
+                    }
+                }
+            }
         },
     ) { inner ->
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
@@ -135,34 +198,8 @@ fun SettingsScreen(
                 bottom = inner.calculateBottomPadding() + 16.dp,
             ),
         ) {
-            item { SettingsHeader("Aspetto") }
-            item {
-                SettingsGroup {
-                    // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
-                    Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
-                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            AppTheme.entries.forEachIndexed { index, option ->
-                                SegmentedButton(
-                                    selected = theme == option,
-                                    onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
-                                    shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
-                                    icon = {},
-                                ) {
-                                    Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-                                }
-                            }
-                        }
-                        Text(
-                            theme.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                        )
-                    }
-                }
-            }
-
-            item { SettingsHeader("Oggi e notifiche") }
+            // Ogni parte sono due righe, intestazione e gruppo: i chip saltano a parte × 2.
+            item { SettingsHeader(SettingsPart.HOME.title) }
             item {
                 SettingsGroup {
                     SettingsItem(
@@ -177,11 +214,24 @@ fun SettingsScreen(
                     RowDivider()
                     MorningSettings()
                     RowDivider()
-                    UpdateNotifySetting()
+                    SettingsItem(
+                        icon = Icons.Outlined.LocationOn,
+                        accent = TileAccent.GREEN,
+                        title = "Località del meteo",
+                        subtitle = if (place != null) "Scelta a mano" else "Dalla posizione del telefono",
+                        value = place?.name ?: "Automatica",
+                        showChevron = true,
+                        onClick = onPickPlace,
+                    )
+                    RowDivider()
+                    RainAlertSetting()
                 }
             }
 
-            item { SettingsHeader("Dati automatici") }
+            item { SettingsHeader(SettingsPart.NEWS.title) }
+            item { SettingsGroup { AdBlockSettings() } }
+
+            item { SettingsHeader(SettingsPart.NOTES.title) }
             item {
                 SettingsGroup {
                     SettingsItem(
@@ -196,24 +246,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { SettingsHeader("Meteo") }
-            item {
-                SettingsGroup {
-                    SettingsItem(
-                        icon = Icons.Outlined.LocationOn,
-                        accent = TileAccent.GREEN,
-                        title = "Località",
-                        subtitle = if (place != null) "Scelta a mano" else "Dalla posizione del telefono",
-                        value = place?.name ?: "Automatica",
-                        showChevron = true,
-                        onClick = onPickPlace,
-                    )
-                    RowDivider()
-                    RainAlertSetting()
-                }
-            }
-
-            item { SettingsHeader("Media") }
+            item { SettingsHeader(SettingsPart.MEDIA.title) }
             item {
                 SettingsGroup {
                     // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
@@ -250,16 +283,51 @@ fun SettingsScreen(
                         )
                     }
                     RowDivider()
-                    AdBlockSettings()
+                    SettingsItem(
+                        icon = Icons.Outlined.MusicNote,
+                        accent = TileAccent.ORANGE,
+                        title = "Riconosci canzoni",
+                        subtitle = if (songToken.isBlank()) "Incolla il token di AudD" else "Dettando con il +: «♪ Canzone», poi in ${SongId.PLAYLIST_NAME}",
+                        value = if (songToken.isBlank()) "Da attivare" else "Attivo",
+                        showChevron = true,
+                        onClick = { editSongToken = true },
+                    )
                 }
             }
 
-            item { SettingsHeader("Dati") }
-            item { SettingsGroup { BackupSettings() } }
-
-            item { SettingsHeader("Informazioni") }
+            item { SettingsHeader(SettingsPart.APP.title) }
             item {
                 SettingsGroup {
+                    // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            AppTheme.entries.forEachIndexed { index, option ->
+                                SegmentedButton(
+                                    selected = theme == option,
+                                    onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
+                                    shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
+                                    icon = {},
+                                ) {
+                                    Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
+                                }
+                            }
+                        }
+                        Text(
+                            theme.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+                        )
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(12.dp)) }
+            item { SettingsGroup { BackupSettings() } }
+            item { Spacer(Modifier.height(12.dp)) }
+            item {
+                SettingsGroup {
+                    UpdateNotifySetting()
+                    RowDivider()
                     SettingsItem(
                         icon = Icons.Outlined.SystemUpdate,
                         accent = TileAccent.BLUE,
@@ -282,7 +350,7 @@ fun SettingsScreen(
                         icon = Icons.Outlined.Info,
                         accent = TileAccent.NEUTRAL,
                         title = "Licenze",
-                        subtitle = "Caratteri Inter, liste del blocco pubblicità",
+                        subtitle = "Caratteri Source Serif e Inter, liste del blocco pubblicità",
                         showChevron = true,
                         onClick = { showLicenses = true },
                     )
@@ -297,7 +365,38 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
                 )
             }
+            // Spazio in fondo: anche l'ultima parte può arrivare in cima quando si tocca il suo chip.
+            item { Spacer(Modifier.height(320.dp)) }
         }
+    }
+
+    if (editSongToken) {
+        var value by remember { mutableStateOf(songToken) }
+        AlertDialog(
+            onDismissRequest = { editSongToken = false },
+            title = { Text("Riconosci canzoni") },
+            text = {
+                Column {
+                    Text(
+                        "Il token di AudD (dashboard.audd.io) resta solo su questo telefono. " +
+                            "Le canzoni riconosciute partono su Spotify e finiscono nella playlist «${SongId.PLAYLIST_NAME}».",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        singleLine = true,
+                        label = { Text("API token") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { SongId.setToken(value); editSongToken = false }) { Text("Salva") }
+            },
+            dismissButton = { TextButton(onClick = { editSongToken = false }) { Text("Annulla") } },
+        )
     }
 
     if (showLicenses) {
@@ -316,6 +415,15 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("OK") } },
         )
     }
+}
+
+/** Le parti delle Impostazioni: una per sezione della barra, più quella di tutta l'app. */
+private enum class SettingsPart(val key: String, val label: String, val title: String, val icon: ImageVector) {
+    HOME("home", "Oggi", "Oggi e notifiche", Icons.Outlined.Dashboard),
+    NEWS("news", "News", "News e lettura", Icons.Outlined.Newspaper),
+    NOTES("notes", "Note", "Note", Icons.Outlined.EditNote),
+    MEDIA("media", "Media", "Media", Icons.Outlined.PlayCircle),
+    APP("app", "App", "Tutta l'app", Icons.Outlined.Tune),
 }
 
 @Composable
