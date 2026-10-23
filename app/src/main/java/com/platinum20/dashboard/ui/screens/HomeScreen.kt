@@ -73,6 +73,7 @@ import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.Tomorrow
+import com.platinum20.dashboard.today.WeekReview
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
@@ -170,6 +171,15 @@ fun HomeScreen(
             events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
             tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
         )
+    }
+    // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
+    var weekSeen by remember { mutableStateOf(0) }
+    val weekReview = remember(minute, notes, weekSeen) {
+        WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }?.let { monday ->
+            WeekReview.build(
+                monday, notes.tasks, notes.habits, notes.expenses, notes.fixedExpenses, notes.parcels, notes.countdowns,
+            ).takeIf { !it.isEmpty }
+        }
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume, tomorrowPlan) {
         Briefing.build(
@@ -318,6 +328,19 @@ fun HomeScreen(
                         onOpenWeather = onOpenWeather,
                         onOpenCalendar = { inApp?.openCalendar?.invoke() },
                         onOpenNotes = onOpenNotes,
+                    )
+                }
+            }
+            weekReview?.let { review ->
+                item(key = "week") {
+                    WeekReviewCard(
+                        review = review,
+                        onOpenNotes = onOpenNotes,
+                        onDismiss = {
+                            haptic(Haptic.TICK)
+                            WeekReviewSeen.markSeen(context, review.monday)
+                            weekSeen++
+                        },
                     )
                 }
             }
