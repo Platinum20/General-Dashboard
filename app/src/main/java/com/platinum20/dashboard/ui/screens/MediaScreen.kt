@@ -149,7 +149,7 @@ fun MediaScreen(
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
     // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata.
     val hero = resumable.firstOrNull()?.takeIf { now == null }
-    val continueList = resumable.filter { it != hero }.take(8)
+    val continueList = resumable.filter { it != hero }.take(12)
     val stations = remember(favoriteStations, recentStations) { (favoriteStations + recentStations).distinctBy { it.id }.take(10) }
     // Al primo uso (nessuna radio ascoltata) le più ascoltate, per partire con un tocco.
     val radioRow = stations.ifEmpty { MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) }
@@ -413,7 +413,8 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         // Il testo sta un po' dentro: gli angoli arrotondati della tessera non devono mangiarne i bordi.
         Column(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp)) {
-            Text(item.title, style = MaterialTheme.typography.labelLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // Sempre due righe, anche per i titoli corti: le tessere hanno tutte la stessa altezza e la pagina non salta.
+            Text(item.title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
