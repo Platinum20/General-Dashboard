@@ -15,8 +15,6 @@ _Ultimo aggiornamento: 2026-10-23 ~04:10 UTC (UI prima di tutto), su main 1.98.0
 
 _**Velocità e stabilità** (thread su richiesta di Antonio, 2026-10-23 00:03 UTC, branch `claude/project-thread-wqcw2c`): cache su disco di notizie, giudizi sugli articoli e feed YouTube/Spotify (mostrati subito all'avvio), notizie man mano che arrivano le fonti, tempi di rete più brevi, Spotify in parallelo, avvio più leggero. Tocca `NewsStore`, `NewsRepository`, `NewsViewModel`, `ArticleVerifier`, `YouTubeStore`, `SpotifyStore`, `MainActivity.onCreate`, nuovi `net/DiskCache.kt` e `media/FeedCache.kt`. Il giro non tocchi queste parti finché questa nota c'è._
 
-_**Revisione delle ridondanze** (thread su richiesta di Antonio, 2026-10-23 00:05 UTC, branch `claude/project-thread-7wuf5j`): audit di doppioni in UI e codice. Prende V20, la parte "Domani ripete Da fare" della voce 7, i doppioni in Video/Media, le scorciatoie doppie e il Client ID di Spotify (voce 8). Il giro non tocchi queste parti finché questa nota c'è; la toglie il thread quando rilascia._ **Nota del regista (04:05 UTC):** il branch ha un commit delle 03:44 che si chiama anch'esso 1.98.0 ed è partito da main 1.97.0, mentre su main è appena uscita un'altra 1.98.0 (PR #79) che ha già fatto V20, V21 e "Da fare senza i promemoria di domani": prima di rilasciare fare merge di main, tenere una sola versione di `Briefing.kt`/`Tomorrow.kt`/`HomeScreen.kt` e uscire come 1.99.0.
-
 ---
 
 ## Problemi trovati dal verificatore
@@ -285,6 +283,7 @@ _(1.101.0: fatti il passo 1, quasi tutto il 2 (posizione per episodio, -10/+30 s
 ## Fatto
 
 Dalle versioni recenti (dettagli in `CHANGELOG.md` su main):
+- 1.102.0 · Revisione dei doppioni (thread su richiesta di Antonio): Agenda la sera non diventa più "Domani"; tolta la card Scorciatoie (`HomeCard.MODULES`); Video con una sola card "Scegli un file / Apri un link" al posto di due pulsanti e della card "Scegli cosa guardare"; via il Client ID dalla pagina di accesso di Spotify; intestazione grande in Video, Spotify e Radio (parte della voce 8: resta YouTube "Oppure collega l'API ufficiale", lasciato come pulsante discreto); tolti `WebPlayerScreen`, la rotta `media/web` e la bolla del sito YouTube (codice morto). Non riproporre la card Scorciatoie
 - 1.101.0 · Podcast in Media (ex 18): ricerca iTunes, Segui, ultimi episodi, ascolto nel player della radio dal punto in cui eri; Sveglia con la radio (ex 16); Ascolta il punto del giorno con la voce del telefono (parte del 13); "ogni mese" il 31 e "ogni anno" il 29 febbraio senza scivolare; riga del widget provata (parte del 2); foto `34_radio` e `35_podcast` nel giro
 - 1.98.0 · Adesso: azioni rapide con Annulla (ex 17); idee in Abitudini (parte del 3); Meteo senza buchi e abitudini non tagliate (parte del 7); V20, V21, V22, V23, V24 del verificatore
 - 1.97.0 · Spotify: playlist non tue con avviso e Riproduci, nuovi indirizzi dell'API
