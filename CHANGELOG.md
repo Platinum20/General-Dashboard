@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.111.0
+**Il + a voce, come i vocali di WhatsApp**
+- Tieni premuto il +: diventa un microfono che si ingrandisce e pulsa con la voce, e sopra la barra compare quello che stai dicendo. Rilasci e si apre il dialogo con il testo e il tipo già riconosciuto (spesa, pacco, evento, nota o promemoria)
+- Niente più finestra di Google: il riconoscimento del telefono lavora nascosto. La prima volta Canvas chiede il permesso del microfono
+
 ## 1.110.0
 **Media, rifatta da capo**
 - Tre sezioni: **Musica**, **Video** e **Radio e podcast**. In alto il blocco colorato con quello che suona adesso (qualunque fonte) o da dove riprendere; sotto "Continua" con le anteprime, i nuovi episodi e le tue radio da far partire con un tocco

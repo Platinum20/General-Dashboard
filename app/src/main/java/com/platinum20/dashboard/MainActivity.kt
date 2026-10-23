@@ -1,12 +1,25 @@
 package com.platinum20.dashboard
 
-import android.content.ActivityNotFoundException
+import android.Manifest
+import androidx.compose.ui.layout.layout
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.foundation.layout.Column
+import com.platinum20.dashboard.capture.Dictation
 import android.content.Intent
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -82,6 +95,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -345,20 +359,36 @@ private val topDestinations = listOf(
  * Barra in basso flottante: una pillola con le quattro sezioni (il nome compare solo su quella aperta)
  * e accanto il + tondo per aggiungere al volo. La pillola è di vetro sfocato sopra le liste.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CanvasNavBar(
     currentRoute: String?,
     dueToday: Int,
     onSelect: (TopDestination) -> Unit,
     onPlus: () -> Unit,
-    onPlusLong: () -> Unit,
+    listening: Boolean,
+    level: Float,
+    partial: String,
+    /** Dito tenuto sul +: true se la dettatura è partita. */
+    onHoldStart: () -> Boolean,
+    onHoldEnd: () -> Unit,
 ) {
     val haptic = rememberHaptic()
+    Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
+    // Il fumetto con quello che si sta dicendo: alto zero, disegnato sopra la barra così non la sposta.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .layout { measurable, constraints ->
+                val p = measurable.measure(constraints.copy(minHeight = 0))
+                layout(p.width, 0) { p.place(0, -p.height) }
+            },
+        contentAlignment = Alignment.BottomEnd,
+    ) {
+        DictationBubble(listening, partial)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -386,24 +416,99 @@ private fun CanvasNavBar(
                 }
             }
         }
-        Surface(
-            shape = CircleShape,
-            // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
-            color = androidx.compose.ui.graphics.Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
-            modifier = Modifier.size(60.dp).bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
-                .clip(CircleShape)
-                // Tocco: scrivi. Tenuto premuto: detta a voce.
-                .combinedClickable(
-                    onClickLabel = "Aggiungi",
-                    onLongClickLabel = "Detta a voce",
-                    onLongClick = { haptic(Haptic.CONFIRM); onPlusLong() },
-                    onClick = { haptic(Haptic.TICK); onPlus() },
-                ),
+        // Il +: tocco = scrivi; tenuto premuto = diventa un microfono e detta, come i vocali di WhatsApp.
+        val grow by animateFloatAsState(if (listening) 1.18f else 1f, Springs.snappy(), label = "micGrow")
+        val pulse by animateFloatAsState(if (listening) level else 0f, tween(90), label = "micLevel")
+        val ring = MaterialTheme.colorScheme.primary
+        // Il gesto vive più a lungo di una ricomposizione: sempre le azioni aggiornate.
+        val tap by rememberUpdatedState(onPlus)
+        val holdStart by rememberUpdatedState(onHoldStart)
+        val holdEnd by rememberUpdatedState(onHoldEnd)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(60.dp)
+                .drawBehind {
+                    // L'alone cresce con la voce.
+                    if (grow > 1.01f) drawCircle(ring.copy(alpha = 0.22f), radius = size.minDimension / 2 * (grow + 0.15f + pulse * 0.45f))
+                }
+                .graphicsLayer { scaleX = grow; scaleY = grow },
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Add, contentDescription = "Aggiungi", modifier = Modifier.size(28.dp))
+            Surface(
+                shape = CircleShape,
+                // Vetro colorato come la pillola accanto: stesso materiale, tinta del tema.
+                color = androidx.compose.ui.graphics.Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.18f)),
+                modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
+                    .semantics {
+                        onClick(label = "Aggiungi") { onPlus(); true }
+                        onLongClick(label = "Detta a voce") { onHoldStart() }
+                    }
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown()
+                            var lifted = false
+                            val up = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                                waitForUpOrCancellation().also { lifted = true }
+                            }
+                            when {
+                                up != null -> { haptic(Haptic.TICK); tap() }
+                                // Annullato (es. il dito è scivolato via): niente.
+                                lifted -> Unit
+                                else -> {
+                                    if (holdStart()) {
+                                        haptic(Haptic.CONFIRM)
+                                        waitForUpOrCancellation()
+                                        haptic(Haptic.TICK)
+                                        holdEnd()
+                                    }
+                                }
+                            }
+                        }
+                    },
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Crossfade(listening, label = "plusMic") { mic ->
+                        Icon(
+                            if (mic) Icons.Rounded.Mic else Icons.Rounded.Add,
+                            contentDescription = if (mic) "In ascolto" else "Aggiungi",
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
+    }
+}
+
+/** Il fumetto sopra la barra mentre si detta tenendo premuto il +. */
+@Composable
+private fun DictationBubble(listening: Boolean, partial: String) {
+    AnimatedVisibility(
+        visible = listening,
+        enter = fadeIn() + slideInVertically { it / 2 },
+        exit = fadeOut(tween(120)),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            border = cardBorder(),
+            modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Text(
+                    partial.ifBlank { "Ti ascolto…" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "Rilascia per finire",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -566,24 +671,32 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     var dictated by remember { mutableStateOf("") }
     val plusOverride by PlusAction.override
     if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
-    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val text = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (!text.isNullOrBlank()) {
-            dictated = text.replaceFirstChar { it.uppercase() }
-            capturing = true
-        }
+    // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
+    val dictation = remember { Dictation(context.applicationContext) }
+    DisposableEffect(Unit) { onDispose { dictation.cancel() } }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
     }
-    val dictate = {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "it-IT")
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, "Promemoria, spesa, evento, pacco o nota")
-        try {
-            voice.launch(intent)
-        } catch (e: ActivityNotFoundException) {
-            Toast.makeText(context, "Dettatura non disponibile su questo telefono", Toast.LENGTH_SHORT).show()
-            capturing = true
+    val startDictation: () -> Boolean = start@{
+        when {
+            !dictation.hasPermission() -> {
+                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+                return@start false
+            }
+            !dictation.available -> {
+                Toast.makeText(context, "Dettatura non disponibile su questo telefono", Toast.LENGTH_SHORT).show()
+                return@start false
+            }
         }
+        dictation.start { text ->
+            if (text.isNullOrBlank()) {
+                Toast.makeText(context, "Non ho sentito niente", Toast.LENGTH_SHORT).show()
+            } else {
+                dictated = text
+                capturing = true
+            }
+        }
+        true
     }
 
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.
@@ -605,7 +718,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         if (currentRoute == dest.route) TabReselect.events.tryEmit(dest.route) else navController.switchTab(dest.route)
                     },
                     onPlus = { plusOverride?.invoke() ?: run { capturing = true } },
-                    onPlusLong = dictate,
+                    listening = dictation.listening,
+                    level = dictation.level,
+                    partial = dictation.partial,
+                    onHoldStart = startDictation,
+                    onHoldEnd = dictation::release,
                 )
             }
         },
