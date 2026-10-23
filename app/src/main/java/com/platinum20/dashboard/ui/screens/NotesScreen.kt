@@ -103,6 +103,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.notes.Checklist
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Habit
+import com.platinum20.dashboard.notes.HabitReminder
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
@@ -438,7 +439,7 @@ private fun HabitsTab(habits: List<Habit>, padding: PaddingValues, onDeleted: (H
                     Column(Modifier.weight(1f)) {
                         Text(habit.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            line.text,
+                            line.text + HabitReminder.suffix(habit),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (line.urgent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                         )

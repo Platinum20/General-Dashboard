@@ -47,6 +47,9 @@ object HabitReminder {
         return null
     }
 
+    /** In coda alla riga dell'abitudine in Note: " · avviso alle 21:00", vuoto se non c'è. */
+    fun suffix(habit: Habit): String = habit.remindAt?.let { " · avviso alle %d:%02d".format(it.hour, it.minute) }.orEmpty()
+
     /** Il testo della notifica: la serie in gioco o quante ne mancano questa settimana. */
     fun text(habit: Habit, today: LocalDate): String = when {
         habit.weekly -> "${habit.weekCount(today)} su ${habit.perWeek} questa settimana"

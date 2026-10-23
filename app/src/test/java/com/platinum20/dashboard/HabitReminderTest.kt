@@ -82,4 +82,10 @@ class HabitReminderTest {
         assertNull(back.habits[0].remindAt)
         assertEquals(setOf(LocalDate.of(2026, 10, 20)), back.habits[0].done)
     }
+
+    @Test
+    fun oraNellaRigaDellAbitudine() {
+        assertEquals(" · avviso alle 21:05", HabitReminder.suffix(Habit(1, "Leggere", remindAt = LocalTime.of(21, 5))))
+        assertEquals("", HabitReminder.suffix(Habit(2, "Acqua")))
+    }
 }
