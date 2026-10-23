@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -71,6 +72,7 @@ import java.time.ZonedDateTime
 internal val podcastIdeas = listOf("Il Post", "Muschio Selvaggio", "Geopop", "Tintoria", "Storia")
 
 /** Podcast: quelli seguiti con gli ultimi episodi, la ricerca e la pagina di ogni podcast. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PodcastScreen(onBack: () -> Unit) {
     val context = LocalContext.current
