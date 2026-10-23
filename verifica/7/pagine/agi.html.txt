@@ -1,0 +1,45 @@
+https://www.agi.it/estero/news/2026-10-23/parigi-cortei-negozi-blindati-39669793/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AFTWsFW8yvhEYXDFS3jelMvAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMSFEvNG3DzpkSy68SAgEQgDtUTcr0Fkhnfa8mpmBfdex58IJ1fQaKiKQ6+ENzPLBpHQZlLUCt9MiavG0DH0lMTpM9cL1EvTjJ8IvWOg==",
+          "iv":"D57HRACL3AAABWSg",
+          "context":"HBYBDXaCYDMEXPkOhRl6S+nz+4hnl3Ox2Ret+XinT+Rqi+XB+5yx9eAwiiIFdddiGu2Y2yVWv7hruoY/xHhmudSkjzEkcglLbjjI+RaWMXA8qJfYid8l2v5w6vxnl1tThbwDy2SFMkb/Z0XV1r3T+lNkzKglzAsv6/roTKJvZWxRKdbApzZryvS5uSuvVkcPeXwkUNGr3kHIfyDJd0DGM2VPr6GJE6dzmJPEaVmZptlROneoanRWq3P2Wr3TjHAEnqbCuQGU+bWmMlUgK4E7Jt1QIBAhgYCRhPYpi6BlbbkjwCXe/hvjY64TWIJlkGAozyhSHVRo3UUml25JXQH9UTCL2qG1W4JA9rBGqieEUgw23tyQTdBH06/ikDTcNno5mcSPojQxBRx++0Tvj1N3J6trpjeTtP5e3h9jVY6WPJTFynuVfSrzpCzHnjg+ib1o3cxKQ011Hst1fZSlYHSnyj5etNiScI8fjM2cRAW/QfB64Fk4wZ6VV8NYFOXZqnh9oldwyFZ3N0PNBbYdsEnOJFOKpGGSlddk9NzBsAS7f0k4ALu/tIPOdi4QqaYu3UhQzGSKKljUw9+sA4qxyT51FCvXjFOSyH/gA0ni5SLnMIGWnqQiHj+N6zEkkPUH1pO1eLltCI/B1MoAYxnQ2+Ty8yy8XpwQTg0WHZFptrIa01CSHY3Llr0Ow5M1Fpnx+buu5TWUiAVFMJq6hOmQ0gs0Ly89kHX1zZpU4Mm8KesgROEWl44jNtDVFAFo13rW/6n/fBY="
+};
+    </script>
+  <script src="https://a49c870577a3.a724cbc9.ca-central-1.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>

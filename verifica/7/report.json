@@ -1,0 +1,1369 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 60,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1763,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1559,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1657,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1363,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 251,
+    "blocked": 0,
+    "wouldBlock": 53,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 6,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "www.datadoghq-browser-agent.com": 1,
+     "cdn.pbstck.com": 2,
+     "intake.pbstck.com": 3,
+     "www.google-analytics.com": 5,
+     "browser-intake-datadoghq.com": 12,
+     "cdn-gl.imrworldwide.com": 3,
+     "arclight.vimeo.com": 6,
+     "mn414n9dooj3f5mwyxludynq05nej1792745979.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 30177,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 209,
+    "blocked": 14,
+    "wouldBlock": 14,
+    "blockedHosts": {
+     "securepubads.g.doubleclick.net": 1,
+     "ads.talkscreativity.com": 1,
+     "www.googletagmanager.com": 3,
+     "www.datadoghq-browser-agent.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "arclight.vimeo.com": 6
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 30177,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/23/armatori-siciliani-pesca-interventi-insufficienti-via-a-sciopero-fiscale_5a616e28-ebd0-490b-9217-08113392bfa5.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 2453,
+    "blocked": 0,
+    "wouldBlock": 2185,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "t.seedtag.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.ansa.it": 1,
+     "www.google-analytics.com": 1,
+     "intake.pbstck.com": 3,
+     "s.seedtag.com": 56,
+     "cdn-gl.imrworldwide.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "n6yjo2uwyjhhvlwpgrifil7gjtzmi1792746004.nuid.imrworldwide.com": 1,
+     "cs.seedtag.com": 7,
+     "csync.smartadserver.com": 3,
+     "ad.360yield.com": 24,
+     "onetag-sys.com": 76,
+     "u.openx.net": 8,
+     "csync.loopme.me": 25,
+     "match.prod.bidr.io": 10,
+     "sync.1rx.io": 52,
+     "sync.srv.stackadapt.com": 14,
+     "beachfront-match.dotomi.com": 1,
+     "pixel-sync.sitescout.com": 15,
+     "ib.adnxs.com": 28,
+     "sync.smartadserver.com": 10,
+     "b1sync.outbrain.com": 23,
+     "match.adsrvr.org": 26,
+     "x.bidswitch.net": 43,
+     "c1.adform.net": 19,
+     "ap.lijit.com": 41,
+     "creativecdn.com": 36,
+     "id5-sync.com": 7,
+     "ups.analytics.yahoo.com": 11,
+     "match.deepintent.com": 12,
+     "t.adx.opera.com": 14,
+     "secure-assets.rubiconproject.com": 41,
+     "ads.pubmatic.com": 26,
+     "visitor.omnitagjs.com": 3,
+     "match.sharethrough.com": 14,
+     "cs.admanmedia.com": 18,
+     "sync.ipredictive.com": 6,
+     "cm.g.doubleclick.net": 7,
+     "ced-ns.sascdn.com": 1,
+     "ad.turn.com": 2,
+     "tr.blismedia.com": 5,
+     "eus.rubiconproject.com": 73,
+     "dis.criteo.com": 2,
+     "s.ad.smaato.net": 36,
+     "sync-tm.everesttech.net": 6,
+     "bttrack.com": 1,
+     "ssc-cms.33across.com": 53,
+     "rtb-csync.smartadserver.com": 4,
+     "sync.richaudience.com": 23,
+     "image8.pubmatic.com": 43,
+     "rtb.mfadsrvr.com": 1,
+     "hb.trustedstack.com": 7,
+     "ssum-sec.casalemedia.com": 10,
+     "id.rlcdn.com": 11,
+     "cpm.vistarsagency.com": 1,
+     "measureadv.com": 1,
+     "cs-server-s2s.yellowblue.io": 7,
+     "ittpx.eskimi.com": 26,
+     "ssbsync.smartadserver.com": 25,
+     "sync.adkernel.com": 48,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "csync.smilewanted.com": 12,
+     "eb2.3lift.com": 65,
+     "prebid.a-mo.net": 15,
+     "cs.media.net": 11,
+     "public.servenobid.com": 1,
+     "token.rubiconproject.com": 52,
+     "pixel.33across.com": 16,
+     "us-east-1-cs-rtb.openwebmp.com": 5,
+     "prebidsrvr.cootlogix.com": 1,
+     "sync.kueezrtb.com": 10,
+     "p.rfihub.com": 13,
+     "ce.lijit.com": 9,
+     "hbx.media.net": 17,
+     "sync.go.sonobi.com": 24,
+     "jadserve.postrelease.com": 15,
+     "ads.servenobid.com": 8,
+     "cm.adform.net": 18,
+     "ssp-sync.criteo.com": 28,
+     "contextual.media.net": 4,
+     "bh.contextweb.com": 16,
+     "rtb.openx.net": 13,
+     "secure.adnxs.com": 10,
+     "prebid-match.dotomi.com": 6,
+     "visitor.us-west1.gcp.omnitagjs.com": 4,
+     "sync.a-mo.net": 5,
+     "ssbsync-global.smartadserver.com": 12,
+     "ms-cookie-sync.presage.io": 7,
+     "dsum-sec.casalemedia.com": 1,
+     "rtb.gumgum.com": 5,
+     "sync.rbstsystems.live": 14,
+     "dsp.360yield.com": 4,
+     "dsp-service.admatic.de": 9,
+     "cookies.nextmillmedia.com": 32,
+     "www.temu.com": 8,
+     "ads.yieldmo.com": 20,
+     "pixel-eu.rubiconproject.com": 4,
+     "us-u.openx.net": 23,
+     "visitor-ow.omnitagjs.com": 3,
+     "user-sync.fwmrm.net": 5,
+     "i.ctnsnet.com": 1,
+     "a.amxrtb.com": 18,
+     "cs.iqzone.com": 14,
+     "pbs-cs.yellowblue.io": 6,
+     "cs.openwebmp.com": 6,
+     "syncingbridge.com": 9,
+     "pixel.rubiconproject.com": 25,
+     "s.console.adtarget.com.tr": 2,
+     "sync.sparteo.com": 16,
+     "sync.cootlogix.com": 49,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "u-las.4dex.io": 2,
+     "dsp-service.adtarget.biz": 2,
+     "visitor-programmaticx.omnitagjs.com": 4,
+     "rt.marphezis.com": 6,
+     "visitor-px.omnitagjs.com": 4,
+     "dsp-service.pixad.com.tr": 3,
+     "u-ams.4dex.io": 14,
+     "idpix.media6degrees.com": 1,
+     "33across-match.dotomi.com": 1,
+     "pixel-us-east.rubiconproject.com": 9,
+     "ittpx-us-e.eskimi.com": 4,
+     "usync.4dex.io": 8,
+     "usync.ingage.tech": 20,
+     "id.a-mx.com": 15,
+     "visitor-33across.omnitagjs.com": 1,
+     "prebid.admatic.de": 4,
+     "ads.betweendigital.com": 1,
+     "et-c-ash.33across.com": 1,
+     "sync.technoratimedia.com": 4,
+     "pixel.tapad.com": 11,
+     "rtb.adentifi.com": 2,
+     "static.cloudflareinsights.com": 8,
+     "b1sync.zemanta.com": 3,
+     "gw-iad-bid.ymmobi.com": 20,
+     "ogury-match.dotomi.com": 3,
+     "ps.eyeota.net": 18,
+     "dp1.33across.com": 1,
+     "cs.yellowblue.io": 3,
+     "gumgum-match.dotomi.com": 3,
+     "elb.the-ozone-project.com": 1,
+     "ortb.vdo.ai": 12,
+     "cms.quantserve.com": 3,
+     "um.simpli.fi": 2,
+     "i.liadm.com": 2,
+     "aorta.clickagy.com": 2,
+     "openx2-match.dotomi.com": 1,
+     "s.amazon-adsystem.com": 1,
+     "i.w55c.net": 1,
+     "oxp.mxptint.net": 1,
+     "thrtle.com": 1,
+     "aa.agkn.com": 5,
+     "su.semasio.net": 2,
+     "pxl.iqm.com": 3,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "vop.sundaysky.com": 6,
+     "cdn.undertone.com": 4,
+     "prebid.pixad.com.tr": 4,
+     "openx-ums.acuityplatform.com": 2,
+     "cs.ingage.tech": 1,
+     "capi.connatix.com": 5,
+     "sync.crwdcntrl.net": 6,
+     "dmp.brand-display.com": 2,
+     "bpi.rtactivate.com": 2,
+     "fei.pro-market.net": 3,
+     "ml314.com": 2,
+     "static.cdn.admatic.de": 4,
+     "prebid.adtarget.biz": 1,
+     "dm-us.hybrid.ai": 2,
+     "evt.undertone.com": 1,
+     "loadm.exelator.com": 1,
+     "idsync.rlcdn.com": 6,
+     "sync.intentiq.com": 3,
+     "dpm.demdex.net": 3,
+     "sync.colossusssp.com": 12,
+     "sync.ottadvisors.com": 2,
+     "inv-nets.admixer.net": 3,
+     "dsp-cookie.adfarm1.adition.com": 1,
+     "stx-match.dotomi.com": 1,
+     "ads165.console.adtarget.com.tr": 4,
+     "us.ck-ie.com": 15,
+     "sync.aniview.com": 12,
+     "krush-match.dotomi.com": 6,
+     "eu-rtbstack-cm.admixer.net": 6,
+     "ads.stickyadstv.com": 6,
+     "sync.bfmio.com": 6,
+     "image2.pubmatic.com": 6,
+     "visitor-krushmedia.omnitagjs.com": 6,
+     "match.sync.ad.cpe.dotomi.com": 6,
+     "visitor-krushmedia_video.omnitagjs.com": 6,
+     "usersync.gumgum.com": 6,
+     "sync-km.ads.yieldmo.com": 6,
+     "player.aniview.com": 6,
+     "inmobi-match.dotomi.com": 3,
+     "tracker-shr.ortb.net": 3,
+     "sync.pinklion.io": 3,
+     "cs.playdigo.com": 3,
+     "beacon-iad6.rubiconproject.com": 1,
+     "pagead2.googlesyndication.com": 3,
+     "use4.s.seedtag.com": 1,
+     "googleads.g.doubleclick.net": 2,
+     "sync.mathtag.com": 6,
+     "tpc.googlesyndication.com": 3,
+     "www.google.com": 1
+    },
+    "errors": [
+     "Uncaught InvalidStateError: Failed to execute 'postMessage' on 'BroadcastChannel': Channel is closed"
+    ]
+   },
+   "info": {
+    "title": "Armatori siciliani pesca, interventi insufficienti, via a sciopero fiscale - Ultima ora - Ansa.it",
+    "textLength": 8729,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 46,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Armatori siciliani pesca, interventi insufficienti, via a sciopero fiscale - Ultima ora - Ansa.it",
+    "textLength": 8729,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/politica/manovra-governo-accelera-e-studia-taglio-irpef-in-due-fasi-dal-2027-aliquota-al-33-fino-a-55mila-euro/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 307,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 307,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 465,
+    "blocked": 0,
+    "wouldBlock": 189,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 2,
+     "pagead2.googlesyndication.com": 5,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "applets.ebxcdn.com": 2,
+     "secure-it.imrworldwide.com": 2,
+     "487eqsdob7rxcyjxrtgwvki9tcm1y1792746085.nuid.imrworldwide.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.google.ca": 1,
+     "ads.pubmatic.com": 4,
+     "link.rubiconproject.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "id5-sync.com": 5,
+     "api.rlcdn.com": 1,
+     "cdn.id5-sync.com": 2,
+     "match.adsrvr.org": 4,
+     "id.crwdcntrl.net": 1,
+     "t.pubmatic.com": 1,
+     "api.id5-sync.com": 1,
+     "assets.evolutionadv.it": 1,
+     "script-api.ccgateway.net": 6,
+     "sync.crwdcntrl.net": 1,
+     "pb-ing-02.ccgateway.net": 1,
+     "dpm.demdex.net": 2,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "cdn.confiant-integrations.net": 2,
+     "lb.eu-1-id5-sync.com": 2,
+     "lbs.eu-1-id5-sync.com": 1,
+     "cdn.permutive.app": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cm.everesttech.net": 1,
+     "services.insurads.com": 2,
+     "smetrics.rcsmetrics.it": 1,
+     "cdn1.anonymised.io": 3,
+     "static.anonm.io": 1,
+     "api.anonymised.io": 2,
+     "account.anonymised.io": 1,
+     "aegis.anonymised.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "static.criteo.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 7,
+     "c.amazon-adsystem.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "rtb.openx.net": 1,
+     "secure-assets.rubiconproject.com": 2,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "gum.criteo.com": 3,
+     "id.a-mx.com": 1,
+     "google-bidout-d.openx.net": 1,
+     "esp.rtbhouse.com": 1,
+     "ups.analytics.yahoo.com": 4,
+     "ad.turn.com": 2,
+     "prebid-server.rubiconproject.com": 3,
+     "htlb.casalemedia.com": 1,
+     "fastlane.rubiconproject.com": 2,
+     "display.bidder.taboola.com": 1,
+     "image6.pubmatic.com": 2,
+     "hbopenbid.pubmatic.com": 1,
+     "grid-bidder.criteo.com": 1,
+     "pixel.rubiconproject.com": 8,
+     "ms-cookie-sync.presage.io": 3,
+     "cs.admanmedia.com": 1,
+     "syncingbridge.com": 1,
+     "sync.richaudience.com": 1,
+     "b1sync.zemanta.com": 1,
+     "id.rlcdn.com": 2,
+     "sync.1rx.io": 1,
+     "ssbsync.smartadserver.com": 1,
+     "ib.adnxs.com": 1,
+     "x.bidswitch.net": 1,
+     "creativecdn.com": 1,
+     "ogury-match.dotomi.com": 1,
+     "gw-iad-bid.ymmobi.com": 1,
+     "eus.rubiconproject.com": 1,
+     "ep1.adtrafficquality.google": 1,
+     "01cf35272431d79252f3f58243871c04.safeframe.googlesyndication.com": 1,
+     "sync.mathtag.com": 1,
+     "s.ad.smaato.net": 1,
+     "sync.srv.stackadapt.com": 2,
+     "bttrack.com": 1,
+     "token.rubiconproject.com": 6,
+     "ep2.adtrafficquality.google": 3,
+     "sync.ipredictive.com": 1,
+     "match.prod.bidr.io": 2,
+     "prebid.a-mo.net": 1,
+     "c1.adform.net": 1,
+     "s.amazon-adsystem.com": 1,
+     "dis.criteo.com": 1,
+     "user-sync.fwmrm.net": 1,
+     "pixel-sync.sitescout.com": 1,
+     "um.simpli.fi": 1,
+     "match.deepintent.com": 1,
+     "idsync.rlcdn.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 22352,
+    "adFrames": 0,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 279,
+    "blocked": 14,
+    "wouldBlock": 14,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 2,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 22352,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/23/scontri-milano-stop-passamontagna-mantova/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 365,
+    "blocked": 0,
+    "wouldBlock": 290,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 6,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "applets.ebxcdn.com": 2,
+     "secure-it.imrworldwide.com": 2,
+     "f6wakev7gghsxh5kbhngphjt67fom1792746108.nuid.imrworldwide.com": 1,
+     "analytics.google.com": 1,
+     "www.google.ca": 1,
+     "stats.g.doubleclick.net": 1,
+     "ads.pubmatic.com": 7,
+     "link.rubiconproject.com": 1,
+     "trc.taboola.com": 2,
+     "carbon-cdn.ccgateway.net": 1,
+     "id5-sync.com": 6,
+     "cdn.id5-sync.com": 2,
+     "api.rlcdn.com": 1,
+     "match.adsrvr.org": 8,
+     "id.crwdcntrl.net": 1,
+     "script-api.ccgateway.net": 6,
+     "t.pubmatic.com": 1,
+     "sync.crwdcntrl.net": 1,
+     "pb-ing-02.ccgateway.net": 1,
+     "ch-trc-events.taboola.com": 3,
+     "gum.criteo.com": 4,
+     "images.taboola.com": 18,
+     "ib.adnxs.com": 4,
+     "cm.g.doubleclick.net": 12,
+     "api.id5-sync.com": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.confiant-integrations.net": 2,
+     "static.anonymised.io": 1,
+     "cdn.insurads.com": 3,
+     "dpm.demdex.net": 2,
+     "cdn.permutive.app": 1,
+     "cm.everesttech.net": 1,
+     "services.insurads.com": 2,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "cdn1.anonymised.io": 3,
+     "lb.eu-1-id5-sync.com": 2,
+     "lbs.eu-1-id5-sync.com": 1,
+     "static.anonm.io": 1,
+     "api.anonymised.io": 2,
+     "account.anonymised.io": 1,
+     "aegis.anonymised.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "prod.us-east-1.cxm-bcn.publisher-services.amazon.dev": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "rtb.openx.net": 2,
+     "esp.rtbhouse.com": 1,
+     "google-bidout-d.openx.net": 1,
+     "ad.turn.com": 1,
+     "ups.analytics.yahoo.com": 2,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 3,
+     "ads.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "id.a-mx.com": 2,
+     "s.amazon-adsystem.com": 9,
+     "image6.pubmatic.com": 2,
+     "pixel.rubiconproject.com": 10,
+     "s.seedtag.com": 1,
+     "sync-amz.ads.yieldmo.com": 1,
+     "u.openx.net": 1,
+     "ssbsync-us.smartadserver.com": 1,
+     "onetag-sys.com": 2,
+     "tr.blismedia.com": 1,
+     "sync.ipredictive.com": 2,
+     "sync-tm.everesttech.net": 1,
+     "ssum-sec.casalemedia.com": 1,
+     "ms-cookie-sync.presage.io": 2,
+     "crb.kargo.com": 1,
+     "eb2.3lift.com": 3,
+     "pixel-sync.sitescout.com": 1,
+     "t.adx.opera.com": 2,
+     "ad.360yield.com": 3,
+     "x.bidswitch.net": 3,
+     "c1.adform.net": 2,
+     "dsum-sec.casalemedia.com": 1,
+     "gw-iad-bid.ymmobi.com": 2,
+     "sync.1rx.io": 2,
+     "b1sync.zemanta.com": 1,
+     "id.rlcdn.com": 2,
+     "ogury-match.dotomi.com": 1,
+     "cs.admanmedia.com": 1,
+     "dsp.360yield.com": 1,
+     "ssbsync.smartadserver.com": 1,
+     "creativecdn.com": 3,
+     "match.deepintent.com": 1,
+     "www.temu.com": 1,
+     "prebid-server.rubiconproject.com": 3,
+     "fastlane.rubiconproject.com": 2,
+     "htlb.casalemedia.com": 1,
+     "display.bidder.taboola.com": 1,
+     "bh.contextweb.com": 1,
+     "b1sync.outbrain.com": 1,
+     "sync.adotmob.com": 1,
+     "rtb-csync.smartadserver.com": 2,
+     "eus.rubiconproject.com": 2,
+     "grid-bidder.criteo.com": 1,
+     "hbopenbid.pubmatic.com": 1,
+     "token.rubiconproject.com": 7,
+     "ep1.adtrafficquality.google": 2,
+     "match.prod.bidr.io": 1,
+     "44e78c13ffd21ee00ec69edf9a36c5c9.safeframe.googlesyndication.com": 1,
+     "sync.smartadserver.com": 1,
+     "csync.smilewanted.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "sync.richaudience.com": 1,
+     "pixel.tapad.com": 1,
+     "um.simpli.fi": 1,
+     "idsync.rlcdn.com": 1,
+     "dis.criteo.com": 2,
+     "secure.adnxs.com": 1,
+     "visitor-missena.omnitagjs.com": 1,
+     "ssp-sync.criteo.com": 1,
+     "sync.a-mo.net": 2,
+     "pagead2.googlesyndication.com": 2,
+     "a.amxrtb.com": 1,
+     "pixel-eu.rubiconproject.com": 1,
+     "ap.lijit.com": 1,
+     "ssbsync-global.smartadserver.com": 1,
+     "ads.yieldmo.com": 1,
+     "cm.adform.net": 1,
+     "image8.pubmatic.com": 1,
+     "ads.creative-serving.com": 1,
+     "ws.rqtrk.eu": 1,
+     "track.adform.net": 1,
+     "use3-sync.a-mo.net": 1,
+     "go.affec.tv": 1
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Scontri a Milano, il negoziante che smette di vendere passamontagna: «Li cerchino altrove, non da me» - Open",
+    "textLength": 4913,
+    "adFrames": 0,
+    "adBoxes": 18
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 71,
+    "blocked": 14,
+    "wouldBlock": 14,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "api.cmp.inmobi.com": 2,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined",
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Scontri a Milano, il negoziante che smette di vendere passamontagna: «Li cerchino altrove, non da me» - Open",
+    "textLength": 3912,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/video/2026/10/-fedez-denunciato-da-4-fan-abbiamo-chiesto-un-selfie-ci-hanno-picchiato-ad9100f1-9ab2-496a-9323-9139e3913ead.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 321,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 321,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 165,
+    "blocked": 0,
+    "wouldBlock": 56,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "stats.g.doubleclick.net": 1,
+     "www.google.ca": 1,
+     "analytics.google.com": 2,
+     "cm.g.doubleclick.net": 3,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "rtb.openx.net": 1,
+     "gum.criteo.com": 2,
+     "google-bidout-d.openx.net": 1,
+     "ad.turn.com": 1,
+     "ups.analytics.yahoo.com": 1,
+     "match.adsrvr.org": 1,
+     "image6.pubmatic.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 2,
+     "6f98c7bdef975989ffa6a67fa72ef293.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "beacon.taboola.com": 1,
+     "images.taboola.com": 12,
+     "ch-trc-events.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15137,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 113,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14402,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/estero/news/2026-10-23/parigi-cortei-negozi-blindati-39669793/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 198,
+    "blocked": 0,
+    "wouldBlock": 93,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "www.google.ca": 1,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 28,
+     "c06f416b59e0cc9b0eaa8a7a1ec0450b.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.ampproject.org": 2,
+     "tpc.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "ch-trc-events.taboola.com": 6,
+     "images.taboola.com": 26
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Parigi si blinda per i cortei: vetrine sbarrate e armerie piene",
+    "textLength": 9558,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 96,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Parigi si blinda per i cortei: vetrine sbarrate e armerie piene",
+    "textLength": 7828,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 190,
+    "blocked": 0,
+    "wouldBlock": 47,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "561aa2c720939282cda497fecaccb97f.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.google.ca": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "q.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11213,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 150,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11169,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/francesca-gnetti/2026/10/23/guida-elezioni-israele"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 154,
+    "blocked": 0,
+    "wouldBlock": 50,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 2,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "e3c368d74efb777b441c92f651104371.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 7,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.google.ca": 1,
+     "www.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "e.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Guida alle elezioni in Israele - Francesca Gnetti - Internazionale",
+    "textLength": 1522,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Guida alle elezioni in Israele - Francesca Gnetti - Internazionale",
+    "textLength": 1121,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
