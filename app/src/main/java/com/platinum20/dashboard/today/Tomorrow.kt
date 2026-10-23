@@ -29,6 +29,8 @@ data class TomorrowLine(val kind: TomorrowKind, val text: String)
 /** La card "Domani" della sera: meteo, impegni e cose da fare del giorno dopo. */
 data class TomorrowPlan(
     val day: LocalDate,
+    /** "Domani" la sera, "Oggi" dopo mezzanotte (il giorno di cui si parla è già iniziato). */
+    val label: String,
     val weather: TomorrowWeather?,
     /** La frase più importante, per la prima riga ("Domani 8:30 dentista, pioggia dalle 10"). */
     val headline: String?,
@@ -88,10 +90,15 @@ object Tomorrow {
         }
 
         if (weather == null && lines.isEmpty()) return null
+        val label = if (day == now.toLocalDate()) "Oggi" else "Domani"
+        val firstTask = tasks.filter { !it.done && it.dueAt != null }
+            .filter { Instant.ofEpochMilli(it.dueAt!!).atZone(zone).toLocalDate() == day }
+            .minByOrNull { it.dueAt!! }
         return TomorrowPlan(
             day = day,
+            label = label,
             weather = weather,
-            headline = headline(sorted.firstOrNull { !it.allDay }, weather, zone),
+            headline = headline(label, sorted.firstOrNull { !it.allDay }, firstTask, weather, zone),
             eventCount = sorted.size,
             lines = lines.take(MAX_LINES),
         )
@@ -112,12 +119,16 @@ object Tomorrow {
         )
     }
 
-    private fun headline(first: CalendarEvent?, weather: TomorrowWeather?, zone: ZoneId): String? {
+    /** Il primo impegno (o, senza calendario, il primo promemoria con l'orario) e la pioggia. */
+    private fun headline(label: String, first: CalendarEvent?, task: TaskItem?, weather: TomorrowWeather?, zone: ZoneId): String? {
         val parts = mutableListOf<String>()
-        first?.let { parts += "${time(it.begin, zone)} ${it.title}" }
+        when {
+            first != null -> parts += "${time(first.begin, zone)} ${first.title}"
+            task != null -> parts += "${time(task.dueAt!!, zone)} ${task.text}"
+        }
         weather?.rainFrom?.let { parts += "pioggia $it" }
         if (parts.isEmpty()) return null
-        return "Domani " + parts.joinToString(", ")
+        return "$label " + parts.joinToString(", ")
     }
 
     private fun time(ms: Long, zone: ZoneId): String = Instant.ofEpochMilli(ms).atZone(zone).toLocalTime().let {

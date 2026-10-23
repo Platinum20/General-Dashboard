@@ -47,4 +47,11 @@ class PhoneVideosTest {
         assertEquals("0:45 · 12 ott", PhoneVideos.caption(video(1, LocalDate.of(2026, 10, 12), 45_000), today, zone))
         assertEquals("3 mar 2025", PhoneVideos.caption(video(1, LocalDate.of(2025, 3, 3), 0), today, zone))
     }
+
+    @Test fun rifiutoDefinitivoApreLeImpostazioni() {
+        // V23: dopo due "Non consentire" la card non deve restare muta.
+        assertEquals(PhoneVideos.Invite.ASK, PhoneVideos.invite(deniedOnce = false, rationale = false))
+        assertEquals(PhoneVideos.Invite.ASK, PhoneVideos.invite(deniedOnce = true, rationale = true))
+        assertEquals(PhoneVideos.Invite.OPEN_SETTINGS, PhoneVideos.invite(deniedOnce = true, rationale = false))
+    }
 }

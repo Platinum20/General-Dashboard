@@ -27,7 +27,28 @@ import java.time.format.DateTimeFormatter
 /** Di che cosa parla una riga di "Adesso": decide l'icona. */
 enum class BriefKind { EVENT, RAIN, TASK, DATE, WEATHER, HABIT, PARCEL, MONEY, MEDIA, FREE }
 
-data class BriefLine(val kind: BriefKind, val text: String, val urgent: Boolean = false)
+/** L'azione rapida a destra di una riga di "Adesso": si chiude la cosa senza aprire Note. */
+enum class BriefAction {
+    /** Segna fatto il promemoria (i ricorrenti passano alla prossima volta). */
+    TASK_DONE,
+    /** Il pacco è arrivato. */
+    PARCEL_ARRIVED,
+    /** Un'abitudine sola da spuntare. */
+    HABIT_DONE,
+    /** Più abitudini: si apre l'elenco da spuntare. */
+    HABITS,
+}
+
+data class BriefLine(
+    val kind: BriefKind,
+    val text: String,
+    val urgent: Boolean = false,
+    /** Per le righe del meteo: il codice Open-Meteo, così l'icona è la pioggia quando piove. */
+    val weatherCode: Int? = null,
+    val action: BriefAction? = null,
+    /** Le cose su cui agisce [action]: id del promemoria, del pacco o delle abitudini. */
+    val targetIds: List<Long> = emptyList(),
+)
 
 /**
  * "Adesso": le poche cose che servono in questo momento, ricavate da meteo, agenda,
@@ -61,9 +82,13 @@ object Briefing {
         fixedExpenses: List<FixedExpense> = emptyList(),
         /** Video lasciato a metà nelle ultime 24 ore (vedi Resume.forAdesso). */
         resume: ResumeItem? = null,
+        /** true se sotto c'è la card "Domani": allora qui niente righe su domani, le dice la card. */
+        tomorrowCard: Boolean = false,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
+        // La sera le righe su domani, solo se la card "Domani" non c'è.
+        val aboutTomorrow = evening && !tomorrowCard
         val lines = mutableListOf<BriefLine>()
 
         // Agenda: quello che è in corso, poi il prossimo impegno di oggi.
@@ -86,14 +111,23 @@ object Briefing {
 
         // Promemoria: prima gli scaduti, poi quelli in scadenza entro stasera.
         val endOfDay = now.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val overdue = tasks.count { !it.done && it.dueAt != null && it.dueAt < nowMs }
+        val overdue = tasks.filter { !it.done && it.dueAt != null && it.dueAt < nowMs }
         val dueToday = tasks.filter { !it.done && it.dueAt != null && it.dueAt in nowMs until endOfDay }
-        if (overdue > 0) {
-            lines += BriefLine(BriefKind.TASK, if (overdue == 1) "1 promemoria scaduto" else "$overdue promemoria scaduti", urgent = true)
+        when (overdue.size) {
+            0 -> Unit
+            // Uno solo: si legge cos'è e si chiude da qui.
+            1 -> lines += BriefLine(
+                BriefKind.TASK, "Scaduto: ${overdue[0].text}", urgent = true,
+                action = BriefAction.TASK_DONE, targetIds = listOf(overdue[0].id),
+            )
+            else -> lines += BriefLine(BriefKind.TASK, "${overdue.size} promemoria scaduti", urgent = true)
         }
         when (dueToday.size) {
             0 -> Unit
-            1 -> lines += BriefLine(BriefKind.TASK, "Entro le ${dueToday[0].dueAt!!.at(zone)}: ${dueToday[0].text}")
+            1 -> lines += BriefLine(
+                BriefKind.TASK, "Entro le ${dueToday[0].dueAt!!.at(zone)}: ${dueToday[0].text}",
+                action = BriefAction.TASK_DONE, targetIds = listOf(dueToday[0].id),
+            )
             else -> lines += BriefLine(BriefKind.TASK, "${dueToday.size} promemoria entro stasera")
         }
 
@@ -102,19 +136,23 @@ object Briefing {
         // Per compleanni e anniversari con l'anno vero, anche quanti anni compie.
         fun Countdown.label() = title + (yearsAtNext(date)?.let { " ($it anni)" } ?: "")
         countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}") }
-        if (evening) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
+        if (aboutTomorrow) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
 
         // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
         val waiting = parcels.filter { !it.delivered && it.expected != null }
         waiting.filter { !it.expected!!.isAfter(date) }.takeIf { it.isNotEmpty() }?.let { list ->
-            lines += BriefLine(BriefKind.PARCEL, "Pacco in arrivo: " + list.joinToString(", ") { it.title })
+            lines += BriefLine(
+                BriefKind.PARCEL, "Pacco in arrivo: " + list.joinToString(", ") { it.title },
+                // "Arrivato" solo con un pacco: con più pacchi non si sa quale.
+                action = BriefAction.PARCEL_ARRIVED.takeIf { list.size == 1 }, targetIds = list.map { it.id },
+            )
         }
-        if (evening) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        if (aboutTomorrow) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
-        // Spese fisse: il giorno prima, per non trovarsi l'addebito a sorpresa.
-        fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        // Spese fisse: il giorno prima (a ogni ora), salvo la sera quando c'è già la card "Domani".
+        if (!(evening && tomorrowCard)) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(
                 BriefKind.MONEY,
                 "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
@@ -138,20 +176,23 @@ object Briefing {
         if (now.hour >= HABIT_HOUR) {
             // Le settimanali solo quando serve farle oggi per restare nell'obiettivo.
             val missing = habits.filter { it.needsReminder(now) }
-            when {
-                missing.isEmpty() -> Unit
-                missing.size <= 2 -> lines += BriefLine(BriefKind.HABIT, "Ancora da fare oggi: " + missing.joinToString(", ") { it.title })
-                else -> lines += BriefLine(BriefKind.HABIT, "${missing.size} abitudini ancora da fare oggi")
+            if (missing.isNotEmpty()) {
+                lines += BriefLine(
+                    BriefKind.HABIT, habitsText(missing.map { it.title }),
+                    action = if (missing.size == 1) BriefAction.HABIT_DONE else BriefAction.HABITS,
+                    targetIds = missing.map { it.id },
+                )
             }
         }
 
-        if (evening) {
+        if (aboutTomorrow) {
             // La sera interessa com'è domani e a che ora si comincia.
             forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.let { d ->
                 lines += BriefLine(
                     BriefKind.WEATHER,
                     "Domani ${d.max.asTemp()} / ${d.min.asTemp()}" +
                         if (d.precipitationProbability >= 40) ", pioggia ${d.precipitationProbability}%" else "",
+                    weatherCode = d.code,
                 )
             }
             val first = tomorrow.orEmpty().firstOrNull { !it.allDay } ?: tomorrow.orEmpty().firstOrNull()
@@ -161,7 +202,7 @@ object Briefing {
                     if (first.allDay) "Domani: ${first.title}" else "Domani alle ${first.begin.at(zone)}: ${first.title}",
                 )
             }
-        } else {
+        } else if (!evening) {
             // Di giorno: avviso UV solo quando serve davvero.
             forecast?.today?.takeIf { it.uvMax >= 6 && now.hour < 16 }?.let {
                 lines += BriefLine(BriefKind.WEATHER, "UV alto (${Math.round(it.uvMax)}): meglio la crema")
@@ -175,10 +216,33 @@ object Briefing {
         }
 
         if (lines.isEmpty() && today != null && (!evening || tomorrow != null)) {
-            lines += BriefLine(BriefKind.FREE, if (evening) "Niente in programma fino a domani" else "Nessun impegno né scadenza oggi")
+            lines += BriefLine(
+                BriefKind.FREE,
+                when {
+                    tomorrowCard && evening -> "Niente altro per stasera"
+                    evening -> "Niente in programma fino a domani"
+                    else -> "Nessun impegno né scadenza oggi"
+                },
+            )
         }
         // Le urgenze in cima, poi l'ordine in cui le abbiamo pensate.
         return lines.withIndex().sortedWith(compareBy({ !it.value.urgent }, { it.index })).map { it.value }.take(max)
+    }
+
+    /** Quanti caratteri ci stanno in una riga di "Adesso" su un telefono normale. */
+    const val LINE_CHARS = 38
+
+    /**
+     * "Ancora da fare oggi: Leggere" se i nomi ci stanno nella riga, altrimenti
+     * "Ancora da fare: 2 abitudini" (meglio di un nome tagliato a metà).
+     */
+    fun habitsText(titles: List<String>, maxChars: Int = LINE_CHARS): String {
+        val names = "Ancora da fare oggi: " + titles.joinToString(", ")
+        return when {
+            titles.size <= 2 && names.length <= maxChars -> names
+            titles.size == 1 -> "Ancora da fare: 1 abitudine"
+            else -> "Ancora da fare: ${titles.size} abitudini"
+        }
     }
 
     /** Lo stesso riepilogo letto dai dati salvati sul telefono, per widget e lavori in background. */

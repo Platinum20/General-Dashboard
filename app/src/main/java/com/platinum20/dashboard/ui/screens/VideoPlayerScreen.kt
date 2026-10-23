@@ -1,6 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
+import androidx.core.app.ActivityCompat
 import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,6 +54,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -132,9 +136,21 @@ fun VideoPlayerScreen(
     // Video del telefono: si leggono solo dopo il tocco su "Mostra i video del telefono".
     var phoneAllowed by remember { mutableStateOf(PhoneVideos.hasPermission(context)) }
     var phoneVideos by remember { mutableStateOf<List<PhoneVideo>?>(null) }
-    val phonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { phoneAllowed = it }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { phoneAllowed = PhoneVideos.hasPermission(context) }
-    LaunchedEffect(phoneAllowed) { phoneVideos = if (phoneAllowed) PhoneVideos.load(context) else null }
+    // Dopo due "Non consentire" Android non chiede più: la card allora porta alle impostazioni dell'app.
+    var phoneInvite by remember { mutableStateOf(PhoneVideos.Invite.ASK) }
+    val phonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        phoneAllowed = granted
+        val activity = context.findActivity()
+        val rationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, PhoneVideos.permission)
+        phoneInvite = PhoneVideos.invite(deniedOnce = !granted, rationale = rationale)
+    }
+    // A ogni ritorno nella pagina si rileggono i video: quelli appena registrati compaiono subito.
+    var resumes by remember { mutableIntStateOf(0) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        phoneAllowed = PhoneVideos.hasPermission(context)
+        resumes++
+    }
+    LaunchedEffect(phoneAllowed, resumes) { phoneVideos = if (phoneAllowed) PhoneVideos.load(context) else null }
     val phoneShown = remember(phoneVideos, recent) { PhoneVideos.forLibrary(phoneVideos.orEmpty(), recent) }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -323,7 +339,19 @@ fun VideoPlayerScreen(
                     item { SectionHeader("Sul telefono", modifier = Modifier.padding(top = 4.dp)) }
                     when {
                         !phoneAllowed -> item {
-                            PhoneVideosInvite(onClick = { phonePermission.launch(PhoneVideos.permission) })
+                            PhoneVideosInvite(
+                                denied = phoneInvite == PhoneVideos.Invite.OPEN_SETTINGS,
+                                onClick = {
+                                    if (phoneInvite == PhoneVideos.Invite.OPEN_SETTINGS) {
+                                        context.startActivity(
+                                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                        )
+                                    } else {
+                                        phonePermission.launch(PhoneVideos.permission)
+                                    }
+                                },
+                            )
                         }
                         phoneVideos != null && phoneShown.isEmpty() -> item {
                             Text(
@@ -436,15 +464,16 @@ private fun EmptyPlayer() {
 
 /** Invito a mostrare i video del telefono: il permesso si chiede solo da qui. */
 @Composable
-private fun PhoneVideosInvite(onClick: () -> Unit) {
+private fun PhoneVideosInvite(denied: Boolean, onClick: () -> Unit) {
     CanvasCard(Modifier.fillMaxWidth(), onClick = onClick) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconTile(Icons.Outlined.VideoLibrary, TileAccent.PURPLE)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text("Mostra i video del telefono", style = MaterialTheme.typography.titleSmall)
+                Text(if (denied) "Permesso negato" else "Mostra i video del telefono", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Registrazioni e download, a portata di tocco. Restano sul telefono.",
+                    if (denied) "Tocca per aprire le impostazioni di Canvas e consentire i video."
+                    else "Registrazioni e download, a portata di tocco. Restano sul telefono.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
