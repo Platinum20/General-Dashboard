@@ -49,13 +49,16 @@ class TomorrowTest {
     fun alleDiciassetteNienteCard() {
         assertNull(Tomorrow.targetDay(today.atTime(17, 59)))
         assertNull(Tomorrow.build(today.atTime(17, 59), forecast(), listOf(dentist), emptyList(), emptyList(), zone = zone))
-        assertNull(Tomorrow.targetDay(today.atTime(3, 0)))
+        // Voce 23: dalle 6 in poi la card del giorno non c'è più (prima finiva alle 3).
+        assertNull(Tomorrow.targetDay(today.atTime(6, 0)))
+        assertNull(Tomorrow.targetDay(today.atTime(12, 0)))
     }
 
     @Test
     fun orariDiConfine() {
         assertEquals(tomorrow, Tomorrow.targetDay(today.atTime(18, 0)))
         assertEquals(tomorrow, Tomorrow.targetDay(tomorrow.atTime(2, 59)))
+        assertEquals(tomorrow, Tomorrow.targetDay(tomorrow.atTime(5, 59)))
     }
 
     @Test
@@ -127,5 +130,21 @@ class TomorrowTest {
         val plan = Tomorrow.build(tomorrow.atTime(1, 0), forecast(rainHour = 10), listOf(dentist), emptyList(), emptyList(), zone = zone)!!
         assertEquals("Oggi", plan.label)
         assertEquals("Oggi 8:30 Dentista, pioggia dalle 10", plan.headline)
+    }
+
+    @Test
+    fun allAlbaGuardaAllaMattina() {
+        // Voce 23: alle 3:30 e alle 5:30 la card dice la pioggia di stamattina e il primo impegno.
+        for (at in listOf(tomorrow.atTime(3, 30), tomorrow.atTime(5, 30))) {
+            val plan = Tomorrow.build(at, forecast(rainHour = 8), listOf(dentist), emptyList(), emptyList(), zone = zone)!!
+            assertEquals("Oggi", plan.label)
+            assertEquals("dalle 8", plan.weather?.rainFrom)
+            assertEquals("Oggi 8:30 Dentista, pioggia dalle 8", plan.headline)
+        }
+    }
+
+    @Test
+    fun alleSetteNienteCardDelMattino() {
+        assertNull(Tomorrow.build(tomorrow.atTime(7, 0), forecast(rainHour = 8), listOf(dentist), emptyList(), emptyList(), zone = zone))
     }
 }

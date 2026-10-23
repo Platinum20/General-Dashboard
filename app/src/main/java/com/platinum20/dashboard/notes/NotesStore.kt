@@ -13,6 +13,7 @@ import java.time.Instant
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -64,6 +65,8 @@ data class Habit(
     val done: Set<LocalDate> = emptySet(),
     /** 0 = ogni giorno; da 1 a 6 = quante volte a settimana. */
     val perWeek: Int = 0,
+    /** Ora del promemoria ("Ricordamelo alle 21"), null se non serve. */
+    val remindAt: LocalTime? = null,
 ) {
     val weekly: Boolean get() = perWeek in 1..6
 
@@ -351,26 +354,51 @@ object NotesStore {
         update { d -> d.copy(countdowns = d.countdowns.filter { it.id != item.id } + item) }
     }
 
-    fun saveHabit(id: Long?, title: String, perWeek: Int = 0) {
+    fun saveHabit(id: Long?, title: String, perWeek: Int = 0, remindAt: LocalTime? = null) {
         val clean = title.trim().ifEmpty { return }
         val target = perWeek.coerceIn(0, 6)
+        val habitId = id ?: newId()
         update { d ->
-            if (id == null) d.copy(habits = d.habits + Habit(newId(), clean, perWeek = target))
-            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean, perWeek = target) else it })
+            if (id == null) d.copy(habits = d.habits + Habit(habitId, clean, perWeek = target, remindAt = remindAt))
+            else d.copy(habits = d.habits.map { if (it.id == id) it.copy(title = clean, perWeek = target, remindAt = remindAt) else it })
         }
+        syncHabitReminder(habitId)
     }
 
-    fun deleteHabit(id: Long) = update { d -> d.copy(habits = d.habits.filter { it.id != id }) }
+    fun deleteHabit(id: Long) {
+        update { d -> d.copy(habits = d.habits.filter { it.id != id }) }
+        syncHabitReminder(id)
+    }
 
     /** Rimette un'abitudine eliminata per sbaglio, con la sua serie: serve ad "Annulla". */
-    fun restoreHabit(habit: Habit) = update { d ->
-        if (d.habits.any { it.id == habit.id }) d else d.copy(habits = d.habits + habit)
+    fun restoreHabit(habit: Habit) {
+        update { d -> if (d.habits.any { it.id == habit.id }) d else d.copy(habits = d.habits + habit) }
+        syncHabitReminder(habit.id)
     }
 
-    fun toggleHabit(id: Long, day: LocalDate = LocalDate.now()) = update { d ->
-        d.copy(habits = d.habits.map { h ->
-            if (h.id != id) h else h.copy(done = if (day in h.done) h.done - day else h.done + day)
-        })
+    fun toggleHabit(id: Long, day: LocalDate = LocalDate.now()) {
+        update { d ->
+            d.copy(habits = d.habits.map { h ->
+                if (h.id != id) h else h.copy(done = if (day in h.done) h.done - day else h.done + day)
+            })
+        }
+        syncHabitReminder(id)
+    }
+
+    /** Segna l'abitudine fatta in [day] (mai il contrario): serve al "Fatto" della notifica. */
+    fun markHabitDone(id: Long, day: LocalDate = LocalDate.now()) {
+        if (habit(id)?.isDone(day) != false) return
+        toggleHabit(id, day)
+    }
+
+    fun habit(id: Long): Habit? = _data.value.habits.firstOrNull { it.id == id }
+
+    /** Rimette (o toglie) l'avviso dell'abitudine: fatta oggi, l'avviso passa al prossimo giorno utile. */
+    private fun syncHabitReminder(id: Long) {
+        if (!::appContext.isInitialized) return
+        val habit = habit(id)
+        if (habit?.remindAt != null) HabitReminderWorker.schedule(appContext, habit)
+        else HabitReminderWorker.cancel(appContext, id)
     }
 
     /** "12,50 pizza": salva la spesa e la restituisce, null se manca l'importo. */
@@ -531,6 +559,7 @@ object NotesStore {
                 put(
                     JSONObject().put("id", h.id).put("title", h.title).put("perWeek", h.perWeek)
                         .put("done", JSONArray(h.done.filter { it.isAfter(since) }.sorted().map { it.toString() }))
+                        .apply { h.remindAt?.let { put("remindAt", "%02d:%02d".format(it.hour, it.minute)) } }
                 )
             }
         })
@@ -610,6 +639,8 @@ object NotesStore {
                     (0 until done.length()).mapNotNull { runCatching { LocalDate.parse(done.getString(it)) }.getOrNull() }.toSet(),
                     // Le abitudini salvate prima della 1.84 sono tutte quotidiane.
                     perWeek = o.optInt("perWeek", 0).coerceIn(0, 6),
+                    // Prima della 1.104 le abitudini non avevano l'ora del promemoria.
+                    remindAt = o.optString("remindAt").takeIf { it.isNotEmpty() }?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
                 )
             },
             expenses = (0 until expenses.length()).mapNotNull { i ->

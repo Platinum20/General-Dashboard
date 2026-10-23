@@ -39,9 +39,12 @@ data class TomorrowPlan(
 )
 
 object Tomorrow {
-    /** Dalle 18 si guarda a domani; fino alle 3 di notte "domani" è il giorno che sta per iniziare. */
+    /**
+     * Dalle 18 si guarda a domani; fino alle 6 del mattino "domani" è il giorno che sta per iniziare
+     * (chi si sveglia presto vede subito la pioggia di stamattina e il primo impegno).
+     */
     const val FROM_HOUR = 18
-    const val UNTIL_HOUR = 3
+    const val UNTIL_HOUR = 6
     const val MAX_LINES = 5
 
     /** Il giorno di cui parlare a quest'ora, null se è troppo presto per la card. */

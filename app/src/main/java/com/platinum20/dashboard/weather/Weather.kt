@@ -221,8 +221,9 @@ object WeatherCodes {
     enum class Kind { CLEAR, PARTLY, CLOUDY, FOG, DRIZZLE, RAIN, SNOW, STORM }
 
     fun kind(code: Int): Kind = when (code) {
-        0 -> Kind.CLEAR
-        1, 2 -> Kind.PARTLY
+        // "Prevalentemente sereno" si disegna col sole (o la luna), non con una nuvola piena.
+        0, 1 -> Kind.CLEAR
+        2 -> Kind.PARTLY
         3 -> Kind.CLOUDY
         45, 48 -> Kind.FOG
         51, 53, 55, 56, 57 -> Kind.DRIZZLE
