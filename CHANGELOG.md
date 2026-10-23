@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.107.0
+**Media, rifatta da capo**
+- Tre sezioni: **Musica**, **Video** e **Radio e podcast**. In alto il blocco colorato con quello che suona adesso (qualunque fonte) o da dove riprendere; sotto "Continua" con le anteprime, i nuovi episodi e le tue radio da far partire con un tocco
+- **Musica** mette insieme Spotify e YouTube Music: i "Mi piace" di YouTube Music accanto ai tuoi ascolti di Spotify, e una ricerca sola che cerca su entrambi. I brani di YouTube si ascoltano in solo audio (meno dati), con "Guarda il video" per passare al video dallo stesso punto
+- **Video** è YouTube più i video del telefono, i file e i link ("Sul telefono"), al posto della vecchia sezione Video
+- **Radio e podcast** in una pagina sola, con le pillole Podcast e Radio. I podcast salvati su Spotify arrivano da soli insieme a quelli che segui: se hanno un feed pubblico si ascoltano nel player dell'app (con il punto salvato), se sono solo su Spotify con il riproduttore di Spotify
+
+**Un player solo**
+- Un unico mini player per tutto (YouTube, musica, Spotify, radio, podcast), con il tempo che scorre; toccandolo si apre il player grande, uguale per tutte le fonti: copertina, barra del tempo da trascinare, comandi e timer di spegnimento (che ora ferma qualunque cosa)
+- Le barre del player dentro Radio, Podcast e Spotify sono sparite: c'è solo il mini player
+
+**YouTube**
+- Con i sottotitoli accesi il video ora parte sempre: i sottotitoli si scaricano prima e, se YouTube non li dà, compare un avviso e il video continua senza
+
+**Meteo**
+- La schermata del Meteo si apre con lo stesso blocco di "Adesso" che c'è in Oggi (luogo, temperatura, cielo, massima e minima), così la card e la pagina sono la stessa cosa; sotto, la temperatura percepita
+
+**Sotto il cofano**
+- Test nuovi: MediaUnifiedTest (player unico, podcast di Spotify senza doppioni), YtCaptionsTest; la verifica dal vivo di YouTube controlla anche i sottotitoli
+
 ## 1.106.0
 **Oggi**
 - Nuova card "La tua settimana", dalla domenica alle 17 al lunedì a mezzogiorno: una frase in cima ("Settimana buona: 12 cose fatte, palestra 3 su 3, spese -18%"), poi "Com'è andata" (promemoria chiusi, ogni abitudine con "5 su 7" o "3 su 3", spese a mano della settimana contro la media delle 4 prima e la categoria cresciuta di più, pacchi arrivati) e "Cosa arriva" (compleanni e date della settimana nuova, addebiti fissi). "Fatto" la chiude fino alla domenica dopo; ogni riga apre Note
