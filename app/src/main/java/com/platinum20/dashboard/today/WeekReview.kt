@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.today
 
+import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Expense
@@ -34,7 +35,7 @@ data class SpendWeek(
     val changePercent: Int? get() = if (averageCents <= 0) null else ((cents - averageCents) * 100.0 / averageCents).roundToInt()
 }
 
-enum class ComingKind { DATE, MONEY }
+enum class ComingKind { EVENT, DATE, MONEY }
 
 data class ComingLine(val kind: ComingKind, val day: LocalDate, val text: String)
 
@@ -75,11 +76,16 @@ object WeekReview {
         parcels: List<Parcel>,
         countdowns: List<Countdown>,
         zone: ZoneId = ZoneId.systemDefault(),
+        /** Gli impegni del calendario della settimana nuova, giorno per giorno (vuoto senza permesso). */
+        events: Map<LocalDate, List<CalendarEvent>> = emptyMap(),
     ): WeekReviewData {
         val sunday = monday.plusDays(6)
         fun inWeek(d: LocalDate) = !d.isBefore(monday) && !d.isAfter(sunday)
 
-        val tasksDone = tasks.count { t -> t.done && t.doneAt?.let { inWeek(Instant.ofEpochMilli(it).atZone(zone).toLocalDate()) } == true }
+        fun msInWeek(ms: Long) = inWeek(Instant.ofEpochMilli(ms).atZone(zone).toLocalDate())
+        // I ricorrenti non si chiudono mai: contano le volte in cui sono stati spuntati.
+        val tasksDone = tasks.count { t -> t.done && t.doneAt?.let(::msInWeek) == true } +
+            tasks.sumOf { t -> t.doneTimes.count(::msInWeek) }
 
         val habitWeeks = habits.map { h ->
             HabitWeek(h.title, h.done.count(::inWeek), if (h.weekly) h.perWeek else 7)
@@ -92,6 +98,7 @@ object WeekReview {
         val nextSunday = nextMonday.plusDays(6)
         fun inNext(d: LocalDate) = !d.isBefore(nextMonday) && !d.isAfter(nextSunday)
         val coming = buildList {
+            addAll(eventLines(events, nextMonday, zone))
             countdowns.forEach { c ->
                 val next = c.nextDate(nextMonday)
                 if (inNext(next)) {
@@ -103,7 +110,7 @@ object WeekReview {
                 val next = f.nextDate(nextMonday)
                 if (inNext(next)) add(ComingLine(ComingKind.MONEY, next, "${dayName(next)} · ${f.text} ${Expenses.format(f.cents)}"))
             }
-        }.sortedBy { it.day }
+        }.sortedWith(compareBy<ComingLine> { it.day }.thenBy { it.kind.ordinal })
 
         return WeekReviewData(
             monday = monday,
@@ -115,6 +122,27 @@ object WeekReview {
             coming = coming,
         )
     }
+
+    /**
+     * Gli impegni della settimana nuova: uno per riga, una volta sola anche se durano più giorni
+     * (nel primo giorno della settimana in cui ci sono). Al massimo [MAX_EVENTS], i primi in ordine.
+     */
+    internal fun eventLines(events: Map<LocalDate, List<CalendarEvent>>, nextMonday: LocalDate, zone: ZoneId): List<ComingLine> {
+        val nextSunday = nextMonday.plusDays(6)
+        val seen = mutableSetOf<Pair<Long, Long>>()
+        val lines = mutableListOf<ComingLine>()
+        events.keys.filter { !it.isBefore(nextMonday) && !it.isAfter(nextSunday) }.sorted().forEach { day ->
+            events[day].orEmpty().forEach { e ->
+                if (seen.add(e.eventId to e.begin)) {
+                    val time = if (e.allDay) "" else " " + Instant.ofEpochMilli(e.begin).atZone(zone).toLocalTime().let { "%d:%02d".format(it.hour, it.minute) }
+                    lines += ComingLine(ComingKind.EVENT, day, "${dayName(day)}$time · ${e.title}")
+                }
+            }
+        }
+        return lines.take(MAX_EVENTS)
+    }
+
+    const val MAX_EVENTS = 6
 
     /** Spese a mano (non le fisse) della settimana contro la media delle 4 prima. Null se non ce ne sono. */
     internal fun spendFor(monday: LocalDate, expenses: List<Expense>): SpendWeek? {

@@ -1,9 +1,33 @@
 # Changelog
 
-## 1.124.0
+## 1.126.0
 **Note più pulite**
 - Niente più campo fisso in cima: per scrivere c'è il + della barra, lo stesso di tutta l'app (toccalo per scrivere, tienilo premuto per dettare). Canvas capisce da solo che cos'è e lo mette nella parte giusta
 - A destra delle pillole due tastini: lo scontrino (fotografalo e si apre il + già compilato con totale e negozio) e la lampadina con le idee da aggiungere (compleanni dalla rubrica, abitudini, date), che non occupano più il fondo della pagina
+- I pacchi in arrivo sono conti alla rovescia come i compleanni: a destra "Oggi", "Domani" o quanti giorni mancano (in rosso se è in ritardo). Tieni premuto per segnarlo arrivato
+
+## 1.124.0
+**Torna il carattere di prima**
+- Via il serif della 1.123.0: titoli e testo tornano in Inter e Inter Display, con le dimensioni di prima
+
+## 1.123.0
+**Il carattere di Claude**
+- Titoli e testo di tutta l'app ora sono in un serif elegante come quello di Claude (Source Serif 4, il carattere libero più simile). Pulsanti, etichette e chip restano in un sans pulito, come nell'app di Claude
+- Il testo è un filo più grande perché il serif si legga bene anche piccolo
+
+## 1.122.0
+**Oggi › La tua settimana**
+- In "Cosa arriva" ci sono anche gli impegni del calendario della settimana nuova ("Mar 27 9:30 · Dentista"), mescolati a compleanni e addebiti fissi in ordine di giorno; toccandoli si apre il Calendario. Un evento di più giorni compare una volta sola, al massimo sei impegni
+- I promemoria ricorrenti contano: ogni volta che li spunti la spunta resta segnata (passano comunque alla volta dopo), così "Buttare la plastica" fatto ogni martedì finisce tra le cose fatte della settimana
+
+**Meteo**
+- La rotella dell'aggiornamento accanto a "ADESSO · ROMA" resta al massimo 10 secondi: poi, e quando i dati sono vecchi, la riga dice da quando sono ("· 5 MIN FA", "· ALLE 9:40"), anche in Oggi
+- Al posto dell'icona che non si capiva, in alto c'è il pulsante "Località"
+
+**Sotto il cofano**
+- Il giro fotografico usa il fuso di Roma: saluto, card del giorno e "Domani" sono quelli che vedi sul telefono
+- Il giro fotografico trova di nuovo il + della barra (la foto del pannello mancava)
+- Test nuovi: WeekReviewEventsTest (impegni nella settimana nuova, ordine con le date, eventi di più giorni, limite, ricorrenti spuntati, salvataggio delle spunte), FreshnessTest (da quando è il meteo)
 
 ## 1.120.0
 **Player più fluido**

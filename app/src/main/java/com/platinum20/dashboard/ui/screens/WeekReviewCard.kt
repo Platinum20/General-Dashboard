@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Euro
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.TaskAlt
@@ -46,6 +47,7 @@ object WeekReviewSeen {
 fun WeekReviewCard(
     review: WeekReviewData,
     onOpenNotes: () -> Unit,
+    onOpenCalendar: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Section(title = "La tua settimana", action = "Fatto", onAction = onDismiss) {
@@ -78,7 +80,11 @@ fun WeekReviewCard(
                 SectionHeader("Cosa arriva", modifier = Modifier.padding(horizontal = 12.dp))
                 review.coming.forEachIndexed { i, line ->
                     if (i > 0) RowDivider()
-                    WeekRow(if (line.kind == ComingKind.DATE) Icons.Outlined.Celebration else Icons.Outlined.Euro, line.text, onOpenNotes)
+                    when (line.kind) {
+                        ComingKind.EVENT -> WeekRow(Icons.Outlined.Event, line.text, onOpenCalendar)
+                        ComingKind.DATE -> WeekRow(Icons.Outlined.Celebration, line.text, onOpenNotes)
+                        ComingKind.MONEY -> WeekRow(Icons.Outlined.Euro, line.text, onOpenNotes)
+                    }
                 }
             }
         }

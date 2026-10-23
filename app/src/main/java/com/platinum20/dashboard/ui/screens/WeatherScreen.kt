@@ -23,7 +23,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Air
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Compress
-import androidx.compose.material.icons.outlined.EditLocationAlt
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.platinum20.dashboard.weather.Freshness
+import java.time.LocalDateTime
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.outlined.Masks
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Opacity
@@ -86,8 +94,11 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                 title = "Meteo",
                 onBack = onBack,
                 actions = {
-                    IconButton(onClick = onPickPlace) {
-                        Icon(Icons.Outlined.EditLocationAlt, contentDescription = "Cambia località")
+                    // Un'etichetta: l'icona da sola non diceva cosa faceva.
+                    TextButton(onClick = onPickPlace) {
+                        Icon(Icons.Outlined.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text("Località")
                     }
                     if (state.loading) {
                         CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
@@ -374,9 +385,33 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, dayCardShown
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-                if (loading) {
+                // La rotella resta al massimo 10 secondi: poi si dice da quando è il dato che si vede.
+                var slow by remember { mutableStateOf(false) }
+                LaunchedEffect(loading) {
+                    slow = false
+                    if (loading) {
+                        delay(Freshness.SPINNER_MS)
+                        slow = true
+                    }
+                }
+                if (loading && !slow) {
                     Spacer(Modifier.size(8.dp))
                     CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = content.copy(alpha = 0.6f))
+                } else {
+                    val minute by produceState(LocalDateTime.now(), forecast.fetchedAt) {
+                        while (true) {
+                            value = LocalDateTime.now()
+                            delay(60_000L)
+                        }
+                    }
+                    Freshness.label(forecast.fetchedAt, minute)?.let { age ->
+                        Text(
+                            " · " + age.uppercase(),
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                            color = content.copy(alpha = 0.6f),
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
             Text(
