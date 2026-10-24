@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -129,11 +130,11 @@ private fun StationRow(station: RadioStation, now: RadioNow?) {
     val playing = now?.station?.id == station.id
     val haptic = rememberHaptic()
     Surface(
-        onClick = { RadioStore.play(station) },
         shape = MaterialTheme.shapes.large,
         color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
         border = if (playing) null else cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
+            .tapOrSave({ SavedLinks.radio(station) }) { RadioStore.play(station) },
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             StationLogo(station, 48)

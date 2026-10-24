@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -537,7 +538,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit) {
             .fillMaxWidth()
             .bouncyPress(0.97f)
             .clip(MaterialTheme.shapes.large)
-            .clickable(onClick = onClick)
+            .tapOrSave({ SavedLinks.youtube(video) }, onClick)
     ) {
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
@@ -574,7 +575,7 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
             .fillMaxWidth()
             .bouncyPress(0.97f)
             .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick),
+            .tapOrSave({ SavedLinks.youtube(video) }, onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(150.dp).clip(MaterialTheme.shapes.medium)) {

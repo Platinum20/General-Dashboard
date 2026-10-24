@@ -296,11 +296,13 @@ private fun EpisodeRow(episode: Episode, now: PodcastNow?, savedMs: Long, showPo
     val started = PodcastProgress.resumeAt(savedMs, durationMs) > 0
     val finished = durationMs > 0 && savedMs >= durationMs - 30_000
     Surface(
-        onClick = { if (playing) PodcastStore.togglePause() else PodcastStore.play(episode) },
         shape = MaterialTheme.shapes.large,
         color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
         border = if (playing) null else cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
+            .tapOrSave({ episodeLink(episode, PodcastProgress.resumeAt(savedMs, durationMs)) }) {
+                if (playing) PodcastStore.togglePause() else PodcastStore.play(episode)
+            },
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

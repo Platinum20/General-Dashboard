@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.139.0
+**Salva nelle note anche da Media**
+- Tieni premuto qualunque cosa in Media per salvarla nelle note: le tessere di Continua, i video di YouTube, le canzoni di YouTube Music, i brani di Spotify, le radio, gli episodi dei podcast e il riquadro di quello che suona adesso
+- Nella pagina di un video, tieni premuto il titolo per salvarlo
+- Dalla nota si riapre fermo, in attesa del play; un episodio di podcast riparte dal punto in cui eri
+
 ## 1.138.0
 **Salva nelle note, tenendo premuto**
 - Tenendo premuta una notizia (nella lista, nella ricerca o il titolo nel lettore), la copertina nel player, o un brano Spotify, un video o una radio nella ricerca, sale il fumetto "Salva nelle note"; toccandolo la nota è fatta e il pallino vola alle Note, con Annulla
