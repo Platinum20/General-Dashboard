@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -312,6 +314,7 @@ private fun NowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modif
     val context = LocalContext.current
     CanvasCard(
         onClick = onOpen,
+        onLongClick = { Playback.currentAsItem()?.let { SavedLinks.offer(SavedLink.Media(it)) } },
         modifier = modifier.fillMaxWidth().bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
         // Come "Adesso" in Oggi: il blocco colorato è ciò che sta succedendo ora.
@@ -388,7 +391,7 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
             .width(168.dp)
             .clip(MaterialTheme.shapes.large)
             .bouncyPress()
-            .clickable(onClick = onClick)
+            .tapOrSave({ SavedLink.Media(item) }, onClick)
     ) {
         Box(
             Modifier
@@ -433,7 +436,7 @@ private fun EpisodeMiniRow(episode: Episode, playing: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .bouncyPress(0.98f)
-            .clickable { if (playing) PodcastStore.togglePause() else PodcastStore.play(episode) }
+            .tapOrSave({ episodeLink(episode) }) { if (playing) PodcastStore.togglePause() else PodcastStore.play(episode) }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -564,6 +567,7 @@ private val ResumeItem.listened: Boolean
 private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
     CanvasCard(
         onClick = onClick,
+        onLongClick = { SavedLinks.offer(SavedLink.Media(item)) },
         modifier = Modifier.fillMaxWidth().bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(

@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.browserUserAgent
 import com.platinum20.dashboard.media.inFrame
 import com.platinum20.dashboard.media.loadWhenAttached
@@ -403,11 +406,11 @@ private fun LazyListScope.ytSection(title: String, list: List<YtVideo>, queue: L
 private fun YtSongRow(video: YtVideo, queue: List<YtVideo>) {
     val context = LocalContext.current
     Surface(
-        onClick = { YtMusic.play(context, video, queue) },
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.card,
         border = cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
+            .tapOrSave({ SavedLinks.youtube(video).asMusic() }) { YtMusic.play(context, video, queue) },
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Cover(video.thumbnail, MaterialTheme.shapes.small, 56)
@@ -545,11 +548,12 @@ private fun LazyListScope.section(title: String, list: List<SpItem>, onItem: (Sp
 @Composable
 private fun ItemRow(item: SpItem, onClick: () -> Unit) {
     Surface(
-        onClick = onClick,
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.card,
         border = cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
+        // Tenendo premuto un brano si salva nelle note (album e playlist no: non si riaprono fermi).
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
+            .tapOrSave({ SavedLinks.spotify(item) }, onClick),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56)
@@ -623,3 +627,7 @@ private fun SpotifyAuthDialog(url: String, onDone: () -> Unit) {
         }
     }
 }
+
+/** Un video di YouTube ascoltato come musica: nella nota si riapre nel player della musica. */
+private fun SavedLink.asMusic(): SavedLink =
+    if (this is SavedLink.Media) copy(item = item.copy(kind = ResumeKind.MUSIC)) else this
