@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 /** Il mini player si chiude lanciandolo di lato; uno spostamento piccolo lo fa tornare al suo posto. */
 @RunWith(RobolectricTestRunner::class)
@@ -27,9 +28,12 @@ class MiniPlayerSwipeTest {
     private fun show() {
         Playback.starting(PlaySource.SPOTIFY, "Brano di prova", "Artista")
         compose.setContent { FloatingPlayer(currentRoute = null, onExpand = {}) }
-        compose.waitUntil(3_000) { Playback.now.value != null }
+        compose.waitUntil(3_000) { idle(); Playback.now.value != null }
         compose.onNodeWithText("Brano di prova").assertExists()
     }
+
+    /** Il player unico vive sul thread principale: in prova i suoi compiti partono solo così. */
+    private fun idle() = ShadowLooper.idleMainLooper()
 
     /** L'altezza della barra sullo schermo (si trascina dalla barra, non solo dal titolo). */
     private fun barY(): Float = compose.onNodeWithText("Brano di prova").fetchSemanticsNode().boundsInRoot.center.y
@@ -39,7 +43,7 @@ class MiniPlayerSwipeTest {
         show()
         val y = barY()
         compose.onRoot().performTouchInput { swipe(Offset(60f, y), Offset(width - 20f, y), durationMillis = 200) }
-        compose.waitUntil(3_000) { Playback.now.value == null }
+        compose.waitUntil(3_000) { idle(); Playback.now.value == null }
         assertNull(Playback.now.value)
     }
 
@@ -50,6 +54,7 @@ class MiniPlayerSwipeTest {
         compose.onRoot().performTouchInput { swipe(Offset(width / 2f, y), Offset(width / 2f + width * 0.1f, y), durationMillis = 800) }
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitForIdle()
+        idle()
         assertEquals("Brano di prova", Playback.now.value?.title)
         compose.onRoot().assertExists()
     }
