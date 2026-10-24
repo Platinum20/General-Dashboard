@@ -3,11 +3,13 @@ package com.platinum20.dashboard
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureComposer
+import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.songid.SongId
 import com.platinum20.dashboard.ui.screens.CaptureComposerLayer
 import com.platinum20.dashboard.capture.CaptureTargets
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
+import com.platinum20.dashboard.ui.screens.SaveToNotesLayer
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
@@ -826,6 +828,12 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
 @Composable
 private fun AppContent(navController: NavHostController, openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val context = LocalContext.current
+    // Una nota fatta con "Salva nelle note" riapre la sua cosa (ferma, in attesa del play); le altre si scrivono.
+    val openNote: (Long?) -> Unit = { id ->
+        val saved = id?.let { NotesStore.data.value.notes.firstOrNull { n -> n.id == it } }?.let { SavedLinks.find(it.text) }
+        if (saved != null) SavedLinks.open(context, saved) { navController.navigate(it) }
+        else navController.navigate(Routes.noteEdit(id))
+    }
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
@@ -1116,7 +1124,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.SEARCH) {
                 SearchScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
+                    onOpenNote = { openNote(it) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
@@ -1129,7 +1137,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.NOTES) {
                 NotesScreen(
                     bottomPadding = padding,
-                    onOpenNote = { navController.navigate(Routes.noteEdit(it)) },
+                    onOpenNote = { openNote(it) },
                     onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
                 )
             }
@@ -1264,6 +1272,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
     }
     CaptureComposerLayer(onNeedsDialog = { dictated = it; capturing = true })
+    SaveToNotesLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
     }

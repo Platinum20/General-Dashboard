@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.138.0
+**Salva nelle note, tenendo premuto**
+- Tenendo premuta una notizia (nella lista, nella ricerca o il titolo nel lettore), la copertina nel player, o un brano Spotify, un video o una radio nella ricerca, sale il fumetto "Salva nelle note"; toccandolo la nota è fatta e il pallino vola alle Note, con Annulla
+- Toccando quella nota si riapre la cosa salvata: brani, video, radio e podcast fermi in attesa del play, gli articoli nel lettore
+- Il segnalibro nel lettore ora fa lo stesso (prima salvava solo il link)
+
 ## 1.137.0
 **Canzoni riconosciute da sole, barra riordinata, Impostazioni dal +**
 - Niente più tasto "♪ Canzone": se in un vocale non c'è nessuna parola ma si sente musica, Canvas capisce da solo che è una canzone, la riconosce e la fa partire su Spotify. Il fumetto mostra titolo e artista e poi il pallino vola alla scheda Media, come le note volano alle Note

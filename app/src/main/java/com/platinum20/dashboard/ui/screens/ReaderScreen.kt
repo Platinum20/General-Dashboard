@@ -1,8 +1,11 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import android.annotation.SuppressLint
 import android.content.Context
-import android.widget.Toast
 import android.content.Intent
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -29,7 +32,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.CloudOff
@@ -129,9 +131,9 @@ fun ReaderScreen(
                     // Integrazione News → Note: l'articolo resta in Note con il link, da leggere dopo.
                     IconButton(onClick = {
                         val title = (state as? ReaderUiState.Loaded)?.article?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
-                        saveForLater(context, title, viewModel.url)
+                        SavedLinks.save(context, SavedLink.Article(viewModel.url, sourceName, title))
                     }) {
-                        Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Leggi dopo")
+                        Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Salva nelle note")
                     }
                     IconButton(onClick = { shareArticle(context, viewModel.url, fallbackTitle) }) {
                         Icon(Icons.Outlined.Share, contentDescription = "Condividi")
@@ -218,7 +220,12 @@ private fun ArticleContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item(key = "header") {
-                Column {
+                // Tenendo premuto il titolo: "Salva nelle note", come per le cose del resto dell'app.
+                Column(
+                    Modifier.pointerInput(article.url) {
+                        detectTapGestures(onLongPress = { SavedLinks.offer(SavedLink.Article(article.url, sourceName, article.title)) })
+                    },
+                ) {
                     Text(
                         sourceName.uppercase(),
                         style = MaterialTheme.typography.labelLarge,
@@ -421,16 +428,6 @@ private fun List<TextRun>.toAnnotated(linkColor: Color, onOpenLink: (String) -> 
             }
         }
     }
-
-/** Salva l'articolo come nota "Da leggere: titolo" con il link sotto. */
-private fun saveForLater(context: Context, title: String, url: String) {
-    NotesStore.init(context)
-    NotesStore.saveNote(null, readLaterText(title, url))
-    Toast.makeText(context, "Salvato in Note, da leggere dopo", Toast.LENGTH_SHORT).show()
-}
-
-internal fun readLaterText(title: String, url: String): String =
-    "Da leggere: ${title.trim().ifEmpty { "articolo" }}\n$url"
 
 private fun shareArticle(context: Context, url: String, title: String) {
     val send = Intent(Intent.ACTION_SEND).apply {
