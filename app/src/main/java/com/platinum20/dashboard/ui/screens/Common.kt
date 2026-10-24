@@ -37,6 +37,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
@@ -434,12 +436,15 @@ fun cardBorder(): BorderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.ou
  * La card dell'app: fondo pieno, bordo sottile, nessuna ombra.
  * Con [colors] colorati (avvisi, evidenze) il bordo sparisce.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CanvasCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     shape: Shape = MaterialTheme.shapes.large,
     colors: CardColors? = null,
+    /** Tenendo premuto: di solito [com.platinum20.dashboard.capture.SavedLinks.offer], "Salva nelle note". */
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardColors = colors ?: CardDefaults.cardColors(
@@ -447,7 +452,15 @@ fun CanvasCard(
         contentColor = MaterialTheme.colorScheme.onSurface,
     )
     val border = if (colors == null) cardBorder() else null
-    if (onClick != null) {
+    if (onLongClick != null) {
+        Card(
+            modifier = modifier.clip(shape).combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick),
+            shape = shape,
+            colors = cardColors,
+            border = border,
+            content = content,
+        )
+    } else if (onClick != null) {
         Card(onClick = onClick, modifier = modifier, shape = shape, colors = cardColors, border = border, content = content)
     } else {
         Card(modifier = modifier, shape = shape, colors = cardColors, border = border, content = content)

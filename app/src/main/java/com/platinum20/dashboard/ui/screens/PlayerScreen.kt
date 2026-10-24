@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.capture.SavedLink
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
@@ -214,7 +218,11 @@ private fun Artwork(now: Playing) {
             .aspectRatio(1f)
             .shadow(24.dp, MaterialTheme.shapes.extraLarge)
             .clip(MaterialTheme.shapes.extraLarge)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            // Tenendo premuta la copertina: "Salva nelle note", per riaprirla poi ferma.
+            .pointerInput(Unit) {
+                detectTapGestures(onLongPress = { Playback.currentAsItem()?.let { SavedLinks.offer(SavedLink.Media(it)) } })
+            },
         contentAlignment = Alignment.Center,
     ) {
         IconTile(sourceIcon(now.source), sourceAccent(now.source), size = 96.dp, iconSize = 48.dp)

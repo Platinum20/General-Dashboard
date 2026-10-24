@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -224,10 +226,14 @@ private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: 
     }
 }
 
+/** L'articolo come cosa da salvare nelle note: si riapre nel lettore. */
+internal fun NewsItem.savedLink() = SavedLink.Article(link, source.name, title)
+
 @Composable
 private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     CanvasCard(
         onClick = onClick,
+        onLongClick = { SavedLinks.offer(item.savedLink()) },
         // Gli articoli già aperti restano, ma attenuati: l'occhio va subito a quelli da leggere.
         modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.extraLarge,
@@ -288,6 +294,7 @@ private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
 private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
     CanvasCard(
         onClick = onClick,
+        onLongClick = { SavedLinks.offer(item.savedLink()) },
         modifier = Modifier.fillMaxWidth().bouncyPress().alpha(if (read) READ_ALPHA else 1f),
         shape = MaterialTheme.shapes.large,
     ) {

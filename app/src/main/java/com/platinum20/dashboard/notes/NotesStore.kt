@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.notes
 
+import com.platinum20.dashboard.capture.SavedLinks
 import android.content.Context
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.widget.DashboardWidget
@@ -174,7 +175,8 @@ data class Note(
 ) {
     /** La prima riga fa da titolo. */
     val title: String get() = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
-    val body: String get() = text.trim().substringAfter('\n', "").trim()
+    /** Senza l'indirizzo canvas://open delle cose salvate da "Salva nelle note". */
+    val body: String get() = SavedLinks.withoutLink(text).substringAfter('\n', "").trim()
 }
 
 data class NotesData(

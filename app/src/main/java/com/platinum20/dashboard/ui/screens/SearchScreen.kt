@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -177,7 +180,7 @@ fun SearchScreen(
                 if (foundNews.isNotEmpty()) item(key = "news") {
                     SourceSection("Notizie", foundNews, "news" in expanded, { expanded = expanded + "news" }) { n ->
                         val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
-                        ResultRow(n.title, n.source.name + whenText) { onOpenArticle(n) }
+                        ResultRow(n.title, n.source.name + whenText, onLongClick = { SavedLinks.offer(n.savedLink()) }) { onOpenArticle(n) }
                     }
                 }
                 count += foundEvents.size + foundNews.size
@@ -189,7 +192,7 @@ fun SearchScreen(
                 val pods = if (shows(SearchFilter.PODCAST) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
                 if (music.isNotEmpty()) item(key = "music") {
                     SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }) { item ->
-                        ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()) {
+                        ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {
                             SpotifyPlayer.play(context, item)
                             onOpenPlayer()
                         }
@@ -197,12 +200,12 @@ fun SearchScreen(
                 }
                 if (videos.isNotEmpty()) item(key = "videos") {
                     SourceSection("YouTube", videos, "videos" in expanded, { expanded = expanded + "videos" }) { v ->
-                        ResultRow(v.title, v.channel) { onWatch(v.watchUrl) }
+                        ResultRow(v.title, v.channel, onLongClick = { SavedLinks.offer(SavedLinks.youtube(v)) }) { onWatch(v.watchUrl) }
                     }
                 }
                 if (radio.isNotEmpty()) item(key = "radio") {
                     SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }) { station ->
-                        ResultRow(station.name, listOf(station.country, station.tags.split(',').firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · ")) {
+                        ResultRow(station.name, listOf(station.country, station.tags.split(',').firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · "), onLongClick = { SavedLinks.offer(SavedLinks.radio(station)) }) {
                             RadioStore.play(station)
                             onOpenPlayer()
                         }
@@ -274,13 +277,14 @@ private fun <T> SourceSection(title: String, items: List<T>, expanded: Boolean, 
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ResultRow(title: String, detail: String, onClick: () -> Unit) {
+private fun ResultRow(title: String, detail: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
             .bouncyPress()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
