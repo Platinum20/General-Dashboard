@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.filled.ThumbUp
@@ -535,6 +537,12 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
+            // Tenendo premuto il titolo si salva il video nelle note.
+            modifier = Modifier.pointerInput(stream?.id) {
+                detectTapGestures(onLongPress = {
+                    stream?.let { SavedLinks.offer(SavedLink.Media(YtPlayer.resumeEntry(it, 0, 0, System.currentTimeMillis()))) }
+                })
+            },
         )
         if (stream == null) return@Column
         val dislikes = dislikesFor(stream.id)

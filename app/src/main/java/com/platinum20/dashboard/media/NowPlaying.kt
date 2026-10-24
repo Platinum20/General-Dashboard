@@ -97,6 +97,11 @@ object NowPlaying {
         }
     }
 
+    /** Rilegge subito lo stato di [service] (chiamabile da qualunque thread). */
+    fun refresh(service: MediaService) {
+        scope.launch { poll(service) }
+    }
+
     /** Salta a [positionMs] nel player della pagina (Spotify nell'app). */
     fun seek(service: MediaService, positionMs: Long) {
         MediaWebViews.webViewFor(service)?.evaluateJavascript("window.cp && cp.seek(${positionMs.coerceAtLeast(0)})", null)

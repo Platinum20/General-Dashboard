@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -58,7 +59,7 @@ import kotlin.math.roundToInt
 private const val NOTICE_MS = 2_600L
 
 /** Il volo del pallino: da dove parte, dove arriva e su quale chiave atterra. */
-private data class Flight(val mode: CaptureMode, val from: Offset, val to: Offset, val key: String)
+private data class Flight(val icon: ImageVector, val from: Offset, val to: Offset, val key: String)
 
 /**
  * Sopra tutta l'app: il fumetto "Spesa: 12,50 € · Cibo · Annulla" sopra la barra e poi il pallino
@@ -78,9 +79,10 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     val haptic = rememberHaptic()
     val inNotes by rememberUpdatedState(onNotes)
 
-    fun target(mode: CaptureMode): Pair<String, Rect>? {
-        val section = CaptureTargets.rects[mode.name]
-        if (inNotes && section != null && section.height > 0f) return mode.name to section
+    fun target(n: CaptureNotice): Pair<String, Rect>? {
+        n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
+        val mode = n.mode
+        // Sempre sulla scheda in basso, anche se le Note sono già aperte (come vuole Antonio).
         val key = if (mode == CaptureMode.EVENT) CaptureTargets.HOME_TAB else CaptureTargets.NOTES_TAB
         return CaptureTargets.rects[key]?.let { key to it }
     }
@@ -99,9 +101,9 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         delay(NOTICE_MS)
         if (notice !== n) return@LaunchedEffect
         val from = noticeRect?.center
-        val to = target(n.mode)
+        val to = target(n)
         notice = null
-        if (from != null && to != null) flight = Flight(n.mode, from, to.second.center, to.first)
+        if (from != null && to != null) flight = Flight(n.icon, from, to.second.center, to.first)
     }
 
     Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp, start = 16.dp, end = 16.dp)) {
@@ -124,7 +126,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
                 Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp)) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(n.mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                            Icon(n.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
                     Spacer(Modifier.width(10.dp))
@@ -188,7 +190,7 @@ private fun FlyingDot(f: Flight, onArrived: () -> Unit) {
             .graphicsLayer { scaleX = scale; scaleY = scale },
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(f.mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+            Icon(f.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
         }
     }
 }
