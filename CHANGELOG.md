@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.137.0
+**Canzoni riconosciute da sole, barra riordinata, Impostazioni dal +**
+- Niente più tasto "♪ Canzone": se in un vocale non c'è nessuna parola ma si sente musica, Canvas capisce da solo che è una canzone, la riconosce e la fa partire su Spotify. Il fumetto mostra titolo e artista e poi il pallino vola alla scheda Media, come le note volano alle Note
+- La prima scheda si chiama Home invece di Oggi; nella barra Note viene prima di News (anche nei chip delle Impostazioni)
+- Le Impostazioni si aprono trascinando il + verso il basso (in su resta la voce); i chip partono da App, poi Home, Note, News e Media. Tenere premuta una sezione della barra non fa più nulla
+- Il pallino di una cosa salvata vola sempre alla scheda in basso (Note, o Home per gli eventi), anche se sei già nelle Note
+
 ## 1.136.0
 **Mini player più affidabile**
 - Quando fai partire qualcosa il mini player passa subito a quello, con titolo e copertina, anche mentre Spotify si sta ancora collegando; se Spotify non parte lo dice lì
@@ -15,6 +22,7 @@
 - Le abitudini stanno sotto "Oggi", perché si fanno oggi
 - "Senza scadenza" raccoglie appunti e cose da fare prima o poi; le Spese restano a parte
 - Le pillole in alto sono solo tre, una per tipo; il + continua a scegliere da solo dove mettere quello che scrivi
+
 
 ## 1.134.0
 **Il punto del giorno nel player**

@@ -122,12 +122,12 @@ class MediaClickTour {
         report.append('\n')
     }
 
-    private val navLabels = setOf("Oggi", "News", "Note", "Media", "Aggiungi", "Impostazioni")
+    private val navLabels = setOf("Home", "News", "Note", "Media", "Aggiungi", "Impostazioni")
 
     /** Torna alla barra in basso e segue il percorso fino alla pagina. */
     private fun open(path: List<String>): Boolean {
         repeat(4) {
-            if (exists("Oggi") && exists("Media")) return@repeat
+            if (exists("Home") && exists("Media")) return@repeat
             scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
             settle(600)
         }
