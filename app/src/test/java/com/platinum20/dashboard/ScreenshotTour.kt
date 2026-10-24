@@ -154,12 +154,13 @@ class ScreenshotTour {
         // Le Impostazioni si aprono tenendo premuta una sezione della barra (qui l'azione del titolo).
         if (action("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
+            // La card in cima apre novità e aggiornamenti: prima di scorrere.
+            visit("novità e aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000, substring = true)
+            visit("Località del meteo", p + "44_localita")
+            visit("Card della Home", p + "45_personalizza")
+            visit("Compila le note", p + "43_compila_da_solo")
             scroll(down = true)
             shot(p + "42_impostazioni_fondo")
-            visit("Compila da solo", p + "43_compila_da_solo")
-            visit("Località del meteo", p + "44_localita")
-            visit("Card di Oggi", p + "45_personalizza")
-            visit("Aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000)
         } else missing += p + "40_impostazioni"
         assertTrue("Schermate attese che il giro non ha fotografato: ${missing.joinToString()}", missing.isEmpty())
     }

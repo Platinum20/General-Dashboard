@@ -1,25 +1,32 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material.icons.outlined.Newspaper
-import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import com.platinum20.dashboard.media.songid.SongId
-import kotlinx.coroutines.launch
 import android.Manifest
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.outlined.Brush
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.border
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,8 +61,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -75,7 +80,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -103,8 +107,9 @@ import java.util.Locale
 import androidx.compose.foundation.layout.widthIn
 
 /**
- * Impostazioni: tutto ciò che si regola una volta sola, raccolto qui anche se prima stava
- * sparso nell'app (blocco pubblicità, avviso delle nuove versioni, località del meteo).
+ * Impostazioni, ordinate per quello che si vuole fare e non per sezione dell'app:
+ * com'è fatta (aspetto), cosa ti avvisa (notifiche), cosa fa da sola, gli account, i dati.
+ * Una pagina sola e corta, senza chip: ogni gruppo ha un titolo che dice a cosa serve.
  * Ogni riga mostra a destra lo stato attuale, così non serve aprirla per sapere com'è.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +121,7 @@ fun SettingsScreen(
     onLogin: (MediaService) -> Unit,
     onPickPlace: () -> Unit,
     onOpenAutoFill: () -> Unit = {},
-    /** La parte da cui partire: la sezione della barra tenuta premuta (Routes.HOME, NEWS, NOTES, MEDIA). */
+    /** Da dove si arriva (Routes.HOME, NEWS, NOTES, MEDIA): la pagina parte dal gruppo che le riguarda. */
     initialSection: String? = null,
 ) {
     val context = LocalContext.current
@@ -139,53 +144,19 @@ fun SettingsScreen(
     val songToken by SongId.token.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
-    // Tenendo premuta una sezione della barra si arriva qui, già alla sua parte.
     LaunchedEffect(Unit) {
-        val start = SettingsPart.entries.indexOfFirst { it.key == initialSection }
-        if (start > 0) listState.scrollToItem(start * 2)
-    }
-    // Il chip acceso segue lo scorrimento: è la parte che si sta guardando.
-    val current by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo
-            val atEnd = info.visibleItemsInfo.lastOrNull()?.index == info.totalItemsCount - 1 && listState.canScrollForward.not()
-            if (atEnd && listState.firstVisibleItemIndex > 0) SettingsPart.entries.last()
-            else SettingsPart.entries[(listState.firstVisibleItemIndex / 2).coerceAtMost(SettingsPart.entries.size - 1)]
-        }
+        val start = SettingsGroupKey.forSection(initialSection)
+        if (start > 0) listState.scrollToItem(start)
     }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            Column(Modifier.background(MaterialTheme.colorScheme.background)) {
-                TopLevelBar(
-                    title = "Impostazioni",
-                    subtitle = "Canvas ${BuildConfig.VERSION_NAME}",
-                    scrollBehavior = scrollBehavior,
-                    onBack = onBack,
-                )
-                // Una parte per ogni sezione della barra in basso, più quelle di tutta l'app.
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    SettingsPart.entries.forEachIndexed { index, part ->
-                        FilterChip(
-                            selected = current == part,
-                            onClick = {
-                                haptic(Haptic.TICK)
-                                scope.launch { listState.animateScrollToItem(index * 2) }
-                            },
-                            label = { Text(part.label) },
-                            leadingIcon = { Icon(part.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        )
-                    }
-                }
-            }
+            TopLevelBar(
+                title = "Impostazioni",
+                scrollBehavior = scrollBehavior,
+                onBack = onBack,
+            )
         },
     ) { inner ->
         LazyColumn(
@@ -194,86 +165,43 @@ fun SettingsScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 32.dp,
             ),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            // Ogni parte sono due righe, intestazione e gruppo: i chip saltano a parte × 2.
-            item { SettingsHeader(SettingsPart.APP.title) }
-            // Tutta l'app in una riga sola della lista: i chip saltano a parte × 2.
-            item {
-                Column {
-                    SettingsGroup {
-                        // Tre scelte in una riga sola, con la descrizione di quella attiva sotto.
-                        Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
-                            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                                AppTheme.entries.forEachIndexed { index, option ->
-                                    SegmentedButton(
-                                        selected = theme == option,
-                                        onClick = { if (theme != option) haptic(Haptic.TICK); AppSettings.setTheme(option) },
-                                        shape = SegmentedButtonDefaults.itemShape(index, AppTheme.entries.size),
-                                        icon = {},
-                                    ) {
-                                        Text(option.label, maxLines = 1, style = MaterialTheme.typography.labelLarge)
-                                    }
-                                }
-                            }
-                            Text(
-                                theme.description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    SettingsGroup { BackupSettings() }
-                    Spacer(Modifier.height(12.dp))
-                    SettingsGroup {
-                        UpdateNotifySetting()
-                        RowDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.SystemUpdate,
-                            accent = TileAccent.BLUE,
-                            title = "Aggiornamenti",
-                            subtitle = "Novità di ogni versione e aggiornamento",
-                            showChevron = true,
-                            onClick = onOpenUpdates,
-                        )
-                        RowDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Code,
-                            accent = TileAccent.NEUTRAL,
-                            title = "Codice sorgente",
-                            subtitle = BuildConfig.GITHUB_REPO,
-                            showChevron = true,
-                            onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
-                        )
-                        RowDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Info,
-                            accent = TileAccent.NEUTRAL,
-                            title = "Licenze",
-                            subtitle = "Caratteri Source Serif e Inter, liste del blocco pubblicità",
-                            showChevron = true,
-                            onClick = { showLicenses = true },
-                        )
+            // In cima l'app stessa: la versione e, toccando, le novità e gli aggiornamenti.
+            item(key = SettingsGroupKey.ABOUT) { AppHero(onClick = onOpenUpdates) }
+
+            item(key = SettingsGroupKey.LOOK) {
+                SettingsBlock("Aspetto") {
+                    ThemePicker(theme) { option ->
+                        if (theme != option) haptic(Haptic.TICK)
+                        AppSettings.setTheme(option)
                     }
                 }
             }
-            item { SettingsHeader(SettingsPart.HOME.title) }
-            item {
-                SettingsGroup {
+
+            item(key = SettingsGroupKey.ALERTS) {
+                SettingsBlock("Cosa ti avvisa") {
+                    MorningSettings()
+                    RowDivider()
+                    RainAlertSetting()
+                    RowDivider()
+                    UpdateNotifySetting()
+                }
+            }
+
+            item(key = SettingsGroupKey.HOME) {
+                SettingsBlock("Home") {
                     SettingsItem(
                         icon = Icons.Outlined.Dashboard,
                         accent = TileAccent.BLUE,
-                        title = "Card di Oggi",
+                        title = "Card della Home",
                         subtitle = "Quali mostrare e in che ordine",
                         value = "${layout.visible.size} su ${HomeCard.entries.size}",
                         showChevron = true,
                         onClick = onCustomize,
                     )
-                    RowDivider()
-                    MorningSettings()
                     RowDivider()
                     SettingsItem(
                         icon = Icons.Outlined.LocationOn,
@@ -284,32 +212,38 @@ fun SettingsScreen(
                         showChevron = true,
                         onClick = onPickPlace,
                     )
-                    RowDivider()
-                    RainAlertSetting()
                 }
             }
 
-            item { SettingsHeader(SettingsPart.NOTES.title) }
-            item {
-                SettingsGroup {
+            item(key = SettingsGroupKey.AUTO) {
+                SettingsBlock("Fa da solo") {
                     SettingsItem(
                         icon = Icons.Outlined.AutoAwesome,
                         accent = TileAccent.BLUE,
-                        title = "Compila da solo",
-                        subtitle = if (autoFillOn) "Pacchi, spese e scadenze dalle notifiche" else "Pacchi, spese e scadenze presi da notifiche, mail e SMS",
+                        title = "Compila le note",
+                        subtitle = "Pacchi, spese e scadenze presi da notifiche, mail e SMS",
                         value = if (autoFillOn) "Acceso" else "Spento",
                         showChevron = true,
                         onClick = onOpenAutoFill,
                     )
+                    RowDivider()
+                    SettingsItem(
+                        icon = Icons.Outlined.MusicNote,
+                        accent = TileAccent.ORANGE,
+                        title = "Riconosci canzoni",
+                        subtitle = if (songToken.isBlank()) "Serve il token di AudD: tocca per incollarlo"
+                        else "Tieni premuto + vicino alla musica: finisce in «${SongId.PLAYLIST_NAME}»",
+                        value = if (songToken.isBlank()) "Da attivare" else "Attivo",
+                        showChevron = true,
+                        onClick = { editSongToken = true },
+                    )
+                    RowDivider()
+                    AdBlockSettings()
                 }
             }
 
-            item { SettingsHeader(SettingsPart.NEWS.title) }
-            item { SettingsGroup { AdBlockSettings() } }
-
-            item { SettingsHeader(SettingsPart.MEDIA.title) }
-            item {
-                SettingsGroup {
+            item(key = SettingsGroupKey.ACCOUNTS) {
+                SettingsBlock("Account") {
                     // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
                     MediaService.entries.forEachIndexed { index, service ->
                         val connected = service in loggedIn
@@ -328,6 +262,7 @@ fun SettingsScreen(
                             trailing = {
                                 if (connected) {
                                     TextButton(onClick = {
+                                        haptic(Haptic.TICK)
                                         Accounts.logout(service)
                                         when (service) {
                                             MediaService.YOUTUBE -> YouTubeStore.clear()
@@ -343,30 +278,34 @@ fun SettingsScreen(
                             },
                         )
                     }
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.MusicNote,
-                        accent = TileAccent.ORANGE,
-                        title = "Riconosci canzoni",
-                        subtitle = if (songToken.isBlank()) "Incolla il token di AudD" else "Dettando con il +: «♪ Canzone», poi in ${SongId.PLAYLIST_NAME}",
-                        value = if (songToken.isBlank()) "Da attivare" else "Attivo",
-                        showChevron = true,
-                        onClick = { editSongToken = true },
-                    )
                 }
             }
 
-            item {
-                Text(
-                    "Canvas ${BuildConfig.VERSION_NAME}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                )
+            item(key = SettingsGroupKey.DATA) {
+                SettingsBlock("I tuoi dati") { BackupSettings() }
             }
-            // Spazio in fondo: anche l'ultima parte può arrivare in cima quando si tocca il suo chip.
-            item { Spacer(Modifier.height(320.dp)) }
+
+            item(key = SettingsGroupKey.INFO) {
+                SettingsBlock("Informazioni") {
+                    SettingsItem(
+                        icon = Icons.Outlined.Code,
+                        accent = TileAccent.NEUTRAL,
+                        title = "Codice sorgente",
+                        subtitle = BuildConfig.GITHUB_REPO,
+                        showChevron = true,
+                        onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
+                    )
+                    RowDivider()
+                    SettingsItem(
+                        icon = Icons.Outlined.Info,
+                        accent = TileAccent.NEUTRAL,
+                        title = "Licenze",
+                        subtitle = "Carattere Inter, liste del blocco pubblicità, Open-Meteo",
+                        showChevron = true,
+                        onClick = { showLicenses = true },
+                    )
+                }
+            }
         }
     }
 
@@ -417,13 +356,168 @@ fun SettingsScreen(
     }
 }
 
-/** Le parti delle Impostazioni: una per sezione della barra, più quella di tutta l'app. */
-private enum class SettingsPart(val key: String, val label: String, val title: String, val icon: ImageVector) {
-    APP("app", "App", "Tutta l'app", Icons.Outlined.Tune),
-    HOME("home", "Home", "Home e notifiche", Icons.Outlined.Dashboard),
-    NOTES("notes", "Note", "Note", Icons.Outlined.EditNote),
-    NEWS("news", "News", "News e lettura", Icons.Outlined.Newspaper),
-    MEDIA("media", "Media", "Media", Icons.Outlined.PlayCircle),
+/** I gruppi della pagina, nell'ordine in cui compaiono (sono anche le chiavi della lista). */
+internal object SettingsGroupKey {
+    const val ABOUT = "about"
+    const val LOOK = "look"
+    const val ALERTS = "alerts"
+    const val HOME = "home"
+    const val AUTO = "auto"
+    const val ACCOUNTS = "accounts"
+    const val DATA = "data"
+    const val INFO = "info"
+    val order = listOf(ABOUT, LOOK, ALERTS, HOME, AUTO, ACCOUNTS, DATA, INFO)
+
+    /** Da quale gruppo partire arrivando da una sezione: Home e meteo, quello che fa da solo, gli account. */
+    fun forSection(section: String?): Int = order.indexOf(
+        when (section) {
+            "home" -> HOME
+            "notes", "news" -> AUTO
+            "media" -> ACCOUNTS
+            else -> ABOUT
+        }
+    )
+}
+
+/** Titolo del gruppo fuori, righe dentro una card. */
+@Composable
+private fun SettingsBlock(title: String, content: @Composable () -> Unit) {
+    Column {
+        SectionHeader(title)
+        Spacer(Modifier.height(4.dp))
+        SettingsGroup(content)
+    }
+}
+
+/** La card in cima: l'app, la sua versione e le novità. */
+@Composable
+private fun AppHero(onClick: () -> Unit) {
+    CanvasCard(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(52.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Brush,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+            Spacer(Modifier.width(16.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Canvas", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Versione ${BuildConfig.VERSION_NAME} · novità e aggiornamenti",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                )
+            }
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+/**
+ * Il tema si sceglie guardandolo: tre anteprime in miniatura (fondo, una card, il colore d'accento),
+ * quella scelta ha l'anello e si ingrandisce appena.
+ */
+@Composable
+private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
+    Column(Modifier.padding(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            AppTheme.entries.forEach { option ->
+                val on = option == selected
+                val ring by animateColorAsState(
+                    if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    tween(Motion.ENTER_MS, easing = Motion.Decelerate),
+                    label = "themeRing",
+                )
+                val scale by animateFloatAsState(if (on) 1f else 0.94f, Springs.snappy(), label = "themeScale")
+                val (bg, card, accent) = themeSwatch(option)
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .graphicsLayer { scaleX = scale; scaleY = scale }
+                        .bouncyPress(0.94f)
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable { onSelect(option) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(76.dp)
+                            .border(if (on) 2.dp else 1.dp, ring, MaterialTheme.shapes.large)
+                            .padding(if (on) 2.dp else 1.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(bg)
+                            .padding(10.dp),
+                    ) {
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.small)
+                                .background(card)
+                                .padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
+                        ) {
+                            Box(Modifier.fillMaxWidth(0.7f).height(5.dp).clip(CircleShape).background(accent))
+                            Box(Modifier.fillMaxWidth(0.45f).height(5.dp).clip(CircleShape).background(accent.copy(alpha = 0.35f)))
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        option.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+        }
+        AnimatedContent(
+            selected.description,
+            transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
+            label = "themeText",
+        ) { text ->
+            Text(
+                text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp),
+            )
+        }
+    }
+}
+
+/** Fondo, card e accento di ogni tema, per le anteprime. Material You usa i colori del telefono se ci sono. */
+@Composable
+private fun themeSwatch(theme: AppTheme): Triple<Color, Color, Color> {
+    val context = LocalContext.current
+    return when (theme) {
+        AppTheme.CANVAS -> Triple(Color(0xFFF5F3EE), Color.White, Color(0xFF3550E8))
+        AppTheme.AMOLED -> Triple(Color.Black, Color(0xFF1E1D1A), Color(0xFF9AABFF))
+        AppTheme.DYNAMIC -> if (Build.VERSION.SDK_INT >= 31) {
+            val scheme = androidx.compose.material3.dynamicLightColorScheme(context)
+            Triple(scheme.surfaceContainer, scheme.surfaceContainerLowest, scheme.primary)
+        } else {
+            Triple(Color(0xFFE8EEF8), Color.White, Color(0xFF4A6FA5))
+        }
+    }
 }
 
 @Composable
@@ -554,7 +648,12 @@ private fun MorningSettings() {
             onClick = toggle,
             trailing = { Switch(checked = morning.enabled, onCheckedChange = hapticToggle { toggle() }) },
         )
-        if (morning.enabled) {
+        // Orario e prova compaiono scivolando solo quando la notifica è accesa.
+        AnimatedVisibility(
+            visible = morning.enabled,
+            enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
+            exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
+        ) { Column {
             RowDivider()
             SettingsItem(
                 icon = Icons.Outlined.Schedule,
@@ -578,7 +677,7 @@ private fun MorningSettings() {
                     }
                 },
             )
-        }
+        } }
     }
 
     if (pickTime) {
@@ -688,7 +787,11 @@ private fun AdBlockSettings() {
         onClick = { toggle(!enabled) },
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle(toggle)) },
     )
-    if (enabled) {
+    AnimatedVisibility(
+        visible = enabled,
+        enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
+        exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
+    ) { Column {
         RowDivider()
         SettingsItem(
             icon = Icons.Outlined.FilterList,
@@ -699,7 +802,7 @@ private fun AdBlockSettings() {
                 TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
             },
         )
-    }
+    } }
 }
 
 /** "EasyList, EasyPrivacy e uBlock Origin · 163.784 regole · aggiornate il 22 ott". */

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.142.0
+**Impostazioni rifatte da capo**
+- Una pagina sola, corta, ordinata per quello che vuoi fare invece che per sezione: Aspetto, Cosa ti avvisa, Home, Fa da solo, Account, I tuoi dati, Informazioni. Niente più chip in alto
+- In cima la card di Canvas con la versione: toccandola vedi novità e aggiornamenti
+- Il tema si sceglie guardandolo: tre anteprime in miniatura con i colori veri, quella scelta ha l'anello
+- Tutte le notifiche in un gruppo solo (mattino, pioggia, nuove versioni); orario e prova del mattino compaiono scivolando solo quando la notifica è accesa
+- Ogni card che si tocca, in tutta l'app, si abbassa appena sotto il dito; le righe piccole in cima alle sezioni ("3 nuove") cambiano con un movimento morbido
+
 ## 1.141.0
 **Nuova UI, parte 1: tutto si muove con fluidità**
 - Passando da una sezione all'altra la pagina scivola dal lato della sua scheda (Note arriva da destra di Home), con curve morbide e senza scatti
