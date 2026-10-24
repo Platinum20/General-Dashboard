@@ -326,7 +326,8 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // La prima card (di solito Adesso), poi le cose trovate da sole in notifiche e SMS, poi le altre.
-            items(cards.take(1), key = { it.name }) { cardContent(it) }
+            // Le card che compaiono, spariscono o cambiano posto scivolano invece di saltare.
+            items(cards.take(1), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
             tomorrowPlan?.let { plan ->
                 item(key = "tomorrow") {
                     TomorrowCard(
@@ -352,7 +353,7 @@ fun HomeScreen(
                 }
             }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
-            items(cards.drop(1), key = { it.name }) { cardContent(it) }
+            items(cards.drop(1), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(
