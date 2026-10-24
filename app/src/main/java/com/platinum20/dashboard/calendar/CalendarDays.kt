@@ -142,6 +142,8 @@ object CalendarDays {
         for (i in 0 until days) {
             val day = first.plusDays(i.toLong())
             val list = unique.filter { occursOn(it.begin, it.end, it.allDay, day, zone) }
+                // Lo stesso evento da due calendari (es. "Tutti i Santi" nelle festività di Google e del telefono): uno solo.
+                .distinctBy { Triple(it.title.trim().lowercase(), it.allDay, if (it.allDay) 0L else it.begin) }
                 .sortedWith(compareByDescending<CalendarEvent> { it.allDay }.thenBy { it.begin })
             if (list.isNotEmpty()) result[day] = list
         }
