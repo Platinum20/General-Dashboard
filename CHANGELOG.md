@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.140.0
+**Note salvate da Media e News**
+- Le note fatte con "Salva nelle note" hanno l'icona di cosa sono (video, brano, radio, podcast, articolo): toccandole si riapre la cosa, con la matita si modifica o si elimina la nota
+
 ## 1.139.0
 **Salva nelle note anche da Media**
 - Tieni premuto qualunque cosa in Media per salvarla nelle note: le tessere di Continua, i video di YouTube, le canzoni di YouTube Music, i brani di Spotify, le radio, gli episodi dei podcast e il riquadro di quello che suona adesso

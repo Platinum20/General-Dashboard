@@ -130,6 +130,14 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.captureTarget
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.ResumeKind
+import androidx.compose.material.icons.automirrored.outlined.Article
+import androidx.compose.material.icons.outlined.SmartDisplay
+import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material.icons.outlined.Radio
+import androidx.compose.material.icons.outlined.Podcasts
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import androidx.lifecycle.repeatOnLifecycle
@@ -181,6 +189,8 @@ fun NotesScreen(
     bottomPadding: PaddingValues,
     onOpenNote: (Long?) -> Unit,
     onOpenEvent: (CalendarEvent) -> Unit = {},
+    /** Apre sempre l'editor, anche per le note di "Salva nelle note" (che al tocco riaprono la loro cosa). */
+    onEditNote: (Long) -> Unit = { onOpenNote(it) },
 ) {
     val context = LocalContext.current
     NotesStore.init(context)
@@ -435,7 +445,7 @@ fun NotesScreen(
                     item(key = "undated-tasks") { TaskGroup(null, undatedTasks, onTaskDeleted) }
                 }
                 items(shownNotes, key = { "note-${it.id}" }) { note ->
-                    NoteCard(note, onOpen = { onOpenNote(note.id) }, modifier = Modifier.padding(bottom = 4.dp))
+                    NoteCard(note, onOpen = { onOpenNote(note.id) }, onEdit = { onEditNote(note.id) }, modifier = Modifier.padding(bottom = 4.dp))
                 }
             }
             if (section == null && (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null)) {
@@ -729,8 +739,10 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
 @OptIn(ExperimentalFoundationApi::class)
 /** Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto si fissa in alto. */
 @Composable
-private fun NoteCard(note: Note, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+private fun NoteCard(note: Note, onOpen: () -> Unit, onEdit: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
+    // Una nota di "Salva nelle note": l'icona dice cos'è e la matita apre l'editor (il tocco riapre la cosa).
+    val saved = remember(note.text) { SavedLinks.find(note.text) }
     CanvasCard(
         shape = MaterialTheme.shapes.extraLarge,
         modifier = modifier
@@ -743,6 +755,14 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, modifier: Modifier = Modifi
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                saved?.let {
+                    Icon(
+                        savedIcon(it),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 8.dp).size(20.dp),
+                    )
+                }
                 Text(
                     note.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -757,6 +777,11 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, modifier: Modifier = Modifi
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp),
                     )
+                }
+                if (saved != null) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Outlined.Edit, contentDescription = "Modifica la nota", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
             Checklist.progressLabel(note.text)?.let { progress ->
@@ -782,6 +807,16 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, modifier: Modifier = Modifi
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+private fun savedIcon(link: SavedLink) = when (link) {
+    is SavedLink.Article -> Icons.AutoMirrored.Outlined.Article
+    is SavedLink.Media -> when (link.item.kind) {
+        ResumeKind.VIDEO, ResumeKind.YOUTUBE -> Icons.Outlined.SmartDisplay
+        ResumeKind.MUSIC, ResumeKind.SPOTIFY -> Icons.Outlined.MusicNote
+        ResumeKind.RADIO -> Icons.Outlined.Radio
+        ResumeKind.PODCAST -> Icons.Outlined.Podcasts
     }
 }
 
