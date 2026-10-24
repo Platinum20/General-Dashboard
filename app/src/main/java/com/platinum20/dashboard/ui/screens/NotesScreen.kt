@@ -411,13 +411,14 @@ fun NotesScreen(
                         .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
                     SectionHeader(
                         group.label,
-                        modifier = Modifier.padding(top = if (index == 0) 0.dp else 12.dp, bottom = 4.dp).then(target)
+                        modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 12.dp, bottom = 4.dp).then(target)
                             .then(if (group == DueGroup.TODAY) Modifier.captureTarget(CaptureMode.HABIT) else Modifier),
                         color = if (group == DueGroup.LATE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 items(rows, key = { it.key }) { row ->
-                    Box(Modifier.padding(bottom = 4.dp)) {
+                    // Spuntate, spostate o cancellate: le righe scivolano al loro posto invece di saltare.
+                    Box(Modifier.animateItem().padding(bottom = 4.dp)) {
                         row.task?.let { TaskDueCard(it, row.day, late = group == DueGroup.LATE, onDeleted = onTaskDeleted) }
                         row.countdown?.let { DateCard(it, onClick = { editingDate = it }) }
                         row.parcel?.let { ParcelCard(it, onClick = { editingParcel = it }) }
@@ -442,10 +443,10 @@ fun NotesScreen(
                     )
                 }
                 if (undatedTasks.isNotEmpty()) {
-                    item(key = "undated-tasks") { TaskGroup(null, undatedTasks, onTaskDeleted) }
+                    item(key = "undated-tasks") { Box(Modifier.animateItem()) { TaskGroup(null, undatedTasks, onTaskDeleted) } }
                 }
                 items(shownNotes, key = { "note-${it.id}" }) { note ->
-                    NoteCard(note, onOpen = { onOpenNote(note.id) }, onEdit = { onEditNote(note.id) }, modifier = Modifier.padding(bottom = 4.dp))
+                    NoteCard(note, onOpen = { onOpenNote(note.id) }, onEdit = { onEditNote(note.id) }, modifier = Modifier.animateItem().padding(bottom = 4.dp))
                 }
             }
             if (section == null && (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null)) {
@@ -453,10 +454,10 @@ fun NotesScreen(
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (done.isNotEmpty() || delivered.isNotEmpty())) {
-                item(key = "done-header") { SectionHeader("Completati", modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) }
-                if (done.isNotEmpty()) item(key = "group-done") { TaskGroup(null, done, onTaskDeleted) }
+                item(key = "done-header") { SectionHeader("Completati", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp)) }
+                if (done.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem()) { TaskGroup(null, done, onTaskDeleted) } }
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
-                    Box(Modifier.padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
+                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
                 }
             }
         }

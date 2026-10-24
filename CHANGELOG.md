@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.141.0
+**Nuova UI, parte 1: tutto si muove con fluidità**
+- Passando da una sezione all'altra la pagina scivola dal lato della sua scheda (Note arriva da destra di Home), con curve morbide e senza scatti
+- Le pagine interne entrano da destra e tornano indietro con lo stesso movimento al contrario; da Android 13 la pagina segue il dito mentre fai il gesto Indietro
+- Nella barra in basso la pillola scura scivola da una scheda all'altra, allungandosi un attimo come una goccia
+- Aprendo una pagina le card salgono a cascata, una dopo l'altra; scorrendo invece sono già lì, senza attese
+- Spuntando, aggiungendo o cancellando note, promemoria e notizie le righe scivolano al loro posto invece di saltare; le card che cambiano altezza si allungano con dolcezza
+
 ## 1.140.0
 **Note salvate da Media e News**
 - Le note fatte con "Salva nelle note" hanno l'icona di cosa sono (video, brano, radio, podcast, articolo): toccandole si riapre la cosa, con la matita si modifica o si elimina la nota

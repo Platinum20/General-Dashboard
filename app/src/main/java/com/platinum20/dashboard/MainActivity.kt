@@ -12,6 +12,9 @@ import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
 import com.platinum20.dashboard.ui.screens.SaveToNotesLayer
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -72,10 +75,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.NavBackStackEntry
 import com.platinum20.dashboard.ui.screens.TabReselect
 import androidx.compose.animation.fadeIn
@@ -114,6 +114,7 @@ import com.platinum20.dashboard.ui.screens.Haptic
 import com.platinum20.dashboard.ui.screens.PlusAction
 import com.platinum20.dashboard.ui.screens.SearchScreen
 import com.platinum20.dashboard.ui.screens.Springs
+import com.platinum20.dashboard.ui.screens.Motion
 import com.platinum20.dashboard.ui.screens.bouncyPress
 import com.platinum20.dashboard.ui.screens.card
 import com.platinum20.dashboard.ui.screens.cardBorder
@@ -449,8 +450,37 @@ private fun CanvasNavBar(
             // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
             modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
         ) {
+            // La pillola scelta è una sola e scivola da una scheda all'altra: il bordo davanti corre,
+            // quello dietro la segue, così si allunga un attimo come una goccia e poi si richiude.
+            val pills = remember { mutableStateMapOf<String, Pair<Float, Float>>() }
+            val left = remember { Animatable(0f) }
+            val right = remember { Animatable(0f) }
+            var placed by remember { mutableStateOf(false) }
+            val target = currentRoute?.let { pills[it] }
+            LaunchedEffect(target) {
+                val (l, r) = target ?: return@LaunchedEffect
+                if (!placed) {
+                    left.snapTo(l)
+                    right.snapTo(r)
+                    placed = true
+                    return@LaunchedEffect
+                }
+                val toRight = l > left.value
+                launch { left.animateTo(l, spring(dampingRatio = 0.78f, stiffness = if (toRight) 260f else 700f)) }
+                launch { right.animateTo(r, spring(dampingRatio = 0.78f, stiffness = if (toRight) 700f else 260f)) }
+            }
+            val indicator = MaterialTheme.colorScheme.onSurface
             Row(
-                modifier = Modifier.padding(horizontal = 6.dp),
+                modifier = Modifier
+                    .padding(horizontal = 6.dp)
+                    .drawBehind {
+                        if (placed) drawRoundRect(
+                            color = indicator,
+                            topLeft = Offset(left.value, 0f),
+                            size = Size((right.value - left.value).coerceAtLeast(0f), size.height),
+                            cornerRadius = CornerRadius(size.height / 2, size.height / 2),
+                        )
+                    },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
@@ -460,6 +490,10 @@ private fun CanvasNavBar(
                         selected = currentRoute == dest.route,
                         badge = if (dest.route == Routes.NOTES) dueToday else 0,
                         onClick = { haptic(Haptic.TICK); onSelect(dest) },
+                        modifier = Modifier.onPlaced { c ->
+                            val x = c.positionInParent().x
+                            pills[dest.route] = x to x + c.size.width
+                        },
                     )
                 }
             }
@@ -728,7 +762,7 @@ private const val PRESS_DRAG = 3
 private const val PRESS_DOWN = 4
 
 @Composable
-private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
+private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
     val targetKey = when (dest.route) {
         Routes.NOTES -> CaptureTargets.NOTES_TAB
@@ -744,19 +778,16 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
             bump.animateTo(1f, Springs.snappy())
         }
     }
-    val container by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent, label = "pill",
-    )
+    // Il fondo scuro della scheda scelta lo disegna la barra (scivola tra le schede): qui solo i colori.
     val content by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant, label = "pillText",
     )
     Row(
-        modifier = Modifier
+        modifier = modifier
             .then(if (targetKey != null) Modifier.captureTarget(targetKey) else Modifier)
             .graphicsLayer { scaleX = bump.value; scaleY = bump.value }
             .bouncyPress(0.9f)
             .clip(CircleShape)
-            .background(container)
             .clickable(onClick = onClick)
             .semantics { contentDescription = dest.label }
             .animateContentSize(Springs.snappy())
@@ -779,11 +810,15 @@ private val pageSpring = spring(
     stiffness = Spring.StiffnessMediumLow,
     visibilityThreshold = IntOffset.VisibilityThreshold,
 )
-private val scaleSpring = spring<Float>(dampingRatio = 0.6f, stiffness = Spring.StiffnessMediumLow)
 
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
     topDestinations.any { it.route == initialState.destination.route } &&
         topDestinations.any { it.route == targetState.destination.route }
+
+/** Verso destra nella barra (Home → Note): la pagina nuova arriva da destra. */
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabForward(): Boolean =
+    topDestinations.indexOfFirst { it.route == targetState.destination.route } >
+        topDestinations.indexOfFirst { it.route == initialState.destination.route }
 
 /** Passa a una sezione della barra in basso mantenendo lo stato delle altre. */
 private fun NavController.switchTab(route: String) {
@@ -1029,17 +1064,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,
             startDestination = Routes.HOME,
-            // Tra le schede una dissolvenza; le pagine di dettaglio entrano da destra ed escono all'indietro.
-            enterTransition = {
-                if (isTabSwitch()) fadeIn(tween(180)) + scaleIn(scaleSpring, initialScale = 0.98f)
-                else slideInHorizontally(pageSpring) { it / 4 } + fadeIn(tween(200)) + scaleIn(scaleSpring, initialScale = 0.97f)
-            },
-            exitTransition = { fadeOut(tween(160)) },
-            popEnterTransition = { fadeIn(tween(220)) },
-            popExitTransition = {
-                if (isTabSwitch()) fadeOut(tween(160))
-                else slideOutHorizontally(pageSpring) { it / 4 } + fadeOut(tween(200))
-            },
+            // Tra le schede la pagina scivola dal lato della sua scheda; i dettagli entrano da destra
+            // e tornano indietro con lo stesso movimento al contrario (anche seguendo il gesto Indietro).
+            enterTransition = { if (isTabSwitch()) Motion.tabEnter(tabForward()) else Motion.pushEnter },
+            exitTransition = { if (isTabSwitch()) Motion.tabExit(tabForward()) else Motion.pushExit },
+            popEnterTransition = { if (isTabSwitch()) Motion.tabEnter(tabForward()) else Motion.popEnter },
+            popExitTransition = { if (isTabSwitch()) Motion.tabExit(tabForward()) else Motion.popExit },
         ) {
             composable(Routes.HOME) {
                 HomeScreen(

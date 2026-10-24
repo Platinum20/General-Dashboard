@@ -77,6 +77,7 @@ import androidx.compose.material.icons.outlined.Thunderstorm
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -452,6 +453,8 @@ fun CanvasCard(
         contentColor = MaterialTheme.colorScheme.onSurface,
     )
     val border = if (colors == null) cardBorder() else null
+    // Ogni card entra a cascata con la pagina e cambia altezza con un movimento morbido, mai a scatti.
+    val modifier = modifier.entrance().animateContentSize(Motion.settle())
     if (onLongClick != null) {
         Card(
             modifier = modifier.clip(shape).combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick),
@@ -478,7 +481,7 @@ fun SectionHeader(
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
-        modifier = modifier.fillMaxWidth().heightIn(min = 36.dp).padding(start = 4.dp),
+        modifier = modifier.entrance().fillMaxWidth().heightIn(min = 36.dp).padding(start = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

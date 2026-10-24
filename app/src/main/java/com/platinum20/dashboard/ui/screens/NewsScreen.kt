@@ -162,7 +162,7 @@ fun NewsScreen(
                     }
                     // La prima notizia in grande, le altre come righe compatte con la miniatura.
                     itemsIndexed(items, key = { _, it -> it.link }) { index, item ->
-                        Column {
+                        Column(Modifier.animateItem()) {
                             if (index == firstSeen && firstSeen > 0) SectionHeader("Già viste", Modifier.padding(top = 8.dp, bottom = 4.dp))
                             val seen = item.link in read
                             if (index == 0) NewsCard(item, read = seen, onClick = { open(item) })
