@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -138,6 +140,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
 private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
+    HomeCard.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.WEEK -> Icons.Outlined.Celebration
     HomeCard.MAIL -> Icons.Outlined.Mail
@@ -147,6 +150,7 @@ private fun HomeCard.icon(): ImageVector = when (this) {
 private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
+    HomeCard.MONEY -> TileAccent.GREEN
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.WEEK -> TileAccent.GREEN
     HomeCard.MAIL -> TileAccent.ORANGE

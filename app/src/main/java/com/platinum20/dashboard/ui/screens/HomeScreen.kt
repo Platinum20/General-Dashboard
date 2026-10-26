@@ -187,7 +187,7 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos, somethingPlaying) {
         HomeResume.pick(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis(), somethingPlaying)
     }
-    // "Prossimi giorni" in fondo ad "Adesso": la settimana da domani, in un posto solo.
+    // "Prossimi giorni": la settimana da domani, in un posto solo.
     val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
         value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
     }
@@ -216,7 +216,7 @@ fun HomeScreen(
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, withTomorrow = false,
+            fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Briefing.CARD_MAX,
         )
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -260,6 +260,7 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.WEEK -> weekReview != null
             HomeCard.MAIL -> autoFillEnabled || gmailConnected
+            HomeCard.MONEY -> notes.hasMoney
             else -> true
         }
     }
@@ -284,8 +285,6 @@ fun HomeScreen(
                     else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
                 },
                 undo = briefUndo,
-                upcoming = upcoming,
-                today = minute.toLocalDate(),
                 onUndo = {
                     haptic(Haptic.TICK)
                     briefUndo?.undo?.invoke()
@@ -294,13 +293,26 @@ fun HomeScreen(
                 onOpenBrief = { kind ->
                     when (kind) {
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
-                        BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
+                        BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.EXPENSES)
+                        BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
                         BriefKind.FREE -> Unit
                     }
                 },
             )
-            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes)
+            HomeCard.DAY -> NextThingsCard(
+                items = upcoming,
+                today = minute.toLocalDate(),
+                onOpenAll = {
+                    haptic(Haptic.TICK)
+                    NotesNav.open(NotesSection.DATED)
+                    onOpenNotes()
+                },
+            )
+            HomeCard.MONEY -> MoneyCard(notes, minute.toLocalDate(), onOpen = {
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.EXPENSES)
+            })
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
                 MediaNowCard(playing, onOpen = {
@@ -444,9 +456,6 @@ private fun WeatherCard(
     undo: BriefUndo?,
     onUndo: () -> Unit,
     onOpenBrief: (BriefKind) -> Unit,
-    /** Da domani alla settimana dopo: la piccola lista in fondo. */
-    upcoming: List<UpcomingItem> = emptyList(),
-    today: LocalDate = LocalDate.now(),
 ) {
     val forecast = state.forecast
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
@@ -481,52 +490,6 @@ private fun WeatherCard(
                         }
                     }
                 }
-            }
-        }
-        if (upcoming.isNotEmpty()) UpcomingBlock(upcoming, today, onOpen = onOpenBrief)
-    }
-}
-
-/**
- * "Prossimi giorni": piccola, sotto le righe di oggi. Il giorno si scrive solo alla sua prima riga,
- * così la settimana si legge a colpo d'occhio senza ripetere "Domani" tre volte.
- */
-@Composable
-private fun UpcomingBlock(items: List<UpcomingItem>, today: LocalDate, onOpen: (BriefKind) -> Unit) {
-    val content = LocalContentColor.current
-    Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
-        HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = content.copy(alpha = 0.12f))
-        Text(
-            "PROSSIMI GIORNI",
-            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
-            color = content.copy(alpha = 0.6f),
-            modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 2.dp),
-        )
-        items.take(Upcoming.MAX).forEachIndexed { index, item ->
-            val first = index == 0 || items[index - 1].day != item.day
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .bouncyPress(0.98f)
-                    .clickable { onOpen(item.kind) }
-                    .padding(horizontal = 18.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    if (first) Upcoming.dayLabel(item.day, today) else "",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = content.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    modifier = Modifier.width(64.dp),
-                )
-                Text(
-                    (item.time?.let { "$it " } ?: "") + item.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = content.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
             }
         }
     }

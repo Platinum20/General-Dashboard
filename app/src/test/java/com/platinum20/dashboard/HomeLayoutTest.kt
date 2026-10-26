@@ -11,7 +11,7 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "La giornata", "Dalla posta", "La tua settimana", "Il punto del giorno"),
+            listOf("Adesso", "Media", "Prossimi giorni", "Spese", "Dalla posta", "La tua settimana", "Il punto del giorno"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
     }
@@ -41,5 +41,12 @@ class HomeLayoutTest {
 
     @Test fun descrizioniCorte() {
         HomeCard.entries.forEach { assertTrue(it.description, it.description.length <= 36) }
+    }
+
+    @Test fun prossimeCoseTornaVisibile() {
+        // "La giornata" nascosta prima della 1.186 diventa "Prossimi giorni": si rivede, le altre restano come erano.
+        val layout = HomeLayout.read("WEATHER,DAY,RECAP", "DAY,RECAP", version = 2)
+        assertEquals(setOf(HomeCard.RECAP), layout.hidden)
+        assertEquals(HomeCard.MONEY, layout.order[layout.order.indexOf(HomeCard.DAY) + 1])
     }
 }

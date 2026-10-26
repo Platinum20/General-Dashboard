@@ -63,9 +63,17 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
-import com.platinum20.dashboard.today.TodayTaskPicker
-import com.platinum20.dashboard.today.DayItem
-import com.platinum20.dashboard.today.DayTimeline
+import com.platinum20.dashboard.today.BriefKind
+import com.platinum20.dashboard.today.Upcoming
+import com.platinum20.dashboard.today.UpcomingItem
+import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.captureTarget
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.LocalShipping
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
 import androidx.compose.material.icons.outlined.Celebration
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -90,7 +98,7 @@ class AgendaState(
 ) {
     /**
      * Gli impegni di oggi; vuoto se non c'è niente da dire. La sera, finiti tutti, l'agenda sparisce:
-     * domani e i giorni dopo li elenca "Prossimi giorni" in fondo ad "Adesso".
+     * domani e i giorni dopo li elenca "Prossimi giorni".
      */
     fun shown(now: LocalDateTime = LocalDateTime.now()): List<CalendarEvent> {
         val list = today.orEmpty()
@@ -135,49 +143,6 @@ internal fun hideAgenda(context: Context) {
     Toast.makeText(context, "Ok, niente agenda: la puoi consentire dal Calendario", Toast.LENGTH_LONG).show()
 }
 
-private val hourFormat = DateTimeFormatter.ofPattern("HH:mm")
-
-@Composable
-private fun EventRow(event: CalendarEvent, past: Boolean, onClick: () -> Unit) {
-    val zone = ZoneId.systemDefault()
-    val time = if (event.allDay) "Tutto il giorno" else
-        Instant.ofEpochMilli(event.begin).atZone(zone).format(hourFormat) + " – " +
-            Instant.ofEpochMilli(event.end).atZone(zone).format(hourFormat)
-    val alpha = if (past) 0.5f else 1f
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(if (event.color != 0) Color(event.color).copy(alpha = alpha) else MaterialTheme.colorScheme.primary)
-        )
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                event.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                if (event.location.isNotBlank()) "$time · ${event.location}" else time,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
 /** Scadenza di un promemoria, in rosso se già passata. */
 @Composable
 fun DueText(dueAt: Long, repeat: Repeat? = null) {
@@ -189,157 +154,150 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
     )
 }
 
-/** Per quanto resta visibile "Annulla" dopo una spunta. */
-private const val UNDO_MS = 5_000L
-
-/** In Oggi solo le date vicine: le altre restano in Note > Date. */
-const val SOON_DAYS = 7L
-
-val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
-
+/**
+ * "Prossimi giorni": i prossimi giorni in una card sola, divisi per giorno. Le stesse cose stanno,
+ * senza limite di giorni, in Note > Prossimi giorni; oggi sta in "Adesso". Il giorno si scrive solo alla
+ * sua prima riga, così la settimana si legge a colpo d'occhio.
+ */
 @Composable
-fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit) {
-    val haptic = rememberHaptic()
-    val context = LocalContext.current
-    val inApp = LocalInAppNav.current
-    NotesStore.init(context)
-    val data by NotesStore.data.collectAsStateWithLifecycle()
-    val open = data.openTasks
-    // Dei promemoria solo quello che conta adesso: il resto è a un tocco, in Note.
-    val tasks = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
-    val events = if (agenda.granted && agenda.today != null) agenda.shown() else emptyList()
-    // Solo le date di oggi: quelle dei prossimi giorni stanno in "Prossimi giorni", dentro Adesso.
-    val soon = data.soon.filter { it.daysLeft() == 0L }
-    val items = remember(events, tasks, soon) { DayTimeline.build(events, tasks.shown, soon, LocalDate.now()) }
-    // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
-    var lastDone by remember { mutableStateOf<TaskItem?>(null) }
-    LaunchedEffect(lastDone) {
-        if (lastDone != null) {
-            delay(UNDO_MS)
-            lastDone = null
-        }
-    }
-    var editing by remember { mutableStateOf<Countdown?>(null) }
-
-    Section(
-        title = "La giornata",
-        action = if (agenda.granted) "Calendario" else "Note",
-        onAction = { if (agenda.granted) inApp?.openCalendar?.invoke() else onOpenNotes() },
-    ) {
-        Column {
-            if (items.isEmpty() && lastDone == null) {
+fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () -> Unit) {
+    val shown = items.take(Upcoming.MAX)
+    Section(title = "Prossimi giorni") {
+        Column(Modifier.padding(vertical = 6.dp)) {
+            if (shown.isEmpty()) {
                 Text(
-                    if (open.isEmpty()) "Niente in programma. Tocca + in basso per aggiungere."
-                    else "Niente in scadenza oggi.",
+                    "Niente nei prossimi ${Upcoming.DAYS} giorni.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
-            val now = System.currentTimeMillis()
-            items.forEachIndexed { index, item ->
-                if (index > 0) RowDivider()
-                when (item) {
-                    is DayItem.Event -> EventRow(item.event, past = !item.event.allDay && item.event.end < now) {
-                        inApp?.openEvent?.invoke(item.event)
-                    }
-                    is DayItem.Task -> TaskRow(item.task) {
-                        haptic(Haptic.CONFIRM)
-                        lastDone = item.task
-                        NotesStore.toggleTask(item.task.id)
-                    }
-                    is DayItem.Date -> DateRow(item.countdown, item.daysLeft) { editing = item.countdown }
-                }
-            }
-            if (tasks.more > 0) {
-                RowDivider()
-                Text(
-                    "+ altri ${tasks.more} promemoria in Note",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            shown.forEachIndexed { index, item ->
+                val first = index == 0 || shown[index - 1].day != item.day
+                if (first && index > 0) RowDivider()
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = onOpenNotes)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-            }
-            lastDone?.let { undone ->
-                RowDivider()
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp),
+                        .bouncyPress(0.98f)
+                        .clickable(onClick = onOpenAll)
+                        .padding(horizontal = 16.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        if (undone.repeat != null) "Spostato alla prossima volta: ${undone.text}" else "Fatto: ${undone.text}",
+                        if (first) Upcoming.dayLabel(item.day, today) else "",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        modifier = Modifier.width(72.dp),
+                    )
+                    Icon(
+                        item.kind.icon(),
+                        contentDescription = null,
+                        tint = item.event?.color?.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        (item.time?.let { "$it  " } ?: "") + item.text,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(
-                        onClick = {
-                            haptic(Haptic.TICK)
-                            NotesStore.restoreTask(undone)
-                            lastDone = null
-                        },
-                        modifier = Modifier.bouncyPress(),
-                    ) { Text("Annulla") }
                 }
+            }
+            // Toccando la card si apre tutto quello che arriva, senza limite di giorni.
+            val more = items.size - shown.size
+            RowDivider()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenAll)
+                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (more > 0) "Tutto quello che arriva · altre $more" else "Tutto quello che arriva",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                )
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                )
             }
         }
     }
-    editing?.let { CountdownDialog(countdown = it, onDismiss = { editing = null }) }
 }
 
+/** L'icona piccola di una riga di "Prossimi giorni": evento, promemoria, data, pacco o addebito. */
+private fun BriefKind.icon(): ImageVector = when (this) {
+    BriefKind.EVENT -> Icons.Outlined.Event
+    BriefKind.TASK -> Icons.Outlined.Checklist
+    BriefKind.DATE -> Icons.Outlined.Celebration
+    BriefKind.PARCEL -> Icons.Outlined.LocalShipping
+    BriefKind.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
+    else -> Icons.Outlined.Event
+}
+
+/**
+ * Spese, in Oggi dalla 1.186: il totale del mese, il budget e il prossimo addebito. Si tocca per la pagina
+ * intera (mesi, categorie, fisse, scontrino). Compare solo quando c'è qualcosa da dire.
+ */
 @Composable
-private fun TaskRow(task: TaskItem, onDone: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onDone)
-            .padding(start = 4.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = task.done, onCheckedChange = { onDone() })
-        Column {
-            Text(task.text, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            task.dueAt?.let { DueText(it, task.repeat) }
+fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
+    val month = YearMonth.from(today)
+    val total = Expenses.total(data.expenses, month)
+    val budget = data.budgetCents
+    val next = data.fixedExpenses.minByOrNull { it.nextDate(today) }
+    Section(title = "Spese", modifier = Modifier.captureTarget(CaptureMode.EXPENSE)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .bouncyPress(0.98f)
+                .clickable(onClick = onOpen)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
+                if (budget != null) {
+                    val over = total > budget
+                    Text(
+                        if (over) "Budget superato di ${Expenses.format(total - budget)}"
+                        else "Restano ${Expenses.format(budget - total)} del budget",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+                next?.let {
+                    val day = it.nextDate(today)
+                    Text(
+                        "Prossimo addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)} · " +
+                            if (day == today) "oggi" else Upcoming.dayLabel(day, today).lowercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline,
+            )
         }
     }
 }
 
-/** Compleanni, viaggi e scadenze dei prossimi giorni: titolo e quanto manca. */
-@Composable
-private fun DateRow(item: Countdown, days: Long, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            Icons.Outlined.Celebration,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(item.dateLine(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(
-            when (days) {
-                0L -> "Oggi"
-                1L -> "Domani"
-                else -> "tra $days giorni"
-            },
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
+/** Si mostra la card Spese solo con qualcosa dentro: una spesa, una fissa o un budget. */
+val NotesData.hasMoney: Boolean get() = expenses.isNotEmpty() || fixedExpenses.isNotEmpty() || budgetCents != null

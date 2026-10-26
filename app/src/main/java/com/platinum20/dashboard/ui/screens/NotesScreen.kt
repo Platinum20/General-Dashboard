@@ -156,8 +156,17 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
-/** Le pillole in cima alle Note, una per tipo: con scadenza, senza scadenza, spese (di nuovo per tornare a tutto). */
-enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Senza scadenza"), MONEY("Spese") }
+/** Apre le Note già su un tipo: la card Prossimi giorni di Oggi porta a tutto quello che arriva. */
+object NotesNav {
+    val request = kotlinx.coroutines.flow.MutableStateFlow<NotesSection?>(null)
+
+    fun open(section: NotesSection) {
+        request.value = section
+    }
+}
+
+/** I due tipi delle Note: con scadenza e senza. Le spese stanno in Oggi dalla 1.186. */
+enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Senza scadenza") }
 
 /**
  * Le pillole con quanto c'è in ciascun tipo ("Con scadenza · 4", "Senza scadenza · 7", "Spese · 115,90 €"):
@@ -167,12 +176,9 @@ enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Sen
 internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: LocalDate = LocalDate.now(), events: Int = 0): List<Pair<NotesSection, String>> {
     val dated = data.tasks.count { !it.done && it.dueAt != null } + data.upcoming.size + data.parcels.count { !it.delivered } + events
     val undated = data.tasks.count { !it.done && it.dueAt == null } + data.notes.size
-    val month = com.platinum20.dashboard.notes.Expenses.total(data.expenses, java.time.YearMonth.from(today))
     return listOfNotNull(
         (dated > 0 || data.habits.isNotEmpty()).takeIf { it }?.let { NotesSection.DATED to if (dated > 0) "Con scadenza · $dated" else "Con scadenza" },
         (undated > 0).takeIf { it }?.let { NotesSection.UNDATED to "Senza scadenza · $undated" },
-        (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null).takeIf { it }
-            ?.let { NotesSection.MONEY to "Spese · ${com.platinum20.dashboard.notes.Expenses.format(month)}" },
     )
 }
 
@@ -188,13 +194,10 @@ private fun NotesOverview(
     listState: androidx.compose.foundation.lazy.LazyListState,
     onOpen: (NotesSection) -> Unit,
 ) {
-    val month = java.time.YearMonth.now()
     val dated = timeline.flatMap { (group, rows) -> rows.map { group to it } }
     val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
     val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
     val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
-    val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
-    val budget = data.budgetCents
     LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "dated") {
             NotesCategoryCard(
@@ -221,25 +224,6 @@ private fun NotesOverview(
                 empty = "Le cose da fare prima o poi e gli appunti",
                 modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
                 onClick = { onOpen(NotesSection.UNDATED) },
-            )
-        }
-        item(key = "money") {
-            NotesCategoryCard(
-                title = NotesSection.MONEY.title,
-                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                accent = TileAccent.GREEN,
-                count = com.platinum20.dashboard.notes.Expenses.format(total).takeIf { total > 0 || budget != null },
-                lines = listOfNotNull(
-                    month.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() } to
-                        "${data.expenses.count { java.time.YearMonth.from(it.date) == month }} spese",
-                    budget?.let { b ->
-                        "Budget" to if (total > b) "superato di ${com.platinum20.dashboard.notes.Expenses.format(total - b)}"
-                        else "restano ${com.platinum20.dashboard.notes.Expenses.format(b - total)}"
-                    },
-                ).takeIf { data.expenses.isNotEmpty() || budget != null }.orEmpty(),
-                empty = "Scrivi \"12,50 pizza\" con il + o fotografa uno scontrino",
-                modifier = Modifier.animateItem().captureTarget(CaptureMode.EXPENSE),
-                onClick = { onOpen(NotesSection.MONEY) },
             )
         }
     }
@@ -317,7 +301,16 @@ fun NotesScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    val inApp = LocalInAppNav.current
+    LaunchedEffect(Unit) {
+        NotesNav.request.collect { wanted ->
+            if (wanted != null) {
+                section = wanted
+                searching = false
+                NotesNav.request.value = null
+            }
+        }
+    }
 
     // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
     // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.
@@ -355,23 +348,8 @@ fun NotesScreen(
         }
     }
     // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
-    // Lo scontrino fotografato apre lo stesso pannello del +, già scritto, da controllare e salvare.
-    var receiptText by remember { mutableStateOf<String?>(null) }
-    receiptText?.let { CaptureDialog(initial = it, initialMode = CaptureMode.TASK, onClose = { receiptText = null }) }
     val listState = rememberReselectListState(Routes.NOTES)
 
-    // Foto dello scontrino.
-    var readingReceipt by remember { mutableStateOf(false) }
-    val receiptPhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        if (!ok) return@rememberLauncherForActivityResult
-        readingReceipt = true
-        scope.launch {
-            val guess = ReceiptReader.read(context, ReceiptReader.photoUri(context))
-            readingReceipt = false
-            if (guess != null) receiptText = guess.captureText
-            else android.widget.Toast.makeText(context, "Non trovo il totale: riprova con lo scontrino dritto e ben illuminato", android.widget.Toast.LENGTH_LONG).show()
-        }
-    }
 
     // Con una pillola accesa, "indietro" torna a tutta la pagina.
     androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
@@ -406,18 +384,7 @@ fun NotesScreen(
                 padding = padding,
                 onClose = { searching = false },
                 onOpenNote = { onOpenNote(it) },
-                onOpenExpenses = { searching = false; section = NotesSection.MONEY },
-            )
-            return@Scaffold
-        }
-        if (section == NotesSection.MONEY) {
-            // Le spese del mese, il budget e le fisse, con il loro campo ("12,50 pizza", "ogni mese il 5 affitto 650").
-            ExpensesTab(
-                data,
-                padding,
-                onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } },
-                readingReceipt = readingReceipt,
-                onReceipt = { runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) } },
+                onOpenExpenses = { searching = false; inApp?.openRoute?.invoke(Routes.EXPENSES) },
             )
             return@Scaffold
         }
@@ -510,9 +477,6 @@ fun NotesScreen(
                         modifier = Modifier.animateItem().padding(bottom = 4.dp))
                 }
             }
-            if (section == null && (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null)) {
-                item(key = "expenses") { ExpensesSummary(data, onOpen = { section = NotesSection.MONEY }) }
-            }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (done.isNotEmpty() || delivered.isNotEmpty())) {
                 item(key = "done-header") {
@@ -530,39 +494,6 @@ fun NotesScreen(
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
                 }
-            }
-        }
-    }
-}
-
-/** La riga delle spese in fondo alle Note: il totale del mese e il budget; si tocca per i dettagli. */
-@Composable
-private fun ExpensesSummary(data: com.platinum20.dashboard.notes.NotesData, onOpen: () -> Unit) {
-    val month = java.time.YearMonth.now()
-    val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
-    val budget = data.budgetCents
-    Column(Modifier.padding(top = 12.dp)) {
-        SectionHeader("Spese", modifier = Modifier.padding(bottom = 4.dp).captureTarget(CaptureMode.EXPENSE))
-        CanvasCard(onClick = onOpen, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        month.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(com.platinum20.dashboard.notes.Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
-                    if (budget != null) {
-                        val over = total > budget
-                        Text(
-                            if (over) "Budget superato di ${com.platinum20.dashboard.notes.Expenses.format(total - budget)}"
-                            else "Restano ${com.platinum20.dashboard.notes.Expenses.format(budget - total)} del budget",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                Text("Dettagli", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

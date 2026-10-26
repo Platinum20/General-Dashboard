@@ -60,6 +60,12 @@ object Briefing {
     /** Da quest'ora in poi widget e notifica guardano anche a domani. */
     const val EVENING_HOUR = 18
 
+    /** Nella card di Oggi fino a quanti promemoria scaduti (o di oggi) si elencano uno per uno. */
+    const val EACH_TASKS = 4
+
+    /** Righe al massimo nella card di Oggi: tutta la giornata, ma non una lista infinita. */
+    const val CARD_MAX = 9
+
     /** Da quest'ora "Adesso" ricorda le abitudini non ancora spuntate. */
     const val HABIT_HOUR = 17
 
@@ -81,6 +87,11 @@ object Briefing {
         fixedExpenses: List<FixedExpense> = emptyList(),
         /** false nella card di Oggi: domani sta in "Prossimi giorni", qui solo oggi. */
         withTomorrow: Boolean = true,
+        /**
+         * true nella card di Oggi: tutta la giornata, una riga per impegno e per promemoria (non solo il
+         * prossimo o "3 scaduti"), compresi gli eventi di tutto il giorno. Il budget no: c'è la card Spese.
+         */
+        wholeDay: Boolean = false,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
@@ -93,8 +104,10 @@ object Briefing {
         timed.firstOrNull { it.begin <= nowMs && it.end > nowMs }?.let {
             lines += BriefLine(BriefKind.EVENT, "In corso: ${it.title}, fino alle ${it.end.at(zone)}")
         }
-        val next = timed.firstOrNull { it.begin > nowMs }
-        if (next != null) {
+        if (wholeDay) today.orEmpty().filter { it.allDay }.forEach { lines += BriefLine(BriefKind.EVENT, "Oggi: ${it.title}") }
+        // Nella card tutti gli impegni che restano; nel widget solo il prossimo.
+        val coming = timed.filter { it.begin > nowMs }.let { if (wholeDay) it else it.take(1) }
+        for (next in coming) {
             val minutes = Duration.ofMillis(next.begin - nowMs).toMinutes()
             val text = when {
                 relative && minutes < 60 -> "Tra ${minutes.coerceAtLeast(1)} min: ${next.title}"
@@ -110,21 +123,22 @@ object Briefing {
         val endOfDay = now.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
         val overdue = tasks.filter { !it.done && it.dueAt != null && it.dueAt < nowMs }
         val dueToday = tasks.filter { !it.done && it.dueAt != null && it.dueAt in nowMs until endOfDay }
-        when (overdue.size) {
-            0 -> Unit
-            // Uno solo: si legge cos'è e si chiude da qui.
-            1 -> lines += BriefLine(
-                BriefKind.TASK, "Scaduto: ${overdue[0].text}", urgent = true,
-                action = BriefAction.TASK_DONE, targetIds = listOf(overdue[0].id),
-            )
+        // Fino a [EACH_TASKS] (o uno solo nel widget) si legge cos'è e si chiude da qui; oltre, il numero.
+        val each = if (wholeDay) EACH_TASKS else 1
+        when {
+            overdue.isEmpty() -> Unit
+            overdue.size <= each -> overdue.forEach { lines += BriefLine(
+                BriefKind.TASK, "Scaduto: ${it.text}", urgent = true,
+                action = BriefAction.TASK_DONE, targetIds = listOf(it.id),
+            ) }
             else -> lines += BriefLine(BriefKind.TASK, "${overdue.size} promemoria scaduti", urgent = true)
         }
-        when (dueToday.size) {
-            0 -> Unit
-            1 -> lines += BriefLine(
-                BriefKind.TASK, "Entro le ${dueToday[0].dueAt!!.at(zone)}: ${dueToday[0].text}",
-                action = BriefAction.TASK_DONE, targetIds = listOf(dueToday[0].id),
-            )
+        when {
+            dueToday.isEmpty() -> Unit
+            dueToday.size <= each -> dueToday.forEach { lines += BriefLine(
+                BriefKind.TASK, "Entro le ${it.dueAt!!.at(zone)}: ${it.text}",
+                action = BriefAction.TASK_DONE, targetIds = listOf(it.id),
+            ) }
             else -> lines += BriefLine(BriefKind.TASK, "${dueToday.size} promemoria entro stasera")
         }
 
@@ -157,7 +171,7 @@ object Briefing {
         }
 
         // Spese: se ne parla solo quando il tetto del mese è vicino.
-        if (budgetCents != null && budgetCents > 0) {
+        if (!wholeDay && budgetCents != null && budgetCents > 0) {
             val spent = Expenses.total(expenses, YearMonth.from(date))
             if (spent >= budgetCents * 8 / 10) {
                 lines += BriefLine(
