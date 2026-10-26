@@ -22,13 +22,21 @@ import org.json.JSONObject
 sealed interface SavedLink {
     val title: String
     val subtitle: String
+    /** L'anteprima nelle note: copertina, miniatura del video o foto dell'articolo; vuota se non c'è. */
+    val image: String
 
     data class Media(val item: ResumeItem) : SavedLink {
         override val title get() = item.title
         override val subtitle get() = item.subtitle
+        override val image get() = item.image
     }
 
-    data class Article(val url: String, val source: String, override val title: String) : SavedLink {
+    data class Article(
+        val url: String,
+        val source: String,
+        override val title: String,
+        override val image: String = "",
+    ) : SavedLink {
         override val subtitle get() = source
     }
 }
@@ -64,6 +72,7 @@ object SavedLinks {
             .appendQueryParameter("url", link.url)
             .appendQueryParameter("source", link.source)
             .appendQueryParameter("title", link.title)
+            .apply { if (link.image.isNotBlank()) appendQueryParameter("image", link.image) }
             .build().toString()
     }
 
@@ -78,6 +87,7 @@ object SavedLinks {
                     url = uri.getQueryParameter("url")!!,
                     source = uri.getQueryParameter("source").orEmpty(),
                     title = uri.getQueryParameter("title").orEmpty(),
+                    image = uri.getQueryParameter("image").orEmpty(),
                 )
                 else -> null
             }
