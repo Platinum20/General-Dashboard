@@ -123,7 +123,7 @@ class BriefingTest {
 
     @Test
     fun laCardDiOggiRestaSuOggi() {
-        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossimi giorni".
+        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossime cose".
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val tomorrow = evening.toLocalDate().plusDays(1).atTime(9, 30)
         fun build(widget: Boolean) = Briefing.build(
@@ -236,5 +236,36 @@ class BriefingTest {
         ).first { it.kind == BriefKind.EVENT }.text
         assertEquals("Alle 12:00: Calcetto · pioggia 70%", line(start))
         assertEquals("Alle 13:30: Calcetto", line(start.plusMinutes(90)))
+    }
+
+    @Test
+    fun laCardElencaTuttaLaGiornata() {
+        // Nella card di Oggi ogni impegno e ogni promemoria ha la sua riga; nel widget solo il prossimo.
+        val allDay = CalendarEvent(3, "Tutti i Santi", ms(morning.withHour(0)), ms(morning.withHour(0).plusDays(1)), allDay = true, location = "", color = 0)
+        fun build(card: Boolean) = Briefing.build(
+            now = morning,
+            forecast = null,
+            today = listOf(allDay, event("Riunione", morning.plusHours(2), morning.plusHours(3)), event("Palestra", morning.plusHours(9), morning.plusHours(10))),
+            tomorrow = null,
+            tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.plusHours(4))), TaskItem(2, "Latte", dueAt = ms(morning.plusHours(6)))),
+            countdowns = emptyList(),
+            budgetCents = 100,
+            expenses = listOf(com.platinum20.dashboard.notes.Expense(1, 500, "pizza", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), date = morning.toLocalDate())),
+            zone = zone,
+            withTomorrow = !card,
+            wholeDay = card,
+            max = Briefing.CARD_MAX,
+        )
+        val card = build(card = true).map { it.text }
+        assertTrue(card.contains("Oggi: Tutti i Santi"))
+        assertTrue(card.contains("Alle 11:00: Riunione"))
+        assertTrue(card.contains("Alle 18:00: Palestra"))
+        assertTrue(card.contains("Entro le 13:00: Bolletta"))
+        assertTrue(card.contains("Entro le 15:00: Latte"))
+        // Il budget sta nella card Spese, non qui.
+        assertFalse(card.any { it.contains("Budget") || it.contains("Spese") })
+        val widget = build(card = false).map { it.text }
+        assertTrue(widget.contains("2 promemoria entro stasera"))
+        assertFalse(widget.contains("Alle 18:00: Palestra"))
     }
 }

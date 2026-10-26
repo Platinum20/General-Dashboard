@@ -38,18 +38,19 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `WeekReviewCard.kt`,
-`CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`
-(pure: the "Adesso" lines, also used by widget + morning notification; the Home card stays on today, `withTomorrow=false`),
-`Upcoming.kt` ("Prossimi giorni" block at the bottom of Adesso: next 7 days of events/tasks/dates/parcels/charges; tomorrow's weather only in WeatherScreen), `DayTimeline.kt`
-("La giornata" card, today only), `TodayTasks`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossime cose", `MoneyCard` "Spese"),
+`WeekReviewCard.kt`, `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
+`home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
+(pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
+= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossime cose" card: next 7 days of
+events/tasks/dates/parcels/charges; tomorrow's weather only in WeatherScreen), `WeekReview`, `Greeting`, `Invites`,
+`HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
 
 **Note**: data in `notes/NotesStore.kt` (one JSON file: tasks, notes, countdowns, habits,
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
-`NotesScreen.kt` (overview of 3 cards + detail pages), `NotesTimeline.kt` (the 3 kinds:
-DATED / UNDATED / MONEY, grouping by day), `NotesExtras.kt`, `NotesSearchUi.kt`.
+`NotesScreen.kt` (overview of 2 cards + detail pages), `NotesTimeline.kt` (DATED / UNDATED, grouping by day), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
@@ -117,8 +118,8 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - One look everywhere: Canvas components above, no ElevatedCard, no FABs, no buttons in section
   headers (search = pull down, settings = drag "+" down). One colored "hero" block per page.
 - Each piece of info lives in one place; no duplicates. Settings = set-once things only.
-- "+" and voice never ask for the type. Note = 3 kinds only (Con scadenza, Senza scadenza,
-  Spese); no tabs, no Idee.
+- "+" and voice never ask for the type. Note = 2 kinds only (Con scadenza, Senza scadenza);
+  Spese is a Home card + page (1.186). No tabs, no Idee.
 - Nav pill animation must stay exactly as 1.140 (restored in 1.149): don't touch it.
 - No serif fonts (tried and rejected). UI polish has priority over new features.
 - Player: one source at a time, no sleep timer, no close button (gestures), mini player free

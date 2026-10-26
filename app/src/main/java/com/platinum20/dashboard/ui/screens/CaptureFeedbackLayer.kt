@@ -85,7 +85,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
         val mode = n.mode
         // Sempre sulla scheda in basso, anche se le Note sono già aperte (come vuole Antonio).
-        val key = if (mode == CaptureMode.EVENT) CaptureTargets.HOME_TAB else CaptureTargets.NOTES_TAB
+        // Le spese stanno in Oggi dalla 1.186, come gli impegni.
+        val key = if (mode == CaptureMode.EVENT || mode == CaptureMode.EXPENSE) CaptureTargets.HOME_TAB else CaptureTargets.NOTES_TAB
         return CaptureTargets.rects[key]?.let { key to it }
     }
 

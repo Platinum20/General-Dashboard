@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.186.0
+**Oggi: tutta la giornata in Adesso, sotto le prossime cose e le spese**
+- Adesso elenca tutto quello che ti resta oggi: ogni impegno, anche quelli di tutto il giorno, e ogni promemoria in scadenza, da spuntare con un tocco
+- La card "La giornata" e "Prossimi giorni" diventano una sola card, Prossime cose: i prossimi 7 giorni divisi per giorno, con impegni del calendario, promemoria, compleanni, pacchi e addebiti (anche quelli trovati in notifiche, SMS e mail)
+- Le Spese passano dalle Note a Oggi: una card con il totale del mese, il budget e il prossimo addebito, che apre la pagina intera; si sposta o si nasconde in Personalizza
+- Le Note restano con due tipi: Con scadenza e Senza scadenza
+
 ## 1.185.0
 **La lettura nel player unico, e la voce del telefono di nuovo funzionante**
 - Quando ti leggo una notizia o il punto del giorno compare la notifica del player, come per musica e video: pausa, avanti e indietro tra i paragrafi, anche dalla schermata di blocco e dalle cuffie

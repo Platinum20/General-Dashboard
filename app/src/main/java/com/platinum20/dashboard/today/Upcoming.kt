@@ -13,26 +13,28 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Una riga di "Prossimi giorni": il giorno, l'ora se c'è, che cosa. */
+/** Una riga di "Prossime cose": il giorno, l'ora se c'è, che cosa. */
 data class UpcomingItem(
     val day: LocalDate,
     val kind: BriefKind,
     val text: String,
     /** "09:30" per impegni e promemoria con orario, null per le cose di tutto il giorno. */
     val time: String? = null,
+    /** L'evento del calendario, per aprirne la scheda con un tocco. */
+    val event: CalendarEvent? = null,
 )
 
 /**
- * "Prossimi giorni", in fondo ad "Adesso": da domani alla settimana dopo, tutto in un posto solo
- * (impegni, promemoria con data, compleanni e date, pacchi, addebiti). "Adesso" sopra resta su oggi;
- * il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura, facile da provare.
+ * "Prossime cose" in Oggi: da domani alla settimana dopo, tutto in un posto solo (impegni del calendario,
+ * promemoria con data, compleanni e date, pacchi, addebiti, anche quelli trovati in notifiche, SMS e mail).
+ * "Adesso" sopra resta su oggi; il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura.
  */
 object Upcoming {
     /** Quanti giorni guarda avanti, domani compreso. */
     const val DAYS = 7
 
-    /** Quante righe al massimo: è un riassunto, il resto è in Calendario e Note. */
-    const val MAX = 6
+    /** Quante righe al massimo: è un riassunto, il resto è in Note > Prossime cose. */
+    const val MAX = 8
 
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -57,8 +59,8 @@ object Upcoming {
                 allDay += UpcomingItem(day, BriefKind.DATE, it.title + (it.yearsAtNext(today)?.let { y -> " ($y anni)" } ?: ""))
             }
             events[day].orEmpty().filter { seen.add(it.eventId) }.forEach {
-                if (it.allDay) allDay += UpcomingItem(day, BriefKind.EVENT, it.title)
-                else timed += it.begin to UpcomingItem(day, BriefKind.EVENT, it.title, it.begin.at(zone))
+                if (it.allDay) allDay += UpcomingItem(day, BriefKind.EVENT, it.title, event = it)
+                else timed += it.begin to UpcomingItem(day, BriefKind.EVENT, it.title, it.begin.at(zone), event = it)
             }
             tasks.filter { !it.done && it.dueAt != null && it.dueAt.day(zone) == day }.forEach {
                 timed += it.dueAt!! to UpcomingItem(day, BriefKind.TASK, it.text, it.dueAt.at(zone))
