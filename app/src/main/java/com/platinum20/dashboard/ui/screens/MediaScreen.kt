@@ -333,7 +333,8 @@ private fun NowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modif
                     contentAlignment = Alignment.Center,
                 ) {
                     IconTile(sourceIcon(now.source), sourceAccent(now.source))
-                    if (now.artwork.isNotBlank()) {
+                    if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.matchParentSize())
+                    else if (now.artwork.isNotBlank()) {
                         AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                     }
                 }

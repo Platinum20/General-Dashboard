@@ -298,7 +298,8 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                     )
                 } else {
                     Icon(sourceIcon(now.source), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (now.artwork.isNotBlank()) {
+                    if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
+                    else if (now.artwork.isNotBlank()) {
                         AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     }
                 }

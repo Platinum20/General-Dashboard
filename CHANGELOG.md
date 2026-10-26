@@ -1,12 +1,19 @@
 # Changelog
 
-## 1.147.0
+## 1.148.0
 **Note in tre card, sezioni tutte uguali, tema Puro**
 - Le Note mostrano solo i tre tipi: Con scadenza, Senza scadenza e Spese, ognuno in una card con le prime cose. Toccandone uno si apre la sua pagina: le scadenze divise in Scaduti, Oggi, Domani, Questa settimana e Più avanti, gli appunti, le spese del mese
 - Tolte le idee (la lampadina). Lo scontrino da fotografare è dentro Spese, in cima; "Elimina i completati" è accanto a Completati
 - Tutte le sezioni sono fatte allo stesso modo: in alto solo il titolo, tutto il resto scorre. In News le fonti sono la prima riga della lista
 - Il tema AMOLED diventa "Puro": segue chiaro e scuro del telefono, bianco pieno di giorno e nero AMOLED di sera
 - Nelle Impostazioni l'anello attorno al tema scelto è della stessa misura dell'anteprima e non la sposta più
+
+## 1.147.0
+**Player audio rivisto e copertina del punto del giorno**
+- Il punto del giorno letto ad alta voce ha la sua copertina: blu e arancione come l'app, con il titolo e la data di oggi; si vede nel player, nel mini player e in Media
+- Nel player audio (Spotify, YouTube Music, radio, podcast, lettura) niente più timer di spegnimento né tasto Chiudi
+- Il player si chiude con un gesto: trascinalo giù per tornare al mini player, lancialo di lato oltre metà schermo per chiudere tutto, come il mini player
+- Tutto il player sta in una pagina: la copertina si rimpicciolisce sugli schermi bassi
 
 ## 1.146.0
 **Barra in basso fluida**
