@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.164.0
+**La bolla dei vocali resta alta come la barra**
+- Mentre detti la barra mostra solo le onde della voce e il testo, su una riga sola
+- Le parole più nuove restano sempre visibili a destra, le prime sfumano a sinistra: la bolla non cresce più
+
 ## 1.163.0
 **Media: prima le sezioni, poi Riprendi e la coda**
 - In cima a Media ci sono Musica, Video e Radio e podcast; sotto la card di quello che suona (o "Riprendi" se non suona niente), poi la coda, poi Continua e le radio
