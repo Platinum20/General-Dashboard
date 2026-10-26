@@ -1,10 +1,16 @@
 # Changelog
 
-## 1.170.0
+## 1.171.0
 **Le voci si scaricano (e si vede a che punto sono)**
 - Il download della voce non sembra più bloccato: la percentuale sale davvero e, se qualcosa va storto, la riga sotto dice il perché ("niente rete", "rete troppo lenta") e basta toccare la voce per riprovare
 - La voce si sceglie come il tema: tre riquadri con l'onda della voce, che si riempie mentre scarica, e una riga sola che dice com'è
 - Nuovo interruttore in Impostazioni › I tuoi dati: "Scarica solo col Wi-Fi". Spento di serie; acceso, voci e aggiornamenti dell'app aspettano il Wi-Fi invece di consumare i dati
+
+## 1.170.0
+**Una sola card media, in Media e in Oggi**
+- La card del media è ora una sola, stretta e identica nelle due pagine: mostra quello che suona adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da riprendere dal punto esatto
+- In Oggi sta subito sotto "Adesso", non più in fondo alla giornata
+- "Le tue radio" è sparita da Media: le radio stanno nella loro pagina, come i podcast
 
 ## 1.169.0
 **Il fumetto "salvato" si chiude portandolo di lato**
