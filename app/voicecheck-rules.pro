@@ -11,3 +11,7 @@
 -keep class kotlin.** { *; }
 -keep class kotlinx.** { *; }
 -dontwarn **
+# Le librerie che l'APK di test prende da quello dell'app (runner, tracing, guava).
+-keep class androidx.** { *; }
+-keep class com.google.common.** { *; }
+-keep class org.junit.** { *; }

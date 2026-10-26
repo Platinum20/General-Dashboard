@@ -29,7 +29,11 @@ class VoiceEngineCheck {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val voice = ReadingVoice.RICCARDO
         val dir = File(context.filesDir, "voices/${voice.archive}")
-        val files = VoiceStore.install(voice.url!!, dir) {}
+        // La rete dell'emulatore a volte parte tardi: qualche tentativo prima di arrendersi.
+        val files = (1..5).firstNotNullOfOrNull { attempt ->
+            runCatching { VoiceStore.install(voice.url!!, dir) {} }
+                .onFailure { Log.i(tag, "download $attempt: $it"); Thread.sleep(5_000) }.getOrNull()
+        } ?: VoiceStore.install(voice.url!!, dir) {}
         Log.i(tag, "file: $files")
 
         val probe = runCatching { NeuralVoice.probe(voice, files, "Ciao, questa è una prova della voce.") }
