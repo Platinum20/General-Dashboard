@@ -1,0 +1,1223 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 60,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 77,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1404,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1607,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1577,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1533,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 124,
+    "blocked": 0,
+    "wouldBlock": 35,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "static.doubleclick.net": 2,
+     "googleads.g.doubleclick.net": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.youtube.com": 5,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "t9jremrrqtne8pniu4x7re3gvkqso1793057632.nuid.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26550,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 84,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 1,
+     "www.youtube.com": 2,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26550,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/26/flavio-bolsonaro-la-polizia-mi-ha-tolto-il-passaporto_79d74835-a94c-4db4-afdc-d9eeb3b698a3.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1879,
+    "blocked": 0,
+    "wouldBlock": 1659,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 3,
+     "t.seedtag.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "intake.pbstck.com": 3,
+     "s.seedtag.com": 44,
+     "cdn-gl.imrworldwide.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "yibqb9pnudsvuk29drumxcbngendn1793057658.nuid.imrworldwide.com": 1,
+     "cs.seedtag.com": 4,
+     "secure-assets.rubiconproject.com": 23,
+     "visitor.omnitagjs.com": 3,
+     "ad.360yield.com": 18,
+     "u.openx.net": 5,
+     "match.prod.bidr.io": 7,
+     "sync.1rx.io": 42,
+     "sync.ipredictive.com": 5,
+     "cs.admanmedia.com": 12,
+     "sync.srv.stackadapt.com": 14,
+     "t.adx.opera.com": 10,
+     "x.bidswitch.net": 34,
+     "id5-sync.com": 6,
+     "sync.smartadserver.com": 9,
+     "pixel-sync.sitescout.com": 16,
+     "ap.lijit.com": 35,
+     "ib.adnxs.com": 19,
+     "match.adsrvr.org": 24,
+     "c1.adform.net": 11,
+     "csync.smartadserver.com": 3,
+     "creativecdn.com": 36,
+     "ads.pubmatic.com": 20,
+     "onetag-sys.com": 47,
+     "match.sharethrough.com": 16,
+     "csync.loopme.me": 26,
+     "match.deepintent.com": 8,
+     "ups.analytics.yahoo.com": 9,
+     "beachfront-match.dotomi.com": 1,
+     "b1sync.outbrain.com": 14,
+     "ced-ns.sascdn.com": 1,
+     "sync.richaudience.com": 24,
+     "cm.g.doubleclick.net": 7,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "image8.pubmatic.com": 17,
+     "eb2.3lift.com": 28,
+     "public.servenobid.com": 1,
+     "eus.rubiconproject.com": 51,
+     "s.ad.smaato.net": 26,
+     "hb.trustedstack.com": 4,
+     "tr.blismedia.com": 2,
+     "ad.turn.com": 2,
+     "csync.smilewanted.com": 10,
+     "ssbsync.smartadserver.com": 25,
+     "sync.adkernel.com": 35,
+     "rtb.mfadsrvr.com": 3,
+     "measureadv.com": 1,
+     "ssc-cms.33across.com": 51,
+     "ssum-sec.casalemedia.com": 11,
+     "cs.media.net": 11,
+     "prebid.a-mo.net": 10,
+     "id.rlcdn.com": 8,
+     "cpm.vistarsagency.com": 1,
+     "cs-server-s2s.yellowblue.io": 7,
+     "ittpx.eskimi.com": 14,
+     "dis.criteo.com": 1,
+     "sync-tm.everesttech.net": 5,
+     "bttrack.com": 1,
+     "rtb-csync.smartadserver.com": 4,
+     "pixel.33across.com": 1,
+     "prebidsrvr.cootlogix.com": 1,
+     "sync.kueezrtb.com": 5,
+     "us-east-1-cs-rtb.openwebmp.com": 4,
+     "p.rfihub.com": 14,
+     "ce.lijit.com": 13,
+     "hbx.media.net": 18,
+     "sync.go.sonobi.com": 29,
+     "jadserve.postrelease.com": 10,
+     "ads.servenobid.com": 8,
+     "token.rubiconproject.com": 41,
+     "cookies.nextmillmedia.com": 4,
+     "dsp-service.admatic.de": 3,
+     "sync.mathtag.com": 9,
+     "prebid-match.dotomi.com": 2,
+     "visitor.us-west1.gcp.omnitagjs.com": 4,
+     "ssbsync-global.smartadserver.com": 7,
+     "cm.adform.net": 18,
+     "bh.contextweb.com": 18,
+     "contextual.media.net": 3,
+     "ads.yieldmo.com": 13,
+     "us-u.openx.net": 15,
+     "secure.adnxs.com": 9,
+     "sync.rbstsystems.live": 7,
+     "rtb.gumgum.com": 4,
+     "ssp-sync.criteo.com": 18,
+     "sync.a-mo.net": 5,
+     "sync.ingage.tech": 4,
+     "ms-cookie-sync.presage.io": 12,
+     "pixel-eu.rubiconproject.com": 4,
+     "rtb.openx.net": 9,
+     "cs.iqzone.com": 10,
+     "a.amxrtb.com": 12,
+     "user-sync.fwmrm.net": 5,
+     "visitor-ow.omnitagjs.com": 3,
+     "syncingbridge.com": 10,
+     "openweb-match.dotomi.com": 2,
+     "www.temu.com": 3,
+     "rt.marphezis.com": 1,
+     "u-las.4dex.io": 5,
+     "dsp-service.adtarget.biz": 2,
+     "dsum-sec.casalemedia.com": 1,
+     "visitor-px.omnitagjs.com": 1,
+     "visitor-programmaticx.omnitagjs.com": 1,
+     "trace.mediago.io": 1,
+     "casale-match.dotomi.com": 1,
+     "pbs-cs.yellowblue.io": 3,
+     "cs.openwebmp.com": 6,
+     "u-ams.4dex.io": 6,
+     "sync.sparteo.com": 6,
+     "idpix.media6degrees.com": 1,
+     "s.console.adtarget.com.tr": 2,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "dsp-service.pixad.com.tr": 3,
+     "sync.cootlogix.com": 22,
+     "pixel.rubiconproject.com": 29,
+     "prebid.admatic.de": 7,
+     "pixel-us-east.rubiconproject.com": 7,
+     "33across-match.dotomi.com": 2,
+     "usync.4dex.io": 4,
+     "pixel.tapad.com": 4,
+     "b1sync.zemanta.com": 3,
+     "ogury-match.dotomi.com": 4,
+     "rtb.adentifi.com": 1,
+     "um.simpli.fi": 2,
+     "ittpx-us-e.eskimi.com": 4,
+     "id.a-mx.com": 15,
+     "ads.betweendigital.com": 1,
+     "visitor-33across.omnitagjs.com": 1,
+     "et-c-ash.33across.com": 2,
+     "cms.quantserve.com": 5,
+     "ps.eyeota.net": 11,
+     "px.ads.linkedin.com": 2,
+     "px.mountain.com": 1,
+     "dp1.33across.com": 1,
+     "dsp.360yield.com": 2,
+     "i.w55c.net": 2,
+     "gumgum-match.dotomi.com": 2,
+     "cs.yellowblue.io": 5,
+     "openx2-match.dotomi.com": 2,
+     "i.liadm.com": 4,
+     "oxp.mxptint.net": 2,
+     "s.amazon-adsystem.com": 3,
+     "elb.the-ozone-project.com": 2,
+     "thrtle.com": 2,
+     "aorta.clickagy.com": 2,
+     "gw-iad-bid.ymmobi.com": 21,
+     "prebid.adtarget.biz": 1,
+     "aa.agkn.com": 2,
+     "openx-ums.acuityplatform.com": 2,
+     "su.semasio.net": 2,
+     "static.cdn.admatic.de": 2,
+     "us.ck-ie.com": 16,
+     "prebid.pixad.com.tr": 4,
+     "sync.aniview.com": 16,
+     "krush-match.dotomi.com": 8,
+     "sync.bfmio.com": 8,
+     "ads.stickyadstv.com": 8,
+     "sync-km.ads.yieldmo.com": 8,
+     "player.aniview.com": 8,
+     "sync.colossusssp.com": 10,
+     "usersync.gumgum.com": 8,
+     "match.sync.ad.cpe.dotomi.com": 8,
+     "image2.pubmatic.com": 8,
+     "visitor-krushmedia.omnitagjs.com": 8,
+     "visitor-krushmedia_video.omnitagjs.com": 8,
+     "eu-rtbstack-cm.admixer.net": 8,
+     "sync.serverbid.com": 1,
+     "sync.adotmob.com": 1,
+     "capi.connatix.com": 3,
+     "i.ctnsnet.com": 1,
+     "ads160.console.adtarget.com.tr": 4,
+     "dmp.brand-display.com": 1,
+     "bpi.rtactivate.com": 1,
+     "vop.sundaysky.com": 3,
+     "sync.crwdcntrl.net": 1,
+     "pxl.iqm.com": 3,
+     "equativ-match.dotomi.com": 1,
+     "cdn.undertone.com": 2,
+     "evt.undertone.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Flavio Bolsonaro, 'la polizia mi ha tolto il passaporto' - Ultima ora - Ansa.it",
+    "textLength": 7203,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Flavio Bolsonaro, 'la polizia mi ha tolto il passaporto' - Ultima ora - Ansa.it",
+    "textLength": 7203,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/sport/calcio/harry-kane-e-il-vincitore-del-pallone-doro-2026-la-classifica-finale-e-i-premi-assegnati-per-categoria/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 310,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 310,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 367,
+    "blocked": 0,
+    "wouldBlock": 108,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 19,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 2,
+     "api.realtimely.io": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "ep1.adtrafficquality.google": 2,
+     "applets.ebxcdn.com": 2,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "ep2.adtrafficquality.google": 3,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "cm.everesttech.net": 1,
+     "cdn.permutive.app": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "services.insurads.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "ycfjkqbkgvqsje7sm9vevzl3mmbco1793057732.nuid.imrworldwide.com": 1,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "static.criteo.net": 1,
+     "oa.openxcdn.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "esp.rtbhouse.com": 1,
+     "084b5fab6dde0aaffca4ab14a8c0dfe0.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "gum.criteo.com": 2,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 19874,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 257,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 19866,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/26/pallone-oro-2026-harry-kane-premi/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 207,
+    "blocked": 0,
+    "wouldBlock": 142,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "stats.open.online": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 20,
+     "cdn.taboola.com": 7,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "cdn.confiant-integrations.net": 2,
+     "dpm.demdex.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "applets.ebxcdn.com": 2,
+     "cdn.permutive.app": 1,
+     "services.insurads.com": 3,
+     "ep1.adtrafficquality.google": 2,
+     "cm.everesttech.net": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "cdn1.anonymised.io": 2,
+     "ep2.adtrafficquality.google": 3,
+     "trc.taboola.com": 2,
+     "secure-it.imrworldwide.com": 2,
+     "xynihg2zutuzsaunlj1iqjcp7n99p1793057755.nuid.imrworldwide.com": 1,
+     "static.anonm.io": 1,
+     "la-trc-events.taboola.com": 4,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "cds.taboola.com": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "ad-delivery.net": 1,
+     "39fd5d6224edfdca3a48d1c55d7ae8c1.safeframe.googlesyndication.com": 3,
+     "esp.rtbhouse.com": 1,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Harry Kane vince il Pallone d'Oro 2026, delusi Mbappé e Yamal. E la Spagna fa incetta di premi - Open",
+    "textLength": 5240,
+    "adFrames": 2,
+    "adBoxes": 17
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Harry Kane vince il Pallone d'Oro 2026, delusi Mbappé e Yamal. E la Spagna fa incetta di premi - Open",
+    "textLength": 4299,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/rubriche/tg2post/video/2026/10/TG2-Post-del-26102026-61fc9ccf-e42b-4b89-a750-144e7d688a96.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 288,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 288,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 163,
+    "blocked": 0,
+    "wouldBlock": 54,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "cm.g.doubleclick.net": 3,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "static.criteo.net": 1,
+     "oa.openxcdn.net": 1,
+     "rtb.openx.net": 1,
+     "google-bidout-d.openx.net": 1,
+     "ad.turn.com": 1,
+     "image6.pubmatic.com": 2,
+     "match.adsrvr.org": 1,
+     "ups.analytics.yahoo.com": 1,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 2,
+     "eae80190ade498dc6e3b32d862b0cb65.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "la-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15439,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 112,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14774,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/estero/news/2026-10-30/elezioni-israele-incognite-partiti-39718328/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 232,
+    "blocked": 0,
+    "wouldBlock": 90,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "cm.g.doubleclick.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "image6.pubmatic.com": 2,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "syndication.x.com": 2,
+     "s0.2mdn.net": 1,
+     "pagead2.googlesyndication.com": 6,
+     "pubads.g.doubleclick.net": 1,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "66e704b44f0026bccf75b0e43599c468.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "la-trc-events.taboola.com": 3,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Elezioni Israele: le incognite di ultradestra, arabi e partitini",
+    "textLength": 12938,
+    "adFrames": 1,
+    "adBoxes": 10
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 145,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "syndication.x.com": 2,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')"
+    ]
+   },
+   "info": {
+    "title": "Elezioni Israele: le incognite di ultradestra, arabi e partitini",
+    "textLength": 10322,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 192,
+    "blocked": 0,
+    "wouldBlock": 47,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "b8edb71b8e1fdeee9bbc813d0229a5ac.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "o.clarity.ms": 2,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11232,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 152,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11188,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/junko-terao/2026/10/26/australia-copyright"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 155,
+    "blocked": 0,
+    "wouldBlock": 51,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 7,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 2,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "4aa907b5595993e7be7ed45ea49b7f6f.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 7,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "e.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 1400,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 991,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
