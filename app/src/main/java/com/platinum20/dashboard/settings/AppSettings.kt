@@ -14,16 +14,19 @@ enum class AppTheme(val label: String, val description: String) {
     AMOLED("Puro", "Bianco di giorno, nero AMOLED di sera"),
 }
 
-/** Le card della Dashboard, nell'ordine predefinito. */
+/**
+ * Le card della Dashboard, nell'ordine predefinito: prima quello che serve subito, poi le cose
+ * da sistemare, infine le letture. Le descrizioni stanno su una riga sola in Personalizza.
+ */
 enum class HomeCard(val label: String, val description: String) {
-    WEATHER("Adesso", "Il meteo e le poche cose da sapere in questo momento: prossimo impegno, pioggia, scadenze"),
-    RESUME("Media", "Quello che suona adesso o, se nulla suona, quello da riprendere dal punto esatto"),
-    TOMORROW("Domani", "Dalle 18 com'è domani: meteo, primo impegno e scadenze, per prepararsi la sera prima"),
-    WEEK("La tua settimana", "Dalla domenica sera al lunedì: com'è andata la settimana e cosa arriva"),
-    MAIL("Posta", "Le mail importanti non ancora lette, solo mittente e oggetto, da leggere in Canvas"),
-    FOUND("Trovati per te", "Impegni, spese e pacchi trovati da soli in mail, notifiche e SMS, da aggiungere in un tocco"),
-    DAY("La giornata", "Impegni, promemoria e date dei prossimi giorni in una lista sola, in ordine di orario"),
-    RECAP("Il punto del giorno", "I temi principali delle notizie"),
+    // Il nome resta WEATHER per le preferenze salvate.
+    WEATHER("Adesso", "Meteo e cose da sapere ora"),
+    RESUME("Media", "Quello che suona o da riprendere"),
+    DAY("La giornata", "Impegni e promemoria per orario"),
+    // Il nome resta MAIL per le preferenze salvate: dalla 1.181 tiene anche "Trovati per te".
+    MAIL("Dalla posta", "Cose da aggiungere e mail importanti"),
+    WEEK("La tua settimana", "Domenica sera e lunedì: com'è andata"),
+    RECAP("Il punto del giorno", "Le notizie principali"),
 }
 
 data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
@@ -31,6 +34,33 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
 
     companion object {
         val DEFAULT = HomeLayout(HomeCard.entries, emptySet())
+
+        /** 2 = 1.181: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo. */
+        const val VERSION = 2
+
+        /**
+         * Legge ordine e card nascoste salvate. Da una versione vecchia l'ordine torna quello
+         * predefinito e "Dalla posta" resta nascosta solo se lo erano sia Posta sia Trovati per te.
+         */
+        fun read(orderRaw: String?, hiddenRaw: String?, version: Int): HomeLayout {
+            fun names(raw: String?) = raw.orEmpty().split(',').filter { it.isNotBlank() }
+            fun parse(list: List<String>) = list.mapNotNull { name -> HomeCard.entries.firstOrNull { it.name == name } }
+            val oldHidden = names(hiddenRaw)
+            if (version < VERSION) {
+                val hidden = parse(oldHidden).toMutableSet()
+                if (hiddenRaw != null && "MAIL" in oldHidden && "FOUND" !in oldHidden) hidden -= HomeCard.MAIL
+                return HomeLayout(DEFAULT.order, hidden)
+            }
+            val order = parse(names(orderRaw)).distinct().toMutableList()
+            // Le card aggiunte in versioni successive finiscono nella loro posizione predefinita.
+            HomeCard.entries.forEach { card ->
+                if (card !in order) {
+                    val before = HomeCard.entries.take(card.ordinal).lastOrNull { it in order }
+                    order.add(if (before == null) 0 else order.indexOf(before) + 1, card)
+                }
+            }
+            return HomeLayout(order, parse(oldHidden).toSet())
+        }
     }
 }
 
@@ -47,6 +77,7 @@ object AppSettings {
     private const val THEME_VERSION = 2
     private const val KEY_CARD_ORDER = "home_card_order"
     private const val KEY_CARD_HIDDEN = "home_card_hidden"
+    private const val KEY_CARD_VERSION = "home_card_version"
     private const val KEY_MORNING_ENABLED = "morning_enabled"
     private const val KEY_MORNING_HOUR = "morning_hour"
     private const val KEY_MORNING_MINUTE = "morning_minute"
@@ -164,19 +195,16 @@ object AppSettings {
     }
 
     private fun readLayout(): HomeLayout {
-        fun parse(raw: String?) = raw.orEmpty().split(',')
-            .mapNotNull { name -> HomeCard.entries.firstOrNull { it.name == name } }
-        val saved = parse(prefs.getString(KEY_CARD_ORDER, null)).distinct()
-        // Le card aggiunte in versioni successive finiscono nella loro posizione predefinita.
-        val order = saved.toMutableList()
-        HomeCard.entries.forEach { card ->
-            if (card !in order) {
-                val before = HomeCard.entries.take(card.ordinal).lastOrNull { it in order }
-                order.add(if (before == null) 0 else order.indexOf(before) + 1, card)
-            }
+        val version = prefs.getInt(KEY_CARD_VERSION, 1)
+        val layout = HomeLayout.read(prefs.getString(KEY_CARD_ORDER, null), prefs.getString(KEY_CARD_HIDDEN, null), version)
+        if (version < HomeLayout.VERSION) {
+            prefs.edit()
+                .putString(KEY_CARD_ORDER, layout.order.joinToString(",") { it.name })
+                .putString(KEY_CARD_HIDDEN, layout.hidden.joinToString(",") { it.name })
+                .putInt(KEY_CARD_VERSION, HomeLayout.VERSION)
+                .apply()
         }
-        val hidden = prefs.getString(KEY_CARD_HIDDEN, null)?.let { parse(it).toSet() } ?: HomeLayout.DEFAULT.hidden
-        return HomeLayout(order, hidden)
+        return layout
     }
 
     private fun saveLayout(layout: HomeLayout) {

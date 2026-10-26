@@ -38,10 +38,10 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `TomorrowCard.kt`, `WeekReviewCard.kt`,
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `WeekReviewCard.kt`,
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`
-(pure: the "Adesso" lines, also used by widget + morning notification), `DayTimeline.kt`
-("La giornata" card), `TodayTasks`, `Tomorrow`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
+(pure: the "Adesso" lines, also used by widget + morning notification; from 18:00 Adesso becomes "Domani", no separate card), `DayTimeline.kt`
+("La giornata" card), `TodayTasks`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
 
@@ -86,8 +86,8 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Mail** (`mail/`): `GmailAuth` (gmail.readonly via AuthorizationClient, `needsConsent` = 7-day re-consent while
 the Google app is in Testing), `MailParse` (pure: Gmail JSON, MIME/HTML to text, mail to `Incoming`), `MailStore`
-(sync: new mails into `AutoFill.offer`, important unread for the "Posta" Home card), `work/MailWorker` (hourly + on
-Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (MailCard,
+(sync: new mails into `AutoFill.offer`, important unread for the Home card), `work/MailWorker` (hourly + on
+Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (`FromMailCard` = Home card "Dalla posta": AutoFill suggestions + important mail,
 GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),

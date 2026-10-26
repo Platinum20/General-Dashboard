@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.181.0
+**Oggi più semplice: da 8 card a 6**
+- La sera "Adesso" diventa "Domani": in cima il meteo di domani, sotto primo impegno, date e pacchi di domani. Niente più card "Domani" a parte
+- "Trovati per te" e "Posta" sono una card sola, "Dalla posta": in cima le cose da aggiungere in un tocco, sotto le mail importanti
+- Ordine nuovo: Adesso, Media, La giornata, Dalla posta, La tua settimana, Il punto del giorno
+- In Personalizza Oggi ogni descrizione sta su una riga
+
 ## 1.180.0
 **Gmail: Canvas legge le mail intere**
 - In Impostazioni > Compila da solo c'è "Collega Gmail" (sola lettura): Canvas legge le mail nuove ogni ora e appena ne arriva una
