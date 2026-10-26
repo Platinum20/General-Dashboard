@@ -10,9 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
@@ -45,9 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -67,18 +61,14 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
-import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Upcoming
 import com.platinum20.dashboard.today.UpcomingItem
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.captureTarget
-import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
-import androidx.compose.material.icons.outlined.LocalShipping
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
-import androidx.compose.material.icons.outlined.Celebration
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -88,7 +78,6 @@ import java.time.format.DateTimeFormatter
 import com.platinum20.dashboard.autofill.AutoFill
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.foundation.layout.PaddingValues
 
@@ -176,55 +165,23 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
-            // Una linea del tempo: un pallino per giorno, e fra due giorni lontani la linea si allunga.
-            val line = MaterialTheme.colorScheme.outlineVariant
-            val dot = MaterialTheme.colorScheme.primary
-            val small = MaterialTheme.colorScheme.outline
+            // La linea del tempo: i nomi a sinistra, la linea con i giorni a destra; fra due giorni lontani
+            // la linea si allunga. Uguale in Note › Prossimi giorni, dove c'è tutto.
             shown.forEachIndexed { index, item ->
                 val first = index == 0 || shown[index - 1].day != item.day
-                val last = index == shown.lastIndex
-                if (first && index > 0) {
-                    val gap = Upcoming.gapDp(shown[index - 1].day, item.day)
-                    if (gap > 0f) TimelineGutter(Modifier.padding(start = 76.dp).height(gap.dp), line, dot = null, top = true, bottom = true)
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                        .bouncyPress(0.98f)
-                        .clickable(onClick = onOpenAll)
-                        .padding(end = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        if (first) Upcoming.dayLabel(item.day, today) else "",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        modifier = Modifier.padding(start = 16.dp).width(60.dp),
-                    )
-                    TimelineGutter(
-                        Modifier.fillMaxHeight(),
-                        line,
-                        dot = if (first) dot to 7.dp else small to 4.dp,
-                        top = index > 0,
-                        bottom = !last,
-                    )
-                    Icon(
-                        item.kind.icon(),
-                        contentDescription = null,
-                        tint = item.event?.color?.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        (item.time?.let { "$it  " } ?: "") + item.text,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(vertical = 7.dp),
-                    )
-                }
+                TimelineRow(
+                    TimelineEntry(
+                        key = "$index",
+                        kind = item.kind,
+                        text = (item.time?.let { "$it  " } ?: "") + item.text,
+                        dayLabel = if (first) Upcoming.dayLabel(item.day, today) else null,
+                        gapDp = if (first && index > 0) Upcoming.gapDp(shown[index - 1].day, item.day) else 0f,
+                        color = item.event?.color ?: 0,
+                    ),
+                    top = index > 0,
+                    bottom = index < shown.lastIndex,
+                    onClick = onOpenAll,
+                )
             }
             // Toccando la card si apre tutto quello che arriva, senza limite di giorni.
             val more = items.size - shown.size
@@ -250,34 +207,6 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
             }
         }
     }
-}
-
-/**
- * Il pezzo di linea a sinistra di una riga di "Prossimi giorni": la linea sopra e/o sotto il centro e,
- * se c'è [dot], il pallino (colore e grandezza) sul centro.
- */
-@Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, androidx.compose.ui.unit.Dp>?, top: Boolean, bottom: Boolean) {
-    Box(
-        modifier.width(22.dp).drawBehind {
-            val x = 6.dp.toPx()
-            val mid = size.height / 2
-            val stroke = 2.dp.toPx()
-            if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
-            if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
-            dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
-        },
-    )
-}
-
-/** L'icona piccola di una riga di "Prossimi giorni": evento, promemoria, data, pacco o addebito. */
-private fun BriefKind.icon(): ImageVector = when (this) {
-    BriefKind.EVENT -> Icons.Outlined.Event
-    BriefKind.TASK -> Icons.Outlined.Checklist
-    BriefKind.DATE -> Icons.Outlined.Celebration
-    BriefKind.PARCEL -> Icons.Outlined.LocalShipping
-    BriefKind.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
-    else -> Icons.Outlined.Event
 }
 
 /**

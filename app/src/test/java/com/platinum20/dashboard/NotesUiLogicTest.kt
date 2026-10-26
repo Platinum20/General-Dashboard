@@ -15,7 +15,7 @@ import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
-import com.platinum20.dashboard.ui.screens.dueMarks
+import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -132,17 +132,29 @@ class NotesUiLogicTest {
         assertEquals("2027", DayScroll.tick(LocalDate.of(2027, 1, 5), today, LocalDate.of(2026, 12, 1)))
     }
 
-    @Test fun tacchePerProssimiGiorni() {
+    @Test fun prossimiGiorniComeLineaDelTempo() {
+        val zone = ZoneId.of("Europe/Rome")
         val today = LocalDate.of(2026, 10, 26)
+        fun ms(t: LocalDateTime) = t.atZone(zone).toInstant().toEpochMilli()
         val groups = listOf(
-            DueDay(null, true, emptyList()),
-            DueDay(today, false, emptyList()),
-            DueDay(today.plusDays(3), false, emptyList()),
+            DueDay(null, true, listOf(DueRowFor.task(1, "Bolletta", ms(today.minusDays(2).atTime(9, 0)), today.minusDays(2)))),
+            DueDay(today.plusDays(1), false, listOf(
+                DueRowFor.task(2, "Dentista", ms(today.plusDays(1).atTime(9, 30)), today.plusDays(1)),
+                DueRowFor.task(3, "Spesa", ms(today.plusDays(1).atTime(18, 0)), today.plusDays(1)),
+            )),
+            DueDay(today.plusDays(5), false, listOf(DueRowFor.task(4, "Treno", ms(today.plusDays(5).atTime(7, 0)), today.plusDays(5)))),
         )
-        val marks = dueMarks(groups, today, first = 1) { 2 }
-        assertEquals(listOf(1, 3, 5), marks.map { it.index })
-        assertEquals(listOf("Scad.", "Oggi", "29"), marks.map { it.tick })
-        assertEquals(listOf(today.toEpochDay() - 1.0, today.toEpochDay().toDouble(), today.toEpochDay() + 3.0), marks.map { it.at })
+        val entries = timelineEntries(groups, today, zone).map { it.first }
+        assertEquals(listOf("Scaduti", "Domani", null, "Sab 31"), entries.map { it.dayLabel })
+        assertEquals(listOf("Bolletta", "09:30  Dentista", "18:00  Spesa", "07:00  Treno"), entries.map { it.text })
+        assertEquals(listOf(true, false, false, false), entries.map { it.late })
+        // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
+        assertEquals(listOf(0f, 0f, 0f, 18f), entries.map { it.gapDp })
+    }
+
+    private object DueRowFor {
+        fun task(id: Long, text: String, due: Long, day: LocalDate) =
+            com.platinum20.dashboard.ui.screens.DueRow("task-$id", day, due, task = TaskItem(id, text, dueAt = due))
     }
 
     @Test fun tacchePerLeNote() {

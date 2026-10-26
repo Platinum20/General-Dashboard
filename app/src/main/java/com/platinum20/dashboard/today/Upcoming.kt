@@ -33,8 +33,8 @@ object Upcoming {
     /** Quanti giorni guarda avanti, domani compreso: come il calendario in Note > Prossimi giorni. */
     const val DAYS = 60
 
-    /** Quante righe al massimo (Antonio: "i prossimi 10"): è un riassunto, il resto è in Note > Prossimi giorni. */
-    const val MAX = 10
+    /** Quante righe al massimo (Antonio: 8): è un riassunto, il resto è in Note > Prossimi giorni. */
+    const val MAX = 8
 
     /** Lo spazio massimo fra due giorni sulla linea della card. */
     const val MAX_GAP_DP = 36f
@@ -86,10 +86,16 @@ object Upcoming {
         return out
     }
 
-    /** "Domani", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi. */
-    fun dayLabel(day: LocalDate, today: LocalDate): String =
-        if (day == today.plusDays(1)) "Domani"
-        else day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}"
+    /**
+     * "Oggi", "Domani", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi.
+     * Oltre quattro settimane anche il mese ("Mar 9 dic"). Uguale in Oggi e in Note.
+     */
+    fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
+        today -> "Oggi"
+        today.plusDays(1) -> "Domani"
+        else -> day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}" +
+            if (day.isAfter(today.plusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
+    }
 
     private fun Long.at(zone: ZoneId): String = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     private fun Long.day(zone: ZoneId): LocalDate = Instant.ofEpochMilli(this).atZone(zone).toLocalDate()

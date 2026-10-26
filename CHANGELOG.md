@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.191.0
+**La linea del tempo a destra, uguale in Oggi e in Note**
+- Nella card Prossimi giorni i nomi stanno a sinistra e la linea con i giorni a destra; le cose mostrate sono 8
+- Note › Prossimi giorni è la stessa linea del tempo della card, solo con tutto: scaduti, impegni, promemoria, compleanni, pacchi e addebiti, con il giorno a destra e la linea che si allunga quando c'è tempo in mezzo
+- Tocchi una riga e si apre: l'evento nella sua pagina, il promemoria, la data o il pacco da modificare; il cerchio a sinistra di un promemoria lo segna fatto
+- Le abitudini stanno in cima a Prossimi giorni
+
 ## 1.190.0
 **Una vera linea del tempo**
 - In Note › Prossimi giorni la linea a destra è una vera linea del tempo: le tacche sono distanziate secondo i giorni che passano fra una cosa e l'altra, con il giorno scritto accanto ("Oggi", "Dom", "30", "3 nov"); i salti di mesi si accorciano per non schiacciare la settimana
