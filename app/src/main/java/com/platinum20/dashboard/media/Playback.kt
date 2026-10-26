@@ -52,7 +52,7 @@ data class Playing(
     /** Si vede un video (YouTube non in solo audio): il player grande è quello con il video. */
     val isVideo: Boolean get() = source == PlaySource.VIDEO
     val canSeek: Boolean get() = !live && durationMs > 0
-    val canSkip: Boolean get() = source == PlaySource.SPOTIFY || source == PlaySource.MUSIC || source == PlaySource.VIDEO || source == PlaySource.SPEECH
+    val canSkip: Boolean get() = source != PlaySource.PODCAST
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
 
@@ -273,26 +273,33 @@ object Playback {
         }
     }
 
+    /** Avanti: la voce dopo nella coda unica; se la coda è finita, quello che sa fare la fonte. */
     fun next(context: Context) {
-        when (now.value?.source) {
+        val source = now.value?.source ?: return
+        if (source == PlaySource.SPEECH) return RecapSpeaker.next()
+        // Il podcast ha i suoi "+30 secondi" al posto di avanti.
+        if (source == PlaySource.PODCAST) return PodcastStore.seekBy(30_000)
+        if (PlayQueue.next(context)) return
+        when (source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.next(context)
             PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.NEXT) { SpotifyApi.next(it) }
-            PlaySource.PODCAST -> PodcastStore.seekBy(30_000)
-            PlaySource.SPEECH -> RecapSpeaker.next()
             else -> Unit
         }
     }
 
+    /** Indietro: all'inizio; nei primi secondi la voce prima nella coda (o quello che sa fare la fonte). */
     fun previous(context: Context) {
-        when (now.value?.source) {
+        val current = now.value ?: return
+        when (current.source) {
+            PlaySource.SPEECH -> return RecapSpeaker.previous()
+            PlaySource.PODCAST -> return PodcastStore.seekBy(-10_000)
+            else -> Unit
+        }
+        if (current.canSeek && current.positionMs > RESTART_MS) return seekTo(context, 0)
+        if (PlayQueue.previous(context)) return
+        when (current.source) {
             PlaySource.VIDEO, PlaySource.MUSIC -> YtPlayer.previous(context)
-            // Il riproduttore nell'app decide da sé (all'inizio, o al brano prima nei primi secondi).
-            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) {
-                val remote = SpotifyStore.playback.value
-                if (remote != null && remote.progressMs > RESTART_MS) SpotifyApi.seek(it, 0) else SpotifyApi.previous(it)
-            }
-            PlaySource.PODCAST -> PodcastStore.seekBy(-10_000)
-            PlaySource.SPEECH -> RecapSpeaker.previous()
+            PlaySource.SPOTIFY -> spotifyCommand(PlayerCommand.PREVIOUS) { SpotifyApi.previous(it) }
             else -> Unit
         }
     }

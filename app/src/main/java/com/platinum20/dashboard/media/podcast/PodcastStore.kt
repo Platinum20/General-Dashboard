@@ -69,6 +69,8 @@ object PodcastStore {
     private var controller: MediaController? = null
     private var connecting = false
     private var pending: Triple<Episode, Long, Boolean>? = null
+    /** L'episodio di cui si è già segnalata la fine alla coda. */
+    private var endedId: String? = null
     private var current: Episode? = null
     private var ticker: Job? = null
     /** L'episodio appena chiesto al player, finché il player non lo carica. */
@@ -254,6 +256,13 @@ object PodcastStore {
         RadioStore.yieldPlayer()
         com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.PODCAST)
         saveCurrentPosition()
+        com.platinum20.dashboard.media.PlayQueue.started(
+            com.platinum20.dashboard.media.ResumeItem(
+                com.platinum20.dashboard.media.ResumeKind.PODCAST, episode.id, episode.title, episode.podcastTitle, episode.image,
+                durationMs = episode.durationSec * 1000, at = System.currentTimeMillis(), link = episode.audioUrl, feed = episode.feedUrl,
+            ),
+        )
+        endedId = null
         current = episode
         val startMs = PodcastProgress.resumeAt(_positions.value[episode.id] ?: 0, episode.durationSec * 1000)
         _now.value = PodcastNow(episode, playing = false, buffering = true, positionMs = startMs, durationMs = episode.durationSec * 1000, error = null)
@@ -358,6 +367,11 @@ object PodcastStore {
             durationMs = duration,
             error = player.playerError?.let { "Episodio non raggiungibile" },
         )
+        // Finito l'episodio: parte quello dopo nella coda (una volta sola).
+        if (ended && endedId != episode.id) {
+            endedId = episode.id
+            com.platinum20.dashboard.media.PlayQueue.ended(appContext)
+        }
         if (ended) savePosition(episode.id, duration) else if (!player.isPlaying) savePosition(episode.id, player.currentPosition)
         if (player.isPlaying) startTicker() else ticker?.cancel()
     }

@@ -128,6 +128,8 @@ fun MusicScreen(
     val context = LocalContext.current
     SpotifyAuth.init(context)
     val official by SpotifyAuth.connected.collectAsState()
+    // Il riproduttore di Spotify si prepara appena si entra: al primo tocco la musica parte subito.
+    LaunchedEffect(official) { if (official) SpotifyPlayer.start(context) }
     val loggedIn by Accounts.loggedIn.collectAsState()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     // Basta l'accesso fatto nell'app; il collegamento con un'app per sviluppatori resta un'alternativa.
@@ -211,10 +213,10 @@ fun MusicScreen(
             }
             val parent = opened
             if (parent != null) {
-                ChildrenList(parent, onOpen = { opened = it }, onPlay = { SpotifyPlayer.play(context, it) }, onPlayFrom = { child ->
-                    // Da un album o una playlist si continua con i brani successivi.
+                ChildrenList(parent, onOpen = { opened = it }, onPlay = { playSpotifyList(context, it, null) }, onPlayFrom = { child ->
+                    // Da un album o una playlist si continua con i brani successivi, nella coda unica.
                     if (parent.kind == SpKind.ALBUM || parent.kind == SpKind.PLAYLIST || parent.kind == SpKind.SHOW) {
-                        SpotifyPlayer.play(context, parent, startAt = child)
+                        playSpotifyList(context, parent, child)
                     } else {
                         SpotifyPlayer.play(context, child)
                     }
@@ -631,3 +633,22 @@ private fun SpotifyAuthDialog(url: String, onDone: () -> Unit) {
 /** Un video di YouTube ascoltato come musica: nella nota si riapre nel player della musica. */
 private fun SavedLink.asMusic(): SavedLink =
     if (this is SavedLink.Media) copy(item = item.copy(kind = ResumeKind.MUSIC)) else this
+
+/**
+ * Un album, una playlist o un podcast di Spotify: i brani già caricati entrano nella coda unica da
+ * [startAt] in poi, così si vedono, si spostano e si mischiano con le altre fonti. Se la lista non
+ * c'è ancora, suona come prima dentro Spotify.
+ */
+private fun playSpotifyList(context: android.content.Context, parent: SpItem, startAt: SpItem?) {
+    val tracks = SpotifyStore.children.value[parent.id]?.data.orEmpty()
+        .filter { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
+    if (tracks.isEmpty()) return SpotifyPlayer.play(context, parent, startAt)
+    val items = tracks.map {
+        com.platinum20.dashboard.media.ResumeItem(
+            com.platinum20.dashboard.media.ResumeKind.SPOTIFY, it.uri, it.title, it.subtitle, it.image.ifBlank { parent.image },
+            at = System.currentTimeMillis(), link = parent.uri,
+        )
+    }
+    val start = startAt?.let { s -> tracks.indexOfFirst { it.uri == s.uri } }?.coerceAtLeast(0) ?: 0
+    com.platinum20.dashboard.media.PlayQueue.playList(context, items, start)
+}

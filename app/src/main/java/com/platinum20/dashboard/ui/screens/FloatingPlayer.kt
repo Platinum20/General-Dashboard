@@ -317,7 +317,10 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
             }
             // Indietro, play/pausa, avanti; niente X: per chiudere la barra si tira giù.
             val podcast = now.source == PlaySource.PODCAST
-            if (!now.live) {
+            // In diretta (radio) avanti e indietro servono solo per muoversi nella coda.
+            val queue by com.platinum20.dashboard.media.PlayQueue.state.collectAsState()
+            val skips = !now.live || queue.hasNext || queue.hasPrevious
+            if (skips) {
                 IconButton(onClick = { Playback.previous(context) }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         if (podcast) Icons.Filled.Replay10 else Icons.Filled.SkipPrevious,
@@ -332,7 +335,7 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                     modifier = Modifier.size(30.dp),
                 )
             }
-            if (!now.live) {
+            if (skips) {
                 IconButton(onClick = { Playback.next(context) }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         if (podcast) Icons.Filled.Forward30 else Icons.Filled.SkipNext,

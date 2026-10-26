@@ -133,6 +133,8 @@ object SpotifyPlayer {
         start(context)
     }
 
+    private var appContext: Context? = null
+
     /** Il dispositivo non vale più: chi suona dopo aspetta un nuovo "ready". */
     private fun forget() {
         deviceId = null
@@ -141,6 +143,7 @@ object SpotifyPlayer {
 
     /** Prepara il riproduttore nascosto (se non è già pronto). */
     fun start(context: Context) {
+        appContext = context.applicationContext
         SpotifyAuth.init(context)
         val existing = MediaWebViews.webViewFor(MediaService.SPOTIFY)
         if (existing != null && existing.url?.startsWith(BASE_URL) == true) return
@@ -165,6 +168,13 @@ object SpotifyPlayer {
         /** Il riproduttore ha cambiato brano o stato: il player dell'app si aggiorna subito, senza aspettare il giro. */
         @JavascriptInterface
         fun onState() = NowPlaying.refresh(MediaService.SPOTIFY)
+
+        /** Il brano è finito da solo: parte il successivo della coda unica. */
+        @JavascriptInterface
+        fun onEnded() {
+            val context = appContext ?: return
+            scope.launch { com.platinum20.dashboard.media.PlayQueue.ended(context) }
+        }
 
         @JavascriptInterface
         fun onError(kind: String, message: String) {
@@ -225,7 +235,11 @@ window.onSpotifyWebPlaybackSDKReady = function () {
   ['initialization_error', 'authentication_error', 'account_error', 'playback_error'].forEach(function (k) {
     player.addListener(k, function (e) { CanvasSpotify.onError(k, (e && e.message) || ''); });
   });
-  player.addListener('player_state_changed', function (s) {
+  // Lo stato vero si rilegge ogni secondo: gli eventi del riproduttore a volte non arrivano
+  // (play rimasto acceso mentre la musica suona).
+  setInterval(function () { player.getCurrentState().then(function (s) { if (s) apply(s, true); }); }, 1000);
+  player.addListener('player_state_changed', function (s) { apply(s, false); });
+  function apply(s, polled) {
     var ms = navigator.mediaSession;
     if (!ms) return;
     var t = s && s.track_window && s.track_window.current_track;
@@ -236,19 +250,24 @@ window.onSpotifyWebPlaybackSDKReady = function () {
       if (ms.metadata) ms.playbackState = 'paused';
       return;
     }
+    var prev = window.cpState;
     window.cpState = { pos: s.position || 0, dur: s.duration || 0, at: Date.now(), paused: !!s.paused,
       uri: t.uri || '', ctx: (s.context && s.context.uri) || '' };
+    // Finito da solo: suonava, era quasi in fondo, ora è fermo all'inizio dello stesso brano.
+    if (prev && !prev.paused && s.paused && (s.position || 0) < 1500 && prev.uri === t.uri && prev.dur > 0 &&
+        prev.pos + (Date.now() - prev.at) > prev.dur - 4000) CanvasSpotify.onEnded();
+    var changed = !prev || prev.paused !== !!s.paused || prev.uri !== (t.uri || '');
     // Dalla più piccola alla più grande: chi legge prende l'ultima, cioè la copertina più nitida.
     var images = ((t.album && t.album.images) || []).slice().sort(function (a, b) { return (a.width || 0) - (b.width || 0); });
-    ms.metadata = new MediaMetadata({
+    if (!polled || changed || !ms.metadata) ms.metadata = new MediaMetadata({
       title: t.name,
       artist: (t.artists || []).map(function (a) { return a.name; }).join(', '),
       album: t.album ? t.album.name : '',
       artwork: images.map(function (i) { return { src: i.url }; })
     });
     ms.playbackState = s.paused ? 'paused' : 'playing';
-    CanvasSpotify.onState();
-  });
+    if (!polled || changed) CanvasSpotify.onState();
+  }
   if (player.activateElement) player.activateElement();
   player.connect();
 };

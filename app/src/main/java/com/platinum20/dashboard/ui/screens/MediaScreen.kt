@@ -133,6 +133,8 @@ fun MediaScreen(
     MediaHistory.init(context)
     VideoLibrary.init(context)
     val spotifyLinked by SpotifyAuth.connected.collectAsState()
+    // Il riproduttore di Spotify si prepara già da qui: al primo tocco la musica parte subito.
+    LaunchedEffect(spotifyLinked) { if (spotifyLinked) com.platinum20.dashboard.media.spotify.SpotifyPlayer.start(context) }
     val youTubeLinked by YouTubeAuth.connected.collectAsState()
     val loggedIn by Accounts.loggedIn.collectAsState()
     val now by Playback.now.collectAsState()
@@ -505,42 +507,7 @@ internal fun openResumeItem(
     autoplay: Boolean = true,
     openRoute: (String) -> Unit,
 ) {
-    val from = if (item.unfinished) item.positionMs else 0
-    when (item.kind) {
-        ResumeKind.VIDEO -> openRoute(Routes.video(item.key))
-        ResumeKind.YOUTUBE -> {
-            // Caricato prima di aprire la schermata: lì il video già nel player non riparte da solo.
-            if (!autoplay) YtPlayer.play(context, Resume.youtubeLink(item), autoplay = false)
-            openRoute(Routes.youtubeWatch(Resume.youtubeLink(item)))
-        }
-        ResumeKind.MUSIC -> {
-            YtPlayer.play(context, Resume.youtubeLink(item), audioOnly = true, autoplay = autoplay)
-            openRoute(Routes.PLAYER)
-        }
-        ResumeKind.SPOTIFY -> {
-            com.platinum20.dashboard.media.spotify.SpotifyPlayer.resume(
-                context, item.key, item.link, from, autoplay,
-                title = item.title, subtitle = item.subtitle, artwork = item.image,
-            )
-            openRoute(Routes.PLAYER)
-        }
-        ResumeKind.RADIO -> {
-            item.station?.let { RadioStore.play(it, autoplay) }
-            openRoute(Routes.PLAYER)
-        }
-        ResumeKind.PODCAST -> {
-            PodcastStore.init(context)
-            PodcastStore.play(
-                Episode(
-                    id = item.key, title = item.title, audioUrl = item.link, publishedAt = 0,
-                    durationSec = item.durationMs / 1000, description = "", image = item.image,
-                    podcastTitle = item.subtitle, feedUrl = item.feed,
-                ),
-                autoplay,
-            )
-            openRoute(Routes.PLAYER)
-        }
-    }
+    com.platinum20.dashboard.media.MediaLauncher.start(context, item, autoplay)?.let(openRoute)
 }
 
 private fun ResumeItem.icon(): ImageVector = when (kind) {

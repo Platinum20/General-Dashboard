@@ -1,5 +1,11 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.platinum20.dashboard.media.PlayQueue
+import com.platinum20.dashboard.media.ResumeKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -51,7 +57,7 @@ private const val OFFER_MS = 6_000L
 
 /**
  * Tenendo premuta una cosa (un brano, un video, una radio, un articolo) sale dal basso il fumetto
- * di vetro con "Salva nelle note". Toccandolo la nota è fatta e il pallino vola alle Note.
+ * di vetro con "Salva nelle note" (e, per i media, "Aggiungi alla coda"). Toccandolo la nota è fatta e il pallino vola alle Note.
  * Chi vuole offrirlo chiama solo [SavedLinks.offer] nel suo onLongClick.
  */
 @Composable
@@ -89,31 +95,58 @@ internal fun BoxScope.SaveToNotesLayer() {
     ) {
         val link = last ?: return@AnimatedVisibility
         val shape = RoundedCornerShape(22.dp)
-        Surface(
-            onClick = { haptic(Haptic.CONFIRM); SavedLinks.save(context, link) },
-            shape = shape,
-            color = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            border = cardBorder(),
-            modifier = Modifier.fillMaxWidth().glass(shape).bouncyPress(0.97f),
-        ) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp)) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Rounded.BookmarkAdd, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp))
-                    }
+        val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
+            if (media != null) {
+                OfferRow(
+                    icon = Icons.Rounded.QueueMusic,
+                    title = "Aggiungi alla coda",
+                    detail = media.title,
+                    shape = shape,
+                ) {
+                    haptic(Haptic.CONFIRM)
+                    SavedLinks.dismiss()
+                    PlayQueue.add(media)
+                    android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Salva nelle note", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+            }
+            OfferRow(
+                icon = Icons.Rounded.BookmarkAdd,
+                title = "Salva nelle note",
+                detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
+                shape = shape,
+            ) { haptic(Haptic.CONFIRM); SavedLinks.save(context, link) }
+        }
+    }
+}
+
+@Composable
+private fun OfferRow(icon: ImageVector, title: String, detail: String, shape: Shape, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = shape,
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = cardBorder(),
+        modifier = Modifier.fillMaxWidth().glass(shape).bouncyPress(0.97f),
+    ) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp))
                 }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

@@ -139,6 +139,15 @@ object NowPlaying {
             if (service == MediaService.SPOTIFY && track.uri.isNotBlank() &&
                 (before?.uri != track.uri || before.playing != track.playing)
             ) rememberSpotify(track)
+            // Un brano nuovo di Spotify nell'app entra nella coda unica (se non è già lui a suonare).
+            if (service == MediaService.SPOTIFY && track.uri.isNotBlank() && before?.uri != track.uri) {
+                PlayQueue.started(
+                    ResumeItem(
+                        ResumeKind.SPOTIFY, track.uri, track.title, track.artist, track.artworkUrl,
+                        durationMs = track.durationMs, at = System.currentTimeMillis(), link = track.contextUri,
+                    ),
+                )
+            }
             if (track.playing) ensureService()
             // Un solo player alla volta: quando questo parte, gli altri si mettono in pausa.
             if (track.playing && !wasPlaying) pauseOthers(service)

@@ -30,6 +30,7 @@ import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.PlaySource
 import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.media.PlayQueue
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YtWatched
 import com.platinum20.dashboard.media.ResumeItem
@@ -224,7 +225,8 @@ object YtPlayer {
                 override fun onEvents(player: Player, events: Player.Events) = publish()
 
                 override fun onPlaybackStateChanged(state: Int) {
-                    if (state == Player.STATE_ENDED) next(context)
+                    // Finito: prima la coda unica, se no i video consigliati.
+                    if (state == Player.STATE_ENDED && !PlayQueue.next(context)) next(context)
                 }
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -287,6 +289,7 @@ object YtPlayer {
                         subtitle = pickSubtitle(it),
                     )
                     remember(context)
+                    PlayQueue.started(resumeEntry(it, 0, 0, System.currentTimeMillis(), audioOnly))
                 }
                 .onFailure { _now.value = YtNow(link, null, loading = false, audioOnly = audioOnly, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
         }
