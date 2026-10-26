@@ -158,6 +158,14 @@ object CanvasPlayer {
 
     fun move(id: Long, by: Int) = setQueue(QueueOps.move(_queue.value, id, by))
 
+    /** Sposta la voce [id] al posto della voce [target] (trascinandola nella coda). */
+    fun moveTo(id: Long, target: Long) {
+        val entries = _queue.value.entries
+        val from = entries.indexOfFirst { it.id == id }
+        val to = entries.indexOfFirst { it.id == target }
+        if (from >= 0 && to >= 0) move(id, to - from)
+    }
+
     fun clearUpcoming() = setQueue(QueueOps.clearUpcoming(_queue.value))
 
     /** Toglie una voce; se era quella che suonava parte la successiva (o il player si ferma). */
@@ -309,8 +317,9 @@ object CanvasPlayer {
             .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, item.kind == ResumeKind.MUSIC || item.kind == ResumeKind.PODCAST || item.kind == ResumeKind.RADIO)
             .build()
         _now.value = EngineNow(entry.id, item, loading = true, durationMs = item.durationMs)
-        context.startService(Intent(context, PlayerService::class.java))
-        if (item.kind == ResumeKind.MUSIC || item.kind == ResumeKind.YOUTUBE) MediaHistory.init(context)
+        // Il servizio c'è già se qualcosa suonava; da fermi e in sottofondo Android può rifiutarlo.
+        runCatching { context.startService(Intent(context, PlayerService::class.java)) }
+        MediaHistory.init(context)
         loadJob = scope.launch {
             try {
                 when (item.kind) {
