@@ -58,6 +58,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.capture.AUTO_HINT
 import com.platinum20.dashboard.capture.CaptureComposer
@@ -144,7 +145,7 @@ internal fun BoxScope.CaptureComposerLayer(onNeedsDialog: (String) -> Unit) {
                     Box(Modifier.weight(1f).padding(top = 6.dp, bottom = 10.dp)) {
                         val style = MaterialTheme.typography.bodyLarge
                         if (text.text.isEmpty()) {
-                            Text(AUTO_HINT, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                            Text(AUTO_HINT, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         BasicTextField(
                             value = text,

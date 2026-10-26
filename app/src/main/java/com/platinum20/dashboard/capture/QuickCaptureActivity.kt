@@ -279,7 +279,7 @@ internal fun CaptureKindTag(mode: CaptureMode) {
 }
 
 /** Con il tipo automatico il suggerimento mostra che si può scrivere di tutto. */
-internal const val AUTO_HINT = "Promemoria, spesa, abitudine, data, pacco o nota: scrivi e Canvas capisce"
+internal const val AUTO_HINT = "Scrivi, Canvas capisce cos'è"
 
 private val eventDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
 private val eventHour = DateTimeFormatter.ofPattern("H:mm")
