@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 enum class AppTheme(val label: String, val description: String) {
-    CANVAS("Canvas", "Carta chiara e inchiostro, chiaro o scuro come il telefono"),
+    CANVAS("Canvas", "Carta e inchiostro, chiaro o scuro col telefono"),
     DYNAMIC("Material You", "I colori seguono lo sfondo del telefono"),
     // Il nome resta AMOLED per le preferenze salvate: ora segue chiaro e scuro del telefono.
-    AMOLED("Puro", "Bianco pieno di giorno, nero AMOLED di sera: segue il chiaro e scuro del telefono"),
+    AMOLED("Puro", "Bianco di giorno, nero AMOLED di sera"),
 }
 
 /** Le card della Dashboard, nell'ordine predefinito. */

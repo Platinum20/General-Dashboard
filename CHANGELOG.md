@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.154.0
+**Descrizioni dei temi su una riga**
+- In Aspetto la descrizione di ogni tema è più corta e sta su una sola riga (Puro: "Bianco di giorno, nero AMOLED di sera")
+
 ## 1.152.0
 **Bolla del + su una riga**
 - Il testo di prova nella bolla che compare quando scrivi è più corto ("Scrivi, Canvas capisce cos'è") e sta sempre su una sola riga
