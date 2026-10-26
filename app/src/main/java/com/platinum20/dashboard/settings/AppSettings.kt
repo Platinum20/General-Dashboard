@@ -23,7 +23,7 @@ enum class HomeCard(val label: String, val description: String) {
     WEATHER("Adesso", "Meteo e cose da sapere ora"),
     RESUME("Media", "Quello che suona o da riprendere"),
     DAY("La giornata", "Impegni e promemoria per orario"),
-    // Il nome resta MAIL per le preferenze salvate: dalla 1.181 tiene anche "Trovati per te".
+    // Il nome resta MAIL per le preferenze salvate: dalla 1.182 tiene anche "Trovati per te".
     MAIL("Dalla posta", "Cose da aggiungere e mail importanti"),
     WEEK("La tua settimana", "Domenica sera e lunedì: com'è andata"),
     RECAP("Il punto del giorno", "Le notizie principali"),
@@ -35,7 +35,7 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
     companion object {
         val DEFAULT = HomeLayout(HomeCard.entries, emptySet())
 
-        /** 2 = 1.181: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo. */
+        /** 2 = 1.182: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo. */
         const val VERSION = 2
 
         /**

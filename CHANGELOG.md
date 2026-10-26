@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.181.0
+## 1.182.0
 **Oggi più semplice: da 8 card a 6**
 - La sera "Adesso" diventa "Domani": in cima il meteo di domani, sotto primo impegno, date e pacchi di domani. Niente più card "Domani" a parte
 - "Trovati per te" e "Posta" sono una card sola, "Dalla posta": in cima le cose da aggiungere in un tocco, sotto le mail importanti
