@@ -339,10 +339,9 @@ fun NotesScreen(
     val dueToday = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay } - overdue
 
     val habitRows = habitItems(data.habits, onDeleted = { h -> offerUndo("Abitudine eliminata") { NotesStore.restoreHabit(h) } })
-    var editingDate by remember { mutableStateOf<Countdown?>(null) }
-    var editingParcel by remember { mutableStateOf<Parcel?>(null) }
-    editingDate?.let { CountdownDialog(countdown = it, onDismiss = { editingDate = null }, onDeleted = { c -> offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) } }) }
-    editingParcel?.let { ParcelDialog(it, onDismiss = { editingParcel = null }, onDeleted = { p -> offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) } }) }
+    // Ogni cosa si apre a schermo intero, come gli eventi del calendario.
+    val openItem = rememberOpenItem()
+    val haptic = rememberHaptic()
     // Gli eventi del calendario sono cose con scadenza come le altre: si rileggono ogni volta che si torna qui,
     // ma la pagina parte da quelli già letti, così le card sono subito alla loro grandezza e non si allargano.
     var events by remember { mutableStateOf(NotesEvents.cached(context)) }
@@ -423,17 +422,11 @@ fun NotesScreen(
         val today = LocalDate.now()
         val empty = if (section == NotesSection.DATED) timeline.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
         else undatedTasks.isEmpty() && notes.isEmpty()
-        // Le abitudini si fanno oggi: stanno sotto "Oggi", anche quando oggi non scade nient'altro.
-        val groups = if (data.habits.isNotEmpty() && timeline.none { !it.late && it.day == today }) {
-            (timeline + DueDay(today, false, emptyList())).sortedBy { if (it.late) Long.MIN_VALUE else it.day?.toEpochDay() ?: Long.MAX_VALUE }
-        } else timeline
+        val groups = timeline
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
-        // La linea del tempo a destra: dove comincia ogni giorno nella lista (stesso ordine degli item sotto),
-        // distanziata secondo i giorni che passano.
+        // In Note la linea del tempo a destra, per data di inserimento: dove comincia ogni giorno nella lista
+        // (stesso ordine degli item sotto). Prossimi giorni ha invece la sua linea dentro la card.
         val marks = when (section) {
-            NotesSection.DATED -> dueMarks(groups, today, first = (if (empty) 1 else 0) + (if (invite) 1 else 0)) { d ->
-                1 + d.rows.size + if (!d.late && d.day == today) data.habits.size else 0
-            }
             NotesSection.UNDATED -> noteMarks(notes, today, first = (if (empty) 1 else 0) + 1 + (if (undatedTasks.isNotEmpty()) 1 else 0))
             else -> emptyList()
         }
@@ -461,31 +454,46 @@ fun NotesScreen(
                     )
                 }
             }
-            // Prossimi giorni: una lista sola per giorno, tutte con quanto manca a destra.
-            if (show(NotesSection.DATED)) groups.forEachIndexed { index, group ->
-                val isToday = !group.late && group.day == today
-                item(key = "due-${group.key}") {
-                    // Il pallino del + atterra sul primo giorno che si vede.
-                    val target = if (index == 0) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
-                        .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
-                    SectionHeader(
-                        group.label(today),
-                        modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 12.dp, bottom = 4.dp).then(target)
-                            .then(if (isToday) Modifier.captureTarget(CaptureMode.HABIT) else Modifier),
-                        color = if (group.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            // Le abitudini si fanno oggi: in cima, prima della linea del tempo.
+            if (show(NotesSection.DATED) && data.habits.isNotEmpty()) {
+                item(key = "habits-header") {
+                    SectionHeader("Abitudini", modifier = Modifier.animateItem().padding(bottom = 4.dp).captureTarget(CaptureMode.HABIT))
                 }
-                items(group.rows, key = { it.key }) { row ->
-                    // Spuntate, spostate o cancellate: le righe scivolano al loro posto invece di saltare.
-                    Box(Modifier.animateItem().padding(bottom = 4.dp)) {
-                        row.task?.let { TaskDueCard(it, row.day, late = group.late, onDeleted = onTaskDeleted) }
-                        row.countdown?.let { DateCard(it, onClick = { editingDate = it }) }
-                        row.parcel?.let { ParcelCard(it, onClick = { editingParcel = it }) }
-                        row.event?.let { EventCard(it, row.day, onClick = { onOpenEvent(it) }) }
-                        row.charge?.let { ChargeCard(it, row.day, onClick = { inApp?.openRoute?.invoke(Routes.EXPENSES) }) }
+                habitRows()
+            }
+            // Prossimi giorni: la stessa linea del tempo della card di Oggi, ma con tutto.
+            if (show(NotesSection.DATED) && groups.isNotEmpty()) {
+                item(key = "timeline") {
+                    val entries = timelineEntries(groups, today)
+                    CanvasCard(
+                        Modifier.fillMaxWidth().padding(top = if (data.habits.isNotEmpty()) 12.dp else 0.dp)
+                            .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
+                            .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT),
+                    ) {
+                        Column(Modifier.padding(vertical = 6.dp)) {
+                            entries.forEachIndexed { index, (entry, row) ->
+                                TimelineRow(
+                                    entry,
+                                    top = index > 0,
+                                    bottom = index < entries.lastIndex,
+                                    onClick = {
+                                        row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                        row.countdown?.let { openItem(ItemKind.DATE, it.id) }
+                                        row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
+                                        row.event?.let { onOpenEvent(it) }
+                                        row.charge?.let { openItem(ItemKind.FIXED, it.id) }
+                                    },
+                                    onIcon = row.task?.let { task ->
+                                        {
+                                            haptic(Haptic.CONFIRM)
+                                            NotesStore.toggleTask(task.id)
+                                        }
+                                    },
+                                )
+                            }
+                        }
                     }
                 }
-                if (isToday) habitRows()
             }
             // Senza scadenza: le cose da fare prima o poi e gli appunti.
             if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
@@ -531,7 +539,7 @@ fun NotesScreen(
                 }
                 if (done.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem()) { TaskGroup(null, done, onTaskDeleted) } }
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
-                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
+                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
                 }
             }
         }
@@ -579,16 +587,15 @@ private fun DateCard(item: Countdown, onClick: () -> Unit) {
  */
 @Composable
 private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyListScope.() -> Unit {
-    var editing by remember { mutableStateOf<Habit?>(null) }
+    val openItem = rememberOpenItem()
     val today = LocalDate.now()
     val haptic = rememberHaptic()
-    editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
     return {
         items(habits, key = { "habit-${it.id}" }) { habit ->
             val doneToday = habit.isDone(today)
             val line = habit.statusLine(LocalDateTime.now())
             CanvasCard(
-                onClick = { editing = habit },
+                onClick = { openItem(ItemKind.HABIT, habit.id) },
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
             ) {
@@ -727,7 +734,7 @@ private fun TaskDueCard(task: TaskItem, day: LocalDate?, late: Boolean, onDelete
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@Composable () -> Unit)? = null) {
-    var editing by remember { mutableStateOf(false) }
+    val openItem = rememberOpenItem()
     val haptic = rememberHaptic()
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -771,7 +778,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
         Column(
             Modifier
                 .weight(1f)
-                .clickable { editing = true }
+                .clickable { openItem(ItemKind.TASK, task.id) }
                 .padding(vertical = 6.dp)
         ) {
             Text(
@@ -786,7 +793,6 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
         trailing?.invoke()
     }
     }
-    if (editing) TaskEditDialog(task, onDismiss = { editing = false }, onDeleted = onDeleted)
 }
 
 @OptIn(ExperimentalFoundationApi::class)

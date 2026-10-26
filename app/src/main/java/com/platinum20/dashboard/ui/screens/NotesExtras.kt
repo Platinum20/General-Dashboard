@@ -95,7 +95,8 @@ fun ExpensesTab(
     var month by remember { mutableStateOf(YearMonth.now()) }
     var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
-    var editing by remember { mutableStateOf<Expense?>(null) }
+    // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
+    val openItem = rememberOpenItem()
     val fixedDraft = remember(draft) { Expenses.parseFixed(draft) }
     val parsed = remember(draft) { if (fixedDraft != null) null else Expenses.parse(draft) }
     val haptic = rememberHaptic()
@@ -242,17 +243,7 @@ fun ExpensesTab(
                         data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
                             if (i > 0) RowDivider()
                             Row(
-                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable {
-                                    // Come gli altri pop-up: il fumetto di vetro in fondo, non una finestra.
-                                    ActionBubble.show(
-                                        BubbleAction(
-                                            Icons.Outlined.Close,
-                                            "Smetti di aggiungerla ogni mese",
-                                            detail = "${f.text.ifEmpty { "Spesa fissa" }} · quelle già aggiunte restano",
-                                            danger = true,
-                                        ) { NotesStore.deleteFixedExpense(f.id) },
-                                    )
-                                }.padding(horizontal = 16.dp, vertical = 10.dp),
+                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
@@ -290,7 +281,7 @@ fun ExpensesTab(
                         spent.forEachIndexed { i, expense ->
                             if (i > 0) RowDivider()
                             Row(
-                                Modifier.fillMaxWidth().clickable { editing = expense }.padding(horizontal = 16.dp, vertical = 12.dp),
+                                Modifier.fillMaxWidth().clickable { openItem(ItemKind.EXPENSE, expense.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(Modifier.weight(1f)) {
@@ -318,7 +309,6 @@ fun ExpensesTab(
     }
 
     if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
-    editing?.let { ExpenseDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 
 private fun dailyLeft(cents: Long): String {
@@ -369,7 +359,7 @@ private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (Expense) -> Unit) {
+internal fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (Expense) -> Unit) {
     var text by remember { mutableStateOf(expense.text) }
     var amount by remember { mutableStateOf(Expenses.format(expense.cents).replace("€", "").trim()) }
     var category by remember { mutableStateOf(expense.category) }

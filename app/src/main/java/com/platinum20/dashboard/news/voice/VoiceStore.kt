@@ -20,21 +20,20 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Le voci che leggono notizie e punto del giorno. Le due Piper sono reti neurali sul telefono
- * (offline, gratis), scaricate una volta sola; la voce del telefono è il ripiego sempre pronto.
+ * Le voci che leggono notizie e punto del giorno: tre reti neurali Piper sul telefono (offline,
+ * gratis), scaricate una volta sola. La voce del telefono resta solo come ripiego finché non c'è.
+ * Miro è la voce maschile giovane (tono medio ~120 Hz) di OpenVoiceOS, licenza CC BY-NC-SA.
  */
-enum class ReadingVoice(val label: String, val description: String, val archive: String?, val sizeMb: Int) {
+enum class ReadingVoice(val label: String, val description: String, val archive: String, val sizeMb: Int) {
+    MIRO("Miro", "Maschile, giovane e naturale", "vits-piper-it_IT-miro-high", 65),
     PAOLA("Paola", "Femminile, la più naturale", "vits-piper-it_IT-paola-medium", 60),
-    RICCARDO("Riccardo", "Maschile, più leggera", "vits-piper-it_IT-riccardo-x_low", 30),
-    SYSTEM("Voce del telefono", "Quella di Google, senza scaricare niente", null, 0);
-
-    val neural: Boolean get() = archive != null
+    RICCARDO("Riccardo", "Maschile, più leggera", "vits-piper-it_IT-riccardo-x_low", 30);
 
     /** I modelli Piper già convertiti per sherpa-onnx, con i dati di pronuncia di espeak-ng. */
-    val url: String? get() = archive?.let { "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/$it.tar.bz2" }
+    val url: String get() = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/$archive.tar.bz2"
 
     companion object {
-        val DEFAULT = PAOLA
+        val DEFAULT = MIRO
         fun of(name: String?): ReadingVoice = entries.firstOrNull { it.name == name } ?: DEFAULT
     }
 }
@@ -61,18 +60,17 @@ object VoiceStore {
         if (::root.isInitialized) return
         AppSettings.init(context)
         root = File(context.applicationContext.filesDir, "voices")
-        _status.value = ReadingVoice.entries.filter { it.neural }
+        _status.value = ReadingVoice.entries
             .associateWith { if (files(it) != null) VoiceStatus.Ready else VoiceStatus.Missing }
     }
 
-    fun statusOf(voice: ReadingVoice): VoiceStatus =
-        if (!voice.neural) VoiceStatus.Ready else _status.value[voice] ?: VoiceStatus.Missing
+    fun statusOf(voice: ReadingVoice): VoiceStatus = _status.value[voice] ?: VoiceStatus.Missing
 
-    /** La voce scelta, se è neurale e già sul telefono: altrimenti si legge con quella di sistema. */
+    /** La voce scelta, se è già sul telefono: altrimenti si legge con quella di sistema. */
     fun readyVoice(): Pair<ReadingVoice, VoiceFiles>? {
         if (!::root.isInitialized) return null
         val voice = AppSettings.readingVoice.value
-        if (!voice.neural || statusOf(voice) != VoiceStatus.Ready) return null
+        if (statusOf(voice) != VoiceStatus.Ready) return null
         return files(voice)?.let { voice to it }
     }
 
@@ -81,11 +79,11 @@ object VoiceStore {
         init(context)
         val voice = AppSettings.readingVoice.value
         val state = statusOf(voice)
-        if (voice.neural && (state is VoiceStatus.Missing || state is VoiceStatus.Waiting)) download(voice, context)
+        if ((state is VoiceStatus.Missing || state is VoiceStatus.Waiting)) download(voice, context)
     }
 
     fun download(voice: ReadingVoice, context: Context? = null) {
-        val url = voice.url ?: return
+        val url = voice.url
         val now = statusOf(voice)
         if (now is VoiceStatus.Downloading || now == VoiceStatus.Ready) return
         // 60 MB non partono sui dati se l'impostazione dice solo Wi-Fi.
@@ -95,7 +93,7 @@ object VoiceStore {
         }
         _status.update { it + (voice to VoiceStatus.Downloading(0f)) }
         scope.launch {
-            val target = File(root, voice.archive!!)
+            val target = File(root, voice.archive)
             val partial = File(root, voice.archive + ".part")
             val result = runCatching {
                 install(url, partial) { progress -> _status.update { it + (voice to VoiceStatus.Downloading(progress)) } }
@@ -132,7 +130,7 @@ object VoiceStore {
         return checkNotNull(locate(into)) { "voce incompleta" }
     }
 
-    private fun files(voice: ReadingVoice): VoiceFiles? = voice.archive?.let { locate(File(root, it)) }
+    private fun files(voice: ReadingVoice): VoiceFiles? = locate(File(root, voice.archive))
 
     /** Scarica il tar.bz2 e lo apre direttamente nella cartella, senza tenere l'archivio. */
     private fun fetch(url: String, into: File, onProgress: (Float) -> Unit) {

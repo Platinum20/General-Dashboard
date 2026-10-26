@@ -8,6 +8,8 @@ import com.platinum20.dashboard.media.songid.SongId
 import com.platinum20.dashboard.ui.screens.CaptureComposerVeil
 import com.platinum20.dashboard.ui.screens.CaptureComposerInput
 import com.platinum20.dashboard.ui.screens.rememberComposerSend
+import com.platinum20.dashboard.ui.screens.ItemDetailScreen
+import com.platinum20.dashboard.ui.screens.ItemKind
 import com.platinum20.dashboard.capture.CaptureTargets
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
@@ -385,6 +387,11 @@ object Routes {
     fun login(service: MediaService) = "settings/login/${service.name}"
 
     fun noteEdit(id: Long?) = "notes/edit?id=${id ?: -1L}"
+
+    /** La pagina a schermo intero di un promemoria, una data, un pacco, un'abitudine o una spesa. */
+    const val NOTE_ITEM = "notes/item/{kind}/{id}"
+
+    fun noteItem(kind: ItemKind, id: Long) = "notes/item/${kind.name}/$id"
     const val READER = "news/reader?url={url}&source={source}&title={title}"
     const val WEB_PAGE = "news/web?url={url}&source={source}"
 
@@ -1285,6 +1292,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             ) { entry ->
                 NoteEditorScreen(
                     noteId = entry.arguments?.getLong("id")?.takeIf { it >= 0 },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                Routes.NOTE_ITEM,
+                arguments = listOf(
+                    navArgument("kind") { type = NavType.StringType },
+                    navArgument("id") { type = NavType.LongType; defaultValue = -1L },
+                ),
+            ) { entry ->
+                ItemDetailScreen(
+                    kind = ItemKind.entries.firstOrNull { it.name == entry.arguments?.getString("kind") } ?: ItemKind.TASK,
+                    id = entry.arguments?.getLong("id") ?: -1L,
                     onBack = { navController.popBackStack() },
                 )
             }
