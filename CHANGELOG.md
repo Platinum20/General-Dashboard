@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.157.0
+**La barra diventa la bolla del +**
+- Niente più bolla separata: toccando il + è la barra in basso stessa a trasformarsi nel campo per scrivere, larga uguale, e sale con la tastiera. Il + diventa la freccia per inviare, la X annulla
+- Anche il vocale vive nella barra: tenendo premuto il + la barra si allarga e mostra la voce e quello che Canvas sta capendo. Scorrendo a sinistra la barra segue il dito, compare il cestino che si fa rosso e il vocale si butta
+- Quando la tastiera si apre per altro (cerca, modifica di una nota) la barra si nasconde e non copre niente
+
 ## 1.156.0
 **Annulla il vocale scorrendo a sinistra**
 - Mentre detti tenendo premuto il +, fai scorrere il dito verso sinistra: accanto al microfono compare "Scorri per annullare" con un cestino che segue il dito e si fa rosso; arrivato in fondo la registrazione viene buttata senza salvare niente, come su WhatsApp
