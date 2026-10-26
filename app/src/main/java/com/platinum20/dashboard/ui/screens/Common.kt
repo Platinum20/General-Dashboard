@@ -77,7 +77,13 @@ import androidx.compose.material.icons.outlined.Thunderstorm
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -136,7 +142,7 @@ object Springs {
  * La card si stringe appena alla pressione e torna con una molla.
  * Osserva i tocchi senza consumarli, quindi click e scorrimento funzionano come prima.
  */
-fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = composed {
+fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = this.then(BouncyMark).composed {
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (pressed) pressedScale else 1f, Springs.snappy(), label = "press")
     this
@@ -154,6 +160,9 @@ fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = composed {
             }
         }
 }
+
+/** Segno lasciato da [bouncyPress]: CanvasCard non aggiunge la sua pressione se c'è già. */
+private object BouncyMark : Modifier.Element
 
 /**
  * Campo da scrivere subito: per gli elementi nuovi la tastiera si apre da sola,
@@ -320,13 +329,24 @@ fun TopLevelBar(
                 },
             ) {
                 if (subtitle != null) {
-                    Text(
+                    // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
+                    AnimatedContent(
                         subtitle.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                        transitionSpec = {
+                            (slideInVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) { it / 2 } +
+                                fadeIn(tween(Motion.ENTER_MS, easing = Motion.Decelerate)))
+                                .togetherWith(fadeOut(tween(Motion.EXIT_MS, easing = Motion.Accelerate)))
+                        },
+                        label = "subtitle",
+                    ) { line ->
+                        Text(
+                            line,
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 Text(title, style = MaterialTheme.typography.headlineLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -454,7 +474,9 @@ fun CanvasCard(
     )
     val border = if (colors == null) cardBorder() else null
     // Ogni card entra a cascata con la pagina e cambia altezza con un movimento morbido, mai a scatti.
-    val modifier = modifier.entrance().animateContentSize(Motion.settle())
+    // Le card che si toccano rispondono al dito, anche dove la schermata non l'ha chiesto.
+    val press = if ((onClick != null || onLongClick != null) && !modifier.any { it === BouncyMark }) Modifier.bouncyPress(0.98f) else Modifier
+    val modifier = modifier.entrance().then(press).animateContentSize(Motion.settle())
     if (onLongClick != null) {
         Card(
             modifier = modifier.clip(shape).combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick),
