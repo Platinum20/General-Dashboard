@@ -339,13 +339,9 @@ fun NotesScreen(
     val dueToday = data.openTasks.count { (it.dueAt ?: Long.MAX_VALUE) < endOfDay } - overdue
 
     val habitRows = habitItems(data.habits, onDeleted = { h -> offerUndo("Abitudine eliminata") { NotesStore.restoreHabit(h) } })
-    var editingDate by remember { mutableStateOf<Countdown?>(null) }
-    var editingParcel by remember { mutableStateOf<Parcel?>(null) }
-    var editingTask by remember { mutableStateOf<TaskItem?>(null) }
+    // Ogni cosa si apre a schermo intero, come gli eventi del calendario.
+    val openItem = rememberOpenItem()
     val haptic = rememberHaptic()
-    editingTask?.let { TaskEditDialog(it, onDismiss = { editingTask = null }, onDeleted = { t -> offerUndo(listOf(t), "Promemoria eliminato") }) }
-    editingDate?.let { CountdownDialog(countdown = it, onDismiss = { editingDate = null }, onDeleted = { c -> offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) } }) }
-    editingParcel?.let { ParcelDialog(it, onDismiss = { editingParcel = null }, onDeleted = { p -> offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) } }) }
     // Gli eventi del calendario sono cose con scadenza come le altre: si rileggono ogni volta che si torna qui,
     // ma la pagina parte da quelli già letti, così le card sono subito alla loro grandezza e non si allargano.
     var events by remember { mutableStateOf(NotesEvents.cached(context)) }
@@ -481,11 +477,11 @@ fun NotesScreen(
                                     top = index > 0,
                                     bottom = index < entries.lastIndex,
                                     onClick = {
-                                        row.task?.let { editingTask = it }
-                                        row.countdown?.let { editingDate = it }
-                                        row.parcel?.let { editingParcel = it }
+                                        row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                        row.countdown?.let { openItem(ItemKind.DATE, it.id) }
+                                        row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
                                         row.event?.let { onOpenEvent(it) }
-                                        row.charge?.let { inApp?.openRoute?.invoke(Routes.EXPENSES) }
+                                        row.charge?.let { openItem(ItemKind.FIXED, it.id) }
                                     },
                                     onIcon = row.task?.let { task ->
                                         {
@@ -543,7 +539,7 @@ fun NotesScreen(
                 }
                 if (done.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem()) { TaskGroup(null, done, onTaskDeleted) } }
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
-                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
+                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
                 }
             }
         }
@@ -591,16 +587,15 @@ private fun DateCard(item: Countdown, onClick: () -> Unit) {
  */
 @Composable
 private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyListScope.() -> Unit {
-    var editing by remember { mutableStateOf<Habit?>(null) }
+    val openItem = rememberOpenItem()
     val today = LocalDate.now()
     val haptic = rememberHaptic()
-    editing?.let { HabitDialog(habit = it, onDismiss = { editing = null }, onDeleted = onDeleted) }
     return {
         items(habits, key = { "habit-${it.id}" }) { habit ->
             val doneToday = habit.isDone(today)
             val line = habit.statusLine(LocalDateTime.now())
             CanvasCard(
-                onClick = { editing = habit },
+                onClick = { openItem(ItemKind.HABIT, habit.id) },
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
             ) {
@@ -739,7 +734,7 @@ private fun TaskDueCard(task: TaskItem, day: LocalDate?, late: Boolean, onDelete
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@Composable () -> Unit)? = null) {
-    var editing by remember { mutableStateOf(false) }
+    val openItem = rememberOpenItem()
     val haptic = rememberHaptic()
     val dismiss = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -783,7 +778,7 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
         Column(
             Modifier
                 .weight(1f)
-                .clickable { editing = true }
+                .clickable { openItem(ItemKind.TASK, task.id) }
                 .padding(vertical = 6.dp)
         ) {
             Text(
@@ -798,7 +793,6 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
         trailing?.invoke()
     }
     }
-    if (editing) TaskEditDialog(task, onDismiss = { editing = false }, onDeleted = onDeleted)
 }
 
 @OptIn(ExperimentalFoundationApi::class)

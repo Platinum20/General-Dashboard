@@ -205,84 +205,42 @@ fun EventDetailScreen(
     }
 
     val current = event
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                actions = {
-                    if (current?.writable == true) {
-                        RoundIconButton(Icons.Outlined.Edit, "Modifica") { withWrite { onEdit(current.id) } }
-                        RoundIconButton(Icons.Outlined.Delete, "Elimina") { confirmDelete = true }
-                        Spacer(Modifier.width(8.dp))
-                    }
-                },
-            )
-        },
-    ) { inner ->
+    val writable = current?.writable == true
+    DetailPage(
+        onBack = onBack,
+        onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
+        onDelete = if (writable) ({ confirmDelete = true }) else null,
+        snackbar = snackbar,
+    ) {
         if (current == null) {
-            if (missing) {
-                Column(
-                    Modifier.padding(inner).fillMaxWidth().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(Icons.Outlined.EventBusy, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    Text("Questo evento non c'è più.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+            if (missing) DetailMissing(Icons.Outlined.EventBusy, "Questo evento non c'è più.")
         } else {
             val zone = ZoneId.systemDefault()
             val from = if (begin > 0) begin else current.begin
             val to = if (begin > 0 && end > 0) end else current.end
-            Column(
-                Modifier
-                    .padding(inner)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                    ColorDot(current.color)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        current.title.ifBlank { "(Senza titolo)" },
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
+            DetailTitle(current.title, if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
+            CanvasCard(Modifier.fillMaxWidth()) {
+                DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                if (current.recurring) {
+                    RowDivider()
+                    DetailRow(Icons.Outlined.Repeat, "Si ripete")
                 }
-                CanvasCard(Modifier.fillMaxWidth()) {
-                    DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
-                    if (current.recurring) {
-                        RowDivider()
-                        DetailRow(Icons.Outlined.Repeat, "Si ripete")
-                    }
-                    if (current.location.isNotBlank()) {
-                        RowDivider()
-                        DetailRow(Icons.Outlined.Place, current.location)
-                    }
-                    if (current.calendarName.isNotBlank()) {
-                        RowDivider()
-                        DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
-                    }
+                if (current.location.isNotBlank()) {
+                    RowDivider()
+                    DetailRow(Icons.Outlined.Place, current.location)
                 }
-                if (current.description.isNotBlank()) {
-                    Section(title = "Note") {
-                        DetailRow(Icons.AutoMirrored.Outlined.Notes, current.description.trim(), maxLines = Int.MAX_VALUE)
-                    }
+                if (current.calendarName.isNotBlank()) {
+                    RowDivider()
+                    DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
                 }
-                if (!current.writable) {
-                    Text(
-                        "Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+            }
+            if (current.description.isNotBlank()) {
+                Section(title = "Note") {
+                    DetailRow(Icons.AutoMirrored.Outlined.Notes, current.description.trim(), maxLines = Int.MAX_VALUE)
                 }
+            }
+            if (!current.writable) {
+                DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
             }
         }
     }
@@ -314,18 +272,6 @@ fun EventDetailScreen(
             },
             dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Annulla") } },
         )
-    }
-}
-
-@Composable
-private fun DetailRow(icon: ImageVector, text: String, maxLines: Int = 3) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.Top,
-    ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(14.dp))
-        Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
     }
 }
 
