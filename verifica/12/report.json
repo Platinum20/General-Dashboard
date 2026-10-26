@@ -1,0 +1,1188 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 60,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 1,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1554,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1711,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1700,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1710,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 126,
+    "blocked": 0,
+    "wouldBlock": 36,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 2,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "googleads.g.doubleclick.net": 2,
+     "static.doubleclick.net": 2,
+     "sb.scorecardresearch.com": 2,
+     "intake.pbstck.com": 3,
+     "www.youtube.com": 5,
+     "cdn-gl.imrworldwide.com": 3,
+     "0owvmwbvr7ywxjgrpabxdgpqrpn9i1793036029.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26779,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 84,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "googleads.g.doubleclick.net": 1,
+     "static.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.youtube.com": 2,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26779,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/26/lo-spread-tra-btp-e-bund-chiude-in-forte-calo-a-112-punti_4e892336-c2df-45a9-bf7c-7679655e940a.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1153,
+    "blocked": 0,
+    "wouldBlock": 1018,
+    "blockedHosts": {
+     "securepubads.g.doubleclick.net": 4,
+     "ads.talkscreativity.com": 3,
+     "www.googletagmanager.com": 2,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "t.seedtag.com": 3,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "intake.pbstck.com": 3,
+     "s.seedtag.com": 43,
+     "ukjah6fa27nz2k4kjtlnt5xuuifew1793036055.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 5,
+     "visitor.omnitagjs.com": 3,
+     "ad.360yield.com": 9,
+     "sync.srv.stackadapt.com": 4,
+     "u.openx.net": 6,
+     "cs.admanmedia.com": 15,
+     "sync.1rx.io": 20,
+     "csync.loopme.me": 10,
+     "match.prod.bidr.io": 6,
+     "secure-assets.rubiconproject.com": 19,
+     "sync.ipredictive.com": 3,
+     "beachfront-match.dotomi.com": 1,
+     "pixel-sync.sitescout.com": 4,
+     "ib.adnxs.com": 15,
+     "sync.smartadserver.com": 1,
+     "b1sync.outbrain.com": 11,
+     "match.adsrvr.org": 14,
+     "x.bidswitch.net": 25,
+     "c1.adform.net": 11,
+     "ap.lijit.com": 27,
+     "creativecdn.com": 23,
+     "t.adx.opera.com": 8,
+     "match.deepintent.com": 6,
+     "id5-sync.com": 5,
+     "ups.analytics.yahoo.com": 6,
+     "csync.smartadserver.com": 3,
+     "ads.pubmatic.com": 20,
+     "match.sharethrough.com": 5,
+     "onetag-sys.com": 23,
+     "cm.g.doubleclick.net": 6,
+     "ad.turn.com": 2,
+     "tr.blismedia.com": 2,
+     "ced-ns.sascdn.com": 1,
+     "dis.criteo.com": 2,
+     "s.ad.smaato.net": 10,
+     "sync-tm.everesttech.net": 3,
+     "bttrack.com": 1,
+     "ssc-cms.33across.com": 20,
+     "eb2.3lift.com": 23,
+     "rtb-csync.smartadserver.com": 5,
+     "id.rlcdn.com": 9,
+     "prebid.a-mo.net": 11,
+     "cs.media.net": 12,
+     "ssum-sec.casalemedia.com": 5,
+     "eus.rubiconproject.com": 31,
+     "ssbsync.smartadserver.com": 17,
+     "sync.richaudience.com": 13,
+     "sync.adkernel.com": 11,
+     "csync.smilewanted.com": 2,
+     "image8.pubmatic.com": 16,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "hb.trustedstack.com": 4,
+     "rtb.mfadsrvr.com": 3,
+     "public.servenobid.com": 1,
+     "cs-server-s2s.yellowblue.io": 10,
+     "cpm.vistarsagency.com": 1,
+     "measureadv.com": 1,
+     "ittpx.eskimi.com": 11,
+     "dsp-service.admatic.de": 3,
+     "cookies.nextmillmedia.com": 1,
+     "us-east-1-cs-rtb.openwebmp.com": 2,
+     "p.rfihub.com": 5,
+     "ce.lijit.com": 5,
+     "prebidsrvr.cootlogix.com": 1,
+     "hbx.media.net": 3,
+     "sync.go.sonobi.com": 6,
+     "jadserve.postrelease.com": 8,
+     "ads.servenobid.com": 8,
+     "sync.kueezrtb.com": 2,
+     "pixel.33across.com": 1,
+     "token.rubiconproject.com": 30,
+     "a.amxrtb.com": 12,
+     "dsum-sec.casalemedia.com": 1,
+     "equativ-match.dotomi.com": 1,
+     "cms.quantserve.com": 4,
+     "rtb.openx.net": 11,
+     "ssbsync-global.smartadserver.com": 4,
+     "secure.adnxs.com": 7,
+     "prebid-match.dotomi.com": 3,
+     "ssp-sync.criteo.com": 14,
+     "cm.adform.net": 17,
+     "ads.yieldmo.com": 16,
+     "visitor.us-west1.gcp.omnitagjs.com": 4,
+     "sync.a-mo.net": 3,
+     "rtb.gumgum.com": 3,
+     "ms-cookie-sync.presage.io": 10,
+     "bh.contextweb.com": 8,
+     "sync.ingage.tech": 3,
+     "casale-match.dotomi.com": 1,
+     "s.company-target.com": 1,
+     "rtb.adentifi.com": 2,
+     "sync.rbstsystems.live": 5,
+     "pixel-eu.rubiconproject.com": 5,
+     "us-u.openx.net": 10,
+     "syncingbridge.com": 6,
+     "user-sync.fwmrm.net": 5,
+     "visitor-ow.omnitagjs.com": 3,
+     "openweb-match.dotomi.com": 2,
+     "visitor-programmaticx.omnitagjs.com": 1,
+     "visitor-px.omnitagjs.com": 1,
+     "u-las.4dex.io": 5,
+     "dsp-service.adtarget.biz": 2,
+     "rt.marphezis.com": 1,
+     "u-ams.4dex.io": 6,
+     "pbs-cs.yellowblue.io": 2,
+     "sync.sparteo.com": 6,
+     "www.temu.com": 2,
+     "cs.openwebmp.com": 6,
+     "prebid.admatic.de": 6,
+     "cs.iqzone.com": 2,
+     "pixel.rubiconproject.com": 19,
+     "ogury-match.dotomi.com": 4,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "s.console.adtarget.com.tr": 2,
+     "dsp-service.pixad.com.tr": 4,
+     "sync.cootlogix.com": 6,
+     "usync.4dex.io": 4,
+     "33across-match.dotomi.com": 2,
+     "idpix.media6degrees.com": 1,
+     "pixel.tapad.com": 1,
+     "sync.adotmob.com": 1,
+     "um.simpli.fi": 2,
+     "et-c-ash.33across.com": 2,
+     "sync.mathtag.com": 1,
+     "visitor-33across.omnitagjs.com": 1,
+     "ads.betweendigital.com": 1,
+     "cs.yellowblue.io": 4,
+     "ittpx-us-e.eskimi.com": 4,
+     "gumgum-match.dotomi.com": 1,
+     "pixel-us-east.rubiconproject.com": 7,
+     "i.w55c.net": 2,
+     "openx2-match.dotomi.com": 2,
+     "i.liadm.com": 4,
+     "elb.the-ozone-project.com": 2,
+     "s.amazon-adsystem.com": 2,
+     "oxp.mxptint.net": 2,
+     "dsp.360yield.com": 1,
+     "thrtle.com": 3,
+     "prebid.adtarget.biz": 1,
+     "aa.agkn.com": 2,
+     "contextual.media.net": 3,
+     "gw-iad-bid.ymmobi.com": 5,
+     "aorta.clickagy.com": 4,
+     "static.cdn.admatic.de": 2,
+     "su.semasio.net": 2,
+     "openx-ums.acuityplatform.com": 2,
+     "b1sync.zemanta.com": 3,
+     "prebid.pixad.com.tr": 4,
+     "ads250.console.adtarget.com.tr": 4,
+     "data.adsrvr.org": 1,
+     "ssp.wp.pl": 1,
+     "dsp-cookie.adfarm1.adition.com": 1,
+     "px.ads.linkedin.com": 1,
+     "id.a-mx.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Lo spread tra Btp e Bund chiude in forte calo a 112 punti - Ultima ora - Ansa.it",
+    "textLength": 6854,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Lo spread tra Btp e Bund chiude in forte calo a 112 punti - Ultima ora - Ansa.it",
+    "textLength": 6854,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/attualita/garofano-torno-dalle-ferie-e-disse-che-avevo-sbagliato-tutto-lex-vice-del-ris-sullomicidio-di-chiara-poggi/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 313,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 313,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 371,
+    "blocked": 0,
+    "wouldBlock": 107,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 2,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "applets.ebxcdn.com": 2,
+     "ep2.adtrafficquality.google": 3,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cm.everesttech.net": 1,
+     "services.insurads.com": 3,
+     "smetrics.rcsmetrics.it": 1,
+     "cdn.permutive.app": 1,
+     "boxnk6nmmubnlfm4lrwfmqpt8swhf1793036128.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "oa.openxcdn.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "ad-delivery.net": 1,
+     "0fc0f0f4ffec9062438982cfba94da4f.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "esp.rtbhouse.com": 1,
+     "gum.criteo.com": 2,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20829,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 262,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20821,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/26/case-343-euro-metro-quadrato-paese-liguria-dove-comprare-appartamenti-gratis/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 202,
+    "blocked": 0,
+    "wouldBlock": 140,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "link.rubiconproject.com": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 5,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 6,
+     "api.realtimely.io": 1,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "dpm.demdex.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "trc.taboola.com": 2,
+     "applets.ebxcdn.com": 2,
+     "services.insurads.com": 3,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.permutive.app": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cm.everesttech.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "swx9xjiabs4h3qma1epow5l9rstzo1793036150.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "la-trc-events.taboola.com": 3,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "cds.taboola.com": 1,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "prod.us-east-1.cxm-bcn.publisher-services.amazon.dev": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "id5-sync.com": 1,
+     "e25269c8088a2f08b85ad631494935f3.safeframe.googlesyndication.com": 3,
+     "esp.rtbhouse.com": 1,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Case a 343 euro al metro quadrato: il paese della Liguria dove comprare alcuni appartamenti è addirittura gratis - Open",
+    "textLength": 6620,
+    "adFrames": 2,
+    "adBoxes": 18
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "assets.evolutionadv.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function",
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Case a 343 euro al metro quadrato: il paese della Liguria dove comprare alcuni appartamenti è addirittura gratis - Open",
+    "textLength": 5619,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/articoli/2026/10/rimbalza-piazza-affari-129-dopo-la-vittoria-di-lula-crolla-la-borsa-brasiliana-15-e21cc82b-4c99-4020-8cd1-b7246cc87fbe.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 336,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 336,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 192,
+    "blocked": 0,
+    "wouldBlock": 74,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "cm.g.doubleclick.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "image6.pubmatic.com": 2,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 28,
+     "b5649d30ce90f117d2a20a31c1555ce6.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "la-trc-events.taboola.com": 2,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15126,
+    "adFrames": 0,
+    "adBoxes": 5
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 114,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "privacyportal-eu.onetrust.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "Uncaught SyntaxError: Unexpected end of JSON input"
+    ]
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14318,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/estero/news/2026-10-26/elezioni-presidenziali-bulgaria-yotova-gyurov-39719835/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 240,
+    "blocked": 0,
+    "wouldBlock": 100,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "sb.scorecardresearch.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 2,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 28,
+     "63811232f01a58f171dd529f501e35f0.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "tpc.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "la-trc-events.taboola.com": 3,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Elezioni in Bulgaria, è sfida al ballottaggio tra Yotova e Gyurov",
+    "textLength": 7636,
+    "adFrames": 1,
+    "adBoxes": 14
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 121,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Elezioni in Bulgaria, è sfida al ballottaggio tra Yotova e Gyurov",
+    "textLength": 5507,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 191,
+    "blocked": 0,
+    "wouldBlock": 46,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 1,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "c97db8dc147df6623d224985acfd299c.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "i.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11163,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 152,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11119,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/junko-terao/2026/10/26/australia-copyright"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 153,
+    "blocked": 0,
+    "wouldBlock": 49,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 2,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "8ebbcb799061930e740b4334ae027bf4.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 7,
+     "www.googletagmanager.com": 1,
+     "tpc.googlesyndication.com": 2,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "o.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 1355,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 991,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
