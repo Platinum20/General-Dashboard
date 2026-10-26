@@ -1,5 +1,15 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import com.platinum20.dashboard.capture.SavedLinks
@@ -98,16 +108,29 @@ internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
 }
 
 /**
- * Il player grande, uguale per musica (Spotify e YouTube Music), radio e podcast: copertina,
- * barra del tempo, comandi e timer di spegnimento. I video di YouTube hanno il loro, con il video.
+ * Il player grande, uguale per musica (Spotify e YouTube Music), radio, podcast e il punto del giorno:
+ * copertina, barra del tempo e comandi. Niente tasti per uscire: trascinato giù si riduce al mini player,
+ * lanciato di lato (come il mini player) si chiude. I video di YouTube hanno il loro, con il video.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
-    val sleepAt by Playback.sleepAt.collectAsState()
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val view = LocalView.current
+    val scope = rememberCoroutineScope()
+    val drag = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+    BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val w = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+    val h = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+    // Il punto del giorno non ha copertina da sfocare: dietro, i colori della sua.
+    if (now?.source == PlaySource.SPEECH) {
+        Box(
+            Modifier.fillMaxWidth().fillMaxHeight(0.7f).background(
+                Brush.verticalGradient(listOf(Color(0xFF3550E8).copy(alpha = 0.35f), MaterialTheme.colorScheme.background))
+            )
+        )
+    }
     // Dietro a tutto la copertina sfocata, che sfuma nello sfondo: il player prende i colori di quello che suona.
     now?.artwork?.takeIf { it.isNotBlank() }?.let { art ->
         AsyncImage(
@@ -150,15 +173,80 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
             }
             return@Scaffold
         }
+        // Tutta la pagina segue il dito: giù oltre un quarto (o con uno scatto) torna al mini player,
+        // di lato oltre metà si chiude. Su e di lato insieme, si decide solo lasciandola.
+        val down = (drag.value.y / h).coerceIn(0f, 1f)
+        val side = (kotlin.math.abs(drag.value.x) / w).coerceIn(0f, 1f)
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(inner)
-                .verticalScroll(rememberScrollState())
+                .graphicsLayer {
+                    translationX = drag.value.x
+                    translationY = drag.value.y
+                    val sc = 1f - 0.08f * down
+                    scaleX = sc
+                    scaleY = sc
+                    alpha = 1f - 0.6f * side
+                }
+                .pointerInput(w, h) {
+                    val tracker = VelocityTracker()
+                    var total = Offset.Zero
+                    var travelled = Offset.Zero
+                    var armed = false
+                    detectDragGestures(
+                        onDragStart = {
+                            tracker.resetTracking()
+                            total = drag.value
+                            travelled = Offset.Zero
+                            armed = false
+                        },
+                        onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy()) } },
+                        onDragEnd = {
+                            val v = tracker.calculateVelocity()
+                            when {
+                                kotlin.math.abs(total.x) > w * 0.5f -> {
+                                    view.haptic(Haptic.CONFIRM)
+                                    scope.launch {
+                                        drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), androidx.compose.animation.core.tween(200))
+                                        Playback.stop(context)
+                                        onBack()
+                                    }
+                                }
+                                total.y > h * 0.25f || (v.y > 1_500f && v.y > 1.5f * kotlin.math.abs(v.x) && total.y > 0f) -> {
+                                    view.haptic(Haptic.SNAP)
+                                    onBack()
+                                }
+                                else -> scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy(), initialVelocity = v.let { Offset(it.x, it.y) }) }
+                            }
+                        },
+                    ) { change, amount ->
+                        change.consume()
+                        travelled += amount
+                        tracker.addPosition(change.uptimeMillis, travelled)
+                        // In su resiste: non porta da nessuna parte.
+                        total = Offset(total.x + amount.x, (total.y + amount.y).coerceAtLeast(-h * 0.05f))
+                        val over = kotlin.math.abs(total.x) > w * 0.5f
+                        if (over != armed) {
+                            armed = over
+                            view.haptic(if (over) Haptic.THRESHOLD else Haptic.TICK)
+                        }
+                        val target = total
+                        scope.launch { drag.snapTo(target) }
+                    }
+                }
                 .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Artwork(current)
+            // La maniglia in alto dice che la pagina si trascina giù.
+            Box(
+                Modifier
+                    .padding(bottom = 12.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+            )
+            Artwork(current, Modifier.weight(1f, fill = false))
             Spacer(Modifier.height(24.dp))
             Column(Modifier.fillMaxWidth().widthIn(max = 420.dp)) {
                 SourcePill(current.source)
@@ -176,17 +264,13 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Controls(current)
                 Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
-                    if (current.source == PlaySource.MUSIC) {
-                        YtPlayer.now.value?.link?.let { link ->
-                            OutlinedButton(onClick = { onWatchVideo(link) }, modifier = Modifier.bouncyPress()) { Text("Guarda il video") }
-                        }
+                // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
+                if (current.source == PlaySource.MUSIC) {
+                    YtPlayer.now.value?.link?.let { link ->
+                        OutlinedButton(onClick = { onWatchVideo(link) }, modifier = Modifier.bouncyPress()) { Text("Guarda il video") }
                     }
-                    OutlinedButton(onClick = { Playback.stop(context) }, modifier = Modifier.bouncyPress()) { Text("Chiudi") }
                 }
-                Spacer(Modifier.height(20.dp))
-                SleepTimer(sleepAt)
+                Spacer(Modifier.height(12.dp))
             }
         }
     }
@@ -210,12 +294,12 @@ private fun SourcePill(source: PlaySource) {
 }
 
 @Composable
-private fun Artwork(now: Playing) {
+private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
     Box(
-        Modifier
-            .fillMaxWidth()
+        modifier
             .widthIn(max = 420.dp)
-            .aspectRatio(1f)
+            // Quadrata, e più piccola se lo schermo è basso: tutto il player sta in una pagina.
+            .aspectRatio(1f, matchHeightConstraintsFirst = true)
             .shadow(24.dp, MaterialTheme.shapes.extraLarge)
             .clip(MaterialTheme.shapes.extraLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -226,7 +310,8 @@ private fun Artwork(now: Playing) {
         contentAlignment = Alignment.Center,
     ) {
         IconTile(sourceIcon(now.source), sourceAccent(now.source), size = 96.dp, iconSize = 48.dp)
-        if (now.artwork.isNotBlank()) {
+        if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
+        else if (now.artwork.isNotBlank()) {
             AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         if (now.loading) CircularProgressIndicator(Modifier.size(40.dp))
@@ -324,31 +409,4 @@ internal fun livePosition(now: Playing): Long {
     val elapsed = if (now.playing && !now.loading) (clock - anchor.second).coerceAtLeast(0) else 0
     val end = now.durationMs.takeIf { it > 0 } ?: Long.MAX_VALUE
     return (anchor.first + elapsed).coerceIn(0, end)
-}
-
-private val sleepOptions = listOf(15 to "15 min", 30 to "30 min", 60 to "1 ora", 90 to "1 ora e mezza")
-private val clock = DateTimeFormatter.ofPattern("HH:mm")
-
-/** Timer di spegnimento: mette in pausa qualunque cosa suoni dopo il tempo scelto. */
-@Composable
-private fun SleepTimer(sleepAt: Long?) {
-    Column {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Bedtime, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                sleepAt?.let { "Si ferma alle " + clock.format(Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())) }
-                    ?: "Timer di spegnimento",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            sleepOptions.forEach { (minutes, label) ->
-                CanvasChip(selected = false, onClick = { Playback.setSleepTimer(minutes) }, label = label)
-            }
-            if (sleepAt != null) CanvasChip(selected = true, onClick = { Playback.setSleepTimer(null) }, label = "Annulla")
-        }
-    }
 }

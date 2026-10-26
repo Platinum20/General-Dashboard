@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.147.0
+**Player audio rivisto e copertina del punto del giorno**
+- Il punto del giorno letto ad alta voce ha la sua copertina: blu e arancione come l'app, con il titolo e la data di oggi; si vede nel player, nel mini player e in Media
+- Nel player audio (Spotify, YouTube Music, radio, podcast, lettura) niente più timer di spegnimento né tasto Chiudi
+- Il player si chiude con un gesto: trascinalo giù per tornare al mini player, lancialo di lato oltre metà schermo per chiudere tutto, come il mini player
+- Tutto il player sta in una pagina: la copertina si rimpicciolisce sugli schermi bassi
+
 ## 1.146.0
 **Barra in basso fluida**
 - Cambiando sezione la pillola scura si apre sulla scheda nuova mentre quella vecchia si richiude, insieme e con la stessa curva: niente più rimbalzi, scatti o pillola che rincorre le schede
