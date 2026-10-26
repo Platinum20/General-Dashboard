@@ -1,0 +1,1224 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 59,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1501,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 79,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1549,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1711,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 77,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1768,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 120,
+    "blocked": 0,
+    "wouldBlock": 34,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "www.googletagmanager.com": 2,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "googleads.g.doubleclick.net": 2,
+     "static.doubleclick.net": 2,
+     "www.youtube.com": 4,
+     "intake.pbstck.com": 3,
+     "www.google-analytics.com": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "szdzgdvhhpybkwuikqvu0dvfkmqzc1793024109.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26425,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 82,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 1,
+     "www.youtube.com": 2,
+     "cdn-gl.imrworldwide.com": 1,
+     "sb.scorecardresearch.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26425,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/26/anthropic-al-nasdaq-a-novembre-verso-ipo-fino-a-100-miliardi_40c9de54-79aa-4f21-bd6f-89a5702205fd.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 3016,
+    "blocked": 0,
+    "wouldBlock": 2739,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "t.seedtag.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.ansa.it": 1,
+     "intake.pbstck.com": 3,
+     "www.google-analytics.com": 1,
+     "s.seedtag.com": 68,
+     "cdn-gl.imrworldwide.com": 3,
+     "fceh7jqmki8q07pblokkrgka9coys1793024136.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 13,
+     "secure-assets.rubiconproject.com": 74,
+     "ads.pubmatic.com": 42,
+     "visitor.omnitagjs.com": 6,
+     "match.sharethrough.com": 22,
+     "csync.loopme.me": 20,
+     "cs.admanmedia.com": 43,
+     "csync.smartadserver.com": 6,
+     "ad.360yield.com": 25,
+     "onetag-sys.com": 74,
+     "b1sync.outbrain.com": 22,
+     "match.adsrvr.org": 31,
+     "x.bidswitch.net": 46,
+     "c1.adform.net": 25,
+     "ap.lijit.com": 37,
+     "creativecdn.com": 51,
+     "t.adx.opera.com": 21,
+     "ib.adnxs.com": 46,
+     "u.openx.net": 12,
+     "match.prod.bidr.io": 11,
+     "sync.1rx.io": 80,
+     "sync.srv.stackadapt.com": 10,
+     "sync.ipredictive.com": 9,
+     "pixel-sync.sitescout.com": 21,
+     "beachfront-match.dotomi.com": 2,
+     "sync.smartadserver.com": 5,
+     "match.deepintent.com": 13,
+     "id5-sync.com": 6,
+     "ups.analytics.yahoo.com": 21,
+     "ced-ns.sascdn.com": 2,
+     "csync.smilewanted.com": 10,
+     "sync.richaudience.com": 32,
+     "id.rlcdn.com": 13,
+     "hb.trustedstack.com": 6,
+     "prebid.a-mo.net": 27,
+     "rtb.mfadsrvr.com": 7,
+     "cpm.vistarsagency.com": 2,
+     "ssum-sec.casalemedia.com": 24,
+     "cs.media.net": 19,
+     "eus.rubiconproject.com": 96,
+     "eb2.3lift.com": 37,
+     "image8.pubmatic.com": 105,
+     "s.ad.smaato.net": 31,
+     "ssbsync.smartadserver.com": 32,
+     "measureadv.com": 2,
+     "eu-west-1-cs-rtb.openwebmp.com": 2,
+     "ittpx.eskimi.com": 23,
+     "sync.adkernel.com": 43,
+     "public.servenobid.com": 2,
+     "ssc-cms.33across.com": 75,
+     "cs-server-s2s.yellowblue.io": 14,
+     "cm.g.doubleclick.net": 15,
+     "ad.turn.com": 4,
+     "tr.blismedia.com": 4,
+     "pixel.33across.com": 2,
+     "us-east-1-cs-rtb.openwebmp.com": 11,
+     "prebidsrvr.cootlogix.com": 2,
+     "sync.kueezrtb.com": 19,
+     "sync.go.sonobi.com": 11,
+     "hbx.media.net": 9,
+     "p.rfihub.com": 10,
+     "ce.lijit.com": 5,
+     "ads.servenobid.com": 16,
+     "jadserve.postrelease.com": 32,
+     "rtb-csync.smartadserver.com": 9,
+     "visitor.us-east4.gcp.omnitagjs.com": 8,
+     "bttrack.com": 3,
+     "dis.criteo.com": 5,
+     "sync-tm.everesttech.net": 10,
+     "dsp-service.admatic.de": 10,
+     "cookies.nextmillmedia.com": 51,
+     "rtb.openx.net": 19,
+     "ssp-sync.criteo.com": 35,
+     "ssp.wp.pl": 2,
+     "us-u.openx.net": 34,
+     "bh.contextweb.com": 14,
+     "token.rubiconproject.com": 84,
+     "prebid-match.dotomi.com": 13,
+     "cm.adform.net": 31,
+     "ssbsync-global.smartadserver.com": 13,
+     "contextual.media.net": 6,
+     "secure.adnxs.com": 16,
+     "ads.yieldmo.com": 24,
+     "sync.a-mo.net": 6,
+     "sync.rbstsystems.live": 17,
+     "ms-cookie-sync.presage.io": 18,
+     "sync.ingage.tech": 4,
+     "a.amxrtb.com": 36,
+     "dsp-cookie.adfarm1.adition.com": 1,
+     "i.ctnsnet.com": 1,
+     "rtb.gumgum.com": 10,
+     "user-sync.fwmrm.net": 9,
+     "visitor-ow.omnitagjs.com": 6,
+     "track.adform.net": 1,
+     "pbs-cs.yellowblue.io": 13,
+     "pixel.rubiconproject.com": 33,
+     "cs.iqzone.com": 14,
+     "visitor-programmaticx.omnitagjs.com": 2,
+     "visitor-px.omnitagjs.com": 2,
+     "rt.marphezis.com": 4,
+     "u-las.4dex.io": 8,
+     "i.liadm.com": 6,
+     "dsum-sec.casalemedia.com": 1,
+     "pixel-eu.rubiconproject.com": 5,
+     "dsp-service.adtarget.biz": 4,
+     "www.temu.com": 17,
+     "syncingbridge.com": 22,
+     "openweb-match.dotomi.com": 4,
+     "d.adroll.com": 1,
+     "rtb.adentifi.com": 2,
+     "dsp.360yield.com": 7,
+     "sync.cootlogix.com": 74,
+     "cs.openwebmp.com": 12,
+     "s.console.adtarget.com.tr": 3,
+     "dsp-service.pixad.com.tr": 5,
+     "sync.adtelligent.com": 3,
+     "bidder.smartytouch.co": 3,
+     "sync.sparteo.com": 15,
+     "usync.4dex.io": 7,
+     "usync.ingage.tech": 17,
+     "u-ams.4dex.io": 10,
+     "33across-match.dotomi.com": 2,
+     "idpix.media6degrees.com": 1,
+     "ittpx-us-e.eskimi.com": 6,
+     "sync.technoratimedia.com": 7,
+     "pixel.tapad.com": 10,
+     "id.a-mx.com": 30,
+     "static.cloudflareinsights.com": 13,
+     "pixel-us-east.rubiconproject.com": 9,
+     "cs.yellowblue.io": 8,
+     "um.simpli.fi": 2,
+     "b1sync.zemanta.com": 7,
+     "ads.betweendigital.com": 1,
+     "visitor-33across.omnitagjs.com": 1,
+     "prebid.admatic.de": 12,
+     "gumgum-match.dotomi.com": 3,
+     "cms.quantserve.com": 3,
+     "gw-iad-bid.ymmobi.com": 7,
+     "elb.the-ozone-project.com": 2,
+     "et-c-ash.33across.com": 2,
+     "i.w55c.net": 1,
+     "ogury-match.dotomi.com": 7,
+     "s.amazon-adsystem.com": 2,
+     "openx2-match.dotomi.com": 2,
+     "ortb.vdo.ai": 13,
+     "oxp.mxptint.net": 2,
+     "px.mountain.com": 2,
+     "dp1.33across.com": 2,
+     "px.ads.linkedin.com": 4,
+     "ps.eyeota.net": 21,
+     "thrtle.com": 2,
+     "aorta.clickagy.com": 2,
+     "aa.agkn.com": 1,
+     "su.semasio.net": 1,
+     "openx-ums.acuityplatform.com": 1,
+     "dmp.brand-display.com": 2,
+     "bpi.rtactivate.com": 2,
+     "fei.pro-market.net": 2,
+     "capi.connatix.com": 2,
+     "ml314.com": 2,
+     "vop.sundaysky.com": 7,
+     "sync.crwdcntrl.net": 9,
+     "dm-us.hybrid.ai": 2,
+     "adx01.groovinads.com": 2,
+     "cs.minutemedia-prebid.com": 2,
+     "public-prod-dspcookiematching.dmxleo.com": 2,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "s.company-target.com": 2,
+     "cs.ingage.tech": 1,
+     "pxl.iqm.com": 5,
+     "prebid.pixad.com.tr": 6,
+     "prebid.adtarget.biz": 2,
+     "cdn.undertone.com": 9,
+     "static.cdn.admatic.de": 4,
+     "ads176.console.adtarget.com.tr": 5,
+     "sync.mathtag.com": 1,
+     "data.adsrvr.org": 1,
+     "sync.colossusssp.com": 11,
+     "evt.undertone.com": 2,
+     "c.bing.com": 1,
+     "triplelift-match.dotomi.com": 1,
+     "stx-match.dotomi.com": 1,
+     "sync.intentiq.com": 7,
+     "dpm.demdex.net": 7,
+     "idsync.rlcdn.com": 7,
+     "equativ-match.dotomi.com": 2,
+     "sync.ottadvisors.com": 5,
+     "inv-nets.admixer.net": 7,
+     "dsp-service.monetixads.com": 1,
+     "ice.360yield.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Anthropic al Nasdaq a novembre, verso Ipo fino a 100 miliardi - Ultima ora - Ansa.it",
+    "textLength": 7265,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Anthropic al Nasdaq a novembre, verso Ipo fino a 100 miliardi - Ultima ora - Ansa.it",
+    "textLength": 7265,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 194,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/politica/la-storia-del-giovedi-nero-del-1973-cosa-accadde-e-perche-la-russa-querela-la-storica-ponzani/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 297,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 297,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 364,
+    "blocked": 0,
+    "wouldBlock": 107,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 2,
+     "www.googletagmanager.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn.confiant-integrations.net": 2,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.insurads.com": 3,
+     "ep2.adtrafficquality.google": 3,
+     "applets.ebxcdn.com": 2,
+     "cdn.permutive.app": 1,
+     "cm.everesttech.net": 1,
+     "services.insurads.com": 4,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "cdn1.anonymised.io": 2,
+     "gnhxcgxsprp6revm735dgisu8rqdo1793024226.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "static.criteo.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "prod.us-east-1.cxm-bcn.publisher-services.amazon.dev": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "ad-delivery.net": 1,
+     "esp.rtbhouse.com": 1,
+     "ab566954fa852b667ac9c479ba2a243f.safeframe.googlesyndication.com": 2,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 3,
+     "gum.criteo.com": 2,
+     "p.typekit.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 19771,
+    "adFrames": 1,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 258,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 19763,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/26/youssef-siher-convalida-arresto-17-ottobre-scontri-milano/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 203,
+    "blocked": 0,
+    "wouldBlock": 141,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "stats.open.online": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 6,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 2,
+     "pagead2.googlesyndication.com": 20,
+     "sb.scorecardresearch.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "cdn.confiant-integrations.net": 2,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "trc.taboola.com": 2,
+     "cdn.insurads.com": 3,
+     "applets.ebxcdn.com": 2,
+     "cdn.permutive.app": 1,
+     "googleads.g.doubleclick.net": 2,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cm.everesttech.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "smetrics.rcsmetrics.it": 1,
+     "secure-it.imrworldwide.com": 2,
+     "mjutkwcvltsxpnd51ewxsveqdkw5i1793024250.nuid.imrworldwide.com": 1,
+     "services.insurads.com": 3,
+     "ep2.adtrafficquality.google": 3,
+     "ch-trc-events.taboola.com": 4,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "cdn1.anonymised.io": 2,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "cds.taboola.com": 1,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "c.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "ad-delivery.net": 1,
+     "esp.rtbhouse.com": 1,
+     "a9fcdade4c61e24c16a2a5beeed0df30.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Youssef Siher «deve stare in carcere». I pm sul pericolo dietro all'ideatore del profilo 17 ottobre: «Può sviluppare strategia rivoluzionaria» - Open",
+    "textLength": 6468,
+    "adFrames": 2,
+    "adBoxes": 18
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function",
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Youssef Siher «deve stare in carcere». I pm sul pericolo dietro all'ideatore del profilo 17 ottobre: «Può sviluppare strategia rivoluzionaria» - Open",
+    "textLength": 5532,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/rubriche/ainews24/video/2026/10/AInews24-del-26102026-5417f9df-5971-4712-a1b3-42b72d628b27.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 291,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 291,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 176,
+    "blocked": 0,
+    "wouldBlock": 57,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 17,
+     "75b88dd5b7c0544fca5e07adc0233ce4.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.ampproject.org": 2,
+     "tpc.googlesyndication.com": 2,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14976,
+    "adFrames": 0,
+    "adBoxes": 5
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 112,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14410,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/estero/news/2026-10-25/serbia-elezioni-vucic-39707478/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 146,
+    "blocked": 0,
+    "wouldBlock": 39,
+    "blockedHosts": {
+     "www.googletagmanager.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "sb.scorecardresearch.com": 2,
+     "securepubads.g.doubleclick.net": 4,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "static.criteo.net": 1,
+     "oa.openxcdn.net": 1,
+     "cm.g.doubleclick.net": 3,
+     "rtb.openx.net": 1,
+     "gum.criteo.com": 2,
+     "google-bidout-d.openx.net": 1,
+     "ups.analytics.yahoo.com": 1,
+     "ad.turn.com": 1,
+     "match.adsrvr.org": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "pagead2.googlesyndication.com": 4,
+     "ep1.adtrafficquality.google": 2,
+     "s0.2mdn.net": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pubads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Storico in Serbia: studenti battono il nazionalista Vucic",
+    "textLength": 8488,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 122,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')"
+    ]
+   },
+   "info": {
+    "title": "Storico in Serbia: studenti battono il nazionalista Vucic",
+    "textLength": 8488,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 192,
+    "blocked": 0,
+    "wouldBlock": 47,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "1c8afb83317ffcfb68ed583b66bae7dd.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "r.clarity.ms": 2,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11180,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 152,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11136,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/junko-terao/2026/10/26/australia-copyright"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 155,
+    "blocked": 0,
+    "wouldBlock": 51,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 2,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "pagead2.googlesyndication.com": 9,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cabf55a6d05285b03391f80ec2c4aa9b.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "e.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 1349,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 991,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
