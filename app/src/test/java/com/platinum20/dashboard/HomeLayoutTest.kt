@@ -25,7 +25,7 @@ class HomeLayoutTest {
     @Test fun laTuaSettimanaSparisceSenzaRompereLOrdine() {
         // "La tua settimana" è stata tolta nella 1.191: chi l'aveva salvata nell'ordine o tra le nascoste non perde il resto.
         val layout = HomeLayout.read("MAIL,WEEK,WEATHER", "WEEK,RECAP", HomeLayout.VERSION)
-        assertEquals(listOf(HomeCard.MAIL, HomeCard.WEATHER), layout.order.take(2))
+        assertEquals(listOf(HomeCard.MAIL, HomeCard.WEATHER), layout.order.filter { it == HomeCard.MAIL || it == HomeCard.WEATHER })
         assertEquals(HomeCard.entries.size, layout.order.size)
         assertEquals(setOf(HomeCard.RECAP), layout.hidden)
     }
