@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Il mini player si chiude lanciandolo di lato; uno spostamento piccolo o su e giù non lo chiude. */
+/** Il mini player si chiude portandolo oltre metà di lato, anche mentre lo si sposta su e giù; meno di così torna al suo posto. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-xxhdpi")
 class MiniPlayerSwipeTest {
@@ -64,6 +64,22 @@ class MiniPlayerSwipeTest {
         drag(Offset(600f, y), Offset(700f, y), 800)
         assertEquals(0, closed)
         compose.onNodeWithText("Brano di prova").assertExists()
+    }
+
+    @Test
+    fun diLatoESuInsiemeChiude() {
+        show()
+        val y = barY()
+        drag(Offset(60f, y), Offset(1_100f, y - 400f), 300)
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun unPoDiLatoMentreLoSpostiNonChiude() {
+        show()
+        val y = barY()
+        drag(Offset(600f, y), Offset(850f, 300f), 300)
+        assertEquals(0, closed)
     }
 
     @Test
