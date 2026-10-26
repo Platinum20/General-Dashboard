@@ -16,6 +16,7 @@ import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.ui.screens.timelineEntries
+import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -150,6 +151,33 @@ class NotesUiLogicTest {
         assertEquals(listOf(true, false, false, false), entries.map { it.late })
         // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
         assertEquals(listOf(0f, 0f, 0f, 18f), entries.map { it.gapDp })
+    }
+
+    @Test fun passatoSopraLaLinea() {
+        val zone = ZoneId.of("Europe/Rome")
+        val now = LocalDateTime.of(2026, 10, 26, 12, 0)
+        val today = now.toLocalDate()
+        fun ms(t: LocalDateTime) = t.atZone(zone).toInstant().toEpochMilli()
+        val past = pastDays(
+            tasks = listOf(
+                TaskItem(1, "Fatto ieri", done = true, dueAt = ms(today.minusDays(1).atTime(9, 0))),
+                TaskItem(2, "Ancora da fare", dueAt = ms(today.minusDays(1).atTime(9, 0))),
+                TaskItem(3, "Fatto troppo tempo fa", done = true, dueAt = ms(today.minusDays(90).atTime(9, 0))),
+            ),
+            parcels = listOf(Parcel(1, "Cuffie", deliveredOn = today.minusDays(3)), Parcel(2, "In viaggio")),
+            events = listOf(
+                CalendarEvent(5, "Cena", ms(today.minusDays(3).atTime(20, 0)), ms(today.minusDays(3).atTime(22, 0)), allDay = false, location = "", color = 0),
+                CalendarEvent(6, "Riunione", ms(today.atTime(9, 0)), ms(today.atTime(10, 0)), allDay = false, location = "", color = 0),
+                CalendarEvent(7, "Più tardi", ms(today.atTime(18, 0)), ms(today.atTime(19, 0)), allDay = false, location = "", color = 0),
+            ),
+            now = now,
+            zone = zone,
+        )
+        assertEquals(listOf(today.minusDays(3), today.minusDays(1), today), past.map { it.day })
+        assertEquals(true, past.all { it.past })
+        val entries = timelineEntries(past, today, zone).map { it.first }
+        assertEquals(listOf("Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
+        assertEquals(listOf("Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
     }
 
     private object DueRowFor {

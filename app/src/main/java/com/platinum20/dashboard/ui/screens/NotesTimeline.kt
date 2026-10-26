@@ -46,12 +46,51 @@ internal data class DueRow(
 )
 
 /** Un giorno della lista. [late] = "Scaduti" in cima; [day] null e non late = pacchi senza data, in fondo. */
-internal data class DueDay(val day: LocalDate?, val late: Boolean, val rows: List<DueRow>) {
+internal data class DueDay(
+    val day: LocalDate?,
+    val late: Boolean,
+    val rows: List<DueRow>,
+    /** Un giorno già passato (cose fatte, pacchi arrivati, eventi finiti): sta sopra, scorrendo in su. */
+    val past: Boolean = false,
+) {
     val key: String get() = when {
+        past -> "p${day?.toEpochDay()}"
         late -> "late"
         day == null -> "nodate"
         else -> "d${day.toEpochDay()}"
     }
+}
+
+/** Quanti giorni indietro si guarda: scorrendo in su in Prossimi giorni si torna nel passato. */
+internal const val PAST_DAYS = 60
+
+/**
+ * Il passato di Prossimi giorni, dal più vecchio a ieri/adesso: promemoria fatti (nel giorno della loro scadenza),
+ * pacchi arrivati, eventi del calendario già finiti negli ultimi [PAST_DAYS] giorni. Va sopra [dueDays].
+ */
+internal fun pastDays(
+    tasks: List<TaskItem>,
+    parcels: List<Parcel>,
+    events: List<CalendarEvent>,
+    now: LocalDateTime = LocalDateTime.now(),
+    zone: ZoneId = ZoneId.systemDefault(),
+): List<DueDay> {
+    val today = now.toLocalDate()
+    val from = today.minusDays(PAST_DAYS.toLong())
+    val nowMs = now.atZone(zone).toInstant().toEpochMilli()
+    fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
+    fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
+    val rows = mutableListOf<DueRow>()
+    tasks.filter { it.done && it.dueAt != null && it.dueAt < nowMs }.forEach { t ->
+        rows += DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
+    }
+    parcels.forEach { p -> p.deliveredOn?.let { rows += DueRow("parcel-${p.id}", it, startOf(it), parcel = p) } }
+    events.filter { it.end <= nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
+        rows += DueRow("event-${e.eventId}-${e.begin}", dayOf(e.begin), if (e.allDay) startOf(dayOf(e.begin)) else e.begin, event = e)
+    }
+    return rows.filter { !it.day!!.isBefore(from) && !it.day.isAfter(today) }
+        .groupBy { it.day!! }.toSortedMap()
+        .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
 }
 
 /** Quanti giorni di calendario si guardano per gli eventi: dalla 1.187 qui c'è anche il Calendario. */
@@ -258,12 +297,13 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
                 r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to
-                    ((r.task.dueAt?.takeIf { !g.late }?.time()?.let { "$it  " } ?: "") + r.task.text)
+                    ((r.task.dueAt?.takeIf { !g.late && !g.past }?.time()?.let { "$it  " } ?: "") + r.task.text)
                 r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     ((if (r.event.allDay) "" else r.event.begin.time() + "  ") + r.event.title)
                 r.countdown != null -> com.platinum20.dashboard.today.BriefKind.DATE to
                     (r.countdown.title + (r.countdown.yearsAtNext(today)?.let { " ($it anni)" } ?: ""))
-                r.parcel != null -> com.platinum20.dashboard.today.BriefKind.PARCEL to "Arriva: ${r.parcel.title}"
+                r.parcel != null -> com.platinum20.dashboard.today.BriefKind.PARCEL to
+                    (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
                 r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
                     "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }} ${Expenses.format(r.charge.cents)}"
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
@@ -276,6 +316,7 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
                 gapDp = if (i == 0) gap else 0f,
                 color = r.event?.color ?: 0,
                 late = g.late,
+                past = g.past,
             ) to r
         }
     }
