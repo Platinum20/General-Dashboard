@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.191.0
+**Dalla posta solo le mail importanti**
+- In Oggi la card Dalla posta mostra solo le mail importanti non lette
+- Pacchi, spese e scadenze trovati in mail, notifiche e SMS si salvano da soli in Note, senza "Aggiungi": se qualcosa non va, lo annulli dalla notifica o da Impostazioni › Compila da solo
+- Via la card La tua settimana
+
 ## 1.190.0
 **Una vera linea del tempo**
 - In Note › Prossimi giorni la linea a destra è una vera linea del tempo: le tacche sono distanziate secondo i giorni che passano fra una cosa e l'altra, con il giorno scritto accanto ("Oggi", "Dom", "30", "3 nov"); i salti di mesi si accorciano per non schiacciare la settimana

@@ -30,7 +30,7 @@ data class Suggestion(
     val state: SuggestionState = SuggestionState.PENDING,
     /** L'id del pacco, della spesa o del promemoria creato: serve ad "Annulla". */
     val ref: Long? = null,
-    /** Salvata senza chiedere (con "Salva senza chiedere" acceso). */
+    /** Salvata senza chiedere (dalla 1.191 sempre). */
     val auto: Boolean = false,
 )
 
@@ -75,14 +75,13 @@ object AutoFillRules {
 }
 
 /**
- * Compila da solo: tiene le cose trovate in notifiche e SMS, le propone in Oggi
- * e, se l'utente lo vuole, le salva senza chiedere. Tutto resta sul telefono.
+ * Compila da solo: le cose trovate in notifiche, SMS e mail si salvano subito in Note,
+ * senza chiedere (si annullano dalla notifica). Tutto resta sul telefono.
  */
 object AutoFill {
     private const val FILE = "autofill.json"
     private const val PREFS = "autofill"
     private const val KEY_ENABLED = "enabled"
-    private const val KEY_AUTO_SAVE = "auto_save"
     private const val KEY_INTRO_DISMISSED = "intro_dismissed"
     private const val KEY_SMS_SCANNED = "sms_scanned"
     private const val KEY_TIDIED = "tidied_1181"
@@ -95,8 +94,6 @@ object AutoFill {
     val items: StateFlow<List<Suggestion>> = _items.asStateFlow()
     private val _enabled = MutableStateFlow(false)
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
-    private val _autoSave = MutableStateFlow(false)
-    val autoSave: StateFlow<Boolean> = _autoSave.asStateFlow()
     private val _introDismissed = MutableStateFlow(false)
     val introDismissed: StateFlow<Boolean> = _introDismissed.asStateFlow()
 
@@ -106,7 +103,6 @@ object AutoFill {
         NotesStore.init(appContext)
         prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _enabled.value = prefs.getBoolean(KEY_ENABLED, false)
-        _autoSave.value = prefs.getBoolean(KEY_AUTO_SAVE, false)
         _introDismissed.value = prefs.getBoolean(KEY_INTRO_DISMISSED, false)
         file = File(appContext.filesDir, FILE)
         _items.value = runCatching { parse(file.readText()) }.getOrDefault(emptyList())
@@ -114,6 +110,8 @@ object AutoFill {
             runCatching { tidySaved() }
             prefs.edit().putBoolean(KEY_TIDIED, true).apply()
         }
+        // Dalla 1.191 si salva sempre da solo: quello che aspettava "Aggiungi" in Oggi entra in Note.
+        if (_items.value.any { it.state == SuggestionState.PENDING }) runCatching { acceptAll() }
     }
 
     /**
@@ -147,11 +145,6 @@ object AutoFill {
     fun setEnabled(on: Boolean) {
         _enabled.value = on
         prefs.edit().putBoolean(KEY_ENABLED, on).apply()
-    }
-
-    fun setAutoSave(on: Boolean) {
-        _autoSave.value = on
-        prefs.edit().putBoolean(KEY_AUTO_SAVE, on).apply()
     }
 
     fun dismissIntro() {
@@ -194,8 +187,8 @@ object AutoFill {
             }
             if (!AutoFillRules.isFresh(found, msg.at, LocalDateTime.now())) continue
             if (!AutoFillRules.isNew(found, _items.value, NotesStore.data.value)) continue
-            var item = Suggestion(newId(), found, msg.app, now)
-            if (_autoSave.value) item = item.copy(state = SuggestionState.ADDED, ref = apply(found), auto = true)
+            // Mai chiedere: si salva subito, dalla notifica o da Impostazioni si può annullare.
+            val item = Suggestion(newId(), found, msg.app, now, state = SuggestionState.ADDED, ref = apply(found), auto = true)
             update { listOf(item) + it }
             added += item
         }

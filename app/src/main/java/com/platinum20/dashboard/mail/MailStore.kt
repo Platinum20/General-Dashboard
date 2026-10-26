@@ -92,7 +92,7 @@ object MailStore {
             val m = MailParse.message(get(token, "messages/$id", mapOf("format" to "full")))
             seen += id
             if (!MailParse.worthScanning(m)) continue
-            // La prima volta niente notifiche a raffica: le proposte compaiono in Oggi.
+            // La prima volta niente notifiche a raffica: si salva tutto in silenzio.
             found += AutoFill.offer(MailParse.incoming(m), notify = !first).size
         }
         prefs.edit().putString(KEY_SEEN, seen.takeLast(MAX_SEEN).joinToString(",")).putLong(KEY_LAST, now).apply()
