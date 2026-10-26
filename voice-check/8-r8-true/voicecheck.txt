@@ -1,0 +1,206 @@
+
+com.platinum20.dashboard.VoiceEngineCheck:.
+
+Time: 44.241
+
+OK (1 test)
+
+
+--------- beginning of main
+10-26 23:38:33.187  2028  2192 W System.err: Seeding context with ref: 106217119
+10-26 23:38:33.225  2028  2192 W System.err: val in interceptor: null
+10-26 23:38:33.268  2028  2193 W System.err: Seeding context with ref: 35900396
+10-26 23:38:33.269  2028  2193 W System.err: val in interceptor: null
+10-26 23:38:33.275  2028  2194 W System.err: Seeding context with ref: 99085237
+10-26 23:38:33.276  2028  2194 W System.err: val in interceptor: null
+10-26 23:38:33.278  2028  2190 W System.err: Seeding context with ref: 9351754
+10-26 23:38:33.278  2028  2190 W System.err: val in interceptor: null
+10-26 23:38:33.328  2028  2195 W System.err: Seeding context with ref: 105948603
+10-26 23:38:33.329  2028  2195 W System.err: val in interceptor: null
+10-26 23:38:33.337  2028  2196 W System.err: Seeding context with ref: 209173208
+10-26 23:38:33.337  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:33.360  2028  2197 W System.err: Seeding context with ref: 83398193
+10-26 23:38:33.361  2028  2197 W System.err: val in interceptor: null
+10-26 23:38:33.367  2028  2189 W System.err: Seeding context with ref: 68004118
+10-26 23:38:33.368  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:36.170  2028  2189 W System.err: Seeding context with ref: 147262704
+10-26 23:38:36.171  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:36.259  2028  2189 W System.err: Seeding context with ref: 72471145
+10-26 23:38:36.276  2028  2197 W System.err: Seeding context with ref: 187221230
+10-26 23:38:36.276  2028  2197 W System.err: val in interceptor: null
+10-26 23:38:36.289  2028  2197 W System.err: Seeding context with ref: 175148431
+10-26 23:38:36.289  2028  2197 W System.err: val in interceptor: null
+10-26 23:38:36.300  2028  2197 W System.err: Seeding context with ref: 145229852
+10-26 23:38:36.300  2028  2197 W System.err: val in interceptor: null
+10-26 23:38:36.305  2028  2196 W System.err: Seeding context with ref: 61615141
+10-26 23:38:36.308  2028  2195 W System.err: Seeding context with ref: 215029330
+10-26 23:38:36.308  2028  2195 W System.err: val in interceptor: null
+10-26 23:38:36.308  2028  2190 W System.err: Seeding context with ref: 255831331
+10-26 23:38:36.309  2028  2190 W System.err: val in interceptor: null
+10-26 23:38:36.309  2028  2194 W System.err: Seeding context with ref: 15700512
+10-26 23:38:36.309  2028  2194 W System.err: val in interceptor: null
+10-26 23:38:36.310  2028  2193 W System.err: Seeding context with ref: 155658201
+10-26 23:38:36.310  2028  2193 W System.err: val in interceptor: null
+10-26 23:38:36.310  2028  2410 W System.err: Seeding context with ref: 205931934
+10-26 23:38:36.310  2028  2410 W System.err: val in interceptor: null
+10-26 23:38:36.317  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:36.318  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:36.319  2028  2192 W System.err: Seeding context with ref: 139786513
+10-26 23:38:36.328  2028  2192 W System.err: val in interceptor: null
+10-26 23:38:36.348  2028  2411 W System.err: Seeding context with ref: 156629119
+10-26 23:38:36.349  2028  2411 W System.err: val in interceptor: null
+10-26 23:38:36.357  2028  2189 W System.err: Seeding context with ref: 70740598
+10-26 23:38:36.358  2028  2190 W System.err: Seeding context with ref: 256752868
+10-26 23:38:36.358  2028  2190 W System.err: val in interceptor: null
+10-26 23:38:36.358  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:36.358  2028  2196 W System.err: Seeding context with ref: 189560951
+10-26 23:38:36.359  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:36.367  2028  2194 W System.err: Seeding context with ref: 268375373
+10-26 23:38:36.368  2028  2193 W System.err: Seeding context with ref: 245872642
+10-26 23:38:36.368  2028  2193 W System.err: val in interceptor: null
+10-26 23:38:36.392  2028  2196 W System.err: Seeding context with ref: 111411055
+10-26 23:38:36.392  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:36.408  2028  2196 W System.err: Seeding context with ref: 176276604
+10-26 23:38:36.419  2028  2189 W System.err: Seeding context with ref: 117874949
+10-26 23:38:36.420  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:36.444  2028  2194 W System.err: val in interceptor: null
+10-26 23:38:36.445  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:36.445  2028  2192 W System.err: Seeding context with ref: 29377882
+10-26 23:38:36.468  2028  2192 W System.err: val in interceptor: null
+10-26 23:38:36.492  2028  2412 W System.err: Seeding context with ref: 210481228
+10-26 23:38:36.493  2028  2412 W System.err: val in interceptor: null
+10-26 23:38:36.493  2028  2428 W System.err: Seeding context with ref: 196715103
+10-26 23:38:36.493  2028  2428 W System.err: val in interceptor: null
+10-26 23:38:36.509  2028  2429 W System.err: Seeding context with ref: 33375404
+10-26 23:38:36.510  2028  2429 W System.err: val in interceptor: null
+10-26 23:38:36.526  2028  2430 W System.err: Seeding context with ref: 224979710
+10-26 23:38:36.531  2028  2413 W System.err: Seeding context with ref: 234449045
+10-26 23:38:36.531  2028  2413 W System.err: val in interceptor: null
+10-26 23:38:36.531  2028  2412 W System.err: Seeding context with ref: 216316170
+10-26 23:38:36.531  2028  2412 W System.err: val in interceptor: null
+10-26 23:38:36.532  2028  2430 W System.err: val in interceptor: null
+10-26 23:38:36.540  2028  2440 W System.err: Seeding context with ref: 228471599
+10-26 23:38:36.542  2028  2440 W System.err: val in interceptor: null
+10-26 23:38:36.560  2028  2442 W System.err: Seeding context with ref: 105339589
+10-26 23:38:36.560  2028  2442 W System.err: val in interceptor: null
+10-26 23:38:36.560  2028  2443 W System.err: Seeding context with ref: 57138202
+10-26 23:38:36.561  2028  2443 W System.err: val in interceptor: null
+10-26 23:38:36.567  2028  2446 W System.err: Seeding context with ref: 231202369
+10-26 23:38:36.567  2028  2446 W System.err: val in interceptor: null
+10-26 23:38:36.578  2028  2447 W System.err: Seeding context with ref: 229333287
+10-26 23:38:36.579  2028  2448 W System.err: Seeding context with ref: 38340564
+10-26 23:38:36.579  2028  2449 W System.err: Seeding context with ref: 192093565
+10-26 23:38:36.580  2028  2450 W System.err: Seeding context with ref: 246273138
+10-26 23:38:36.581  2028  2451 W System.err: Seeding context with ref: 149577923
+10-26 23:38:36.586  2028  2451 W System.err: val in interceptor: null
+10-26 23:38:36.586  2028  2452 W System.err: Seeding context with ref: 253283648
+10-26 23:38:36.587  2028  2452 W System.err: val in interceptor: null
+10-26 23:38:36.593  2028  2194 W System.err: Seeding context with ref: 44916006
+10-26 23:38:36.593  2028  2456 W System.err: Seeding context with ref: 73235820
+10-26 23:38:36.609  2028  2456 W System.err: val in interceptor: null
+10-26 23:38:36.609  2028  2455 W System.err: Seeding context with ref: 42485279
+10-26 23:38:36.610  2028  2455 W System.err: val in interceptor: null
+10-26 23:38:36.613  2028  2459 W System.err: Seeding context with ref: 49620283
+10-26 23:38:36.613  2028  2459 W System.err: val in interceptor: null
+10-26 23:38:36.613  2028  2457 W System.err: Seeding context with ref: 93159221
+10-26 23:38:36.614  2028  2457 W System.err: val in interceptor: null
+10-26 23:38:36.614  2028  2460 W System.err: Seeding context with ref: 173737048
+10-26 23:38:36.614  2028  2460 W System.err: val in interceptor: null
+10-26 23:38:36.614  2028  2458 W System.err: Seeding context with ref: 33521610
+10-26 23:38:36.614  2028  2458 W System.err: val in interceptor: null
+10-26 23:38:36.616  2028  2463 W System.err: Seeding context with ref: 260495895
+10-26 23:38:36.618  2028  2463 W System.err: val in interceptor: null
+10-26 23:38:36.627  2028  2471 W System.err: Seeding context with ref: 147331694
+10-26 23:38:36.627  2028  2471 W System.err: val in interceptor: null
+10-26 23:38:36.630  2028  2473 W System.err: Seeding context with ref: 57743772
+10-26 23:38:36.635  2028  2473 W System.err: val in interceptor: null
+10-26 23:38:36.635  2028  2474 W System.err: Seeding context with ref: 127770533
+10-26 23:38:36.642  2028  2474 W System.err: val in interceptor: null
+10-26 23:38:36.642  2028  2470 W System.err: Seeding context with ref: 56586106
+10-26 23:38:36.643  2028  2470 W System.err: val in interceptor: null
+10-26 23:38:36.669  2028  2431 W System.err: Seeding context with ref: 203523769
+10-26 23:38:36.669  2028  2414 W System.err: Seeding context with ref: 156048810
+10-26 23:38:36.670  2028  2415 W System.err: Seeding context with ref: 6004123
+10-26 23:38:36.670  2028  2415 W System.err: val in interceptor: null
+10-26 23:38:36.672  2028  2416 W System.err: Seeding context with ref: 32081208
+10-26 23:38:36.672  2028  2416 W System.err: val in interceptor: null
+10-26 23:38:36.678  2028  2414 W System.err: val in interceptor: null
+10-26 23:38:36.678  2028  2431 W System.err: val in interceptor: null
+10-26 23:38:36.678  2028  2411 W System.err: Seeding context with ref: 184952083
+10-26 23:38:36.678  2028  2411 W System.err: val in interceptor: null
+10-26 23:38:36.681  2028  2410 W System.err: Seeding context with ref: 10208080
+10-26 23:38:36.681  2028  2410 W System.err: val in interceptor: null
+10-26 23:38:36.681  2028  2417 W System.err: Seeding context with ref: 266162766
+10-26 23:38:36.681  2028  2417 W System.err: val in interceptor: null
+10-26 23:38:36.681  2028  2197 W System.err: Seeding context with ref: 129284425
+10-26 23:38:36.681  2028  2197 W System.err: val in interceptor: null
+10-26 23:38:36.682  2028  2196 W System.err: Seeding context with ref: 26944395
+10-26 23:38:36.682  2028  2196 W System.err: val in interceptor: null
+10-26 23:38:36.682  2028  2190 W System.err: Seeding context with ref: 207924328
+10-26 23:38:36.682  2028  2190 W System.err: val in interceptor: null
+10-26 23:38:36.682  2028  2193 W System.err: Seeding context with ref: 64309377
+10-26 23:38:36.682  2028  2193 W System.err: val in interceptor: null
+10-26 23:38:36.682  2028  2195 W System.err: Seeding context with ref: 84682516
+10-26 23:38:36.682  2028  2195 W System.err: val in interceptor: null
+10-26 23:38:36.684  2028  2447 W System.err: val in interceptor: null
+10-26 23:38:36.686  2028  2448 W System.err: val in interceptor: null
+10-26 23:38:36.686  2028  2194 W System.err: val in interceptor: null
+10-26 23:38:36.689  2028  2439 W System.err: Seeding context with ref: 64290062
+10-26 23:38:36.689  2028  2439 W System.err: val in interceptor: null
+10-26 23:38:36.690  2028  2436 W System.err: Seeding context with ref: 186097638
+10-26 23:38:36.690  2028  2436 W System.err: val in interceptor: null
+10-26 23:38:36.690  2028  2438 W System.err: Seeding context with ref: 115955465
+10-26 23:38:36.690  2028  2438 W System.err: val in interceptor: null
+10-26 23:38:36.691  2028  2449 W System.err: val in interceptor: null
+10-26 23:38:36.691  2028  2192 W System.err: Seeding context with ref: 15010118
+10-26 23:38:36.691  2028  2192 W System.err: val in interceptor: null
+10-26 23:38:36.696  2028  2461 W System.err: Seeding context with ref: 136567217
+10-26 23:38:36.696  2028  2461 W System.err: val in interceptor: null
+10-26 23:38:36.696  2028  2445 W System.err: Seeding context with ref: 5308712
+10-26 23:38:36.696  2028  2445 W System.err: val in interceptor: null
+10-26 23:38:36.696  2028  2453 W System.err: Seeding context with ref: 194581625
+10-26 23:38:36.696  2028  2453 W System.err: val in interceptor: null
+10-26 23:38:36.696  2028  2432 W System.err: Seeding context with ref: 216875024
+10-26 23:38:36.697  2028  2432 W System.err: val in interceptor: null
+10-26 23:38:36.697  2028  2444 W System.err: Seeding context with ref: 241488715
+10-26 23:38:36.697  2028  2444 W System.err: val in interceptor: null
+10-26 23:38:36.697  2028  2441 W System.err: Seeding context with ref: 89017660
+10-26 23:38:36.697  2028  2441 W System.err: val in interceptor: null
+10-26 23:38:36.698  2028  2454 W System.err: Seeding context with ref: 50382270
+10-26 23:38:36.698  2028  2454 W System.err: val in interceptor: null
+10-26 23:38:36.700  2028  2450 W System.err: val in interceptor: null
+10-26 23:38:36.700  2028  2464 W System.err: Seeding context with ref: 128454148
+10-26 23:38:36.700  2028  2464 W System.err: val in interceptor: null
+10-26 23:38:36.700  2028  2462 W System.err: Seeding context with ref: 58576534
+10-26 23:38:36.700  2028  2462 W System.err: val in interceptor: null
+10-26 23:38:36.701  2028  2466 W System.err: Seeding context with ref: 113262114
+10-26 23:38:36.701  2028  2466 W System.err: val in interceptor: null
+10-26 23:38:36.701  2028  2465 W System.err: Seeding context with ref: 32202733
+10-26 23:38:36.701  2028  2465 W System.err: val in interceptor: null
+10-26 23:38:36.702  2028  2467 W System.err: Seeding context with ref: 51708083
+10-26 23:38:36.702  2028  2467 W System.err: val in interceptor: null
+10-26 23:38:36.702  2028  2468 W System.err: Seeding context with ref: 60425840
+10-26 23:38:36.702  2028  2468 W System.err: val in interceptor: null
+10-26 23:38:36.703  2028  2472 W System.err: Seeding context with ref: 72676623
+10-26 23:38:36.704  2028  2472 W System.err: val in interceptor: null
+10-26 23:38:36.704  2028  2433 W System.err: Seeding context with ref: 99996459
+10-26 23:38:36.704  2028  2433 W System.err: val in interceptor: null
+10-26 23:38:36.705  2028  2469 W System.err: Seeding context with ref: 19598825
+10-26 23:38:36.705  2028  2469 W System.err: val in interceptor: null
+10-26 23:38:36.705  2028  2434 W System.err: Seeding context with ref: 239350664
+10-26 23:38:36.705  2028  2434 W System.err: val in interceptor: null
+10-26 23:38:36.708  2028  2435 W System.err: Seeding context with ref: 233672993
+10-26 23:38:36.708  2028  2435 W System.err: val in interceptor: null
+10-26 23:38:36.708  2028  2189 W System.err: Seeding context with ref: 127298919
+10-26 23:38:36.708  2028  2189 W System.err: val in interceptor: null
+10-26 23:38:43.126  2028  2189 W System.err: Seeding context with ref: 49356381
+10-26 23:38:43.802  2028  2845 W System.err: val in interceptor: null
+10-26 23:38:44.032  2747  2848 I VoiceCheck: download 1: java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+10-26 23:38:46.598  2028  2189 W System.err: Seeding context with ref: 163647293
+10-26 23:38:58.422  2028  2845 W System.err: val in interceptor: null
+10-26 23:38:58.749  2028  2189 W System.err: Seeding context with ref: 97519747
+10-26 23:39:00.032  2028  2845 W System.err: val in interceptor: null
+10-26 23:39:13.131  2747  2848 I VoiceCheck: file: VoiceFiles(model=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-riccardo-x_low/it_IT-riccardo-x_low.onnx, tokens=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-riccardo-x_low/tokens.txt, dataDir=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-riccardo-x_low/espeak-ng-data)
+10-26 23:39:16.164  2747  2848 I VoiceCheck: motore: (33484, 16000) 
+10-26 23:39:16.176  2747  2848 I VoiceCheck: voce pronta per l'app: RICCARDO
+10-26 23:39:28.216  2747  2848 I VoiceCheck: app: posizione massima 3286 ms, errore Piper: null
