@@ -90,7 +90,7 @@ fun NewsScreen(
     LaunchedEffect(Unit) {
         TabReselect.events.collect { if (it == Routes.NEWS) listState.animateScrollToItem(0) }
     }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     // Le notizie uscite dopo l'ultima visita stanno in cima; dalla prima già vista in poi, un separatore.
     val items = state.visibleItems
     val firstSeen = if (since == null) -1 else items.indexOfFirst { it.publishedAt != null && !it.publishedAt.isAfter(since) }
@@ -100,27 +100,34 @@ fun NewsScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            Column(Modifier.background(MaterialTheme.colorScheme.background)) {
-                TopLevelBar(
-                    title = "News",
-                    subtitle = NewsHistory.headline(items.size, newCount, items.mapNotNull { it.publishedAt }.maxOrNull()),
-                    scrollBehavior = scrollBehavior,
-                )
-                SourceChips(
-                    selected = state.selectedSource,
-                    onSelect = viewModel::selectSource,
-                    failed = state.failures.map { it.source.name },
-                )
-            }
+            // Come le altre sezioni: in alto solo il titolo; le fonti scorrono con le notizie.
+            TopLevelBar(
+                title = "News",
+                subtitle = NewsHistory.headline(items.size, newCount, items.mapNotNull { it.publishedAt }.maxOrNull()),
+                scrollBehavior = scrollBehavior,
+            )
         },
     ) { inner ->
         // Le notizie si aggiornano da sole; trascinare dall'alto apre la ricerca.
         AutoRefresh { viewModel.refreshIfStale() }
+        val sources = @Composable { side: androidx.compose.ui.unit.Dp ->
+            SourceChips(
+                side = side,
+                selected = state.selectedSource,
+                onSelect = viewModel::selectSource,
+                failed = state.failures.map { it.source.name },
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = inner.calculateTopPadding()),
         ) {
+            // Finché non c'è la lista le fonti stanno in cima; con la lista ne sono la prima riga.
+            val listShown = !(state.loading && state.items.isEmpty()) &&
+                !(state.visibleItems.isEmpty() && state.verification.pending > 0) &&
+                !(state.error != null && state.items.isEmpty())
+            if (!listShown) Box(Modifier.align(Alignment.TopStart)) { sources(16.dp) }
             when {
                 state.loading && state.items.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -150,6 +157,7 @@ fun NewsScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    item(key = "sources") { sources(0.dp) }
                     if (state.verification.pending > 0) {
                         item {
                             Text(
@@ -188,13 +196,13 @@ fun NewsScreen(
 const val READ_ALPHA = 0.55f
 
 @Composable
-private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: List<String>) {
+private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: List<String>, side: androidx.compose.ui.unit.Dp = 16.dp) {
     var showFailed by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = side, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         CanvasChip(selected = selected == null, onClick = { onSelect(null) }, label = "Tutte")

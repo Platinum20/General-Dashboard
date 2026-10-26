@@ -35,6 +35,9 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.focus.focusRequester
@@ -156,7 +159,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
 /** Le pillole in cima alle Note, una per tipo: con scadenza, senza scadenza, spese (di nuovo per tornare a tutto). */
-enum class NotesSection { DATED, UNDATED, MONEY }
+enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Senza scadenza"), MONEY("Spese") }
 
 /**
  * Le pillole con quanto c'è in ciascun tipo ("Con scadenza · 4", "Senza scadenza · 7", "Spese · 115,90 €"):
@@ -175,13 +178,133 @@ internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: L
     )
 }
 
+/**
+ * La pagina delle Note: i tre tipi, uno per card, con le prime cose di ognuno.
+ * Toccando una card si apre il tipo intero (le scadenze divise per giorno, le spese per mese).
+ */
+@Composable
+private fun NotesOverview(
+    data: com.platinum20.dashboard.notes.NotesData,
+    timeline: List<Pair<DueGroup, List<DueRow>>>,
+    padding: PaddingValues,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onOpen: (NotesSection) -> Unit,
+) {
+    val month = java.time.YearMonth.now()
+    val dated = timeline.flatMap { (group, rows) -> rows.map { group to it } }
+    val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
+    val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
+    val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+    val total = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month)
+    val budget = data.budgetCents
+    LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item(key = "dated") {
+            NotesCategoryCard(
+                title = NotesSection.DATED.title,
+                icon = Icons.Outlined.Event,
+                accent = TileAccent.BLUE,
+                count = (dated.size + data.habits.size).takeIf { it > 0 }?.toString(),
+                lines = dated.take(3).map { (group, row) -> group.label to row.title() } +
+                    listOfNotNull(habitsLeft.takeIf { it > 0 }?.let { "Oggi" to if (it == 1) "1 abitudine da fare" else "$it abitudini da fare" }),
+                empty = "Promemoria, date, pacchi ed eventi, in ordine di giorno",
+                modifier = Modifier.animateItem()
+                    .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
+                    .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
+                onClick = { onOpen(NotesSection.DATED) },
+            )
+        }
+        item(key = "undated") {
+            NotesCategoryCard(
+                title = NotesSection.UNDATED.title,
+                icon = Icons.Outlined.EditNote,
+                accent = TileAccent.ORANGE,
+                count = (undatedTasks.size + notes.size).takeIf { it > 0 }?.toString(),
+                lines = (undatedTasks.map { "Da fare" to it.text } + notes.map { "Nota" to it.text.lineSequence().first().trim() }).take(3),
+                empty = "Le cose da fare prima o poi e gli appunti",
+                modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
+                onClick = { onOpen(NotesSection.UNDATED) },
+            )
+        }
+        item(key = "money") {
+            NotesCategoryCard(
+                title = NotesSection.MONEY.title,
+                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
+                accent = TileAccent.GREEN,
+                count = com.platinum20.dashboard.notes.Expenses.format(total).takeIf { total > 0 || budget != null },
+                lines = listOfNotNull(
+                    month.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() } to
+                        "${data.expenses.count { java.time.YearMonth.from(it.date) == month }} spese",
+                    budget?.let { b ->
+                        "Budget" to if (total > b) "superato di ${com.platinum20.dashboard.notes.Expenses.format(total - b)}"
+                        else "restano ${com.platinum20.dashboard.notes.Expenses.format(b - total)}"
+                    },
+                ).takeIf { data.expenses.isNotEmpty() || budget != null }.orEmpty(),
+                empty = "Scrivi \"12,50 pizza\" con il + o fotografa uno scontrino",
+                modifier = Modifier.animateItem().captureTarget(CaptureMode.EXPENSE),
+                onClick = { onOpen(NotesSection.MONEY) },
+            )
+        }
+    }
+}
+
+/** Il titolo di una cosa con scadenza, qualunque sia. */
+private fun DueRow.title(): String =
+    task?.text ?: countdown?.title ?: parcel?.title ?: event?.title ?: ""
+
+/** Una card della pagina Note: icona, nome del tipo, quanto c'è a destra e le prime righe sotto. */
+@Composable
+private fun NotesCategoryCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accent: TileAccent,
+    count: String?,
+    lines: List<Pair<String, String>>,
+    empty: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.extraLarge, modifier = modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                if (count != null) {
+                    Text(count, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            if (lines.isEmpty()) {
+                Text(empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else lines.forEach { (label, text) ->
+                Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(96.dp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
 /** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
 internal const val NOTES_PREVIEW = 4
 
 /**
- * Sezione "Note", in una pagina sola: in cima si scrive e il tipo (promemoria, nota, spesa, abitudine,
- * data, pacco, evento) lo sceglie Canvas da solo; sotto, tutto in ordine di quando conta.
- * Le pillole in alto riassumono ogni parte e la mostrano da sola.
+ * Sezione "Note": tre card, una per tipo (con scadenza, senza scadenza, spese), con le prime cose di ognuno.
+ * Toccandone una si apre il tipo intero: le scadenze divise per giorno, le note, le spese del mese.
+ * Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -236,20 +359,6 @@ fun NotesScreen(
             events = CalendarRepository.eventsFrom(context, LocalDate.now(), EVENT_DAYS).values.flatten()
         }
     }
-    var proposingHabit by remember { mutableStateOf<HabitIdea?>(null) }
-    var proposingDate by remember { mutableStateOf<DateIdea?>(null) }
-    proposingHabit?.let { HabitDialog(habit = null, idea = it, onDismiss = { proposingHabit = null }) }
-    proposingDate?.let { CountdownDialog(countdown = null, idea = it, onDismiss = { proposingDate = null }) }
-    var importingContacts by remember { mutableStateOf(false) }
-    if (importingContacts) {
-        ContactImportDialog(data.countdowns, onDismiss = { importingContacts = false }) { added ->
-            if (added.isNotEmpty()) {
-                val ids = added.map { it.id }.toSet()
-                offerUndo(if (added.size == 1) "Importata 1 data" else "Importate ${added.size} date") { NotesStore.removeCountdowns(ids) }
-            }
-        }
-    }
-
     // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
     // Lo scontrino fotografato apre lo stesso pannello del +, già scritto, da controllare e salvare.
     var receiptText by remember { mutableStateOf<String?>(null) }
@@ -269,93 +378,29 @@ fun NotesScreen(
         }
     }
 
-    // La lampadina: esempi da aggiungere con un tocco (compleanni dalla rubrica, abitudini, date).
-    var showingIdeas by remember { mutableStateOf(false) }
-    val habitIdeas = HabitIdeas.suggest(data.habits, max = 5, until = Int.MAX_VALUE)
-    val dateIdeas = DateIdeas.suggest(data.countdowns, max = 4, until = Int.MAX_VALUE)
-    val contacts = showContactImport(data.countdowns)
-    val ideaRows = listOfNotNull(("Compleanni dai contatti" to "Importa dalla rubrica, una volta sola").takeIf { contacts }) +
-        habitIdeas.map { it.title to "Abitudine · ${it.frequency.lowercase()}" } +
-        dateIdeas.map { it.title.trim() to if (it.yearly) "Data · ogni anno" else "Data" }
-    if (showingIdeas) {
-        CanvasDialog(
-            onDismissRequest = { showingIdeas = false },
-            title = { Text("Idee da aggiungere") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    IdeasSection(ideaRows, header = false) { i ->
-                        showingIdeas = false
-                        val offset = if (contacts) 1 else 0
-                        when {
-                            i < offset -> importingContacts = true
-                            i - offset < habitIdeas.size -> proposingHabit = habitIdeas[i - offset]
-                            else -> proposingDate = dateIdeas[i - offset - habitIdeas.size]
-                        }
-                    }
-                }
-            },
-            confirmButton = { androidx.compose.material3.TextButton(onClick = { showingIdeas = false }) { Text("Chiudi") } },
-        )
-    }
-
     // Con una pillola accesa, "indietro" torna a tutta la pagina.
     androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
+    // Ogni pagina (i tre tipi, o uno solo) parte dalla cima.
+    LaunchedEffect(section) { runCatching { listState.scrollToItem(0) } }
     val timeline = dueGroups(data.tasks, data.upcoming, data.parcels, events)
-    val chips = notesChips(data, events = timeline.sumOf { g -> g.second.count { it.event != null } })
-    // Se la parte scelta si svuota (es. ultimo pacco eliminato) si torna a tutto.
-    LaunchedEffect(chips.map { it.first }) { if (section != null && chips.none { it.first == section }) section = null }
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
         snackbarHost = {
             SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
         },
-        topBar = { Column {
+        // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
+        // è il tipo con la freccia per tornare ai tre.
+        topBar = {
             TopLevelBar(
-                title = "Note",
-                subtitle = listOfNotNull(
+                title = section?.title ?: "Note",
+                subtitle = if (section != null) null else listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
-                actions = {
-                    if (!searching && data.tasks.any { it.done }) {
-                        RoundIconButton(Icons.Outlined.DeleteSweep, "Elimina completati") {
-                            val done = data.tasks.filter { it.done }
-                            NotesStore.clearDone()
-                            offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
-                        }
-                    }
-                },
+                onBack = if (section != null) ({ section = null }) else null,
             )
-            if (!searching) {
-                val haptic = rememberHaptic()
-                // Le pillole scorrono; a destra, fissi, i due tastini: scontrino e idee.
-                Row(Modifier.fillMaxWidth().padding(end = 12.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Row(
-                        Modifier.weight(1f).horizontalScroll(rememberScrollState()).padding(start = 16.dp, end = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (chips.size >= 2) chips.forEach { (s, label) ->
-                            CanvasChip(
-                                selected = section == s,
-                                onClick = { haptic(Haptic.TICK); section = if (section == s) null else s },
-                                label = label,
-                            )
-                        }
-                    }
-                    if (readingReceipt) {
-                        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
-                    } else {
-                        RoundIconButton(Icons.AutoMirrored.Outlined.ReceiptLong, "Fotografa uno scontrino") {
-                            runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) }
-                        }
-                    }
-                    if (ideaRows.isNotEmpty()) {
-                        RoundIconButton(Icons.Outlined.Lightbulb, "Idee da aggiungere") { showingIdeas = true }
-                    }
-                }
-            }
-        } },
+        },
     ) { inner ->
         val padding = PaddingValues(
             start = 16.dp,
@@ -375,7 +420,24 @@ fun NotesScreen(
         }
         if (section == NotesSection.MONEY) {
             // Le spese del mese, il budget e le fisse, con il loro campo ("12,50 pizza", "ogni mese il 5 affitto 650").
-            ExpensesTab(data, padding, onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } })
+            ExpensesTab(
+                data,
+                padding,
+                onDeleted = { e -> offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) } },
+                readingReceipt = readingReceipt,
+                onReceipt = { runCatching { receiptPhoto.launch(ReceiptReader.photoUri(context)) } },
+            )
+            return@Scaffold
+        }
+        if (section == null) {
+            // I tre tipi e basta: si tocca uno per vederlo tutto, diviso per giorno o per mese.
+            NotesOverview(
+                data = data,
+                timeline = timeline,
+                padding = padding,
+                listState = listState,
+                onOpen = { section = it },
+            )
             return@Scaffold
         }
         fun show(part: NotesSection) = section == null || section == part
@@ -454,7 +516,17 @@ fun NotesScreen(
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (done.isNotEmpty() || delivered.isNotEmpty())) {
-                item(key = "done-header") { SectionHeader("Completati", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp)) }
+                item(key = "done-header") {
+                    SectionHeader(
+                        "Completati",
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
+                        action = if (done.isNotEmpty()) "Elimina" else null,
+                        onAction = {
+                            NotesStore.clearDone()
+                            offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
+                        },
+                    )
+                }
                 if (done.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem()) { TaskGroup(null, done, onTaskDeleted) } }
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }

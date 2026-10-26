@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.147.0
+**Note in tre card, sezioni tutte uguali, tema Puro**
+- Le Note mostrano solo i tre tipi: Con scadenza, Senza scadenza e Spese, ognuno in una card con le prime cose. Toccandone uno si apre la sua pagina: le scadenze divise in Scaduti, Oggi, Domani, Questa settimana e Più avanti, gli appunti, le spese del mese
+- Tolte le idee (la lampadina). Lo scontrino da fotografare è dentro Spese, in cima; "Elimina i completati" è accanto a Completati
+- Tutte le sezioni sono fatte allo stesso modo: in alto solo il titolo, tutto il resto scorre. In News le fonti sono la prima riga della lista
+- Il tema AMOLED diventa "Puro": segue chiaro e scuro del telefono, bianco pieno di giorno e nero AMOLED di sera
+- Nelle Impostazioni l'anello attorno al tema scelto è della stessa misura dell'anteprima e non la sposta più
+
 ## 1.146.0
 **Barra in basso fluida**
 - Cambiando sezione la pillola scura si apre sulla scheda nuova mentre quella vecchia si richiude, insieme e con la stessa curva: niente più rimbalzi, scatti o pillola che rincorre le schede

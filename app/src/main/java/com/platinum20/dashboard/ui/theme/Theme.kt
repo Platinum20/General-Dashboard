@@ -101,8 +101,7 @@ private val CanvasDark = darkColorScheme(
 
 /** Il tema in uso è scuro? Serve anche per il colore delle icone di sistema. */
 @Composable
-fun isAppInDarkTheme(theme: AppTheme): Boolean =
-    theme == AppTheme.AMOLED || isSystemInDarkTheme()
+fun isAppInDarkTheme(@Suppress("UNUSED_PARAMETER") theme: AppTheme): Boolean = isSystemInDarkTheme()
 
 @Composable
 fun GeneralDashboardTheme(
@@ -121,8 +120,8 @@ fun GeneralDashboardTheme(
                 if (dark) CanvasDark else CanvasLight
             }
         AppTheme.CANVAS -> if (dark) CanvasDark else CanvasLight
-        // Gli stessi colori di Canvas, sugli sfondi neri.
-        AppTheme.AMOLED -> CanvasDark.toAmoled()
+        // "Puro": gli stessi colori di Canvas su bianco pieno di giorno e su nero AMOLED di sera.
+        AppTheme.AMOLED -> if (dark) CanvasDark.toAmoled() else CanvasLight.toDeepWhite()
     }
 
     MaterialTheme(colorScheme = colorScheme, typography = AppTypography, shapes = AppShapes, content = content)
@@ -139,6 +138,23 @@ private fun ColorScheme.toAmoled(): ColorScheme = copy(
     surfaceContainerHighest = Color(0xFF222222),
     surfaceBright = Color(0xFF262626),
     surfaceVariant = Color(0xFF1A1A1A),
+)
+
+/** Tutto bianco, senza la carta calda: le card si staccano solo con il bordo grigio chiaro. */
+private fun ColorScheme.toDeepWhite(): ColorScheme = copy(
+    background = Color.White,
+    surface = Color.White,
+    surfaceBright = Color.White,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color.White,
+    surfaceContainer = Color(0xFFF6F6F6),
+    surfaceContainerHigh = Color(0xFFF0F0F0),
+    surfaceContainerHighest = Color(0xFFEAEAEA),
+    surfaceDim = Color(0xFFEDEDED),
+    surfaceVariant = Color(0xFFF2F2F2),
+    secondaryContainer = Color(0xFFF2F2F2),
+    outlineVariant = Color(0xFFE6E6E6),
+    inverseOnSurface = Color.White,
 )
 
 /** Inter per il testo, Inter Display (più stretto) per i titoli grandi: inclusi nell'app. */

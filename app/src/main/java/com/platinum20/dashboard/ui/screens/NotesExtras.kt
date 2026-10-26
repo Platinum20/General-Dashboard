@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyListScope
@@ -84,7 +85,14 @@ private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
  * In alto il totale del mese, il budget e dove vanno i soldi.
  */
 @Composable
-fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) -> Unit = {}) {
+fun ExpensesTab(
+    data: NotesData,
+    padding: PaddingValues,
+    onDeleted: (Expense) -> Unit = {},
+    /** Fotografa uno scontrino: sta qui, con le spese, invece che in cima alla pagina Note. */
+    onReceipt: (() -> Unit)? = null,
+    readingReceipt: Boolean = false,
+) {
     var month by remember { mutableStateOf(YearMonth.now()) }
     var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
@@ -106,6 +114,16 @@ fun ExpensesTab(data: NotesData, padding: PaddingValues, onDeleted: (Expense) ->
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (onReceipt != null) item(key = "receipt") {
+            CanvasCard(onClick = { if (!readingReceipt) onReceipt() }, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                SettingsItem(
+                    icon = Icons.AutoMirrored.Outlined.ReceiptLong,
+                    accent = TileAccent.GREEN,
+                    title = if (readingReceipt) "Leggo lo scontrino…" else "Fotografa uno scontrino",
+                    subtitle = "Canvas legge totale e negozio, tu controlli e salvi",
+                )
+            }
+        }
         item {
             OutlinedTextField(
                 value = draft,
