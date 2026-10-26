@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.170.0
+**Una sola card media, in Media e in Oggi**
+- La card del media è ora una sola, stretta e identica nelle due pagine: mostra quello che suona adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da riprendere dal punto esatto
+- In Oggi sta subito sotto "Adesso", non più in fondo alla giornata
+- "Le tue radio" è sparita da Media: le radio stanno nella loro pagina, come i podcast
+
 ## 1.169.0
 **Il fumetto "salvato" si chiude portandolo di lato**
 - Dopo aver salvato col +, il fumetto di conferma si toglie trascinandolo o lanciandolo di lato, con lo stesso gesto del mini player (compare la X che diventa rossa). La cosa resta salvata
