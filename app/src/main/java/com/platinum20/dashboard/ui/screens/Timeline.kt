@@ -139,7 +139,7 @@ fun TimelineRow(
     }
 }
 
-private val TIMELINE_LABEL = 64.dp
+private val TIMELINE_LABEL = 76.dp
 private val GUTTER = 22.dp
 
 /** Lo spazio vuoto fra due giorni lontani: solo la linea, allineata a quella delle righe. */

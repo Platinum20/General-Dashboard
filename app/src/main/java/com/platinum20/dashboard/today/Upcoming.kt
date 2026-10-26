@@ -30,8 +30,8 @@ data class UpcomingItem(
  * "Adesso" sopra resta su oggi; il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura.
  */
 object Upcoming {
-    /** Quanti giorni guarda avanti, domani compreso: come il calendario in Note > Prossimi giorni. */
-    const val DAYS = 60
+    /** Quanti giorni guarda avanti, domani compreso: più di un anno, come il calendario in Note > Prossimi giorni. */
+    const val DAYS = 400
 
     /** Quante righe al massimo (Antonio: 8): è un riassunto, il resto è in Note > Prossimi giorni. */
     const val MAX = 8
@@ -88,12 +88,14 @@ object Upcoming {
 
     /**
      * "Oggi", "Domani", "Ieri", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi.
-     * Oltre quattro settimane anche il mese ("Mar 9 dic"). Uguale in Oggi e in Note.
+     * Oltre quattro settimane anche il mese ("Mar 9 dic"); in un altro anno il giorno, il mese e l'anno
+     * ("9 feb 2027"). Uguale in Oggi e in Note.
      */
-    fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
-        today -> "Oggi"
-        today.plusDays(1) -> "Domani"
-        today.minusDays(1) -> "Ieri"
+    fun dayLabel(day: LocalDate, today: LocalDate): String = when {
+        day == today -> "Oggi"
+        day == today.plusDays(1) -> "Domani"
+        day == today.minusDays(1) -> "Ieri"
+        day.year != today.year -> "${day.dayOfMonth} " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) + " ${day.year}"
         else -> day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}" +
             if (day.isAfter(today.plusDays(27)) || day.isBefore(today.minusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
     }
