@@ -104,8 +104,8 @@ object RecapSpeaker {
     private var appContext: Context? = null
     private var tts: TextToSpeech? = null
     private var ready = false
-    /** Se Piper non parte su questo telefono, per il resto della sessione legge la voce di sistema. */
-    private var neuralBroken = false
+    /** La voce Piper che non è partita: finché non si sceglie di nuovo, legge la voce di sistema. */
+    private var brokenVoice: ReadingVoice? = null
     private var parts: List<String> = emptyList()
     private var starts: List<Long> = emptyList()
     private var totalMs = 0L
@@ -142,7 +142,13 @@ object RecapSpeaker {
 
     /** La voce Piper da usare adesso, se c'è. */
     private fun neuralVoice(): Pair<ReadingVoice, VoiceFiles>? =
-        if (neuralBroken) null else VoiceStore.readyVoice()
+        VoiceStore.readyVoice()?.takeIf { it.first != brokenVoice }
+
+    /** Toccando una voce in Impostazioni si riprova Piper anche se prima non era partito. */
+    fun retryNeural() {
+        brokenVoice = null
+        NeuralVoice.clearFailure()
+    }
 
     /** Accende la sintesi di Android (una volta) e riparte da dove era la barra. */
     private fun startSystemVoice() {
@@ -248,7 +254,7 @@ object RecapSpeaker {
                 },
                 onDone = { if (parts === script) _state.value = null },
                 onError = {
-                    neuralBroken = true
+                    brokenVoice = voice
                     // La sintesi di Android si comanda dal thread principale.
                     Handler(Looper.getMainLooper()).post {
                         if (parts === script) { if (ready) speakFrom(index, char) else startSystemVoice() }

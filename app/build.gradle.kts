@@ -82,7 +82,9 @@ android {
     packaging {
         jniLibs {
             // La voce neurale serve solo sui telefoni a 64 bit ARM: niente 30 MB in più per le altre architetture.
-            listOf("armeabi-v7a", "x86", "x86_64").forEach { abi ->
+            // -PallAbis=true le tiene tutte, per provare la voce sull'emulatore (voicecheck.yml).
+            val abis = if (project.hasProperty("allAbis")) emptyList() else listOf("armeabi-v7a", "x86", "x86_64")
+            abis.forEach { abi ->
                 excludes += "lib/$abi/libsherpa-onnx-*.so"
                 excludes += "lib/$abi/libonnxruntime.so"
             }

@@ -3,6 +3,7 @@ package com.platinum20.dashboard.news.voice
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.util.Log
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
@@ -14,6 +15,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -73,6 +77,23 @@ object NeuralVoice {
     private var job: Job? = null
     @Volatile private var track: AudioTrack? = null
 
+    private val _failure = MutableStateFlow<String?>(null)
+    /**
+     * Perché Piper non è partito l'ultima volta (null se va): si vede in Impostazioni sotto le voci,
+     * così non si legge per sbaglio con la voce del telefono senza saperlo.
+     */
+    val failure: StateFlow<String?> = _failure.asStateFlow()
+
+    fun clearFailure() {
+        _failure.value = null
+    }
+
+    /** Il motore genera davvero [text] con [voice]: quanti campioni e a che frequenza. Per le verifiche. */
+    internal fun probe(voice: ReadingVoice, files: VoiceFiles, text: String): Pair<Int, Int> {
+        val tts = engineFor(voice, files)
+        return tts.generate(text, 0, 1.0f).samples.size to tts.sampleRate()
+    }
+
     /**
      * Legge da [index]/[char] in poi. [onProgress] dice a che carattere è arrivata la voce,
      * [onDone] arriva in fondo al copione, [onError] se il motore non parte (si torna alla voce di sistema).
@@ -110,6 +131,7 @@ object NeuralVoice {
                     }
                 }
                 out = openTrack(rate).also { track = it }
+                _failure.value = null
                 out.play()
                 var written = 0L
                 val step = rate / 10
@@ -131,11 +153,19 @@ object NeuralVoice {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
+                Log.w("NeuralVoice", "Piper non parte con ${voice.label}", e)
+                _failure.value = describe(e)
                 onError(e)
             } finally {
                 out?.let(::release)
             }
         }
+    }
+
+    /** "UnsatisfiedLinkError: libsherpa-onnx-jni.so non trovata" → una riga leggibile. */
+    private fun describe(e: Throwable): String {
+        val root = generateSequence(e) { it.cause }.last()
+        return (root.javaClass.simpleName + (root.message?.let { ": $it" } ?: "")).take(140)
     }
 
     fun stop() {
