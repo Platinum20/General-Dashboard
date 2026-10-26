@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Wifi
 import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
+import com.platinum20.dashboard.news.voice.NeuralVoice
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import com.platinum20.dashboard.news.voice.VoiceStatus
 import com.platinum20.dashboard.news.voice.VoiceStore
@@ -753,11 +754,14 @@ private fun VoicePicker() {
                         .clip(MaterialTheme.shapes.large)
                         .clickable {
                             haptic(Haptic.TICK)
-                            if (on && state == VoiceStatus.Ready) {
+                            RecapSpeaker.retryNeural()
+                            // Un tocco sceglie la voce e la fa sentire subito; se manca, la scarica.
+                            AppSettings.setReadingVoice(option)
+                            if (state == VoiceStatus.Ready) {
                                 RecapSpeaker.play(context, listOf(voiceSample(option)), title = "Voce: ${option.label}")
                             } else {
-                                AppSettings.setReadingVoice(option)
-                                if (option.neural && state != VoiceStatus.Ready) VoiceStore.download(option, context)
+                                RecapSpeaker.stop()
+                                VoiceStore.download(option, context)
                             }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -795,7 +799,11 @@ private fun VoicePicker() {
                 }
             }
         }
-        val line = voiceLine(selected, if (selected.neural) status[selected] ?: VoiceStatus.Missing else VoiceStatus.Ready)
+        val failure by NeuralVoice.failure.collectAsState()
+        val selectedState = if (selected.neural) status[selected] ?: VoiceStatus.Missing else VoiceStatus.Ready
+        val line = failure?.takeIf { selected.neural && selectedState == VoiceStatus.Ready }
+            ?.let { "${selected.label} non parte, legge la voce del telefono: $it" }
+            ?: voiceLine(selected, selectedState)
         AnimatedContent(
             line,
             transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
@@ -853,7 +861,7 @@ private fun voiceLine(voice: ReadingVoice, state: VoiceStatus): String = when (s
     is VoiceStatus.Failed -> state.message
     VoiceStatus.Waiting -> HeavyDownloads.BLOCKED
     VoiceStatus.Missing -> "${voice.description} · si scarica una volta (${voice.sizeMb} MB)"
-    VoiceStatus.Ready -> "${voice.description} · tocca di nuovo per sentirla"
+    VoiceStatus.Ready -> "${voice.description} · tocca per sentirla"
 }
 
 /** Download pesanti solo col Wi-Fi: vale per le voci e per gli aggiornamenti dell'app. */

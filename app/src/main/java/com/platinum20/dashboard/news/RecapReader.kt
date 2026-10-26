@@ -1,11 +1,13 @@
 package com.platinum20.dashboard.news
 
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.PlayerService
 import com.platinum20.dashboard.news.voice.NeuralVoice
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import com.platinum20.dashboard.news.voice.VoiceFiles
@@ -104,8 +106,10 @@ object RecapSpeaker {
     private var appContext: Context? = null
     private var tts: TextToSpeech? = null
     private var ready = false
-    /** Se Piper non parte su questo telefono, per il resto della sessione legge la voce di sistema. */
-    private var neuralBroken = false
+    /** La sintesi di Android si sta accendendo: non va rifatta finché non risponde. */
+    private var systemStarting = false
+    /** La voce Piper che non è partita: finché non si sceglie di nuovo, legge la voce di sistema. */
+    private var brokenVoice: ReadingVoice? = null
     private var parts: List<String> = emptyList()
     private var starts: List<Long> = emptyList()
     private var totalMs = 0L
@@ -137,18 +141,33 @@ object RecapSpeaker {
         this.title = title
         chapters = chaptersOf(script, labels)
         _state.value = listening(0, speaking = false, positionMs = fromMs)
+        // La lettura sta nel player unico: notifica, schermata di blocco e cuffie come le altre fonti.
+        runCatching { context.startService(Intent(context, PlayerService::class.java)) }
         if (neuralVoice() != null || ready) seekTo(fromMs) else startSystemVoice()
     }
 
     /** La voce Piper da usare adesso, se c'è. */
     private fun neuralVoice(): Pair<ReadingVoice, VoiceFiles>? =
-        if (neuralBroken) null else VoiceStore.readyVoice()
+        VoiceStore.readyVoice()?.takeIf { it.first != brokenVoice }
+
+    /** Toccando una voce in Impostazioni si riprova Piper anche se prima non era partito. */
+    fun retryNeural() {
+        brokenVoice = null
+        NeuralVoice.clearFailure()
+    }
 
     /** Accende la sintesi di Android (una volta) e riparte da dove era la barra. */
     private fun startSystemVoice() {
+        // Un motore che non era partito si riaccende: magari ora la voce italiana c'è.
+        if (tts != null && !ready && !systemStarting) {
+            tts?.shutdown()
+            tts = null
+        }
         if (tts != null) return
         val context = appContext ?: return
+        systemStarting = true
         tts = TextToSpeech(context) init@{ status ->
+            systemStarting = false
             ready = status == TextToSpeech.SUCCESS
             if (!ready) {
                 _state.value = _state.value?.copy(speaking = false, error = "Sintesi vocale non disponibile sul telefono")
@@ -156,6 +175,7 @@ object RecapSpeaker {
             }
             val language = tts?.setLanguage(Locale.ITALIAN) ?: TextToSpeech.LANG_NOT_SUPPORTED
             if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
+                ready = false
                 _state.value = _state.value?.copy(speaking = false, error = "Manca la voce italiana: aggiungila in Impostazioni › Sintesi vocale")
                 return@init
             }
@@ -248,7 +268,7 @@ object RecapSpeaker {
                 },
                 onDone = { if (parts === script) _state.value = null },
                 onError = {
-                    neuralBroken = true
+                    brokenVoice = voice
                     // La sintesi di Android si comanda dal thread principale.
                     Handler(Looper.getMainLooper()).post {
                         if (parts === script) { if (ready) speakFrom(index, char) else startSystemVoice() }
@@ -259,7 +279,7 @@ object RecapSpeaker {
             return
         }
         val engine = tts ?: return startSystemVoice()
-        if (!ready) return
+        if (!ready) return startSystemVoice()
         NeuralVoice.stop()
         engine.stop()
         engine.speak(parts[index].substring(char), TextToSpeech.QUEUE_FLUSH, null, "punto-$index-$char")

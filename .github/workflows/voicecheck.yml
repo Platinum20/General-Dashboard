@@ -1,0 +1,66 @@
+name: Verifica voce Piper
+
+# Su un emulatore Android vero: scarica una voce Piper e la fa parlare (VoiceEngineCheck).
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - ".github/workflows/voicecheck.yml"
+      - "app/src/androidTest/**"
+
+permissions:
+  contents: write
+
+jobs:
+  emulator:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [36]
+        minify: ["false", "true"]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Liste dei filtri pubblicità
+        run: python3 scripts/update_filter_lists.py
+      - name: Compila
+        run: gradle ${{ matrix.minify == 'true' && ':app:assembleRelease :app:assembleReleaseAndroidTest -PreleaseCheck=true -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease' || ':app:assembleDebug :app:assembleDebugAndroidTest' }} -PallAbis=true --no-daemon
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: |
+            adb logcat -c
+            adb install -r app/build/outputs/apk/${{ matrix.minify == 'true' && 'release/app-release' || 'debug/app-debug' }}.apk
+            adb install -r app/build/outputs/apk/androidTest/${{ matrix.minify == 'true' && 'release/app-release-androidTest' || 'debug/app-debug-androidTest' }}.apk
+            adb shell am instrument -w -e class com.platinum20.dashboard.VoiceEngineCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
+            (cat instrument.txt; adb logcat -d -s VoiceCheck:I NeuralVoice:W AndroidRuntime:E System.err:W) > voicecheck.txt || true
+      - name: Risultato
+        if: always()
+        run: cat voicecheck.txt || true
+      - name: Pubblica il resoconto nel ramo screenshots
+        if: always()
+        run: |
+          DEST="voice-check/${{ github.run_number }}-r8-${{ matrix.minify }}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          mkdir -p "$RUNNER_TEMP/out" && cp voicecheck.txt "$RUNNER_TEMP/out/" 2>/dev/null || true
+          git fetch origin screenshots && git checkout -B screenshots origin/screenshots
+          mkdir -p "$DEST" && cp -r "$RUNNER_TEMP/out/." "$DEST/"
+          git add "$DEST" && git commit -m "Verifica voce $DEST" >/dev/null
+          for i in 1 2 3; do git push origin screenshots && break; git pull -q --rebase origin screenshots; done
