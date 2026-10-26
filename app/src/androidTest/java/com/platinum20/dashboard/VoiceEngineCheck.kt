@@ -24,6 +24,23 @@ import java.io.File
 class VoiceEngineCheck {
     private val tag = "VoiceCheck"
 
+    /** Ogni voce col suo modello: Paola e Miro non partivano sul telefono mentre Riccardo sì. */
+    @Test
+    fun ogniVoceParla() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val results = ReadingVoice.entries.associateWith { voice ->
+            val dir = File(context.filesDir, "voices/${voice.archive}")
+            runCatching {
+                val files = VoiceStore.install(voice.url, dir) {}
+                Log.i(tag, "${voice.label} file: $files ${files.model.length()} byte")
+                NeuralVoice.probe(voice, files, "Ciao, questa è una prova della voce.")
+            }.also { Log.i(tag, "${voice.label} motore: ${it.getOrNull()} ${it.exceptionOrNull()?.stackTraceToString() ?: ""}") }
+        }
+        results.forEach { (voice, result) ->
+            assertTrue("${voice.label} non genera: ${result.exceptionOrNull()}", (result.getOrNull()?.first ?: 0) > 0)
+        }
+    }
+
     @Test
     fun piperParla() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
