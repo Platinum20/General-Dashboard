@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.165.0
+**La bolla dei vocali resta alta come la barra**
+- Mentre detti la barra mostra solo le onde della voce e il testo, su una riga sola
+- Le parole più nuove restano sempre visibili a destra, le prime sfumano a sinistra: la bolla non cresce più
+
 ## 1.164.0
 **Home: "Adesso" solo per quello che ha un orario**
 - La card in cima ora dice solo le cose di oggi con un orario o una scadenza: meteo, impegni, pioggia, cose da fare, pacchi, spese
