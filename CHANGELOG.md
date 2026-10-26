@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.181.0
+**Le cose trovate nelle mail, più pulite**
+- Titoli corti su una riga: "Fine prova Metal", "Claude Pro termina", "Bolletta Enel", senza più "Scadenza:" davanti
+- Scadenze, rinnovi e prove gratuite sono date da aspettare come compleanni ed eventi: niente più casella da spuntare
+- I pacchi hanno nomi brevi e senza virgolette ("Tazza regalo" invece di "STAMPATEK Tazza Regalo…")
+- Gli eventi del calendario in Con scadenza stanno su una riga: "Evento · tutto il giorno"
+- Anche le cose già salvate vengono sistemate da sole
+
 ## 1.180.0
 **Gmail: Canvas legge le mail intere**
 - In Impostazioni > Compila da solo c'è "Collega Gmail" (sola lettura): Canvas legge le mail nuove ogni ora e appena ne arriva una

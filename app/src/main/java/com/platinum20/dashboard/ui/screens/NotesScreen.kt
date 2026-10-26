@@ -584,6 +584,8 @@ private fun DateCard(item: Countdown, onClick: () -> Unit) {
                     item.dateLine(),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             val (big, small) = dueBadge(item.nextDate())

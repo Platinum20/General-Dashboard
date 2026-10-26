@@ -98,7 +98,7 @@ object Extractor {
     // Abbonamenti: il rinnovo automatico o la fine della prova gratuita, da sapere prima dell'addebito.
     private val renewalWords = rx(
         "si rinnover[àa]|verr[àa] rinnovat[oa]|rinnovo automatico|rinnovo (?:del|dell'|della)? ?(?:tuo )?(?:abbonamento|piano|iscrizione)|" +
-            "prova gratuita (?:termina|finisce|scade)|periodo di prova (?:termina|finisce|scade)|trial ends|renews on|will renew|subscription renews"
+            "prova(?: gratuita)? (?:termina|finisce|scade)|periodo di prova (?:termina|finisce|scade)|trial ends|renews on|will renew|subscription renews"
     )
     private val bookingWords = rx(
         "prenotazion[ei]|prenotat[oa]|appuntament[oi]|visita|volo|partenza|check.?in|biglietto|biglietti|evento|concerto|" +
@@ -171,8 +171,8 @@ object Extractor {
         }
         // Amazon spesso non mostra il codice: basta il nome dell'articolo.
         if (isAmazon && !deliveredWords.containsMatchIn(text)) {
-            val item = amazonShipped.find(text)?.groupValues?.get(1)?.lineSequence()?.firstOrNull()?.trim()?.trim('"', '“', '”', '.')
-            if (!item.isNullOrBlank()) return Found.NewParcel(item.take(60), "", expected(text, msg.at))
+            val item = amazonShipped.find(text)?.groupValues?.get(1)?.lineSequence()?.firstOrNull()?.let(::itemName)
+            if (!item.isNullOrBlank()) return Found.NewParcel(item, "", expected(text, msg.at))
         }
         return null
     }
@@ -191,7 +191,6 @@ object Extractor {
         if (msg.kind == SourceKind.PAYMENT) return null
         val trigger = renewalWords.find(text) ?: billWords.find(text) ?: bookingWords.find(text) ?: return null
         val renewal = renewalWords.containsMatchIn(text)
-        val bill = billWords.containsMatchIn(text)
         // La data va cercata vicino alla parola chiave, non in tutta la mail.
         val window = text.substring(maxOf(0, trigger.range.first - 30), minOf(text.length, trigger.range.last + 60))
         val dateMatch = dateToken.find(window) ?: return null
@@ -200,22 +199,98 @@ object Extractor {
         // Senza anno una data passata diventa quella dell'anno prossimo: troppo lontana, è quasi sempre il passato.
         val hasYear = Regex("\\d{1,2}/\\d{1,2}/\\d{2,4}|\\d{4}").containsMatchIn(window)
         if (!hasYear && parsed.isAfter(msg.at.plusDays(200))) return null
-        val subject = msg.text.lineSequence().map { tidyLine(it) }.firstOrNull { it.isNotEmpty() } ?: tidyLine(msg.title)
-        val head = subject.ifEmpty { msg.app }.take(70)
-        val title = when {
-            renewal && !head.contains("rinnov", true) -> "Rinnovo: $head"
-            renewal -> head
-            bill && !head.contains("scad", true) -> "Scadenza: $head"
-            else -> head
-        }
-        return Found.Deadline(title, parsed)
+        val subject = msg.text.lineSequence().map { clean(it) }.firstOrNull { it.isNotEmpty() } ?: clean(msg.title)
+        val from = listOf(msg.app, msg.title).map { tidyName(it) }
+            .firstOrNull { it.isNotEmpty() && it.length <= 24 && !it.equals(subject, true) && !genericApps.matches(it) }
+        return Found.Deadline(shortTitle(subject, from, renewal).ifEmpty { msg.app }, parsed)
     }
+
+    private val genericApps = Regex("gmail|outlook|posta|mail|e-?mail|messaggi|sms|yahoo mail|proton ?mail", RegexOption.IGNORE_CASE)
+    private val subjectPrefix = Regex(
+        "^(?:(?:re|r|fwd?|i|inoltro|scadenza|rinnovo|promemoria|reminder|avviso|importante|attenzione|info)\\s*:\\s*)+",
+        RegexOption.IGNORE_CASE,
+    )
+    /** Un nome di servizio: parole che iniziano con la maiuscola ("Metal", "Claude Pro", "Disney+"). */
+    private const val NAME = "([\\p{Lu}\\d][\\p{L}\\d+&.'’-]*(?: [\\p{Lu}\\d][\\p{L}\\d+&.'’-]*){0,2})"
+    // Le parole chiave senza maiuscole/minuscole, il nome invece sì: deve restare maiuscolo.
+    private val trialOf = Regex("(?i:prova(?: gratuita)?|periodo di prova|trial)(?: (?i:di|a|al|per|del|della|dello|of|on|for))? $NAME")
+    private val subscriptionOf = Regex("(?i:abbonamento|iscrizione|piano|subscription)(?: (?i:a|al|all'|di|del|per|to))? $NAME")
+    private val endingWords = rx("annullat[oa]|disdett[oa]|cancellat[oa]|cancel+ed|terminat?[oa]?|termina|finisce|scad[a-z]*|sospes[oa]|ends?")
+    private val possessive = Regex("^(?:il tuo|la tua|i tuoi|le tue|il vostro|la vostra|your)\\s+", RegexOption.IGNORE_CASE)
+    private val dangling = Regex("(?:\\s+(?:il|lo|la|l'|i|gli|le|per|entro|del|della|dal|di|da|alle|a|in|on|by|for|at|e|ed|,|-|:|·))+$", RegexOption.IGNORE_CASE)
+
+    /**
+     * L'oggetto di una mail diventa un titolo corto da una riga, senza "Scadenza:" (lo dice già il conto alla rovescia):
+     * "La tua prova gratuita di Metal" diventa "Fine prova Metal", "Il tuo abbonamento a Claude Pro è stato annullato"
+     * diventa "Claude Pro termina". Vale anche per i titoli già salvati dalle versioni prima.
+     */
+    fun shortTitle(raw: String, from: String? = null, renewal: Boolean = false): String {
+        val s = clean(raw).replace("…", " ").trim().replace(subjectPrefix, "").replace(possessive, "").trim()
+        fun name(m: MatchResult) = m.groupValues[1].trim(' ', '.', ',', '-').replaceFirstChar { it.uppercase() }
+        trialOf.find(s)?.takeIf { val n = it.groupValues[1]; !n.first().isDigit() && endingWords.find(n)?.range?.first != 0 }
+            ?.let { return "Fine prova ${name(it)}" }
+        subscriptionOf.find(s)?.let { m ->
+            val n = name(m)
+            return when {
+                renewal || s.contains("rinnov", true) || s.contains("renew", true) -> "Rinnovo $n"
+                endingWords.containsMatchIn(s) -> "$n termina"
+                else -> "Abbonamento $n"
+            }
+        }
+        Regex("${B0}(bolletta|fattura|bollo|multa|rata|canone)$B1", RegexOption.IGNORE_CASE).find(s)?.let { m ->
+            val what = m.value.lowercase().replaceFirstChar { it.uppercase() }
+            if (from != null) return "$what $from"
+        }
+        if (renewal && from != null && !s.contains("rinnov", true)) return "Rinnovo $from"
+        // Il resto: via "il tuo", via la data (la dice già la riga sotto) e quello che viene dopo una virgola.
+        var t = s
+        dateToken.find(t)?.takeIf { it.range.first > 3 }?.let { t = t.substring(0, it.range.first) }
+        t = t.split(Regex("\\s*[,;|!?(\\[]\\s*|\\s+[-–—]\\s+|:\\s+")).firstOrNull { it.isNotBlank() }.orEmpty().trim()
+        t = t.replace(dangling, "").trim()
+        return shorten(t).replaceFirstChar { it.uppercase() }
+    }
+
+    /** Al massimo 32 caratteri, tagliati fra due parole e senza puntini: deve stare su una riga. */
+    private fun shorten(s: String, max: Int = 32): String {
+        if (s.length <= max) return s
+        val cut = s.take(max + 1).substringBeforeLast(' ').ifEmpty { s.take(max) }
+        return cut.replace(dangling, "").trim()
+    }
+
+    /**
+     * Il nome di un articolo come lo scrivono i negozi ("STAMPATEK Tazza Regalo Personalizzata…“") diventa
+     * corto e pulito ("Tazza regalo"): via virgolette, marca in maiuscolo e tutto quello dopo le prime parole.
+     */
+    fun itemName(raw: String): String {
+        var s = clean(raw).replace(Regex("[\"“”„«»‘’`]|…|\\.{3}"), " ").replace(Regex("\\s+"), " ").trim(' ', '.', '-', ',', ':')
+        s = s.split(Regex("\\s*[,;|(\\[/]\\s*|\\s+[-–—]\\s+|\\s+(?:con|per|with|for)\\s+", RegexOption.IGNORE_CASE))
+            .firstOrNull { it.isNotBlank() }.orEmpty().trim()
+        var words = s.split(' ').filter { it.isNotBlank() }
+        // "STAMPATEK Tazza": la marca tutta maiuscola in testa non dice cos'è.
+        if (words.size > 1 && words[0].length >= 3 && words[0].all { !it.isLetter() || it.isUpperCase() } && words[1].any { it.isLowerCase() }) {
+            words = words.drop(1)
+        }
+        // I codici dei modelli ("WH-1000XM5") e le misure non servono a riconoscerlo.
+        words = words.takeWhile { w -> w.none { it.isDigit() } }.ifEmpty { words.take(1) }
+        // Due parole che dicono cos'è bastano ("Tazza regalo", "Lampada da tavolo"): dopo di solito c'è la marca.
+        var content = 0
+        words = words.takeWhile { w -> (content < 2).also { if (it && w.lowercase() !in linkWords) content++ } }
+        return words.mapIndexed { i, w ->
+            val titleCase = w.length > 1 && w[0].isUpperCase() && w.drop(1).all { !it.isLetter() || it.isLowerCase() }
+            when {
+                i == 0 && w.all { !it.isLetter() || it.isUpperCase() } && w.length > 3 -> w.lowercase().replaceFirstChar { it.uppercase() }
+                i == 0 -> w.replaceFirstChar { it.uppercase() }
+                titleCase -> w.lowercase()
+                else -> w
+            }
+        }.joinToString(" ").replace(dangling, "")
+    }
+
+    private val linkWords = setOf("da", "di", "del", "della", "dei", "a", "in", "e", "of", "the")
 
     private val emoji = Regex("[\\p{So}\\p{Cs}\\uFE0F\\u200D]")
 
     private fun clean(s: String) = s.replace(emoji, " ").replace(Regex("[ \\t ]+"), " ").trim()
-
-    private fun tidyLine(s: String) = clean(s).trim(' ', '-', ':', '.').let { if (it.length > 70) it.take(69).trimEnd() + "…" else it }
 
     /** "LIDL ITALIA S.R.L." diventa "Lidl Italia", "Amazon.it*AB12CD" diventa "Amazon.it". */
     fun tidyName(raw: String): String {
