@@ -90,7 +90,7 @@ class AgendaState(
 ) {
     /**
      * Gli impegni di oggi; vuoto se non c'è niente da dire. La sera, finiti tutti, l'agenda sparisce:
-     * domani lo racconta "Adesso", che la sera diventa "Domani": non serve una seconda lista.
+     * domani e i giorni dopo li elenca "Prossimi giorni" in fondo ad "Adesso".
      */
     fun shown(now: LocalDateTime = LocalDateTime.now()): List<CalendarEvent> {
         val list = today.orEmpty()
@@ -208,7 +208,8 @@ fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit) {
     // Dei promemoria solo quello che conta adesso: il resto è a un tocco, in Note.
     val tasks = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
     val events = if (agenda.granted && agenda.today != null) agenda.shown() else emptyList()
-    val soon = data.soon
+    // Solo le date di oggi: quelle dei prossimi giorni stanno in "Prossimi giorni", dentro Adesso.
+    val soon = data.soon.filter { it.daysLeft() == 0L }
     val items = remember(events, tasks, soon) { DayTimeline.build(events, tasks.shown, soon, LocalDate.now()) }
     // L'ultimo promemoria spuntato da qui: per qualche secondo si può annullare.
     var lastDone by remember { mutableStateOf<TaskItem?>(null) }

@@ -40,8 +40,9 @@ create something it lists, so the next thread doesn't have to explore.
 
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `WeekReviewCard.kt`,
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`
-(pure: the "Adesso" lines, also used by widget + morning notification; from 18:00 Adesso becomes "Domani", no separate card), `DayTimeline.kt`
-("La giornata" card), `TodayTasks`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
+(pure: the "Adesso" lines, also used by widget + morning notification; the Home card stays on today, `withTomorrow=false`),
+`Upcoming.kt` ("Prossimi giorni" block at the bottom of Adesso: next 7 days of events/tasks/dates/parcels/charges; tomorrow's weather only in WeatherScreen), `DayTimeline.kt`
+("La giornata" card, today only), `TodayTasks`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
 

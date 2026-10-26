@@ -13,7 +13,6 @@ import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
 import java.time.YearMonth
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.weather.DailyPoint
 import com.platinum20.dashboard.weather.Forecast
 import com.platinum20.dashboard.weather.asTemp
 import java.time.Duration
@@ -51,13 +50,14 @@ data class BriefLine(
 
 /**
  * "Adesso": le poche cose che servono in questo momento, ricavate da meteo, agenda,
- * promemoria e date. Al mattino e di giorno guarda a oggi, la sera anche a domani.
+ * promemoria e date. Nella card di Oggi parla solo di oggi (i giorni dopo li elenca [Upcoming]);
+ * widget e notifica, che non hanno quella lista, la sera guardano anche a domani.
  * Niente rete qui dentro: è una funzione pura, facile da provare.
  */
 object Briefing {
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 
-    /** Da quest'ora in poi "Adesso" guarda anche a domani. */
+    /** Da quest'ora in poi widget e notifica guardano anche a domani. */
     const val EVENING_HOUR = 18
 
     /** Da quest'ora "Adesso" ricorda le abitudini non ancora spuntate. */
@@ -79,13 +79,13 @@ object Briefing {
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
         fixedExpenses: List<FixedExpense> = emptyList(),
-        /** true se la testata della card mostra già il meteo di domani (la sera in Oggi): qui non si ripete. */
-        tomorrowInHeader: Boolean = false,
+        /** false nella card di Oggi: domani sta in "Prossimi giorni", qui solo oggi. */
+        withTomorrow: Boolean = true,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
-        // La sera le righe su domani: "Adesso" diventa "Domani".
-        val aboutTomorrow = evening
+        // La sera le righe su domani, ma non nella card: lì c'è "Prossimi giorni".
+        val aboutTomorrow = evening && withTomorrow
         val lines = mutableListOf<BriefLine>()
 
         // Agenda: quello che è in corso, poi il prossimo impegno di oggi.
@@ -148,8 +148,8 @@ object Briefing {
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
-        // Spese fisse: il giorno prima, a ogni ora.
-        fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossimi giorni").
+        if (withTomorrow) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(
                 BriefKind.MONEY,
                 "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
@@ -184,7 +184,7 @@ object Briefing {
 
         if (aboutTomorrow) {
             // La sera interessa com'è domani e a che ora si comincia.
-            forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.takeIf { !tomorrowInHeader }?.let { d ->
+            forecast?.daily?.firstOrNull { it.date == date.plusDays(1) }?.let { d ->
                 lines += BriefLine(
                     BriefKind.WEATHER,
                     "Domani ${d.max.asTemp()} / ${d.min.asTemp()}" +
@@ -207,11 +207,12 @@ object Briefing {
             }
         }
 
-        if (lines.isEmpty() && today != null && (!evening || tomorrow != null)) {
+        if (lines.isEmpty() && today != null && (!aboutTomorrow || tomorrow != null)) {
             lines += BriefLine(
                 BriefKind.FREE,
                 when {
-                    evening -> "Niente in programma fino a domani"
+                    aboutTomorrow -> "Niente in programma fino a domani"
+                    evening -> "Niente altro in programma oggi"
                     else -> "Nessun impegno né scadenza oggi"
                 },
             )
@@ -219,11 +220,6 @@ object Briefing {
         // Le urgenze in cima, poi l'ordine in cui le abbiamo pensate.
         return lines.withIndex().sortedWith(compareBy({ !it.value.urgent }, { it.index })).map { it.value }.take(max)
     }
-
-    /** La sera il meteo di domani, che prende il posto di quello di adesso in testa alla card. */
-    fun tomorrowWeather(now: LocalDateTime, forecast: Forecast?): DailyPoint? =
-        if (now.hour < EVENING_HOUR) null
-        else forecast?.daily?.firstOrNull { it.date == now.toLocalDate().plusDays(1) }
 
     /** Da questa probabilità la pioggia si segnala sull'impegno. */
     const val EVENT_RAIN_PERCENT = 50

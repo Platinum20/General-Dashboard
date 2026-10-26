@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.184.0
+**Adesso resta su oggi, e sotto i prossimi giorni**
+- La card Adesso non diventa più "Domani" la sera: sempre meteo e impegni di oggi
+- In fondo alla card, "Prossimi giorni": impegni, promemoria, compleanni, pacchi e addebiti della settimana, tutti in un posto
+- Il meteo di domani e dei giorni dopo si legge toccando la card
+- La giornata mostra solo oggi: le date dei prossimi giorni ora stanno in Prossimi giorni
+
 ## 1.183.0
 **Le cose trovate nelle mail, più pulite**
 - Titoli corti su una riga: "Fine prova Metal", "Claude Pro termina", "Bolletta Enel", senza più "Scadenza:" davanti
