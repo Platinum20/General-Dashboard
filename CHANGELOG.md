@@ -4,6 +4,7 @@
 **Miro, una voce giovane per la lettura**
 - Fra le voci di lettura c'è Miro, un ragazzo che parla in modo naturale: è la prima a sinistra e funziona senza internet dopo averla scaricata una volta (circa 65 MB)
 - La voce del telefono non si sceglie più: restano Miro, Paola e Riccardo. Se avevi quella del telefono, ora leggerà Miro
+
 ## 1.192.0
 **Ogni cosa si apre come un evento**
 - Toccando un promemoria, una data o un conto alla rovescia, un pacco, un'abitudine, una spesa o una spesa fissa si apre la stessa pagina a schermo intero degli eventi del calendario: titolo col pallino, una scheda con quando, ripetizione e stato, e in alto Modifica ed Elimina
