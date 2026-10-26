@@ -25,6 +25,8 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.offset
 import kotlin.math.roundToInt
@@ -73,6 +75,7 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Constraints
 import androidx.navigation.NavBackStackEntry
 import com.platinum20.dashboard.ui.screens.TabReselect
 import androidx.compose.animation.fadeIn
@@ -478,9 +481,13 @@ private fun CanvasNavBar(
         val lock by rememberUpdatedState(onLock)
         val isMusic by rememberUpdatedState(music)
         val settings by rememberUpdatedState(onOpenSettings)
+        val cancelVoice by rememberUpdatedState(onCancelDictation)
         // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
         var drag by remember { mutableFloatStateOf(0f) }
+        // Quanto verso sinistra: "Scorri per annullare" scivola con il dito, in fondo cestina.
+        var slide by remember { mutableFloatStateOf(0f) }
         val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
+        val cancelDistance = with(LocalDensity.current) { 110.dp.toPx() }
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -525,21 +532,33 @@ private fun CanvasNavBar(
                             else -> {
                                 if (holdStart()) {
                                     haptic(Haptic.CONFIRM)
-                                    // Come WhatsApp: trascinando in su il microfono si blocca.
+                                    // Come WhatsApp: trascinando in su il microfono si blocca, a sinistra si annulla.
                                     var lockedNow = false
+                                    var cancelled = false
                                     while (true) {
                                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
                                         if (!change.pressed) break
-                                        drag = (down.position.y - change.position.y).coerceAtLeast(0f)
-                                        if (!lockedNow && drag > lockDistance) {
-                                            lockedNow = true
-                                            haptic(Haptic.CONFIRM)
-                                            lock()
+                                        if (!lockedNow && !cancelled) {
+                                            val up = (down.position.y - change.position.y).coerceAtLeast(0f)
+                                            val left = (down.position.x - change.position.x).coerceAtLeast(0f)
+                                            // Vince la direzione prevalente: il lucchetto e il cestino non si muovono insieme.
+                                            drag = if (up >= left) up else 0f
+                                            slide = if (left > up) left else 0f
+                                            if (drag > lockDistance) {
+                                                lockedNow = true
+                                                haptic(Haptic.CONFIRM)
+                                                lock()
+                                            } else if (slide > cancelDistance) {
+                                                cancelled = true
+                                                haptic(Haptic.CONFIRM)
+                                                cancelVoice()
+                                            }
                                         }
                                         change.consume()
                                     }
                                     drag = 0f
-                                    if (!lockedNow) {
+                                    slide = 0f
+                                    if (!lockedNow && !cancelled) {
                                         haptic(Haptic.TICK)
                                         holdEnd()
                                     }
@@ -586,8 +605,53 @@ private fun CanvasNavBar(
                     }
                 }
             }
-            // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
+            // A sinistra del microfono: "Scorri per annullare" segue il dito; il cestino si fa rosso e in fondo annulla.
             if (listening && !locked && !music) {
+                val progress = (slide / cancelDistance).coerceIn(0f, 1f)
+                val danger = MaterialTheme.colorScheme.error
+                Surface(
+                    shape = CircleShape,
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    border = cardBorder(),
+                    modifier = Modifier
+                        .layout { measurable, constraints ->
+                            val p = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity, minHeight = 0))
+                            layout(constraints.maxWidth, constraints.maxHeight) {
+                                p.place(
+                                    -p.width - 10.dp.roundToPx() - (slide * 0.55f).roundToInt(),
+                                    (constraints.maxHeight - p.height) / 2,
+                                )
+                            }
+                        }
+                        .glass(CircleShape),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 10.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+                    ) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, danger, progress),
+                            modifier = Modifier.size(18.dp).graphicsLayer { scaleX = 1f + progress * 0.3f; scaleY = 1f + progress * 0.3f },
+                        )
+                        Icon(
+                            Icons.Rounded.KeyboardArrowLeft,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            "Scorri per annullare",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+            // Il lucchetto sopra il microfono: sale con il dito, arrivato in cima blocca.
+            if (listening && !locked && !music && slide == 0f) {
                 val progress = (drag / lockDistance).coerceIn(0f, 1f)
                 Surface(
                     shape = CircleShape,
@@ -705,7 +769,7 @@ private fun DictationBubble(
                         when {
                             music -> "Qualche secondo e te la trovo su Spotify"
                             locked -> "Bloccato · tocca ➤ per inserire"
-                            else -> "Rilascia per finire · trascina su per bloccare"
+                            else -> "Rilascia per finire · su per bloccare · a sinistra annulli"
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

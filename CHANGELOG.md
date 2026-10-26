@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.153.0
+**Annulla il vocale scorrendo a sinistra**
+- Mentre detti tenendo premuto il +, fai scorrere il dito verso sinistra: accanto al microfono compare "Scorri per annullare" con un cestino che segue il dito e si fa rosso; arrivato in fondo la registrazione viene buttata senza salvare niente, come su WhatsApp
+- Trascinare in su per bloccare e in giù per le Impostazioni funzionano come prima
+
 ## 1.152.0
 **Bolla del + su una riga**
 - Il testo di prova nella bolla che compare quando scrivi è più corto ("Scrivi, Canvas capisce cos'è") e sta sempre su una sola riga
