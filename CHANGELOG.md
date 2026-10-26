@@ -1,9 +1,13 @@
 # Changelog
 
-## 1.177.0
+## 1.179.0
 **Via il vecchio codice dei player**
 - Tolti i vecchi player web di YouTube e Spotify e la loro seconda notifica: ora c'è solo il player unico
 - Nessun cambiamento visibile: l'app è un po' più leggera
+
+## 1.178.0
+**Avviso aggiornamenti quasi subito**
+- Canvas controlla le nuove versioni ogni 15 minuti invece che ogni 6 ore, e una volta appena la apri: l'avviso arriva poco dopo l'uscita
 
 ## 1.176.0
 **Oggi: card media sempre presente e tutte le card in Personalizza**

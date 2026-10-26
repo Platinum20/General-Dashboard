@@ -86,7 +86,7 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
-`work/` (Morning, Refresh, RainAlert, UpdateCheck workers), `update/` (APK self-update),
+`work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
 `SettingsScreen.kt` (groups by intent), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per
