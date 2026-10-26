@@ -39,7 +39,7 @@ create something it lists, so the next thread doesn't have to explore.
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `TomorrowCard.kt`, `WeekReviewCard.kt`,
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification), `DayTimeline.kt`
-("La giornata" card), `TodayTasks`, `Tomorrow`, `WeekReview`, `Greeting`, `Invites`.
+("La giornata" card), `TodayTasks`, `Tomorrow`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
 
@@ -56,7 +56,9 @@ type from text: never ask the user the type), `CaptureSave.kt` (single save path
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
 
 **News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,
-`NewsHistory` "N nuove"/"Già viste", `RecapReader`), `news/reader/` (ArticleExtractor,
+`NewsHistory` "N nuove"/"Già viste", `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
+(`VoiceStore` Piper voice choice/download, `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
+the sherpa AAR is downloaded by `app/build.gradle.kts` into ignored `app/libs/`), `news/reader/` (ArticleExtractor,
 PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallback for 403 sites.
 Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 

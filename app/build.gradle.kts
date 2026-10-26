@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -12,6 +13,18 @@ val versionProps = Properties().apply {
 
 // La firma della release arriva dalle variabili d'ambiente (secret di GitHub Actions).
 // Senza di esse la build release usa la chiave di debug, utile solo per prove in locale.
+// Voce neurale Piper (sherpa-onnx): l'AAR ufficiale sta solo nelle release di GitHub,
+// quindi la build lo scarica una volta in app/libs (ignorata da git).
+val sherpaOnnxVersion = "1.12.10"
+val sherpaOnnxAar = file("libs/sherpa-onnx-$sherpaOnnxVersion.aar")
+if (!sherpaOnnxAar.exists()) {
+    sherpaOnnxAar.parentFile.mkdirs()
+    val partial = file("libs/sherpa-onnx.part")
+    URI("https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaOnnxVersion/sherpa-onnx-$sherpaOnnxVersion.aar")
+        .toURL().openStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
+    partial.renameTo(sherpaOnnxAar)
+}
+
 val keystorePath: String? = System.getenv("KEYSTORE_FILE")
 val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 
@@ -65,6 +78,15 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    packaging {
+        jniLibs {
+            // La voce neurale serve solo sui telefoni a 64 bit ARM: niente 30 MB in più per le altre architetture.
+            listOf("armeabi-v7a", "x86", "x86_64").forEach { abi ->
+                excludes += "lib/$abi/libsherpa-onnx-*.so"
+                excludes += "lib/$abi/libonnxruntime.so"
+            }
+        }
     }
     buildFeatures {
         compose = true
@@ -130,6 +152,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
     // Lettura degli scontrini sul telefono (modello incluso nell'app, senza rete)
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Voce di lettura neurale sul telefono (Piper), e l'apertura dei suoi archivi tar.bz2
+    implementation(files(sherpaOnnxAar))
+    implementation("org.apache.commons:commons-compress:1.27.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

@@ -15,3 +15,6 @@
 
 # Liste dei filtri: le scarica scripts/update_filter_lists.py prima di compilare
 /app/src/main/assets/adblock/lists/
+
+# AAR di sherpa-onnx (voce Piper): lo scarica app/build.gradle.kts
+/app/libs/

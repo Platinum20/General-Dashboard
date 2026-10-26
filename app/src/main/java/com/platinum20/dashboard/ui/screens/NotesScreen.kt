@@ -62,6 +62,8 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -130,7 +132,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.captureTarget
@@ -313,8 +314,6 @@ fun NotesScreen(
     bottomPadding: PaddingValues,
     onOpenNote: (Long?) -> Unit,
     onOpenEvent: (CalendarEvent) -> Unit = {},
-    /** Apre sempre l'editor, anche per le note di "Salva nelle note" (che al tocco riaprono la loro cosa). */
-    onEditNote: (Long) -> Unit = { onOpenNote(it) },
 ) {
     val context = LocalContext.current
     NotesStore.init(context)
@@ -509,7 +508,14 @@ fun NotesScreen(
                     item(key = "undated-tasks") { Box(Modifier.animateItem()) { TaskGroup(null, undatedTasks, onTaskDeleted) } }
                 }
                 items(shownNotes, key = { "note-${it.id}" }) { note ->
-                    NoteCard(note, onOpen = { onOpenNote(note.id) }, onEdit = { onEditNote(note.id) }, modifier = Modifier.animateItem().padding(bottom = 4.dp))
+                    NoteCard(
+                        note,
+                        onOpen = { onOpenNote(note.id) },
+                        onDelete = {
+                            NotesStore.deleteNote(note.id)
+                            offerUndo("Nota eliminata") { NotesStore.restoreNote(note) }
+                        },
+                        modifier = Modifier.animateItem().padding(bottom = 4.dp))
                 }
             }
             if (section == null && (data.expenses.isNotEmpty() || data.fixedExpenses.isNotEmpty() || data.budgetCents != null)) {
@@ -722,7 +728,7 @@ private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskIte
             SectionHeader(label, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
         }
-        CanvasCard(Modifier.fillMaxWidth().animateContentSize(Springs.snappy())) {
+        CanvasCard(Modifier.fillMaxWidth()) {
             tasks.forEachIndexed { index, task ->
                 key(task.id) {
                     if (index > 0) RowDivider()
@@ -811,20 +817,27 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-/** Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto si fissa in alto. */
+/**
+ * Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto compare il menu
+ * (fissa in alto, condividi, elimina): per le cose di "Salva nelle note" è l'unico modo di gestirle,
+ * perché il loro testo con l'indirizzo canvas://open non si mostra mai in un editor.
+ */
 @Composable
-private fun NoteCard(note: Note, onOpen: () -> Unit, onEdit: () -> Unit, modifier: Modifier = Modifier) {
+private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
-    // Una nota di "Salva nelle note": l'icona dice cos'è e la matita apre l'editor (il tocco riapre la cosa).
+    val context = LocalContext.current
+    // Una nota di "Salva nelle note": l'icona dice cos'è e il tocco riapre la cosa.
     val saved = remember(note.text) { SavedLinks.find(note.text) }
+    var menu by remember { mutableStateOf(false) }
+    Box(modifier) {
     CanvasCard(
         shape = MaterialTheme.shapes.extraLarge,
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .bouncyPress()
             .combinedClickable(
                 onClick = onOpen,
-                onLongClick = { haptic(Haptic.LONG_PRESS); NotesStore.togglePin(note.id) },
+                onLongClick = { haptic(Haptic.LONG_PRESS); menu = true },
             ),
     ) {
         Row(Modifier.padding(16.dp)) {
@@ -855,11 +868,6 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onEdit: () -> Unit, modifie
                             modifier = Modifier.size(18.dp),
                         )
                     }
-                    if (saved != null) {
-                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Outlined.Edit, contentDescription = "Modifica la nota", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                        }
-                    }
                 }
                 Checklist.progressLabel(note.text)?.let { progress ->
                     Text(
@@ -885,6 +893,30 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onEdit: () -> Unit, modifie
                 )
             }
         }
+    }
+    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+        DropdownMenuItem(
+            text = { Text(if (note.pinned) "Togli da in alto" else "Fissa in alto") },
+            leadingIcon = { Icon(if (note.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin, contentDescription = null) },
+            onClick = { menu = false; NotesStore.togglePin(note.id) },
+        )
+        DropdownMenuItem(
+            text = { Text("Condividi") },
+            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+            onClick = {
+                menu = false
+                val share = android.content.Intent(android.content.Intent.ACTION_SEND)
+                    .setType("text/plain")
+                    .putExtra(android.content.Intent.EXTRA_TEXT, saved?.let(SavedLinks::shareText) ?: note.text)
+                context.startActivity(android.content.Intent.createChooser(share, null))
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Elimina") },
+            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+            onClick = { menu = false; onDelete() },
+        )
+    }
     }
 }
 

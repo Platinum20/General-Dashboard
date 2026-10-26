@@ -10,6 +10,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
+import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material3.RadioButton
+import com.platinum20.dashboard.news.RecapSpeaker
+import com.platinum20.dashboard.news.voice.ReadingVoice
+import com.platinum20.dashboard.news.voice.VoiceStatus
+import com.platinum20.dashboard.news.voice.VoiceStore
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -217,6 +224,10 @@ fun SettingsScreen(
                 }
             }
 
+            item(key = SettingsGroupKey.VOICE) {
+                SettingsBlock("Voce di lettura") { VoiceSettings() }
+            }
+
             item(key = SettingsGroupKey.AUTO) {
                 SettingsBlock("Fa da solo") {
                     SettingsItem(
@@ -349,7 +360,8 @@ fun SettingsScreen(
                     "Caratteri Inter e Inter Display di Rasmus Andersson, SIL Open Font License 1.1.\n\n" +
                         "Liste del blocco pubblicità: EasyList ed EasyPrivacy (CC BY-SA 3.0, GPLv3), " +
                         "filtri di uBlock Origin (GPLv3), scaricate dai loro siti.\n\n" +
-                        "Meteo e località: Open-Meteo (CC BY 4.0).",
+                        "Meteo e località: Open-Meteo (CC BY 4.0).\n\n" +
+                        "Voci di lettura: Piper (voci paola e riccardo) con sherpa-onnx (Apache 2.0).",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
@@ -364,17 +376,19 @@ internal object SettingsGroupKey {
     const val LOOK = "look"
     const val ALERTS = "alerts"
     const val HOME = "home"
+    const val VOICE = "voice"
     const val AUTO = "auto"
     const val ACCOUNTS = "accounts"
     const val DATA = "data"
     const val INFO = "info"
-    val order = listOf(ABOUT, LOOK, ALERTS, HOME, AUTO, ACCOUNTS, DATA, INFO)
+    val order = listOf(ABOUT, LOOK, ALERTS, HOME, VOICE, AUTO, ACCOUNTS, DATA, INFO)
 
     /** Da quale gruppo partire arrivando da una sezione: Home e meteo, quello che fa da solo, gli account. */
     fun forSection(section: String?): Int = order.indexOf(
         when (section) {
             "home" -> HOME
-            "notes", "news" -> AUTO
+            "notes" -> AUTO
+            "news" -> VOICE
             "media" -> ACCOUNTS
             else -> ABOUT
         }
@@ -706,6 +720,58 @@ private fun MorningSettings() {
             },
         )
     }
+}
+
+/**
+ * Le tre voci che leggono notizie e punto del giorno. Le voci Piper si scaricano una volta sola
+ * appena scelte; toccare di nuovo quella scelta fa sentire come suona.
+ */
+@Composable
+private fun VoiceSettings() {
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    val selected by AppSettings.readingVoice.collectAsState()
+    remember { VoiceStore.init(context) }
+    val status by VoiceStore.status.collectAsState()
+    ReadingVoice.entries.forEachIndexed { index, voice ->
+        if (index > 0) RowDivider()
+        val state = if (voice.neural) status[voice] ?: VoiceStatus.Missing else VoiceStatus.Ready
+        val chosen = voice == selected
+        val pick = {
+            haptic(Haptic.TICK)
+            if (chosen && state == VoiceStatus.Ready) {
+                RecapSpeaker.play(context, listOf(voiceSample(voice)), title = "Voce di lettura: ${voice.label}")
+            } else {
+                AppSettings.setReadingVoice(voice)
+                if (voice.neural && state !is VoiceStatus.Ready) VoiceStore.download(voice)
+            }
+        }
+        SettingsItem(
+            icon = if (voice.neural) Icons.Outlined.RecordVoiceOver else Icons.Outlined.PhoneAndroid,
+            accent = when (voice) {
+                ReadingVoice.PAOLA -> TileAccent.PURPLE
+                ReadingVoice.RICCARDO -> TileAccent.BLUE
+                ReadingVoice.SYSTEM -> TileAccent.NEUTRAL
+            },
+            title = voice.label,
+            subtitle = voiceSubtitle(voice, state, chosen),
+            onClick = pick,
+            trailing = { RadioButton(selected = chosen, onClick = pick) },
+        )
+    }
+}
+
+private fun voiceSample(voice: ReadingVoice): String = when (voice) {
+    ReadingVoice.SYSTEM -> "Ciao, sono la voce del telefono. Ti leggo le notizie e il punto del giorno."
+    else -> "Ciao, sono ${voice.label}. Ti leggo le notizie e il punto del giorno, anche senza internet."
+}
+
+/** "Femminile, la più naturale · si scarica una volta (60 MB)", "Scarico… 42%", "Tocca per sentirla". */
+private fun voiceSubtitle(voice: ReadingVoice, state: VoiceStatus, chosen: Boolean): String = when (state) {
+    is VoiceStatus.Downloading -> "Scarico la voce… ${(state.progress * 100).toInt()}%"
+    is VoiceStatus.Failed -> state.message
+    VoiceStatus.Missing -> "${voice.description} · si scarica una volta (${voice.sizeMb} MB)"
+    VoiceStatus.Ready -> if (chosen) "${voice.description} · tocca per sentirla" else voice.description
 }
 
 /** Avviso pioggia: una notifica quando sta per piovere dove sei. */
