@@ -33,6 +33,9 @@ class SavedLinksTest {
     fun articleRoundTrips() {
         val link = SavedLink.Article("https://example.com/a?b=1&c=2", "Il Post", "Titolo & altro")
         assertEquals(link, SavedLinks.find(SavedLinks.noteText(link)))
+        // Con la foto dell'articolo, per l'anteprima nelle note.
+        val withImage = link.copy(image = "https://example.com/foto.jpg?w=600&h=400")
+        assertEquals(withImage, SavedLinks.find(SavedLinks.noteText(withImage)))
     }
 
     @Test

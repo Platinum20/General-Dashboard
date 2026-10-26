@@ -28,4 +28,20 @@ class RecapSeekTest {
         // Oltre la fine: l'ultima parte.
         assertEquals(2, RecapSpeaker.locate(script, Long.MAX_VALUE / 2).first)
     }
+
+    @Test
+    fun iCapitoliComincianoDoveComincianoLeParti() {
+        val starts = RecapSpeaker.timeline(script)
+        val chapters = RecapSpeaker.chaptersOf(script, listOf("Apertura", "La pioggia", "Lo sciopero"))
+        assertEquals(listOf("Apertura", "La pioggia", "Lo sciopero"), chapters.map { it.label })
+        assertEquals(starts, chapters.map { it.startMs })
+        // Senza nomi niente capitoli.
+        assertEquals(emptyList<Any>(), RecapSpeaker.chaptersOf(script, emptyList()))
+    }
+
+    @Test
+    fun lArticoloSiLeggeDalTitoloSenzaParagrafiVuoti() {
+        val parts = com.platinum20.dashboard.news.RecapReader.articleScript("Titolo «forte»", listOf("Primo.", "  ", "Vedi https://x.it ora."))
+        assertEquals(listOf("Titolo forte", "Primo.", "Vedi ora."), parts)
+    }
 }
