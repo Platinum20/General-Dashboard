@@ -1,0 +1,45 @@
+https://www.agi.it/estero/news/2026-10-30/elezioni-israele-incognite-partiti-39718328/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AFxmAOsEg4HTioC3Ii/bp79AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMzuMiecWjKJbGXJzYAgEQgDuZsLnwPBaRFv9ODq1ByTFT6w9Stc429mARfIdfwfe6onLuyHn79EJ1KxBLdblfWd6WME4pZSvQJnPwIg==",
+          "iv":"EkQp8gCXdQAAAqWB",
+          "context":"/blakaHp0GWqT6HeHB1UtxklWjNZG2UDBpz959VuNn3TOiQTsxsXnB/Aw+3AJBsYtfQKaltjAnQv/4jaLct5D1TJmRCgKJy24sgaDARqVD5VCUS45b59w9O5sGVNGE9zH34jeImNHXHbZLV+Sok3pyfppgHDWDsSriLYMB/kcpnENJQFjMpy3O4h684HIW/e2o1TrPbdmMvWDWa3H86+xUffYrJe1gLUSCUJv1l9NvkNOkZwKREWdfWChFSLL/6uBwToqqopdSs2ok4R+vj2OnbJcvJX53THJ6fdusi9vJ+nJs102RHyCsRrzPfknq6zkZKzV09UtSdTzQqFxoMPzR34vkzDQ62JdXOM3w8fJoUdoOiYCpsCI4Is8SVVrtSYyvuF85qXDclVBJHSL7hdsiym0a6dWkOR5hO/UQadpaYIyM3yrzaBbllU/3d/WJHIopb6zzXWHcrTkK+AxAhpEvWDXrkcFwQEzT/t8n1diUnbS/2iIgiAt84N/ZJxH6aq0lIrbpA3SzO2OwAXMxMEDN2w3RxJi3DM0v1nG79huAUIRoTOF1C5urrs8rQjhfpn3S0f0ZBqMHUvl03OVKvC++dogTgypfcA7WkYfo4At/bG2xw09cNcKnSnwlPNP8sLybUt08Ptji5YEata0PKz8sd6ZDqz9GfH8TteMhxoDXSPZssfMEZ3PNHH3y+UqMaeA0Sj14aJca+qMeQUTkLUsk43mo4arTvVUObeDmqAPWNz/32jVu5zK/O1G2SrTHZs4r8="
+};
+    </script>
+  <script src="https://a49c870577a3.f245ce8f.us-east-2.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>
