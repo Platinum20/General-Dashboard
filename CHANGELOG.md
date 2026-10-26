@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.164.0
+**Una voce molto più naturale per le notizie**
+- Notizie e punto del giorno ora li legge una voce neurale (Piper) che gira sul telefono: intonazione e pause molto più naturali, gratis e anche senza internet
+- In Impostazioni › Voce di lettura scegli tra tre voci: Paola (femminile, la più naturale), Riccardo (maschile, più leggera) e la voce del telefono. Tocca di nuovo la voce scelta per sentire come suona
+- La voce si scarica una volta sola (Paola circa 60 MB, Riccardo circa 30): la prima volta parte da sola in sottofondo e intanto legge la voce del telefono
+
 ## 1.163.0
 **Media: prima le sezioni, poi Riprendi e la coda**
 - In cima a Media ci sono Musica, Video e Radio e podcast; sotto la card di quello che suona (o "Riprendi" se non suona niente), poi la coda, poi Continua e le radio

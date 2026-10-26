@@ -2,6 +2,7 @@ package com.platinum20.dashboard.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.platinum20.dashboard.news.voice.ReadingVoice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +48,7 @@ object AppSettings {
     private const val KEY_AD_BLOCK = "ad_block"
     private const val KEY_UPDATE_NOTIFY = "update_notify"
     private const val KEY_RAIN_ALERT = "rain_alert"
+    private const val KEY_READING_VOICE = "reading_voice"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -64,6 +66,9 @@ object AppSettings {
     private val _rainAlert = MutableStateFlow(false)
     /** Notifica quando sta per piovere (spenta di default). */
     val rainAlert: StateFlow<Boolean> = _rainAlert.asStateFlow()
+    private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
+    /** La voce che legge notizie e punto del giorno. */
+    val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -111,6 +116,7 @@ object AppSettings {
         _adBlock.value = prefs.getBoolean(KEY_AD_BLOCK, true)
         _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
+        _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -130,6 +136,11 @@ object AppSettings {
     fun setUpdateNotify(enabled: Boolean) {
         _updateNotify.value = enabled
         prefs.edit().putBoolean(KEY_UPDATE_NOTIFY, enabled).apply()
+    }
+
+    fun setReadingVoice(voice: ReadingVoice) {
+        _readingVoice.value = voice
+        prefs.edit().putString(KEY_READING_VOICE, voice.name).apply()
     }
 
     fun setRainAlert(enabled: Boolean) {

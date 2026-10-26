@@ -56,7 +56,9 @@ type from text: never ask the user the type), `CaptureSave.kt` (single save path
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
 
 **News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,
-`NewsHistory` "N nuove"/"Già viste", `RecapReader`), `news/reader/` (ArticleExtractor,
+`NewsHistory` "N nuove"/"Già viste", `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
+(`VoiceStore` Piper voice choice/download, `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
+the sherpa AAR is downloaded by `app/build.gradle.kts` into ignored `app/libs/`), `news/reader/` (ArticleExtractor,
 PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallback for 403 sites.
 Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 

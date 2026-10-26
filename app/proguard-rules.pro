@@ -17,3 +17,12 @@
 -dontwarn jdk.dynalink.**
 -dontwarn org.jsoup.**
 -dontwarn com.google.errorprone.annotations.**
+
+# sherpa-onnx (voce Piper): il codice nativo legge i campi delle configurazioni per nome.
+-keep class com.k2fsa.sherpa.onnx.** { *; }
+# commons-compress: formati opzionali che l'app non usa (solo tar.bz2).
+-dontwarn org.tukaani.xz.**
+-dontwarn com.github.luben.zstd.**
+-dontwarn org.brotli.dec.**
+-dontwarn org.objectweb.asm.**
+-dontwarn org.osgi.**
