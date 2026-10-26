@@ -178,9 +178,6 @@ fun SettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            // In cima l'app stessa: la versione e, toccando, le novità e gli aggiornamenti.
-            item(key = SettingsGroupKey.ABOUT) { AppHero(onClick = onOpenUpdates) }
-
             item(key = SettingsGroupKey.LOOK) {
                 SettingsBlock("Aspetto") {
                     ThemePicker(theme) { option ->
@@ -323,6 +320,9 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            // In fondo l'app stessa: la versione e, toccando, le novità e gli aggiornamenti.
+            item(key = SettingsGroupKey.ABOUT) { AppHero(onClick = onOpenUpdates) }
         }
     }
 
@@ -385,7 +385,7 @@ internal object SettingsGroupKey {
     const val ACCOUNTS = "accounts"
     const val DATA = "data"
     const val INFO = "info"
-    val order = listOf(ABOUT, LOOK, ALERTS, HOME, VOICE, AUTO, ACCOUNTS, DATA, INFO)
+    val order = listOf(LOOK, ALERTS, HOME, VOICE, AUTO, ACCOUNTS, DATA, INFO, ABOUT)
 
     /** Da quale gruppo partire arrivando da una sezione: Home e meteo, quello che fa da solo, gli account. */
     fun forSection(section: String?): Int = order.indexOf(
@@ -394,7 +394,7 @@ internal object SettingsGroupKey {
             "notes" -> AUTO
             "news" -> VOICE
             "media" -> ACCOUNTS
-            else -> ABOUT
+            else -> LOOK
         }
     )
 }
@@ -409,7 +409,7 @@ private fun SettingsBlock(title: String, content: @Composable () -> Unit) {
     }
 }
 
-/** La card in cima: l'app, la sua versione e le novità. */
+/** La card in fondo: l'app, la sua versione e le novità. */
 @Composable
 private fun AppHero(onClick: () -> Unit) {
     CanvasCard(
