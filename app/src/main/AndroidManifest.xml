@@ -25,10 +25,14 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-    <!-- Dettatura tenendo premuto il +: serve vedere il servizio di riconoscimento vocale (Android 11+). -->
+    <!-- Dettatura tenendo premuto il +: serve vedere il servizio di riconoscimento vocale (Android 11+).
+         La voce del telefono che legge le notizie: senza vedere il motore di sintesi non parte. -->
     <queries>
         <intent>
             <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 

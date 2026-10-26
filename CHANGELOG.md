@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.185.0
+**La lettura nel player unico, e la voce del telefono di nuovo funzionante**
+- Quando ti leggo una notizia o il punto del giorno compare la notifica del player, come per musica e video: pausa, avanti e indietro tra i paragrafi, anche dalla schermata di blocco e dalle cuffie
+- "Voce del telefono" funziona di nuovo, sia nella prova sia nella lettura delle notizie
+- In Impostazioni › Voce di lettura un tocco sceglie la voce e te la fa sentire subito
+- Se Piper non riesce a partire, la riga sotto le voci lo dice (con il motivo) invece di passare di nascosto alla voce del telefono; toccando la voce si riprova
+
 ## 1.184.0
 **Adesso resta su oggi, e sotto i prossimi giorni**
 - La card Adesso non diventa più "Domani" la sera: sempre meteo e impegni di oggi

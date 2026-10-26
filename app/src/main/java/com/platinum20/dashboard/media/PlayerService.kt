@@ -17,6 +17,7 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
+import com.platinum20.dashboard.news.RecapSpeaker
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
@@ -47,13 +48,22 @@ class PlayerService : MediaSessionService() {
             // L'app comanda il motore direttamente, senza collegarsi alla sessione: senza questa riga
             // il servizio non conosce la sessione e la notifica con copertina e comandi non compare mai.
             .also(::addSession)
-        scope.launch { combine(CanvasPlayer.now, CanvasPlayer.queue) { _, _ -> }.collect { player.refresh() } }
+        scope.launch {
+            var reading = false
+            combine(CanvasPlayer.now, CanvasPlayer.queue, RecapSpeaker.state, Playback.now) { engine, _, speech, _ -> engine to speech }
+                .collect { (engine, speech) ->
+                    player.refresh()
+                    // Finita la lettura, se il motore è fermo la notifica se ne va (come per CanvasPlayer.stop).
+                    if (reading && speech == null && engine == null) stopSelf()
+                    reading = speech != null
+                }
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (CanvasPlayer.now.value?.playing != true) stopSelf()
+        if (Playback.now.value?.playing != true) stopSelf()
     }
 
     override fun onDestroy() {
@@ -82,6 +92,7 @@ private class SessionPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     fun refresh() = invalidateState()
 
     override fun getState(): State {
+        Playback.now.value?.takeIf { it.source == PlaySource.SPEECH }?.let { return speechState(it) }
         val now = CanvasPlayer.now.value
         val queue = CanvasPlayer.queue.value
         val current = queue.now
@@ -116,6 +127,47 @@ private class SessionPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
             .build()
     }
 
+    /**
+     * La lettura (notizia o punto del giorno) come una traccia: titolo, capitolo, barra del tempo;
+     * avanti e indietro passano da un paragrafo o tema all'altro.
+     */
+    private fun speechState(shown: Playing): State {
+        val speech = RecapSpeaker.state.value
+        val part = speech?.part ?: 0
+        val total = speech?.total ?: 1
+        val ids = listOfNotNull((part - 1).takeIf { it >= 0 }, part, (part + 1).takeIf { it < total })
+        val metadata = MediaMetadata.Builder()
+            .setTitle(shown.title)
+            .setArtist(shown.subtitle)
+            .build()
+        val items = ids.map { index ->
+            MediaItemData.Builder("lettura-$index")
+                .setMediaItem(MediaItem.Builder().setMediaId("lettura-$index").setMediaMetadata(metadata).build())
+                .setMediaMetadata(metadata)
+                .setDurationUs(if (index == part && shown.durationMs > 0) shown.durationMs * 1000 else C.TIME_UNSET)
+                .setIsSeekable(index == part && shown.durationMs > 0)
+                .build()
+        }
+        val commands = Player.Commands.Builder().addAll(
+            Player.COMMAND_PLAY_PAUSE, Player.COMMAND_STOP,
+            Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+            Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
+            Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_MEDIA_ITEM,
+            Player.COMMAND_GET_CURRENT_MEDIA_ITEM, Player.COMMAND_GET_TIMELINE,
+            Player.COMMAND_GET_METADATA, Player.COMMAND_RELEASE,
+        ).build()
+        return State.Builder()
+            .setAvailableCommands(commands)
+            .setPlaylist(items)
+            .setCurrentMediaItemIndex(ids.indexOf(part))
+            .setPlayWhenReady(shown.playing, Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+            .setPlaybackState(if (shown.error != null) Player.STATE_IDLE else Player.STATE_READY)
+            .setContentPositionMs { Playback.now.value?.positionMs ?: 0 }
+            .build()
+    }
+
+    private fun speaking(): Boolean = Playback.now.value?.source == PlaySource.SPEECH
+
     private fun itemData(entry: QueueEntry, now: EngineNow?): MediaItemData {
         val item = entry.item
         val title = if (now != null && now.streamTitle.isNotBlank()) now.streamTitle else item.title
@@ -135,6 +187,10 @@ private class SessionPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     }
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        if (speaking()) {
+            if (playWhenReady != (Playback.now.value?.playing == true)) Playback.toggle()
+            return Futures.immediateVoidFuture()
+        }
         val now = CanvasPlayer.now.value
         if (playWhenReady != (now?.playing == true)) {
             if (playWhenReady) CanvasPlayer.toggle() else CanvasPlayer.pause()
@@ -145,7 +201,7 @@ private class SessionPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     override fun handlePrepare(): ListenableFuture<*> = Futures.immediateVoidFuture()
 
     override fun handleStop(): ListenableFuture<*> {
-        CanvasPlayer.stop()
+        Playback.stop()
         return Futures.immediateVoidFuture()
     }
 
@@ -153,10 +209,11 @@ private class SessionPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
 
     override fun handleSeek(mediaItemIndex: Int, positionMs: Long, seekCommand: Int): ListenableFuture<*> {
         val current = currentMediaItemIndex
+        val speech = speaking()
         when {
             mediaItemIndex > current -> Playback.next()
-            mediaItemIndex in 0 until current -> CanvasPlayer.previous()
-            else -> CanvasPlayer.seekTo(if (positionMs == C.TIME_UNSET) 0 else positionMs)
+            mediaItemIndex in 0 until current -> if (speech) Playback.previous() else CanvasPlayer.previous()
+            else -> Playback.seekTo(if (positionMs == C.TIME_UNSET) 0 else positionMs)
         }
         return Futures.immediateVoidFuture()
     }

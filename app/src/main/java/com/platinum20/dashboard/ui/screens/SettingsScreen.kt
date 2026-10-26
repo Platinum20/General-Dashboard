@@ -755,11 +755,13 @@ private fun VoicePicker() {
                         .clickable {
                             haptic(Haptic.TICK)
                             RecapSpeaker.retryNeural()
-                            if (on && state == VoiceStatus.Ready) {
+                            // Un tocco sceglie la voce e la fa sentire subito; se manca, la scarica.
+                            AppSettings.setReadingVoice(option)
+                            if (state == VoiceStatus.Ready) {
                                 RecapSpeaker.play(context, listOf(voiceSample(option)), title = "Voce: ${option.label}")
                             } else {
-                                AppSettings.setReadingVoice(option)
-                                if (option.neural && state != VoiceStatus.Ready) VoiceStore.download(option, context)
+                                RecapSpeaker.stop()
+                                VoiceStore.download(option, context)
                             }
                         },
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -859,7 +861,7 @@ private fun voiceLine(voice: ReadingVoice, state: VoiceStatus): String = when (s
     is VoiceStatus.Failed -> state.message
     VoiceStatus.Waiting -> HeavyDownloads.BLOCKED
     VoiceStatus.Missing -> "${voice.description} · si scarica una volta (${voice.sizeMb} MB)"
-    VoiceStatus.Ready -> "${voice.description} · tocca di nuovo per sentirla"
+    VoiceStatus.Ready -> "${voice.description} · tocca per sentirla"
 }
 
 /** Download pesanti solo col Wi-Fi: vale per le voci e per gli aggiornamenti dell'app. */
