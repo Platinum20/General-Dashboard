@@ -1,10 +1,14 @@
 # Changelog
 
-## 1.163.0
+## 1.164.0
 **Home: "Adesso" solo per quello che ha un orario**
 - La card in cima ora dice solo le cose di oggi con un orario o una scadenza: meteo, impegni, pioggia, cose da fare, pacchi, spese
 - Il video, il brano o il podcast lasciato a metà ha una card sua, "Riprendi", sotto "La giornata": copertina, punto da cui riparte e un tocco per farlo ripartire. Sparisce mentre qualcosa sta già suonando (c'è il mini player)
 - Si può spostare o nascondere da Impostazioni, Home, come le altre card
+
+## 1.163.0
+**Media: prima le sezioni, poi Riprendi e la coda**
+- In cima a Media ci sono Musica, Video e Radio e podcast; sotto la card di quello che suona (o "Riprendi" se non suona niente), poi la coda, poi Continua e le radio
 
 ## 1.162.0
 **Media riordinata: Riprendi in cima, coda in fondo**
