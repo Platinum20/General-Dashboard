@@ -1,11 +1,26 @@
 # Changelog
 
-## 1.165.0
+## 1.168.0
 **Note: le cose salvate si salvano una volta sola**
 - Su un articolo già nelle note il tasto in alto a destra diventa "Rimuovi dalle note" (segnalibro pieno) e lo toglie; niente più copie della stessa notizia
 - Lo stesso per canzoni, video, radio e podcast: tenendoli premuti, se sono già nelle note il fumetto dice "Rimuovi dalle note"
 - Tenendo premuta una nota compare un menu: Fissa in alto, Condividi, Elimina. Per le cose salvate non c'è più la matita con il titolo e il link: si gestiscono da qui
 - Condividi manda il titolo con un link che si apre ovunque (YouTube, Spotify, l'articolo)
+
+## 1.167.0
+**Una voce molto più naturale per le notizie**
+- Notizie e punto del giorno ora li legge una voce neurale (Piper) che gira sul telefono: intonazione e pause molto più naturali, gratis e anche senza internet
+- In Impostazioni › Voce di lettura scegli tra tre voci: Paola (femminile, la più naturale), Riccardo (maschile, più leggera) e la voce del telefono. Tocca di nuovo la voce scelta per sentire come suona
+- La voce si scarica una volta sola (Paola circa 60 MB, Riccardo circa 30): la prima volta parte da sola in sottofondo e intanto legge la voce del telefono
+
+## 1.166.0
+**Card sempre a grandezza piena**
+- Aprendo o cambiando sezione le card non si allungano e non si accorciano più mentre arrivano i dati: compaiono già alla loro grandezza, con una semplice dissolvenza
+
+## 1.165.0
+**La bolla dei vocali resta alta come la barra**
+- Mentre detti la barra mostra solo le onde della voce e il testo, su una riga sola
+- Le parole più nuove restano sempre visibili a destra, le prime sfumano a sinistra: la bolla non cresce più
 
 ## 1.164.0
 **Home: "Adesso" solo per quello che ha un orario**

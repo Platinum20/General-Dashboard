@@ -9,7 +9,6 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -104,7 +103,7 @@ fun AutoFillCard(onOpenSettings: () -> Unit) {
             if (pending > 0) AutoFill.acceptAll() else AutoFill.clearRecent()
         },
     ) {
-        Column(Modifier.animateContentSize(Springs.snappy())) {
+        Column {
             shown.take(6).forEachIndexed { index, s ->
                 if (index > 0) RowDivider()
                 SuggestionRow(

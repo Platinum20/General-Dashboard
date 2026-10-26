@@ -27,13 +27,11 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.offset
 import kotlin.math.roundToInt
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +50,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
@@ -679,7 +682,7 @@ private fun CanvasNavBar(
 }
 
 /**
- * La barra mentre si detta tenendo premuto il +: le barre che seguono la voce e, sotto,
+ * La barra mentre si detta tenendo premuto il +: le barre che seguono la voce e, accanto,
  * quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
  * Scorrendo a sinistra tutto segue il dito e compare il cestino: in fondo il vocale si butta.
  */
@@ -735,21 +738,26 @@ private fun DictationContent(
                     },
             )
         }
-        Column(
-            Modifier
+        // Sempre alta come la barra: visualizzatore a sinistra e una sola riga di testo
+        // che mostra le parole più nuove, le prime sfumano a sinistra mentre si parla.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp)
                 .graphicsLayer {
                     translationX = -slidePx * 0.6f
                     alpha = 1f - slide * 0.6f
                 }
-                .padding(start = 20.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = 18.dp, end = 14.dp),
         ) {
             if (listening) {
                 val barColor = MaterialTheme.colorScheme.primary
-                Canvas(Modifier.fillMaxWidth().height(28.dp)) {
-                    val gap = 3.dp.toPx()
+                Canvas(Modifier.width(56.dp).height(26.dp)) {
+                    val gap = 2.dp.toPx()
                     val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
                     bars.forEachIndexed { i, v ->
-                        val h = (size.height * (0.12f + 0.88f * v)).coerceAtMost(size.height)
+                        val h = (size.height * (0.14f + 0.86f * v)).coerceAtMost(size.height)
                         drawRoundRect(
                             color = barColor.copy(alpha = 0.35f + 0.65f * v),
                             topLeft = Offset(i * (w + gap), (size.height - h) / 2),
@@ -758,7 +766,7 @@ private fun DictationContent(
                         )
                     }
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.width(12.dp))
             }
             val shown = when {
                 !listening && notice != null -> notice
@@ -766,44 +774,52 @@ private fun DictationContent(
                 silent -> Dictation.NO_SOUND
                 else -> "Ti ascolto…"
             }
-            Text(
-                shown,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (listening) 0.dp else 8.dp),
-            )
-            if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
-                if (!locked && !music) {
-                    Icon(
-                        Icons.Rounded.KeyboardArrowLeft,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                Text(
-                    when {
-                        music -> "Qualche secondo e te la trovo su Spotify"
-                        locked -> "Bloccato · tocca ➤ per inserire"
-                        else -> "Scorri per annullare · su per bloccare"
+            val fade = 28.dp
+            Box(
+                contentAlignment = Alignment.CenterEnd,
+                modifier = Modifier
+                    .weight(1f)
+                    .clipToBounds()
+                    // Sfumatura solo a sinistra: lì escono le parole vecchie.
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        val f = fade.toPx().coerceAtMost(size.width / 3)
+                        drawRect(
+                            Brush.horizontalGradient(0f to androidx.compose.ui.graphics.Color.Transparent, f / size.width to androidx.compose.ui.graphics.Color.Black),
+                            blendMode = BlendMode.DstIn,
+                        )
                     },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            ) {
+                // Senza andare a capo e allineato a destra: si vede sempre la fine della frase.
+                Text(
+                    shown,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                    softWrap = false,
+                    modifier = Modifier.wrapContentWidth(Alignment.End, unbounded = true),
                 )
-                if (locked && !music) {
-                    TextButton(onClick = onCancel) { Text("Annulla") }
-                }
+            }
+            // Bloccato il dito non c'è più: resta solo il cestino per buttare il vocale.
+            if (listening && locked && !music) {
+                Icon(
+                    Icons.Rounded.Delete,
+                    contentDescription = "Annulla",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onCancel)
+                        .padding(6.dp)
+                        .size(22.dp),
+                )
             }
         }
     }
 }
 
-private const val BAR_COUNT = 28
+private const val BAR_COUNT = 14
 
 // Cosa mostra la barra in basso.
 private const val BAR_TABS = 0

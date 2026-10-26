@@ -105,7 +105,6 @@ import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import androidx.compose.animation.animateContentSize
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -456,7 +455,7 @@ private fun WeatherCard(
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry, dayCardShown)
         if (briefing.isNotEmpty() || undo != null) {
-            Column(Modifier.padding(bottom = 10.dp).animateContentSize()) {
+            Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
                 undo?.let { u ->
                     Row(

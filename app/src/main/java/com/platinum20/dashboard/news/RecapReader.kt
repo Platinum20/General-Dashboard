@@ -1,9 +1,15 @@
 package com.platinum20.dashboard.news
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.news.voice.NeuralVoice
+import com.platinum20.dashboard.news.voice.ReadingVoice
+import com.platinum20.dashboard.news.voice.VoiceFiles
+import com.platinum20.dashboard.news.voice.VoiceStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -87,13 +93,19 @@ data class RecapListening(
 /** Dove comincia a parlare di una cosa: i timestamp del punto del giorno nel player. */
 data class SpeechChapter(val label: String, val startMs: Long)
 
-/** La voce di Android (italiano, sul telefono e gratis) che legge il copione del punto del giorno. */
+/**
+ * La voce che legge il copione: Piper sul telefono (neurale, offline) se la voce scelta è già
+ * scaricata, altrimenti la sintesi vocale di Android, che fa da ripiego mentre Piper si scarica.
+ */
 object RecapSpeaker {
     /** Ritmo medio della voce italiana: serve a trasformare i caratteri in tempo per la barra. */
     private const val MS_PER_CHAR = 62L
 
+    private var appContext: Context? = null
     private var tts: TextToSpeech? = null
     private var ready = false
+    /** Se Piper non parte su questo telefono, per il resto della sessione legge la voce di sistema. */
+    private var neuralBroken = false
     private var parts: List<String> = emptyList()
     private var starts: List<Long> = emptyList()
     private var totalMs = 0L
@@ -115,30 +127,40 @@ object RecapSpeaker {
         fromMs: Long = 0,
     ) {
         if (script.isEmpty()) return
+        appContext = context.applicationContext
         // Un solo audio alla volta: musica, radio, podcast e video si mettono in pausa.
         NowPlaying.pauseOthers(null, radio = true, recap = false)
+        VoiceStore.ensureDownloaded(context)
         parts = script
         starts = timeline(script)
         totalMs = starts.last() + script.last().length * MS_PER_CHAR
         this.title = title
         chapters = chaptersOf(script, labels)
         _state.value = listening(0, speaking = false, positionMs = fromMs)
-        val engine = tts
-        if (engine != null && ready) seekTo(fromMs) else if (engine == null) {
-            tts = TextToSpeech(context.applicationContext) init@{ status ->
-                ready = status == TextToSpeech.SUCCESS
-                if (!ready) {
-                    _state.value = listening(0, speaking = false, error = "Sintesi vocale non disponibile sul telefono")
-                    return@init
-                }
-                val language = tts?.setLanguage(Locale.ITALIAN) ?: TextToSpeech.LANG_NOT_SUPPORTED
-                if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    _state.value = listening(0, speaking = false, error = "Manca la voce italiana: aggiungila in Impostazioni › Sintesi vocale")
-                    return@init
-                }
-                tts?.setOnUtteranceProgressListener(listener)
-                seekTo(_state.value?.positionMs ?: 0)
+        if (neuralVoice() != null || ready) seekTo(fromMs) else startSystemVoice()
+    }
+
+    /** La voce Piper da usare adesso, se c'è. */
+    private fun neuralVoice(): Pair<ReadingVoice, VoiceFiles>? =
+        if (neuralBroken) null else VoiceStore.readyVoice()
+
+    /** Accende la sintesi di Android (una volta) e riparte da dove era la barra. */
+    private fun startSystemVoice() {
+        if (tts != null) return
+        val context = appContext ?: return
+        tts = TextToSpeech(context) init@{ status ->
+            ready = status == TextToSpeech.SUCCESS
+            if (!ready) {
+                _state.value = _state.value?.copy(speaking = false, error = "Sintesi vocale non disponibile sul telefono")
+                return@init
             }
+            val language = tts?.setLanguage(Locale.ITALIAN) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
+                _state.value = _state.value?.copy(speaking = false, error = "Manca la voce italiana: aggiungila in Impostazioni › Sintesi vocale")
+                return@init
+            }
+            tts?.setOnUtteranceProgressListener(listener)
+            _state.value?.let { seekTo(it.positionMs) }
         }
     }
 
@@ -175,6 +197,7 @@ object RecapSpeaker {
         val now = _state.value ?: return
         if (!now.speaking) return
         tts?.stop()
+        NeuralVoice.stop()
         _state.value = now.copy(speaking = false)
     }
 
@@ -204,12 +227,40 @@ object RecapSpeaker {
 
     fun stop() {
         tts?.stop()
+        NeuralVoice.stop()
         _state.value = null
     }
 
     private fun speakFrom(index: Int, char: Int) {
-        val engine = tts ?: return
-        if (!ready || index !in parts.indices) return
+        if (index !in parts.indices) return
+        val neural = neuralVoice()
+        if (neural != null) {
+            tts?.stop()
+            val (voice, files) = neural
+            val script = parts
+            NeuralVoice.speak(
+                voice, files, script, index, char,
+                onProgress = { part, at ->
+                    val now = _state.value
+                    if (now != null && now.speaking && parts === script) {
+                        _state.value = now.copy(part = part, positionMs = position(part, at))
+                    }
+                },
+                onDone = { if (parts === script) _state.value = null },
+                onError = {
+                    neuralBroken = true
+                    // La sintesi di Android si comanda dal thread principale.
+                    Handler(Looper.getMainLooper()).post {
+                        if (parts === script) { if (ready) speakFrom(index, char) else startSystemVoice() }
+                    }
+                },
+            )
+            _state.value = listening(index, speaking = true, positionMs = position(index, char))
+            return
+        }
+        val engine = tts ?: return startSystemVoice()
+        if (!ready) return
+        NeuralVoice.stop()
         engine.stop()
         engine.speak(parts[index].substring(char), TextToSpeech.QUEUE_FLUSH, null, "punto-$index-$char")
         for (i in index + 1 until parts.size) engine.speak(parts[i], TextToSpeech.QUEUE_ADD, null, "punto-$i-0")
