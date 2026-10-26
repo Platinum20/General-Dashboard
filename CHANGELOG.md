@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.159.0
+**Il tieni premuto si annulla di lato**
+- Quando tieni premuto qualcosa e sale il fumetto "Salva nelle note" / "Aggiungi alla coda", puoi annullarlo portandolo di lato, con lo stesso gesto che chiude il mini player: dietro compare la X, oltre metà schermo diventa rossa e lasciando il fumetto vola via
+
 ## 1.158.0
 **La barra diventa la bolla del +**
 - Niente più bolla separata: toccando il + è la barra in basso stessa a trasformarsi nel campo per scrivere, larga uguale, e sale con la tastiera. Il + diventa la freccia per inviare, la X annulla
