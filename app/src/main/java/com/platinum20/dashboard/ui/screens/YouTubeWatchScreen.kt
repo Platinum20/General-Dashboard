@@ -197,6 +197,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
                     }
                 },
                 modifier = if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+                onOpenQueue = onOpenQueue,
             )
             if (immersive) return@Column
 
@@ -271,6 +272,7 @@ private fun VideoArea(
     onDragBy: (Float) -> Unit,
     onDragEnd: (velocity: Float) -> Unit,
     modifier: Modifier,
+    onOpenQueue: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val player = remember { YtPlayer.player(context) }
