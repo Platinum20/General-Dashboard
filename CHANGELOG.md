@@ -1,11 +1,16 @@
 # Changelog
 
-## 1.193.0
+## 1.195.0
 **La linea del tempo a destra, uguale in Oggi e in Note**
 - Nella card Prossimi giorni i nomi stanno a sinistra e la linea con i giorni a destra; le cose mostrate sono 8
 - Note › Prossimi giorni è la stessa linea del tempo della card, solo con tutto: scaduti, impegni, promemoria, compleanni, pacchi e addebiti, con il giorno a destra e la linea che si allunga quando c'è tempo in mezzo
 - Tocchi una riga e si apre la sua pagina; il cerchio a sinistra di un promemoria lo segna fatto
 - Le abitudini stanno in cima a Prossimi giorni
+
+## 1.194.0
+**Miro, una voce giovane per la lettura**
+- Fra le voci di lettura c'è Miro, un ragazzo che parla in modo naturale: è la prima a sinistra e funziona senza internet dopo averla scaricata una volta (circa 65 MB)
+- La voce del telefono non si sceglie più: restano Miro, Paola e Riccardo. Se avevi quella del telefono, ora leggerà Miro
 
 ## 1.192.0
 **Ogni cosa si apre come un evento**

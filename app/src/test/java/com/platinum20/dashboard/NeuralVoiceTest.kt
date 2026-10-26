@@ -67,10 +67,11 @@ class NeuralVoiceTest {
     }
 
     @Test
-    fun `tre voci con Paola di serie e il ripiego del telefono senza download`() {
-        assertEquals(3, ReadingVoice.entries.size)
-        assertEquals(ReadingVoice.PAOLA, ReadingVoice.of(null))
-        assertNull(ReadingVoice.SYSTEM.url)
-        assert(ReadingVoice.RICCARDO.url!!.endsWith("vits-piper-it_IT-riccardo-x_low.tar.bz2"))
+    fun `tre voci Piper con Miro per prima e di serie, la vecchia voce del telefono torna a Miro`() {
+        assertEquals(listOf(ReadingVoice.MIRO, ReadingVoice.PAOLA, ReadingVoice.RICCARDO), ReadingVoice.entries)
+        assertEquals(ReadingVoice.MIRO, ReadingVoice.of(null))
+        assertEquals(ReadingVoice.MIRO, ReadingVoice.of("SYSTEM"))
+        assert(ReadingVoice.MIRO.url.endsWith("vits-piper-it_IT-miro-high.tar.bz2"))
+        assert(ReadingVoice.RICCARDO.url.endsWith("vits-piper-it_IT-riccardo-x_low.tar.bz2"))
     }
 }
