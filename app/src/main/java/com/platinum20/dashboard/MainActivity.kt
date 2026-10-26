@@ -180,14 +180,13 @@ import com.platinum20.dashboard.ui.screens.FloatingPlayer
 import com.platinum20.dashboard.ui.screens.ListenScreen
 import com.platinum20.dashboard.ui.screens.ListenTab
 import com.platinum20.dashboard.ui.screens.PlayerScreen
-import com.platinum20.dashboard.media.radio.RadioService
+import com.platinum20.dashboard.media.PlayerService
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
 import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
-import com.platinum20.dashboard.ui.screens.YouTubeWatchScreen
 import com.platinum20.dashboard.ui.screens.MusicScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
@@ -268,7 +267,10 @@ class MainActivity : ComponentActivity() {
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
         AdBlocker.init(this)
         // La coda di ascolto ritrovata com'era.
-        com.platinum20.dashboard.media.PlayQueue.init(this)
+        com.platinum20.dashboard.media.CanvasPlayer.init(this)
+        // Il riproduttore di Spotify si accende con l'app e resta pronto: il play parte subito.
+        com.platinum20.dashboard.media.spotify.SpotifyAuth.init(this)
+        if (com.platinum20.dashboard.media.spotify.SpotifyAuth.connected.value) com.platinum20.dashboard.media.spotify.SpotifyPlayer.start(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
@@ -925,7 +927,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
                 }
-                OpenRequest.MEDIA -> if (request.source == RadioService.SOURCE_RADIO) {
+                OpenRequest.MEDIA -> if (request.source == PlayerService.SOURCE_PLAYER || request.source == "RADIO") {
                     navController.navigate(Routes.PLAYER) { launchSingleTop = true }
                 } else {
                     MediaService.entries.firstOrNull { it.name == request.source }
@@ -1140,7 +1142,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
-                    onWatchVideo = { link -> navController.navigate(Routes.youtubeWatch(link)) { popUpTo(Routes.PLAYER) { inclusive = true } } },
                 )
             }
             composable(Routes.QUEUE) {
@@ -1153,8 +1154,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 enterTransition = { slideInVertically(pageSpring) { it / 3 } + fadeIn(tween(200)) },
                 popExitTransition = { slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200)) },
             ) { entry ->
-                YouTubeWatchScreen(
-                    url = entry.arguments?.getString("url"),
+                // Lo stesso player unico: con un video mostra la pagina del video.
+                PlayerScreen(
+                    startUrl = entry.arguments?.getString("url"),
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
                 )

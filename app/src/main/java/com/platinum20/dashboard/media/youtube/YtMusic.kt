@@ -40,7 +40,7 @@ object YtMusic {
     fun play(context: Context, video: YtVideo, list: List<YtVideo>) {
         val from = list.indexOfFirst { it.id == video.id }.coerceAtLeast(0)
         // Vanno nella coda unica: si vedono, si spostano e si mischiano con le altre fonti.
-        com.platinum20.dashboard.media.PlayQueue.playList(context, list.map { it.asQueueItem() }, from)
+        com.platinum20.dashboard.media.CanvasPlayer.playList(context, list.map { it.asQueueItem() }, from)
     }
 
     fun YtVideo.asQueueItem() = com.platinum20.dashboard.media.ResumeItem(

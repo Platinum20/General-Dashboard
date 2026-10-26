@@ -1,15 +1,18 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.media.EngineNow
 import com.platinum20.dashboard.media.PlaySource
 import com.platinum20.dashboard.media.Playback
-import com.platinum20.dashboard.media.Track
-import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.media.radio.RadioStation
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import com.platinum20.dashboard.media.podcast.Podcast
 import com.platinum20.dashboard.media.podcast.PodcastFeed
 import com.platinum20.dashboard.media.podcast.PodcastStore
 import com.platinum20.dashboard.media.spotify.SpEpisode
-import com.platinum20.dashboard.media.youtube.player.YtNow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,28 +23,48 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class MediaUnifiedTest {
-    private val ytPaused = YtNow(link = "https://youtu.be/abcdefghijk", stream = null, playing = false, loading = false)
-    private val spotifyPlaying = Track(MediaService.SPOTIFY, "Brano", "Artista", "", playing = true)
+    private fun engine(kind: ResumeKind, title: String = "Titolo", subtitle: String = "Sotto", playing: Boolean = false, loading: Boolean = false) =
+        EngineNow(1, ResumeItem(kind, "k", title, subtitle, "https://img", at = 0, station = if (kind == ResumeKind.RADIO) RadioStation("r", title, "http://s", "", "", "", 128) else null), playing = playing, loading = loading, positionMs = 5_000, durationMs = 60_000)
 
     @Test
-    fun ilPlayerUnicoMostraQuelloCheSuona() {
-        val all = Playback.candidates(ytPaused, spotifyPlaying, null, null, null)
-        assertEquals(PlaySource.SPOTIFY, Playback.pick(all, last = PlaySource.VIDEO)?.source)
+    fun ogniFonteHaLaSuaEtichetta() {
+        assertEquals(PlaySource.VIDEO, Playback.playing(engine(ResumeKind.YOUTUBE)).source)
+        assertEquals(PlaySource.MUSIC, Playback.playing(engine(ResumeKind.MUSIC)).source)
+        assertEquals(PlaySource.SPOTIFY, Playback.playing(engine(ResumeKind.SPOTIFY)).source)
+        assertEquals(PlaySource.LOCAL, Playback.playing(engine(ResumeKind.VIDEO)).source)
     }
 
     @Test
-    fun tuttoInPausaVinceLUltimoPartito() {
-        val all = Playback.candidates(ytPaused, spotifyPlaying.copy(playing = false), null, null, null)
-        assertEquals(PlaySource.SPOTIFY, Playback.pick(all, last = PlaySource.SPOTIFY)?.source)
-        assertEquals(PlaySource.VIDEO, Playback.pick(all, last = null)?.source)
-        assertNull(Playback.pick(emptyList(), last = PlaySource.RADIO))
+    fun soloIVideoHannoIlVideo() {
+        assertTrue(Playback.playing(engine(ResumeKind.YOUTUBE)).isVideo)
+        assertFalse(Playback.playing(engine(ResumeKind.MUSIC)).isVideo)
+        assertFalse(Playback.playing(engine(ResumeKind.SPOTIFY)).isVideo)
     }
 
     @Test
-    fun youTubeInSoloAudioEMusica() {
-        val all = Playback.candidates(ytPaused.copy(audioOnly = true), null, null, null, null)
-        assertEquals(PlaySource.MUSIC, all.single().source)
-        assertTrue(!all.single().isVideo)
+    fun laRadioEInDirettaConIlBrano() {
+        val radio = Playback.playing(engine(ResumeKind.RADIO, title = "Radio Uno", playing = true).copy(streamTitle = "Artista - Brano"))
+        assertTrue(radio.live)
+        assertFalse(radio.canSeek)
+        assertEquals("Radio Uno", radio.title)
+        assertEquals("Artista - Brano", radio.subtitle)
+    }
+
+    @Test
+    fun senzaTitoloSiVedeLaFonteEIlCaricamento() {
+        val loading = Playback.playing(engine(ResumeKind.YOUTUBE, title = "", subtitle = "", loading = true))
+        assertEquals("YouTube", loading.title)
+        assertEquals("Caricamento…", loading.subtitle)
+    }
+
+    @Test
+    fun spotifyFinitoDaSolo() {
+        // Suonava a 2:58 di 3:00, due secondi dopo è fermo all'inizio: finito.
+        assertTrue(SpotifyPlayer.endedForTest(178_000, false, 0, true, 180_000, 2_000))
+        // Messo in pausa a metà: non è finito.
+        assertFalse(SpotifyPlayer.endedForTest(90_000, false, 90_500, true, 180_000, 500))
+        // Già in pausa prima: niente.
+        assertFalse(SpotifyPlayer.endedForTest(178_000, true, 0, true, 180_000, 2_000))
     }
 
     @Test

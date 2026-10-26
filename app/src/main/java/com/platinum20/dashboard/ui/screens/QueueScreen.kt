@@ -46,7 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.media.PlayQueue
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.QueueEntry
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
@@ -84,7 +84,7 @@ private fun ResumeItem.sourceLabel(): String = when (kind) {
 @Composable
 fun QueueScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val queue by PlayQueue.state.collectAsState()
+    val queue by CanvasPlayer.queue.collectAsState()
     val now = queue.now
     val upcoming = queue.upcoming
     Scaffold(
@@ -95,7 +95,7 @@ fun QueueScreen(onBack: () -> Unit) {
                 subtitle = if (upcoming.isEmpty()) null else "${upcoming.size} dopo questo",
                 onBack = onBack,
             ) {
-                if (upcoming.isNotEmpty()) TextButton(onClick = { PlayQueue.clearUpcoming() }) { Text("Svuota") }
+                if (upcoming.isNotEmpty()) TextButton(onClick = { CanvasPlayer.clearUpcoming() }) { Text("Svuota") }
             }
         },
     ) { inner ->
@@ -138,10 +138,30 @@ fun QueueScreen(onBack: () -> Unit) {
                         canUp = index > 0,
                         canDown = index < upcoming.size - 1,
                         modifier = Modifier.animateItem(),
-                        onTap = { PlayQueue.jump(context, entry.id) },
+                        onTap = { CanvasPlayer.jump(entry.id) },
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Le prossime voci della coda in Media, al posto della card "Riprendi": si vede cosa viene dopo senza
+ * aprire la coda. Un tocco salta lì; "Apri" porta alla coda intera.
+ */
+@Composable
+internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
+    val queue by CanvasPlayer.queue.collectAsState()
+    val next = queue.upcoming
+    if (next.isEmpty()) return
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionHeader("In coda · ${next.size}", Modifier.weight(1f))
+            TextButton(onClick = onOpenQueue) { Text("Apri") }
+        }
+        next.take(3).forEach { entry ->
+            QueueRow(entry, current = false, canUp = false, canDown = false, compact = true, onTap = { CanvasPlayer.jump(entry.id) })
         }
     }
 }
@@ -153,6 +173,7 @@ private fun QueueRow(
     canUp: Boolean,
     canDown: Boolean,
     modifier: Modifier = Modifier,
+    compact: Boolean = false,
     onTap: () -> Unit,
 ) {
     val item = entry.item
@@ -182,14 +203,18 @@ private fun QueueRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (!current) {
-            IconButton(onClick = { PlayQueue.move(entry.id, -1) }, enabled = canUp, modifier = Modifier.size(40.dp)) {
+        if (compact) {
+            IconButton(onClick = { CanvasPlayer.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Rounded.Close, contentDescription = "Togli dalla coda")
+            }
+        } else if (!current) {
+            IconButton(onClick = { CanvasPlayer.move(entry.id, -1) }, enabled = canUp, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Sposta su")
             }
-            IconButton(onClick = { PlayQueue.move(entry.id, 1) }, enabled = canDown, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { CanvasPlayer.move(entry.id, 1) }, enabled = canDown, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Sposta giù")
             }
-            IconButton(onClick = { PlayQueue.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { CanvasPlayer.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Rounded.Close, contentDescription = "Togli dalla coda")
             }
         }

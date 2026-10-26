@@ -98,24 +98,47 @@ internal fun sourceIcon(source: PlaySource): ImageVector = when (source) {
     PlaySource.SPOTIFY -> Icons.Outlined.GraphicEq
     PlaySource.RADIO -> Icons.Outlined.Radio
     PlaySource.PODCAST -> Icons.Outlined.Mic
+    PlaySource.LOCAL -> Icons.Outlined.OndemandVideo
     PlaySource.SPEECH -> Icons.Outlined.Headphones
 }
 
 internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
-    PlaySource.VIDEO -> TileAccent.ORANGE
+    PlaySource.VIDEO, PlaySource.LOCAL -> TileAccent.ORANGE
     PlaySource.MUSIC, PlaySource.SPOTIFY -> TileAccent.GREEN
     PlaySource.RADIO, PlaySource.PODCAST -> TileAccent.PURPLE
     PlaySource.SPEECH -> TileAccent.BLUE
 }
 
 /**
- * Il player grande, uguale per musica (Spotify e YouTube Music), radio, podcast e il punto del giorno:
- * copertina, barra del tempo e comandi. Niente tasti per uscire: trascinato giù si riduce al mini player,
- * lanciato di lato (come il mini player) si chiude. I video di YouTube hanno il loro, con il video.
+ * Il player unico, per qualunque cosa suoni. Se la voce della coda ha un video di YouTube la pagina
+ * è quella del video (con titolo, descrizione, commenti); se no copertina, barra del tempo e comandi.
+ * Passando da un video a una canzone nella coda la pagina cambia da sola, senza cambiare schermata.
+ * [startUrl]: un video di YouTube da far partire aprendo la pagina.
+ */
+@Composable
+fun PlayerScreen(onBack: () -> Unit, onOpenQueue: () -> Unit = {}, startUrl: String? = null) {
+    val context = LocalContext.current
+    val now by Playback.now.collectAsState()
+    var starting by remember { mutableStateOf(startUrl != null) }
+    LaunchedEffect(startUrl) {
+        startUrl?.let { YtPlayer.play(context, it) }
+        starting = false
+    }
+    if (starting || now?.source == PlaySource.VIDEO) {
+        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue)
+    } else {
+        AudioPlayer(onBack, onOpenQueue)
+    }
+}
+
+/**
+ * Musica (Spotify e YouTube Music), radio, podcast, video del telefono e il punto del giorno:
+ * copertina (o il video), barra del tempo e comandi. Niente tasti per uscire: trascinato giù si
+ * riduce al mini player, lanciato di lato (come il mini player) si chiude.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit, onOpenQueue: () -> Unit = {}) {
+private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
     val view = LocalView.current
@@ -156,7 +179,7 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit, onOpenQueue
                 transparent = true,
             ) {
                 // La coda unica: cosa viene dopo, di qualunque fonte.
-                val queue by com.platinum20.dashboard.media.PlayQueue.state.collectAsState()
+                val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
                 IconButton(onClick = onOpenQueue) {
                     androidx.compose.material3.BadgedBox(badge = {
                         if (queue.upcoming.isNotEmpty()) androidx.compose.material3.Badge { Text("${queue.upcoming.size}") }
@@ -220,7 +243,7 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit, onOpenQueue
                                     view.haptic(Haptic.CONFIRM)
                                     scope.launch {
                                         drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), androidx.compose.animation.core.tween(200))
-                                        Playback.stop(context)
+                                        Playback.stop()
                                         onBack()
                                     }
                                 }
@@ -278,7 +301,7 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit, onOpenQueue
                 // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
                 if (current.source == PlaySource.MUSIC) {
                     YtPlayer.now.value?.link?.let { link ->
-                        OutlinedButton(onClick = { onWatchVideo(link) }, modifier = Modifier.bouncyPress()) { Text("Guarda il video") }
+                        OutlinedButton(onClick = { YtPlayer.play(context, link) }, modifier = Modifier.bouncyPress()) { Text("Guarda il video") }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -321,7 +344,8 @@ private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         IconTile(sourceIcon(now.source), sourceAccent(now.source), size = 96.dp, iconSize = 48.dp)
-        if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
+        if (now.isVideo) VideoSurface(Modifier.fillMaxSize())
+        else if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
         else if (now.artwork.isNotBlank()) {
             AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
@@ -349,7 +373,7 @@ private fun TimeBar(now: Playing) {
         enabled = now.canSeek,
         onValueChange = { dragging = it },
         onValueChangeFinished = {
-            dragging?.let { Playback.seekTo(context, (it * now.durationMs).toLong()) }
+            dragging?.let { Playback.seekTo((it * now.durationMs).toLong()) }
             dragging = null
         },
     )
@@ -362,24 +386,23 @@ private fun TimeBar(now: Playing) {
 
 @Composable
 private fun Controls(now: Playing) {
-    val context = LocalContext.current
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val podcast = now.source == PlaySource.PODCAST
-        if (now.canSkip || podcast) {
-            IconButton(onClick = { Playback.previous(context) }, modifier = Modifier.size(56.dp)) {
-                Icon(
-                    if (podcast) Icons.Filled.Replay10 else Icons.Filled.SkipPrevious,
-                    contentDescription = if (podcast) "Indietro di 10 secondi" else "Indietro",
-                    modifier = Modifier.size(32.dp),
-                )
+        // Il podcast ha anche i classici -10 e +30 secondi; avanti e indietro vanno nella coda.
+        val podcast = now.source == PlaySource.PODCAST && now.canSeek
+        if (podcast) {
+            IconButton(onClick = { Playback.seekBy(-10_000) }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Filled.Replay10, contentDescription = "Indietro di 10 secondi", modifier = Modifier.size(26.dp))
             }
         }
+        IconButton(onClick = { Playback.previous() }, modifier = Modifier.size(56.dp)) {
+            Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro", modifier = Modifier.size(32.dp))
+        }
         FilledIconButton(
-            onClick = { Playback.toggle(context) },
+            onClick = { Playback.toggle() },
             modifier = Modifier.size(76.dp).bouncyPress(),
             colors = IconButtonDefaults.filledIconButtonColors(),
         ) {
@@ -389,16 +412,33 @@ private fun Controls(now: Playing) {
                 modifier = Modifier.size(40.dp),
             )
         }
-        if (now.canSkip || podcast) {
-            IconButton(onClick = { Playback.next(context) }, modifier = Modifier.size(56.dp)) {
-                Icon(
-                    if (podcast) Icons.Filled.Forward30 else Icons.Filled.SkipNext,
-                    contentDescription = if (podcast) "Avanti di 30 secondi" else "Avanti",
-                    modifier = Modifier.size(32.dp),
-                )
+        IconButton(onClick = { Playback.next() }, modifier = Modifier.size(56.dp)) {
+            Icon(Icons.Filled.SkipNext, contentDescription = "Avanti", modifier = Modifier.size(32.dp))
+        }
+        if (podcast) {
+            IconButton(onClick = { Playback.seekBy(30_000) }, modifier = Modifier.size(48.dp)) {
+                Icon(Icons.Filled.Forward30, contentDescription = "Avanti di 30 secondi", modifier = Modifier.size(26.dp))
             }
         }
     }
+}
+
+/** Il video del motore (i video del telefono): stesso player, si vede solo qui. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
+@Composable
+private fun VideoSurface(modifier: Modifier) {
+    val context = LocalContext.current
+    androidx.compose.ui.viewinterop.AndroidView(
+        factory = {
+            androidx.media3.ui.PlayerView(it).apply {
+                useController = false
+                setBackgroundColor(android.graphics.Color.BLACK)
+            }
+        },
+        update = { it.player = com.platinum20.dashboard.media.CanvasPlayer.player(context) },
+        onRelease = { it.player = null },
+        modifier = modifier,
+    )
 }
 
 /**

@@ -176,7 +176,7 @@ object RadioAlarm {
             }
         )
         val open = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        OpenRequest(OpenRequest.MEDIA, source = RadioService.SOURCE_RADIO).writeTo(open)
+        OpenRequest(OpenRequest.MEDIA, source = com.platinum20.dashboard.media.PlayerService.SOURCE_PLAYER).writeTo(open)
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Sveglia · ${_settings.value.timeLabel}")

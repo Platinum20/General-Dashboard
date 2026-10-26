@@ -16,28 +16,28 @@ class PlayQueueTest {
 
     @Test
     fun quelloCheParteDiventaLaCorrente() {
-        var s = QueueOps.started(QueueState(), song("a"), 1)
+        var s = QueueOps.playNow(QueueState(), song("a"), 1)
         s = QueueOps.add(s, song("b"), 2)
-        s = QueueOps.started(s, song("v", ResumeKind.YOUTUBE), 3)
+        s = QueueOps.playNow(s, song("v", ResumeKind.YOUTUBE), 3)
         assertEquals(listOf("a", "v", "b"), titles(s))
         assertEquals("v", s.now?.item?.key)
         // Lo stesso video ascoltato come musica non si duplica.
-        s = QueueOps.started(s, song("v", ResumeKind.MUSIC), 4)
+        s = QueueOps.playNow(s, song("v", ResumeKind.MUSIC), 4)
         assertEquals(3, s.entries.size)
     }
 
     @Test
     fun laProssimaPartitaDaSolaFaAvanzare() {
-        var s = QueueOps.started(QueueState(), song("a"), 1)
+        var s = QueueOps.playNow(QueueState(), song("a"), 1)
         s = QueueOps.add(s, song("b"), 2)
-        s = QueueOps.started(s, song("b"), 3)
+        s = QueueOps.playNow(s, song("b"), 3)
         assertEquals(listOf("a", "b"), titles(s))
         assertEquals(1, s.current)
     }
 
     @Test
     fun spostaSuEGiuETogli() {
-        var s = QueueOps.started(QueueState(), song("now"), 1)
+        var s = QueueOps.playNow(QueueState(), song("now"), 1)
         listOf("a", "b", "c").forEachIndexed { i, k -> s = QueueOps.add(s, song(k), 10L + i) }
         s = QueueOps.move(s, 12, -1)
         assertEquals(listOf("now", "a", "c", "b"), titles(s))
@@ -51,7 +51,7 @@ class PlayQueueTest {
 
     @Test
     fun unaListaSostituisceQuelloCheVenivaDopo() {
-        var s = QueueOps.started(QueueState(), song("now"), 1)
+        var s = QueueOps.playNow(QueueState(), song("now"), 1)
         s = QueueOps.add(s, song("x"), 2)
         s = QueueOps.playList(s, listOf(song("1"), song("2"), song("3")), start = 1, firstId = 10)
         assertEquals(listOf("now", "1", "2", "3"), titles(s))
@@ -60,7 +60,7 @@ class PlayQueueTest {
 
     @Test
     fun svuotaTieneLaCorrente() {
-        var s = QueueOps.started(QueueState(), song("now"), 1)
+        var s = QueueOps.playNow(QueueState(), song("now"), 1)
         s = QueueOps.add(s, song("x"), 2)
         s = QueueOps.clearUpcoming(s)
         assertEquals(listOf("now"), titles(s))
@@ -69,7 +69,7 @@ class PlayQueueTest {
 
     @Test
     fun toltaLaCorrenteAvantiPortaAllaSeguente() {
-        var s = QueueOps.started(QueueState(), song("a"), 1)
+        var s = QueueOps.playNow(QueueState(), song("a"), 1)
         s = QueueOps.add(s, song("b"), 2)
         s = QueueOps.add(s, song("c"), 3)
         s = QueueOps.jump(s, 2)
