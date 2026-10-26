@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.160.0
+**Torna la card Riprendi in Media**
+- Quando non suona niente, in cima a Media c'è di nuovo "Riprendi": l'ultima cosa vista o ascoltata, da qualunque fonte (YouTube, musica, Spotify, podcast, radio, video del telefono). Un tocco la fa ripartire dal punto esatto in cui l'avevi lasciata
+- La coda resta subito sotto, con le prossime cose in arrivo
+
 ## 1.159.0
 **Il tieni premuto si annulla di lato**
 - Quando tieni premuto qualcosa e sale il fumetto "Salva nelle note" / "Aggiungi alla coda", puoi annullarlo portandolo di lato, con lo stesso gesto che chiude il mini player: dietro compare la X, oltre metà schermo diventa rossa e lasciando il fumetto vola via

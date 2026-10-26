@@ -152,8 +152,9 @@ fun MediaScreen(
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
     val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-    // Quando nulla suona e la coda è vuota, il blocco colorato è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { now == null && queue.upcoming.isEmpty() }
+    // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata, di qualunque fonte:
+    // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
+    val hero = resumable.firstOrNull()?.takeIf { now == null }
     val continueList = resumable.filter { it != hero }.take(12)
     val stations = remember(favoriteStations, recentStations) { (favoriteStations + recentStations).distinctBy { it.id }.take(10) }
     // Al primo uso (nessuna radio ascoltata) le più ascoltate, per partire con un tocco.
@@ -194,17 +195,17 @@ fun MediaScreen(
                     NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
                 }
             }
+            hero?.let { last ->
+                item(key = "resume") {
+                    Box(Modifier.padding(horizontal = 16.dp)) { ResumeCard(last, onClick = { openResume(last) }) }
+                }
+            }
             // La coda in vista: cosa viene dopo, di qualunque fonte.
             if (queue.upcoming.isNotEmpty()) item(key = "queue") {
                 QueuePeek(
                     onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
-            }
-            hero?.let { last ->
-                item(key = "resume") {
-                    Box(Modifier.padding(horizontal = 16.dp)) { ResumeCard(last, onClick = { openResume(last) }) }
-                }
             }
             // Le tre sezioni, una accanto all'altra: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "sections") {

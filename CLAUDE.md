@@ -60,20 +60,24 @@ PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallbac
 Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Media** (Musica / Video / Radio e podcast)
-- `media/Playback.kt`: the ONE player state (`Playing`, `PlaySource`), `Playback.starting(...)`
-  every source must call, `next/previous/stop`. `media/PlayQueue.kt`: app-wide queue (pure
-  `QueueOps` + StateFlow). `MediaLauncher.kt`: start any `ResumeItem`. `NowPlaying.kt`:
-  web-player state + `pauseOthers`. `MediaHistory.kt` ("Continua"). `MediaPlaybackService.kt`.
-  A rewrite into a single `CanvasPlayer` engine (ExoPlayer + queue, Spotify Web Playback SDK as
-  external backend, one notification) was in progress on 2026-10-26: check main before touching.
+- `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue
+  (pure ops in `QueueOps.kt`, `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
+  Spotify plugs in as `ExternalBackend`. `PlayerService.kt` = the one MediaSession/notification
+  (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
+  `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
+  `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
+  adapters over CanvasPlayer. Leftovers to delete: `NowPlaying`, `MediaWebViews` web players,
+  `MediaPlaybackService`, VideoPlayerScreen's own ExoPlayer.
 - `media/youtube/` (YouTubeWeb/Api/Store, YtMusic, YtHistory, YtFavorites) + `player/`
-  (NewPipeExtractor `YtResolver`, ExoPlayer `YtPlayer`, captions, service).
-- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyPlayer` = hidden
-  Web Playback SDK), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
+  (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
+- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyPlayer` = own hidden
+  WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
 - `media/MediaWebViews.kt`: any WebView in Compose must go through `WebView.inFrame(ctx)`.
 - Screens: `MediaScreen`, `MusicScreen`, `ListenScreen`/`RadioScreen`/`PodcastScreen`,
   `YouTubeFeedScreen`, `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
-  `FloatingPlayer` (mini player).
+  `FloatingPlayer` (mini player). `PlayerScreen` is the single player route: video layout
+  (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
+  drag-to-reorder for LazyColumns (queue, Personalizza).
 
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
