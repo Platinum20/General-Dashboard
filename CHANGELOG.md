@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.149.0
+**Torna la pillola di prima**
+- La pillola della barra in basso torna esattamente com'era fino alla 1.140: si allarga con il suo piccolo rimbalzo e il nome compare dentro
+
 ## 1.148.0
 **Note in tre card, sezioni tutte uguali, tema Puro**
 - Le Note mostrano solo i tre tipi: Con scadenza, Senza scadenza e Spese, ognuno in una card con le prime cose. Toccandone uno si apre la sua pagina: le scadenze divise in Scaduti, Oggi, Domani, Questa settimana e Più avanti, gli appunti, le spese del mese
