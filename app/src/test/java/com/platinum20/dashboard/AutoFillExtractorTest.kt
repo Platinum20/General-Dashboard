@@ -102,7 +102,7 @@ class AutoFillExtractorTest {
     @Test fun amazonSenzaCodice() {
         val p = find("Amazon Shopping", SourceKind.SHOP, "Amazon", "Spedito: Cuffie Bluetooth Sony WH-1000XM5")
             .single() as Found.NewParcel
-        assertEquals("Cuffie bluetooth", p.title)
+        assertEquals("Cuffie Bluetooth", p.title)
         assertEquals("", p.code)
     }
 

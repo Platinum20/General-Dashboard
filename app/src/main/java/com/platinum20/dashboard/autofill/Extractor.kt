@@ -241,7 +241,11 @@ object Extractor {
             val what = m.value.lowercase().replaceFirstChar { it.uppercase() }
             if (from != null) return "$what $from"
         }
-        if (renewal && from != null && !s.contains("rinnov", true)) return "Rinnovo $from"
+        if (renewal && !s.contains("rinnov", true)) {
+            // Un oggetto che è solo il nome del servizio ("Spotify Premium") dice di più del mittente.
+            val isName = s.length <= 24 && s.split(' ').all { w -> w.firstOrNull()?.let { it.isUpperCase() || it.isDigit() } == true }
+            (if (isName) s else from)?.let { return "Rinnovo $it" }
+        }
         // Il resto: via "il tuo", via la data (la dice già la riga sotto) e quello che viene dopo una virgola.
         var t = s
         dateToken.find(t)?.takeIf { it.range.first > 3 }?.let { t = t.substring(0, it.range.first) }
@@ -276,7 +280,9 @@ object Extractor {
         var content = 0
         words = words.takeWhile { w -> (content < 2).also { if (it && w.lowercase() !in linkWords) content++ } }
         return words.mapIndexed { i, w ->
-            val titleCase = w.length > 1 && w[0].isUpperCase() && w.drop(1).all { !it.isLetter() || it.isLowerCase() }
+            // "Regalo" è una parola, "Sony" o "Bluetooth" sono nomi: le parole italiane finiscono quasi sempre in vocale.
+            val titleCase = w.length > 1 && w[0].isUpperCase() && w.drop(1).all { !it.isLetter() || it.isLowerCase() } &&
+                w.last().lowercaseChar() in "aeiouàèéìòù"
             when {
                 i == 0 && w.all { !it.isLetter() || it.isUpperCase() } && w.length > 3 -> w.lowercase().replaceFirstChar { it.uppercase() }
                 i == 0 -> w.replaceFirstChar { it.uppercase() }

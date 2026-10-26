@@ -86,7 +86,7 @@ class MailParseTest {
         val d = Extractor.extract(
             Incoming("Spotify", SourceKind.MAIL, "Spotify Premium", "Spotify Premium\nIl tuo abbonamento si rinnoverà il 3 novembre.", now)
         ).single() as Found.Deadline
-        assertEquals("Rinnovo: Spotify Premium", d.title)
+        assertEquals("Rinnovo Spotify Premium", d.title)
         assertEquals(LocalDate.of(2026, 11, 3), d.due.toLocalDate())
     }
 
