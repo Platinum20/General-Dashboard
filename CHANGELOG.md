@@ -5,6 +5,12 @@
 - La card in cima ora dice solo le cose di oggi con un orario o una scadenza: meteo, impegni, pioggia, cose da fare, pacchi, spese
 - Il video, il brano o il podcast lasciato a metà ha una card sua, "Riprendi", sotto "La giornata": copertina, punto da cui riparte e un tocco per farlo ripartire. Sparisce mentre qualcosa sta già suonando (c'è il mini player)
 - Si può spostare o nascondere da Impostazioni, Home, come le altre card
+**Media riordinata: Riprendi in cima, coda in fondo**
+- Quando non suona niente, in cima a Media c'è di nuovo "Riprendi": l'ultima cosa vista o ascoltata, da qualunque fonte (YouTube, musica, Spotify, podcast, radio, video del telefono). Un tocco la fa ripartire dal punto esatto in cui l'avevi lasciata
+- Sotto Riprendi le sezioni; la coda è in fondo alla pagina
+- "Nuovi episodi" non è più in Media: gli ultimi episodi sono nella pagina dei podcast
+- In "Radio e podcast" le schede in alto sono nello stesso ordine del nome: prima Radio, poi Podcast
+
 ## 1.161.0
 **La notizia più pulita, e le anteprime nelle note**
 - Nella pagina di una notizia in alto restano solo due tasti: le cuffie per fartela leggere dalla voce del player e "Salva nelle note". Il testo è sempre alla dimensione più piccola, senza il tasto "Aa"
