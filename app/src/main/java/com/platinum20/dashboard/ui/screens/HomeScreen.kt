@@ -87,7 +87,6 @@ import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
-import com.platinum20.dashboard.today.WeekReview
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
@@ -197,21 +196,6 @@ fun HomeScreen(
             parcels = notes.parcels, fixedExpenses = notes.fixedExpenses,
         )
     }
-    // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
-    var weekSeen by remember { mutableStateOf(0) }
-    val weekMonday = WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }
-    // Gli impegni della settimana nuova si leggono solo quando la card c'è.
-    val weekEvents by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), weekMonday, agenda.granted, calendarRefresh) {
-        value = if (weekMonday != null && agenda.granted) CalendarRepository.eventsFrom(context, weekMonday.plusWeeks(1), 7) else emptyMap()
-    }
-    val weekReview = remember(weekMonday, notes, weekSeen, weekEvents) {
-        weekMonday?.let { monday ->
-            WeekReview.build(
-                monday, notes.tasks, notes.habits, notes.expenses, notes.fixedExpenses, notes.parcels, notes.countdowns,
-                events = weekEvents,
-            ).takeIf { !it.isEmpty }
-        }
-    }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
@@ -258,8 +242,7 @@ fun HomeScreen(
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
-            HomeCard.WEEK -> weekReview != null
-            HomeCard.MAIL -> autoFillEnabled || gmailConnected
+            HomeCard.MAIL -> gmailConnected
             HomeCard.MONEY -> notes.hasMoney
             else -> true
         }
@@ -324,18 +307,6 @@ fun HomeScreen(
                     haptic(Haptic.TICK)
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
-            }
-            HomeCard.WEEK -> weekReview?.let { review ->
-            WeekReviewCard(
-                review = review,
-                onOpenNotes = onOpenNotes,
-                onOpenCalendar = { inApp?.openCalendar?.invoke() },
-                onDismiss = {
-                    haptic(Haptic.TICK)
-                    WeekReviewSeen.markSeen(context, review.monday)
-                    weekSeen++
-                },
-            )
             }
             HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.RECAP -> RecapCard(
