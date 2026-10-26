@@ -187,7 +187,7 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos, somethingPlaying) {
         HomeResume.pick(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis(), somethingPlaying)
     }
-    // "Prossime cose": la settimana da domani, in un posto solo.
+    // "Prossimi giorni": la settimana da domani, in un posto solo.
     val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
         value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
     }
@@ -303,15 +303,11 @@ fun HomeScreen(
             HomeCard.DAY -> NextThingsCard(
                 items = upcoming,
                 today = minute.toLocalDate(),
-                onOpen = { item ->
+                onOpenAll = {
                     haptic(Haptic.TICK)
-                    when {
-                        item.event != null -> inApp?.openEvent?.invoke(item.event)
-                        item.kind == BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.EXPENSES)
-                        else -> onOpenNotes()
-                    }
+                    NotesNav.open(NotesSection.DATED)
+                    onOpenNotes()
                 },
-                onOpenAll = onOpenNotes,
             )
             HomeCard.MONEY -> MoneyCard(notes, minute.toLocalDate(), onOpen = {
                 haptic(Haptic.TICK)

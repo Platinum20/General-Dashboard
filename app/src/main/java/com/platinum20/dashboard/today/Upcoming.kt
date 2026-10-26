@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-/** Una riga di "Prossime cose": il giorno, l'ora se c'è, che cosa. */
+/** Una riga di "Prossimi giorni": il giorno, l'ora se c'è, che cosa. */
 data class UpcomingItem(
     val day: LocalDate,
     val kind: BriefKind,
@@ -25,7 +25,7 @@ data class UpcomingItem(
 )
 
 /**
- * "Prossime cose" in Oggi: da domani alla settimana dopo, tutto in un posto solo (impegni del calendario,
+ * "Prossimi giorni" in Oggi: da domani alla settimana dopo, tutto in un posto solo (impegni del calendario,
  * promemoria con data, compleanni e date, pacchi, addebiti, anche quelli trovati in notifiche, SMS e mail).
  * "Adesso" sopra resta su oggi; il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura.
  */
@@ -33,7 +33,7 @@ object Upcoming {
     /** Quanti giorni guarda avanti, domani compreso. */
     const val DAYS = 7
 
-    /** Quante righe al massimo: è un riassunto, il resto è in Note > Prossime cose. */
+    /** Quante righe al massimo: è un riassunto, il resto è in Note > Prossimi giorni. */
     const val MAX = 8
 
     private val hour = DateTimeFormatter.ofPattern("HH:mm")

@@ -98,7 +98,7 @@ class AgendaState(
 ) {
     /**
      * Gli impegni di oggi; vuoto se non c'è niente da dire. La sera, finiti tutti, l'agenda sparisce:
-     * domani e i giorni dopo li elenca "Prossime cose".
+     * domani e i giorni dopo li elenca "Prossimi giorni".
      */
     fun shown(now: LocalDateTime = LocalDateTime.now()): List<CalendarEvent> {
         val list = today.orEmpty()
@@ -155,14 +155,14 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 }
 
 /**
- * "Prossime cose": i prossimi giorni in una card sola, divisi per giorno. Le stesse cose stanno,
- * senza limite di giorni, in Note > Prossime cose; oggi sta in "Adesso". Il giorno si scrive solo alla
+ * "Prossimi giorni": i prossimi giorni in una card sola, divisi per giorno. Le stesse cose stanno,
+ * senza limite di giorni, in Note > Prossimi giorni; oggi sta in "Adesso". Il giorno si scrive solo alla
  * sua prima riga, così la settimana si legge a colpo d'occhio.
  */
 @Composable
-fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpen: (UpcomingItem) -> Unit, onOpenAll: () -> Unit) {
+fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () -> Unit) {
     val shown = items.take(Upcoming.MAX)
-    Section(title = "Prossime cose") {
+    Section(title = "Prossimi giorni") {
         Column(Modifier.padding(vertical = 6.dp)) {
             if (shown.isEmpty()) {
                 Text(
@@ -179,7 +179,7 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpen: (Upcomin
                     modifier = Modifier
                         .fillMaxWidth()
                         .bouncyPress(0.98f)
-                        .clickable { onOpen(item) }
+                        .clickable(onClick = onOpenAll)
                         .padding(horizontal = 16.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -206,24 +206,33 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpen: (Upcomin
                     )
                 }
             }
+            // Toccando la card si apre tutto quello che arriva, senza limite di giorni.
             val more = items.size - shown.size
-            if (more > 0) {
-                RowDivider()
+            RowDivider()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenAll)
+                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    if (more == 1) "+ un'altra in Note" else "+ altre $more in Note",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onOpenAll)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    if (more > 0) "Tutto quello che arriva · altre $more" else "Tutto quello che arriva",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                )
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
         }
     }
 }
 
-/** L'icona piccola di una riga di "Prossime cose": evento, promemoria, data, pacco o addebito. */
+/** L'icona piccola di una riga di "Prossimi giorni": evento, promemoria, data, pacco o addebito. */
 private fun BriefKind.icon(): ImageVector = when (this) {
     BriefKind.EVENT -> Icons.Outlined.Event
     BriefKind.TASK -> Icons.Outlined.Checklist

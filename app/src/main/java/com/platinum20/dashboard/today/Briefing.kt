@@ -85,7 +85,7 @@ object Briefing {
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
         fixedExpenses: List<FixedExpense> = emptyList(),
-        /** false nella card di Oggi: domani sta in "Prossime cose", qui solo oggi. */
+        /** false nella card di Oggi: domani sta in "Prossimi giorni", qui solo oggi. */
         withTomorrow: Boolean = true,
         /**
          * true nella card di Oggi: tutta la giornata, una riga per impegno e per promemoria (non solo il
@@ -95,7 +95,7 @@ object Briefing {
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
-        // La sera le righe su domani, ma non nella card: lì c'è "Prossime cose".
+        // La sera le righe su domani, ma non nella card: lì c'è "Prossimi giorni".
         val aboutTomorrow = evening && withTomorrow
         val lines = mutableListOf<BriefLine>()
 
@@ -162,7 +162,7 @@ object Briefing {
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
-        // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossime cose").
+        // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossimi giorni").
         if (withTomorrow) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(
                 BriefKind.MONEY,

@@ -123,7 +123,7 @@ class BriefingTest {
 
     @Test
     fun laCardDiOggiRestaSuOggi() {
-        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossime cose".
+        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossimi giorni".
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val tomorrow = evening.toLocalDate().plusDays(1).atTime(9, 30)
         fun build(widget: Boolean) = Briefing.build(

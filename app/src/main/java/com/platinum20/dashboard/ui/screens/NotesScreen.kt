@@ -156,6 +156,15 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
+/** Apre le Note già su un tipo: la card Prossimi giorni di Oggi porta a tutto quello che arriva. */
+object NotesNav {
+    val request = kotlinx.coroutines.flow.MutableStateFlow<NotesSection?>(null)
+
+    fun open(section: NotesSection) {
+        request.value = section
+    }
+}
+
 /** I due tipi delle Note: con scadenza e senza. Le spese stanno in Oggi dalla 1.186. */
 enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Senza scadenza") }
 
@@ -293,6 +302,15 @@ fun NotesScreen(
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
     val inApp = LocalInAppNav.current
+    LaunchedEffect(Unit) {
+        NotesNav.request.collect { wanted ->
+            if (wanted != null) {
+                section = wanted
+                searching = false
+                NotesNav.request.value = null
+            }
+        }
+    }
 
     // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
     // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.

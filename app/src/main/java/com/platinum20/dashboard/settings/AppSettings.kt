@@ -22,8 +22,8 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta WEATHER per le preferenze salvate.
     WEATHER("Adesso", "Meteo e cose da sapere ora"),
     RESUME("Media", "Quello che suona o da riprendere"),
-    // Il nome resta DAY per le preferenze salvate: dalla 1.186 è "Prossime cose" (oggi sta in Adesso).
-    DAY("Prossime cose", "I prossimi 7 giorni, tutto insieme"),
+    // Il nome resta DAY per le preferenze salvate: dalla 1.186 è "Prossimi giorni" (oggi sta in Adesso).
+    DAY("Prossimi giorni", "I prossimi 7 giorni, tutto insieme"),
     MONEY("Spese", "Il mese, il budget e gli addebiti"),
     // Il nome resta MAIL per le preferenze salvate: dalla 1.182 tiene anche "Trovati per te".
     MAIL("Dalla posta", "Cose da aggiungere e mail importanti"),
@@ -39,7 +39,7 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
 
         /**
          * 2 = 1.182: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo.
-         * 3 = 1.186: "La giornata" diventa "Prossime cose" e torna visibile anche se era nascosta.
+         * 3 = 1.186: "La giornata" diventa "Prossimi giorni" e torna visibile anche se era nascosta.
          */
         const val VERSION = 3
 

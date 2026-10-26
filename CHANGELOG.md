@@ -3,7 +3,7 @@
 ## 1.186.0
 **Oggi: tutta la giornata in Adesso, sotto le prossime cose e le spese**
 - Adesso elenca tutto quello che ti resta oggi: ogni impegno, anche quelli di tutto il giorno, e ogni promemoria in scadenza, da spuntare con un tocco
-- La card "La giornata" e "Prossimi giorni" diventano una sola card, Prossime cose: i prossimi 7 giorni divisi per giorno, con impegni del calendario, promemoria, compleanni, pacchi e addebiti (anche quelli trovati in notifiche, SMS e mail)
+- La card "La giornata" e il blocco "Prossimi giorni" diventano una sola card, Prossimi giorni: la settimana da domani divisa per giorno, con impegni del calendario, promemoria, compleanni, pacchi e addebiti (anche quelli trovati in notifiche, SMS e mail). Toccandola si apre tutto quello che arriva, in Note
 - Le Spese passano dalle Note a Oggi: una card con il totale del mese, il budget e il prossimo addebito, che apre la pagina intera; si sposta o si nasconde in Personalizza
 - Le Note restano con due tipi: Con scadenza e Senza scadenza
 

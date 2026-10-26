@@ -38,11 +38,11 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossime cose", `MoneyCard` "Spese"),
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese"),
 `WeekReviewCard.kt`, `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
-= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossime cose" card: next 7 days of
+= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 7 days of
 events/tasks/dates/parcels/charges; tomorrow's weather only in WeatherScreen), `WeekReview`, `Greeting`, `Invites`,
 `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
