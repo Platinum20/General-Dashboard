@@ -186,16 +186,6 @@ fun MediaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            now?.let { playing ->
-                item(key = "now") {
-                    NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
-                }
-            }
-            hero?.let { last ->
-                item(key = "resume") {
-                    Box(Modifier.padding(horizontal = 16.dp)) { ResumeCard(last, onClick = { openResume(last) }) }
-                }
-            }
             // Le tre sezioni, una accanto all'altra: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "sections") {
                 Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -225,6 +215,23 @@ fun MediaScreen(
                     )
                 }
             }
+            now?.let { playing ->
+                item(key = "now") {
+                    NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
+                }
+            }
+            hero?.let { last ->
+                item(key = "resume") {
+                    Box(Modifier.padding(horizontal = 16.dp)) { ResumeCard(last, onClick = { openResume(last) }) }
+                }
+            }
+            // La coda: cosa viene dopo, di qualunque fonte.
+            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
+                QueuePeek(
+                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
             if (continueList.isNotEmpty()) {
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
                 item(key = "continue") {
@@ -251,13 +258,6 @@ fun MediaScreen(
                         }
                     }
                 }
-            }
-            // In fondo la coda: cosa viene dopo, di qualunque fonte.
-            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
-                QueuePeek(
-                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
             }
         }
     }

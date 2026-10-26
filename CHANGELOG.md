@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.163.0
+**Media: prima le sezioni, poi Riprendi e la coda**
+- In cima a Media ci sono Musica, Video e Radio e podcast; sotto la card di quello che suona (o "Riprendi" se non suona niente), poi la coda, poi Continua e le radio
+
 ## 1.162.0
 **Media riordinata: Riprendi in cima, coda in fondo**
 - Quando non suona niente, in cima a Media c'è di nuovo "Riprendi": l'ultima cosa vista o ascoltata, da qualunque fonte (YouTube, musica, Spotify, podcast, radio, video del telefono). Un tocco la fa ripartire dal punto esatto in cui l'avevi lasciata
