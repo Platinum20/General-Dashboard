@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import com.platinum20.dashboard.notes.Expenses
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -14,6 +16,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import java.time.Instant
@@ -21,22 +24,15 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 
 /**
- * Le Note hanno tre tipi soli: con scadenza, senza scadenza, spese.
- * "Con scadenza" è una lista unica, per giorno: promemoria, date da ricordare, pacchi ed eventi del calendario
- * fanno la stessa cosa (arriva un giorno) e si vedono allo stesso modo, con quanto manca a destra.
+ * "Prossimi giorni": tutto quello che arriva un giorno (promemoria, date da ricordare, pacchi, eventi del
+ * calendario, addebiti) in una lista sola divisa per giorno, con quanto manca a destra. In Oggi la stessa
+ * lista si ferma a una settimana; qui va avanti finché c'è qualcosa.
  */
-internal enum class DueGroup(val label: String) {
-    LATE("Scaduti"),
-    TODAY("Oggi"),
-    TOMORROW("Domani"),
-    WEEK("Questa settimana"),
-    LATER("Più avanti"),
-}
-
-/** Una cosa con scadenza: uno solo fra promemoria, data, pacco ed evento. [day] null = pacco senza data. */
 internal data class DueRow(
     val key: String,
     val day: LocalDate?,
@@ -46,19 +42,30 @@ internal data class DueRow(
     val countdown: Countdown? = null,
     val parcel: Parcel? = null,
     val event: CalendarEvent? = null,
+    val charge: FixedExpense? = null,
 )
 
-/** Quanti giorni di calendario si guardano per gli eventi. */
-internal const val EVENT_DAYS = 14
+/** Un giorno della lista. [late] = "Scaduti" in cima; [day] null e non late = pacchi senza data, in fondo. */
+internal data class DueDay(val day: LocalDate?, val late: Boolean, val rows: List<DueRow>) {
+    val key: String get() = when {
+        late -> "late"
+        day == null -> "nodate"
+        else -> "d${day.toEpochDay()}"
+    }
+}
 
-internal fun dueGroups(
+/** Quanti giorni di calendario si guardano per gli eventi: dalla 1.187 qui c'è anche il Calendario. */
+internal const val EVENT_DAYS = 60
+
+internal fun dueDays(
     tasks: List<TaskItem>,
     countdowns: List<Countdown>,
     parcels: List<Parcel>,
     events: List<CalendarEvent>,
+    fixedExpenses: List<FixedExpense> = emptyList(),
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
-): List<Pair<DueGroup, List<DueRow>>> {
+): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
@@ -66,6 +73,7 @@ internal fun dueGroups(
 
     val late = mutableListOf<DueRow>()
     val dated = mutableListOf<DueRow>()
+    val undated = mutableListOf<DueRow>()
     tasks.filter { !it.done && it.dueAt != null }.forEach { t ->
         val row = DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
         if (t.dueAt < nowMs) late += row else dated += row
@@ -77,26 +85,50 @@ internal fun dueGroups(
     }
     parcels.filter { !it.delivered }.forEach { p ->
         val day = p.expected
-        val row = DueRow("parcel-${p.id}", day, day?.let(::startOf) ?: Long.MAX_VALUE, parcel = p)
-        if (day != null && day.isBefore(today)) late += row else dated += row
+        when {
+            day == null -> undated += DueRow("parcel-${p.id}", null, Long.MAX_VALUE, parcel = p)
+            day.isBefore(today) -> late += DueRow("parcel-${p.id}", day, startOf(day), parcel = p)
+            else -> dated += DueRow("parcel-${p.id}", day, startOf(day), parcel = p)
+        }
     }
     events.filter { it.end > nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
         // Un evento iniziato ieri e ancora in corso conta oggi.
         val day = maxOf(dayOf(e.begin), today)
         dated += DueRow("event-${e.eventId}-${e.begin}", day, if (e.allDay) startOf(day) else maxOf(e.begin, startOf(day)), event = e)
     }
-
-    fun groupOf(day: LocalDate?): DueGroup = when {
-        day == null -> DueGroup.LATER
-        day == today -> DueGroup.TODAY
-        day == today.plusDays(1) -> DueGroup.TOMORROW
-        !day.isAfter(today.plusDays(7)) -> DueGroup.WEEK
-        else -> DueGroup.LATER
+    fixedExpenses.forEach { f ->
+        val day = f.nextDate(today)
+        dated += DueRow("charge-${f.id}", day, startOf(day), charge = f)
     }
-    val byGroup = dated.groupBy { groupOf(it.day) }
-    return DueGroup.entries.mapNotNull { g ->
-        val rows = if (g == DueGroup.LATE) late else byGroup[g].orEmpty()
-        rows.takeIf { it.isNotEmpty() }?.let { g to it.sortedBy { r -> r.at } }
+    return buildList {
+        if (late.isNotEmpty()) add(DueDay(null, true, late.sortedBy { it.at }))
+        dated.groupBy { it.day!! }.toSortedMap().forEach { (day, rows) -> add(DueDay(day, false, rows.sortedBy { it.at })) }
+        if (undated.isNotEmpty()) add(DueDay(null, false, undated))
+    }
+}
+
+private val longDay = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN)
+private val longDayYear = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.ITALIAN)
+
+/** Il titolo di un giorno: "Scaduti", "Oggi", "Domani", "Mercoledì 28 ottobre" (con l'anno se non è questo). */
+internal fun DueDay.label(today: LocalDate = LocalDate.now()): String = when {
+    late -> "Scaduti"
+    day == null -> "Senza data"
+    day == today -> "Oggi"
+    day == today.plusDays(1) -> "Domani"
+    else -> day.format(if (day.year == today.year) longDay else longDayYear).replaceFirstChar { it.uppercase() }
+}
+
+/** Corto, per la linea dei giorni e per le righe dell'anteprima: "Mer 28", "Mar 9 mar" se è più in là di un mese. */
+internal fun DueDay.shortLabel(today: LocalDate = LocalDate.now()): String {
+    val d = day
+    return when {
+        late -> "Scaduti"
+        d == null -> "Senza data"
+        d == today -> "Oggi"
+        d == today.plusDays(1) -> "Domani"
+        else -> d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${d.dayOfMonth}" +
+            if (d.isAfter(today.plusDays(27))) " " + d.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
     }
 }
 
@@ -155,6 +187,53 @@ internal fun EventCard(event: CalendarEvent, day: LocalDate?, onClick: () -> Uni
                 )
             }
             DueBadge(big, small)
+        }
+    }
+}
+
+/** Un addebito fisso fra le cose che arrivano: quanto, che cosa e i giorni che mancano. Si tocca per le Spese. */
+@Composable
+internal fun ChargeCard(charge: FixedExpense, day: LocalDate?, onClick: () -> Unit) {
+    val (big, small) = dueBadge(day)
+    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress()) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Addebito: ${charge.text.ifEmpty { charge.category.label }}",
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "${Expenses.format(charge.cents)} · ogni mese il ${charge.day}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            DueBadge(big, small)
+        }
+    }
+}
+
+/** In cima a Prossimi giorni finché il calendario non è consentito: gli impegni stanno qui insieme al resto. */
+@Composable
+internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
+    CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 4.dp)) {
+            Text("Anche gli impegni del calendario", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Li metto qui, nel loro giorno, insieme al resto",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onLater) { Text("Non ora") }
+                TextButton(onClick = onAllow) { Text("Consenti") }
+            }
         }
     }
 }

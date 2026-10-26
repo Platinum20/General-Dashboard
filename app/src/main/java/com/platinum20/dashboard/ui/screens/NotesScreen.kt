@@ -139,6 +139,7 @@ import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.Podcasts
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
+import com.platinum20.dashboard.calendar.CalendarAsk
 import androidx.lifecycle.repeatOnLifecycle
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
@@ -165,11 +166,14 @@ object NotesNav {
     }
 }
 
-/** I due tipi delle Note: con scadenza e senza. Le spese stanno in Oggi dalla 1.186. */
-enum class NotesSection(val title: String) { DATED("Con scadenza"), UNDATED("Senza scadenza") }
+/**
+ * Le due parti delle Note (1.187): "Prossimi giorni", tutto quello che arriva un giorno (con il Calendario
+ * dentro, lo stesso nome della card di Oggi), e "Note", tutto quello senza data. Le spese stanno in Oggi.
+ */
+enum class NotesSection(val title: String) { DATED("Prossimi giorni"), UNDATED("Note") }
 
 /**
- * Le pillole con quanto c'è in ciascun tipo ("Con scadenza · 4", "Senza scadenza · 7", "Spese · 115,90 €"):
+ * Quanto c'è in ciascuna parte ("Prossimi giorni · 4", "Note · 7"):
  * solo i tipi che hanno qualcosa, così ogni pillola dice qualcosa e porta da qualche parte.
  * Le abitudini stanno con le scadenze: si fanno oggi. [events] sono gli eventi del calendario in lista.
  */
@@ -177,8 +181,8 @@ internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: L
     val dated = data.tasks.count { !it.done && it.dueAt != null } + data.upcoming.size + data.parcels.count { !it.delivered } + events
     val undated = data.tasks.count { !it.done && it.dueAt == null } + data.notes.size
     return listOfNotNull(
-        (dated > 0 || data.habits.isNotEmpty()).takeIf { it }?.let { NotesSection.DATED to if (dated > 0) "Con scadenza · $dated" else "Con scadenza" },
-        (undated > 0).takeIf { it }?.let { NotesSection.UNDATED to "Senza scadenza · $undated" },
+        (dated > 0 || data.habits.isNotEmpty()).takeIf { it }?.let { NotesSection.DATED to if (dated > 0) "Prossimi giorni · $dated" else "Prossimi giorni" },
+        (undated > 0).takeIf { it }?.let { NotesSection.UNDATED to "Note · $undated" },
     )
 }
 
@@ -189,12 +193,12 @@ internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: L
 @Composable
 private fun NotesOverview(
     data: com.platinum20.dashboard.notes.NotesData,
-    timeline: List<Pair<DueGroup, List<DueRow>>>,
+    timeline: List<DueDay>,
     padding: PaddingValues,
     listState: androidx.compose.foundation.lazy.LazyListState,
     onOpen: (NotesSection) -> Unit,
 ) {
-    val dated = timeline.flatMap { (group, rows) -> rows.map { group to it } }
+    val dated = timeline.flatMap { d -> d.rows.map { d to it } }
     val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
     val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
     val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
@@ -205,9 +209,9 @@ private fun NotesOverview(
                 icon = Icons.Outlined.Event,
                 accent = TileAccent.BLUE,
                 count = (dated.size + data.habits.size).takeIf { it > 0 }?.toString(),
-                lines = dated.take(3).map { (group, row) -> group.label to row.title() } +
+                lines = dated.take(3).map { (day, row) -> day.shortLabel() to row.title() } +
                     listOfNotNull(habitsLeft.takeIf { it > 0 }?.let { "Oggi" to if (it == 1) "1 abitudine da fare" else "$it abitudini da fare" }),
-                empty = "Promemoria, date, pacchi ed eventi, in ordine di giorno",
+                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno",
                 modifier = Modifier.animateItem()
                     .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
                     .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
@@ -221,7 +225,7 @@ private fun NotesOverview(
                 accent = TileAccent.ORANGE,
                 count = (undatedTasks.size + notes.size).takeIf { it > 0 }?.toString(),
                 lines = (undatedTasks.map { "Da fare" to it.text } + notes.map { "Nota" to it.text.lineSequence().first().trim() }).take(3),
-                empty = "Le cose da fare prima o poi e gli appunti",
+                empty = "Tutto quello senza data: cose da fare e appunti",
                 modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
                 onClick = { onOpen(NotesSection.UNDATED) },
             )
@@ -231,7 +235,7 @@ private fun NotesOverview(
 
 /** Il titolo di una cosa con scadenza, qualunque sia. */
 private fun DueRow.title(): String =
-    task?.text ?: countdown?.title ?: parcel?.title ?: event?.title ?: ""
+    task?.text ?: countdown?.title ?: parcel?.title ?: event?.title ?: charge?.let { "Addebito: ${it.text.ifEmpty { it.category.label }}" } ?: ""
 
 /** Una card della pagina Note: icona, nome del tipo, quanto c'è a destra e le prime righe sotto. */
 @Composable
@@ -302,6 +306,7 @@ fun NotesScreen(
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
     val inApp = LocalInAppNav.current
+    val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {
         NotesNav.request.collect { wanted ->
             if (wanted != null) {
@@ -355,7 +360,15 @@ fun NotesScreen(
     androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
     // Ogni pagina (i tre tipi, o uno solo) parte dalla cima.
     LaunchedEffect(section) { runCatching { listState.scrollToItem(0) } }
-    val timeline = dueGroups(data.tasks, data.upcoming, data.parcels, events)
+    val timeline = dueDays(data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses)
+    // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
+    var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
+    val calendarAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        calendarGranted = it
+        if (it) scope.launch { events = NotesEvents.load(context) }
+        else if (CalendarAsk.shouldHide(CalendarAsk.recordDenial(context))) hideAgenda(context)
+    }
+    val calendarOff by CalendarAsk.off.collectAsStateWithLifecycle()
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
@@ -406,53 +419,77 @@ fun NotesScreen(
         val delivered = data.parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
         val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
         val shownNotes = if (allNotes || section == NotesSection.UNDATED) notes else notes.take(NOTES_PREVIEW)
-        val empty = data.tasks.isEmpty() && data.notes.isEmpty() && data.habits.isEmpty() &&
-            data.upcoming.isEmpty() && data.parcels.isEmpty() && data.expenses.isEmpty() && events.isEmpty()
-        // Le abitudini si fanno oggi: stanno sotto "Oggi", anche quando oggi non scade nient'altro.
-        val groups = if (data.habits.isNotEmpty() && timeline.none { it.first == DueGroup.TODAY }) {
-            (timeline + (DueGroup.TODAY to emptyList())).sortedBy { it.first.ordinal }
-        } else timeline
         val today = LocalDate.now()
+        val empty = if (section == NotesSection.DATED) timeline.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
+        else undatedTasks.isEmpty() && notes.isEmpty()
+        // Le abitudini si fanno oggi: stanno sotto "Oggi", anche quando oggi non scade nient'altro.
+        val groups = if (data.habits.isNotEmpty() && timeline.none { !it.late && it.day == today }) {
+            (timeline + DueDay(today, false, emptyList())).sortedBy { if (it.late) Long.MIN_VALUE else it.day?.toEpochDay() ?: Long.MAX_VALUE }
+        } else timeline
+        val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
+        // La linea dei giorni a destra: dove comincia ogni giorno nella lista (stesso ordine degli item sotto).
+        val marks = if (section != NotesSection.DATED) emptyList() else buildList {
+            var index = (if (empty) 1 else 0) + (if (invite) 1 else 0)
+            groups.forEach { d ->
+                add(DayMark(index, d.shortLabel(today)))
+                index += 1 + d.rows.size + if (!d.late && d.day == today) data.habits.size else 0
+            }
+        }
+        val listPadding = if (marks.size >= 3) PaddingValues(
+            start = 16.dp, end = 36.dp,
+            top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding(),
+        ) else padding
 
-        LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, contentPadding = listPadding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
-                        "Tocca + e scrivi come parli: Canvas capisce da solo se ha una scadenza. \"venerdì alle 18 palestra\", " +
-                            "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono in Con scadenza, con i giorni che mancano; " +
-                            "un'idea senza data in Senza scadenza; \"12,50 pizza\" nelle Spese."
+                        "Tocca + e scrivi come parli: Canvas capisce da solo se c'è una data. \"venerdì alle 18 palestra\", " +
+                            "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono in Prossimi giorni, con i giorni che mancano; " +
+                            "un'idea senza data in Note."
                     )
                 }
             }
-            // Con scadenza: una lista sola per giorno, tutte con quanto manca a destra.
-            if (show(NotesSection.DATED)) groups.forEachIndexed { index, (group, rows) ->
-                item(key = "due-${group.name}") {
+            if (invite) {
+                item(key = "calendar-invite") {
+                    CalendarInvite(
+                        onAllow = { calendarAsk.launch(android.Manifest.permission.READ_CALENDAR) },
+                        onLater = { hideAgenda(context) },
+                    )
+                }
+            }
+            // Prossimi giorni: una lista sola per giorno, tutte con quanto manca a destra.
+            if (show(NotesSection.DATED)) groups.forEachIndexed { index, group ->
+                val isToday = !group.late && group.day == today
+                item(key = "due-${group.key}") {
                     // Il pallino del + atterra sul primo giorno che si vede.
                     val target = if (index == 0) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                         .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
                     SectionHeader(
-                        group.label,
+                        group.label(today),
                         modifier = Modifier.animateItem().padding(top = if (index == 0) 0.dp else 12.dp, bottom = 4.dp).then(target)
-                            .then(if (group == DueGroup.TODAY) Modifier.captureTarget(CaptureMode.HABIT) else Modifier),
-                        color = if (group == DueGroup.LATE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            .then(if (isToday) Modifier.captureTarget(CaptureMode.HABIT) else Modifier),
+                        color = if (group.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                items(rows, key = { it.key }) { row ->
+                items(group.rows, key = { it.key }) { row ->
                     // Spuntate, spostate o cancellate: le righe scivolano al loro posto invece di saltare.
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) {
-                        row.task?.let { TaskDueCard(it, row.day, late = group == DueGroup.LATE, onDeleted = onTaskDeleted) }
+                        row.task?.let { TaskDueCard(it, row.day, late = group.late, onDeleted = onTaskDeleted) }
                         row.countdown?.let { DateCard(it, onClick = { editingDate = it }) }
                         row.parcel?.let { ParcelCard(it, onClick = { editingParcel = it }) }
                         row.event?.let { EventCard(it, row.day, onClick = { onOpenEvent(it) }) }
+                        row.charge?.let { ChargeCard(it, row.day, onClick = { inApp?.openRoute?.invoke(Routes.EXPENSES) }) }
                     }
                 }
-                if (group == DueGroup.TODAY) habitRows()
+                if (isToday) habitRows()
             }
             // Senza scadenza: le cose da fare prima o poi e gli appunti.
             if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
                 item(key = "undated-header") {
                     SectionHeader(
-                        "Senza scadenza",
+                        "Senza data",
                         modifier = Modifier.padding(top = if (section == null && groups.isNotEmpty()) 12.dp else 0.dp, bottom = 4.dp)
                             .captureTarget(CaptureMode.NOTE),
                         action = when {
@@ -495,6 +532,15 @@ fun NotesScreen(
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { editingParcel = p }) }
                 }
             }
+        }
+        // Allineata al + in basso: in cima comincia sotto il titolo, in fondo si ferma sopra la barra.
+        DayScrollbar(
+            listState,
+            marks,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = listPadding.calculateTopPadding(), bottom = listPadding.calculateBottomPadding(), end = 6.dp),
+        )
         }
     }
 }

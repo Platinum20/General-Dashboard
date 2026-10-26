@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.187.0
+**Note in due parti, con il Calendario dentro e la linea dei giorni**
+- Le Note hanno due parti: Prossimi giorni (tutto quello che arriva, con impegni del calendario, promemoria, compleanni, pacchi e addebiti) e Note (tutto quello senza data)
+- Prossimi giorni è divisa giorno per giorno ("Oggi", "Domani", "Mercoledì 28 ottobre"…) e guarda avanti due mesi di calendario
+- A destra c'è la linea dei giorni: una tacca per giorno, la trascini o la tocchi e salti a quel giorno, con il nome accanto al dito
+- La pagina Calendario non c'è più: gli impegni stanno in Prossimi giorni, e da lì si consente il calendario se non l'hai ancora fatto
+- Toccare un impegno in Adesso apre Prossimi giorni
+
 ## 1.186.0
 **Oggi: tutta la giornata in Adesso, sotto le prossime cose e le spese**
 - Adesso elenca tutto quello che ti resta oggi: ogni impegno, anche quelli di tutto il giorno, e ogni promemoria in scadenza, da spuntare con un tocco

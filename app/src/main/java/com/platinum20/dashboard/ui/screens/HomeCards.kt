@@ -137,10 +137,10 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
     return AgendaState(granted, today, tomorrow) { launcher.launch(Manifest.permission.READ_CALENDAR) }
 }
 
-/** Niente più inviti per il calendario: si può sempre consentire dal Calendario. */
+/** Niente più inviti per il calendario: si può sempre consentire da Info app. */
 internal fun hideAgenda(context: Context) {
     CalendarAsk.setOff(context)
-    Toast.makeText(context, "Ok, niente agenda: la puoi consentire dal Calendario", Toast.LENGTH_LONG).show()
+    Toast.makeText(context, "Ok, niente calendario: lo puoi consentire in Info app › Autorizzazioni", Toast.LENGTH_LONG).show()
 }
 
 /** Scadenza di un promemoria, in rosso se già passata. */
