@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.151.0
+**Tema Puro davvero bianco**
+- In modalità chiara il tema Puro è tutto bianco e nero: niente più blu, i pulsanti e le parti scelte sono in nero, i blocchi in evidenza (come Adesso) in grigio chiarissimo. Si distingue subito da Canvas
+
 ## 1.150.0
 **Coda unica per tutto quello che ascolti e guardi**
 - Una sola coda per YouTube, YouTube Music, Spotify, radio e podcast: le cose si mischiano e avanti/indietro passano da una fonte all'altra; finito un brano parte il successivo, di qualunque fonte sia

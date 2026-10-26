@@ -140,8 +140,25 @@ private fun ColorScheme.toAmoled(): ColorScheme = copy(
     surfaceVariant = Color(0xFF1A1A1A),
 )
 
-/** Tutto bianco, senza la carta calda: le card si staccano solo con il bordo grigio chiaro. */
+/**
+ * Tutto bianco, senza la carta calda e senza il blu: inchiostro nero per l'accento, grigi chiarissimi
+ * per i blocchi in evidenza. Le card si staccano solo con il bordo grigio chiaro.
+ */
 private fun ColorScheme.toDeepWhite(): ColorScheme = copy(
+    primary = Color(0xFF111111),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFF3F3F3),
+    onPrimaryContainer = Color(0xFF111111),
+    inversePrimary = Color(0xFFE0E0E0),
+    surfaceTint = Color.Transparent,
+    secondary = Color(0xFF555555),
+    onSecondary = Color.White,
+    onSecondaryContainer = Color(0xFF111111),
+    onBackground = Color(0xFF111111),
+    onSurface = Color(0xFF111111),
+    onSurfaceVariant = Color(0xFF6B6B6B),
+    outline = Color(0xFFA8A8A8),
+    inverseSurface = Color(0xFF111111),
     background = Color.White,
     surface = Color.White,
     surfaceBright = Color.White,
