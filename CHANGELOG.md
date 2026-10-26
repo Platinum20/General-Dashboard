@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.143.0
+## 1.144.0
 **Impostazioni rifatte da capo, barra in basso sistemata**
 - La pillola scura della scheda scelta torna della sua misura, dentro la barra (nella 1.141 usciva sopra e sotto)
 - Una pagina sola, corta, ordinata per quello che vuoi fare invece che per sezione: Aspetto, Cosa ti avvisa, Home, Fa da solo, Account, I tuoi dati, Informazioni. Niente più chip in alto
@@ -8,6 +8,12 @@
 - Il tema si sceglie guardandolo: tre anteprime in miniatura con i colori veri, quella scelta ha l'anello
 - Tutte le notifiche in un gruppo solo (mattino, pioggia, nuove versioni); orario e prova del mattino compaiono scivolando solo quando la notifica è accesa
 - Ogni card che si tocca, in tutta l'app, si abbassa appena sotto il dito; le righe piccole in cima alle sezioni ("3 nuove") cambiano con un movimento morbido
+
+## 1.143.0
+**Mini player: si chiude lanciandolo di lato**
+- Per chiudere il mini player ora basta lanciarlo a destra o a sinistra, come una notifica, sia in alto che in basso: segue il dito, si inclina e sbiadisce
+- Dal lato che si scopre compare una X che cresce e diventa rossa quando, lasciando, si chiude; uno scatto veloce chiude anche con poco movimento
+- Su e giù resta per spostarlo in alto o in basso: il primo movimento decide quale dei due
 
 ## 1.142.0
 **Niente festività doppie**

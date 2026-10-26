@@ -1,12 +1,12 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,19 +72,22 @@ import kotlin.math.roundToInt
 /**
  * Mini player unico sopra tutta l'app, per qualunque cosa suoni (YouTube, musica, Spotify, radio,
  * podcast): una barra di vetro larga quanto la barra in basso con il +, con copertina (o il video
- * stesso), titolo, play/pausa, chiudi e il tempo che scorre. Si trascina e si aggancia solo in alto
- * o in basso (sopra la barra delle sezioni); un tocco apre il player grande.
+ * stesso), titolo, indietro, play/pausa, avanti e il tempo che scorre. Si trascina e si aggancia solo
+ * in alto o in basso (sopra la barra delle sezioni), si chiude lanciandola di lato; un tocco apre il player grande.
  */
 @Composable
 fun FloatingPlayer(
     currentRoute: String?,
     onExpand: (Playing) -> Unit,
     modifier: Modifier = Modifier,
+    /** Solo per le prove: cosa mostrare e cosa fare chiudendo, al posto del player unico. */
+    shown: Playing? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     RadioStore.init(context)
     val playing by Playback.now.collectAsState()
-    val now = playing ?: return
+    val now = shown ?: playing ?: return
     // Sulle schermate dei player la barra non serve: c'è già il player grande.
     if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
     if (now.isVideo && currentRoute?.startsWith("media/watch") == true) return
@@ -108,18 +111,55 @@ fun FloatingPlayer(
         val appear = remember { Animatable(0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
         val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
-        // Per chiudere: già in basso, la si tira ancora giù; compare la X e lasciandola si chiude.
-        val closePx = with(LocalDensity.current) { 72.dp.toPx() }
-        val overshootMax = closePx * 1.4f / range
-        val over = ((y.value - 1f) * range / closePx).coerceIn(0f, 1f)
+        // Per chiudere: si lancia di lato, come una notifica. Il dito la porta, sotto compare la X
+        // dal lato che si scopre; oltre un terzo della larghezza (o con uno scatto) lasciandola si chiude.
+        val maxW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+        val x = remember { Animatable(0f) }
+        val closeAt = maxW * 0.33f
+        val reveal = (kotlin.math.abs(x.value) / closeAt).coerceIn(0f, 1f)
         var closeArmed by remember { mutableStateOf(false) }
         var closing by remember { mutableStateOf(false) }
-        // Se dopo la chiusura qualcosa suona ancora (es. Spotify non risponde) la barra torna al suo posto.
+        // Se dopo la chiusura qualcosa suona ancora (es. Spotify non risponde) la barra rientra.
         LaunchedEffect(closing) {
             if (closing) {
                 kotlinx.coroutines.delay(1_500)
                 closing = false
-                y.animateTo(1f, Springs.bouncy())
+                x.snapTo(0f)
+                appear.snapTo(0f)
+                appear.animateTo(1f, Springs.bouncy())
+            }
+        }
+
+        // La X dietro la barra, dal lato che si scopre: cresce e diventa rossa quando lasciando si chiude.
+        if (reveal > 0f && barH > 0) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(with(LocalDensity.current) { barH.toDp() })
+                    .offset { IntOffset(0, (y.value * range).roundToInt()) },
+                contentAlignment = if (x.value > 0) Alignment.CenterStart else Alignment.CenterEnd,
+            ) {
+                Box(
+                    Modifier
+                        .padding(horizontal = 12.dp)
+                        .size(44.dp)
+                        .graphicsLayer {
+                            val sc = 0.6f + 0.4f * reveal
+                            scaleX = sc
+                            scaleY = sc
+                            alpha = reveal
+                        }
+                        .clip(CircleShape)
+                        .background(if (closeArmed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = if (closeArmed) "Lascia per chiudere" else null,
+                        tint = if (closeArmed) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = 90f * (1f - reveal) },
+                    )
+                }
             }
         }
 
@@ -129,98 +169,100 @@ fun FloatingPlayer(
             border = cardBorder(),
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(0, (y.value * range).roundToInt()) }
+                .offset { IntOffset(x.value.roundToInt(), (y.value * range).roundToInt()) }
                 .graphicsLayer {
                     val sc = (0.8f + 0.2f * appear.value) * pressScale
                     scaleX = sc
                     scaleY = sc
-                    alpha = appear.value.coerceIn(0f, 1f) * (if (closing) 0f else 1f - 0.25f * over)
+                    // Si inclina appena verso dove la si lancia, e sbiadisce allontanandosi.
+                    rotationZ = x.value / maxW * 8f
+                    alpha = appear.value.coerceIn(0f, 1f) * (1f - 0.6f * (kotlin.math.abs(x.value) / maxW).coerceIn(0f, 1f))
                 }
                 .onSizeChanged { barH = it.height }
                 .glass(MaterialTheme.shapes.extraLarge)
-                .pointerInput(range) {
+                .pointerInput(range, maxW) {
                     val tracker = VelocityTracker()
-                    var cur = 0f
+                    var curY = 0f
                     var start = 0f
+                    var dx = 0f
+                    // Il primo movimento decide: di lato si chiude, su e giù si sposta.
+                    var sideways: Boolean? = null
                     // Il dito si misura sullo schermo, non sulla barra (che si muove con lui):
                     // sulla barra la velocità risulterebbe sempre quasi zero e il lancio non partirebbe.
-                    var travelled = 0f
-                    detectVerticalDragGestures(
+                    var travelled = androidx.compose.ui.geometry.Offset.Zero
+                    detectDragGestures(
                         onDragStart = {
                             view.haptic(Haptic.GRAB)
                             dragging = true
                             tracker.resetTracking()
-                            cur = y.value
-                            start = cur
-                            travelled = 0f
+                            curY = y.value
+                            start = curY
+                            dx = 0f
+                            sideways = null
+                            travelled = androidx.compose.ui.geometry.Offset.Zero
                         },
                         onDragCancel = {
                             dragging = false
                             closeArmed = false
+                            scope.launch { x.animateTo(0f, Springs.bouncy()) }
                             scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
                         },
-                        // Lasciata: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
                         onDragEnd = {
                             dragging = false
-                            if (closeArmed) {
-                                closeArmed = false
-                                closing = true
-                                view.haptic(Haptic.CONFIRM)
-                                Playback.stop(context)
+                            val velocity = tracker.calculateVelocity()
+                            if (sideways == true) {
+                                val vx = velocity.x
+                                // Uno scatto di lato basta anche se la barra si è mossa poco.
+                                val fling = kotlin.math.abs(vx) > 1_800f && kotlin.math.sign(vx) == kotlin.math.sign(dx)
+                                if (closeArmed || fling) {
+                                    closeArmed = false
+                                    closing = true
+                                    view.haptic(Haptic.CONFIRM)
+                                    val dir = if (dx >= 0) 1f else -1f
+                                    scope.launch {
+                                        x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(180), initialVelocity = vx)
+                                        onClose?.invoke() ?: Playback.stop(context)
+                                    }
+                                } else {
+                                    scope.launch { x.animateTo(0f, Springs.bouncy(), initialVelocity = vx) }
+                                }
                             } else {
-                            val v = tracker.calculateVelocity().y / range
-                            val moved = cur - start
-                            val top = when {
-                                v < -0.6f -> true
-                                v > 0.6f -> false
-                                moved < -0.1f -> true
-                                moved > 0.1f -> false
-                                else -> cur < 0.5f
-                            }
-                            view.haptic(Haptic.SNAP)
-                            if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Springs.bouncy(), initialVelocity = v) }
-                            atTop = top
+                                // Lasciata: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
+                                val v = velocity.y / range
+                                val moved = curY - start
+                                val top = when {
+                                    v < -0.6f -> true
+                                    v > 0.6f -> false
+                                    moved < -0.1f -> true
+                                    moved > 0.1f -> false
+                                    else -> curY < 0.5f
+                                }
+                                view.haptic(Haptic.SNAP)
+                                if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Springs.bouncy(), initialVelocity = v) }
+                                atTop = top
                             }
                         },
                     ) { change, amount ->
                         change.consume()
                         travelled += amount
-                        tracker.addPosition(change.uptimeMillis, androidx.compose.ui.geometry.Offset(0f, travelled))
-                        // Dal basso si può scendere oltre il bordo: è il gesto per chiudere.
-                        val canClose = !atTop && start > 0.9f
-                        cur = (cur + amount / range).coerceIn(-0.03f, if (canClose) 1f + overshootMax else 1.03f)
-                        val armed = canClose && (cur - 1f) * range > closePx
-                        if (armed != closeArmed) {
-                            closeArmed = armed
-                            view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
+                        tracker.addPosition(change.uptimeMillis, travelled)
+                        if (sideways == null) sideways = kotlin.math.abs(amount.x) > kotlin.math.abs(amount.y)
+                        if (sideways == true) {
+                            dx += amount.x
+                            val armed = kotlin.math.abs(dx) > closeAt
+                            if (armed != closeArmed) {
+                                closeArmed = armed
+                                view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
+                            }
+                            scope.launch { x.snapTo(dx) }
+                        } else {
+                            curY = (curY + amount.y / range).coerceIn(-0.03f, 1.03f)
+                            scope.launch { y.snapTo(curY) }
                         }
-                        scope.launch { y.snapTo(cur) }
                     }
                 },
         ) {
-            Box {
-                MiniPlayer(now, onExpand = { onExpand(now) })
-                // La X sale mentre la si tira giù; diventa rossa quando lasciando si chiude.
-                if (over > 0f) {
-                    Box(
-                        Modifier
-                            .matchParentSize()
-                            .background(
-                                (if (closeArmed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant)
-                                    .copy(alpha = 0.92f * over)
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = if (closeArmed) "Lascia per chiudere" else null,
-                            tint = (if (closeArmed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant)
-                                .copy(alpha = over),
-                            modifier = Modifier.size(24.dp + 8.dp * over).graphicsLayer { rotationZ = 90f * (1f - over) },
-                        )
-                    }
-                }
-            }
+            MiniPlayer(now, onExpand = { onExpand(now) })
         }
     }
 }
