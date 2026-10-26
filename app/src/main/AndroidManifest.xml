@@ -205,11 +205,6 @@
         </activity>
 
         <service
-            android:name=".media.MediaPlaybackService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
-
-        <service
             android:name=".media.PlayerService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">

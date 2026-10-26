@@ -3,7 +3,6 @@ package com.platinum20.dashboard.media
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.MutableContextWrapper
 import android.graphics.Bitmap
 import android.net.Uri
 import android.view.View
@@ -19,10 +18,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.platinum20.dashboard.adblock.AdBlocker
 import com.platinum20.dashboard.settings.AppSettings
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 /** Quello che succede nella pagina del player, girato alla schermata che la sta mostrando. */
 interface MediaPageListener {
@@ -35,54 +30,6 @@ interface MediaPageListener {
     fun onHideFullscreen() {}
     /** Indirizzo non web (es. il ritorno dal login di Spotify): true se l'ha gestito chi ascolta. */
     fun onAppLink(uri: Uri): Boolean = false
-}
-
-/**
- * Le pagine di YouTube e Spotify restano vive mentre si usa il resto dell'app,
- * così la musica continua anche cambiando sezione. Si chiudono con [release].
- */
-object MediaWebViews {
-    private val views = mutableMapOf<MediaService, WebView>()
-
-    private val _open = MutableStateFlow<Set<MediaService>>(emptySet())
-    /** Player aperti, anche se non sono a schermo. */
-    val open: StateFlow<Set<MediaService>> = _open.asStateFlow()
-
-    /**
-     * Pagina nascosta fatta dall'app (mai a schermo), per esempio il riproduttore di Spotify:
-     * [html] caricato con origine [baseUrl] e [bridge] raggiungibile dagli script come [bridgeName].
-     * Se c'era la pagina del sito di quel servizio, viene chiusa.
-     */
-    @SuppressLint("JavascriptInterface", "AddJavascriptInterface")
-    fun obtainHidden(context: Context, service: MediaService, baseUrl: String, html: String, bridge: Any, bridgeName: String): WebView {
-        views[service]?.let { existing ->
-            if (existing.url?.startsWith(baseUrl) == true) return existing
-            release(service)
-        }
-        val webView = createMediaWebView(MutableContextWrapper(context.applicationContext), service, blockAds = false) { null }
-        webView.addJavascriptInterface(bridge, bridgeName)
-        webView.loadDataWithBaseURL(baseUrl, html, "text/html", "UTF-8", null)
-        views[service] = webView
-        _open.update { it + service }
-        NowPlaying.start(context)
-        return webView
-    }
-
-    fun webViewFor(service: MediaService): WebView? = views[service]
-
-    fun openServices(): Set<MediaService> = views.keys.toSet()
-
-    fun release(service: MediaService) {
-        val webView = views.remove(service) ?: return
-        (webView.parent as? ViewGroup)?.removeView(webView)
-        webView.stopLoading()
-        webView.loadUrl("about:blank")
-        webView.destroy()
-        _open.update { it - service }
-        NowPlaying.forget(service)
-    }
-
-    fun releaseAll() = MediaService.entries.forEach { release(it) }
 }
 
 /** User agent di Chrome senza i segni della WebView: Google altrimenti rifiuta l'accesso. */

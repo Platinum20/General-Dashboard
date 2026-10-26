@@ -34,7 +34,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.MediaPageListener
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.createMediaWebView
 import com.platinum20.dashboard.media.inFrame
 import com.platinum20.dashboard.media.loadWhenAttached
@@ -58,8 +57,6 @@ fun LoginScreen(
             finished = true
             CookieManager.getInstance().flush()
             Accounts.refresh()
-            // Il player eventualmente aperto senza account riparte con l'accesso fatto.
-            MediaWebViews.release(service)
             onDone()
         }
     }

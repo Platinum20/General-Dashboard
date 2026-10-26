@@ -99,7 +99,6 @@ import com.platinum20.dashboard.autofill.AutoFill
 import androidx.compose.material.icons.outlined.AutoAwesome
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.youtube.YouTubeStore
@@ -946,11 +945,7 @@ private fun AdBlockSettings() {
     val enabled by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
     val status by AdBlocker.status.collectAsState()
-    val toggle = { on: Boolean ->
-        AppSettings.setAdBlock(on)
-        // Le pagine aperte ripartono con la nuova impostazione.
-        MediaWebViews.releaseAll()
-    }
+    val toggle = { on: Boolean -> AppSettings.setAdBlock(on) }
     SettingsItem(
         icon = Icons.Outlined.Shield,
         accent = TileAccent.PURPLE,

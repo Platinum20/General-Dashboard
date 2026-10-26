@@ -64,7 +64,6 @@ object Accounts {
 
     /** Esce dall'account cancellando cookie e dati salvati dei siti del servizio. */
     fun logout(service: MediaService) {
-        MediaWebViews.release(service)
         val cookies = CookieManager.getInstance()
         service.cookieUrls.forEach { url ->
             cookieNames(cookies.getCookie(url)).forEach { name ->

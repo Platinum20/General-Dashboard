@@ -5,7 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import com.platinum20.dashboard.media.NowPlaying
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.news.voice.NeuralVoice
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import com.platinum20.dashboard.news.voice.VoiceFiles
@@ -129,7 +129,7 @@ object RecapSpeaker {
         if (script.isEmpty()) return
         appContext = context.applicationContext
         // Un solo audio alla volta: musica, radio, podcast e video si mettono in pausa.
-        NowPlaying.pauseOthers(null, radio = true, recap = false)
+        CanvasPlayer.pause()
         VoiceStore.ensureDownloaded(context)
         parts = script
         starts = timeline(script)
@@ -203,7 +203,7 @@ object RecapSpeaker {
 
     fun resume() {
         val now = _state.value ?: return
-        NowPlaying.pauseOthers(null, radio = true, recap = false)
+        CanvasPlayer.pause()
         seekTo(now.positionMs)
     }
 

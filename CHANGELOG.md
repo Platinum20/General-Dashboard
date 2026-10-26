@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.177.0
+**Via il vecchio codice dei player**
+- Tolti i vecchi player web di YouTube e Spotify e la loro seconda notifica: ora c'è solo il player unico
+- Nessun cambiamento visibile: l'app è un po' più leggera
+
 ## 1.176.0
 **Oggi: card media sempre presente e tutte le card in Personalizza**
 - La card media non sparisce più quando c'è il mini player: mentre qualcosa suona mostra quello, come in Media
