@@ -25,16 +25,26 @@ data class UpcomingItem(
 )
 
 /**
- * "Prossimi giorni" in Oggi: da domani alla settimana dopo, tutto in un posto solo (impegni del calendario,
+ * "Prossimi giorni" in Oggi: le prossime [MAX] cose da domani in poi (fino a [DAYS] giorni), tutto in un posto solo (impegni del calendario,
  * promemoria con data, compleanni e date, pacchi, addebiti, anche quelli trovati in notifiche, SMS e mail).
  * "Adesso" sopra resta su oggi; il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura.
  */
 object Upcoming {
-    /** Quanti giorni guarda avanti, domani compreso. */
-    const val DAYS = 7
+    /** Quanti giorni guarda avanti, domani compreso: come il calendario in Note > Prossimi giorni. */
+    const val DAYS = 60
 
-    /** Quante righe al massimo: è un riassunto, il resto è in Note > Prossimi giorni. */
-    const val MAX = 8
+    /** Quante righe al massimo (Antonio: "i prossimi 10"): è un riassunto, il resto è in Note > Prossimi giorni. */
+    const val MAX = 10
+
+    /** Lo spazio massimo fra due giorni sulla linea della card. */
+    const val MAX_GAP_DP = 36f
+
+    /**
+     * Lo spazio in più (dp) fra due righe della card: zero se sono giorni di fila, poi 6 dp per ogni giorno
+     * vuoto in mezzo, fino a [MAX_GAP_DP]. Così la linea mostra quanto tempo passa fra una cosa e l'altra.
+     */
+    fun gapDp(from: LocalDate, to: LocalDate): Float =
+        (6f * (java.time.temporal.ChronoUnit.DAYS.between(from, to) - 1)).coerceIn(0f, MAX_GAP_DP)
 
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 

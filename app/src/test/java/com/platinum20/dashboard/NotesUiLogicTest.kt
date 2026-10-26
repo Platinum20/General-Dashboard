@@ -14,6 +14,9 @@ import com.platinum20.dashboard.ui.screens.dueBadge
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
+import com.platinum20.dashboard.ui.screens.DueDay
+import com.platinum20.dashboard.ui.screens.dueMarks
+import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import java.time.LocalDate
@@ -100,11 +103,60 @@ class NotesUiLogicTest {
     }
 
     @Test fun lineaDeiGiorni() {
-        val marks = listOf(DayMark(0, "Oggi"), DayMark(5, "Domani"), DayMark(10, "Lun 26"))
-        assertEquals(0.5f, DayScroll.fraction(5, 11))
-        assertEquals("Domani", DayScroll.nearest(marks, 11, 0.55f)?.label)
-        assertEquals("Lun 26", DayScroll.nearest(marks, 11, 1f)?.label)
+        val marks = listOf(DayMark(0, "Oggi", 0.0), DayMark(5, "Domani", 1.0), DayMark(10, "Lun 26", 4.0))
+        // Distanziate secondo il tempo: 1 giorno poi 3 giorni.
+        assertEquals(listOf(0f, 0.25f, 1f), DayScroll.fractions(marks))
+        assertEquals("Domani", DayScroll.nearest(marks, 0.3f)?.label)
+        assertEquals("Lun 26", DayScroll.nearest(marks, 1f)?.label)
         assertEquals("Domani", DayScroll.current(marks, 7)?.label)
         assertEquals("Oggi", DayScroll.current(marks, 0)?.label)
+        // Lo stesso giorno per tutti: in fila come una lista.
+        assertEquals(listOf(0f, 0.5f, 1f), DayScroll.fractions(marks.map { it.copy(at = 3.0) }))
+    }
+
+    @Test fun lineaDelTempoAccorciaISaltiLunghi() {
+        assertEquals(10.0, DayScroll.span(10.0), 0.0)
+        assertEquals(14.0 + 2 * Math.sqrt(286.0), DayScroll.span(300.0), 1e-9)
+        assertEquals(DayScroll.span(5.0), DayScroll.span(-5.0), 0.0)
+    }
+
+    @Test fun etichetteCorteSenzaAccavallarsi() {
+        assertEquals(setOf(0, 2), DayScroll.visibleTicks(listOf(0f, 0.02f, 0.5f), 0.05f))
+        // Quella accesa vince sulla vicina.
+        assertEquals(setOf(1, 2), DayScroll.visibleTicks(listOf(0f, 0.02f, 0.5f), 0.05f, keep = 1))
+        val today = LocalDate.of(2026, 10, 26)
+        assertEquals("Oggi", DayScroll.tick(today, today, null))
+        assertEquals("Dom", DayScroll.tick(today.plusDays(1), today, today))
+        assertEquals("30", DayScroll.tick(today.plusDays(4), today, today.plusDays(1)))
+        assertEquals("3 nov", DayScroll.tick(LocalDate.of(2026, 11, 3), today, today.plusDays(4)))
+        assertEquals("2027", DayScroll.tick(LocalDate.of(2027, 1, 5), today, LocalDate.of(2026, 12, 1)))
+    }
+
+    @Test fun tacchePerProssimiGiorni() {
+        val today = LocalDate.of(2026, 10, 26)
+        val groups = listOf(
+            DueDay(null, true, emptyList()),
+            DueDay(today, false, emptyList()),
+            DueDay(today.plusDays(3), false, emptyList()),
+        )
+        val marks = dueMarks(groups, today, first = 1) { 2 }
+        assertEquals(listOf(1, 3, 5), marks.map { it.index })
+        assertEquals(listOf("Scad.", "Oggi", "29"), marks.map { it.tick })
+        assertEquals(listOf(today.toEpochDay() - 1.0, today.toEpochDay().toDouble(), today.toEpochDay() + 3.0), marks.map { it.at })
+    }
+
+    @Test fun tacchePerLeNote() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun at(d: LocalDate) = d.atTime(10, 0).atZone(zone).toInstant().toEpochMilli()
+        val notes = listOf(
+            Note(1, "Fissata", updatedAt = 1, pinned = true),
+            Note(2, "Oggi", createdAt = at(today)),
+            Note(3, "Oggi bis", createdAt = at(today)),
+            Note(4, "Settembre", createdAt = at(LocalDate.of(2026, 9, 12))),
+        )
+        val marks = noteMarks(notes, today, first = 1, zone = zone)
+        assertEquals(listOf(2, 4), marks.map { it.index })
+        assertEquals(listOf("Oggi", "12 set"), marks.map { it.tick })
     }
 }

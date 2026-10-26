@@ -201,7 +201,7 @@ private fun NotesOverview(
     val dated = timeline.flatMap { d -> d.rows.map { d to it } }
     val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
     val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
-    val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+    val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
     LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "dated") {
             NotesCategoryCard(
@@ -417,7 +417,8 @@ fun NotesScreen(
         val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
         val done = data.tasks.filter { it.done }
         val delivered = data.parcels.filter { it.delivered }.sortedByDescending { it.deliveredOn }
-        val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.updatedAt })
+        // In ordine di inserimento, le più nuove in cima: la linea del tempo a destra segue questo ordine.
+        val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
         val shownNotes = if (allNotes || section == NotesSection.UNDATED) notes else notes.take(NOTES_PREVIEW)
         val today = LocalDate.now()
         val empty = if (section == NotesSection.DATED) timeline.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
@@ -427,16 +428,17 @@ fun NotesScreen(
             (timeline + DueDay(today, false, emptyList())).sortedBy { if (it.late) Long.MIN_VALUE else it.day?.toEpochDay() ?: Long.MAX_VALUE }
         } else timeline
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
-        // La linea dei giorni a destra: dove comincia ogni giorno nella lista (stesso ordine degli item sotto).
-        val marks = if (section != NotesSection.DATED) emptyList() else buildList {
-            var index = (if (empty) 1 else 0) + (if (invite) 1 else 0)
-            groups.forEach { d ->
-                add(DayMark(index, d.shortLabel(today)))
-                index += 1 + d.rows.size + if (!d.late && d.day == today) data.habits.size else 0
+        // La linea del tempo a destra: dove comincia ogni giorno nella lista (stesso ordine degli item sotto),
+        // distanziata secondo i giorni che passano.
+        val marks = when (section) {
+            NotesSection.DATED -> dueMarks(groups, today, first = (if (empty) 1 else 0) + (if (invite) 1 else 0)) { d ->
+                1 + d.rows.size + if (!d.late && d.day == today) data.habits.size else 0
             }
+            NotesSection.UNDATED -> noteMarks(notes, today, first = (if (empty) 1 else 0) + 1 + (if (undatedTasks.isNotEmpty()) 1 else 0))
+            else -> emptyList()
         }
-        val listPadding = if (marks.size >= 3) PaddingValues(
-            start = 16.dp, end = 36.dp,
+        val listPadding = if (marks.size >= 2) PaddingValues(
+            start = 16.dp, end = DayScrollbarGutter,
             top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding(),
         ) else padding
 

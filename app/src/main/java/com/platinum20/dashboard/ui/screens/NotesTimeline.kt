@@ -237,3 +237,48 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
         }
     }
 }
+
+/**
+ * Le tacche della linea del tempo per Prossimi giorni: una per giorno, a partire dalla riga [first];
+ * [rowsOf] dice quante righe occupa un giorno nella lista. "Scaduti" sta un giorno prima del primo,
+ * "Senza data" un giorno dopo l'ultimo.
+ */
+internal fun dueMarks(groups: List<DueDay>, today: LocalDate, first: Int, rowsOf: (DueDay) -> Int): List<DayMark> {
+    val days = groups.mapNotNull { it.day }
+    val start = (days.minOrNull() ?: today).let { if (it.isAfter(today)) today else it }
+    val end = days.maxOrNull() ?: today
+    var index = first
+    var previous: LocalDate? = null
+    return groups.map { d ->
+        val day = d.day
+        val mark = when {
+            d.late -> DayMark(index, "Scaduti", start.toEpochDay() - 1.0, "Scad.")
+            day == null -> DayMark(index, "Senza data", end.toEpochDay() + 1.0, "—")
+            else -> DayMark(index, d.shortLabel(today), day.toEpochDay().toDouble(), DayScroll.tick(day, today, previous)).also { previous = day }
+        }
+        index += rowsOf(d)
+        mark
+    }
+}
+
+/**
+ * Le tacche della linea del tempo per le Note: una per giorno di inserimento, dalla più nuova in giù,
+ * a partire dalla riga [first]. Le note fissate stanno in cima fuori dall'ordine: niente tacca.
+ */
+internal fun noteMarks(notes: List<com.platinum20.dashboard.notes.Note>, today: LocalDate, first: Int, zone: ZoneId = ZoneId.systemDefault()): List<DayMark> {
+    var previous: LocalDate? = null
+    return notes.mapIndexedNotNull { i, note ->
+        if (note.pinned) return@mapIndexedNotNull null
+        val day = Instant.ofEpochMilli(note.createdAt).atZone(zone).toLocalDate()
+        if (day == previous) return@mapIndexedNotNull null
+        val label = when (day) {
+            today -> "Oggi"
+            today.minusDays(1) -> "Ieri"
+            else -> day.format(if (day.year == today.year) shortDay else shortDayYear).replaceFirstChar { it.uppercase() }
+        }
+        DayMark(first + i, label, day.toEpochDay().toDouble(), DayScroll.tick(day, today, previous)).also { previous = day }
+    }
+}
+
+private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
+private val shortDayYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN)
