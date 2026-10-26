@@ -84,8 +84,8 @@ object Playback {
     }
 
     private fun speechPlaying(it: RecapListening) = Playing(
-        PlaySource.SPEECH, "Il punto del giorno",
-        it.error ?: if (it.part == 0) "Apertura" else "Tema ${it.part} di ${it.total - 1}",
+        PlaySource.SPEECH, it.title,
+        it.error ?: it.chapter?.label ?: "Parte ${it.part + 1} di ${it.total}",
         "", it.speaking, positionMs = it.positionMs, durationMs = it.durationMs, error = it.error,
     )
 

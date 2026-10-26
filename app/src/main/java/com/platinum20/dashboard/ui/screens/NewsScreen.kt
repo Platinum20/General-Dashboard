@@ -235,7 +235,7 @@ private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: 
 }
 
 /** L'articolo come cosa da salvare nelle note: si riapre nel lettore. */
-internal fun NewsItem.savedLink() = SavedLink.Article(link, source.name, title)
+internal fun NewsItem.savedLink() = SavedLink.Article(link, source.name, title, imageUrl.orEmpty())
 
 @Composable
 private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {

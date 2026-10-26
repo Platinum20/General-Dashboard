@@ -827,60 +827,99 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onEdit: () -> Unit, modifie
                 onLongClick = { haptic(Haptic.LONG_PRESS); NotesStore.togglePin(note.id) },
             ),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                saved?.let {
-                    Icon(
-                        savedIcon(it),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(end = 8.dp).size(20.dp),
+        Row(Modifier.padding(16.dp)) {
+            // L'anteprima di quello che si è salvato: copertina, miniatura del video, foto dell'articolo.
+            saved?.takeIf { it.image.isNotBlank() }?.let { SavedPreview(it, it.image) }
+            Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    saved?.takeIf { it.image.isBlank() }?.let {
+                        Icon(
+                            savedIcon(it),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp).size(20.dp),
+                        )
+                    }
+                    Text(
+                        note.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = if (saved != null) 2 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
                     )
-                }
-                Text(
-                    note.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                if (note.pinned) {
-                    Icon(
-                        Icons.Outlined.PushPin,
-                        contentDescription = "Fissata",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                if (saved != null) {
-                    IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
-                        Icon(Icons.Outlined.Edit, contentDescription = "Modifica la nota", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    if (note.pinned) {
+                        Icon(
+                            Icons.Outlined.PushPin,
+                            contentDescription = "Fissata",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    if (saved != null) {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                            Icon(Icons.Outlined.Edit, contentDescription = "Modifica la nota", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
-            }
-            Checklist.progressLabel(note.text)?.let { progress ->
+                Checklist.progressLabel(note.text)?.let { progress ->
+                    Text(
+                        progress,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                if (note.body.isNotBlank()) {
+                    Text(
+                        Checklist.preview(note.body),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    progress,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            if (note.body.isNotBlank()) {
-                Text(
-                    Checklist.preview(note.body),
-                    style = MaterialTheme.typography.bodyMedium,
+                    relativeTime(Instant.ofEpochMilli(note.updatedAt)),
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                relativeTime(Instant.ofEpochMilli(note.updatedAt)),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
+    }
+}
+
+/**
+ * La miniatura a sinistra di una nota salvata: quadrata per musica, radio e podcast, larga per
+ * video e articoli. Sopra, la piccola icona che dice cos'è.
+ */
+@Composable
+private fun SavedPreview(link: SavedLink, image: String) {
+    val square = link is SavedLink.Media && link.item.kind in setOf(ResumeKind.MUSIC, ResumeKind.SPOTIFY, ResumeKind.RADIO, ResumeKind.PODCAST)
+    Box(
+        Modifier
+            .padding(end = 12.dp)
+            .size(width = if (square) 64.dp else 96.dp, height = 64.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        coil3.compose.AsyncImage(
+            model = image,
+            contentDescription = null,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Icon(
+            savedIcon(link),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(4.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(3.dp)
+                .size(14.dp),
+        )
     }
 }
 

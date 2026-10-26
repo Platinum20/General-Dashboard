@@ -13,6 +13,7 @@ import java.util.Locale
 /** Il copione del punto del giorno letto ad alta voce: un'apertura e una parte per tema. */
 object RecapReader {
     const val MAX_THEMES = 6
+    const val TITLE = "Il punto del giorno"
     private val ordinals = listOf("Primo", "Secondo", "Terzo", "Quarto", "Quinto", "Sesto")
 
     /** Le parti da leggere una dopo l'altra; vuoto se non ci sono temi. */
@@ -31,6 +32,20 @@ object RecapReader {
         }
         return parts
     }
+
+    /** Il nome di ogni parte del copione, per i capitoli del player: "Apertura" e i titoli dei temi. */
+    fun labels(themes: List<RecapTheme>): List<String> =
+        listOf("Apertura") + themes.take(MAX_THEMES).map { clean(it.headline.title).trimEnd('.', ' ') }
+
+    /** Il nome di una parte nei capitoli: le prime parole, così si vede di cosa parla. */
+    fun chapterLabel(text: String): String {
+        val words = text.split(' ').filter { it.isNotBlank() }
+        return if (words.size <= 8) text else words.take(8).joinToString(" ").trimEnd(',', ';', ':') + "…"
+    }
+
+    /** Mettere un articolo del lettore in voce: titolo, poi un paragrafo per parte. */
+    fun articleScript(title: String, paragraphs: List<String>): List<String> =
+        (listOf(title) + paragraphs).map(::clean).filter { it.isNotBlank() }
 
     /** Toglie quello che a voce non ha senso: indirizzi, virgolette, simboli, spazi doppi. */
     fun clean(text: String): String = text
@@ -62,7 +77,15 @@ data class RecapListening(
     val error: String? = null,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
-)
+    val title: String = RecapReader.TITLE,
+    val chapters: List<SpeechChapter> = emptyList(),
+) {
+    /** Il capitolo in corso, se le parti hanno un nome. */
+    val chapter: SpeechChapter? get() = chapters.getOrNull(part)
+}
+
+/** Dove comincia a parlare di una cosa: i timestamp del punto del giorno nel player. */
+data class SpeechChapter(val label: String, val startMs: Long)
 
 /** La voce di Android (italiano, sul telefono e gratis) che legge il copione del punto del giorno. */
 object RecapSpeaker {
@@ -74,32 +97,43 @@ object RecapSpeaker {
     private var parts: List<String> = emptyList()
     private var starts: List<Long> = emptyList()
     private var totalMs = 0L
+    private var title = ""
+    private var chapters: List<SpeechChapter> = emptyList()
 
     private val _state = MutableStateFlow<RecapListening?>(null)
     val state: StateFlow<RecapListening?> = _state.asStateFlow()
 
-    fun play(context: Context, script: List<String>) {
+    /**
+     * Legge [script] dall'inizio o da [fromMs]. [labels] dà un nome a ogni parte: diventano i
+     * capitoli con l'orario nel player.
+     */
+    fun play(
+        context: Context,
+        script: List<String>,
+        title: String = RecapReader.TITLE,
+        labels: List<String> = emptyList(),
+        fromMs: Long = 0,
+    ) {
         if (script.isEmpty()) return
         // Un solo audio alla volta: musica, radio, podcast e video si mettono in pausa.
         NowPlaying.pauseOthers(null, radio = true, recap = false)
         parts = script
         starts = timeline(script)
         totalMs = starts.last() + script.last().length * MS_PER_CHAR
-        _state.value = RecapListening(0, script.size, speaking = false, durationMs = totalMs)
+        this.title = title
+        chapters = chaptersOf(script, labels)
+        _state.value = listening(0, speaking = false, positionMs = fromMs)
         val engine = tts
-        if (engine != null && ready) speakFrom(0, 0) else if (engine == null) {
+        if (engine != null && ready) seekTo(fromMs) else if (engine == null) {
             tts = TextToSpeech(context.applicationContext) init@{ status ->
                 ready = status == TextToSpeech.SUCCESS
                 if (!ready) {
-                    _state.value = RecapListening(0, parts.size, speaking = false, error = "Sintesi vocale non disponibile sul telefono")
+                    _state.value = listening(0, speaking = false, error = "Sintesi vocale non disponibile sul telefono")
                     return@init
                 }
                 val language = tts?.setLanguage(Locale.ITALIAN) ?: TextToSpeech.LANG_NOT_SUPPORTED
                 if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    _state.value = RecapListening(
-                        0, parts.size, speaking = false,
-                        error = "Manca la voce italiana: aggiungila in Impostazioni › Sintesi vocale",
-                    )
+                    _state.value = listening(0, speaking = false, error = "Manca la voce italiana: aggiungila in Impostazioni › Sintesi vocale")
                     return@init
                 }
                 tts?.setOnUtteranceProgressListener(listener)
@@ -107,6 +141,13 @@ object RecapSpeaker {
             }
         }
     }
+
+    /** I capitoli: una parte con nome per etichetta, dal punto in cui comincia. Funzione pura. */
+    internal fun chaptersOf(script: List<String>, labels: List<String>): List<SpeechChapter> =
+        timeline(script).zip(labels) { start, label -> SpeechChapter(label, start) }
+
+    private fun listening(part: Int, speaking: Boolean, positionMs: Long = 0, error: String? = null) =
+        RecapListening(part, parts.size, speaking, error, positionMs, totalMs, title, chapters)
 
     /** Dove comincia ogni parte, in millisecondi stimati: funzione pura, provata nei test. */
     internal fun timeline(script: List<String>): List<Long> =
@@ -172,7 +213,7 @@ object RecapSpeaker {
         engine.stop()
         engine.speak(parts[index].substring(char), TextToSpeech.QUEUE_FLUSH, null, "punto-$index-$char")
         for (i in index + 1 until parts.size) engine.speak(parts[i], TextToSpeech.QUEUE_ADD, null, "punto-$i-0")
-        _state.value = RecapListening(index, parts.size, speaking = true, positionMs = position(index, char), durationMs = totalMs)
+        _state.value = listening(index, speaking = true, positionMs = position(index, char))
     }
 
     private fun position(part: Int, char: Int): Long = (starts.getOrNull(part) ?: 0) + char * MS_PER_CHAR
@@ -187,7 +228,7 @@ object RecapSpeaker {
     private val listener = object : UtteranceProgressListener() {
         override fun onStart(utteranceId: String?) {
             val (part, char) = parse(utteranceId) ?: return
-            _state.value = RecapListening(part, parts.size, speaking = true, positionMs = position(part, char), durationMs = totalMs)
+            _state.value = listening(part, speaking = true, positionMs = position(part, char))
         }
 
         // Parola per parola: la barra segue la voce.
