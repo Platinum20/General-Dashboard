@@ -52,6 +52,8 @@ data class TimelineEntry(
     val color: Int = 0,
     /** "Scaduti": il giorno in rosso. */
     val late: Boolean = false,
+    /** Già passato: tutto più tenue. */
+    val past: Boolean = false,
 )
 
 /** L'icona piccola di una riga: evento, promemoria, data, pacco o addebito. */
@@ -104,6 +106,7 @@ fun TimelineRow(
         Text(
             entry.text,
             style = MaterialTheme.typography.bodyMedium,
+            color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(vertical = 7.dp),
@@ -114,6 +117,7 @@ fun TimelineRow(
             Modifier.fillMaxHeight(),
             line,
             dot = when {
+                first && entry.past -> MaterialTheme.colorScheme.outline to 7.dp
                 first -> (if (entry.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) to 7.dp
                 else -> MaterialTheme.colorScheme.outline to 4.dp
             },
@@ -123,7 +127,11 @@ fun TimelineRow(
         Text(
             entry.dayLabel.orEmpty(),
             style = MaterialTheme.typography.labelLarge,
-            color = if (entry.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            color = when {
+                entry.late -> MaterialTheme.colorScheme.error
+                entry.past -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.primary
+            },
             maxLines = 1,
             textAlign = TextAlign.End,
             modifier = Modifier.width(TIMELINE_LABEL),

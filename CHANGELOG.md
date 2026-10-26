@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.196.0
+**Prossimi giorni: scorrendo in su si torna indietro nel tempo**
+- Note › Prossimi giorni si apre sempre da adesso; scorrendo verso l'alto vedi il passato degli ultimi due mesi: impegni finiti, promemoria fatti e pacchi arrivati, più tenui
+- Le abitudini stanno sotto la linea del tempo, e in Completati resta solo quello che non è già nel passato
+
 ## 1.195.0
 **La linea del tempo a destra, uguale in Oggi e in Note**
 - Nella card Prossimi giorni i nomi stanno a sinistra e la linea con i giorni a destra; le cose mostrate sono 8

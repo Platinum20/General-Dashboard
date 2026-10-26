@@ -87,14 +87,15 @@ object Upcoming {
     }
 
     /**
-     * "Oggi", "Domani", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi.
+     * "Oggi", "Domani", "Ieri", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi.
      * Oltre quattro settimane anche il mese ("Mar 9 dic"). Uguale in Oggi e in Note.
      */
     fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
         today -> "Oggi"
         today.plusDays(1) -> "Domani"
+        today.minusDays(1) -> "Ieri"
         else -> day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}" +
-            if (day.isAfter(today.plusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
+            if (day.isAfter(today.plusDays(27)) || day.isBefore(today.minusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
     }
 
     private fun Long.at(zone: ZoneId): String = Instant.ofEpochMilli(this).atZone(zone).format(hour)
