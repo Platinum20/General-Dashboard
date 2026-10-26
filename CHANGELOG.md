@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.173.0
+**I pop-up delle Note come gli altri**
+- Tenendo premuta una nota, Fissa in alto, Condividi ed Elimina salgono nel fumetto di vetro in fondo al centro, come "Salva nelle note", invece del menu a tendina
+- Anche "smetti di aggiungerla ogni mese" sulle spese fisse usa lo stesso fumetto
+- Si chiudono portandoli di lato (come il mini player), toccando fuori o con indietro
+- Anche "Nota eliminata · Annulla" (e le altre eliminazioni nelle Note) ora è il fumetto di vetro in fondo al centro, come la conferma del +, chiudibile di lato
+
 ## 1.172.0
 **Le voci si scaricano (e si vede a che punto sono)**
 - Il download della voce non sembra più bloccato: la percentuale sale davvero e, se qualcosa va storto, la riga sotto dice il perché ("niente rete", "rete troppo lenta") e basta toccare la voce per riprovare

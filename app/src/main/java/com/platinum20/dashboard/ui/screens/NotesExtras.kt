@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.notes.Carrier
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.Expenses
-import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
@@ -99,7 +98,6 @@ fun ExpensesTab(
     var editing by remember { mutableStateOf<Expense?>(null) }
     val fixedDraft = remember(draft) { Expenses.parseFixed(draft) }
     val parsed = remember(draft) { if (fixedDraft != null) null else Expenses.parse(draft) }
-    var stopping by remember { mutableStateOf<FixedExpense?>(null) }
     val haptic = rememberHaptic()
     val add = {
         // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
@@ -244,7 +242,17 @@ fun ExpensesTab(
                         data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
                             if (i > 0) RowDivider()
                             Row(
-                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { stopping = f }.padding(horizontal = 16.dp, vertical = 10.dp),
+                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable {
+                                    // Come gli altri pop-up: il fumetto di vetro in fondo, non una finestra.
+                                    ActionBubble.show(
+                                        BubbleAction(
+                                            Icons.Outlined.Close,
+                                            "Smetti di aggiungerla ogni mese",
+                                            detail = "${f.text.ifEmpty { "Spesa fissa" }} · quelle già aggiunte restano",
+                                            danger = true,
+                                        ) { NotesStore.deleteFixedExpense(f.id) },
+                                    )
+                                }.padding(horizontal = 16.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
@@ -310,20 +318,6 @@ fun ExpensesTab(
     }
 
     if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
-    stopping?.let { f ->
-        CanvasDialog(
-            onDismissRequest = { stopping = null },
-            title = { Text(f.text.ifEmpty { "Spesa fissa" }) },
-            text = { Text("Smettere di aggiungerla ogni mese? Quelle già aggiunte restano nei mesi passati.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    NotesStore.deleteFixedExpense(f.id)
-                    stopping = null
-                }) { Text("Smetti") }
-            },
-            dismissButton = { TextButton(onClick = { stopping = null }) { Text("Annulla") } },
-        )
-    }
     editing?.let { ExpenseDialog(it, onDismiss = { editing = null }, onDeleted = onDeleted) }
 }
 

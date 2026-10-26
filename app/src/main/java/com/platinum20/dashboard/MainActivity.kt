@@ -12,6 +12,7 @@ import com.platinum20.dashboard.capture.CaptureTargets
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
 import com.platinum20.dashboard.ui.screens.SaveToNotesLayer
+import com.platinum20.dashboard.ui.screens.ActionBubbleLayer
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
@@ -1406,6 +1407,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
     }
     SaveToNotesLayer()
+    ActionBubbleLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
     }

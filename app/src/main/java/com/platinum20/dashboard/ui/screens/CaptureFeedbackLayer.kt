@@ -105,7 +105,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         // Mentre il dito lo tiene di lato non vola via: decide il gesto.
         while (notice === n && swipe.x.value != 0f) delay(100)
         if (notice !== n) return@LaunchedEffect
-        val from = noticeRect?.center
+        val from = noticeRect?.center?.takeIf { n.fly }
         val to = target(n)
         notice = null
         if (from != null && to != null) flight = Flight(n.icon, from, to.second.center, to.first)

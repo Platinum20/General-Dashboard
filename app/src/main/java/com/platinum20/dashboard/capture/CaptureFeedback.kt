@@ -20,6 +20,8 @@ internal data class CaptureNotice(
     /** Per ciò che non è una nota (una canzone riconosciuta): l'icona e la scheda dove vola il pallino. */
     val icon: ImageVector = mode.icon,
     val target: String? = null,
+    /** False per le conferme che non salvano niente (es. "Nota eliminata · Annulla"): il fumetto sparisce senza pallino. */
+    val fly: Boolean = true,
 )
 
 /**

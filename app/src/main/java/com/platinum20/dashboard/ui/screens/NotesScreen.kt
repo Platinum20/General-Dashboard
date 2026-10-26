@@ -62,8 +62,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -71,10 +69,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -148,6 +142,8 @@ import com.platinum20.dashboard.calendar.CalendarRepository
 import androidx.lifecycle.repeatOnLifecycle
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureGuess
 import com.platinum20.dashboard.capture.CaptureSave
 import com.platinum20.dashboard.capture.CaptureResult
@@ -321,16 +317,14 @@ fun NotesScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
-    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
+    // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
+    // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.
     fun offerUndo(message: String, restore: () -> Unit) {
-        scope.launch {
-            snackbar.currentSnackbarData?.dismiss()
-            val result = snackbar.showSnackbar(message, actionLabel = "Annulla", duration = SnackbarDuration.Short)
-            if (result == SnackbarResult.ActionPerformed) restore()
-        }
+        CaptureFeedback.show(
+            CaptureNotice(CaptureMode.NOTE, message, undo = { restore() }, icon = Icons.Outlined.Delete, fly = false),
+        )
     }
 
     fun offerUndo(removed: List<TaskItem>, message: String) {
@@ -386,9 +380,6 @@ fun NotesScreen(
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
-        snackbarHost = {
-            SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
-        },
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
@@ -818,8 +809,8 @@ private fun TaskRow(task: TaskItem, onDeleted: (TaskItem) -> Unit, trailing: (@C
 
 @OptIn(ExperimentalFoundationApi::class)
 /**
- * Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto compare il menu
- * (fissa in alto, condividi, elimina): per le cose di "Salva nelle note" è l'unico modo di gestirle,
+ * Una nota nella lista: titolo, anteprima e quando è stata toccata. Tenendo premuto sale il fumetto
+ * delle azioni (fissa in alto, condividi, elimina): per le cose di "Salva nelle note" è l'unico modo di gestirle,
  * perché il loro testo con l'indirizzo canvas://open non si mostra mai in un editor.
  */
 @Composable
@@ -828,7 +819,6 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
     val context = LocalContext.current
     // Una nota di "Salva nelle note": l'icona dice cos'è e il tocco riapre la cosa.
     val saved = remember(note.text) { SavedLinks.find(note.text) }
-    var menu by remember { mutableStateOf(false) }
     Box(modifier) {
     CanvasCard(
         shape = MaterialTheme.shapes.extraLarge,
@@ -837,7 +827,23 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
             .bouncyPress()
             .combinedClickable(
                 onClick = onOpen,
-                onLongClick = { haptic(Haptic.LONG_PRESS); menu = true },
+                onLongClick = {
+                    haptic(Haptic.LONG_PRESS)
+                    ActionBubble.show(
+                        BubbleAction(
+                            if (note.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
+                            if (note.pinned) "Togli da in alto" else "Fissa in alto",
+                            detail = note.title,
+                        ) { NotesStore.togglePin(note.id) },
+                        BubbleAction(Icons.Outlined.Share, "Condividi") {
+                            val share = android.content.Intent(android.content.Intent.ACTION_SEND)
+                                .setType("text/plain")
+                                .putExtra(android.content.Intent.EXTRA_TEXT, saved?.let(SavedLinks::shareText) ?: note.text)
+                            context.startActivity(android.content.Intent.createChooser(share, null))
+                        },
+                        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true, onClick = onDelete),
+                    )
+                },
             ),
     ) {
         Row(Modifier.padding(16.dp)) {
@@ -893,29 +899,6 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                 )
             }
         }
-    }
-    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-        DropdownMenuItem(
-            text = { Text(if (note.pinned) "Togli da in alto" else "Fissa in alto") },
-            leadingIcon = { Icon(if (note.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin, contentDescription = null) },
-            onClick = { menu = false; NotesStore.togglePin(note.id) },
-        )
-        DropdownMenuItem(
-            text = { Text("Condividi") },
-            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-            onClick = {
-                menu = false
-                val share = android.content.Intent(android.content.Intent.ACTION_SEND)
-                    .setType("text/plain")
-                    .putExtra(android.content.Intent.EXTRA_TEXT, saved?.let(SavedLinks::shareText) ?: note.text)
-                context.startActivity(android.content.Intent.createChooser(share, null))
-            },
-        )
-        DropdownMenuItem(
-            text = { Text("Elimina") },
-            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            onClick = { menu = false; onDelete() },
-        )
     }
     }
 }
