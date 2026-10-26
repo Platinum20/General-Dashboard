@@ -79,8 +79,8 @@ private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
- * Spese: si scrivono come un messaggio ("12,50 pizza"), la categoria si indovina dalle parole.
- * In alto il totale del mese, il budget e dove vanno i soldi.
+ * Spese: il totale del mese, il budget e dove vanno i soldi. Si aggiungono solo dal +
+ * ("12,50 pizza", "ogni mese il 5 affitto 650"), la categoria si indovina dalle parole.
  */
 @Composable
 fun ExpensesTab(
@@ -89,53 +89,14 @@ fun ExpensesTab(
     onDeleted: (Expense) -> Unit = {},
 ) {
     var month by remember { mutableStateOf(YearMonth.now()) }
-    var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
-    val fixedDraft = remember(draft) { Expenses.parseFixed(draft) }
-    val parsed = remember(draft) { if (fixedDraft != null) null else Expenses.parse(draft) }
-    val haptic = rememberHaptic()
-    val add = {
-        // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
-        val saved = if (fixedDraft != null) NotesStore.addFixedExpense(draft) else NotesStore.addExpense(draft)
-        if (saved != null) {
-            haptic(Haptic.CONFIRM)
-            draft = ""
-        }
-    }
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        item {
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                placeholder = { Text("Es. 12,50 pizza · ogni mese il 5 affitto 650") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { add() }),
-                trailingIcon = {
-                    if (parsed != null || fixedDraft != null) IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
-                },
-                shape = MaterialTheme.shapes.large,
-                colors = canvasFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (draft.isNotBlank()) {
-                Text(
-                    fixedDraft?.let { "Ogni mese il ${it.day} · ${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
-                        ?: parsed?.let { "${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
-                        ?: "Scrivi anche l'importo",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (parsed != null || fixedDraft != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 12.dp, top = 4.dp),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-        }
         item {
             CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
