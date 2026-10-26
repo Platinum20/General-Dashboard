@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.202.0
+**Allega una foto dalla barra**
+- Quando scrivi con il +, tutto a sinistra nella barra c'è la graffetta: scatti una foto o ne scegli una dalla galleria
+- Canvas la legge sul telefono e capisce cosa farne: uno scontrino diventa una spesa, un biglietto o un invito con la data diventa una scadenza, il resto una nota. Controlli e invii come sempre
+- In Spese non c'è più il pulsante dello scontrino né il campo in cima: le spese si aggiungono dal +
+
 ## 1.200.0
 **Prossimi giorni arriva fino all'anno dopo**
 - Note › Prossimi giorni e la card in Oggi guardano avanti più di un anno di calendario, non più solo due mesi

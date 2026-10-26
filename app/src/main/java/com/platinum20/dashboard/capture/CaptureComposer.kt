@@ -23,6 +23,9 @@ object CaptureComposer {
     /** Si sta dettando dentro il campo: la tastiera che si chiude non deve annullare la nota. */
     var dictating by mutableStateOf(false)
 
+    /** Si sta scegliendo o leggendo una foto con la graffetta: anche qui la tastiera chiusa non annulla. */
+    var attaching by mutableStateOf(false)
+
     fun open(text: String = "") {
         this.text = TextFieldValue(text, TextRange(text.length))
         request = text
@@ -31,6 +34,7 @@ object CaptureComposer {
     fun close() {
         request = null
         dictating = false
+        attaching = false
     }
 
     /** Dettato tenendo premuto il tasto invia: si aggiunge a quello che si stava scrivendo. */
