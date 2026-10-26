@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.176.0
+**Oggi: card media sempre presente e tutte le card in Personalizza**
+- La card media non sparisce più quando c'è il mini player: mentre qualcosa suona mostra quello, come in Media
+- In Oggi sta subito sotto "Adesso" e prima di "Domani"
+- In Personalizza ora ci sono tutte le card di Oggi: oltre ad Adesso, Media, La giornata e Il punto del giorno anche Domani, La tua settimana e Trovati per te. Si spostano trascinandole e si nascondono come le altre
+
 ## 1.175.0
 **Note: gli eventi del calendario ci sono subito**
 - Aprendo o tornando su Note gli eventi in corso (come un appuntamento di oggi) sono già nella card, che non si allarga più un attimo dopo
