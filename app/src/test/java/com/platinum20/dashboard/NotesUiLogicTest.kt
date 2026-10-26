@@ -7,10 +7,13 @@ import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.ui.screens.DueGroup
+import com.platinum20.dashboard.ui.screens.label
+import com.platinum20.dashboard.ui.screens.shortLabel
 import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.screens.dueBadge
-import com.platinum20.dashboard.ui.screens.dueGroups
+import com.platinum20.dashboard.ui.screens.dueDays
+import com.platinum20.dashboard.ui.screens.DayMark
+import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import java.time.LocalDate
@@ -34,7 +37,7 @@ class NotesUiLogicTest {
     private fun ms(t: LocalDateTime) = t.atZone(zone).toInstant().toEpochMilli()
 
     @Test fun promemoriaDateEPacchiInUnaListaSolaPerGiorno() {
-        val groups = dueGroups(
+        val groups = dueDays(
             tasks = listOf(
                 TaskItem(1, "Bollette", dueAt = ms(oggi.minusDays(1).atTime(9, 0))),
                 TaskItem(2, "Palestra", dueAt = ms(oggi.atTime(18, 0))),
@@ -56,10 +59,14 @@ class NotesUiLogicTest {
             now = adesso,
             zone = zone,
         )
-        assertEquals(listOf(DueGroup.LATE, DueGroup.TODAY, DueGroup.TOMORROW, DueGroup.WEEK, DueGroup.LATER), groups.map { it.first })
         assertEquals(
-            listOf(listOf("parcel-9", "task-1"), listOf("task-2"), listOf("date-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("date-5", "parcel-10")),
-            groups.map { g -> g.second.map { it.key } },
+            listOf("Scaduti", "Oggi", "Domani", "Lunedì 26 ottobre", "Lunedì 2 novembre", "Senza data"),
+            groups.map { it.label(oggi) },
+        )
+        assertEquals(listOf("Scaduti", "Oggi", "Domani", "Lun 26", "Lun 2", "Senza data"), groups.map { it.shortLabel(oggi) })
+        assertEquals(
+            listOf(listOf("parcel-9", "task-1"), listOf("task-2"), listOf("date-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("date-5"), listOf("parcel-10")),
+            groups.map { g -> g.rows.map { it.key } },
         )
     }
 
@@ -78,8 +85,26 @@ class NotesUiLogicTest {
         )
         val chips = notesChips(data, oggi)
         assertEquals(listOf(NotesSection.DATED, NotesSection.UNDATED), chips.map { it.first })
-        assertEquals(listOf("Con scadenza · 1", "Senza scadenza · 2"), chips.map { it.second })
+        assertEquals(listOf("Prossimi giorni · 1", "Note · 2"), chips.map { it.second })
     }
 
     @Test fun senzaNienteNessunaPillola() = assertEquals(emptyList<Any>(), notesChips(NotesData(), oggi))
+
+    @Test fun addebitiNelGiornoDelProssimoAddebito() {
+        val affitto = com.platinum20.dashboard.notes.FixedExpense(
+            1, 65000, "affitto", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), day = 5, from = java.time.YearMonth.of(2026, 1),
+        )
+        val groups = dueDays(emptyList(), emptyList(), emptyList(), emptyList(), listOf(affitto), now = adesso, zone = zone)
+        assertEquals(listOf(LocalDate.of(2026, 11, 5)), groups.map { it.day })
+        assertEquals("charge-1", groups.single().rows.single().key)
+    }
+
+    @Test fun lineaDeiGiorni() {
+        val marks = listOf(DayMark(0, "Oggi"), DayMark(5, "Domani"), DayMark(10, "Lun 26"))
+        assertEquals(0.5f, DayScroll.fraction(5, 11))
+        assertEquals("Domani", DayScroll.nearest(marks, 11, 0.55f)?.label)
+        assertEquals("Lun 26", DayScroll.nearest(marks, 11, 1f)?.label)
+        assertEquals("Domani", DayScroll.current(marks, 7)?.label)
+        assertEquals("Oggi", DayScroll.current(marks, 0)?.label)
+    }
 }

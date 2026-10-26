@@ -157,7 +157,6 @@ import com.platinum20.dashboard.ui.screens.PullToSearchIndicator
 import com.platinum20.dashboard.ui.screens.LocalOpenSearch
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
 import com.platinum20.dashboard.ui.screens.rememberPullToSearch
-import com.platinum20.dashboard.ui.screens.CalendarScreen
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
 import com.platinum20.dashboard.ui.screens.InAppLinks
@@ -218,6 +217,8 @@ import com.platinum20.dashboard.ui.screens.AutoFillScreen
 import com.platinum20.dashboard.ui.screens.MailScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.screens.ExpensesScreen
+import com.platinum20.dashboard.ui.screens.NotesNav
+import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 import com.platinum20.dashboard.widget.DashboardWidget
@@ -392,7 +393,6 @@ object Routes {
 
     fun webPage(url: String, source: String) = "news/web?url=${Uri.encode(url)}&source=${Uri.encode(source)}"
 
-    const val CALENDAR = "home/calendar"
     const val CALENDAR_EVENT = "home/calendar/event?id={id}&begin={begin}&end={end}"
     const val CALENDAR_EDIT = "home/calendar/edit?id={id}&day={day}"
 
@@ -927,7 +927,11 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     LinkTarget.None -> Unit
                 }
             },
-            openCalendar = { navController.navigate(Routes.CALENDAR) { launchSingleTop = true } },
+            // Il Calendario sta in Note › Prossimi giorni dalla 1.187, insieme a tutto quello che arriva.
+            openCalendar = {
+                NotesNav.open(NotesSection.DATED)
+                navController.switchTab(Routes.NOTES)
+            },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
             openRoute = { navController.navigate(it) },
@@ -1356,13 +1360,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     url = entry.arguments?.getString("url").orEmpty(),
                     sourceName = entry.arguments?.getString("source").orEmpty(),
                     onBack = { navController.popBackStack() },
-                )
-            }
-            composable(Routes.CALENDAR) {
-                CalendarScreen(
-                    onBack = { navController.popBackStack() },
-                    onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
-                    onNewEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
                 )
             }
             composable(

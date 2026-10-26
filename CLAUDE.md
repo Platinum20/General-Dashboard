@@ -50,7 +50,11 @@ events/tasks/dates/parcels/charges; tomorrow's weather only in WeatherScreen), `
 
 **Note**: data in `notes/NotesStore.kt` (one JSON file: tasks, notes, countdowns, habits,
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
-`NotesScreen.kt` (overview of 2 cards + detail pages), `NotesTimeline.kt` (DATED / UNDATED, grouping by day), `NotesExtras.kt`, `NotesSearchUi.kt`.
+`NotesScreen.kt` (overview of 2 cards: DATED "Prossimi giorni" = everything with a day incl. calendar
+events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `NotesNav.open(section)` opens one from
+elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `DueDay.label/shortLabel`),
+`DayScrollbar.kt` (reusable day-tick fast scroll: `DayMark` + `DayScroll` pure logic), `NotesExtras.kt`, `NotesSearchUi.kt`.
+`CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the

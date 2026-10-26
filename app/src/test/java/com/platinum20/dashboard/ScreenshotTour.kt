@@ -131,21 +131,17 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            // I tre tipi: ognuno si apre nella sua pagina ("indietro" torna ai tre).
-            if (tap("Con scadenza")) {
+            // Le due parti: ognuna si apre nella sua pagina ("indietro" torna alle due).
+            if (tap("Prossimi giorni")) {
                 settle(800); shot(p + "21_note_con_scadenza")
                 scroll(down = true)
                 shot(p + "22_note_fondo")
                 back()
             } else missing += p + "21_note_con_scadenza"
-            if (tap("Senza scadenza")) {
+            if (tap("Libri da leggere", substring = true)) {
                 settle(800); shot(p + "23_note_senza_scadenza")
-                // L'editor di una nota.
-                visit("Libri da leggere", p + "26_nota", substring = true)
                 back()
             } else missing += p + "23_note_senza_scadenza"
-            // Le spese del mese, con lo scontrino da fotografare in cima.
-            visit("Spese", p + "24_spese", waitMs = 1_000)
         } else missing += p + "20_note"
 
         if (tap("Media")) {
