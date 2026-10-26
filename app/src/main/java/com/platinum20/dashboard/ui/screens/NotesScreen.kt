@@ -130,7 +130,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.key
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.capture.captureTarget
@@ -722,7 +721,7 @@ private fun TaskGroup(label: String?, tasks: List<TaskItem>, onDeleted: (TaskIte
             SectionHeader(label, color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(2.dp))
         }
-        CanvasCard(Modifier.fillMaxWidth().animateContentSize(Springs.snappy())) {
+        CanvasCard(Modifier.fillMaxWidth()) {
             tasks.forEachIndexed { index, task ->
                 key(task.id) {
                     if (index > 0) RowDivider()

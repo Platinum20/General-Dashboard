@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.165.0
+**Card sempre a grandezza piena**
+- Aprendo o cambiando sezione le card non si allungano e non si accorciano più mentre arrivano i dati: compaiono già alla loro grandezza, con una semplice dissolvenza
+
 ## 1.163.0
 **Media: prima le sezioni, poi Riprendi e la coda**
 - In cima a Media ci sono Musica, Video e Radio e podcast; sotto la card di quello che suona (o "Riprendi" se non suona niente), poi la coda, poi Continua e le radio

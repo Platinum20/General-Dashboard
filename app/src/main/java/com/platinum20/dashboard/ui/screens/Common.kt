@@ -78,7 +78,6 @@ import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -473,10 +472,11 @@ fun CanvasCard(
         contentColor = MaterialTheme.colorScheme.onSurface,
     )
     val border = if (colors == null) cardBorder() else null
-    // Ogni card entra a cascata con la pagina e cambia altezza con un movimento morbido, mai a scatti.
+    // Ogni card entra a cascata con la pagina, sempre già alla sua grandezza: niente crescere o
+    // rimpicciolire mentre arrivano i dati (Antonio le vuole ferme).
     // Le card che si toccano rispondono al dito, anche dove la schermata non l'ha chiesto.
     val press = if ((onClick != null || onLongClick != null) && !modifier.any { it === BouncyMark }) Modifier.bouncyPress(0.98f) else Modifier
-    val modifier = modifier.entrance().then(press).animateContentSize(Motion.settle())
+    val modifier = modifier.entrance().then(press)
     if (onLongClick != null) {
         Card(
             modifier = modifier.clip(shape).combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick),
