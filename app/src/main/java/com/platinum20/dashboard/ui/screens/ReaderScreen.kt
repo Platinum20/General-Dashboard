@@ -105,7 +105,6 @@ internal fun ReaderArticle.spokenParagraphs(): List<String> = blocks.mapNotNull 
         else -> null
     }?.takeIf { it.isNotBlank() }
 }
-}
 
 /**
  * Lettore vero e proprio: dalla pagina del giornale prende solo titolo, testo, immagini e video
