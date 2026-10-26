@@ -1,10 +1,19 @@
 package com.platinum20.dashboard.ui.screens
 
+import coil3.compose.AsyncImage
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.foundation.background
+import com.platinum20.dashboard.today.HomeResume
+import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.media.VideoLibrary
 import com.platinum20.dashboard.media.ResumeItem
-import com.platinum20.dashboard.media.Resume
 import com.platinum20.dashboard.media.MediaHistory
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -170,8 +179,10 @@ fun HomeScreen(
     VideoLibrary.init(context)
     val mediaHistory by MediaHistory.items.collectAsStateWithLifecycle()
     val videos by VideoLibrary.recent.collectAsStateWithLifecycle()
-    val resume = remember(minute, mediaHistory, videos) {
-        Resume.forAdesso(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis())
+    val playingNow by Playback.now.collectAsStateWithLifecycle()
+    val somethingPlaying = playingNow?.let { it.playing || it.loading } == true
+    val resume = remember(minute, mediaHistory, videos, somethingPlaying) {
+        HomeResume.pick(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis(), somethingPlaying)
     }
     // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
     val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
@@ -196,11 +207,11 @@ fun HomeScreen(
             ).takeIf { !it.isEmpty }
         }
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, resume, tomorrowPlan) {
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, tomorrowPlan) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, resume = resume, tomorrowCard = tomorrowPlan != null,
+            fixedExpenses = notes.fixedExpenses, tomorrowCard = tomorrowPlan != null,
         )
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -238,6 +249,7 @@ fun HomeScreen(
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
+            HomeCard.RESUME -> resume != null
             else -> true
         }
     }
@@ -273,12 +285,17 @@ fun HomeScreen(
                         BriefKind.EVENT -> inApp?.openCalendar?.invoke()
                         BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL, BriefKind.MONEY -> onOpenNotes()
                         BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
-                        BriefKind.MEDIA -> resume?.let { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
                         BriefKind.FREE -> Unit
                     }
                 },
             )
             HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
+            HomeCard.RESUME -> resume?.let { item ->
+                ResumeCard(item) {
+                    haptic(Haptic.TICK)
+                    openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
+                }
+            }
             HomeCard.RECAP -> RecapCard(
                 state = recap,
                 onOpenTheme = {
@@ -495,7 +512,6 @@ private fun BriefRow(line: BriefLine, onAction: () -> Unit, onClick: () -> Unit)
         BriefKind.HABIT -> Icons.Outlined.Autorenew
         BriefKind.PARCEL -> Icons.Outlined.LocalShipping
         BriefKind.MONEY -> Icons.Outlined.Euro
-        BriefKind.MEDIA -> Icons.Outlined.PlayCircle
         BriefKind.FREE -> Icons.Outlined.CheckCircle
     }
     val content = LocalContentColor.current
@@ -559,6 +575,51 @@ private fun WeatherSummary(
             action = "Riprova",
             onAction = onRetry,
         )
+    }
+}
+
+/** "Riprendi": copertina, titolo e punto da cui riparte; un tocco e riparte da lì. */
+@Composable
+private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
+    CanvasCard(
+        onClick = onClick,
+        onLongClick = { SavedLinks.offer(SavedLink.Media(item)) },
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(width = 72.dp, height = 48.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (item.image.isNotBlank()) {
+                    AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                }
+                if (item.durationMs > 0) {
+                    LinearProgressIndicator(
+                        progress = { item.progress },
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                        drawStopIndicator = {},
+                    )
+                }
+            }
+            Spacer(Modifier.size(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Riprendi", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                HomeResume.detail(item).takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            Spacer(Modifier.size(8.dp))
+            Icon(Icons.Filled.PlayArrow, contentDescription = "Riprendi", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+        }
     }
 }
 
