@@ -17,6 +17,7 @@ import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
+import com.platinum20.dashboard.ui.screens.undatedEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -178,6 +179,25 @@ class NotesUiLogicTest {
         val entries = timelineEntries(past, today, zone).map { it.first }
         assertEquals(listOf("Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
         assertEquals(listOf("Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+    }
+
+    @Test fun noteSullaLineaDelTempo() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val entries = undatedEntries(
+            tasks = listOf(TaskItem(1, "Chiamare Luca", createdAt = at(today, 9)), TaskItem(2, "Comprare lampadine", createdAt = at(today.minusDays(5), 9))),
+            notes = listOf(
+                Note(3, "Idee regalo", createdAt = at(today, 11)),
+                Note(4, "Password wifi", pinned = true, createdAt = at(today.minusDays(40), 9)),
+            ),
+            today = today,
+            zone = zone,
+        ).map { it.first }
+        assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
+        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
+        // Fra oggi e mercoledì scorso quattro giorni vuoti.
+        assertEquals(24f, entries[3].gapDp)
     }
 
     private object DueRowFor {
