@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.174.0
+**La card media in Oggi resta sempre, subito sotto "Adesso"**
+- Non sparisce più quando c'è il mini player: mentre qualcosa suona mostra quello, come in Media
+- Sta subito sotto "Adesso" e prima di "Domani"
+
 ## 1.173.0
 **I pop-up delle Note come gli altri**
 - Tenendo premuta una nota, Fissa in alto, Condividi ed Elimina salgono nel fumetto di vetro in fondo al centro, come "Salva nelle note", invece del menu a tendina

@@ -248,7 +248,8 @@ fun HomeScreen(
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
-            HomeCard.RESUME -> resume != null
+            // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
+            HomeCard.RESUME -> resume != null || playingNow != null
             else -> true
         }
     }
@@ -347,9 +348,10 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // La prima card (di solito Adesso), poi le cose trovate da sole in notifiche e SMS, poi le altre.
-            // Le card che compaiono, spariscono o cambiano posto scivolano invece di saltare.
-            items(cards.take(1), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
+            // La prima card (di solito Adesso, con subito sotto la card media), poi Domani e le cose trovate
+            // da sole in notifiche e SMS, poi le altre. Le card che compaiono, spariscono o cambiano posto scivolano.
+            val lead = if (cards.getOrNull(1) == HomeCard.RESUME) 2 else 1
+            items(cards.take(lead), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
             tomorrowPlan?.let { plan ->
                 item(key = "tomorrow") {
                     TomorrowCard(
@@ -375,7 +377,7 @@ fun HomeScreen(
                 }
             }
             item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
-            items(cards.drop(1), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
+            items(cards.drop(lead), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(
