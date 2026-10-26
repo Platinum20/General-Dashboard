@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.171.0
+**Il vocale parte anche dal tasto invia**
+- Dopo aver toccato il + per scrivere, puoi ancora dettare: tieni premuto il tasto invia e parla, come se tenessi premuto il +. Trascinando in su si blocca, verso sinistra annulli
+- Quello che detti si aggiunge a quello che avevi già scritto, invece di sostituirlo
+- Un tocco sul tasto invia continua a inviare come prima
+
 ## 1.170.0
 **Una sola card media, in Media e in Oggi**
 - La card del media è ora una sola, stretta e identica nelle due pagine: mostra quello che suona adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da riprendere dal punto esatto

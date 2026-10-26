@@ -463,9 +463,10 @@ private fun CanvasNavBar(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         // La barra si trasforma: le schede, la voce che si sta dettando o il campo per scrivere.
+        // La voce vince sul campo: dettando dal tasto invia si vede l'onda, poi si torna a scrivere.
         val barMode = when {
-            composing -> BAR_WRITE
             listening || notice != null -> BAR_VOICE
+            composing -> BAR_WRITE
             else -> BAR_TABS
         }
         val barShape = RoundedCornerShape(30.dp)
@@ -555,12 +556,14 @@ private fun CanvasNavBar(
                             }
                         }
                         when {
-                            // La barra è il campo: il + è la freccia che invia.
-                            isComposing -> { if (outcome == PRESS_TAP) { haptic(Haptic.TICK); send() } }
                             // Microfono bloccato: il tocco inserisce quello che si è detto.
                             outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
                             // Mentre ascolta una canzone il + non fa altro: finisce da solo.
                             isMusic -> Unit
+                            // La barra è il campo: il tocco invia, ma tenendo premuto si detta come dal +.
+                            isComposing && outcome == PRESS_TAP -> { haptic(Haptic.TICK); send() }
+                            // In giù, mentre si scrive, niente Impostazioni: la nota andrebbe persa.
+                            isComposing && outcome == PRESS_DOWN -> Unit
                             outcome == PRESS_DOWN && !isLocked -> { haptic(Haptic.CONFIRM); settings() }
                             outcome == PRESS_DOWN -> Unit
                             outcome == PRESS_TAP -> { haptic(Haptic.TICK); tap() }
@@ -1066,9 +1069,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 return@start false
             }
         }
+        // Si stava già scrivendo nella barra: la voce completa quel testo invece di salvarsi da sola.
+        val intoComposer = CaptureComposer.isOpen
+        CaptureComposer.dictating = intoComposer
         dictation.start { text ->
+            if (intoComposer) {
+                CaptureComposer.dictating = false
+                if (text.isNullOrBlank()) voiceScope.launch {
+                    delay(1_600)
+                    dictation.clearNotice()
+                } else CaptureComposer.append(text)
+            }
             // Nessuna parola ma qualcosa si sentiva: forse è musica, Canvas prova a riconoscerla.
-            if (text.isNullOrBlank() && dictation.soundedLikeMusic() && SongId.ready) identifySong()
+            else if (text.isNullOrBlank() && dictation.soundedLikeMusic() && SongId.ready) identifySong()
             // Niente di detto: "Nessun suono rilevato" resta un attimo nel fumetto.
             else if (text.isNullOrBlank()) voiceScope.launch {
                 delay(1_600)
@@ -1129,7 +1142,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onHoldEnd = dictation::release,
                     locked = dictation.locked,
                     onLock = dictation::lock,
-                    onCancelDictation = dictation::discard,
+                    onCancelDictation = { CaptureComposer.dictating = false; dictation.discard() },
                     heardSound = dictation.heardSound,
                     notice = dictation.notice,
                     composing = composing,

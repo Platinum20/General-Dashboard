@@ -83,10 +83,12 @@ internal fun BoxScope.CaptureComposerVeil() {
     // Il primo "indietro" lo usa la tastiera per chiudersi: anche quello annulla la nota.
     val imeVisible = WindowInsets.isImeVisible
     var imeShown by remember { mutableStateOf(false) }
-    LaunchedEffect(imeVisible, open) {
+    // Mentre si detta la tastiera si chiude da sola: quello non annulla niente.
+    val dictating = CaptureComposer.dictating
+    LaunchedEffect(imeVisible, open, dictating) {
         if (!open) imeShown = false
         else if (imeVisible) imeShown = true
-        else if (imeShown) CaptureComposer.close()
+        else if (imeShown && !dictating) CaptureComposer.close()
     }
     // Un velo leggero: toccando fuori dalla barra si chiude.
     AnimatedVisibility(open, enter = fadeIn(), exit = fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
