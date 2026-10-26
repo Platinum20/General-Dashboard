@@ -40,6 +40,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Newspaper
@@ -136,11 +137,13 @@ fun CustomizeScreen(onBack: () -> Unit) {
 private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
+    HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.RECAP -> Icons.Outlined.Newspaper
 }
 
 private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
+    HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.RECAP -> TileAccent.GREEN
 }
