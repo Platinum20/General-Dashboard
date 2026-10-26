@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.160.0
+## 1.162.0
 **Home: "Adesso" solo per quello che ha un orario**
 - La card in cima ora dice solo le cose di oggi con un orario o una scadenza: meteo, impegni, pioggia, cose da fare, pacchi, spese
 - Il video, il brano o il podcast lasciato a metà ha una card sua, "Riprendi", sotto "La giornata": copertina, punto da cui riparte e un tocco per farlo ripartire. Sparisce mentre qualcosa sta già suonando (c'è il mini player)
