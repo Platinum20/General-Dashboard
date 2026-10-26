@@ -50,6 +50,7 @@ object AppSettings {
     private const val KEY_UPDATE_NOTIFY = "update_notify"
     private const val KEY_RAIN_ALERT = "rain_alert"
     private const val KEY_READING_VOICE = "reading_voice"
+    private const val KEY_WIFI_ONLY = "wifi_only_downloads"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -70,6 +71,9 @@ object AppSettings {
     private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
     /** La voce che legge notizie e punto del giorno. */
     val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
+    private val _wifiOnlyDownloads = MutableStateFlow(false)
+    /** Voci e aggiornamenti si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
+    val wifiOnlyDownloads: StateFlow<Boolean> = _wifiOnlyDownloads.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -118,6 +122,7 @@ object AppSettings {
         _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
+        _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -137,6 +142,11 @@ object AppSettings {
     fun setUpdateNotify(enabled: Boolean) {
         _updateNotify.value = enabled
         prefs.edit().putBoolean(KEY_UPDATE_NOTIFY, enabled).apply()
+    }
+
+    fun setWifiOnlyDownloads(enabled: Boolean) {
+        _wifiOnlyDownloads.value = enabled
+        prefs.edit().putBoolean(KEY_WIFI_ONLY, enabled).apply()
     }
 
     fun setReadingVoice(voice: ReadingVoice) {

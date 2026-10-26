@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.news.voice
 
 import android.content.Context
+import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,8 @@ data class VoiceFiles(val model: File, val tokens: File, val dataDir: File)
 
 sealed interface VoiceStatus {
     data object Missing : VoiceStatus
+    /** Scelta, ma il Wi-Fi non c'è e i dati sono bloccati dall'impostazione. */
+    data object Waiting : VoiceStatus
     data class Downloading(val progress: Float) : VoiceStatus
     data object Ready : VoiceStatus
     data class Failed(val message: String) : VoiceStatus
@@ -77,30 +80,56 @@ object VoiceStore {
     fun ensureDownloaded(context: Context) {
         init(context)
         val voice = AppSettings.readingVoice.value
-        if (voice.neural && statusOf(voice) is VoiceStatus.Missing) download(voice)
+        val state = statusOf(voice)
+        if (voice.neural && (state is VoiceStatus.Missing || state is VoiceStatus.Waiting)) download(voice, context)
     }
 
-    fun download(voice: ReadingVoice) {
+    fun download(voice: ReadingVoice, context: Context? = null) {
         val url = voice.url ?: return
         val now = statusOf(voice)
         if (now is VoiceStatus.Downloading || now == VoiceStatus.Ready) return
+        // 60 MB non partono sui dati se l'impostazione dice solo Wi-Fi.
+        if (context != null && HeavyDownloads.blocked(context)) {
+            _status.update { it + (voice to VoiceStatus.Waiting) }
+            return
+        }
         _status.update { it + (voice to VoiceStatus.Downloading(0f)) }
         scope.launch {
             val target = File(root, voice.archive!!)
             val partial = File(root, voice.archive + ".part")
             val result = runCatching {
-                partial.deleteRecursively()
-                fetch(url, partial) { progress -> _status.update { it + (voice to VoiceStatus.Downloading(progress)) } }
-                checkNotNull(locate(partial)) { "Voce incompleta" }
+                install(url, partial) { progress -> _status.update { it + (voice to VoiceStatus.Downloading(progress)) } }
                 target.deleteRecursively()
-                check(partial.renameTo(target)) { "Non riesco a salvare la voce" }
+                check(partial.renameTo(target)) { "non riesco a salvarla" }
             }
             partial.deleteRecursively()
             _status.update {
                 it + (voice to if (result.isSuccess && files(voice) != null) VoiceStatus.Ready
-                else VoiceStatus.Failed("Download non riuscito: riprova con la rete"))
+                else VoiceStatus.Failed(failureText(result.exceptionOrNull())))
             }
         }
+    }
+
+    /** Cosa dire quando il download non va: tocca la voce per riprovare. */
+    private fun failureText(error: Throwable?): String {
+        val why = when (error) {
+            is java.net.UnknownHostException, is java.net.ConnectException -> "niente rete"
+            is java.net.SocketTimeoutException -> "rete troppo lenta"
+            null -> "voce incompleta"
+            else -> error.message?.take(60) ?: error.javaClass.simpleName
+        }
+        return "Download non riuscito ($why): tocca per riprovare"
+    }
+
+    /**
+     * Scarica la voce da [url] e la apre in [into], controllando che ci sia tutto.
+     * Solo Java puro: la provano anche le verifiche dal vivo.
+     */
+    internal fun install(url: String, into: File, onProgress: (Float) -> Unit): VoiceFiles {
+        into.deleteRecursively()
+        into.mkdirs()
+        fetch(url, into, onProgress)
+        return checkNotNull(locate(into)) { "voce incompleta" }
     }
 
     private fun files(voice: ReadingVoice): VoiceFiles? = voice.archive?.let { locate(File(root, it)) }
@@ -113,18 +142,20 @@ object VoiceStore {
             instanceFollowRedirects = true
         }
         try {
-            check(connection.responseCode == 200) { "HTTP ${connection.responseCode}" }
+            check(connection.responseCode == 200) { "errore ${connection.responseCode}" }
             val total = connection.contentLengthLong
             var read = 0L
-            var shown = 0
+            var shown = -1
+            fun count(n: Int) {
+                if (n <= 0 || total <= 0) return
+                read += n
+                val percent = (read * 100 / total).toInt()
+                if (percent != shown) { shown = percent; onProgress(percent / 100f) }
+            }
+            // bzip2 legge un byte alla volta: vanno contati anche quelli, o la barra resta a 0%.
             val counting = object : FilterInputStream(connection.inputStream.buffered(1 shl 16)) {
-                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also { n ->
-                    if (n > 0 && total > 0) {
-                        read += n
-                        val percent = (read * 100 / total).toInt()
-                        if (percent != shown) { shown = percent; onProgress(percent / 100f) }
-                    }
-                }
+                override fun read(): Int = super.read().also { if (it >= 0) count(1) }
+                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also(::count)
             }
             untar(BZip2CompressorInputStream(counting), into)
         } finally {

@@ -10,9 +10,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
-import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material3.RadioButton
+import androidx.compose.material.icons.outlined.Wifi
+import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import com.platinum20.dashboard.news.voice.VoiceStatus
@@ -225,7 +225,7 @@ fun SettingsScreen(
             }
 
             item(key = SettingsGroupKey.VOICE) {
-                SettingsBlock("Voce di lettura") { VoiceSettings() }
+                SettingsBlock("Voce di lettura") { VoicePicker() }
             }
 
             item(key = SettingsGroupKey.AUTO) {
@@ -295,7 +295,11 @@ fun SettingsScreen(
             }
 
             item(key = SettingsGroupKey.DATA) {
-                SettingsBlock("I tuoi dati") { BackupSettings() }
+                SettingsBlock("I tuoi dati") {
+                    WifiOnlySetting()
+                    RowDivider()
+                    BackupSettings()
+                }
             }
 
             item(key = SettingsGroupKey.INFO) {
@@ -723,41 +727,119 @@ private fun MorningSettings() {
 }
 
 /**
- * Le tre voci che leggono notizie e punto del giorno. Le voci Piper si scaricano una volta sola
- * appena scelte; toccare di nuovo quella scelta fa sentire come suona.
+ * La voce si sceglie come il tema: tre riquadri con l'onda della voce, quella scelta ha l'anello,
+ * e sotto una riga sola che dice com'è (o a che punto è il download).
  */
 @Composable
-private fun VoiceSettings() {
+private fun VoicePicker() {
     val context = LocalContext.current
     val haptic = rememberHaptic()
     val selected by AppSettings.readingVoice.collectAsState()
     remember { VoiceStore.init(context) }
     val status by VoiceStore.status.collectAsState()
-    ReadingVoice.entries.forEachIndexed { index, voice ->
-        if (index > 0) RowDivider()
-        val state = if (voice.neural) status[voice] ?: VoiceStatus.Missing else VoiceStatus.Ready
-        val chosen = voice == selected
-        val pick = {
-            haptic(Haptic.TICK)
-            if (chosen && state == VoiceStatus.Ready) {
-                RecapSpeaker.play(context, listOf(voiceSample(voice)), title = "Voce di lettura: ${voice.label}")
-            } else {
-                AppSettings.setReadingVoice(voice)
-                if (voice.neural && state !is VoiceStatus.Ready) VoiceStore.download(voice)
+    Column(Modifier.padding(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ReadingVoice.entries.forEach { option ->
+                val on = option == selected
+                val ring by animateColorAsState(
+                    if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    tween(Motion.ENTER_MS, easing = Motion.Decelerate),
+                    label = "voiceRing",
+                )
+                val state = if (option.neural) status[option] ?: VoiceStatus.Missing else VoiceStatus.Ready
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .bouncyPress(0.94f)
+                        .clip(MaterialTheme.shapes.large)
+                        .clickable {
+                            haptic(Haptic.TICK)
+                            if (on && state == VoiceStatus.Ready) {
+                                RecapSpeaker.play(context, listOf(voiceSample(option)), title = "Voce: ${option.label}")
+                            } else {
+                                AppSettings.setReadingVoice(option)
+                                if (option.neural && state != VoiceStatus.Ready) VoiceStore.download(option, context)
+                            }
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(76.dp)
+                            // Anello sempre della stessa misura: cambia solo il colore, il riquadro non si sposta.
+                            .border(2.dp, ring, MaterialTheme.shapes.large)
+                            .padding(4.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.card)
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (option.neural) VoiceWave(on, state) else {
+                            Icon(
+                                Icons.Outlined.PhoneAndroid,
+                                contentDescription = null,
+                                tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        option.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
             }
         }
-        SettingsItem(
-            icon = if (voice.neural) Icons.Outlined.RecordVoiceOver else Icons.Outlined.PhoneAndroid,
-            accent = when (voice) {
-                ReadingVoice.PAOLA -> TileAccent.PURPLE
-                ReadingVoice.RICCARDO -> TileAccent.BLUE
-                ReadingVoice.SYSTEM -> TileAccent.NEUTRAL
-            },
-            title = voice.label,
-            subtitle = voiceSubtitle(voice, state, chosen),
-            onClick = pick,
-            trailing = { RadioButton(selected = chosen, onClick = pick) },
-        )
+        val line = voiceLine(selected, if (selected.neural) status[selected] ?: VoiceStatus.Missing else VoiceStatus.Ready)
+        AnimatedContent(
+            line,
+            transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
+            label = "voiceText",
+        ) { text ->
+            Text(
+                text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp),
+            )
+        }
+    }
+}
+
+/** L'onda di una voce neurale: si riempie col download e respira piano quando è la voce scelta. */
+@Composable
+private fun VoiceWave(on: Boolean, state: VoiceStatus) {
+    val heights = listOf(0.35f, 0.7f, 1f, 0.55f, 0.85f, 0.4f)
+    val filled = when (state) {
+        is VoiceStatus.Downloading -> state.progress
+        VoiceStatus.Ready -> 1f
+        else -> 0f
+    }
+    val grown by animateFloatAsState(filled, tween(Motion.ENTER_MS, easing = Motion.Decelerate), label = "voiceFill")
+    val accent = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        heights.forEachIndexed { index, height ->
+            val done = (index + 1f) / heights.size <= grown + 0.001f
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height((34 * height).dp)
+                    .clip(CircleShape)
+                    .background(if (done) accent else accent.copy(alpha = 0.22f)),
+            )
+        }
     }
 }
 
@@ -766,12 +848,28 @@ private fun voiceSample(voice: ReadingVoice): String = when (voice) {
     else -> "Ciao, sono ${voice.label}. Ti leggo le notizie e il punto del giorno, anche senza internet."
 }
 
-/** "Femminile, la più naturale · si scarica una volta (60 MB)", "Scarico… 42%", "Tocca per sentirla". */
-private fun voiceSubtitle(voice: ReadingVoice, state: VoiceStatus, chosen: Boolean): String = when (state) {
-    is VoiceStatus.Downloading -> "Scarico la voce… ${(state.progress * 100).toInt()}%"
+/** La riga sotto i riquadri: com'è la voce, a che punto è il download, o perché non è partito. */
+private fun voiceLine(voice: ReadingVoice, state: VoiceStatus): String = when (state) {
+    is VoiceStatus.Downloading -> "Scarico ${voice.label}… ${(state.progress * 100).toInt()}%"
     is VoiceStatus.Failed -> state.message
+    VoiceStatus.Waiting -> HeavyDownloads.BLOCKED
     VoiceStatus.Missing -> "${voice.description} · si scarica una volta (${voice.sizeMb} MB)"
-    VoiceStatus.Ready -> if (chosen) "${voice.description} · tocca per sentirla" else voice.description
+    VoiceStatus.Ready -> "${voice.description} · tocca di nuovo per sentirla"
+}
+
+/** Download pesanti solo col Wi-Fi: vale per le voci e per gli aggiornamenti dell'app. */
+@Composable
+private fun WifiOnlySetting() {
+    val enabled by AppSettings.wifiOnlyDownloads.collectAsState()
+    val toggle = { AppSettings.setWifiOnlyDownloads(!enabled) }
+    SettingsItem(
+        icon = Icons.Outlined.Wifi,
+        accent = TileAccent.BLUE,
+        title = "Scarica solo col Wi-Fi",
+        subtitle = if (enabled) "Voci e aggiornamenti aspettano il Wi-Fi" else "Voci e aggiornamenti scaricano con qualunque rete",
+        onClick = toggle,
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { toggle() }) },
+    )
 }
 
 /** Avviso pioggia: una notifica quando sta per piovere dove sei. */
