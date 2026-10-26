@@ -206,11 +206,13 @@ fun HomeScreen(
             ).takeIf { !it.isEmpty }
         }
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, tomorrowPlan) {
+    // "Domani" si può nascondere in Personalizza: allora le altre card tornano a dire anche di domani.
+    val tomorrowShown = tomorrowPlan != null && HomeCard.TOMORROW in layout.visible
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, tomorrowShown) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, tomorrowCard = tomorrowPlan != null,
+            fixedExpenses = notes.fixedExpenses, tomorrowCard = tomorrowShown,
         )
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -250,11 +252,14 @@ fun HomeScreen(
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
+            HomeCard.TOMORROW -> tomorrowPlan != null
+            HomeCard.WEEK -> weekReview != null
+            HomeCard.FOUND -> autoFillEnabled
             else -> true
         }
     }
 
-    // Una card della pagina; la lista la divide per mettere sotto la prima le cose trovate da sole.
+    // Una card della pagina, nel posto scelto in Personalizza.
     val cardContent: @Composable (HomeCard) -> Unit = { card ->
         when (card) {
             HomeCard.WEATHER -> WeatherCard(
@@ -274,7 +279,7 @@ fun HomeScreen(
                     else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
                 },
                 undo = briefUndo,
-                dayCardShown = tomorrowPlan?.let { it.day == minute.toLocalDate() } == true,
+                dayCardShown = tomorrowShown && tomorrowPlan?.day == minute.toLocalDate(),
                 onUndo = {
                     haptic(Haptic.TICK)
                     briefUndo?.undo?.invoke()
@@ -289,7 +294,7 @@ fun HomeScreen(
                     }
                 },
             )
-            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
+            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowShown)
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
                 MediaNowCard(playing, onOpen = {
@@ -302,6 +307,27 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
+            HomeCard.TOMORROW -> tomorrowPlan?.let { plan ->
+            TomorrowCard(
+                plan = plan,
+                onOpenWeather = onOpenWeather,
+                onOpenCalendar = { inApp?.openCalendar?.invoke() },
+                onOpenNotes = onOpenNotes,
+            )
+            }
+            HomeCard.WEEK -> weekReview?.let { review ->
+            WeekReviewCard(
+                review = review,
+                onOpenNotes = onOpenNotes,
+                onOpenCalendar = { inApp?.openCalendar?.invoke() },
+                onDismiss = {
+                    haptic(Haptic.TICK)
+                    WeekReviewSeen.markSeen(context, review.monday)
+                    weekSeen++
+                },
+            )
+            }
+            HomeCard.FOUND -> AutoFillCard(onOpenSettings = onOpenAutoFill)
             HomeCard.RECAP -> RecapCard(
                 state = recap,
                 onOpenTheme = {
@@ -348,36 +374,8 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // La prima card (di solito Adesso, con subito sotto la card media), poi Domani e le cose trovate
-            // da sole in notifiche e SMS, poi le altre. Le card che compaiono, spariscono o cambiano posto scivolano.
-            val lead = if (cards.getOrNull(1) == HomeCard.RESUME) 2 else 1
-            items(cards.take(lead), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
-            tomorrowPlan?.let { plan ->
-                item(key = "tomorrow") {
-                    TomorrowCard(
-                        plan = plan,
-                        onOpenWeather = onOpenWeather,
-                        onOpenCalendar = { inApp?.openCalendar?.invoke() },
-                        onOpenNotes = onOpenNotes,
-                    )
-                }
-            }
-            weekReview?.let { review ->
-                item(key = "week") {
-                    WeekReviewCard(
-                        review = review,
-                        onOpenNotes = onOpenNotes,
-                        onOpenCalendar = { inApp?.openCalendar?.invoke() },
-                        onDismiss = {
-                            haptic(Haptic.TICK)
-                            WeekReviewSeen.markSeen(context, review.monday)
-                            weekSeen++
-                        },
-                    )
-                }
-            }
-            item(key = "autofill") { AutoFillCard(onOpenSettings = onOpenAutoFill) }
-            items(cards.drop(lead), key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
+            // Le card nell'ordine scelto in Personalizza. Quelle che compaiono, spariscono o cambiano posto scivolano.
+            items(cards, key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(

@@ -1,9 +1,10 @@
 # Changelog
 
 ## 1.174.0
-**La card media in Oggi resta sempre, subito sotto "Adesso"**
+**Oggi: card media sempre presente e tutte le card in Personalizza**
 - Non sparisce più quando c'è il mini player: mentre qualcosa suona mostra quello, come in Media
 - Sta subito sotto "Adesso" e prima di "Domani"
+- In Personalizza ora ci sono tutte le card di Oggi: oltre ad Adesso, Media, La giornata e Il punto del giorno anche Domani, La tua settimana e Trovati per te. Si spostano trascinandole e si nascondono come le altre
 
 ## 1.173.0
 **I pop-up delle Note come gli altri**
