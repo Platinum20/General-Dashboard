@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.175.0
+**Note: gli eventi del calendario ci sono subito**
+- Aprendo o tornando su Note gli eventi in corso (come un appuntamento di oggi) sono già nella card, che non si allarga più un attimo dopo
+
 ## 1.173.0
 **I pop-up delle Note come gli altri**
 - Tenendo premuta una nota, Fissa in alto, Condividi ed Elimina salgono nel fumetto di vetro in fondo al centro, come "Salva nelle note", invece del menu a tendina
