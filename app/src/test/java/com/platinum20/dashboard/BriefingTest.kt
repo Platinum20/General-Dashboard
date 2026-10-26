@@ -122,12 +122,11 @@ class BriefingTest {
     )
 
     @Test
-    fun laSeraAdessoDiventaDomani() {
-        // Dalle 18 "Adesso" diventa "Domani": date, pacchi e impegni di domani stanno qui.
-        // Con il meteo di domani già in testata, la riga del meteo non si ripete.
+    fun laCardDiOggiRestaSuOggi() {
+        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossimi giorni".
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val tomorrow = evening.toLocalDate().plusDays(1).atTime(9, 30)
-        fun build(header: Boolean) = Briefing.build(
+        fun build(widget: Boolean) = Briefing.build(
             now = evening,
             forecast = rainyTomorrow(evening.toLocalDate()),
             today = emptyList(),
@@ -136,24 +135,15 @@ class BriefingTest {
             countdowns = listOf(Countdown(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23))),
             parcels = listOf(Parcel(1, "Cuffie", expected = LocalDate.of(2026, 10, 23))),
             zone = zone,
-            tomorrowInHeader = header,
+            withTomorrow = widget,
         )
-        val widget = build(header = false)
+        val widget = build(widget = true)
         assertTrue(widget.any { it.kind == BriefKind.WEATHER })
-        val card = build(header = true)
+        assertTrue(widget.any { it.text == "Domani alle 09:30: Treno" })
+        val card = build(widget = false)
+        assertFalse(card.any { it.text.startsWith("Domani") })
         assertFalse(card.any { it.kind == BriefKind.WEATHER })
-        assertTrue(card.any { it.text == "Domani alle 09:30: Treno" })
-        assertTrue(card.any { it.text.startsWith("Domani: Compleanno di Marta") })
-        assertTrue(card.any { it.text == "Domani arriva: Cuffie" })
-    }
-
-    @Test
-    fun meteoDiDomaniSoloLaSera() {
-        val day = LocalDate.of(2026, 10, 22)
-        val forecast = rainyTomorrow(day)
-        assertNull(Briefing.tomorrowWeather(day.atTime(17, 59), forecast))
-        assertEquals(day.plusDays(1), Briefing.tomorrowWeather(day.atTime(18, 0), forecast)?.date)
-        assertNull(Briefing.tomorrowWeather(day.atTime(20, 0), null))
+        assertEquals(listOf("Niente altro in programma oggi"), card.map { it.text })
     }
 
     @Test

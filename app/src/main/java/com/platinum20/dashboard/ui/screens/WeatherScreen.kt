@@ -367,10 +367,10 @@ private fun TempBar(min: Double, max: Double, low: Double, high: Double, modifie
 /**
  * La parte alta di "Adesso": luogo, temperatura grande, cielo con massima e minima, icona.
  * È la stessa nella card di Oggi e in cima alla schermata Meteo, così le due si riconoscono.
- * Con [tomorrow] (la sera in Oggi) diventa "Domani": massima, cielo e pioggia di domani.
+ * Sempre il meteo di adesso: domani e i giorni dopo si leggono nella schermata Meteo.
  */
 @Composable
-internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, tomorrow: DailyPoint? = null) {
+internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
     Row(
         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.Top,
@@ -379,7 +379,7 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, tomorrow: Da
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    (if (tomorrow != null) "DOMANI · " else "ADESSO · ") + forecast.place.uppercase(),
+                    "ADESSO · " + forecast.place.uppercase(),
                     style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
                     color = content.copy(alpha = 0.6f),
                     maxLines = 1,
@@ -416,18 +416,14 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, tomorrow: Da
                 }
             }
             Text(
-                (tomorrow?.max ?: forecast.current.temperature).asTemp(),
+                forecast.current.temperature.asTemp(),
                 style = MaterialTheme.typography.displayMedium.copy(fontSize = 52.sp, lineHeight = 58.sp),
             )
             val today = forecast.today
             // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
             val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
             Text(
-                if (tomorrow != null) Greeting.weatherLine(
-                    WeatherCodes.description(tomorrow.code),
-                    "${tomorrow.max.asTemp()} / ${tomorrow.min.asTemp()}",
-                    tomorrow.precipitationProbability.takeIf { it >= 30 }?.let { "pioggia $it%" },
-                ) else Greeting.weatherLine(
+                Greeting.weatherLine(
                     WeatherCodes.description(forecast.current.code),
                     if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
                     rain,
@@ -439,7 +435,7 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, tomorrow: Da
             )
         }
         Icon(
-            if (tomorrow != null) weatherIcon(tomorrow.code) else weatherIcon(forecast.current.code, forecast.current.isDay),
+            weatherIcon(forecast.current.code, forecast.current.isDay),
             contentDescription = null,
             modifier = Modifier.padding(top = 4.dp).size(44.dp),
         )

@@ -7,6 +7,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.background
 import com.platinum20.dashboard.today.HomeResume
+import com.platinum20.dashboard.today.Upcoming
+import com.platinum20.dashboard.today.UpcomingItem
 import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.capture.SavedLink
@@ -22,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,7 +87,6 @@ import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
-import com.platinum20.dashboard.weather.DailyPoint
 import com.platinum20.dashboard.today.WeekReview
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
@@ -185,8 +187,16 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos, somethingPlaying) {
         HomeResume.pick(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis(), somethingPlaying)
     }
-    // Dalle 18 "Adesso" diventa "Domani": in testa il meteo di domani al posto di quello di adesso.
-    val tomorrowWeather = remember(minute, weather.forecast) { Briefing.tomorrowWeather(minute, weather.forecast) }
+    // "Prossimi giorni" in fondo ad "Adesso": la settimana da domani, in un posto solo.
+    val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
+        value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
+    }
+    val upcoming = remember(minute.toLocalDate(), weekAhead, notes) {
+        Upcoming.build(
+            minute.toLocalDate(), weekAhead, notes.openTasks, notes.countdowns,
+            parcels = notes.parcels, fixedExpenses = notes.fixedExpenses,
+        )
+    }
     // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
     var weekSeen by remember { mutableStateOf(0) }
     val weekMonday = WeekReview.weekToReview(minute)?.takeIf { !WeekReviewSeen.isSeen(context, it) }
@@ -202,11 +212,11 @@ fun HomeScreen(
             ).takeIf { !it.isEmpty }
         }
     }
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, tomorrowWeather) {
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, tomorrowInHeader = tomorrowWeather != null,
+            fixedExpenses = notes.fixedExpenses, withTomorrow = false,
         )
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -274,7 +284,8 @@ fun HomeScreen(
                     else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
                 },
                 undo = briefUndo,
-                tomorrow = tomorrowWeather,
+                upcoming = upcoming,
+                today = minute.toLocalDate(),
                 onUndo = {
                     haptic(Haptic.TICK)
                     briefUndo?.undo?.invoke()
@@ -433,8 +444,9 @@ private fun WeatherCard(
     undo: BriefUndo?,
     onUndo: () -> Unit,
     onOpenBrief: (BriefKind) -> Unit,
-    /** La sera il meteo di domani: la testata diventa "Domani". */
-    tomorrow: DailyPoint? = null,
+    /** Da domani alla settimana dopo: la piccola lista in fondo. */
+    upcoming: List<UpcomingItem> = emptyList(),
+    today: LocalDate = LocalDate.now(),
 ) {
     val forecast = state.forecast
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
@@ -447,7 +459,7 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, tomorrow)
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
         if (briefing.isNotEmpty() || undo != null) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
@@ -469,6 +481,52 @@ private fun WeatherCard(
                         }
                     }
                 }
+            }
+        }
+        if (upcoming.isNotEmpty()) UpcomingBlock(upcoming, today, onOpen = onOpenBrief)
+    }
+}
+
+/**
+ * "Prossimi giorni": piccola, sotto le righe di oggi. Il giorno si scrive solo alla sua prima riga,
+ * così la settimana si legge a colpo d'occhio senza ripetere "Domani" tre volte.
+ */
+@Composable
+private fun UpcomingBlock(items: List<UpcomingItem>, today: LocalDate, onOpen: (BriefKind) -> Unit) {
+    val content = LocalContentColor.current
+    Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+        HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = content.copy(alpha = 0.12f))
+        Text(
+            "PROSSIMI GIORNI",
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+            color = content.copy(alpha = 0.6f),
+            modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 2.dp),
+        )
+        items.take(Upcoming.MAX).forEachIndexed { index, item ->
+            val first = index == 0 || items[index - 1].day != item.day
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bouncyPress(0.98f)
+                    .clickable { onOpen(item.kind) }
+                    .padding(horizontal = 18.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (first) Upcoming.dayLabel(item.day, today) else "",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = content.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    modifier = Modifier.width(64.dp),
+                )
+                Text(
+                    (item.time?.let { "$it " } ?: "") + item.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = content.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -541,11 +599,10 @@ private fun WeatherSummary(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
-    tomorrow: DailyPoint?,
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> WeatherNowHeader(forecast, state.loading, tomorrow)
+        forecast != null -> WeatherNowHeader(forecast, state.loading)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",
