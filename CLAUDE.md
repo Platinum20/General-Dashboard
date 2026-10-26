@@ -48,10 +48,10 @@ expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Scre
 DATED / UNDATED / MONEY, grouping by day), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
-**Capture ("+")**: `capture/CaptureComposer.kt` (glass bubble), `CaptureGuess.kt` (picks the
+**Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
 type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo),
 `Dictation.kt`/`VoiceCapture.kt` (in-app speech, no Google dialog), `SavedLink.kt`,
-`QuickCaptureActivity.kt` (QS tile, share target). UI layers: `CaptureComposerLayer.kt`,
+`QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
 
 **News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,

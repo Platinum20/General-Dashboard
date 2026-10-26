@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.158.0
+**La barra diventa la bolla del +**
+- Niente più bolla separata: toccando il + è la barra in basso stessa a trasformarsi nel campo per scrivere, larga uguale, e sale con la tastiera. Il + diventa la freccia per inviare, la X annulla
+- Anche il vocale vive nella barra: tenendo premuto il + la barra si allarga e mostra la voce e quello che Canvas sta capendo. Scorrendo a sinistra la barra segue il dito, compare il cestino che si fa rosso e il vocale si butta
+- Quando la tastiera si apre per altro (cerca, modifica di una nota) la barra si nasconde e non copre niente
+
 ## 1.157.0
 **Un solo player, davvero, e Spotify rifatto da capo**
 - Un unico motore per YouTube, YouTube Music, radio, podcast e video del telefono: la coda è quella del player, non una copia accanto, quindi avanti, indietro e "finito, parte il prossimo" funzionano sempre e tra tutte le fonti
