@@ -239,25 +239,45 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
 }
 
 /**
- * Le tacche della linea del tempo per Prossimi giorni: una per giorno, a partire dalla riga [first];
- * [rowsOf] dice quante righe occupa un giorno nella lista. "Scaduti" sta un giorno prima del primo,
- * "Senza data" un giorno dopo l'ultimo.
+ * Prossimi giorni come linea del tempo, uguale alla card di Oggi ma con tutto: una riga per cosa, il giorno
+ * sulla prima riga di ogni giorno, e fra due giorni lontani la linea si allunga ([com.platinum20.dashboard.today.Upcoming.gapDp]).
  */
-internal fun dueMarks(groups: List<DueDay>, today: LocalDate, first: Int, rowsOf: (DueDay) -> Int): List<DayMark> {
-    val days = groups.mapNotNull { it.day }
-    val start = (days.minOrNull() ?: today).let { if (it.isAfter(today)) today else it }
-    val end = days.maxOrNull() ?: today
-    var index = first
+internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<Pair<TimelineEntry, DueRow>> {
+    val hour = DateTimeFormatter.ofPattern("HH:mm")
+    fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     var previous: LocalDate? = null
-    return groups.map { d ->
-        val day = d.day
-        val mark = when {
-            d.late -> DayMark(index, "Scaduti", start.toEpochDay() - 1.0, "Scad.")
-            day == null -> DayMark(index, "Senza data", end.toEpochDay() + 1.0, "—")
-            else -> DayMark(index, d.shortLabel(today), day.toEpochDay().toDouble(), DayScroll.tick(day, today, previous)).also { previous = day }
+    return groups.flatMap { g ->
+        val day = g.day
+        val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
+        if (day != null && !g.late) previous = day
+        val label = when {
+            g.late -> "Scaduti"
+            day == null -> "Senza data"
+            else -> com.platinum20.dashboard.today.Upcoming.dayLabel(day, today)
         }
-        index += rowsOf(d)
-        mark
+        g.rows.mapIndexed { i, r ->
+            val (kind, text) = when {
+                r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to
+                    ((r.task.dueAt?.takeIf { !g.late }?.time()?.let { "$it  " } ?: "") + r.task.text)
+                r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
+                    ((if (r.event.allDay) "" else r.event.begin.time() + "  ") + r.event.title)
+                r.countdown != null -> com.platinum20.dashboard.today.BriefKind.DATE to
+                    (r.countdown.title + (r.countdown.yearsAtNext(today)?.let { " ($it anni)" } ?: ""))
+                r.parcel != null -> com.platinum20.dashboard.today.BriefKind.PARCEL to "Arriva: ${r.parcel.title}"
+                r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
+                    "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }} ${Expenses.format(r.charge.cents)}"
+                else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
+            }
+            TimelineEntry(
+                key = r.key,
+                kind = kind,
+                text = text,
+                dayLabel = if (i == 0) label else null,
+                gapDp = if (i == 0) gap else 0f,
+                color = r.event?.color ?: 0,
+                late = g.late,
+            ) to r
+        }
     }
 }
 

@@ -42,8 +42,8 @@ create something it lists, so the next thread doesn't have to explore.
 `WeekReviewCard.kt`, `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
-= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 10 items within 60 days of
-events/tasks/dates/parcels/charges, drawn on a timeline (`Upcoming.gapDp`); tomorrow's weather only in WeatherScreen), `WeekReview`, `Greeting`, `Invites`,
+= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 60 days of
+events/tasks/dates/parcels/charges, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp`); tomorrow's weather only in WeatherScreen), `WeekReview`, `Greeting`, `Invites`,
 `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
@@ -52,8 +52,8 @@ events/tasks/dates/parcels/charges, drawn on a timeline (`Upcoming.gapDp`); tomo
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
 `NotesScreen.kt` (overview of 2 cards: DATED "Prossimi giorni" = everything with a day incl. calendar
 events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `NotesNav.open(section)` opens one from
-elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `DueDay.label/shortLabel`),
-`DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; marks built by `dueMarks`/`noteMarks` in NotesTimeline, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
+elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card),
+`DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; now only on the undated Note page via `noteMarks`, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; Modifica opens their old dialog). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
