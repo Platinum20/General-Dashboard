@@ -8,6 +8,7 @@ import com.platinum20.dashboard.media.VideoEntry
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Briefing
+import com.platinum20.dashboard.today.HomeResume
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import org.junit.Assert.assertEquals
@@ -71,12 +72,15 @@ class ResumeTest {
     }
 
     @Test
-    fun rigaInAdesso() {
+    fun cardRiprendiFuoriDaAdesso() {
         val at = LocalDateTime.of(2026, 10, 22, 10, 0)
-        val item = yt("aaaaaaaaaaa", at.toInstant(ZoneOffset.UTC).toEpochMilli() - hour, 750_000, 2_700_000)
-        val lines = Briefing.build(at, null, emptyList(), null, emptyList(), emptyList(), zone = ZoneOffset.UTC, resume = item)
-        val line = lines.single { it.kind == BriefKind.MEDIA }
-        assertEquals("Riprendi: Video aaaaaaaaaaa · 12:30 di 45:00", line.text)
-        assertTrue(lines.none { it.kind == BriefKind.FREE })
+        val nowMs = at.toInstant(ZoneOffset.UTC).toEpochMilli()
+        val item = yt("aaaaaaaaaaa", nowMs - hour, 750_000, 2_700_000)
+        // "Adesso" non parla più di media: resta per orari e scadenze.
+        val lines = Briefing.build(at, null, emptyList(), null, emptyList(), emptyList(), zone = ZoneOffset.UTC)
+        assertTrue(lines.none { it.text.startsWith("Riprendi") })
+        assertEquals(item, HomeResume.pick(listOf(item), nowMs, somethingPlaying = false))
+        assertEquals(null, HomeResume.pick(listOf(item), nowMs, somethingPlaying = true))
+        assertTrue(HomeResume.detail(item).endsWith("12:30 di 45:00"))
     }
 }
