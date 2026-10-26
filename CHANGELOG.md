@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.188.0
+## 1.189.0
 **La versione in fondo alle Impostazioni**
 - La card di Canvas con la versione, le novità e gli aggiornamenti ora sta in fondo alle Impostazioni: in cima trovi subito l'Aspetto
 
