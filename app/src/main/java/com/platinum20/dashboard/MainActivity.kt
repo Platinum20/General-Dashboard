@@ -5,7 +5,9 @@ import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureComposer
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.songid.SongId
-import com.platinum20.dashboard.ui.screens.CaptureComposerLayer
+import com.platinum20.dashboard.ui.screens.CaptureComposerVeil
+import com.platinum20.dashboard.ui.screens.CaptureComposerInput
+import com.platinum20.dashboard.ui.screens.rememberComposerSend
 import com.platinum20.dashboard.capture.CaptureTargets
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
@@ -35,6 +37,17 @@ import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
@@ -75,7 +88,6 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.Constraints
 import androidx.navigation.NavBackStackEntry
 import com.platinum20.dashboard.ui.screens.TabReselect
 import androidx.compose.animation.fadeIn
@@ -426,48 +438,71 @@ private fun CanvasNavBar(
     /** Sta ascoltando la musica per riconoscerla, non la voce. */
     music: Boolean,
     onIdentifySong: () -> Unit,
+    /** Il + toccato: la barra è diventata il campo per scrivere e il + la freccia per inviare. */
+    composing: Boolean,
+    onSend: () -> Unit,
 ) {
     val haptic = rememberHaptic()
-    Column(Modifier.fillMaxWidth().navigationBarsPadding()) {
-    // Il fumetto con quello che si sta dicendo: alto zero, disegnato sopra la barra così non la sposta.
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .layout { measurable, constraints ->
-                val p = measurable.measure(constraints.copy(minHeight = 0))
-                layout(p.width, 0) { p.place(0, -p.height) }
-            },
-        contentAlignment = Alignment.BottomEnd,
-    ) {
-        DictationBubble(listening, partial, locked, level, heardSound || music, notice, music, onCancelDictation, onIdentifySong)
-    }
+    // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
+    var drag by remember { mutableFloatStateOf(0f) }
+    // Quanto verso sinistra: la barra scivola con il dito e il cestino si fa rosso; in fondo annulla.
+    var slide by remember { mutableFloatStateOf(0f) }
+    val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
+    val cancelDistance = with(LocalDensity.current) { 110.dp.toPx() }
+    // Mentre si scrive la barra è il campo: sale con la tastiera.
+    val insets = if (composing) WindowInsets.navigationBars.union(WindowInsets.ime) else WindowInsets.navigationBars
+    Column(Modifier.fillMaxWidth().windowInsetsPadding(insets)) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        // La barra si trasforma: le schede, la voce che si sta dettando o il campo per scrivere.
+        val barMode = when {
+            composing -> BAR_WRITE
+            listening || notice != null -> BAR_VOICE
+            else -> BAR_TABS
+        }
+        val barShape = RoundedCornerShape(30.dp)
         // Pillola di vetro: le liste scorrono sotto e si intravedono sfocate.
         Surface(
-            shape = CircleShape,
+            shape = barShape,
             color = androidx.compose.ui.graphics.Color.Transparent,
             border = cardBorder(),
             // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
-            modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
+            modifier = Modifier.weight(1f).heightIn(min = 60.dp).glass(barShape),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround,
-            ) {
-                topDestinations.forEach { dest ->
-                    NavPill(
-                        dest = dest,
-                        selected = currentRoute == dest.route,
-                        badge = if (dest.route == Routes.NOTES) dueToday else 0,
-                        onClick = { haptic(Haptic.TICK); onSelect(dest) },
+            AnimatedContent(
+                targetState = barMode,
+                transitionSpec = {
+                    (fadeIn(tween(180, delayMillis = 60)) togetherWith fadeOut(tween(90)))
+                        .using(SizeTransform(clip = true) { _, _ -> Springs.snappy() })
+                },
+                contentAlignment = Alignment.BottomStart,
+                label = "barMorph",
+            ) { mode ->
+                when (mode) {
+                    BAR_WRITE -> CaptureComposerInput(Modifier.fillMaxWidth())
+                    BAR_VOICE -> DictationContent(
+                        listening, partial, locked, level, heardSound || music, notice, music,
+                        slide = (slide / cancelDistance).coerceIn(0f, 1f), slidePx = slide, onCancel = onCancelDictation,
                     )
+                    else -> Row(
+                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround,
+                    ) {
+                        topDestinations.forEach { dest ->
+                            NavPill(
+                                dest = dest,
+                                selected = currentRoute == dest.route,
+                                badge = if (dest.route == Routes.NOTES) dueToday else 0,
+                                onClick = { haptic(Haptic.TICK); onSelect(dest) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -484,12 +519,8 @@ private fun CanvasNavBar(
         val isMusic by rememberUpdatedState(music)
         val settings by rememberUpdatedState(onOpenSettings)
         val cancelVoice by rememberUpdatedState(onCancelDictation)
-        // Quanto si è trascinato il dito verso l'alto: il lucchetto sale con lui.
-        var drag by remember { mutableFloatStateOf(0f) }
-        // Quanto verso sinistra: "Scorri per annullare" scivola con il dito, in fondo cestina.
-        var slide by remember { mutableFloatStateOf(0f) }
-        val lockDistance = with(LocalDensity.current) { 64.dp.toPx() }
-        val cancelDistance = with(LocalDensity.current) { 110.dp.toPx() }
+        val isComposing by rememberUpdatedState(composing)
+        val send by rememberUpdatedState(onSend)
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -521,6 +552,8 @@ private fun CanvasNavBar(
                             }
                         }
                         when {
+                            // La barra è il campo: il + è la freccia che invia.
+                            isComposing -> { if (outcome == PRESS_TAP) { haptic(Haptic.TICK); send() } }
                             // Microfono bloccato: il tocco inserisce quello che si è detto.
                             outcome == PRESS_TAP && isLocked -> { haptic(Haptic.CONFIRM); holdEnd() }
                             // Mentre ascolta una canzone il + non fa altro: finisce da solo.
@@ -580,6 +613,7 @@ private fun CanvasNavBar(
                 modifier = Modifier.fillMaxSize().bouncyPress(0.88f).glass(CircleShape, MaterialTheme.colorScheme.primary)
                     .semantics {
                         contentDescription = when {
+                            composing -> "Inserisci"
                             listening && locked -> "Inserisci"
                             listening -> "In ascolto"
                             else -> "Aggiungi"
@@ -590,6 +624,7 @@ private fun CanvasNavBar(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     val icon = when {
+                        composing -> 2
                         listening && locked -> 2
                         listening -> 1
                         else -> 0
@@ -603,51 +638,6 @@ private fun CanvasNavBar(
                             },
                             contentDescription = null,
                             modifier = Modifier.size(if (i == 2) 24.dp else 28.dp),
-                        )
-                    }
-                }
-            }
-            // A sinistra del microfono: "Scorri per annullare" segue il dito; il cestino si fa rosso e in fondo annulla.
-            if (listening && !locked && !music) {
-                val progress = (slide / cancelDistance).coerceIn(0f, 1f)
-                val danger = MaterialTheme.colorScheme.error
-                Surface(
-                    shape = CircleShape,
-                    color = androidx.compose.ui.graphics.Color.Transparent,
-                    border = cardBorder(),
-                    modifier = Modifier
-                        .layout { measurable, constraints ->
-                            val p = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity, minHeight = 0))
-                            layout(constraints.maxWidth, constraints.maxHeight) {
-                                p.place(
-                                    -p.width - 10.dp.roundToPx() - (slide * 0.55f).roundToInt(),
-                                    (constraints.maxHeight - p.height) / 2,
-                                )
-                            }
-                        }
-                        .glass(CircleShape),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 10.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
-                    ) {
-                        Icon(
-                            Icons.Rounded.Delete,
-                            contentDescription = null,
-                            tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, danger, progress),
-                            modifier = Modifier.size(18.dp).graphicsLayer { scaleX = 1f + progress * 0.3f; scaleY = 1f + progress * 0.3f },
-                        )
-                        Icon(
-                            Icons.Rounded.KeyboardArrowLeft,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            "Scorri per annullare",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
                         )
                     }
                 }
@@ -689,11 +679,12 @@ private fun CanvasNavBar(
 }
 
 /**
- * Il fumetto sopra la barra mentre si detta tenendo premuto il +: le barre che seguono la voce
- * e, sotto, quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
+ * La barra mentre si detta tenendo premuto il +: le barre che seguono la voce e, sotto,
+ * quello che Canvas sta capendo. Se dopo un attimo non si sente niente lo dice.
+ * Scorrendo a sinistra tutto segue il dito e compare il cestino: in fondo il vocale si butta.
  */
 @Composable
-private fun DictationBubble(
+private fun DictationContent(
     listening: Boolean,
     partial: String,
     locked: Boolean,
@@ -701,8 +692,10 @@ private fun DictationBubble(
     heardSound: Boolean,
     notice: String?,
     music: Boolean,
+    /** Da 0 a 1: quanto manca al cestino. */
+    slide: Float,
+    slidePx: Float,
     onCancel: () -> Unit,
-    onIdentifySong: () -> Unit,
 ) {
     // Dopo due secondi di solo silenzio: "Nessun suono rilevato" invece di "Ti ascolto…".
     var silent by remember { mutableStateOf(false) }
@@ -724,62 +717,86 @@ private fun DictationBubble(
         }
         for (i in bars.indices) bars[i] = 0f
     }
-    AnimatedVisibility(
-        visible = listening || notice != null,
-        enter = fadeIn() + slideInVertically { it / 2 },
-        exit = fadeOut(tween(120)),
-    ) {
-        Surface(
-            shape = RoundedCornerShape(22.dp),
-            color = androidx.compose.ui.graphics.Color.Transparent,
-            border = cardBorder(),
-            modifier = Modifier.padding(horizontal = 16.dp).glass(RoundedCornerShape(22.dp)),
-        ) {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                if (listening) {
-                    val barColor = MaterialTheme.colorScheme.primary
-                    Canvas(Modifier.fillMaxWidth().height(28.dp)) {
-                        val gap = 3.dp.toPx()
-                        val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
-                        bars.forEachIndexed { i, v ->
-                            val h = (size.height * (0.12f + 0.88f * v)).coerceAtMost(size.height)
-                            drawRoundRect(
-                                color = barColor.copy(alpha = 0.35f + 0.65f * v),
-                                topLeft = Offset(i * (w + gap), (size.height - h) / 2),
-                                size = Size(w, h),
-                                cornerRadius = CornerRadius(w / 2, w / 2),
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
+    Box(Modifier.fillMaxWidth()) {
+        // Il cestino aspetta a sinistra: compare e diventa rosso mentre il dito scorre.
+        if (slide > 0f) {
+            Icon(
+                Icons.Rounded.Delete,
+                contentDescription = null,
+                tint = androidx.compose.ui.graphics.lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.error, slide),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 18.dp)
+                    .size(24.dp)
+                    .graphicsLayer {
+                        alpha = (slide * 2f).coerceAtMost(1f)
+                        scaleX = 0.8f + slide * 0.5f
+                        scaleY = 0.8f + slide * 0.5f
+                    },
+            )
+        }
+        Column(
+            Modifier
+                .graphicsLayer {
+                    translationX = -slidePx * 0.6f
+                    alpha = 1f - slide * 0.6f
                 }
-                val shown = when {
-                    !listening && notice != null -> notice
-                    partial.isNotBlank() -> partial
-                    silent -> Dictation.NO_SOUND
-                    else -> "Ti ascolto…"
+                .padding(start = 20.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+        ) {
+            if (listening) {
+                val barColor = MaterialTheme.colorScheme.primary
+                Canvas(Modifier.fillMaxWidth().height(28.dp)) {
+                    val gap = 3.dp.toPx()
+                    val w = (size.width - gap * (BAR_COUNT - 1)) / BAR_COUNT
+                    bars.forEachIndexed { i, v ->
+                        val h = (size.height * (0.12f + 0.88f * v)).coerceAtMost(size.height)
+                        drawRoundRect(
+                            color = barColor.copy(alpha = 0.35f + 0.65f * v),
+                            topLeft = Offset(i * (w + gap), (size.height - h) / 2),
+                            size = Size(w, h),
+                            cornerRadius = CornerRadius(w / 2, w / 2),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+            val shown = when {
+                !listening && notice != null -> notice
+                partial.isNotBlank() -> partial
+                silent -> Dictation.NO_SOUND
+                else -> "Ti ascolto…"
+            }
+            Text(
+                shown,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(vertical = if (listening) 0.dp else 8.dp),
+            )
+            if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!locked && !music) {
+                    Icon(
+                        Icons.Rounded.KeyboardArrowLeft,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
                 Text(
-                    shown,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (shown == Dictation.NO_SOUND) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 4,
+                    when {
+                        music -> "Qualche secondo e te la trovo su Spotify"
+                        locked -> "Bloccato · tocca ➤ per inserire"
+                        else -> "Scorri per annullare · su per bloccare"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
-                if (listening) Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        when {
-                            music -> "Qualche secondo e te la trovo su Spotify"
-                            locked -> "Bloccato · tocca ➤ per inserire"
-                            else -> "Rilascia per finire · su per bloccare · a sinistra annulli"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (locked && !music) {
-                        TextButton(onClick = onCancel) { Text("Annulla") }
-                    }
+                if (locked && !music) {
+                    TextButton(onClick = onCancel) { Text("Annulla") }
                 }
             }
         }
@@ -787,6 +804,11 @@ private fun DictationBubble(
 }
 
 private const val BAR_COUNT = 28
+
+// Cosa mostra la barra in basso.
+private const val BAR_TABS = 0
+private const val BAR_VOICE = 1
+private const val BAR_WRITE = 2
 
 // Come finisce la prima parte del gesto sul +.
 private const val PRESS_HOLD = 0
@@ -897,6 +919,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AppContent(navController: NavHostController, openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val context = LocalContext.current
@@ -951,6 +974,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val showBottomBar = topDestinations.any { it.route == currentRoute }
+    val composing = CaptureComposer.isOpen
+    val imeOpen = WindowInsets.isImeVisible
+    // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
+    LaunchedEffect(showBottomBar) { if (!showBottomBar) CaptureComposer.close() }
     // Pallino sulla scheda Note: promemoria scaduti o in scadenza oggi.
     NotesStore.init(context)
     val notes by NotesStore.data.collectAsState()
@@ -976,6 +1003,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     var capturing by remember { mutableStateOf(false) }
     // Il testo dettato tenendo premuto il +: il dialogo lo riceve e ne riconosce il tipo.
     var dictated by remember { mutableStateOf("") }
+    val sendComposer = rememberComposerSend { dictated = it; capturing = true }
     val plusOverride by PlusAction.override
     if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
@@ -1062,7 +1090,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     Scaffold(
         bottomBar = {
             AnimatedVisibility(
-                visible = showBottomBar,
+                // La tastiera aperta per altro (cerca, modifica) nasconde la barra; se si scrive nella barra sale con lei.
+                visible = showBottomBar && (composing || !imeOpen),
                 enter = slideInVertically(pageSpring) { it } + fadeIn(),
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
@@ -1087,6 +1116,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onCancelDictation = dictation::discard,
                     heardSound = dictation.heardSound,
                     notice = dictation.notice,
+                    composing = composing,
+                    onSend = sendComposer,
                 )
             }
         },
@@ -1342,9 +1373,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             modifier = Modifier.padding(padding),
         )
         PullToSearchIndicator(pullSearch)
+        // Sotto la barra, che intanto è diventata il campo per scrivere.
+        CaptureComposerVeil()
         }
     }
-    CaptureComposerLayer(onNeedsDialog = { dictated = it; capturing = true })
     SaveToNotesLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
