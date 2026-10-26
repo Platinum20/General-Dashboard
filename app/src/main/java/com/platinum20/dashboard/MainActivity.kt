@@ -68,8 +68,6 @@ import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
@@ -744,17 +742,11 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
             bump.animateTo(1f, Springs.snappy())
         }
     }
-    // Colori e larghezza cambiano insieme, con la stessa curva e senza rimbalzi: la pillola si apre
-    // sulla scheda nuova mentre quella vecchia si richiude, senza scatti né sovrapposizioni.
     val container by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent,
-        tween(NAV_MS, easing = Motion.Standard),
-        label = "pill",
+        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent, label = "pill",
     )
     val content by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
-        tween(NAV_MS, easing = Motion.Standard),
-        label = "pillText",
+        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant, label = "pillText",
     )
     Row(
         modifier = Modifier
@@ -765,29 +757,19 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
             .background(container)
             .clickable(onClick = onClick)
             .semantics { contentDescription = dest.label }
+            .animateContentSize(Springs.snappy())
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BadgedBox(badge = { if (badge > 0) Badge { Text("$badge") } }) {
             Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
         }
-        // Il nome entra e esce allargando la pillola: la larghezza la decide solo questa animazione.
-        AnimatedVisibility(
-            visible = selected,
-            enter = expandHorizontally(tween(NAV_MS, easing = Motion.Standard), expandFrom = Alignment.Start) +
-                fadeIn(tween(NAV_MS, delayMillis = NAV_MS / 3)),
-            exit = shrinkHorizontally(tween(NAV_MS, easing = Motion.Standard), shrinkTowards = Alignment.Start) +
-                fadeOut(tween(NAV_MS / 2)),
-        ) {
-            Row {
-                Spacer(Modifier.width(8.dp))
-                Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, softWrap = false)
-            }
+        if (selected) {
+            Spacer(Modifier.width(8.dp))
+            Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
         }
     }
 }
-
-private const val NAV_MS = 280
 
 // Molle delle transizioni: le pagine arrivano con un leggero rimbalzo invece di una curva fissa.
 private val pageSpring = spring(
