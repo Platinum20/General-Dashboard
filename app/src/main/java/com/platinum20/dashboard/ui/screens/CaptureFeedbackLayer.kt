@@ -78,6 +78,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     val scope = rememberCoroutineScope()
     val haptic = rememberHaptic()
     val inNotes by rememberUpdatedState(onNotes)
+    // Portato di lato si chiude come il mini player: la cosa resta salvata, solo senza volo.
+    val swipe = rememberSwipeAwayState()
 
     fun target(n: CaptureNotice): Pair<String, Rect>? {
         n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
@@ -92,6 +94,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
             notice = n
             last = n
             noticeRect = null
+            swipe.reset()
             seq++
         }
     }
@@ -99,6 +102,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     LaunchedEffect(seq) {
         val n = notice ?: return@LaunchedEffect
         delay(NOTICE_MS)
+        // Mentre il dito lo tiene di lato non vola via: decide il gesto.
+        while (notice === n && swipe.x.value != 0f) delay(100)
         if (notice !== n) return@LaunchedEffect
         val from = noticeRect?.center
         val to = target(n)
@@ -113,6 +118,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
             exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.4f, animationSpec = tween(160)),
         ) {
             val n = last ?: return@AnimatedVisibility
+            Box(contentAlignment = Alignment.Center) {
+            SwipeAwayMark(swipe)
             Surface(
                 shape = RoundedCornerShape(22.dp),
                 color = androidx.compose.ui.graphics.Color.Transparent,
@@ -120,6 +127,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 border = cardBorder(),
                 modifier = Modifier
+                    .swipeAway(swipe) { if (notice === n) notice = null }
                     .glass(RoundedCornerShape(22.dp))
                     .onGloballyPositioned { noticeRect = it.boundsInRoot() },
             ) {
@@ -148,6 +156,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
                         Spacer(Modifier.width(12.dp))
                     }
                 }
+            }
             }
         }
     }

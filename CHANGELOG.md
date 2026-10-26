@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.169.0
+**Il fumetto "salvato" si chiude portandolo di lato**
+- Dopo aver salvato col +, il fumetto di conferma si toglie trascinandolo o lanciandolo di lato, con lo stesso gesto del mini player (compare la X che diventa rossa). La cosa resta salvata
+- Finché lo tieni col dito non vola via da solo
+
 ## 1.168.0
 **Note: le cose salvate si salvano una volta sola**
 - Su un articolo già nelle note il tasto in alto a destra diventa "Rimuovi dalle note" (segnalibro pieno) e lo toglie; niente più copie della stessa notizia
