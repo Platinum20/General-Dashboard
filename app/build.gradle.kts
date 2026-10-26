@@ -1,3 +1,4 @@
+import java.net.URI
 import java.util.Properties
 
 plugins {
@@ -19,7 +20,7 @@ val sherpaOnnxAar = file("libs/sherpa-onnx-$sherpaOnnxVersion.aar")
 if (!sherpaOnnxAar.exists()) {
     sherpaOnnxAar.parentFile.mkdirs()
     val partial = file("libs/sherpa-onnx.part")
-    java.net.URI("https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaOnnxVersion/sherpa-onnx-$sherpaOnnxVersion.aar")
+    URI("https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaOnnxVersion/sherpa-onnx-$sherpaOnnxVersion.aar")
         .toURL().openStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
     partial.renameTo(sherpaOnnxAar)
 }
