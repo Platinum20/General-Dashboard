@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.145.0
+**Barra in basso fluida**
+- Cambiando sezione la pillola scura si apre sulla scheda nuova mentre quella vecchia si richiude, insieme e con la stessa curva: niente più rimbalzi, scatti o pillola che rincorre le schede
+- Il nome della sezione entra ed esce sfumando mentre la pillola si allarga, invece di comparire di colpo
+
 ## 1.144.0
 **Impostazioni rifatte da capo, barra in basso sistemata**
 - La pillola scura della scheda scelta torna della sua misura, dentro la barra (nella 1.141 usciva sopra e sotto)

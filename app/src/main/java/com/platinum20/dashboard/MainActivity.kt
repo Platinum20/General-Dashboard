@@ -12,9 +12,6 @@ import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
 import com.platinum20.dashboard.ui.screens.SaveToNotesLayer
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.animation.core.Animatable
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.ui.layout.onPlaced
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -71,6 +68,8 @@ import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
@@ -450,40 +449,8 @@ private fun CanvasNavBar(
             // Niente ombra: sotto un fondo trasparente scurirebbe il vetro rendendolo opaco.
             modifier = Modifier.weight(1f).height(60.dp).glass(CircleShape),
         ) {
-            // La pillola scelta è una sola e scivola da una scheda all'altra: il bordo davanti corre,
-            // quello dietro la segue, così si allunga un attimo come una goccia e poi si richiude.
-            val pills = remember { mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
-            val left = remember { Animatable(0f) }
-            val right = remember { Animatable(0f) }
-            var placed by remember { mutableStateOf(false) }
-            val target = currentRoute?.let { pills[it] }
-            LaunchedEffect(target) {
-                val l = target?.left ?: return@LaunchedEffect
-                val r = target.right
-                if (!placed) {
-                    left.snapTo(l)
-                    right.snapTo(r)
-                    placed = true
-                    return@LaunchedEffect
-                }
-                val toRight = l > left.value
-                launch { left.animateTo(l, spring(dampingRatio = 0.78f, stiffness = if (toRight) 260f else 700f)) }
-                launch { right.animateTo(r, spring(dampingRatio = 0.78f, stiffness = if (toRight) 700f else 260f)) }
-            }
-            val indicator = MaterialTheme.colorScheme.onSurface
             Row(
-                modifier = Modifier
-                    .padding(horizontal = 6.dp)
-                    .drawBehind {
-                        // Alta quanto la pillola della scheda (non quanto la barra), centrata come lei.
-                        val pill = target ?: return@drawBehind
-                        if (placed) drawRoundRect(
-                            color = indicator,
-                            topLeft = Offset(left.value, pill.top),
-                            size = Size((right.value - left.value).coerceAtLeast(0f), pill.height),
-                            cornerRadius = CornerRadius(pill.height / 2, pill.height / 2),
-                        )
-                    },
+                modifier = Modifier.padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
@@ -493,10 +460,6 @@ private fun CanvasNavBar(
                         selected = currentRoute == dest.route,
                         badge = if (dest.route == Routes.NOTES) dueToday else 0,
                         onClick = { haptic(Haptic.TICK); onSelect(dest) },
-                        modifier = Modifier.onPlaced { c ->
-                            val p = c.positionInParent()
-                            pills[dest.route] = androidx.compose.ui.geometry.Rect(p.x, p.y, p.x + c.size.width, p.y + c.size.height)
-                        },
                     )
                 }
             }
@@ -765,7 +728,7 @@ private const val PRESS_DRAG = 3
 private const val PRESS_DOWN = 4
 
 @Composable
-private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
     // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
     val targetKey = when (dest.route) {
         Routes.NOTES -> CaptureTargets.NOTES_TAB
@@ -781,31 +744,50 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
             bump.animateTo(1f, Springs.snappy())
         }
     }
-    // Il fondo scuro della scheda scelta lo disegna la barra (scivola tra le schede): qui solo i colori.
+    // Colori e larghezza cambiano insieme, con la stessa curva e senza rimbalzi: la pillola si apre
+    // sulla scheda nuova mentre quella vecchia si richiude, senza scatti né sovrapposizioni.
+    val container by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onSurface else androidx.compose.ui.graphics.Color.Transparent,
+        tween(NAV_MS, easing = Motion.Standard),
+        label = "pill",
+    )
     val content by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant, label = "pillText",
+        if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
+        tween(NAV_MS, easing = Motion.Standard),
+        label = "pillText",
     )
     Row(
-        modifier = modifier
+        modifier = Modifier
             .then(if (targetKey != null) Modifier.captureTarget(targetKey) else Modifier)
             .graphicsLayer { scaleX = bump.value; scaleY = bump.value }
             .bouncyPress(0.9f)
             .clip(CircleShape)
+            .background(container)
             .clickable(onClick = onClick)
             .semantics { contentDescription = dest.label }
-            .animateContentSize(Springs.snappy())
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BadgedBox(badge = { if (badge > 0) Badge { Text("$badge") } }) {
             Icon(if (selected) dest.selectedIcon else dest.icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
         }
-        if (selected) {
-            Spacer(Modifier.width(8.dp))
-            Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1)
+        // Il nome entra e esce allargando la pillola: la larghezza la decide solo questa animazione.
+        AnimatedVisibility(
+            visible = selected,
+            enter = expandHorizontally(tween(NAV_MS, easing = Motion.Standard), expandFrom = Alignment.Start) +
+                fadeIn(tween(NAV_MS, delayMillis = NAV_MS / 3)),
+            exit = shrinkHorizontally(tween(NAV_MS, easing = Motion.Standard), shrinkTowards = Alignment.Start) +
+                fadeOut(tween(NAV_MS / 2)),
+        ) {
+            Row {
+                Spacer(Modifier.width(8.dp))
+                Text(dest.label, style = MaterialTheme.typography.labelLarge, color = content, maxLines = 1, softWrap = false)
+            }
         }
     }
 }
+
+private const val NAV_MS = 280
 
 // Molle delle transizioni: le pagine arrivano con un leggero rimbalzo invece di una curva fissa.
 private val pageSpring = spring(
