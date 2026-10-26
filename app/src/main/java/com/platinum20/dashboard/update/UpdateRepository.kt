@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.File
 import java.io.IOException
+import com.platinum20.dashboard.net.HeavyDownloads
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -50,6 +51,8 @@ class UpdateRepository(private val context: Context) {
         onProgress: (Float) -> Unit,
     ): File = withContext(Dispatchers.IO) {
         val url = release.apkUrl ?: throw IOException("Questa release non contiene un APK.")
+        // L'APK pesa decine di MB: con "solo Wi-Fi" acceso non parte sui dati.
+        if (HeavyDownloads.blocked(context)) throw IOException(HeavyDownloads.BLOCKED)
         val dir = File(context.cacheDir, "updates").apply { mkdirs() }
         dir.listFiles()?.forEach { it.delete() }
         val target = File(dir, "General-Dashboard-${release.version}.apk")

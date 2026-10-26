@@ -8,6 +8,8 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsRepository
 import com.platinum20.dashboard.news.NewsSources
 import com.platinum20.dashboard.news.reader.ArticleExtractor
+import com.platinum20.dashboard.news.voice.ReadingVoice
+import com.platinum20.dashboard.news.voice.VoiceStore
 import com.platinum20.dashboard.update.UpdateRepository
 import com.platinum20.dashboard.weather.ForecastParser
 import kotlinx.coroutines.runBlocking
@@ -113,6 +115,25 @@ class LiveChecks {
                 line(code in 200..399, "Download dell'APK raggiungibile (HTTP $code)")
             }
         }
+
+        report.append("\n## Voce di lettura\n\n")
+        // La voce più leggera si scarica e si apre davvero: così si vede se il link vive ancora.
+        ReadingVoice.entries.filter { it.neural }.forEach { voice ->
+            val url = voice.url!!
+            val code = runCatching { (URL(url).openConnection() as HttpURLConnection).run { requestMethod = "HEAD"; responseCode.also { disconnect() } } }.getOrNull()
+            line(code in 200..399, "Voce ${voice.label} raggiungibile (HTTP $code) — $url")
+        }
+        val light = ReadingVoice.RICCARDO
+        val dir = File(liveDir, "voce-${light.name.lowercase()}")
+        var percent = 0
+        val installed = runCatching { VoiceStore.install(light.url!!, dir) { percent = (it * 100).toInt() } }
+        line(
+            installed.isSuccess,
+            "Voce ${light.label} scaricata e aperta: " + (installed.getOrNull()
+                ?.let { "modello ${it.model.length() / 1_000_000} MB, avanzamento visto fino a $percent%" }
+                ?: installed.exceptionOrNull().toString()),
+        )
+        dir.deleteRecursively()
 
         report.append("\n## Radio\n\n")
         val stations = runCatching { RadioApi.popular() }
