@@ -289,11 +289,17 @@ fun HomeScreen(
                 },
             )
             HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowPlan != null)
-            HomeCard.RESUME -> resume?.let { item ->
-                ResumeCard(item) {
+            // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
+            HomeCard.RESUME -> playingNow?.let { playing ->
+                MediaNowCard(playing, onOpen = {
+                    haptic(Haptic.TICK)
+                    inApp?.openRoute?.invoke(Routes.PLAYER)
+                })
+            } ?: resume?.let { item ->
+                MediaResumeCard(item, onClick = {
                     haptic(Haptic.TICK)
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
-                }
+                })
             }
             HomeCard.RECAP -> RecapCard(
                 state = recap,
@@ -574,51 +580,6 @@ private fun WeatherSummary(
             action = "Riprova",
             onAction = onRetry,
         )
-    }
-}
-
-/** "Riprendi": copertina, titolo e punto da cui riparte; un tocco e riparte da lì. */
-@Composable
-private fun ResumeCard(item: ResumeItem, onClick: () -> Unit) {
-    CanvasCard(
-        onClick = onClick,
-        onLongClick = { SavedLinks.offer(SavedLink.Media(item)) },
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .size(width = 72.dp, height = 48.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Outlined.PlayCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (item.image.isNotBlank()) {
-                    AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                }
-                if (item.durationMs > 0) {
-                    LinearProgressIndicator(
-                        progress = { item.progress },
-                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
-                        drawStopIndicator = {},
-                    )
-                }
-            }
-            Spacer(Modifier.size(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text("Riprendi", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                HomeResume.detail(item).takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Spacer(Modifier.size(8.dp))
-            Icon(Icons.Filled.PlayArrow, contentDescription = "Riprendi", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
-        }
     }
 }
 
