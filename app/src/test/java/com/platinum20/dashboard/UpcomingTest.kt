@@ -57,6 +57,7 @@ class UpcomingTest {
         assertEquals("Mer 28", Upcoming.dayLabel(today.plusDays(2), today))
         assertEquals("Oggi", Upcoming.dayLabel(today, today))
         assertEquals("Mer 9 dic", Upcoming.dayLabel(LocalDate.of(2026, 12, 9), today))
+        assertEquals("9 feb 2027", Upcoming.dayLabel(LocalDate.of(2027, 2, 9), today))
     }
 
     @Test

@@ -93,8 +93,8 @@ internal fun pastDays(
         .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
 }
 
-/** Quanti giorni di calendario si guardano per gli eventi: dalla 1.187 qui c'è anche il Calendario. */
-internal const val EVENT_DAYS = 60
+/** Quanti giorni di calendario si guardano per gli eventi: più di un anno, così c'è anche l'anno dopo (Antonio). */
+internal const val EVENT_DAYS = com.platinum20.dashboard.today.Upcoming.DAYS
 
 internal fun dueDays(
     tasks: List<TaskItem>,

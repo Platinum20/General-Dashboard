@@ -42,7 +42,7 @@ create something it lists, so the next thread doesn't have to explore.
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
-= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 60 days of
+= every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 400 days (`Upcoming.DAYS`, also Notes' `EVENT_DAYS`) of
 events/tasks/dates/parcels/charges, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
 `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
@@ -58,7 +58,7 @@ Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica,
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
-type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → receipt = expense text, else text for CaptureGuess; was the Spese "scontrino" card until 1.199),
+type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → receipt = expense text, else text for CaptureGuess; was the Spese "scontrino" card until 1.202),
 `Dictation.kt`/`VoiceCapture.kt` (in-app speech, no Google dialog), `SavedLink.kt`,
 `QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
