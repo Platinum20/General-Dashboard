@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.200.0
+**Prossimi giorni arriva fino all'anno dopo**
+- Note › Prossimi giorni e la card in Oggi guardano avanti più di un anno di calendario, non più solo due mesi
+- Le date di un altro anno si leggono con l'anno: "9 feb 2027"
+
 ## 1.197.0
 **Prossimi giorni: scorrendo in su si torna indietro nel tempo**
 - Note › Prossimi giorni si apre sempre da adesso; scorrendo verso l'alto vedi il passato degli ultimi due mesi: impegni finiti, promemoria fatti e pacchi arrivati, più tenui
