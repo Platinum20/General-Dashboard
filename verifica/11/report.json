@@ -1,0 +1,1235 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 59,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 62,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1596,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 3,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1611,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1595,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 77,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1559,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 121,
+    "blocked": 0,
+    "wouldBlock": 34,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "sb.scorecardresearch.com": 2,
+     "static.doubleclick.net": 2,
+     "googleads.g.doubleclick.net": 2,
+     "www.youtube.com": 4,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "qhjoi2tn7jsm71qhayqfbzn873wdj1793035374.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26787,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 84,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 1,
+     "www.youtube.com": 2,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26787,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/26/borsa-leuropa-chiude-in-rialzo-e-guarda-alle-banche-centrali_58ad0768-5fd9-42ae-bf76-711c32d52d68.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 2885,
+    "blocked": 0,
+    "wouldBlock": 2552,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "t.seedtag.com": 3,
+     "cdn.pbstck.com": 2,
+     "www.google-analytics.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "intake.pbstck.com": 3,
+     "s.seedtag.com": 51,
+     "cdn-gl.imrworldwide.com": 3,
+     "sp2gp5mw1gwsrmdroh7mw1oycob781793035399.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 7,
+     "secure-assets.rubiconproject.com": 37,
+     "ads.pubmatic.com": 28,
+     "cs.admanmedia.com": 21,
+     "sync.1rx.io": 68,
+     "csync.loopme.me": 48,
+     "u.openx.net": 10,
+     "onetag-sys.com": 85,
+     "match.prod.bidr.io": 9,
+     "match.sharethrough.com": 19,
+     "x.bidswitch.net": 42,
+     "c1.adform.net": 19,
+     "ap.lijit.com": 58,
+     "sync.smartadserver.com": 16,
+     "creativecdn.com": 43,
+     "id5-sync.com": 7,
+     "ups.analytics.yahoo.com": 10,
+     "b1sync.outbrain.com": 22,
+     "ib.adnxs.com": 30,
+     "sync.ipredictive.com": 6,
+     "t.adx.opera.com": 13,
+     "match.deepintent.com": 10,
+     "beachfront-match.dotomi.com": 1,
+     "pixel-sync.sitescout.com": 26,
+     "sync.srv.stackadapt.com": 19,
+     "match.adsrvr.org": 30,
+     "ad.360yield.com": 33,
+     "visitor.omnitagjs.com": 4,
+     "csync.smartadserver.com": 3,
+     "ced-ns.sascdn.com": 1,
+     "csync.smilewanted.com": 18,
+     "rtb.mfadsrvr.com": 4,
+     "id.rlcdn.com": 12,
+     "hb.trustedstack.com": 5,
+     "ssum-sec.casalemedia.com": 9,
+     "s.ad.smaato.net": 47,
+     "prebid.a-mo.net": 17,
+     "image8.pubmatic.com": 40,
+     "eb2.3lift.com": 44,
+     "cs.media.net": 14,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "sync.richaudience.com": 33,
+     "cs-server-s2s.yellowblue.io": 12,
+     "cm.g.doubleclick.net": 8,
+     "tr.blismedia.com": 5,
+     "ad.turn.com": 2,
+     "public.servenobid.com": 1,
+     "measureadv.com": 1,
+     "eus.rubiconproject.com": 77,
+     "ssc-cms.33across.com": 72,
+     "cpm.vistarsagency.com": 1,
+     "sync.adkernel.com": 72,
+     "ittpx.eskimi.com": 25,
+     "ssbsync.smartadserver.com": 35,
+     "rtb-csync.smartadserver.com": 3,
+     "bttrack.com": 2,
+     "dis.criteo.com": 2,
+     "sync-tm.everesttech.net": 7,
+     "pixel.33across.com": 1,
+     "prebidsrvr.cootlogix.com": 1,
+     "p.rfihub.com": 17,
+     "sync.kueezrtb.com": 7,
+     "sync.go.sonobi.com": 42,
+     "ce.lijit.com": 16,
+     "jadserve.postrelease.com": 15,
+     "hbx.media.net": 31,
+     "ads.servenobid.com": 7,
+     "us-east-1-cs-rtb.openwebmp.com": 4,
+     "ssp-sync.criteo.com": 27,
+     "sync.ingage.tech": 2,
+     "us-u.openx.net": 22,
+     "prebid-match.dotomi.com": 6,
+     "secure.adnxs.com": 8,
+     "bh.contextweb.com": 22,
+     "ads.yieldmo.com": 13,
+     "cm.adform.net": 24,
+     "visitor.us-east4.gcp.omnitagjs.com": 4,
+     "ms-cookie-sync.presage.io": 10,
+     "sync.rbstsystems.live": 12,
+     "sync.a-mo.net": 3,
+     "rtb.gumgum.com": 5,
+     "d.adroll.com": 1,
+     "cookies.nextmillmedia.com": 29,
+     "cms.quantserve.com": 2,
+     "dsp-service.admatic.de": 10,
+     "rtb.openx.net": 6,
+     "dsum-sec.casalemedia.com": 1,
+     "sync.mathtag.com": 12,
+     "sync.adotmob.com": 1,
+     "trace.mediago.io": 1,
+     "um.simpli.fi": 3,
+     "cs.iqzone.com": 18,
+     "openweb-match.dotomi.com": 2,
+     "syncingbridge.com": 12,
+     "user-sync.fwmrm.net": 7,
+     "visitor-ow.omnitagjs.com": 3,
+     "token.rubiconproject.com": 62,
+     "33across-match.dotomi.com": 1,
+     "a.amxrtb.com": 23,
+     "rt.marphezis.com": 2,
+     "visitor-px.omnitagjs.com": 4,
+     "visitor-programmaticx.omnitagjs.com": 4,
+     "dsp-service.adtarget.biz": 3,
+     "u-las.4dex.io": 5,
+     "www.temu.com": 8,
+     "cs.openwebmp.com": 6,
+     "sync.cootlogix.com": 47,
+     "pixel-eu.rubiconproject.com": 4,
+     "pbs-cs.yellowblue.io": 6,
+     "u-ams.4dex.io": 21,
+     "sync.sparteo.com": 17,
+     "usync.ingage.tech": 13,
+     "et-c-ash.33across.com": 1,
+     "ssbsync-global.smartadserver.com": 10,
+     "sync.technoratimedia.com": 4,
+     "prebid.admatic.de": 7,
+     "gw-iad-bid.ymmobi.com": 33,
+     "dsp-service.pixad.com.tr": 3,
+     "sync.adtelligent.com": 2,
+     "bidder.smartytouch.co": 2,
+     "visitor-33across.omnitagjs.com": 2,
+     "ads.betweendigital.com": 2,
+     "s.console.adtarget.com.tr": 2,
+     "pixel.rubiconproject.com": 37,
+     "pixel.tapad.com": 9,
+     "rtb.adentifi.com": 1,
+     "idpix.media6degrees.com": 1,
+     "static.cloudflareinsights.com": 8,
+     "usync.4dex.io": 11,
+     "ortb.vdo.ai": 12,
+     "b1sync.zemanta.com": 4,
+     "ogury-match.dotomi.com": 4,
+     "ittpx-us-e.eskimi.com": 4,
+     "id.a-mx.com": 20,
+     "ps.eyeota.net": 24,
+     "px.ads.linkedin.com": 4,
+     "px.mountain.com": 2,
+     "dp1.33across.com": 2,
+     "pixel-us-east.rubiconproject.com": 12,
+     "i.w55c.net": 2,
+     "s.amazon-adsystem.com": 3,
+     "elb.the-ozone-project.com": 2,
+     "i.liadm.com": 5,
+     "gumgum-match.dotomi.com": 2,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "cs.yellowblue.io": 8,
+     "openx2-match.dotomi.com": 2,
+     "dsp.360yield.com": 3,
+     "oxp.mxptint.net": 2,
+     "thrtle.com": 2,
+     "pxl.iqm.com": 3,
+     "vop.sundaysky.com": 4,
+     "cdn.undertone.com": 3,
+     "aa.agkn.com": 4,
+     "contextual.media.net": 2,
+     "cs.ingage.tech": 1,
+     "aorta.clickagy.com": 3,
+     "su.semasio.net": 1,
+     "openx-ums.acuityplatform.com": 1,
+     "dmp.brand-display.com": 2,
+     "prebid.adtarget.biz": 1,
+     "bpi.rtactivate.com": 2,
+     "fei.pro-market.net": 3,
+     "capi.connatix.com": 3,
+     "static.cdn.admatic.de": 5,
+     "ml314.com": 3,
+     "sync.crwdcntrl.net": 4,
+     "dm-us.hybrid.ai": 3,
+     "evt.undertone.com": 1,
+     "prebid.pixad.com.tr": 4,
+     "sync.colossusssp.com": 17,
+     "us.ck-ie.com": 27,
+     "dpm.demdex.net": 2,
+     "idsync.rlcdn.com": 5,
+     "sync.intentiq.com": 2,
+     "sync.aniview.com": 24,
+     "krush-match.dotomi.com": 12,
+     "data.adsrvr.org": 1,
+     "sync.bfmio.com": 12,
+     "s.company-target.com": 1,
+     "eu-rtbstack-cm.admixer.net": 12,
+     "sync-km.ads.yieldmo.com": 12,
+     "player.aniview.com": 12,
+     "ads.stickyadstv.com": 12,
+     "usersync.gumgum.com": 12,
+     "image2.pubmatic.com": 12,
+     "visitor-krushmedia.omnitagjs.com": 12,
+     "match.sync.ad.cpe.dotomi.com": 12,
+     "visitor-krushmedia_video.omnitagjs.com": 12,
+     "ads164.console.adtarget.com.tr": 4,
+     "sync.serverbid.com": 1,
+     "inv-nets.admixer.net": 2,
+     "dsp-cookie.adfarm1.adition.com": 1,
+     "stx-match.dotomi.com": 1,
+     "sync.ottadvisors.com": 1,
+     "adx01.groovinads.com": 1,
+     "cs.minutemedia-prebid.com": 1,
+     "public-prod-dspcookiematching.dmxleo.com": 1,
+     "inmobi-match.dotomi.com": 3,
+     "cs.playdigo.com": 3,
+     "tracker-shr.ortb.net": 3,
+     "sync.pinklion.io": 3,
+     "pbs-us-east.openx.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Borsa: l'Europa chiude in rialzo e guarda alle banche centrali - Ultima ora - Ansa.it",
+    "textLength": 7026,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "securepubads.g.doubleclick.net": 1,
+     "ads.talkscreativity.com": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "cdn-gl.imrworldwide.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Borsa: l'Europa chiude in rialzo e guarda alle banche centrali - Ultima ora - Ansa.it",
+    "textLength": 7026,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 192,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/attualita/garofano-torno-dalle-ferie-e-disse-che-avevo-sbagliato-tutto-lex-vice-del-ris-sullomicidio-di-chiara-poggi/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 313,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 313,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 374,
+    "blocked": 0,
+    "wouldBlock": 110,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 2,
+     "carbon-cdn.ccgateway.net": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 5,
+     "assets.evolutionadv.it": 1,
+     "sb.scorecardresearch.com": 2,
+     "pagead2.googlesyndication.com": 18,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 3,
+     "www.googletagmanager.com": 2,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "dpm.demdex.net": 1,
+     "cdn.confiant-integrations.net": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "cdn.permutive.app": 1,
+     "applets.ebxcdn.com": 2,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "cm.everesttech.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn1.anonymised.io": 2,
+     "services.insurads.com": 3,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "static.anonm.io": 1,
+     "secure-it.imrworldwide.com": 2,
+     "4mnmsuidgnlyux9xhrjynbjupzazj1793035483.nuid.imrworldwide.com": 1,
+     "micro.rubiconproject.com": 1,
+     "client.aps.amazon-adsystem.com": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "prod.us-east-1.cxm-bcn.publisher-services.amazon.dev": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "esp.rtbhouse.com": 1,
+     "7bdc371afe9b90f167417f76e2d48124.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "gum.criteo.com": 2,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20686,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 262,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20678,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/26/mantovano-maranza-droga-saccheggi-citta/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 206,
+    "blocked": 0,
+    "wouldBlock": 140,
+    "blockedHosts": {
+     "www.googletagservices.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 4,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 2,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "cdn.taboola.com": 6,
+     "www.googletagmanager.com": 2,
+     "assets.evolutionadv.it": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "sb.scorecardresearch.com": 2,
+     "trc.taboola.com": 2,
+     "pagead2.googlesyndication.com": 20,
+     "applets.ebxcdn.com": 2,
+     "dpm.demdex.net": 1,
+     "static.anonymised.io": 1,
+     "cdn.insurads.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.permutive.app": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "cm.everesttech.net": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "googleads.g.doubleclick.net": 2,
+     "ep1.adtrafficquality.google": 2,
+     "ch-trc-events.taboola.com": 3,
+     "gum.criteo.com": 3,
+     "images.taboola.com": 18,
+     "ep2.adtrafficquality.google": 3,
+     "secure-it.imrworldwide.com": 2,
+     "rxkjogtxyack7xwlqw3dvryrucm6k1793035505.nuid.imrworldwide.com": 1,
+     "ib.adnxs.com": 1,
+     "cm.g.doubleclick.net": 2,
+     "services.insurads.com": 3,
+     "cdn1.anonymised.io": 2,
+     "cds.taboola.com": 1,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "c.amazon-adsystem.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "ad-delivery.net": 1,
+     "esp.rtbhouse.com": 1,
+     "7bd4fa534d6ebab6cbd7a8c870363237.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Mantovano e i saccheggi: «Prima si sono drogati, poi hanno devastato le città»",
+    "textLength": 6026,
+    "adFrames": 2,
+    "adBoxes": 17
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Mantovano e i saccheggi: «Prima si sono drogati, poi hanno devastato le città»",
+    "textLength": 5067,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/articoli/2026/10/rimbalza-piazza-affari-129-dopo-la-vittoria-di-lula-crolla-la-borsa-brasiliana-15-e21cc82b-4c99-4020-8cd1-b7246cc87fbe.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 336,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 336,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 156,
+    "blocked": 0,
+    "wouldBlock": 47,
+    "blockedHosts": {
+     "www.googletagmanager.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "cm.g.doubleclick.net": 1,
+     "oa.openxcdn.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "static.criteo.net": 1,
+     "image6.pubmatic.com": 2,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 2,
+     "ep2.adtrafficquality.google": 3,
+     "1f20f6f5ca90860bf140c2224a821f66.safeframe.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 1,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15124,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 113,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14506,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/salute/news/2026-10-26/tumore-endometrio-avanzato-trofuse-39719394/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 204,
+    "blocked": 0,
+    "wouldBlock": 80,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "pagead2.googlesyndication.com": 6,
+     "s0.2mdn.net": 1,
+     "pubads.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "ep2.adtrafficquality.google": 3,
+     "e99d4e47e731420b45dac41eb4786999.safeframe.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "ch-trc-events.taboola.com": 4,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Tumore endometrio avanzato: nuovi risultati dallo studio TroFuse",
+    "textLength": 11037,
+    "adFrames": 1,
+    "adBoxes": 10
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 126,
+    "blocked": 8,
+    "wouldBlock": 8,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "d11otsap2ziep3.cloudfront.net": 1,
+     "imasdk.googleapis.com": 1,
+     "privacyportal-eu.onetrust.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "TypeError: this.vjsPlayer.ads is not a function",
+     "TypeError: Cannot read properties of undefined (reading 'onPlayerVolumeChanged')",
+     "Uncaught SyntaxError: Unexpected end of JSON input"
+    ]
+   },
+   "info": {
+    "title": "Tumore endometrio avanzato: nuovi risultati dallo studio TroFuse",
+    "textLength": 8587,
+    "adFrames": 1,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 191,
+    "blocked": 0,
+    "wouldBlock": 46,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "dbf569b8949e4d10ed7d741fc5548c1c.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "www.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "q.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11180,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 152,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11136,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/junko-terao/2026/10/26/australia-copyright"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 146,
+    "blocked": 0,
+    "wouldBlock": 42,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 5,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 2,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "051d2f3ae7c0a686cfd393c5da2f1fc0.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 2,
+     "www.googletagmanager.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "q.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 1355,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 991,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
