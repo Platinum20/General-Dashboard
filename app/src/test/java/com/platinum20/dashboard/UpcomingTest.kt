@@ -41,6 +41,7 @@ class UpcomingTest {
             countdowns = listOf(Countdown(1, "Compleanno Marta", d3)),
             parcels = listOf(Parcel(1, "Cuffie", expected = d1)),
             zone = zone,
+            days = 7,
         )
         assertEquals(
             listOf("Arriva: Cuffie", "Bolletta", "Treno", "Compleanno Marta", "Vacanza"),
@@ -58,4 +59,20 @@ class UpcomingTest {
 
     @Test
     fun vuota() = assertTrue(Upcoming.build(today, emptyMap(), emptyList(), emptyList()).isEmpty())
+
+    @Test
+    fun lineaDellaCard() {
+        // Giorni di fila: nessuno spazio in più; più giorni in mezzo, più spazio, fino a un massimo.
+        assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(1)))
+        assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(2)))
+        assertEquals(12f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)))
+        assertEquals(Upcoming.MAX_GAP_DP, Upcoming.gapDp(today.plusDays(1), today.plusDays(50)))
+    }
+
+    @Test
+    fun guardaPiuInLaDiUnaSettimana() {
+        val far = today.plusDays(30)
+        val items = Upcoming.build(today, mapOf(far to listOf(event(9, "Concerto", far, 21))), emptyList(), emptyList(), zone = zone)
+        assertEquals(listOf("Concerto"), items.map { it.text })
+    }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.188.0
+**Una vera linea del tempo**
+- In Note › Prossimi giorni la linea a destra è una vera linea del tempo: le tacche sono distanziate secondo i giorni che passano fra una cosa e l'altra, con il giorno scritto accanto ("Oggi", "Dom", "30", "3 nov"); i salti di mesi si accorciano per non schiacciare la settimana
+- Anche Note ha la sua linea del tempo, secondo quando hai scritto ogni nota: le più nuove in cima
+- La card Prossimi giorni in Oggi mostra le prossime 10 cose (impegni, promemoria, compleanni, pacchi, addebiti), anche oltre la settimana, lungo una linea con un pallino per giorno che si allunga quando fra due giorni c'è tempo in mezzo
+
 ## 1.187.0
 **Note in due parti, con il Calendario dentro e la linea dei giorni**
 - Le Note hanno due parti: Prossimi giorni (tutto quello che arriva, con impegni del calendario, promemoria, compleanni, pacchi e addebiti) e Note (tutto quello senza data)

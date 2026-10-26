@@ -172,6 +172,8 @@ data class Note(
     val text: String,
     val updatedAt: Long = System.currentTimeMillis(),
     val pinned: Boolean = false,
+    /** Quando è stata scritta: l'ordine e la linea del tempo delle Note. Le vecchie note non lo avevano: vale l'ultima modifica. */
+    val createdAt: Long = updatedAt,
 ) {
     /** La prima riga fa da titolo. */
     val title: String get() = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
@@ -525,7 +527,8 @@ object NotesStore {
         update { d ->
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
-            val note = Note(noteId, text, System.currentTimeMillis(), existing?.pinned ?: false)
+            val now = System.currentTimeMillis()
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now)
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
@@ -589,7 +592,7 @@ object NotesStore {
         })
         .put("notes", JSONArray().apply {
             d.notes.forEach {
-                put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned))
+                put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt))
             }
         })
         .put("countdowns", JSONArray().apply {
@@ -670,7 +673,9 @@ object NotesStore {
             },
             notes = (0 until notes.length()).map { i ->
                 val o = notes.getJSONObject(i)
-                Note(o.getLong("id"), o.optString("text"), o.optLong("updatedAt"), o.optBoolean("pinned"))
+                o.optLong("updatedAt").let { updated ->
+                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated))
+                }
             },
             countdowns = (0 until countdowns.length()).mapNotNull { i ->
                 val o = countdowns.getJSONObject(i)
