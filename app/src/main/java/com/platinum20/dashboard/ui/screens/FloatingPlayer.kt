@@ -80,11 +80,14 @@ fun FloatingPlayer(
     currentRoute: String?,
     onExpand: (Playing) -> Unit,
     modifier: Modifier = Modifier,
+    /** Solo per le prove: cosa mostrare e cosa fare chiudendo, al posto del player unico. */
+    shown: Playing? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     RadioStore.init(context)
     val playing by Playback.now.collectAsState()
-    val now = playing ?: return
+    val now = shown ?: playing ?: return
     // Sulle schermate dei player la barra non serve: c'è già il player grande.
     if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
     if (now.isVideo && currentRoute?.startsWith("media/watch") == true) return
@@ -218,7 +221,7 @@ fun FloatingPlayer(
                                     val dir = if (dx >= 0) 1f else -1f
                                     scope.launch {
                                         x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(180), initialVelocity = vx)
-                                        Playback.stop(context)
+                                        onClose?.invoke() ?: Playback.stop(context)
                                     }
                                 } else {
                                     scope.launch { x.animateTo(0f, Springs.bouncy(), initialVelocity = vx) }

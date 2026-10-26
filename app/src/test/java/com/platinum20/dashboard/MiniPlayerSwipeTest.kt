@@ -7,55 +7,70 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import com.platinum20.dashboard.media.PlaySource
-import com.platinum20.dashboard.media.Playback
+import com.platinum20.dashboard.media.Playing
 import com.platinum20.dashboard.ui.screens.FloatingPlayer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.shadows.ShadowLooper
 
-/** Il mini player si chiude lanciandolo di lato; uno spostamento piccolo lo fa tornare al suo posto. */
+/** Il mini player si chiude lanciandolo di lato; uno spostamento piccolo o su e giù non lo chiude. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-xxhdpi")
 class MiniPlayerSwipeTest {
     @get:Rule
     val compose = createComposeRule()
 
+    private var closed = 0
+
     private fun show() {
-        Playback.starting(PlaySource.SPOTIFY, "Brano di prova", "Artista")
-        compose.setContent { FloatingPlayer(currentRoute = null, onExpand = {}) }
-        compose.waitUntil(3_000) { idle(); Playback.now.value != null }
+        val song = Playing(PlaySource.SPOTIFY, "Brano di prova", "Artista", "", playing = true, positionMs = 10_000, durationMs = 200_000)
+        compose.setContent { FloatingPlayer(currentRoute = null, onExpand = {}, shown = song, onClose = { closed++ }) }
+        compose.waitForIdle()
         compose.onNodeWithText("Brano di prova").assertExists()
     }
 
-    /** Il player unico vive sul thread principale: in prova i suoi compiti partono solo così. */
-    private fun idle() = ShadowLooper.idleMainLooper()
-
     /** L'altezza della barra sullo schermo (si trascina dalla barra, non solo dal titolo). */
     private fun barY(): Float = compose.onNodeWithText("Brano di prova").fetchSemanticsNode().boundsInRoot.center.y
+
+    private fun drag(from: Offset, to: Offset, ms: Long) {
+        compose.onRoot().performTouchInput { swipe(from, to, durationMillis = ms) }
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+    }
 
     @Test
     fun lanciatoDiLatoSiChiude() {
         show()
         val y = barY()
-        compose.onRoot().performTouchInput { swipe(Offset(60f, y), Offset(width - 20f, y), durationMillis = 200) }
-        compose.waitUntil(3_000) { idle(); Playback.now.value == null }
-        assertNull(Playback.now.value)
+        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        assertEquals(1, closed)
+    }
+
+    @Test
+    fun anceVersoSinistra() {
+        show()
+        val y = barY()
+        drag(Offset(1_100f, y), Offset(60f, y), 200)
+        assertEquals(1, closed)
     }
 
     @Test
     fun spostatoPocoTorna() {
         show()
         val y = barY()
-        compose.onRoot().performTouchInput { swipe(Offset(width / 2f, y), Offset(width / 2f + width * 0.1f, y), durationMillis = 800) }
-        compose.mainClock.advanceTimeBy(1_000)
-        compose.waitForIdle()
-        idle()
-        assertEquals("Brano di prova", Playback.now.value?.title)
-        compose.onRoot().assertExists()
+        drag(Offset(600f, y), Offset(700f, y), 800)
+        assertEquals(0, closed)
+        compose.onNodeWithText("Brano di prova").assertExists()
+    }
+
+    @Test
+    fun suEGiuNonChiude() {
+        show()
+        val y = barY()
+        drag(Offset(600f, y), Offset(600f, 300f), 300)
+        assertEquals(0, closed)
     }
 }
