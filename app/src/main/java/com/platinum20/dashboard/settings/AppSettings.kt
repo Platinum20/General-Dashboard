@@ -171,6 +171,12 @@ object AppSettings {
         saveLayout(layout.copy(order = order))
     }
 
+    /** Sposta [card] al posto di [target] (trascinandola). */
+    fun moveCardTo(card: HomeCard, target: HomeCard) {
+        val order = _homeLayout.value.order
+        moveCard(card, order.indexOf(target) - order.indexOf(card))
+    }
+
     fun setCardVisible(card: HomeCard, visible: Boolean) {
         val layout = _homeLayout.value
         saveLayout(layout.copy(hidden = if (visible) layout.hidden - card else layout.hidden + card))

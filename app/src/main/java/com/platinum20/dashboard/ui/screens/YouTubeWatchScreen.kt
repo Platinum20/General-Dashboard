@@ -406,7 +406,7 @@ private fun VideoArea(
                         Icon(Icons.Outlined.QueueMusic, contentDescription = "Coda", tint = Color.White)
                     }
                     // Prima la coda unica, se no il prossimo video consigliato.
-                    IconButton(onClick = { if (!com.platinum20.dashboard.media.PlayQueue.next(context)) YtPlayer.next(context) }) {
+                    IconButton(onClick = { YtPlayer.next(context) }) {
                         Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
                     }
                 }

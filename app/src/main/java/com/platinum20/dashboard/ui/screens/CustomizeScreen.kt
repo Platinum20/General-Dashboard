@@ -8,8 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -65,7 +64,18 @@ fun CustomizeScreen(onBack: () -> Unit) {
             )
         },
     ) { inner ->
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+        val reorderHaptic = rememberHaptic()
+        val reorder = rememberReorderState(listState, canMove = { it is String }) { from, to ->
+            val card = HomeCard.entries.firstOrNull { it.name == from }
+            val target = HomeCard.entries.firstOrNull { it.name == to }
+            if (card != null && target != null) {
+                reorderHaptic(Haptic.TICK)
+                AppSettings.moveCardTo(card, target)
+            }
+        }
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
@@ -73,22 +83,23 @@ fun CustomizeScreen(onBack: () -> Unit) {
                 bottom = inner.calculateBottomPadding() + 16.dp,
             ),
         ) {
-            item {
+            item(key = 0) {
                 Text(
-                    "Le frecce cambiano l'ordine delle card in Oggi; l'interruttore le mostra o le nasconde.",
+                    "Trascina la maniglia per cambiare l'ordine delle card in Oggi; l'interruttore le mostra o le nasconde.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
                 )
             }
-            itemsIndexed(layout.order, key = { _, card -> card.name }) { index, card ->
+            itemsIndexed(layout.order, key = { _, card -> card.name }) { _, card ->
                 val visible = card !in layout.hidden
                 val haptic = rememberHaptic()
                 val toggle = hapticToggle { AppSettings.setCardVisible(card, it) }
-                // Come le righe delle Impostazioni: icona, testo, frecce per l'ordine e interruttore a destra.
+                // Come le righe delle Impostazioni: icona, testo, maniglia per l'ordine e interruttore a destra.
                 Row(
                     modifier = Modifier
-                        .animateItem()
+                        .then(if (reorder.isDragging(card.name)) Modifier else Modifier.animateItem())
+                        .reorderItem(reorder, card.name)
                         .padding(vertical = 4.dp)
                         .fillMaxWidth()
                         .bouncyPress(0.98f)
@@ -105,14 +116,15 @@ fun CustomizeScreen(onBack: () -> Unit) {
                         Text(card.label, style = MaterialTheme.typography.titleMedium)
                         Text(card.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Column {
-                        IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, -1) }, enabled = index > 0, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Sposta su")
-                        }
-                        IconButton(onClick = { haptic(Haptic.TICK); AppSettings.moveCard(card, 1) }, enabled = index < layout.order.lastIndex, modifier = Modifier.size(36.dp)) {
-                            Icon(Icons.Outlined.KeyboardArrowDown, contentDescription = "Sposta giù")
-                        }
-                    }
+                    Icon(
+                        Icons.Outlined.DragHandle,
+                        contentDescription = "Trascina per spostare",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .reorderHandle(reorder, card.name) { haptic(Haptic.GRAB) }
+                            .padding(8.dp)
+                            .size(24.dp),
+                    )
                     Spacer(Modifier.width(4.dp))
                     Switch(checked = visible, onCheckedChange = toggle)
                 }

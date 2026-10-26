@@ -1,37 +1,26 @@
 package com.platinum20.dashboard.media.podcast
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
-import androidx.core.content.ContextCompat
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
-import androidx.media3.common.Player
-import androidx.media3.session.MediaController
-import androidx.media3.session.SessionToken
 import com.platinum20.dashboard.BuildConfig
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.Loadable
-import com.platinum20.dashboard.media.NowPlaying
 import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
-import com.platinum20.dashboard.media.radio.RadioService
-import com.platinum20.dashboard.media.radio.RadioStore
 import com.platinum20.dashboard.media.spotify.SpotifyApi
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
-import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -66,15 +55,6 @@ object PodcastStore {
     private val scope = MainScope()
     private lateinit var prefs: SharedPreferences
     private lateinit var appContext: Context
-    private var controller: MediaController? = null
-    private var connecting = false
-    private var pending: Triple<Episode, Long, Boolean>? = null
-    /** L'episodio di cui si è già segnalata la fine alla coda. */
-    private var endedId: String? = null
-    private var current: Episode? = null
-    private var ticker: Job? = null
-    /** L'episodio appena chiesto al player, finché il player non lo carica. */
-    private var awaiting: String? = null
 
     private val _search = MutableStateFlow(Loadable<List<Podcast>>())
     val search: StateFlow<Loadable<List<Podcast>>> = _search.asStateFlow()
@@ -143,12 +123,25 @@ object PodcastStore {
     /** Dove eri rimasto in ogni episodio (millisecondi), per id dell'episodio. */
     val positions: StateFlow<Map<String, Long>> = _positions.asStateFlow()
 
-    private val _now = MutableStateFlow<PodcastNow?>(null)
-    val now: StateFlow<PodcastNow?> = _now.asStateFlow()
+    /** L'episodio nel player unico, se è un podcast a suonare. */
+    val now: StateFlow<PodcastNow?> = CanvasPlayer.now.map { n ->
+        n?.takeIf { it.item.kind == ResumeKind.PODCAST }?.let {
+            val item = it.item
+            PodcastNow(
+                Episode(
+                    id = item.key, title = item.title, audioUrl = item.link, publishedAt = 0,
+                    durationSec = item.durationMs / 1000, description = "", image = item.image,
+                    podcastTitle = item.subtitle, feedUrl = item.feed,
+                ),
+                it.playing, it.loading, it.positionMs, it.durationMs, it.error,
+            )
+        }
+    }.stateIn(scope, SharingStarted.Eagerly, null)
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         appContext = context.applicationContext
+        CanvasPlayer.init(appContext)
         prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _followed.value = runCatching {
             val array = JSONArray(prefs.getString(KEY_FOLLOWED, "[]"))
@@ -245,178 +238,47 @@ object PodcastStore {
 
     /** Con [autoplay] falso l'episodio si carica fermo e aspetta il play (es. aperto da una nota). */
     fun play(episode: Episode, autoplay: Boolean = true) {
-        // Episodio che c'è solo su Spotify: suona nel riproduttore di Spotify (protetto), sempre nell'app.
-        if (episode.audioUrl.startsWith("spotify:")) {
-            if (current != null) stop()
-            SpotifyPlayer.playLink(appContext, episode.audioUrl, episode.title, episode.podcastTitle, episode.image)
-            return
-        }
-        // Un solo player alla volta: si fermano YouTube, Spotify e la radio (che lascia il player al podcast).
-        NowPlaying.pauseOthers(null, podcast = false)
-        RadioStore.yieldPlayer()
-        com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.PODCAST)
-        saveCurrentPosition()
-        com.platinum20.dashboard.media.PlayQueue.started(
-            com.platinum20.dashboard.media.ResumeItem(
-                com.platinum20.dashboard.media.ResumeKind.PODCAST, episode.id, episode.title, episode.podcastTitle, episode.image,
-                durationMs = episode.durationSec * 1000, at = System.currentTimeMillis(), link = episode.audioUrl, feed = episode.feedUrl,
-            ),
-        )
-        endedId = null
-        current = episode
-        val startMs = PodcastProgress.resumeAt(_positions.value[episode.id] ?: 0, episode.durationSec * 1000)
-        _now.value = PodcastNow(episode, playing = false, buffering = true, positionMs = startMs, durationMs = episode.durationSec * 1000, error = null)
-        // Subito in "Continua" di Media, senza aspettare la prima pausa.
-        savePosition(episode.id, startMs)
-        val ready = controller
-        if (ready != null) start(ready, episode, startMs, autoplay) else {
-            pending = Triple(episode, startMs, autoplay)
-            connect()
-        }
+        // Episodio che c'è solo su Spotify: suona nel riproduttore di Spotify (protetto), sempre nella coda unica.
+        val item = if (episode.audioUrl.startsWith("spotify:")) {
+            ResumeItem(ResumeKind.SPOTIFY, episode.audioUrl, episode.title, episode.podcastTitle, episode.image, at = System.currentTimeMillis())
+        } else episode.asItem()
+        CanvasPlayer.play(appContext, item, autoplay)
     }
 
+    fun Episode.asItem() = ResumeItem(
+        ResumeKind.PODCAST, id, title, podcastTitle, image,
+        durationMs = durationSec * 1000, at = System.currentTimeMillis(), link = audioUrl, feed = feedUrl,
+    )
+
+    private fun isCurrent() = CanvasPlayer.now.value?.item?.kind == ResumeKind.PODCAST
+
     fun togglePause() {
-        val c = controller ?: return
-        if (c.isPlaying) c.pause() else {
-            NowPlaying.pauseOthers(null)
-            c.play()
-        }
+        if (isCurrent()) CanvasPlayer.toggle()
     }
 
     /** Salta avanti o indietro di [deltaMs] (i classici 30 e 15 secondi). */
     fun seekBy(deltaMs: Long) {
-        val c = controller ?: return
-        if (current == null) return
-        c.seekTo((c.currentPosition + deltaMs).coerceAtLeast(0))
+        if (isCurrent()) CanvasPlayer.seekBy(deltaMs)
     }
 
     fun pause() {
-        if (current == null) return
-        controller?.takeIf { it.isPlaying }?.pause()
+        if (isCurrent()) CanvasPlayer.pause()
     }
 
     fun stop() {
-        saveCurrentPosition()
-        controller?.stop()
-        controller?.clearMediaItems()
-        current = null
-        _now.value = null
+        if (isCurrent()) CanvasPlayer.stop()
     }
 
-    /** La radio prende il player: salviamo il punto e smettiamo di seguirlo, senza comandarlo. */
-    fun yieldPlayer() {
-        saveCurrentPosition()
-        current = null
-        _now.value = null
-    }
+    /** Da dove riprendere l'episodio [id] (0 se appena iniziato o quasi finito). */
+    internal fun resumeMs(id: String, durationMs: Long): Long = PodcastProgress.resumeAt(_positions.value[id] ?: 0, durationMs)
 
-    private fun start(controller: MediaController, episode: Episode, startMs: Long, autoplay: Boolean) {
-        awaiting = episode.id
-        val item = MediaItem.Builder()
-            .setMediaId(episode.id)
-            .setRequestMetadata(MediaItem.RequestMetadata.Builder().setMediaUri(Uri.parse(episode.audioUrl)).build())
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(episode.title)
-                    .setArtist(episode.podcastTitle)
-                    .apply { if (episode.image.isNotBlank()) setArtworkUri(Uri.parse(episode.image)) }
-                    .build()
-            )
-            .build()
-        controller.setMediaItem(item, startMs)
-        controller.prepare()
-        if (autoplay) controller.play() else controller.pause()
-    }
-
-    private fun connect() {
-        if (connecting) return
-        connecting = true
-        val token = SessionToken(appContext, ComponentName(appContext, RadioService::class.java))
-        val future = MediaController.Builder(appContext, token).buildAsync()
-        future.addListener({
-            connecting = false
-            val c = runCatching { future.get() }.getOrNull() ?: return@addListener
-            controller = c
-            c.addListener(object : Player.Listener {
-                override fun onEvents(player: Player, events: Player.Events) = publish(player)
-            })
-            pending?.let { (episode, startMs, autoplay) -> start(c, episode, startMs, autoplay) }
-            pending = null
-        }, ContextCompat.getMainExecutor(appContext))
-    }
-
-    private fun publish(player: Player) {
-        val episode = current ?: return
-        // La radio ha messo la sua stazione: l'episodio non è più nel player.
-        val mediaId = player.currentMediaItem?.mediaId
-        if (mediaId == episode.id) awaiting = null
-        // Il player non ha ancora caricato l'episodio appena scelto: aspettiamo.
-        if (awaiting == episode.id || (mediaId == null && pending != null)) return
-        if (mediaId != null && mediaId != episode.id) {
-            current = null
-            _now.value = null
-            return
-        }
-        val duration = player.duration.takeIf { it > 0 } ?: (episode.durationSec * 1000)
-        val ended = player.playbackState == Player.STATE_ENDED
-        _now.value = PodcastNow(
-            episode = episode,
-            playing = player.isPlaying,
-            buffering = player.playbackState == Player.STATE_BUFFERING,
-            positionMs = if (ended) duration else player.currentPosition,
-            durationMs = duration,
-            error = player.playerError?.let { "Episodio non raggiungibile" },
-        )
-        // Finito l'episodio: parte quello dopo nella coda (una volta sola).
-        if (ended && endedId != episode.id) {
-            endedId = episode.id
-            com.platinum20.dashboard.media.PlayQueue.ended(appContext)
-        }
-        if (ended) savePosition(episode.id, duration) else if (!player.isPlaying) savePosition(episode.id, player.currentPosition)
-        if (player.isPlaying) startTicker() else ticker?.cancel()
-    }
-
-    // Mentre suona: barra del tempo che scorre e punto salvato ogni 10 secondi.
-    private fun startTicker() {
-        if (ticker?.isActive == true) return
-        ticker = scope.launch {
-            var beats = 0
-            while (isActive) {
-                delay(1_000)
-                val c = controller ?: break
-                val episode = current ?: break
-                _now.update { it?.copy(positionMs = c.currentPosition) }
-                if (++beats % 10 == 0) savePosition(episode.id, c.currentPosition)
-            }
-        }
-    }
-
-    private fun saveCurrentPosition() {
-        val episode = current ?: return
-        val c = controller ?: return
-        if (c.currentMediaItem?.mediaId == episode.id) savePosition(episode.id, c.currentPosition)
-    }
-
-    private fun savePosition(id: String, positionMs: Long) {
+    /** Il player unico segna dove si è arrivati nell'episodio. */
+    internal fun saveProgress(item: ResumeItem, positionMs: Long, durationMs: Long) {
         if (!::prefs.isInitialized) return
         // Anche in "Continua" di Media, insieme a video, musica e radio.
-        current?.takeIf { it.id == id }?.let { episode ->
-            MediaHistory.init(appContext)
-            MediaHistory.record(
-                ResumeItem(
-                    kind = ResumeKind.PODCAST,
-                    key = episode.id,
-                    title = episode.title,
-                    subtitle = episode.podcastTitle,
-                    image = episode.image,
-                    positionMs = positionMs,
-                    durationMs = (_now.value?.durationMs ?: 0).takeIf { it > 0 } ?: (episode.durationSec * 1000),
-                    at = System.currentTimeMillis(),
-                    link = episode.audioUrl,
-                    feed = episode.feedUrl,
-                )
-            )
-        }
+        MediaHistory.init(appContext)
+        MediaHistory.record(item.copy(positionMs = positionMs, durationMs = durationMs.takeIf { it > 0 } ?: item.durationMs, at = System.currentTimeMillis()))
+        val id = item.key
         val map = (_positions.value - id + (id to positionMs)).entries.toList().takeLast(MAX_POSITIONS).associate { it.key to it.value }
         _positions.value = map
         prefs.edit().putString(KEY_POSITIONS, JSONObject(map).toString()).apply()

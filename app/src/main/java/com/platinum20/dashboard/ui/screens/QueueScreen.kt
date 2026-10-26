@@ -24,8 +24,7 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,7 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.media.PlayQueue
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.QueueEntry
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
@@ -78,13 +77,13 @@ private fun ResumeItem.sourceLabel(): String = when (kind) {
 
 /**
  * La coda unica: in cima quello che suona, sotto quello che viene dopo, di qualunque fonte.
- * Un tocco salta lì; le frecce spostano su e giù (decidono cosa viene dopo); la X toglie.
+ * Un tocco salta lì; trascinando la maniglia si sceglie cosa viene dopo; la X toglie.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QueueScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val queue by PlayQueue.state.collectAsState()
+    val queue by CanvasPlayer.queue.collectAsState()
     val now = queue.now
     val upcoming = queue.upcoming
     Scaffold(
@@ -95,7 +94,7 @@ fun QueueScreen(onBack: () -> Unit) {
                 subtitle = if (upcoming.isEmpty()) null else "${upcoming.size} dopo questo",
                 onBack = onBack,
             ) {
-                if (upcoming.isNotEmpty()) TextButton(onClick = { PlayQueue.clearUpcoming() }) { Text("Svuota") }
+                if (upcoming.isNotEmpty()) TextButton(onClick = { CanvasPlayer.clearUpcoming() }) { Text("Svuota") }
             }
         },
     ) { inner ->
@@ -117,31 +116,57 @@ fun QueueScreen(onBack: () -> Unit) {
             }
             return@Scaffold
         }
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+        val view = androidx.compose.ui.platform.LocalView.current
+        val upcomingIds = upcoming.map { it.id }.toSet()
+        val reorder = rememberReorderState(listState, canMove = { it in upcomingIds }) { from, to ->
+            view.haptic(Haptic.TICK)
+            CanvasPlayer.moveTo(from as Long, to as Long)
+        }
         LazyColumn(
             Modifier.fillMaxSize().padding(inner),
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (now != null) {
                 item(key = "h-now") { SectionHeader("In riproduzione") }
                 item(key = now.id) {
-                    QueueRow(now, current = true, canUp = false, canDown = false, modifier = Modifier.animateItem(), onTap = {})
+                    QueueRow(now, current = true, modifier = Modifier.animateItem(), onTap = {})
                 }
             }
             if (upcoming.isNotEmpty()) {
                 item(key = "h-next") { SectionHeader("Dopo", Modifier.padding(top = 8.dp)) }
                 items(upcoming, key = { it.id }) { entry ->
-                    val index = upcoming.indexOf(entry)
                     QueueRow(
                         entry,
                         current = false,
-                        canUp = index > 0,
-                        canDown = index < upcoming.size - 1,
-                        modifier = Modifier.animateItem(),
-                        onTap = { PlayQueue.jump(context, entry.id) },
+                        modifier = (if (reorder.isDragging(entry.id)) Modifier else Modifier.animateItem()).reorderItem(reorder, entry.id),
+                        handle = Modifier.reorderHandle(reorder, entry.id) { view.haptic(Haptic.GRAB) },
+                        onTap = { CanvasPlayer.jump(entry.id) },
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Le prossime voci della coda in Media, al posto della card "Riprendi": si vede cosa viene dopo senza
+ * aprire la coda. Un tocco salta lì; "Apri" porta alla coda intera.
+ */
+@Composable
+internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
+    val queue by CanvasPlayer.queue.collectAsState()
+    val next = queue.upcoming
+    if (next.isEmpty()) return
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionHeader("In coda · ${next.size}", Modifier.weight(1f))
+            TextButton(onClick = onOpenQueue) { Text("Apri") }
+        }
+        next.take(3).forEach { entry ->
+            QueueRow(entry, current = false, onTap = { CanvasPlayer.jump(entry.id) })
         }
     }
 }
@@ -150,9 +175,9 @@ fun QueueScreen(onBack: () -> Unit) {
 private fun QueueRow(
     entry: QueueEntry,
     current: Boolean,
-    canUp: Boolean,
-    canDown: Boolean,
     modifier: Modifier = Modifier,
+    /** La maniglia per trascinare la riga (nella coda intera). */
+    handle: Modifier? = null,
     onTap: () -> Unit,
 ) {
     val item = entry.item
@@ -183,14 +208,16 @@ private fun QueueRow(
             )
         }
         if (!current) {
-            IconButton(onClick = { PlayQueue.move(entry.id, -1) }, enabled = canUp, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = "Sposta su")
-            }
-            IconButton(onClick = { PlayQueue.move(entry.id, 1) }, enabled = canDown, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = "Sposta giù")
-            }
-            IconButton(onClick = { PlayQueue.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
+            IconButton(onClick = { CanvasPlayer.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
                 Icon(Icons.Rounded.Close, contentDescription = "Togli dalla coda")
+            }
+            if (handle != null) {
+                Icon(
+                    Icons.Rounded.DragHandle,
+                    contentDescription = "Trascina per spostare",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = handle.padding(8.dp).size(24.dp),
+                )
             }
         }
     }

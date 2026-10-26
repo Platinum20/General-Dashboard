@@ -151,8 +151,9 @@ fun MediaScreen(
     val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
-    // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { now == null }
+    val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
+    // Quando nulla suona e la coda è vuota, il blocco colorato è l'ultima cosa vista o ascoltata.
+    val hero = resumable.firstOrNull()?.takeIf { now == null && queue.upcoming.isEmpty() }
     val continueList = resumable.filter { it != hero }.take(12)
     val stations = remember(favoriteStations, recentStations) { (favoriteStations + recentStations).distinctBy { it.id }.take(10) }
     // Al primo uso (nessuna radio ascoltata) le più ascoltate, per partire con un tocco.
@@ -192,6 +193,13 @@ fun MediaScreen(
                 item(key = "now") {
                     NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
                 }
+            }
+            // La coda in vista: cosa viene dopo, di qualunque fonte.
+            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
+                QueuePeek(
+                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
             }
             hero?.let { last ->
                 item(key = "resume") {
@@ -375,11 +383,11 @@ private fun NowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modif
                     }
                 }
                 Spacer(Modifier.size(8.dp))
-                FilledIconButton(onClick = { Playback.toggle(context) }) {
+                FilledIconButton(onClick = { Playback.toggle() }) {
                     Icon(if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = if (now.playing) "Pausa" else "Riproduci")
                 }
-                if (now.canSkip) {
-                    IconButton(onClick = { Playback.next(context) }) { Icon(Icons.Filled.SkipNext, contentDescription = "Avanti") }
+                run {
+                    IconButton(onClick = { Playback.next() }) { Icon(Icons.Filled.SkipNext, contentDescription = "Avanti") }
                 }
             }
         }
@@ -507,7 +515,7 @@ internal fun openResumeItem(
     autoplay: Boolean = true,
     openRoute: (String) -> Unit,
 ) {
-    com.platinum20.dashboard.media.MediaLauncher.start(context, item, autoplay)?.let(openRoute)
+    openRoute(com.platinum20.dashboard.media.MediaLauncher.start(context, item, autoplay))
 }
 
 private fun ResumeItem.icon(): ImageVector = when (kind) {
