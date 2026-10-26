@@ -39,7 +39,7 @@ create something it lists, so the next thread doesn't have to explore.
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `TomorrowCard.kt`, `WeekReviewCard.kt`,
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification), `DayTimeline.kt`
-("La giornata" card), `TodayTasks`, `Tomorrow`, `WeekReview`, `Greeting`, `Invites`.
+("La giornata" card), `TodayTasks`, `Tomorrow`, `WeekReview`, `Greeting`, `Invites`, `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
 `QuickEvent`, `CalendarAsk`).
 
