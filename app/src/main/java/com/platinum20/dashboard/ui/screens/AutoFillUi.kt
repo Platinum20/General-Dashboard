@@ -82,45 +82,9 @@ private fun Found.icon(): ImageVector = when (this) {
  * In Oggi: le cose trovate da sole da confermare (o appena salvate, da annullare).
  * Se la funzione è spenta, una volta sola, l'invito ad accenderla.
  */
+/** Una cosa trovata da sola, con Ignora e Aggiungi. Sta nella card "Dalla posta" di Oggi. */
 @Composable
-fun AutoFillCard(onOpenSettings: () -> Unit) {
-    val context = LocalContext.current
-    AutoFill.init(context)
-    val items by AutoFill.items.collectAsStateWithLifecycle()
-    val enabled by AutoFill.enabled.collectAsStateWithLifecycle()
-    val haptic = rememberHaptic()
-    val shown = remember(items) { AutoFillRules.visible(items, System.currentTimeMillis()) }
-
-    val gmail by GmailAuth.connected.collectAsStateWithLifecycle()
-    // L'invito ad attivarla sta in fondo a Oggi (InvitesRow), non in cima. Con Gmail collegato le proposte arrivano dalle mail.
-    if (!enabled && !gmail) return
-    if (shown.isEmpty()) return
-
-    val pending = shown.count { it.state == SuggestionState.PENDING }
-    Section(
-        title = if (pending > 0) "Trovati per te · $pending" else "Aggiunti da soli",
-        action = if (pending > 1) "Aggiungi tutti" else if (pending == 0) "Ok" else null,
-        onAction = {
-            haptic(Haptic.CONFIRM)
-            if (pending > 0) AutoFill.acceptAll() else AutoFill.clearRecent()
-        },
-    ) {
-        Column {
-            shown.take(6).forEachIndexed { index, s ->
-                if (index > 0) RowDivider()
-                SuggestionRow(
-                    s,
-                    onAccept = { haptic(Haptic.CONFIRM); AutoFill.accept(s.id) },
-                    onDismiss = { haptic(Haptic.TICK); AutoFill.dismiss(s.id) },
-                    onUndo = { haptic(Haptic.TICK); AutoFill.undo(s.id) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SuggestionRow(s: Suggestion, onAccept: () -> Unit, onDismiss: () -> Unit, onUndo: () -> Unit) {
+internal fun SuggestionRow(s: Suggestion, onAccept: () -> Unit, onDismiss: () -> Unit, onUndo: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

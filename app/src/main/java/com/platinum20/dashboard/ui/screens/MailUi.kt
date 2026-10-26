@@ -43,6 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.autofill.AutoFill
+import com.platinum20.dashboard.autofill.AutoFillRules
+import com.platinum20.dashboard.autofill.SuggestionState
 import com.platinum20.dashboard.mail.GmailAuth
 import com.platinum20.dashboard.mail.MailMessage
 import com.platinum20.dashboard.mail.MailStore
@@ -87,21 +90,43 @@ private fun rememberGmailConnect(onConnected: () -> Unit): GmailConnect {
     )
 }
 
-/** In Oggi: le mail importanti non lette, solo mittente e oggetto. Si apre in Canvas, non in Gmail. */
+/**
+ * In Oggi, una card sola per quello che arriva da mail, notifiche e SMS: in cima le cose
+ * trovate da aggiungere in un tocco, sotto le mail importanti non lette (si aprono in Canvas).
+ */
 @Composable
-fun MailCard(onOpen: (String) -> Unit) {
+fun FromMailCard(onOpenMail: (String) -> Unit) {
     val context = LocalContext.current
+    AutoFill.init(context)
     MailStore.init(context)
+    val items by AutoFill.items.collectAsStateWithLifecycle()
+    val autoFill by AutoFill.enabled.collectAsStateWithLifecycle()
+    val gmail by GmailAuth.connected.collectAsStateWithLifecycle()
     val mails by MailStore.important.collectAsStateWithLifecycle()
     val needsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
     val haptic = rememberHaptic()
     val scope = rememberCoroutineScope()
     val connect = rememberGmailConnect(onConnected = { scope.launch { runCatching { MailStore.sync(context) } } })
-    if (mails.isEmpty() && !needsConsent) return
+    // L'invito ad attivare Compila da solo sta in fondo a Oggi (InvitesRow), non qui.
+    val found = remember(items, autoFill, gmail) {
+        if (autoFill || gmail) AutoFillRules.visible(items, System.currentTimeMillis()).take(6) else emptyList()
+    }
+    val mail = if (gmail) mails else emptyList()
+    val consent = gmail && needsConsent
+    if (found.isEmpty() && mail.isEmpty() && !consent) return
 
-    Section(title = if (mails.isEmpty()) "Posta" else "Posta · ${mails.size}") {
+    val pending = found.count { it.state == SuggestionState.PENDING }
+    val count = pending + mail.size
+    Section(
+        title = if (count > 0) "Dalla posta · $count" else "Dalla posta",
+        action = if (pending > 1) "Aggiungi tutti" else if (pending == 0 && found.isNotEmpty()) "Ok" else null,
+        onAction = {
+            haptic(Haptic.CONFIRM)
+            if (pending > 0) AutoFill.acceptAll() else AutoFill.clearRecent()
+        },
+    ) {
         Column {
-            if (needsConsent) {
+            if (consent) {
                 Row(
                     Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -118,9 +143,18 @@ fun MailCard(onOpen: (String) -> Unit) {
                     TextButton(enabled = !connect.busy, onClick = { haptic(Haptic.TICK); connect.start() }) { Text("Ricollega") }
                 }
             }
-            mails.forEachIndexed { index, m ->
-                if (index > 0 || needsConsent) RowDivider()
-                MailRow(m, onClick = { haptic(Haptic.TICK); onOpen(m.id) })
+            found.forEachIndexed { index, s ->
+                if (index > 0 || consent) RowDivider()
+                SuggestionRow(
+                    s,
+                    onAccept = { haptic(Haptic.CONFIRM); AutoFill.accept(s.id) },
+                    onDismiss = { haptic(Haptic.TICK); AutoFill.dismiss(s.id) },
+                    onUndo = { haptic(Haptic.TICK); AutoFill.undo(s.id) },
+                )
+            }
+            mail.forEachIndexed { index, m ->
+                if (index > 0 || consent || found.isNotEmpty()) RowDivider()
+                MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })
             }
         }
     }

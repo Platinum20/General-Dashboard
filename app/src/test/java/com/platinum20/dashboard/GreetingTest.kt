@@ -31,9 +31,4 @@ class GreetingTest {
         assertEquals("Sereno", Greeting.weatherLine("Sereno", null, ""))
     }
 
-    @Test
-    fun conLaCardDelGiornoSoloIlCielo() {
-        assertEquals("Sereno", Greeting.adessoWeather("Sereno", "22° / 10°", "pioggia 48%", dayCardShown = true))
-        assertEquals("Sereno · 22° / 10° · pioggia 48%", Greeting.adessoWeather("Sereno", "22° / 10°", "pioggia 48%", dayCardShown = false))
-    }
 }

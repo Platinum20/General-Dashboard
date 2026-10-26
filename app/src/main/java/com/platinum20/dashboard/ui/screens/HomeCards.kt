@@ -90,7 +90,7 @@ class AgendaState(
 ) {
     /**
      * Gli impegni di oggi; vuoto se non c'è niente da dire. La sera, finiti tutti, l'agenda sparisce:
-     * domani lo racconta la card "Domani", non serve una seconda lista.
+     * domani lo racconta "Adesso", che la sera diventa "Domani": non serve una seconda lista.
      */
     fun shown(now: LocalDateTime = LocalDateTime.now()): List<CalendarEvent> {
         val list = today.orEmpty()
@@ -198,7 +198,7 @@ const val SOON_DAYS = 7L
 val NotesData.soon: List<Countdown> get() = upcoming.filter { it.daysLeft() <= SOON_DAYS }
 
 @Composable
-fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit, tomorrowCard: Boolean = false) {
+fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit) {
     val haptic = rememberHaptic()
     val context = LocalContext.current
     val inApp = LocalInAppNav.current
@@ -206,7 +206,7 @@ fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit, tomorrowCard: Boolean 
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val open = data.openTasks
     // Dei promemoria solo quello che conta adesso: il resto è a un tocco, in Note.
-    val tasks = remember(open, tomorrowCard) { TodayTaskPicker.pick(open, LocalDateTime.now(), tomorrowCard = tomorrowCard) }
+    val tasks = remember(open) { TodayTaskPicker.pick(open, LocalDateTime.now()) }
     val events = if (agenda.granted && agenda.today != null) agenda.shown() else emptyList()
     val soon = data.soon
     val items = remember(events, tasks, soon) { DayTimeline.build(events, tasks.shown, soon, LocalDate.now()) }
