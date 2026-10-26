@@ -91,6 +91,8 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.autofill.AutoFill
+import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.MailStore
 import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.today.Invites
@@ -246,6 +248,10 @@ fun HomeScreen(
     AutoFill.init(context)
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
+    MailStore.init(context)
+    val gmailConnected by GmailAuth.connected.collectAsStateWithLifecycle()
+    val gmailNeedsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
+    val importantMail by MailStore.important.collectAsStateWithLifecycle()
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
@@ -254,7 +260,8 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.TOMORROW -> tomorrowPlan != null
             HomeCard.WEEK -> weekReview != null
-            HomeCard.FOUND -> autoFillEnabled
+            HomeCard.FOUND -> autoFillEnabled || gmailConnected
+            HomeCard.MAIL -> gmailConnected && (importantMail.isNotEmpty() || gmailNeedsConsent)
             else -> true
         }
     }
@@ -327,6 +334,7 @@ fun HomeScreen(
                 },
             )
             }
+            HomeCard.MAIL -> MailCard(onOpen = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.FOUND -> AutoFillCard(onOpenSettings = onOpenAutoFill)
             HomeCard.RECAP -> RecapCard(
                 state = recap,
@@ -356,6 +364,7 @@ fun HomeScreen(
         AutoRefresh {
             if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context)
             runCatching { NewsStore.load() }
+            if (GmailAuth.connected.value) runCatching { MailStore.sync(context) }
             calendarRefresh++
         }
         Box(

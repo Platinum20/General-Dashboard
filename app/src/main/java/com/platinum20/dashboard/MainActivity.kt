@@ -215,6 +215,7 @@ import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.screens.AutoFillScreen
+import com.platinum20.dashboard.ui.screens.MailScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
@@ -296,6 +297,8 @@ class MainActivity : ComponentActivity() {
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
+                com.platinum20.dashboard.mail.GmailAuth.init(app)
+                if (com.platinum20.dashboard.mail.GmailAuth.connected.value) com.platinum20.dashboard.work.MailWorker.schedule(app)
             }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
@@ -341,6 +344,8 @@ object Routes {
     fun settings(section: String? = null) = if (section == null) SETTINGS else "settings?section=$section"
     const val UPDATES = "settings/updates"
     const val AUTOFILL = "settings/autofill"
+    const val MAIL = "home/mail/{id}"
+    fun mail(id: String) = "home/mail/${Uri.encode(id)}"
     const val WEATHER = "home/weather"
     const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
@@ -1314,6 +1319,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.AUTOFILL) {
                 AutoFillScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.MAIL, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                MailScreen(id = entry.arguments?.getString("id").orEmpty(), onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.READER,

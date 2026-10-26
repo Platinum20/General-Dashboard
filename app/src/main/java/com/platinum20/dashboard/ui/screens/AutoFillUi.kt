@@ -67,6 +67,7 @@ import com.platinum20.dashboard.autofill.SmsScanner
 import com.platinum20.dashboard.autofill.Suggestion
 import com.platinum20.dashboard.autofill.SuggestionState
 import com.platinum20.dashboard.autofill.SuggestionText
+import com.platinum20.dashboard.mail.GmailAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,8 +91,9 @@ fun AutoFillCard(onOpenSettings: () -> Unit) {
     val haptic = rememberHaptic()
     val shown = remember(items) { AutoFillRules.visible(items, System.currentTimeMillis()) }
 
-    // L'invito ad attivarla sta in fondo a Oggi (InvitesRow), non in cima.
-    if (!enabled) return
+    val gmail by GmailAuth.connected.collectAsStateWithLifecycle()
+    // L'invito ad attivarla sta in fondo a Oggi (InvitesRow), non in cima. Con Gmail collegato le proposte arrivano dalle mail.
+    if (!enabled && !gmail) return
     if (shown.isEmpty()) return
 
     val pending = shown.count { it.state == SuggestionState.PENDING }
@@ -234,7 +236,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
             item {
                 Text(
                     "Canvas legge le notifiche che arrivano sul telefono e ci trova pacchi in arrivo (Amazon, Poste, BRT, GLS, DHL), " +
-                        "spese (Revolut, banche, Satispay, PayPal) e scadenze o appuntamenti (bollette, prenotazioni, visite, anche da Gmail). " +
+                        "spese (Revolut, banche, Satispay, PayPal), scadenze, prenotazioni e rinnovi. Con Gmail collegato legge le mail intere. " +
                         "Le chat non vengono lette. Niente lascia il telefono.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -291,6 +293,8 @@ fun AutoFillScreen(onBack: () -> Unit) {
                     }
                 }
             }
+            item { SettingsHeader("Gmail") }
+            item { GmailSettingsGroup() }
             item { SettingsHeader("SMS") }
             item {
                 SettingsGroup {
