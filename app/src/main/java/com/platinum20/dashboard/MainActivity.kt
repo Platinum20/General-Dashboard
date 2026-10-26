@@ -180,7 +180,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
 import com.platinum20.dashboard.media.youtubeWatchUrl
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import com.platinum20.dashboard.net.DiskCache
@@ -331,11 +330,6 @@ class MainActivity : ComponentActivity() {
         OpenRequest.from(intent)?.let { openRequest.value = it }
     }
 
-    override fun onDestroy() {
-        // Chiudendo l'app si fermano anche YouTube e Spotify lasciati in sottofondo.
-        if (isFinishing) MediaWebViews.releaseAll()
-        super.onDestroy()
-    }
 }
 
 object Routes {

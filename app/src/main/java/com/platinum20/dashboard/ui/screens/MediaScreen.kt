@@ -49,13 +49,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import com.platinum20.dashboard.media.MediaService
-import com.platinum20.dashboard.media.MediaWebViews
-import com.platinum20.dashboard.media.NowPlaying
 import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.podcast.PodcastStore
 import androidx.compose.material.icons.outlined.Mic
-import com.platinum20.dashboard.media.PlayerCommand
-import com.platinum20.dashboard.media.Track
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.filled.Pause

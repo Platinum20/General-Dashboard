@@ -394,7 +394,7 @@ object CanvasPlayer {
 
     /** Un solo audio alla volta: la lettura del punto del giorno e i riproduttori web si fermano. */
     private fun pauseOthers() {
-        NowPlaying.pauseOthers(null, radio = false, nativeYouTube = false, podcast = false)
+        com.platinum20.dashboard.news.RecapSpeaker.pause()
     }
 
     private fun build(context: Context): ExoPlayer = ExoPlayer.Builder(context)
