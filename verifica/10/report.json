@@ -1,0 +1,1232 @@
+[
+ {
+  "site": {
+   "name": "YouTube home",
+   "url": "https://m.youtube.com/",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 60,
+    "blocked": 0,
+    "wouldBlock": 4,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 66,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "googleads.g.doubleclick.net": 1,
+     "m.youtube.com": 5,
+     "static.doubleclick.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 126,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": false,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video",
+   "url": "https://m.youtube.com/watch?v=kJQP7kiw5Fk",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "YouTube",
+    "textLength": 1722,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 76,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Luis Fonsi - Despacito ft. Daddy Yankee - YouTube",
+    "textLength": 1592,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "YouTube video 2",
+   "url": "https://m.youtube.com/watch?v=JGwWNGJdvx8",
+   "youtube": true
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 73,
+    "blocked": 0,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "m.youtube.com": 2,
+     "googleads.g.doubleclick.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1687,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 75,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 2,
+     "m.youtube.com": 3
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ed Sheeran - Shape of You (Official Music Video) - YouTube",
+    "textLength": 1488,
+    "adFrames": 0,
+    "adBoxes": 0,
+    "playerResponse": true,
+    "adPlacements": false,
+    "playerAds": false,
+    "adShowing": false,
+    "video": {
+     "time": 0,
+     "duration": 0,
+     "paused": true
+    },
+    "adRenderers": 0
+   },
+   "shot": "YouTube_video_2-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA home",
+   "url": "https://www.ansa.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 124,
+    "blocked": 0,
+    "wouldBlock": 36,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 4,
+     "www.googletagmanager.com": 2,
+     "boot.pbstck.com": 1,
+     "cdn.confiant-integrations.net": 2,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "googleads.g.doubleclick.net": 2,
+     "static.doubleclick.net": 2,
+     "sb.scorecardresearch.com": 2,
+     "www.youtube.com": 5,
+     "intake.pbstck.com": 3,
+     "www.google-analytics.com": 1,
+     "cdn-gl.imrworldwide.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "xhxgfzphelcvrzzvk5dtofo8wehw71793034542.nuid.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26335,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 84,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "static.doubleclick.net": 1,
+     "googleads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.youtube.com": 2,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Agenzia ANSA: ultime notizie di cronaca, politica e sport - ANSA",
+    "textLength": 26335,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "ANSA articolo",
+   "url": "https://www.ansa.it/sito/notizie/topnews/2026/10/26/borsa-milano-chiude-in-rialzo-dell129_9a40b5a1-978a-4272-bd33-a136a1f44bb4.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 2641,
+    "blocked": 0,
+    "wouldBlock": 2338,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 3,
+     "securepubads.g.doubleclick.net": 3,
+     "www.googletagmanager.com": 2,
+     "t.seedtag.com": 3,
+     "cdn.confiant-integrations.net": 2,
+     "boot.pbstck.com": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.pbstck.com": 2,
+     "s.seedtag.com": 51,
+     "www.google-analytics.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "intake.pbstck.com": 3,
+     "cdn-gl.imrworldwide.com": 3,
+     "zfaaccfokskerxg3vkcssatpkldfs1793034567.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cs.seedtag.com": 7,
+     "csync.smartadserver.com": 3,
+     "visitor.omnitagjs.com": 3,
+     "ad.360yield.com": 29,
+     "u.openx.net": 8,
+     "csync.loopme.me": 45,
+     "match.prod.bidr.io": 9,
+     "sync.1rx.io": 58,
+     "ib.adnxs.com": 29,
+     "sync.smartadserver.com": 11,
+     "b1sync.outbrain.com": 14,
+     "cs.admanmedia.com": 39,
+     "sync.srv.stackadapt.com": 16,
+     "beachfront-match.dotomi.com": 1,
+     "sync.ipredictive.com": 5,
+     "x.bidswitch.net": 44,
+     "c1.adform.net": 20,
+     "ap.lijit.com": 47,
+     "creativecdn.com": 37,
+     "t.adx.opera.com": 12,
+     "match.deepintent.com": 10,
+     "id5-sync.com": 9,
+     "ups.analytics.yahoo.com": 10,
+     "pixel-sync.sitescout.com": 20,
+     "secure-assets.rubiconproject.com": 41,
+     "ads.pubmatic.com": 33,
+     "onetag-sys.com": 80,
+     "match.sharethrough.com": 17,
+     "match.adsrvr.org": 27,
+     "ced-ns.sascdn.com": 1,
+     "ad.turn.com": 3,
+     "tr.blismedia.com": 4,
+     "sync.richaudience.com": 30,
+     "csync.smilewanted.com": 15,
+     "image8.pubmatic.com": 38,
+     "eb2.3lift.com": 34,
+     "s.ad.smaato.net": 38,
+     "hb.trustedstack.com": 5,
+     "prebid.a-mo.net": 15,
+     "cs.media.net": 12,
+     "rtb.mfadsrvr.com": 4,
+     "cm.g.doubleclick.net": 8,
+     "id.rlcdn.com": 13,
+     "eu-west-1-cs-rtb.openwebmp.com": 1,
+     "bttrack.com": 2,
+     "ssc-cms.33across.com": 66,
+     "ssum-sec.casalemedia.com": 9,
+     "eus.rubiconproject.com": 75,
+     "cpm.vistarsagency.com": 1,
+     "sync.adkernel.com": 61,
+     "public.servenobid.com": 1,
+     "ittpx.eskimi.com": 23,
+     "measureadv.com": 1,
+     "ssbsync.smartadserver.com": 30,
+     "cs-server-s2s.yellowblue.io": 10,
+     "dis.criteo.com": 2,
+     "rtb-csync.smartadserver.com": 4,
+     "sync-tm.everesttech.net": 6,
+     "pixel.33across.com": 1,
+     "us-east-1-cs-rtb.openwebmp.com": 5,
+     "prebidsrvr.cootlogix.com": 1,
+     "sync.kueezrtb.com": 7,
+     "p.rfihub.com": 15,
+     "ce.lijit.com": 12,
+     "hbx.media.net": 23,
+     "ads.servenobid.com": 7,
+     "sync.go.sonobi.com": 33,
+     "jadserve.postrelease.com": 20,
+     "equativ-match.dotomi.com": 1,
+     "dsp-cookie.adfarm1.adition.com": 1,
+     "ads.yieldmo.com": 18,
+     "contextual.media.net": 3,
+     "secure.adnxs.com": 7,
+     "prebid-match.dotomi.com": 6,
+     "rtb.openx.net": 12,
+     "cm.adform.net": 18,
+     "cs.iqzone.com": 16,
+     "bh.contextweb.com": 18,
+     "ms-cookie-sync.presage.io": 10,
+     "rtb.gumgum.com": 5,
+     "visitor.us-east4.gcp.omnitagjs.com": 4,
+     "ssp-sync.criteo.com": 24,
+     "sync.ingage.tech": 2,
+     "sync.rbstsystems.live": 12,
+     "sync.a-mo.net": 5,
+     "dsp-service.admatic.de": 9,
+     "cookies.nextmillmedia.com": 26,
+     "cms.quantserve.com": 5,
+     "a.amxrtb.com": 22,
+     "www.temu.com": 7,
+     "dsum-sec.casalemedia.com": 1,
+     "openweb-match.dotomi.com": 2,
+     "user-sync.fwmrm.net": 6,
+     "visitor-ow.omnitagjs.com": 3,
+     "us-u.openx.net": 20,
+     "syncingbridge.com": 12,
+     "token.rubiconproject.com": 62,
+     "rt.marphezis.com": 1,
+     "visitor-programmaticx.omnitagjs.com": 3,
+     "dsp-service.adtarget.biz": 3,
+     "u-las.4dex.io": 3,
+     "visitor-px.omnitagjs.com": 3,
+     "sync.cootlogix.com": 41,
+     "usync.ingage.tech": 13,
+     "pbs-cs.yellowblue.io": 11,
+     "cs.openwebmp.com": 6,
+     "s.console.adtarget.com.tr": 2,
+     "sync.sparteo.com": 16,
+     "bidder.smartytouch.co": 2,
+     "dsp-service.pixad.com.tr": 3,
+     "sync.adtelligent.com": 2,
+     "pixel-eu.rubiconproject.com": 6,
+     "sync.technoratimedia.com": 4,
+     "ssbsync-global.smartadserver.com": 6,
+     "u-ams.4dex.io": 19,
+     "usync.4dex.io": 9,
+     "static.cloudflareinsights.com": 8,
+     "33across-match.dotomi.com": 2,
+     "ittpx-us-e.eskimi.com": 4,
+     "id.a-mx.com": 12,
+     "pixel.rubiconproject.com": 30,
+     "ortb.vdo.ai": 12,
+     "idpix.media6degrees.com": 1,
+     "ads.betweendigital.com": 1,
+     "visitor-33across.omnitagjs.com": 1,
+     "prebid.admatic.de": 12,
+     "pixel.tapad.com": 8,
+     "et-c-ash.33across.com": 2,
+     "rtb.adentifi.com": 3,
+     "ogury-match.dotomi.com": 4,
+     "gw-iad-bid.ymmobi.com": 25,
+     "b1sync.zemanta.com": 2,
+     "i.liadm.com": 6,
+     "cs-rtb.minutemedia-prebid.com": 1,
+     "dp1.33across.com": 1,
+     "pixel-us-east.rubiconproject.com": 12,
+     "px.ads.linkedin.com": 3,
+     "ps.eyeota.net": 19,
+     "px.mountain.com": 1,
+     "um.simpli.fi": 4,
+     "i.w55c.net": 3,
+     "thrtle.com": 1,
+     "s.amazon-adsystem.com": 3,
+     "gumgum-match.dotomi.com": 2,
+     "cs.yellowblue.io": 11,
+     "elb.the-ozone-project.com": 3,
+     "dsp.360yield.com": 3,
+     "oxp.mxptint.net": 3,
+     "aa.agkn.com": 3,
+     "cs.ingage.tech": 1,
+     "aorta.clickagy.com": 2,
+     "openx2-match.dotomi.com": 3,
+     "su.semasio.net": 1,
+     "openx-ums.acuityplatform.com": 1,
+     "vop.sundaysky.com": 7,
+     "pxl.iqm.com": 2,
+     "cdn.undertone.com": 3,
+     "prebid.adtarget.biz": 1,
+     "prebid.pixad.com.tr": 4,
+     "dmp.brand-display.com": 5,
+     "bpi.rtactivate.com": 5,
+     "capi.connatix.com": 6,
+     "sync.crwdcntrl.net": 6,
+     "ads259.console.adtarget.com.tr": 3,
+     "static.cdn.admatic.de": 5,
+     "evt.undertone.com": 2,
+     "sync.serverbid.com": 1,
+     "sync.colossusssp.com": 14,
+     "data.adsrvr.org": 1,
+     "sync.ottadvisors.com": 2,
+     "fei.pro-market.net": 1,
+     "inv-nets.admixer.net": 2,
+     "ml314.com": 1,
+     "dm-us.hybrid.ai": 1,
+     "dpm.demdex.net": 1,
+     "idsync.rlcdn.com": 3,
+     "loadm.exelator.com": 1,
+     "sync.intentiq.com": 1,
+     "inmobi-match.dotomi.com": 2,
+     "us.ck-ie.com": 20,
+     "tracker-shr.ortb.net": 2,
+     "sync.pinklion.io": 2,
+     "cs.playdigo.com": 2,
+     "sync.aniview.com": 18,
+     "eu-rtbstack-cm.admixer.net": 9,
+     "image2.pubmatic.com": 9,
+     "visitor-krushmedia.omnitagjs.com": 9,
+     "match.sync.ad.cpe.dotomi.com": 9,
+     "visitor-krushmedia_video.omnitagjs.com": 9,
+     "ads.stickyadstv.com": 9,
+     "sync-km.ads.yieldmo.com": 9,
+     "player.aniview.com": 9,
+     "usersync.gumgum.com": 9,
+     "krush-match.dotomi.com": 9,
+     "sync.bfmio.com": 9,
+     "ice.360yield.com": 1,
+     "pbs-us-east.openx.net": 1,
+     "sync.mathtag.com": 9
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Borsa: Milano chiude in rialzo dell'1,29% - Ultima ora - Ansa.it",
+    "textLength": 6689,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 53,
+    "blocked": 7,
+    "wouldBlock": 7,
+    "blockedHosts": {
+     "ads.talkscreativity.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "www.googletagmanager.com": 1,
+     "t.seedtag.com": 1,
+     "sb.scorecardresearch.com": 1,
+     "www.ansa.it": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Borsa: Milano chiude in rialzo dell'1,29% - Ultima ora - Ansa.it",
+    "textLength": 6689,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "ANSA_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage home",
+   "url": "https://www.fanpage.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 192,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 192,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Fanpage articolo",
+   "url": "https://www.fanpage.it/sport/motori/forse-dovremmo-usare-il-linguaggio-dei-segni-verstappen-sarcastico-nei-confronti-della-red-bull/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 301,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 305,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Fanpage_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open home",
+   "url": "https://www.open.online/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 372,
+    "blocked": 0,
+    "wouldBlock": 108,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "pagead2.googlesyndication.com": 18,
+     "sb.scorecardresearch.com": 2,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 3,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn.insurads.com": 3,
+     "dpm.demdex.net": 1,
+     "static.anonymised.io": 1,
+     "cdn.confiant-integrations.net": 2,
+     "cm.everesttech.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "ep2.adtrafficquality.google": 3,
+     "applets.ebxcdn.com": 2,
+     "rcsmediagroupspa.demdex.net": 1,
+     "cdn.permutive.app": 1,
+     "services.insurads.com": 3,
+     "secure-it.imrworldwide.com": 2,
+     "omq4cqgwn73qeielgui7yr1ooq6821793034645.nuid.imrworldwide.com": 1,
+     "analytics.google.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "cdn1.anonymised.io": 2,
+     "static.anonm.io": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "id5-sync.com": 1,
+     "esp.rtbhouse.com": 1,
+     "ad-delivery.net": 1,
+     "cdn.jsdelivr.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "bb5a554e01d615cc4c49590401ddb333.safeframe.googlesyndication.com": 3,
+     "image6.pubmatic.com": 1,
+     "gum.criteo.com": 2,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20827,
+    "adFrames": 2,
+    "adBoxes": 14
+   },
+   "shot": "Open_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 262,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "link.rubiconproject.com": 1,
+     "ads.pubmatic.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "www.googletagmanager.com": 1,
+     "cdn.taboola.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function"
+    ]
+   },
+   "info": {
+    "title": "Open - Il giornale online fondato da Enrico Mentana - Open",
+    "textLength": 20819,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "Open_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Open articolo",
+   "url": "https://www.open.online/2026/10/26/papa-leone-viaggio-sudamerica-medici/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 200,
+    "blocked": 0,
+    "wouldBlock": 138,
+    "blockedHosts": {
+     "fundingchoicesmessages.google.com": 4,
+     "stats.open.online": 1,
+     "www.googletagservices.com": 1,
+     "ua.realtimely.io": 1,
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 2,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "carbon-cdn.ccgateway.net": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "assets.evolutionadv.it": 1,
+     "pagead2.googlesyndication.com": 18,
+     "sb.scorecardresearch.com": 2,
+     "googleads.g.doubleclick.net": 2,
+     "cdn.taboola.com": 6,
+     "www.googletagmanager.com": 2,
+     "cdn-gl.imrworldwide.com": 3,
+     "api.realtimely.io": 1,
+     "dpm.demdex.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "cdn.confiant-integrations.net": 2,
+     "cdn.insurads.com": 3,
+     "static.anonymised.io": 1,
+     "trc.taboola.com": 2,
+     "cm.everesttech.net": 1,
+     "applets.ebxcdn.com": 2,
+     "ep2.adtrafficquality.google": 3,
+     "cdn.permutive.app": 1,
+     "rcsmediagroupspa.demdex.net": 1,
+     "smetrics.rcsmetrics.it": 1,
+     "services.insurads.com": 3,
+     "a1hogqrp4itwgjitnouwzrdduukkc1793034668.nuid.imrworldwide.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "cdn1.anonymised.io": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "ch-trc-events.taboola.com": 3,
+     "gum.criteo.com": 3,
+     "static.anonm.io": 1,
+     "cm.g.doubleclick.net": 2,
+     "ib.adnxs.com": 1,
+     "images.taboola.com": 18,
+     "cds.taboola.com": 1,
+     "config.aps.amazon-adsystem.com": 2,
+     "client.aps.amazon-adsystem.com": 1,
+     "micro.rubiconproject.com": 1,
+     "invstatic101.creativecdn.com": 1,
+     "oa.openxcdn.net": 1,
+     "static.criteo.net": 1,
+     "imasdk.googleapis.com": 1,
+     "cdn.id5-sync.com": 1,
+     "secure.cdn.fastclick.net": 1,
+     "c.amazon-adsystem.com": 1,
+     "web-video.ads.aps.amazon-adsystem.com": 1,
+     "ad-delivery.net": 1,
+     "secure-assets.rubiconproject.com": 1,
+     "cdn.jsdelivr.net": 1,
+     "id5-sync.com": 1,
+     "108bcadefc294f84ff55ce86f742c31b.safeframe.googlesyndication.com": 3,
+     "esp.rtbhouse.com": 1,
+     "image6.pubmatic.com": 1,
+     "tpc.googlesyndication.com": 4,
+     "p.typekit.net": 2
+    },
+    "errors": [
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Papa Leone sta bene: via libera dei medici al viaggio in Sudamerica. Dove andrà e quando - Open",
+    "textLength": 6473,
+    "adFrames": 2,
+    "adBoxes": 18
+   },
+   "shot": "Open_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 64,
+    "blocked": 13,
+    "wouldBlock": 13,
+    "blockedHosts": {
+     "visit-server.inmobi-choice.io": 1,
+     "ads.pubmatic.com": 1,
+     "link.rubiconproject.com": 1,
+     "api.cmp.inmobi.com": 1,
+     "stats.open.online": 1,
+     "ua.realtimely.io": 1,
+     "www.googletagservices.com": 1,
+     "fundingchoicesmessages.google.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "assets.evolutionadv.it": 1,
+     "cdn.taboola.com": 1,
+     "www.googletagmanager.com": 1,
+     "cdn-gl.imrworldwide.com": 1
+    },
+    "errors": [
+     "Uncaught TypeError: evopbjs.setConfig is not a function",
+     "Uncaught ReferenceError: checkBannerFrame2 is not defined"
+    ]
+   },
+   "info": {
+    "title": "Papa Leone sta bene: via libera dei medici al viaggio in Sudamerica. Dove andrà e quando - Open",
+    "textLength": 5549,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Open_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews home",
+   "url": "https://www.rainews.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 196,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "RaiNews articolo",
+   "url": "https://www.rainews.it/articoli/2026/10/mantovano-sui-cortei-molti-giovani-prima-di-darsi-a-devastazioni-assumono-droghe-3757156b-7bcb-49dc-ba52-baba88c096cc.html"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 335,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 1,
+    "blocked": 0,
+    "wouldBlock": 0,
+    "blockedHosts": {},
+    "errors": []
+   },
+   "info": {
+    "title": "Access Denied",
+    "textLength": 335,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "RaiNews_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI home",
+   "url": "https://www.agi.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 176,
+    "blocked": 0,
+    "wouldBlock": 62,
+    "blockedHosts": {
+     "www.googletagmanager.com": 1,
+     "secure-it.imrworldwide.com": 2,
+     "securepubads.g.doubleclick.net": 3,
+     "sb.scorecardresearch.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 2,
+     "cm.g.doubleclick.net": 1,
+     "static.criteo.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "image6.pubmatic.com": 2,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 15,
+     "ep2.adtrafficquality.google": 3,
+     "9863cd19511b50d2704a344a9a1271e3.safeframe.googlesyndication.com": 1,
+     "cdn.taboola.com": 3,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 2,
+     "ch-trc-events.taboola.com": 2,
+     "images.taboola.com": 12
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 15144,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "AGI_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 113,
+    "blocked": 5,
+    "wouldBlock": 5,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Ultime Notizie Online | Agenzia Giornalistica Italia | AGI",
+    "textLength": 14526,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "AGI articolo",
+   "url": "https://www.agi.it/salute/news/2026-10-26/tumore-endometrio-avanzato-trofuse-39719394/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 196,
+    "blocked": 0,
+    "wouldBlock": 94,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 2,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 4,
+     "sb.scorecardresearch.com": 2,
+     "analytics.google.com": 2,
+     "stats.g.doubleclick.net": 1,
+     "invstatic101.creativecdn.com": 1,
+     "ads.pubmatic.com": 1,
+     "oa.openxcdn.net": 1,
+     "cm.g.doubleclick.net": 1,
+     "static.criteo.net": 1,
+     "image6.pubmatic.com": 2,
+     "gum.criteo.com": 2,
+     "ep1.adtrafficquality.google": 2,
+     "pagead2.googlesyndication.com": 16,
+     "ep2.adtrafficquality.google": 3,
+     "c65e374b4030ecb992c4f06a4d4ac58d.safeframe.googlesyndication.com": 1,
+     "cdn.taboola.com": 2,
+     "pm-widget.taboola.com": 2,
+     "trc.taboola.com": 8,
+     "ch-trc-events.taboola.com": 3,
+     "images.taboola.com": 36
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Tumore endometrio avanzato: nuovi risultati dallo studio TroFuse",
+    "textLength": 10453,
+    "adFrames": 0,
+    "adBoxes": 12
+   },
+   "shot": "AGI_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 98,
+    "blocked": 6,
+    "wouldBlock": 6,
+    "blockedHosts": {
+     "secure-it.imrworldwide.com": 1,
+     "www.googletagmanager.com": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "sb.scorecardresearch.com": 1,
+     "privacyportal-eu.onetrust.com": 1,
+     "cdn.taboola.com": 1
+    },
+    "errors": [
+     "Uncaught SyntaxError: Unexpected end of JSON input"
+    ]
+   },
+   "info": {
+    "title": "Tumore endometrio avanzato: nuovi risultati dallo studio TroFuse",
+    "textLength": 8464,
+    "adFrames": 0,
+    "adBoxes": 0
+   },
+   "shot": "AGI_articolo-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale home",
+   "url": "https://www.internazionale.it/"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 191,
+    "blocked": 0,
+    "wouldBlock": 46,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "ping.chartbeat.net": 1,
+     "mab.chartbeat.com": 1,
+     "cdn.cxense.com": 2,
+     "id.cxense.com": 1,
+     "comcluster.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "7bc3c416508ecc38a3ecc7023308f558.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 6,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "b.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11180,
+    "adFrames": 0,
+    "adBoxes": 16
+   },
+   "shot": "Internazionale_home-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 152,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Internazionale - Notizie dall'Italia e dal mondo",
+    "textLength": 11136,
+    "adFrames": 0,
+    "adBoxes": 1
+   },
+   "shot": "Internazionale_home-blocco.png"
+  }
+ },
+ {
+  "site": {
+   "name": "Internazionale articolo",
+   "url": "https://www.internazionale.it/notizie/junko-terao/2026/10/26/australia-copyright"
+  },
+  "before": {
+   "ok": true,
+   "stats": {
+    "requests": 153,
+    "blocked": 0,
+    "wouldBlock": 49,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "plausible.io": 1,
+     "securepubads.g.doubleclick.net": 6,
+     "www.google-analytics.com": 2,
+     "static.chartbeat.com": 3,
+     "mab.chartbeat.com": 1,
+     "ping.chartbeat.net": 2,
+     "cdn.cxense.com": 2,
+     "comcluster.cxense.com": 1,
+     "id.cxense.com": 1,
+     "api.cxense.com": 1,
+     "cm.g.doubleclick.net": 1,
+     "ep1.adtrafficquality.google": 2,
+     "f1d7d7b853889202f249fa5a7914bb2b.safeframe.googlesyndication.com": 1,
+     "ep2.adtrafficquality.google": 3,
+     "pagead2.googlesyndication.com": 7,
+     "tpc.googlesyndication.com": 2,
+     "www.googletagmanager.com": 1,
+     "stats.g.doubleclick.net": 1,
+     "analytics.google.com": 1,
+     "www.clarity.ms": 1,
+     "scripts.clarity.ms": 1,
+     "c.clarity.ms": 1,
+     "t.clarity.ms": 1,
+     "sb.scorecardresearch.com": 2,
+     "connect.facebook.net": 2,
+     "www.facebook.com": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 1366,
+    "adFrames": 0,
+    "adBoxes": 9
+   },
+   "shot": "Internazionale_articolo-senza.png"
+  },
+  "after": {
+   "ok": true,
+   "stats": {
+    "requests": 102,
+    "blocked": 9,
+    "wouldBlock": 9,
+    "blockedHosts": {
+     "static.internazionale.it": 1,
+     "securepubads.g.doubleclick.net": 1,
+     "plausible.io": 1,
+     "www.google-analytics.com": 1,
+     "cdn.cxense.com": 1,
+     "www.googletagmanager.com": 1,
+     "www.clarity.ms": 1,
+     "sb.scorecardresearch.com": 1,
+     "connect.facebook.net": 1
+    },
+    "errors": []
+   },
+   "info": {
+    "title": "Se l’Australia diventa un paradiso per violare il copyright - Junko Terao - Internazionale",
+    "textLength": 991,
+    "adFrames": 0,
+    "adBoxes": 3
+   },
+   "shot": "Internazionale_articolo-blocco.png"
+  }
+ }
+]
