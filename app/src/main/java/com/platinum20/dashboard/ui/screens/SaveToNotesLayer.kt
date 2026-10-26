@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeKind
@@ -19,6 +18,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -83,18 +83,54 @@ internal fun BoxScope.SaveToNotesLayer() {
         delay(OFFER_MS)
         if (SavedLinks.offered === offered) SavedLinks.dismiss()
     }
-    BackHandler(offered != null) { SavedLinks.dismiss() }
+    BottomBubble(visible = offered != null, swipe = swipe, onDismiss = { SavedLinks.dismiss() }) {
+        val link = last ?: return@BottomBubble
+        val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
+        // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
+        if (media != null) {
+            BubbleRow(icon = Icons.Rounded.QueueMusic, title = "Aggiungi alla coda", detail = media.title) {
+                haptic(Haptic.CONFIRM)
+                SavedLinks.dismiss()
+                CanvasPlayer.add(media)
+                android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
+        val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
+        BubbleRow(
+            icon = if (saved) Icons.Rounded.BookmarkRemove else Icons.Rounded.BookmarkAdd,
+            title = if (saved) "Rimuovi dalle note" else "Salva nelle note",
+            detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
+        ) {
+            haptic(Haptic.CONFIRM)
+            if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
+        }
+    }
+}
 
-    AnimatedVisibility(offered != null, enter = fadeIn(), exit = fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
+/**
+ * Il fumetto di vetro in fondo al centro, comune a tutti i pop-up di Canvas: velo leggero dietro
+ * (toccandolo si chiude), indietro lo chiude, e portandolo di lato si chiude come il mini player.
+ * Va disegnato fuori dal NavHost, se no il vetro non ha niente dietro da sfocare.
+ */
+@Composable
+internal fun BoxScope.BottomBubble(
+    visible: Boolean,
+    swipe: SwipeAwayState,
+    onDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    BackHandler(visible) { onDismiss() }
+    AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
         Box(
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.12f))
-                .pointerInput(Unit) { detectTapGestures { SavedLinks.dismiss() } },
+                .pointerInput(Unit) { detectTapGestures { onDismiss() } },
         )
     }
     AnimatedVisibility(
-        offered != null,
+        visible,
         enter = fadeIn() + scaleIn(initialScale = 0.92f) + slideInVertically { it / 3 },
         exit = fadeOut(tween(140)) + slideOutVertically { it / 3 },
         modifier = Modifier
@@ -102,47 +138,23 @@ internal fun BoxScope.SaveToNotesLayer() {
             .navigationBarsPadding()
             .padding(bottom = 96.dp, start = 16.dp, end = 16.dp),
     ) {
-        val link = last ?: return@AnimatedVisibility
-        val shape = RoundedCornerShape(22.dp)
-        val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        SwipeAwayMark(swipe)
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.swipeAway(swipe) { if (SavedLinks.offered === link) SavedLinks.dismiss() },
-        ) {
-            // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
-            if (media != null) {
-                OfferRow(
-                    icon = Icons.Rounded.QueueMusic,
-                    title = "Aggiungi alla coda",
-                    detail = media.title,
-                    shape = shape,
-                ) {
-                    haptic(Haptic.CONFIRM)
-                    SavedLinks.dismiss()
-                    CanvasPlayer.add(media)
-                    android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
-            // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
-            val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
-            OfferRow(
-                icon = if (saved) Icons.Rounded.BookmarkRemove else Icons.Rounded.BookmarkAdd,
-                title = if (saved) "Rimuovi dalle note" else "Salva nelle note",
-                detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
-                shape = shape,
-            ) {
-                haptic(Haptic.CONFIRM)
-                if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
-            }
-        }
+            SwipeAwayMark(swipe)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.swipeAway(swipe) { if (visible) onDismiss() },
+                content = content,
+            )
         }
     }
 }
 
+/** Una riga del fumetto: pallino con l'icona, titolo e una riga di dettaglio. [danger] per le azioni che tolgono qualcosa. */
 @Composable
-private fun OfferRow(icon: ImageVector, title: String, detail: String, shape: Shape, onClick: () -> Unit) {
+internal fun BubbleRow(icon: ImageVector, title: String, detail: String = "", danger: Boolean = false, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(22.dp)
+    val tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val onTint = if (danger) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
     Surface(
         onClick = onClick,
         shape = shape,
@@ -152,21 +164,23 @@ private fun OfferRow(icon: ImageVector, title: String, detail: String, shape: Sh
         modifier = Modifier.fillMaxWidth().glass(shape).bouncyPress(0.97f),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp)) {
+            Surface(shape = CircleShape, color = tint, modifier = Modifier.size(36.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp))
+                    Icon(icon, contentDescription = null, tint = onTint, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    detail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (detail.isNotBlank()) {
+                    Text(
+                        detail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

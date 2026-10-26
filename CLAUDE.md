@@ -34,7 +34,9 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"), `SearchScreen.kt` + `search/EverywhereSearch.kt`.
 - `ui/screens/SwipeAway.kt`: "drag sideways to close" (rule + `Modifier.swipeAway` + X), shared by mini player and save bubble.
 - `ui/screens/Pickers.kt` (date/time/task edit dialogs), `SaveToNotesLayer.kt`/`SaveOnLongPress.kt`
-  (long-press bubble: "Salva nelle note", "Aggiungi alla coda").
+  (long-press bubble: "Salva nelle note", "Aggiungi alla coda"; also holds the shared `BottomBubble`
+  scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
+  pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt`, `TomorrowCard.kt`, `WeekReviewCard.kt`,
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`. Logic in `today/`: `Briefing.kt`

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.170.0
+**I pop-up delle Note come gli altri**
+- Tenendo premuta una nota, Fissa in alto, Condividi ed Elimina salgono nel fumetto di vetro in fondo al centro, come "Salva nelle note", invece del menu a tendina
+- Anche "smetti di aggiungerla ogni mese" sulle spese fisse usa lo stesso fumetto
+- Si chiudono portandoli di lato (come il mini player), toccando fuori o con indietro
+
 ## 1.169.0
 **Il fumetto "salvato" si chiude portandolo di lato**
 - Dopo aver salvato col +, il fumetto di conferma si toglie trascinandolo o lanciandolo di lato, con lo stesso gesto del mini player (compare la X che diventa rossa). La cosa resta salvata
