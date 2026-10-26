@@ -40,7 +40,8 @@ fun SpeechCover(modifier: Modifier = Modifier) {
     BoxWithConstraints(
         modifier.background(Brush.linearGradient(listOf(Blue, Night), start = Offset.Zero, end = Offset.Infinite)),
     ) {
-        val large = maxWidth >= 140.dp
+        val side = maxWidth
+        val large = side >= 140.dp
         Canvas(Modifier.fillMaxSize()) {
             val r = size.minDimension
             // Il sole arancione che spunta in alto a destra, con due aloni.
@@ -62,21 +63,21 @@ fun SpeechCover(modifier: Modifier = Modifier) {
                 LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
                     .replaceFirstChar { it.uppercase() }
             }
-            Column(Modifier.align(Alignment.BottomStart).padding(maxWidth * 0.08f)) {
-                Icon(Icons.Rounded.GraphicEq, contentDescription = null, tint = Color.White, modifier = Modifier.size(maxWidth * 0.12f))
+            Column(Modifier.align(Alignment.BottomStart).padding(side * 0.08f)) {
+                Icon(Icons.Rounded.GraphicEq, contentDescription = null, tint = Color.White, modifier = Modifier.size(side * 0.12f))
                 Text(
                     "Il punto\ndel giorno",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = (maxWidth.value * 0.11f).sp,
-                    lineHeight = (maxWidth.value * 0.12f).sp,
+                    fontSize = (side.value * 0.11f).sp,
+                    lineHeight = (side.value * 0.12f).sp,
                     style = MaterialTheme.typography.headlineLarge,
                 )
-                Text(date, color = Color.White.copy(alpha = 0.8f), fontSize = (maxWidth.value * 0.05f).sp, style = MaterialTheme.typography.bodyLarge)
+                Text(date, color = Color.White.copy(alpha = 0.8f), fontSize = (side.value * 0.05f).sp, style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.GraphicEq, contentDescription = null, tint = Color.White, modifier = Modifier.size(maxWidth * 0.5f))
+                Icon(Icons.Rounded.GraphicEq, contentDescription = null, tint = Color.White, modifier = Modifier.size(side * 0.5f))
             }
         }
     }
