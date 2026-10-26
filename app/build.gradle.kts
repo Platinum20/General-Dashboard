@@ -68,6 +68,17 @@ android {
                 signingConfigs.getByName("debug")
             }
         }
+        // -PminifyDebug=true: la debug passa da R8 come la release, per provarla sull'emulatore (voicecheck.yml).
+        if (project.hasProperty("minifyDebug")) {
+            debug {
+                isMinifyEnabled = true
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro",
+                    "voicecheck-rules.pro",
+                )
+            }
+        }
     }
 
     compileOptions {
