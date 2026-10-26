@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.152.0
+**Bolla del + su una riga**
+- Il testo di prova nella bolla che compare quando scrivi è più corto ("Scrivi, Canvas capisce cos'è") e sta sempre su una sola riga
+
 ## 1.151.0
 **Tema Puro davvero bianco**
 - In modalità chiara il tema Puro è tutto bianco e nero: niente più blu, i pulsanti e le parti scelte sono in nero, i blocchi in evidenza (come Adesso) in grigio chiarissimo. Si distingue subito da Canvas
