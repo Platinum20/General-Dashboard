@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.170.0
+## 1.172.0
 **I pop-up delle Note come gli altri**
 - Tenendo premuta una nota, Fissa in alto, Condividi ed Elimina salgono nel fumetto di vetro in fondo al centro, come "Salva nelle note", invece del menu a tendina
 - Anche "smetti di aggiungerla ogni mese" sulle spese fisse usa lo stesso fumetto
 - Si chiudono portandoli di lato (come il mini player), toccando fuori o con indietro
 - Anche "Nota eliminata · Annulla" (e le altre eliminazioni nelle Note) ora è il fumetto di vetro in fondo al centro, come la conferma del +, chiudibile di lato
+
+## 1.170.0
+**Una sola card media, in Media e in Oggi**
+- La card del media è ora una sola, stretta e identica nelle due pagine: mostra quello che suona adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da riprendere dal punto esatto
+- In Oggi sta subito sotto "Adesso", non più in fondo alla giornata
+- "Le tue radio" è sparita da Media: le radio stanno nella loro pagina, come i podcast
 
 ## 1.169.0
 **Il fumetto "salvato" si chiude portandolo di lato**
