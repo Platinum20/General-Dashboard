@@ -5,7 +5,6 @@ import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -226,7 +225,7 @@ fun DayCard(agenda: AgendaState, onOpenNotes: () -> Unit, tomorrowCard: Boolean 
         action = if (agenda.granted) "Calendario" else "Note",
         onAction = { if (agenda.granted) inApp?.openCalendar?.invoke() else onOpenNotes() },
     ) {
-        Column(Modifier.animateContentSize(Springs.snappy())) {
+        Column {
             if (items.isEmpty() && lastDone == null) {
                 Text(
                     if (open.isEmpty()) "Niente in programma. Tocca + in basso per aggiungere."

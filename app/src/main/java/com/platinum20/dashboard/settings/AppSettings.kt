@@ -18,6 +18,7 @@ enum class AppTheme(val label: String, val description: String) {
 enum class HomeCard(val label: String, val description: String) {
     WEATHER("Adesso", "Il meteo e le poche cose da sapere in questo momento: prossimo impegno, pioggia, scadenze"),
     DAY("La giornata", "Impegni, promemoria e date dei prossimi giorni in una lista sola, in ordine di orario"),
+    RESUME("Riprendi", "Il video, il brano o il podcast lasciato a metà, da far ripartire in un tocco"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
 }
 
