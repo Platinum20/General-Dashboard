@@ -488,6 +488,10 @@ object NotesStore {
         d.copy(parcels = d.parcels.map { if (it.id == id) it.copy(deliveredOn = if (it.delivered) null else LocalDate.now()) else it })
     }
 
+    fun renameParcel(id: Long, title: String) = update { d ->
+        d.copy(parcels = d.parcels.map { if (it.id == id && title.isNotBlank()) it.copy(title = title.trim()) else it })
+    }
+
     fun deleteParcel(id: Long) = update { d -> d.copy(parcels = d.parcels.filter { it.id != id }) }
 
     fun restoreParcel(item: Parcel) = update { d ->
