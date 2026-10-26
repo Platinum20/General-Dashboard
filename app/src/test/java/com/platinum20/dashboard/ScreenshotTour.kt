@@ -131,17 +131,21 @@ class ScreenshotTour {
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
-            // La lampadina: le idee da aggiungere.
-            if (tap("Idee da aggiungere")) { settle(800); shot(p + "25_note_idee"); tap("Chiudi"); settle(500) } else missing += p + "25_note_idee"
-            // Una pillola in alto accesa: la pagina mostra solo quella parte ("indietro" torna a tutto).
-            visit("Con scadenza", p + "21_note_con_scadenza", waitMs = 800, substring = true)
-            visit("Senza scadenza ·", p + "23_note_senza_scadenza", waitMs = 800, substring = true)
-            scroll(down = true)
-            shot(p + "22_note_fondo")
-            // Le spese del mese: la pillola "Spese" (o "Dettagli" nel riassunto).
-            visit("Dettagli", p + "24_spese", waitMs = 1_000)
-            // L'editor di una nota.
-            visit("Libri da leggere", p + "26_nota", substring = true)
+            // I tre tipi: ognuno si apre nella sua pagina ("indietro" torna ai tre).
+            if (tap("Con scadenza")) {
+                settle(800); shot(p + "21_note_con_scadenza")
+                scroll(down = true)
+                shot(p + "22_note_fondo")
+                back()
+            } else missing += p + "21_note_con_scadenza"
+            if (tap("Senza scadenza")) {
+                settle(800); shot(p + "23_note_senza_scadenza")
+                // L'editor di una nota.
+                visit("Libri da leggere", p + "26_nota", substring = true)
+                back()
+            } else missing += p + "23_note_senza_scadenza"
+            // Le spese del mese, con lo scontrino da fotografare in cima.
+            visit("Spese", p + "24_spese", waitMs = 1_000)
         } else missing += p + "20_note"
 
         if (tap("Media")) {
@@ -180,6 +184,11 @@ class ScreenshotTour {
         shot(name)
         scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         settle(1_000)
+    }
+
+    private fun back() {
+        scenario?.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        settle(800)
     }
 
     /** Esegue un'azione di accessibilità (es. "Cerca ovunque" del titolo delle sezioni). */

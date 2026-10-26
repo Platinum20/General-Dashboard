@@ -10,6 +10,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -441,16 +443,18 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
             AppTheme.entries.forEach { option ->
                 val on = option == selected
                 val ring by animateColorAsState(
-                    if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
                     tween(Motion.ENTER_MS, easing = Motion.Decelerate),
                     label = "themeRing",
                 )
-                val scale by animateFloatAsState(if (on) 1f else 0.94f, Springs.snappy(), label = "themeScale")
                 val (bg, card, accent) = themeSwatch(option)
+                // "Puro" mostra metà bianco e metà nero: di giorno e di sera.
+                val fill = if (option == AppTheme.AMOLED) {
+                    Brush.horizontalGradient(0f to Color.White, 0.5f to Color.White, 0.5f to Color.Black, 1f to Color.Black)
+                } else SolidColor(bg)
                 Column(
                     Modifier
                         .weight(1f)
-                        .graphicsLayer { scaleX = scale; scaleY = scale }
                         .bouncyPress(0.94f)
                         .clip(MaterialTheme.shapes.large)
                         .clickable { onSelect(option) },
@@ -460,10 +464,12 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                         Modifier
                             .fillMaxWidth()
                             .height(76.dp)
-                            .border(if (on) 2.dp else 1.dp, ring, MaterialTheme.shapes.large)
-                            .padding(if (on) 2.dp else 1.dp)
-                            .clip(MaterialTheme.shapes.large)
-                            .background(bg)
+                            // Anello sempre della stessa misura: cambia solo il colore, l'anteprima non si sposta.
+                            .border(2.dp, ring, MaterialTheme.shapes.large)
+                            .padding(4.dp)
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium)
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(fill)
                             .padding(10.dp),
                     ) {
                         Column(
@@ -510,7 +516,7 @@ private fun themeSwatch(theme: AppTheme): Triple<Color, Color, Color> {
     val context = LocalContext.current
     return when (theme) {
         AppTheme.CANVAS -> Triple(Color(0xFFF5F3EE), Color.White, Color(0xFF3550E8))
-        AppTheme.AMOLED -> Triple(Color.Black, Color(0xFF1E1D1A), Color(0xFF9AABFF))
+        AppTheme.AMOLED -> Triple(Color.White, Color(0xFF1E1D1A), Color(0xFF9AABFF))
         AppTheme.DYNAMIC -> if (Build.VERSION.SDK_INT >= 31) {
             val scheme = androidx.compose.material3.dynamicLightColorScheme(context)
             Triple(scheme.surfaceContainer, scheme.surfaceContainerLowest, scheme.primary)
