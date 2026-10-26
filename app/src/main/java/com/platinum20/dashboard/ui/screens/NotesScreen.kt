@@ -69,10 +69,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -146,6 +142,8 @@ import com.platinum20.dashboard.calendar.CalendarRepository
 import androidx.lifecycle.repeatOnLifecycle
 import com.platinum20.dashboard.capture.CaptureDialog
 import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CaptureGuess
 import com.platinum20.dashboard.capture.CaptureSave
 import com.platinum20.dashboard.capture.CaptureResult
@@ -319,16 +317,14 @@ fun NotesScreen(
     var searching by rememberSaveable { mutableStateOf(false) }
     var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
     var allNotes by rememberSaveable { mutableStateOf(false) }
-    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
+    // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
+    // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.
     fun offerUndo(message: String, restore: () -> Unit) {
-        scope.launch {
-            snackbar.currentSnackbarData?.dismiss()
-            val result = snackbar.showSnackbar(message, actionLabel = "Annulla", duration = SnackbarDuration.Short)
-            if (result == SnackbarResult.ActionPerformed) restore()
-        }
+        CaptureFeedback.show(
+            CaptureNotice(CaptureMode.NOTE, message, undo = { restore() }, icon = Icons.Outlined.Delete, fly = false),
+        )
     }
 
     fun offerUndo(removed: List<TaskItem>, message: String) {
@@ -384,9 +380,6 @@ fun NotesScreen(
 
     Scaffold(
         contentWindowInsets = topLevelInsets,
-        snackbarHost = {
-            SnackbarHost(snackbar, Modifier.padding(bottom = bottomPadding.calculateBottomPadding()))
-        },
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
