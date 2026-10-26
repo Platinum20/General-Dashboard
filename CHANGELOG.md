@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.197.0
+**Prossimi giorni: scorrendo in su si torna indietro nel tempo**
+- Note › Prossimi giorni si apre sempre da adesso; scorrendo verso l'alto vedi il passato degli ultimi due mesi: impegni finiti, promemoria fatti e pacchi arrivati, più tenui
+- Le abitudini stanno sotto la linea del tempo, e in Completati resta solo quello che non è già nel passato
+
 ## 1.196.0
 **Dalla posta solo le mail importanti**
 - In Oggi la card Dalla posta mostra solo le mail importanti non lette
