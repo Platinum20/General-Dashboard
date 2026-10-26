@@ -58,6 +58,7 @@ private const val OFFER_MS = 6_000L
 /**
  * Tenendo premuta una cosa (un brano, un video, una radio, un articolo) sale dal basso il fumetto
  * di vetro con "Salva nelle note" (e, per i media, "Aggiungi alla coda"). Toccandolo la nota è fatta e il pallino vola alle Note.
+ * Portandolo di lato (come il mini player) si annulla.
  * Chi vuole offrirlo chiama solo [SavedLinks.offer] nel suo onLongClick.
  */
 @Composable
@@ -67,9 +68,12 @@ internal fun BoxScope.SaveToNotesLayer() {
     val haptic = rememberHaptic()
     // L'ultima offerta resta disegnata mentre il fumetto si chiude.
     var last by remember { mutableStateOf<SavedLink?>(null) }
+    // Portando il fumetto di lato si annulla, con lo stesso gesto che chiude il mini player.
+    val swipe = rememberSwipeAwayState()
     LaunchedEffect(offered) {
         if (offered == null) return@LaunchedEffect
         last = offered
+        swipe.reset()
         haptic(Haptic.LONG_PRESS)
         delay(OFFER_MS)
         if (SavedLinks.offered === offered) SavedLinks.dismiss()
@@ -96,7 +100,12 @@ internal fun BoxScope.SaveToNotesLayer() {
         val link = last ?: return@AnimatedVisibility
         val shape = RoundedCornerShape(22.dp)
         val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        SwipeAwayMark(swipe)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.swipeAway(swipe) { if (SavedLinks.offered === link) SavedLinks.dismiss() },
+        ) {
             // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
             if (media != null) {
                 OfferRow(
@@ -117,6 +126,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
                 shape = shape,
             ) { haptic(Haptic.CONFIRM); SavedLinks.save(context, link) }
+        }
         }
     }
 }

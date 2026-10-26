@@ -206,8 +206,7 @@ fun FloatingPlayer(
                             val velocity = tracker.calculateVelocity()
                             val vx = velocity.x
                             // Chiude solo se portata oltre metà, o lanciata forte di lato quando è già ben avviata.
-                            val fling = kotlin.math.abs(vx) > 2_500f && kotlin.math.abs(vx) > 1.5f * kotlin.math.abs(velocity.y) &&
-                                kotlin.math.sign(vx) == kotlin.math.sign(dx) && kotlin.math.abs(dx) > maxW * 0.2f
+                            val fling = SwipeAway.fling(dx, vx, velocity.y, maxW)
                             if (closeArmed || fling) {
                                 closeArmed = false
                                 closing = true
