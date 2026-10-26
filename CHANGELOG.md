@@ -1,10 +1,21 @@
 # Changelog
 
-## 1.157.0
+## 1.158.0
 **La barra diventa la bolla del +**
 - Niente più bolla separata: toccando il + è la barra in basso stessa a trasformarsi nel campo per scrivere, larga uguale, e sale con la tastiera. Il + diventa la freccia per inviare, la X annulla
 - Anche il vocale vive nella barra: tenendo premuto il + la barra si allarga e mostra la voce e quello che Canvas sta capendo. Scorrendo a sinistra la barra segue il dito, compare il cestino che si fa rosso e il vocale si butta
 - Quando la tastiera si apre per altro (cerca, modifica di una nota) la barra si nasconde e non copre niente
+
+## 1.157.0
+**Un solo player, davvero, e Spotify rifatto da capo**
+- Un unico motore per YouTube, YouTube Music, radio, podcast e video del telefono: la coda è quella del player, non una copia accanto, quindi avanti, indietro e "finito, parte il prossimo" funzionano sempre e tra tutte le fonti
+- Video e musica nella stessa coda: ogni cosa è prima di tutto audio; se ha il video lo vedi quando apri il player, nel mini player e a schermo spento continua l'audio senza interruzioni
+- Una sola schermata del player: con un video di YouTube mostra il video (titolo, descrizione, commenti), con una canzone copertina e comandi; passando dall'uno all'altro nella coda cambia da sola
+- Una sola notifica per tutto, Spotify compreso, con avanti e indietro nella coda anche dalla schermata di blocco e dalle cuffie
+- Spotify rifatto: il riproduttore ufficiale (Premium, audio originale) si accende con l'app e resta pronto; è solo l'uscita audio, coda e comandi sono del player unico. Album e playlist entrano in coda brano per brano
+- La coda è in cima alla pagina Media (le prossime 3, tocca per saltare lì, "Apri" per tutta la coda), al posto della card "Riprendi" quando c'è qualcosa in coda
+- Nella coda le voci si spostano trascinando la maniglia; lo stesso in Personalizza per l'ordine delle card di Oggi
+- Podcast: avanti e indietro vanno nella coda; nel player ci sono anche -10 e +30 secondi
 
 ## 1.156.0
 **Annulla il vocale scorrendo a sinistra**

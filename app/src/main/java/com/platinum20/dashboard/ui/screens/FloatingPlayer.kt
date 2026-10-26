@@ -21,8 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Forward30
-import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import com.platinum20.dashboard.media.PlaySource
@@ -90,7 +88,7 @@ fun FloatingPlayer(
     val now = shown ?: playing ?: return
     // Sulle schermate dei player la barra non serve: c'è già il player grande.
     if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
-    if (now.isVideo && currentRoute?.startsWith("media/watch") == true) return
+    if (currentRoute?.startsWith("media/watch") == true) return
 
     BoxWithConstraints(
         modifier
@@ -217,7 +215,7 @@ fun FloatingPlayer(
                                 val dir = if (dx >= 0) 1f else -1f
                                 scope.launch {
                                     x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(200), initialVelocity = vx)
-                                    onClose?.invoke() ?: Playback.stop(context)
+                                    onClose?.invoke() ?: Playback.stop()
                                 }
                                 scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
                             } else {
@@ -315,20 +313,16 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            // Indietro, play/pausa, avanti; niente X: per chiudere la barra si tira giù.
-            val podcast = now.source == PlaySource.PODCAST
+            // Indietro, play/pausa, avanti (nella coda, per tutte le fonti); niente X: si chiude trascinandola.
             // In diretta (radio) avanti e indietro servono solo per muoversi nella coda.
-            val queue by com.platinum20.dashboard.media.PlayQueue.state.collectAsState()
+            val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
             val skips = !now.live || queue.hasNext || queue.hasPrevious
             if (skips) {
-                IconButton(onClick = { Playback.previous(context) }, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        if (podcast) Icons.Filled.Replay10 else Icons.Filled.SkipPrevious,
-                        contentDescription = if (podcast) "Indietro di 10 secondi" else "Indietro",
-                    )
+                IconButton(onClick = { Playback.previous() }, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro")
                 }
             }
-            IconButton(onClick = { Playback.toggle(context) }, modifier = Modifier.size(44.dp)) {
+            IconButton(onClick = { Playback.toggle() }, modifier = Modifier.size(44.dp)) {
                 Icon(
                     if (now.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (now.playing) "Pausa" else "Riproduci",
@@ -336,11 +330,8 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                 )
             }
             if (skips) {
-                IconButton(onClick = { Playback.next(context) }, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        if (podcast) Icons.Filled.Forward30 else Icons.Filled.SkipNext,
-                        contentDescription = if (podcast) "Avanti di 30 secondi" else "Avanti",
-                    )
+                IconButton(onClick = { Playback.next() }, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = "Avanti")
                 }
             }
         }

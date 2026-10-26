@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.platinum20.dashboard.media.PlayQueue
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -107,7 +107,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 ) {
                     haptic(Haptic.CONFIRM)
                     SavedLinks.dismiss()
-                    PlayQueue.add(media)
+                    CanvasPlayer.add(media)
                     android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }

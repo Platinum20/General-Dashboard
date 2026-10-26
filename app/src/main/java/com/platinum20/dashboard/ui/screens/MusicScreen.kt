@@ -650,5 +650,5 @@ private fun playSpotifyList(context: android.content.Context, parent: SpItem, st
         )
     }
     val start = startAt?.let { s -> tracks.indexOfFirst { it.uri == s.uri } }?.coerceAtLeast(0) ?: 0
-    com.platinum20.dashboard.media.PlayQueue.playList(context, items, start)
+    com.platinum20.dashboard.media.CanvasPlayer.playList(context, items, start)
 }

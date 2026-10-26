@@ -82,7 +82,6 @@ object RecapSpeaker {
         if (script.isEmpty()) return
         // Un solo audio alla volta: musica, radio, podcast e video si mettono in pausa.
         NowPlaying.pauseOthers(null, radio = true, recap = false)
-        com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.SPEECH)
         parts = script
         starts = timeline(script)
         totalMs = starts.last() + script.last().length * MS_PER_CHAR

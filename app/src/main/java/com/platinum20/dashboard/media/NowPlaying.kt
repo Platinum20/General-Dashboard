@@ -139,15 +139,6 @@ object NowPlaying {
             if (service == MediaService.SPOTIFY && track.uri.isNotBlank() &&
                 (before?.uri != track.uri || before.playing != track.playing)
             ) rememberSpotify(track)
-            // Un brano nuovo di Spotify nell'app entra nella coda unica (se non è già lui a suonare).
-            if (service == MediaService.SPOTIFY && track.uri.isNotBlank() && before?.uri != track.uri) {
-                PlayQueue.started(
-                    ResumeItem(
-                        ResumeKind.SPOTIFY, track.uri, track.title, track.artist, track.artworkUrl,
-                        durationMs = track.durationMs, at = System.currentTimeMillis(), link = track.contextUri,
-                    ),
-                )
-            }
             if (track.playing) ensureService()
             // Un solo player alla volta: quando questo parte, gli altri si mettono in pausa.
             if (track.playing && !wasPlaying) pauseOthers(service)
@@ -168,13 +159,10 @@ object NowPlaying {
         // "Pausa" e non "play/pausa": va mandata a tutte le pagine aperte senza fidarsi dello stato
         // letto (che può essere vecchio di un secondo e mezzo), e non fa ripartire chi era già fermo.
         MediaWebViews.openServices().filter { it != keep }.forEach { command(it, PlayerCommand.PAUSE) }
-        // Spotify che suona nell'app di Spotify o su un altro dispositivo: si ferma anche quello.
-        if (keep != MediaService.SPOTIFY) com.platinum20.dashboard.media.spotify.SpotifyStore.pauseRemote()
-        if (radio) com.platinum20.dashboard.media.radio.RadioStore.pause()
-        if (podcast) com.platinum20.dashboard.media.podcast.PodcastStore.pause()
         // La lettura si mette in pausa come le altre: resta nel player e riparte da dove era.
         if (recap) com.platinum20.dashboard.news.RecapSpeaker.pause()
-        if (nativeYouTube) com.platinum20.dashboard.media.youtube.player.YtPlayer.pause()
+        // Il player unico (YouTube, musica, radio, podcast, Spotify) è uno solo.
+        if (radio || podcast || nativeYouTube) CanvasPlayer.pause()
     }
 
     private fun rememberSpotify(track: Track) {
