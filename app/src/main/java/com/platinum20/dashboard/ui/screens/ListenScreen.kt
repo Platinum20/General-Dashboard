@@ -22,7 +22,7 @@ import com.platinum20.dashboard.media.podcast.PodcastStore
 import com.platinum20.dashboard.media.radio.RadioStore
 
 /** Le due anime di "Radio e podcast": si passa dall'una all'altra con le pillole in alto. */
-enum class ListenTab(val label: String) { PODCAST("Podcast"), RADIO("Radio") }
+enum class ListenTab(val label: String) { RADIO("Radio"), PODCAST("Podcast") }
 
 /**
  * Radio e podcast in un'unica sezione: tutto quello che si ascolta "parlato" o in diretta,
