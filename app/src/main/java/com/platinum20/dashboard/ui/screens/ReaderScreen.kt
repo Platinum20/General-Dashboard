@@ -2,6 +2,7 @@ package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import android.annotation.SuppressLint
@@ -33,6 +34,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BookmarkAdd
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material3.Button
@@ -146,11 +148,22 @@ fun ReaderScreen(
                         }
                     }
                     // Integrazione News → Note: l'articolo resta in Note con il link e l'immagine, da leggere dopo.
+                    // Se è già nelle note il tasto la toglie: niente copie dello stesso articolo.
+                    NotesStore.init(context)
+                    val notes by NotesStore.data.collectAsStateWithLifecycle()
+                    val link = SavedLink.Article(
+                        viewModel.url, sourceName,
+                        loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle, loaded?.coverImage().orEmpty(),
+                    )
+                    val saved = remember(notes.notes, viewModel.url) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
                     IconButton(onClick = {
-                        val title = loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
-                        SavedLinks.save(context, SavedLink.Article(viewModel.url, sourceName, title, loaded?.coverImage().orEmpty()))
+                        if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
                     }) {
-                        Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Salva nelle note")
+                        if (saved) {
+                            Icon(Icons.Filled.Bookmark, contentDescription = "Rimuovi dalle note", tint = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Salva nelle note")
+                        }
                     }
                 },
                 scrollBehavior = scrollBehavior,

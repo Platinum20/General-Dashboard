@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.165.0
+**Note: le cose salvate si salvano una volta sola**
+- Su un articolo già nelle note il tasto in alto a destra diventa "Rimuovi dalle note" (segnalibro pieno) e lo toglie; niente più copie della stessa notizia
+- Lo stesso per canzoni, video, radio e podcast: tenendoli premuti, se sono già nelle note il fumetto dice "Rimuovi dalle note"
+- Tenendo premuta una nota compare un menu: Fissa in alto, Condividi, Elimina. Per le cose salvate non c'è più la matita con il titolo e il link: si gestiscono da qui
+- Condividi manda il titolo con un link che si apre ovunque (YouTube, Spotify, l'articolo)
+
 ## 1.164.0
 **Home: "Adesso" solo per quello che ha un orario**
 - La card in cima ora dice solo le cose di oggi con un orario o una scadenza: meteo, impegni, pioggia, cose da fare, pacchi, spese
