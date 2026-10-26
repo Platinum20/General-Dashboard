@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.160.0
+## 1.161.0
 **La notizia più pulita, e le anteprime nelle note**
 - Nella pagina di una notizia in alto restano solo due tasti: le cuffie per fartela leggere dalla voce del player e "Salva nelle note". Il testo è sempre alla dimensione più piccola, senza il tasto "Aa"
 - Le cose salvate nelle note (notizie, video, brani, radio, podcast) mostrano l'anteprima: la foto dell'articolo, la miniatura del video, la copertina dell'album
