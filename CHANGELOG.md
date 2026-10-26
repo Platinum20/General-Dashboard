@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.189.0
+**La versione in fondo alle Impostazioni**
+- La card di Canvas con la versione, le novità e gli aggiornamenti ora sta in fondo alle Impostazioni: in cima trovi subito l'Aspetto
+
 ## 1.187.0
 **Note in due parti, con il Calendario dentro e la linea dei giorni**
 - Le Note hanno due parti: Prossimi giorni (tutto quello che arriva, con impegni del calendario, promemoria, compleanni, pacchi e addebiti) e Note (tutto quello senza data)
