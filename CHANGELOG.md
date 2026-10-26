@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.180.0
+**Gmail: Canvas legge le mail intere**
+- In Impostazioni > Compila da solo c'è "Collega Gmail" (sola lettura): Canvas legge le mail nuove ogni ora e appena ne arriva una
+- Dalle mail intere, non più dalla sola anteprima, trova pacchi con tracking, spese, bollette e scadenze, prenotazioni e rinnovi di abbonamenti e prove gratuite
+- Nuova card "Posta" in Oggi: le mail importanti non lette, si aprono e si leggono in Canvas
+- Promozioni e social non vengono letti; niente lascia il telefono
+- Finché l'app Google è in prova, ogni 7 giorni Google chiede di ricollegare Gmail: lo dice la card Posta, basta un tocco
+
 ## 1.179.0
 **Via il vecchio codice dei player**
 - Tolti i vecchi player web di YouTube e Spotify e la loro seconda notifica: ora c'è solo il player unico

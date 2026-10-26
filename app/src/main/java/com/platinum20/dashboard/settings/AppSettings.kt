@@ -20,7 +20,8 @@ enum class HomeCard(val label: String, val description: String) {
     RESUME("Media", "Quello che suona adesso o, se nulla suona, quello da riprendere dal punto esatto"),
     TOMORROW("Domani", "Dalle 18 com'è domani: meteo, primo impegno e scadenze, per prepararsi la sera prima"),
     WEEK("La tua settimana", "Dalla domenica sera al lunedì: com'è andata la settimana e cosa arriva"),
-    FOUND("Trovati per te", "Impegni, spese e pacchi trovati da soli nelle notifiche e negli SMS, da aggiungere in un tocco"),
+    MAIL("Posta", "Le mail importanti non ancora lette, solo mittente e oggetto, da leggere in Canvas"),
+    FOUND("Trovati per te", "Impegni, spese e pacchi trovati da soli in mail, notifiche e SMS, da aggiungere in un tocco"),
     DAY("La giornata", "Impegni, promemoria e date dei prossimi giorni in una lista sola, in ordine di orario"),
     RECAP("Il punto del giorno", "I temi principali delle notizie"),
 }

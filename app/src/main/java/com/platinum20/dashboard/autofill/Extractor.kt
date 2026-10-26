@@ -68,7 +68,7 @@ object Extractor {
             "non (?:è )?riuscit[oa]|failed|non andat[oa] a buon fine|annullat[oa]|top.?up|ricaric[a-z]* (?:il |del )?(?:tuo )?conto|" +
             "aggiunt[oi] (?:al conto|denaro)|added money|bonifico in (?:entrata|arrivo)|autorizz[a-z]*|approva|conferma il pagamento|" +
             "otp|codice (?:di )?(?:sicurezza|verifica|conferma)|password|cashback|stipendio|salary|richiesta di pagamento|payment request|" +
-            "ti ha inviato|sent you|hai inviato|you sent|da pagare|scad[a-z]*"
+            "ti ha inviato|sent you|hai inviato|you sent|da pagare|scad[a-z]*|si rinnover[àa]|verr[àa] (?:rinnovat|addebitat)[oa]|prova gratuita|will renew|renews on"
     )
     private val receipt = rx("ricevuta|scontrino|conferma (?:d(?:ell)?'|del )?(?:ordine|acquisto|pagamento)|il tuo ordine|order confirmation|receipt|grazie per il (?:tuo )?acquisto")
     private val merchantAfter = Regex(
@@ -95,6 +95,11 @@ object Extractor {
     // --- Scadenze e appuntamenti ---
 
     private val billWords = rx("scad(?:e|enza|r[àa]|ono|uta)|entro (?:il|e non oltre)|da pagare|pagamento entro|termine ultimo|due date|due on")
+    // Abbonamenti: il rinnovo automatico o la fine della prova gratuita, da sapere prima dell'addebito.
+    private val renewalWords = rx(
+        "si rinnover[àa]|verr[àa] rinnovat[oa]|rinnovo automatico|rinnovo (?:del|dell'|della)? ?(?:tuo )?(?:abbonamento|piano|iscrizione)|" +
+            "prova gratuita (?:termina|finisce|scade)|periodo di prova (?:termina|finisce|scade)|trial ends|renews on|will renew|subscription renews"
+    )
     private val bookingWords = rx(
         "prenotazion[ei]|prenotat[oa]|appuntament[oi]|visita|volo|partenza|check.?in|biglietto|biglietti|evento|concerto|" +
             "udienza|esame|colloquio|reservation|booking|flight|appointment|ritiro"
@@ -184,7 +189,8 @@ object Extractor {
 
     private fun deadline(msg: Incoming, text: String): Found.Deadline? {
         if (msg.kind == SourceKind.PAYMENT) return null
-        val trigger = billWords.find(text) ?: bookingWords.find(text) ?: return null
+        val trigger = renewalWords.find(text) ?: billWords.find(text) ?: bookingWords.find(text) ?: return null
+        val renewal = renewalWords.containsMatchIn(text)
         val bill = billWords.containsMatchIn(text)
         // La data va cercata vicino alla parola chiave, non in tutta la mail.
         val window = text.substring(maxOf(0, trigger.range.first - 30), minOf(text.length, trigger.range.last + 60))
@@ -197,6 +203,8 @@ object Extractor {
         val subject = msg.text.lineSequence().map { tidyLine(it) }.firstOrNull { it.isNotEmpty() } ?: tidyLine(msg.title)
         val head = subject.ifEmpty { msg.app }.take(70)
         val title = when {
+            renewal && !head.contains("rinnov", true) -> "Rinnovo: $head"
+            renewal -> head
             bill && !head.contains("scad", true) -> "Scadenza: $head"
             else -> head
         }

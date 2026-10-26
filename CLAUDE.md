@@ -84,6 +84,12 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).
 
+**Mail** (`mail/`): `GmailAuth` (gmail.readonly via AuthorizationClient, `needsConsent` = 7-day re-consent while
+the Google app is in Testing), `MailParse` (pure: Gmail JSON, MIME/HTML to text, mail to `Incoming`), `MailStore`
+(sync: new mails into `AutoFill.offer`, important unread for the "Posta" Home card), `work/MailWorker` (hourly + on
+Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (MailCard,
+GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
+
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),

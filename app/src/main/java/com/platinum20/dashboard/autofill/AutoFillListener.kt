@@ -6,6 +6,8 @@ import android.content.pm.ApplicationInfo
 import android.provider.Telephony
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.work.MailWorker
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -33,10 +35,20 @@ class AutoFillListener : NotificationListenerService() {
     }
 
     private fun handle(sbn: StatusBarNotification, notify: Boolean) {
+        // Con Gmail collegato la mail intera è meglio dell'anteprima: la notifica fa solo da campanello.
+        if (sbn.packageName.startsWith(GMAIL_APP)) {
+            GmailAuth.init(this)
+            if (GmailAuth.connected.value) {
+                if (notify) MailWorker.runNow(this)
+                return
+            }
+        }
         runCatching { messagesOf(this, sbn) }.getOrNull().orEmpty().forEach { AutoFill.offer(it, notify) }
     }
 
     companion object {
+        private const val GMAIL_APP = "com.google.android.gm"
+
         fun messagesOf(context: Context, sbn: StatusBarNotification): List<Incoming> {
             if (sbn.packageName == context.packageName) return emptyList()
             val n = sbn.notification

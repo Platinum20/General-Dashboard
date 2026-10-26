@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Celebration
+import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Newspaper
 import com.platinum20.dashboard.settings.HomeCard
 
@@ -141,6 +142,7 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.TOMORROW -> Icons.Outlined.Bedtime
     HomeCard.WEEK -> Icons.Outlined.Celebration
+    HomeCard.MAIL -> Icons.Outlined.Mail
     HomeCard.FOUND -> Icons.Outlined.TaskAlt
     HomeCard.RECAP -> Icons.Outlined.Newspaper
 }
@@ -151,6 +153,7 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.TOMORROW -> TileAccent.ORANGE
     HomeCard.WEEK -> TileAccent.GREEN
+    HomeCard.MAIL -> TileAccent.ORANGE
     HomeCard.FOUND -> TileAccent.PURPLE
     HomeCard.RECAP -> TileAccent.GREEN
 }
