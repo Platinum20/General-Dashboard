@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.191.0
+**Miro, una voce giovane per la lettura**
+- Fra le voci di lettura c'è Miro, un ragazzo che parla in modo naturale: è la prima a sinistra e funziona senza internet dopo averla scaricata una volta (circa 65 MB)
+- La voce del telefono non si sceglie più: restano Miro, Paola e Riccardo. Se avevi quella del telefono, ora leggerà Miro
 ## 1.190.0
 **Una vera linea del tempo**
 - In Note › Prossimi giorni la linea a destra è una vera linea del tempo: le tacche sono distanziate secondo i giorni che passano fra una cosa e l'altra, con il giorno scritto accanto ("Oggi", "Dom", "30", "3 nov"); i salti di mesi si accorciano per non schiacciare la settimana

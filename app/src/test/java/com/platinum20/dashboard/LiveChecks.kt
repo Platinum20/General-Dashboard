@@ -118,15 +118,15 @@ class LiveChecks {
 
         report.append("\n## Voce di lettura\n\n")
         // La voce più leggera si scarica e si apre davvero: così si vede se il link vive ancora.
-        ReadingVoice.entries.filter { it.neural }.forEach { voice ->
-            val url = voice.url!!
+        ReadingVoice.entries.forEach { voice ->
+            val url = voice.url
             val code = runCatching { (URL(url).openConnection() as HttpURLConnection).run { requestMethod = "HEAD"; responseCode.also { disconnect() } } }.getOrNull()
             line(code in 200..399, "Voce ${voice.label} raggiungibile (HTTP $code) — $url")
         }
         val light = ReadingVoice.RICCARDO
         val dir = File(liveDir, "voce-${light.name.lowercase()}")
         var percent = 0
-        val installed = runCatching { VoiceStore.install(light.url!!, dir) { percent = (it * 100).toInt() } }
+        val installed = runCatching { VoiceStore.install(light.url, dir) { percent = (it * 100).toInt() } }
         line(
             installed.isSuccess,
             "Voce ${light.label} scaricata e aperta: " + (installed.getOrNull()

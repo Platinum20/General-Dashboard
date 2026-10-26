@@ -10,7 +10,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
-import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Wifi
 import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
@@ -746,7 +745,7 @@ private fun VoicePicker() {
                     tween(Motion.ENTER_MS, easing = Motion.Decelerate),
                     label = "voiceRing",
                 )
-                val state = if (option.neural) status[option] ?: VoiceStatus.Missing else VoiceStatus.Ready
+                val state = status[option] ?: VoiceStatus.Missing
                 Column(
                     Modifier
                         .weight(1f)
@@ -779,14 +778,7 @@ private fun VoicePicker() {
                             .padding(horizontal = 10.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        if (option.neural) VoiceWave(on, state) else {
-                            Icon(
-                                Icons.Outlined.PhoneAndroid,
-                                contentDescription = null,
-                                tint = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
+                        VoiceWave(on, state)
                     }
                     Spacer(Modifier.height(6.dp))
                     Text(
@@ -800,8 +792,8 @@ private fun VoicePicker() {
             }
         }
         val failure by NeuralVoice.failure.collectAsState()
-        val selectedState = if (selected.neural) status[selected] ?: VoiceStatus.Missing else VoiceStatus.Ready
-        val line = failure?.takeIf { selected.neural && selectedState == VoiceStatus.Ready }
+        val selectedState = status[selected] ?: VoiceStatus.Missing
+        val line = failure?.takeIf { selectedState == VoiceStatus.Ready }
             ?.let { "${selected.label} non parte, legge la voce del telefono: $it" }
             ?: voiceLine(selected, selectedState)
         AnimatedContent(
@@ -850,10 +842,8 @@ private fun VoiceWave(on: Boolean, state: VoiceStatus) {
     }
 }
 
-private fun voiceSample(voice: ReadingVoice): String = when (voice) {
-    ReadingVoice.SYSTEM -> "Ciao, sono la voce del telefono. Ti leggo le notizie e il punto del giorno."
-    else -> "Ciao, sono ${voice.label}. Ti leggo le notizie e il punto del giorno, anche senza internet."
-}
+private fun voiceSample(voice: ReadingVoice): String =
+    "Ciao, sono ${voice.label}. Ti leggo le notizie e il punto del giorno, anche senza internet."
 
 /** La riga sotto i riquadri: com'è la voce, a che punto è il download, o perché non è partito. */
 private fun voiceLine(voice: ReadingVoice, state: VoiceStatus): String = when (state) {
