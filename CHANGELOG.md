@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.145.0
+**Mini player: gesto libero per chiuderlo**
+- Il mini player non si inclina più mentre lo trascini
+- Lo muovi liberamente di lato e su e giù nello stesso gesto: si decide solo quando lo lasci (chiuderlo, spostarlo in alto o in basso, o farlo tornare al suo posto)
+- Per chiuderlo va portato oltre metà schermo (prima bastava un terzo); lo scatto veloce chiude solo se è già ben avviato di lato
+
 ## 1.144.0
 **Impostazioni rifatte da capo, barra in basso sistemata**
 - La pillola scura della scheda scelta torna della sua misura, dentro la barra (nella 1.141 usciva sopra e sotto)

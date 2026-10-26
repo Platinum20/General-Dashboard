@@ -111,11 +111,11 @@ fun FloatingPlayer(
         val appear = remember { Animatable(0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
         val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
-        // Per chiudere: si lancia di lato, come una notifica. Il dito la porta, sotto compare la X
-        // dal lato che si scopre; oltre un terzo della larghezza (o con uno scatto) lasciandola si chiude.
+        // Per chiudere: si porta di lato, come una notifica. Il dito la muove liberamente (di lato e
+        // su e giù insieme), sotto compare la X dal lato che si scopre; oltre metà larghezza lasciandola si chiude.
         val maxW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
         val x = remember { Animatable(0f) }
-        val closeAt = maxW * 0.33f
+        val closeAt = maxW * 0.5f
         val reveal = (kotlin.math.abs(x.value) / closeAt).coerceIn(0f, 1f)
         var closeArmed by remember { mutableStateOf(false) }
         var closing by remember { mutableStateOf(false) }
@@ -174,8 +174,7 @@ fun FloatingPlayer(
                     val sc = (0.8f + 0.2f * appear.value) * pressScale
                     scaleX = sc
                     scaleY = sc
-                    // Si inclina appena verso dove la si lancia, e sbiadisce allontanandosi.
-                    rotationZ = x.value / maxW * 8f
+                    // Sbiadisce allontanandosi di lato.
                     alpha = appear.value.coerceIn(0f, 1f) * (1f - 0.6f * (kotlin.math.abs(x.value) / maxW).coerceIn(0f, 1f))
                 }
                 .onSizeChanged { barH = it.height }
@@ -185,8 +184,6 @@ fun FloatingPlayer(
                     var curY = 0f
                     var start = 0f
                     var dx = 0f
-                    // Il primo movimento decide: di lato si chiude, su e giù si sposta.
-                    var sideways: Boolean? = null
                     // Il dito si misura sullo schermo, non sulla barra (che si muove con lui):
                     // sulla barra la velocità risulterebbe sempre quasi zero e il lancio non partirebbe.
                     var travelled = androidx.compose.ui.geometry.Offset.Zero
@@ -197,8 +194,7 @@ fun FloatingPlayer(
                             tracker.resetTracking()
                             curY = y.value
                             start = curY
-                            dx = 0f
-                            sideways = null
+                            dx = x.value
                             travelled = androidx.compose.ui.geometry.Offset.Zero
                         },
                         onDragCancel = {
@@ -210,24 +206,23 @@ fun FloatingPlayer(
                         onDragEnd = {
                             dragging = false
                             val velocity = tracker.calculateVelocity()
-                            if (sideways == true) {
-                                val vx = velocity.x
-                                // Uno scatto di lato basta anche se la barra si è mossa poco.
-                                val fling = kotlin.math.abs(vx) > 1_800f && kotlin.math.sign(vx) == kotlin.math.sign(dx)
-                                if (closeArmed || fling) {
-                                    closeArmed = false
-                                    closing = true
-                                    view.haptic(Haptic.CONFIRM)
-                                    val dir = if (dx >= 0) 1f else -1f
-                                    scope.launch {
-                                        x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(180), initialVelocity = vx)
-                                        onClose?.invoke() ?: Playback.stop(context)
-                                    }
-                                } else {
-                                    scope.launch { x.animateTo(0f, Springs.bouncy(), initialVelocity = vx) }
+                            val vx = velocity.x
+                            // Chiude solo se portata oltre metà, o lanciata forte di lato quando è già ben avviata.
+                            val fling = kotlin.math.abs(vx) > 2_500f && kotlin.math.abs(vx) > 1.5f * kotlin.math.abs(velocity.y) &&
+                                kotlin.math.sign(vx) == kotlin.math.sign(dx) && kotlin.math.abs(dx) > maxW * 0.2f
+                            if (closeArmed || fling) {
+                                closeArmed = false
+                                closing = true
+                                view.haptic(Haptic.CONFIRM)
+                                val dir = if (dx >= 0) 1f else -1f
+                                scope.launch {
+                                    x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(200), initialVelocity = vx)
+                                    onClose?.invoke() ?: Playback.stop(context)
                                 }
+                                scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
                             } else {
-                                // Lasciata: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
+                                scope.launch { x.animateTo(0f, Springs.bouncy(), initialVelocity = vx) }
+                                // In alto o in basso: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
                                 val v = velocity.y / range
                                 val moved = curY - start
                                 val top = when {
@@ -246,19 +241,18 @@ fun FloatingPlayer(
                         change.consume()
                         travelled += amount
                         tracker.addPosition(change.uptimeMillis, travelled)
-                        if (sideways == null) sideways = kotlin.math.abs(amount.x) > kotlin.math.abs(amount.y)
-                        if (sideways == true) {
-                            dx += amount.x
-                            val armed = kotlin.math.abs(dx) > closeAt
-                            if (armed != closeArmed) {
-                                closeArmed = armed
-                                view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
-                            }
-                            scope.launch { x.snapTo(dx) }
-                        } else {
-                            curY = (curY + amount.y / range).coerceIn(-0.03f, 1.03f)
-                            scope.launch { y.snapTo(curY) }
+                        // Di lato e su e giù insieme: si decide solo lasciandola.
+                        dx += amount.x
+                        curY = (curY + amount.y / range).coerceIn(-0.03f, 1.03f)
+                        val armed = kotlin.math.abs(dx) > closeAt
+                        if (armed != closeArmed) {
+                            closeArmed = armed
+                            view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
                         }
+                        val nx = dx
+                        val ny = curY
+                        scope.launch { x.snapTo(nx) }
+                        scope.launch { y.snapTo(ny) }
                     }
                 },
         ) {
