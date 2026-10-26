@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.170.0
+**Il vocale parte anche dal tasto invia**
+- Dopo aver toccato il + per scrivere, puoi ancora dettare: tieni premuto il tasto invia e parla, come se tenessi premuto il +. Trascinando in su si blocca, verso sinistra annulli
+- Quello che detti si aggiunge a quello che avevi già scritto, invece di sostituirlo
+- Un tocco sul tasto invia continua a inviare come prima
+
 ## 1.169.0
 **Il fumetto "salvato" si chiude portandolo di lato**
 - Dopo aver salvato col +, il fumetto di conferma si toglie trascinandolo o lanciandolo di lato, con lo stesso gesto del mini player (compare la X che diventa rossa). La cosa resta salvata
