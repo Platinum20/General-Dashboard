@@ -102,7 +102,6 @@ import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.PlaySource
 import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.media.Playing
-import com.platinum20.dashboard.media.podcast.Episode
 import com.platinum20.dashboard.media.podcast.EpisodeDate
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -140,10 +139,8 @@ fun MediaScreen(
     val now by Playback.now.collectAsState()
     val history by MediaHistory.items.collectAsState()
     val videos by VideoLibrary.recent.collectAsState()
-    val latest by PodcastStore.latest.collectAsState()
     val followed by PodcastStore.followed.collectAsState()
     val spotifyShows by PodcastStore.spotify.collectAsState()
-    val podcastNow by PodcastStore.now.collectAsState()
     val radioNow by RadioStore.now.collectAsState()
     val popular by RadioStore.popular.collectAsState()
     val recentStations by RadioStore.recent.collectAsState()
@@ -152,14 +149,14 @@ fun MediaScreen(
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
     val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-    // Quando nulla suona e la coda è vuota, il blocco colorato è l'ultima cosa vista o ascoltata.
-    val hero = resumable.firstOrNull()?.takeIf { now == null && queue.upcoming.isEmpty() }
+    // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata, di qualunque fonte:
+    // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
+    val hero = resumable.firstOrNull()?.takeIf { now == null }
     val continueList = resumable.filter { it != hero }.take(12)
     val stations = remember(favoriteStations, recentStations) { (favoriteStations + recentStations).distinctBy { it.id }.take(10) }
     // Al primo uso (nessuna radio ascoltata) le più ascoltate, per partire con un tocco.
     val radioRow = stations.ifEmpty { MediaStarters.stations(popular.data.orEmpty(), recentStations, favoriteStations) }
     LaunchedEffect(stations.isEmpty()) { if (stations.isEmpty()) RadioStore.loadPopular() }
-    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
@@ -193,13 +190,6 @@ fun MediaScreen(
                 item(key = "now") {
                     NowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
                 }
-            }
-            // La coda in vista: cosa viene dopo, di qualunque fonte.
-            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
-                QueuePeek(
-                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
             }
             hero?.let { last ->
                 item(key = "resume") {
@@ -243,22 +233,6 @@ fun MediaScreen(
                     }
                 }
             }
-            val episodes = latest.data.orEmpty().take(3)
-            if (episodes.isNotEmpty()) {
-                item(key = "episodes") {
-                    Section(
-                        "Nuovi episodi",
-                        action = "Tutti",
-                        onAction = { onOpenListen(ListenTab.PODCAST) },
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    ) {
-                        episodes.forEachIndexed { index, episode ->
-                            if (index > 0) RowDivider()
-                            EpisodeMiniRow(episode, playing = podcastNow?.episode?.id == episode.id && podcastNow?.playing == true)
-                        }
-                    }
-                }
-            }
             if (radioRow.isNotEmpty()) {
                 item(key = "radio-h") {
                     SectionHeader(
@@ -277,6 +251,13 @@ fun MediaScreen(
                         }
                     }
                 }
+            }
+            // In fondo la coda: cosa viene dopo, di qualunque fonte.
+            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
+                QueuePeek(
+                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
             }
         }
     }
@@ -437,46 +418,6 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-    }
-}
-
-/** Un episodio nuovo: copertina, titolo e podcast; un tocco lo fa partire (o lo mette in pausa). */
-@Composable
-private fun EpisodeMiniRow(episode: Episode, playing: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .tapOrSave({ episodeLink(episode) }) { if (playing) PodcastStore.togglePause() else PodcastStore.play(episode) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(44.dp).clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center) {
-            IconTile(Icons.Outlined.Mic, TileAccent.PURPLE, size = 44.dp)
-            if (episode.image.isNotBlank()) {
-                AsyncImage(model = episode.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(44.dp))
-            }
-        }
-        Spacer(Modifier.size(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(episode.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                listOf(
-                    episode.podcastTitle,
-                    EpisodeDate.label(episode.publishedAt, java.time.ZonedDateTime.now()),
-                    if (episode.audioUrl.startsWith("spotify:")) "Spotify" else "",
-                ).filter { it.isNotBlank() }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Icon(
-            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            contentDescription = if (playing) "Pausa" else "Ascolta",
-            tint = MaterialTheme.colorScheme.primary,
-        )
     }
 }
 

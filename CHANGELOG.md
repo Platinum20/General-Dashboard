@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.162.0
+**Media riordinata: Riprendi in cima, coda in fondo**
+- Quando non suona niente, in cima a Media c'è di nuovo "Riprendi": l'ultima cosa vista o ascoltata, da qualunque fonte (YouTube, musica, Spotify, podcast, radio, video del telefono). Un tocco la fa ripartire dal punto esatto in cui l'avevi lasciata
+- Sotto Riprendi le sezioni; la coda è in fondo alla pagina
+- "Nuovi episodi" non è più in Media: gli ultimi episodi sono nella pagina dei podcast
+- In "Radio e podcast" le schede in alto sono nello stesso ordine del nome: prima Radio, poi Podcast
+
 ## 1.161.0
 **La notizia più pulita, e le anteprime nelle note**
 - Nella pagina di una notizia in alto restano solo due tasti: le cuffie per fartela leggere dalla voce del player e "Salva nelle note". Il testo è sempre alla dimensione più piccola, senza il tasto "Aa"
