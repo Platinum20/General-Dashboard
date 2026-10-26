@@ -38,7 +38,7 @@ import com.platinum20.dashboard.today.BriefKind
 
 /**
  * Una riga della linea del tempo, uguale nella card "Prossimi giorni" di Oggi e in Note › Prossimi giorni:
- * a sinistra l'icona e il nome, a destra la linea con il pallino e il giorno.
+ * a sinistra l'icona e il nome, a destra il giorno e poi la linea con il pallino, sotto il +.
  */
 data class TimelineEntry(
     val key: String,
@@ -54,6 +54,8 @@ data class TimelineEntry(
     val late: Boolean = false,
     /** Già passato: tutto più tenue. */
     val past: Boolean = false,
+    /** L'icona a sinistra, se non è quella del tipo (le note). */
+    val icon: ImageVector? = null,
 )
 
 /** L'icona piccola di una riga: evento, promemoria, data, pacco o addebito. */
@@ -87,7 +89,7 @@ fun TimelineRow(
             .height(IntrinsicSize.Min)
             .bouncyPress(0.98f)
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = 16.dp),
+            .padding(start = 16.dp, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
@@ -100,7 +102,7 @@ fun TimelineRow(
             )
             Spacer(Modifier.width(8.dp))
         } else {
-            Icon(entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+            Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(10.dp))
         }
         Text(
@@ -113,17 +115,6 @@ fun TimelineRow(
         )
         Spacer(Modifier.width(8.dp))
         val first = entry.dayLabel != null
-        TimelineGutter(
-            Modifier.fillMaxHeight(),
-            line,
-            dot = when {
-                first && entry.past -> MaterialTheme.colorScheme.outline to 7.dp
-                first -> (if (entry.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) to 7.dp
-                else -> MaterialTheme.colorScheme.outline to 4.dp
-            },
-            top = top,
-            bottom = bottom,
-        )
         Text(
             entry.dayLabel.orEmpty(),
             style = MaterialTheme.typography.labelLarge,
@@ -136,19 +127,36 @@ fun TimelineRow(
             textAlign = TextAlign.End,
             modifier = Modifier.width(TIMELINE_LABEL),
         )
+        Spacer(Modifier.width(4.dp))
+        TimelineGutter(
+            Modifier.fillMaxHeight(),
+            line,
+            dot = when {
+                first && entry.past -> MaterialTheme.colorScheme.outline to 7.dp
+                first -> (if (entry.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) to 7.dp
+                else -> MaterialTheme.colorScheme.outline to 4.dp
+            },
+            top = top,
+            bottom = bottom,
+        )
     }
 }
 
 private val TIMELINE_LABEL = 76.dp
 private val GUTTER = 22.dp
 
+/**
+ * Il margine destro dopo la linea: con la card a 16 dp dal bordo, il centro della linea cade a 46 dp
+ * dal bordo dello schermo, cioè sul centro del + rotondo in basso a destra (60 dp, a 16 dp dal bordo).
+ */
+private val LINE_END = 19.dp
+
 /** Lo spazio vuoto fra due giorni lontani: solo la linea, allineata a quella delle righe. */
 @Composable
 private fun TimelineGap(height: Dp, line: Color, top: Boolean) {
-    Row(Modifier.fillMaxWidth().height(height).padding(end = 16.dp)) {
+    Row(Modifier.fillMaxWidth().height(height).padding(end = LINE_END)) {
         Spacer(Modifier.weight(1f))
         TimelineGutter(Modifier.fillMaxHeight(), line, dot = null, top = top, bottom = top)
-        Spacer(Modifier.width(TIMELINE_LABEL))
     }
 }
 

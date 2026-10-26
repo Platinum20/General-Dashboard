@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.203.0
+**Note sulla linea del tempo, e la linea sotto il +**
+- Anche Note è una linea del tempo, uguale a Prossimi giorni: promemoria da spuntare e appunti insieme, per quando li hai scritti, i più nuovi in cima; le note fissate restano in cima
+- In tutte le linee del tempo la data viene prima e la linea sta tutta a destra, allineata al centro del + in basso
+
 ## 1.202.0
 **Allega una foto dalla barra**
 - Quando scrivi con il +, tutto a sinistra nella barra c'è la graffetta: scatti una foto o ne scegli una dalla galleria
