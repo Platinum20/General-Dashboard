@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.166.0
+**Card sempre a grandezza piena**
+- Aprendo o cambiando sezione le card non si allungano e non si accorciano più mentre arrivano i dati: compaiono già alla loro grandezza, con una semplice dissolvenza
+
 ## 1.165.0
 **La bolla dei vocali resta alta come la barra**
 - Mentre detti la barra mostra solo le onde della voce e il testo, su una riga sola
