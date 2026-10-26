@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.161.0
+**La notizia più pulita, e le anteprime nelle note**
+- Nella pagina di una notizia in alto restano solo due tasti: le cuffie per fartela leggere dalla voce del player e "Salva nelle note". Il testo è sempre alla dimensione più piccola, senza il tasto "Aa"
+- Le cose salvate nelle note (notizie, video, brani, radio, podcast) mostrano l'anteprima: la foto dell'articolo, la miniatura del video, la copertina dell'album
+- Il punto del giorno ha i timestamp: nel player sotto i comandi c'è l'elenco dei temi con l'orario in cui se ne parla, e nella pagina del punto ogni tema ha il suo orario. Toccandolo la voce salta lì
+- Anche un articolo letto a voce ha i suoi capitoli, paragrafo per paragrafo
+
 ## 1.159.0
 **Il tieni premuto si annulla di lato**
 - Quando tieni premuto qualcosa e sale il fumetto "Salva nelle note" / "Aggiungi alla coda", puoi annullarlo portandolo di lato, con lo stesso gesto che chiude il mini player: dietro compare la X, oltre metà schermo diventa rossa e lasciando il fumetto vola via

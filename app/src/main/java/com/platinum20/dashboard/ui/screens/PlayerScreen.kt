@@ -16,6 +16,9 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.capture.SavedLink
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -298,6 +301,7 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Controls(current)
                 Spacer(Modifier.height(16.dp))
+                if (current.source == PlaySource.SPEECH) SpeechChapters()
                 // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
                 if (current.source == PlaySource.MUSIC) {
                     YtPlayer.now.value?.link?.let { link ->
@@ -308,6 +312,49 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
             }
         }
     }
+    }
+}
+
+/** I timestamp della lettura: di cosa parla e da quando; toccandone uno la voce salta lì. */
+@Composable
+private fun SpeechChapters() {
+    val speech by com.platinum20.dashboard.news.RecapSpeaker.state.collectAsState()
+    val chapters = speech?.chapters.orEmpty()
+    if (chapters.size < 2) return
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(max = 200.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 4.dp),
+    ) {
+        chapters.forEachIndexed { i, chapter ->
+            val here = speech?.part == i
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { Playback.seekTo(chapter.startMs) }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    clockLabel(chapter.startMs),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.width(48.dp),
+                )
+                Text(
+                    chapter.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = if (here) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (here) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 

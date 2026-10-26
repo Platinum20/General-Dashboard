@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -58,6 +59,12 @@ fun RecapScreen(
     // Come in News: gli articoli già aperti restano attenuati.
     val read by NewsHistory.read.collectAsStateWithLifecycle()
     val listening by RecapSpeaker.state.collectAsStateWithLifecycle()
+    // Il copione con i capitoli: ogni tema ha l'orario da cui la voce ne parla.
+    val script = remember(state.themes) { RecapReader.script(state.themes, LocalTime.now()) }
+    val starts = remember(script) { RecapSpeaker.timeline(script) }
+    val listen = { fromMs: Long ->
+        RecapSpeaker.play(context, script, labels = RecapReader.labels(state.themes), fromMs = fromMs)
+    }
     val open = { item: NewsItem ->
         NewsHistory.markRead(item.link)
         onOpenArticle(item)
@@ -75,7 +82,7 @@ fun RecapScreen(
                             if (listening != null) "Smetti di ascoltare" else "Ascolta",
                         ) {
                             if (listening != null) RecapSpeaker.stop()
-                            else RecapSpeaker.play(context, RecapReader.script(state.themes, LocalTime.now()))
+                            else listen(0)
                         }
                     }
                 },
@@ -104,14 +111,30 @@ fun RecapScreen(
                     CanvasCard(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(vertical = 8.dp)) {
                             // Il primo articolo è il titolo del tema; sopra solo quanto se ne parla.
-                            Text(
-                                "${index + 1} · " + if (theme.items.size > 1) {
-                                    "${theme.items.size} articoli da ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
-                                } else "1 articolo",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
-                            )
+                            Row(
+                                Modifier.padding(start = 20.dp, end = 12.dp, top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "${index + 1} · " + if (theme.items.size > 1) {
+                                        "${theme.items.size} articoli da ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
+                                    } else "1 articolo",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                // Il timestamp del tema nella lettura: toccandolo si ascolta da lì.
+                                starts.getOrNull(index + 1)?.let { start ->
+                                    // Solo se la voce sta leggendo il punto (e non un articolo).
+                                    val recap = listening?.title == RecapReader.TITLE
+                                    val here = recap && listening?.part == index + 1
+                                    CanvasChip(
+                                        label = "▶ " + clockLabel(start),
+                                        selected = here,
+                                        onClick = { if (recap) RecapSpeaker.seekTo(start) else listen(start) },
+                                    )
+                                }
+                            }
                             theme.items.take(6).forEachIndexed { i, item ->
                                 if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp))
                                 Column(

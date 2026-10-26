@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -35,9 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.FormatSize
-import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -54,10 +51,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,14 +80,31 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.adblock.AdBlocker
+import com.platinum20.dashboard.news.RecapReader
+import com.platinum20.dashboard.news.RecapSpeaker
 import com.platinum20.dashboard.news.reader.ReaderArticle
 import com.platinum20.dashboard.news.reader.ReaderBlock
 import com.platinum20.dashboard.news.reader.ReaderUiState
 import com.platinum20.dashboard.news.reader.ReaderViewModel
 import com.platinum20.dashboard.news.reader.TextRun
 
-/** Dimensioni del testo tra cui si passa col tasto "Aa". */
-private val textScales = listOf(1f, 1.15f, 1.3f, 0.9f)
+/** Il testo del lettore: la dimensione più piccola, fissa (Antonio non vuole il tasto "Aa"). */
+private const val TEXT_SCALE = 0.9f
+
+/** La prima immagine dell'articolo, per l'anteprima nelle note. */
+internal fun ReaderArticle.coverImage(): String? =
+    leadImage ?: blocks.firstNotNullOfOrNull { (it as? ReaderBlock.Image)?.url ?: (it as? ReaderBlock.Video)?.poster }
+
+/** Il testo da leggere a voce: paragrafi, citazioni, punti elenco e sottotitoli, uno per parte. */
+internal fun ReaderArticle.spokenParagraphs(): List<String> = blocks.mapNotNull { block ->
+    when (block) {
+        is ReaderBlock.Heading -> block.text
+        is ReaderBlock.Paragraph -> block.runs.joinToString("") { it.text }
+        is ReaderBlock.Quote -> block.runs.joinToString("") { it.text }
+        is ReaderBlock.ListItem -> block.runs.joinToString("") { it.text }
+        else -> null
+    }?.takeIf { it.isNotBlank() }
+}
 
 /**
  * Lettore vero e proprio: dalla pagina del giornale prende solo titolo, testo, immagini e video
@@ -111,7 +122,6 @@ fun ReaderScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var scaleIndex by rememberSaveable { mutableIntStateOf(0) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -125,21 +135,22 @@ fun ReaderScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { scaleIndex = (scaleIndex + 1) % textScales.size }) {
-                        Icon(Icons.Outlined.FormatSize, contentDescription = "Dimensione testo")
+                    // Solo due tasti: ascoltarla con la voce del player e salvarla nelle note.
+                    val loaded = (state as? ReaderUiState.Loaded)?.article
+                    if (loaded != null) {
+                        IconButton(onClick = {
+                            val script = RecapReader.articleScript(loaded.title.ifBlank { fallbackTitle }, loaded.spokenParagraphs())
+                            RecapSpeaker.play(context, script, title = loaded.title.ifBlank { fallbackTitle }, labels = script.map(RecapReader::chapterLabel))
+                        }) {
+                            Icon(Icons.Outlined.Headphones, contentDescription = "Ascolta")
+                        }
                     }
-                    // Integrazione News → Note: l'articolo resta in Note con il link, da leggere dopo.
+                    // Integrazione News → Note: l'articolo resta in Note con il link e l'immagine, da leggere dopo.
                     IconButton(onClick = {
-                        val title = (state as? ReaderUiState.Loaded)?.article?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
-                        SavedLinks.save(context, SavedLink.Article(viewModel.url, sourceName, title))
+                        val title = loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
+                        SavedLinks.save(context, SavedLink.Article(viewModel.url, sourceName, title, loaded?.coverImage().orEmpty()))
                     }) {
                         Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Salva nelle note")
-                    }
-                    IconButton(onClick = { shareArticle(context, viewModel.url, fallbackTitle) }) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Condividi")
-                    }
-                    IconButton(onClick = { onOpenOriginal(viewModel.url) }) {
-                        Icon(Icons.Outlined.Language, contentDescription = "Pagina originale")
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -177,7 +188,7 @@ fun ReaderScreen(
                 is ReaderUiState.Loaded -> ArticleContent(
                     article = s.article,
                     sourceName = sourceName,
-                    scale = textScales[scaleIndex],
+                    scale = TEXT_SCALE,
                     bottomInset = inner.calculateBottomPadding(),
                     onOpenLink = onOpenLink,
                 )
@@ -223,7 +234,7 @@ private fun ArticleContent(
                 // Tenendo premuto il titolo: "Salva nelle note", come per le cose del resto dell'app.
                 Column(
                     Modifier.pointerInput(article.url) {
-                        detectTapGestures(onLongPress = { SavedLinks.offer(SavedLink.Article(article.url, sourceName, article.title)) })
+                        detectTapGestures(onLongPress = { SavedLinks.offer(SavedLink.Article(article.url, sourceName, article.title, article.coverImage().orEmpty())) })
                     },
                 ) {
                     Text(
@@ -428,12 +439,3 @@ private fun List<TextRun>.toAnnotated(linkColor: Color, onOpenLink: (String) -> 
             }
         }
     }
-
-private fun shareArticle(context: Context, url: String, title: String) {
-    val send = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, url)
-        if (title.isNotBlank()) putExtra(Intent.EXTRA_SUBJECT, title)
-    }
-    context.startActivity(Intent.createChooser(send, "Condividi articolo").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-}
