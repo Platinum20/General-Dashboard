@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.143.0
+**Mini player: si chiude lanciandolo di lato**
+- Per chiudere il mini player ora basta lanciarlo a destra o a sinistra, come una notifica, sia in alto che in basso: segue il dito, si inclina e sbiadisce
+- Dal lato che si scopre compare una X che cresce e diventa rossa quando, lasciando, si chiude; uno scatto veloce chiude anche con poco movimento
+- Su e giù resta per spostarlo in alto o in basso: il primo movimento decide quale dei due
+
 ## 1.142.0
 **Niente festività doppie**
 - Se lo stesso evento arriva da due calendari (per esempio "Tutti i Santi" nelle festività di Google e in quelle del telefono) se ne vede uno solo, in Oggi, nel Calendario, nelle Note e nel widget
