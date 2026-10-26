@@ -9,9 +9,9 @@
 -keep class com.platinum20.dashboard.news.RecapListening { *; }
 -keep class com.platinum20.dashboard.settings.AppSettings { *; }
 -keep class kotlin.** { *; }
--keep class kotlinx.** { *; }
+-keep class kotlinx.coroutines.flow.** { *; }
 -dontwarn **
 # Le librerie che l'APK di test prende da quello dell'app (runner, tracing, guava).
--keep class androidx.** { *; }
--keep class com.google.common.** { *; }
--keep class org.junit.** { *; }
+-keep class androidx.tracing.** { *; }
+-keep class androidx.test.** { *; }
+-keep class androidx.concurrent.** { *; }

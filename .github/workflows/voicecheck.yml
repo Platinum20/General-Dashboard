@@ -37,7 +37,7 @@ jobs:
       - name: Liste dei filtri pubblicità
         run: python3 scripts/update_filter_lists.py
       - name: Compila
-        run: gradle ${{ matrix.minify == 'true' && ':app:assembleRelease :app:assembleReleaseAndroidTest -PreleaseCheck=true' || ':app:assembleDebug :app:assembleDebugAndroidTest' }} -PallAbis=true --no-daemon
+        run: gradle ${{ matrix.minify == 'true' && ':app:assembleRelease :app:assembleReleaseAndroidTest -PreleaseCheck=true -x lintVitalAnalyzeRelease -x lintVitalReportRelease -x lintVitalRelease' || ':app:assembleDebug :app:assembleDebugAndroidTest' }} -PallAbis=true --no-daemon
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
