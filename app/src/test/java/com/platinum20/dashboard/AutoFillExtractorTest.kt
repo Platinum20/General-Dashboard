@@ -102,7 +102,7 @@ class AutoFillExtractorTest {
     @Test fun amazonSenzaCodice() {
         val p = find("Amazon Shopping", SourceKind.SHOP, "Amazon", "Spedito: Cuffie Bluetooth Sony WH-1000XM5")
             .single() as Found.NewParcel
-        assertEquals("Cuffie Bluetooth Sony WH-1000XM5", p.title)
+        assertEquals("Cuffie Bluetooth", p.title)
         assertEquals("", p.code)
     }
 
@@ -118,7 +118,7 @@ class AutoFillExtractorTest {
     @Test fun bolletta() {
         val d = find("Gmail", SourceKind.MAIL, "Enel Energia", "Nuova bolletta disponibile\nImporto 85,20 €, scade il 15/11/2026")
             .single() as Found.Deadline
-        assertEquals("Scadenza: Nuova bolletta disponibile", d.title)
+        assertEquals("Bolletta Enel Energia", d.title)
         assertEquals(LocalDate.of(2026, 11, 15), d.due.toLocalDate())
     }
 
@@ -126,6 +126,29 @@ class AutoFillExtractorTest {
         val d = find("SMS", SourceKind.SMS, "ASL", "Promemoria: visita cardiologica il 3 novembre alle 9:30, presentarsi 15 minuti prima")
             .single() as Found.Deadline
         assertEquals(LocalDateTime.of(2026, 11, 3, 9, 30), d.due)
+        assertEquals("Visita cardiologica", d.title)
+    }
+
+    @Test fun provaGratuitaDaMail() {
+        val d = find("Metal", SourceKind.MAIL, "La tua prova gratuita di Metal", "La tua prova gratuita di Metal\nLa prova termina il 28 ottobre 2026, poi 9,99 € al mese")
+            .single() as Found.Deadline
+        assertEquals("Fine prova Metal", d.title)
+    }
+
+    @Test fun titoliCorti() {
+        assertEquals("Fine prova Metal", Extractor.shortTitle("Scadenza: La tua prova gratuita di Metal"))
+        assertEquals("Claude Pro termina", Extractor.shortTitle("Scadenza: Il tuo abbonamento a Claude Pro è stato annullato"))
+        assertEquals("Rinnovo Netflix", Extractor.shortTitle("Rinnovo: Il tuo abbonamento a Netflix si rinnoverà il 3/11"))
+        assertEquals("Bolletta Enel", Extractor.shortTitle("Nuova bolletta disponibile", from = "Enel"))
+        assertEquals("Volo per Londra", Extractor.shortTitle("Il tuo volo per Londra di domenica, check-in aperto"))
+        assertTrue(Extractor.shortTitle("Conferma della prenotazione numero 1234 presso la struttura alberghiera").length <= 32)
+    }
+
+    @Test fun nomiDegliArticoli() {
+        assertEquals("Tazza regalo", Extractor.itemName("STAMPATEK Tazza Regalo…“"))
+        assertEquals("Tazza regalo", Extractor.itemName("“STAMPATEK Tazza Regalo Personalizzata con Foto”"))
+        assertEquals("Lampada da tavolo", Extractor.itemName("Lampada da Tavolo LED, 3 colori"))
+        assertEquals("Cover iPhone", Extractor.itemName("Cover iPhone 15 Pro trasparente"))
     }
 
     @Test fun dataPassataNo() = nothing("Gmail", SourceKind.MAIL, "Trenitalia", "Il tuo biglietto per il 10/10 è stato utilizzato")

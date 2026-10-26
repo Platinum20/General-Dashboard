@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -47,7 +48,8 @@ object AutoFillRules {
             }
             // Una spesa uguale scritta a mano lo stesso giorno: è la stessa.
             is Found.Spent -> notes.expenses.none { it.cents == found.cents && it.date == found.date }
-            is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) }
+            is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) } &&
+                notes.countdowns.none { it.title.equals(found.title, true) && it.date == found.due.toLocalDate() }
             is Found.Delivered -> true
         }
     }
@@ -83,6 +85,7 @@ object AutoFill {
     private const val KEY_AUTO_SAVE = "auto_save"
     private const val KEY_INTRO_DISMISSED = "intro_dismissed"
     private const val KEY_SMS_SCANNED = "sms_scanned"
+    private const val KEY_TIDIED = "tidied_1181"
 
     private lateinit var file: File
     private lateinit var prefs: SharedPreferences
@@ -107,6 +110,38 @@ object AutoFill {
         _introDismissed.value = prefs.getBoolean(KEY_INTRO_DISMISSED, false)
         file = File(appContext.filesDir, FILE)
         _items.value = runCatching { parse(file.readText()) }.getOrDefault(emptyList())
+        if (!prefs.getBoolean(KEY_TIDIED, false)) {
+            runCatching { tidySaved() }
+            prefs.edit().putBoolean(KEY_TIDIED, true).apply()
+        }
+    }
+
+    /**
+     * Le cose salvate prima della 1.181: i promemoria con la spunta diventano date da aspettare
+     * e i titoli lunghi presi dalle mail ("Scadenza: La tua prova gratuita di Metal") diventano corti.
+     */
+    private fun tidySaved() {
+        val zone = ZoneId.systemDefault()
+        val next = _items.value.map { s ->
+            when (val f = s.found) {
+                is Found.Deadline -> {
+                    val title = Extractor.shortTitle(f.title).ifEmpty { f.title }
+                    val task = s.ref?.let { NotesStore.task(it) }?.takeIf { s.state == SuggestionState.ADDED && !it.done && it.dueAt != null }
+                    val ref = if (task == null) s.ref else {
+                        NotesStore.deleteTask(task.id)
+                        NotesStore.saveCountdown(null, title, Instant.ofEpochMilli(task.dueAt!!).atZone(zone).toLocalDate(), false)
+                    }
+                    s.copy(found = f.copy(title = title), ref = ref)
+                }
+                is Found.NewParcel -> if (f.code.isNotEmpty()) s else {
+                    val title = Extractor.itemName(f.title).ifEmpty { f.title }
+                    if (s.state == SuggestionState.ADDED) s.ref?.let { NotesStore.renameParcel(it, title) }
+                    s.copy(found = f.copy(title = title))
+                }
+                else -> s
+            }
+        }
+        update { next }
     }
 
     fun setEnabled(on: Boolean) {
@@ -192,7 +227,11 @@ object AutoFill {
             when (item.found) {
                 is Found.NewParcel -> NotesStore.deleteParcel(ref)
                 is Found.Spent -> NotesStore.deleteExpense(ref)
-                is Found.Deadline -> NotesStore.deleteTask(ref)
+                // Prima della 1.181 era un promemoria, ora è una data: l'id è di uno dei due.
+                is Found.Deadline -> {
+                    NotesStore.deleteCountdown(ref)
+                    NotesStore.deleteTask(ref)
+                }
                 is Found.Delivered -> Unit
             }
         }
@@ -208,7 +247,8 @@ object AutoFill {
     private fun apply(found: Found): Long? = when (found) {
         is Found.NewParcel -> NotesStore.addParcel(found.title, found.code, found.expected)
         is Found.Spent -> NotesStore.addExpense(Expense(0, found.cents, found.merchant, found.category, found.date)).id
-        is Found.Deadline -> NotesStore.addTaskAt(found.title, found.due.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()).id
+        // Una data da aspettare, non un promemoria da spuntare: la scadenza di un abbonamento non si "fa".
+        is Found.Deadline -> NotesStore.saveCountdown(null, found.title, found.due.toLocalDate(), false)
         is Found.Delivered -> null
     }
 

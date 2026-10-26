@@ -50,13 +50,14 @@ data class BriefLine(
 
 /**
  * "Adesso": le poche cose che servono in questo momento, ricavate da meteo, agenda,
- * promemoria e date. Al mattino e di giorno guarda a oggi, la sera anche a domani.
+ * promemoria e date. Nella card di Oggi parla solo di oggi (i giorni dopo li elenca [Upcoming]);
+ * widget e notifica, che non hanno quella lista, la sera guardano anche a domani.
  * Niente rete qui dentro: è una funzione pura, facile da provare.
  */
 object Briefing {
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 
-    /** Da quest'ora in poi "Adesso" guarda anche a domani. */
+    /** Da quest'ora in poi widget e notifica guardano anche a domani. */
     const val EVENING_HOUR = 18
 
     /** Da quest'ora "Adesso" ricorda le abitudini non ancora spuntate. */
@@ -78,13 +79,13 @@ object Briefing {
         expenses: List<Expense> = emptyList(),
         budgetCents: Long? = null,
         fixedExpenses: List<FixedExpense> = emptyList(),
-        /** true se sotto c'è la card "Domani": allora qui niente righe su domani, le dice la card. */
-        tomorrowCard: Boolean = false,
+        /** false nella card di Oggi: domani sta in "Prossimi giorni", qui solo oggi. */
+        withTomorrow: Boolean = true,
     ): List<BriefLine> {
         val nowMs = now.atZone(zone).toInstant().toEpochMilli()
         val evening = now.hour >= EVENING_HOUR
-        // La sera le righe su domani, solo se la card "Domani" non c'è.
-        val aboutTomorrow = evening && !tomorrowCard
+        // La sera le righe su domani, ma non nella card: lì c'è "Prossimi giorni".
+        val aboutTomorrow = evening && withTomorrow
         val lines = mutableListOf<BriefLine>()
 
         // Agenda: quello che è in corso, poi il prossimo impegno di oggi.
@@ -147,8 +148,8 @@ object Briefing {
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
         }
 
-        // Spese fisse: il giorno prima (a ogni ora), salvo la sera quando c'è già la card "Domani".
-        if (!(evening && tomorrowCard)) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
+        // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossimi giorni").
+        if (withTomorrow) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(
                 BriefKind.MONEY,
                 "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
@@ -206,12 +207,12 @@ object Briefing {
             }
         }
 
-        if (lines.isEmpty() && today != null && (!evening || tomorrow != null)) {
+        if (lines.isEmpty() && today != null && (!aboutTomorrow || tomorrow != null)) {
             lines += BriefLine(
                 BriefKind.FREE,
                 when {
-                    tomorrowCard && evening -> "Niente altro per stasera"
-                    evening -> "Niente in programma fino a domani"
+                    aboutTomorrow -> "Niente in programma fino a domani"
+                    evening -> "Niente altro in programma oggi"
                     else -> "Nessun impegno né scadenza oggi"
                 },
             )

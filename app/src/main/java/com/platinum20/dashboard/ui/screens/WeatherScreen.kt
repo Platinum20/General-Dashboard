@@ -367,9 +367,10 @@ private fun TempBar(min: Double, max: Double, low: Double, high: Double, modifie
 /**
  * La parte alta di "Adesso": luogo, temperatura grande, cielo con massima e minima, icona.
  * È la stessa nella card di Oggi e in cima alla schermata Meteo, così le due si riconoscono.
+ * Sempre il meteo di adesso: domani e i giorni dopo si leggono nella schermata Meteo.
  */
 @Composable
-internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, dayCardShown: Boolean = false) {
+internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
     Row(
         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.Top,
@@ -422,11 +423,10 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean, dayCardShown
             // L'avviso di pioggia delle prossime ore sta già sotto: qui solo la probabilità del giorno.
             val rain = today?.precipitationProbability?.takeIf { it >= 30 && forecast.rainAlert == null }?.let { "pioggia $it%" }
             Text(
-                Greeting.adessoWeather(
+                Greeting.weatherLine(
                     WeatherCodes.description(forecast.current.code),
                     if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
                     rain,
-                    dayCardShown,
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = content.copy(alpha = 0.75f),

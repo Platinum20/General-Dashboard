@@ -7,6 +7,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.foundation.background
 import com.platinum20.dashboard.today.HomeResume
+import com.platinum20.dashboard.today.Upcoming
+import com.platinum20.dashboard.today.UpcomingItem
 import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.capture.SavedLink
@@ -22,6 +24,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,7 +87,6 @@ import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.BriefAction
-import com.platinum20.dashboard.today.Tomorrow
 import com.platinum20.dashboard.today.WeekReview
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
@@ -185,12 +187,14 @@ fun HomeScreen(
     val resume = remember(minute, mediaHistory, videos, somethingPlaying) {
         HomeResume.pick(mediaHistory + videos.map(ResumeItem::fromVideo), System.currentTimeMillis(), somethingPlaying)
     }
-    // Dalle 18: com'è domani. Dopo mezzanotte "domani" è il giorno appena iniziato.
-    val tomorrowPlan = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
-        Tomorrow.build(
-            minute, weather.forecast,
-            events = if (minute.hour >= Tomorrow.FROM_HOUR) agenda.tomorrow else agenda.today,
-            tasks = notes.openTasks, countdowns = notes.countdowns, fixed = notes.fixedExpenses,
+    // "Prossimi giorni" in fondo ad "Adesso": la settimana da domani, in un posto solo.
+    val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
+        value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
+    }
+    val upcoming = remember(minute.toLocalDate(), weekAhead, notes) {
+        Upcoming.build(
+            minute.toLocalDate(), weekAhead, notes.openTasks, notes.countdowns,
+            parcels = notes.parcels, fixedExpenses = notes.fixedExpenses,
         )
     }
     // Dalla domenica alle 17 al lunedì a mezzogiorno: com'è andata la settimana, finché non si chiude.
@@ -208,13 +212,11 @@ fun HomeScreen(
             ).takeIf { !it.isEmpty }
         }
     }
-    // "Domani" si può nascondere in Personalizza: allora le altre card tornano a dire anche di domani.
-    val tomorrowShown = tomorrowPlan != null && HomeCard.TOMORROW in layout.visible
-    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes, tomorrowShown) {
+    val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
-            fixedExpenses = notes.fixedExpenses, tomorrowCard = tomorrowShown,
+            fixedExpenses = notes.fixedExpenses, withTomorrow = false,
         )
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -250,18 +252,14 @@ fun HomeScreen(
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     MailStore.init(context)
     val gmailConnected by GmailAuth.connected.collectAsStateWithLifecycle()
-    val gmailNeedsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
-    val importantMail by MailStore.important.collectAsStateWithLifecycle()
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
-            HomeCard.TOMORROW -> tomorrowPlan != null
             HomeCard.WEEK -> weekReview != null
-            HomeCard.FOUND -> autoFillEnabled || gmailConnected
-            HomeCard.MAIL -> gmailConnected && (importantMail.isNotEmpty() || gmailNeedsConsent)
+            HomeCard.MAIL -> autoFillEnabled || gmailConnected
             else -> true
         }
     }
@@ -286,7 +284,8 @@ fun HomeScreen(
                     else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
                 },
                 undo = briefUndo,
-                dayCardShown = tomorrowShown && tomorrowPlan?.day == minute.toLocalDate(),
+                upcoming = upcoming,
+                today = minute.toLocalDate(),
                 onUndo = {
                     haptic(Haptic.TICK)
                     briefUndo?.undo?.invoke()
@@ -301,7 +300,7 @@ fun HomeScreen(
                     }
                 },
             )
-            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes, tomorrowCard = tomorrowShown)
+            HomeCard.DAY -> DayCard(agenda, onOpenNotes = onOpenNotes)
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
                 MediaNowCard(playing, onOpen = {
@@ -313,14 +312,6 @@ fun HomeScreen(
                     haptic(Haptic.TICK)
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
-            }
-            HomeCard.TOMORROW -> tomorrowPlan?.let { plan ->
-            TomorrowCard(
-                plan = plan,
-                onOpenWeather = onOpenWeather,
-                onOpenCalendar = { inApp?.openCalendar?.invoke() },
-                onOpenNotes = onOpenNotes,
-            )
             }
             HomeCard.WEEK -> weekReview?.let { review ->
             WeekReviewCard(
@@ -334,8 +325,7 @@ fun HomeScreen(
                 },
             )
             }
-            HomeCard.MAIL -> MailCard(onOpen = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
-            HomeCard.FOUND -> AutoFillCard(onOpenSettings = onOpenAutoFill)
+            HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.RECAP -> RecapCard(
                 state = recap,
                 onOpenTheme = {
@@ -454,8 +444,9 @@ private fun WeatherCard(
     undo: BriefUndo?,
     onUndo: () -> Unit,
     onOpenBrief: (BriefKind) -> Unit,
-    /** true se sotto c'è la card "Oggi · …" della notte: allora qui niente massime, minime e pioggia. */
-    dayCardShown: Boolean = false,
+    /** Da domani alla settimana dopo: la piccola lista in fondo. */
+    upcoming: List<UpcomingItem> = emptyList(),
+    today: LocalDate = LocalDate.now(),
 ) {
     val forecast = state.forecast
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
@@ -468,7 +459,7 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, dayCardShown)
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
         if (briefing.isNotEmpty() || undo != null) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
@@ -490,6 +481,52 @@ private fun WeatherCard(
                         }
                     }
                 }
+            }
+        }
+        if (upcoming.isNotEmpty()) UpcomingBlock(upcoming, today, onOpen = onOpenBrief)
+    }
+}
+
+/**
+ * "Prossimi giorni": piccola, sotto le righe di oggi. Il giorno si scrive solo alla sua prima riga,
+ * così la settimana si legge a colpo d'occhio senza ripetere "Domani" tre volte.
+ */
+@Composable
+private fun UpcomingBlock(items: List<UpcomingItem>, today: LocalDate, onOpen: (BriefKind) -> Unit) {
+    val content = LocalContentColor.current
+    Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+        HorizontalDivider(Modifier.padding(horizontal = 18.dp), color = content.copy(alpha = 0.12f))
+        Text(
+            "PROSSIMI GIORNI",
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+            color = content.copy(alpha = 0.6f),
+            modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 2.dp),
+        )
+        items.take(Upcoming.MAX).forEachIndexed { index, item ->
+            val first = index == 0 || items[index - 1].day != item.day
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .bouncyPress(0.98f)
+                    .clickable { onOpen(item.kind) }
+                    .padding(horizontal = 18.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    if (first) Upcoming.dayLabel(item.day, today) else "",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = content.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    modifier = Modifier.width(64.dp),
+                )
+                Text(
+                    (item.time?.let { "$it " } ?: "") + item.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = content.copy(alpha = 0.8f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
@@ -562,11 +599,10 @@ private fun WeatherSummary(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
-    dayCardShown: Boolean,
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> WeatherNowHeader(forecast, state.loading, dayCardShown)
+        forecast != null -> WeatherNowHeader(forecast, state.loading)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",

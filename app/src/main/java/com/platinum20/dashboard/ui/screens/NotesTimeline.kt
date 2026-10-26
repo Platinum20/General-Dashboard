@@ -146,7 +146,6 @@ internal fun EventCard(event: CalendarEvent, day: LocalDate?, onClick: () -> Uni
                     listOfNotNull(
                         "Evento",
                         if (event.allDay) "tutto il giorno" else "${from.format(clock)}–${to.format(clock)}",
-                        day?.takeIf { ChronoUnit.DAYS.between(LocalDate.now(), it) > 1 }?.let { longDate(it).replaceFirstChar { c -> c.lowercase() } },
                         event.location.takeIf { it.isNotBlank() },
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,

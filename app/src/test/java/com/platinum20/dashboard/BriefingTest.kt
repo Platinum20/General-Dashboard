@@ -19,6 +19,7 @@ import com.platinum20.dashboard.weather.DailyPoint
 import com.platinum20.dashboard.weather.Forecast
 import com.platinum20.dashboard.weather.HourlyPoint
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 
 class BriefingTest {
     private val zone = ZoneId.of("Europe/Rome")
@@ -121,11 +122,11 @@ class BriefingTest {
     )
 
     @Test
-    fun conLaCardDomaniNienteRigheSuDomani() {
-        // V20: la sera, se sotto c'è la card "Domani", Adesso non ripete meteo, impegni e date di domani.
+    fun laCardDiOggiRestaSuOggi() {
+        // Nel widget la sera arriva anche domani; nella card no: lì c'è "Prossimi giorni".
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val tomorrow = evening.toLocalDate().plusDays(1).atTime(9, 30)
-        fun build(card: Boolean) = Briefing.build(
+        fun build(widget: Boolean) = Briefing.build(
             now = evening,
             forecast = rainyTomorrow(evening.toLocalDate()),
             today = emptyList(),
@@ -134,12 +135,15 @@ class BriefingTest {
             countdowns = listOf(Countdown(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23))),
             parcels = listOf(Parcel(1, "Cuffie", expected = LocalDate.of(2026, 10, 23))),
             zone = zone,
-            tomorrowCard = card,
+            withTomorrow = widget,
         )
-        assertTrue(build(card = false).any { it.text.startsWith("Domani") })
-        val withCard = build(card = true)
-        assertFalse(withCard.any { it.text.startsWith("Domani") })
-        assertEquals(listOf("Niente altro per stasera"), withCard.map { it.text })
+        val widget = build(widget = true)
+        assertTrue(widget.any { it.kind == BriefKind.WEATHER })
+        assertTrue(widget.any { it.text == "Domani alle 09:30: Treno" })
+        val card = build(widget = false)
+        assertFalse(card.any { it.text.startsWith("Domani") })
+        assertFalse(card.any { it.kind == BriefKind.WEATHER })
+        assertEquals(listOf("Niente altro in programma oggi"), card.map { it.text })
     }
 
     @Test

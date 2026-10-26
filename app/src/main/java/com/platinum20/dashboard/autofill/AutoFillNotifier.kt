@@ -25,7 +25,6 @@ import java.util.Locale
 /** Le parole per mostrare una proposta, uguali in Oggi e nella notifica. */
 object SuggestionText {
     private val day = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
-    private val dayTime = DateTimeFormatter.ofPattern("EEE d MMM, HH:mm", Locale.ITALIAN)
 
     fun title(found: Found): String = when (found) {
         is Found.NewParcel -> found.title
@@ -38,7 +37,7 @@ object SuggestionText {
         val what = when (val f = s.found) {
             is Found.NewParcel -> listOfNotNull("Pacco", f.code.ifEmpty { null }, f.expected?.let { "atteso " + day.format(it) }).joinToString(" · ")
             is Found.Spent -> "Spesa · ${f.category.label}"
-            is Found.Deadline -> "Promemoria · " + (if (f.due.hour == 9 && f.due.minute == 0) day.format(f.due) else dayTime.format(f.due))
+            is Found.Deadline -> "Data · " + day.format(f.due)
             is Found.Delivered -> "Pacco"
         }
         return "$what · da ${s.app}"

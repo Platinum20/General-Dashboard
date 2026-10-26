@@ -17,10 +17,4 @@ object Greeting {
     fun weatherLine(vararg parts: String?): String =
         parts.filterNotNull().filter { it.isNotBlank() }.joinToString(" · ") { it.replace(' ', NBSP) }
 
-    /**
-     * La riga sotto la temperatura di "Adesso". Con la card del giorno visibile (dopo mezzanotte),
-     * massima, minima e pioggia le dice già la card: qui resta solo il cielo di adesso.
-     */
-    fun adessoWeather(sky: String, range: String?, rain: String?, dayCardShown: Boolean): String =
-        if (dayCardShown) weatherLine(sky) else weatherLine(sky, range, rain)
 }
