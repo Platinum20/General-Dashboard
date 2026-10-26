@@ -37,7 +37,7 @@ jobs:
       - name: Liste dei filtri pubblicità
         run: python3 scripts/update_filter_lists.py
       - name: Compila
-        run: gradle :app:assembleDebug :app:assembleDebugAndroidTest -PallAbis=true ${{ matrix.minify == 'true' && '-PminifyDebug=true' || '' }} --no-daemon
+        run: gradle ${{ matrix.minify == 'true' && ':app:assembleRelease :app:assembleReleaseAndroidTest -PreleaseCheck=true' || ':app:assembleDebug :app:assembleDebugAndroidTest' }} -PallAbis=true --no-daemon
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
@@ -46,8 +46,8 @@ jobs:
           disable-animations: true
           script: |
             adb logcat -c
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
-            adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb install -r app/build/outputs/apk/${{ matrix.minify == 'true' && 'release/app-release' || 'debug/app-debug' }}.apk
+            adb install -r app/build/outputs/apk/androidTest/${{ matrix.minify == 'true' && 'release/app-release-androidTest' || 'debug/app-debug-androidTest' }}.apk
             adb shell am instrument -w -e class com.platinum20.dashboard.VoiceEngineCheck com.platinum20.dashboard.test/androidx.test.runner.AndroidJUnitRunner | tee instrument.txt || true
             (cat instrument.txt; adb logcat -d -s VoiceCheck:I NeuralVoice:W AndroidRuntime:E System.err:W) > voicecheck.txt || true
       - name: Risultato

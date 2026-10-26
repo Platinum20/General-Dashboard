@@ -43,6 +43,8 @@ android {
         buildConfigField("String", "GITHUB_REPO", "\"Platinum20/General-Dashboard\"")
     }
 
+    if (project.hasProperty("releaseCheck")) testBuildType = "release"
+
     signingConfigs {
         if (hasReleaseKey) {
             create("release") {
@@ -62,21 +64,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // -PreleaseCheck=true: la prova della voce sull'emulatore gira proprio sulla release passata da R8.
+            if (project.hasProperty("releaseCheck")) {
+                proguardFile("voicecheck-rules.pro")
+                testProguardFile("voicecheck-rules.pro")
+            }
             signingConfig = if (hasReleaseKey) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
-            }
-        }
-        // -PminifyDebug=true: la debug passa da R8 come la release, per provarla sull'emulatore (voicecheck.yml).
-        if (project.hasProperty("minifyDebug")) {
-            debug {
-                isMinifyEnabled = true
-                proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro",
-                    "voicecheck-rules.pro",
-                )
             }
         }
     }
