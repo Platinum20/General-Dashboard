@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.settings.AppSettings
@@ -41,8 +42,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.PlayCircle
-import androidx.compose.material.icons.outlined.Bedtime
-import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Newspaper
@@ -117,7 +116,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f).alpha(if (visible) 1f else 0.6f)) {
                         Text(card.label, style = MaterialTheme.typography.titleMedium)
-                        Text(card.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(card.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Icon(
                         Icons.Outlined.DragHandle,
@@ -140,10 +139,8 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
-    HomeCard.TOMORROW -> Icons.Outlined.Bedtime
     HomeCard.WEEK -> Icons.Outlined.Celebration
     HomeCard.MAIL -> Icons.Outlined.Mail
-    HomeCard.FOUND -> Icons.Outlined.TaskAlt
     HomeCard.RECAP -> Icons.Outlined.Newspaper
 }
 
@@ -151,9 +148,7 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
     HomeCard.RESUME -> TileAccent.PURPLE
-    HomeCard.TOMORROW -> TileAccent.ORANGE
     HomeCard.WEEK -> TileAccent.GREEN
     HomeCard.MAIL -> TileAccent.ORANGE
-    HomeCard.FOUND -> TileAccent.PURPLE
     HomeCard.RECAP -> TileAccent.GREEN
 }

@@ -22,7 +22,7 @@ class GmailAuthException : IOException("Gmail va ricollegato")
 
 /**
  * Le mail di Gmail lette sul telefono: quelle nuove passano dall'estrattore di "Compila da solo"
- * (pacchi, spese, scadenze, prenotazioni, rinnovi) e le importanti non lette finiscono nella card Posta.
+ * (pacchi, spese, scadenze, prenotazioni, rinnovi) e le importanti non lette finiscono nella card "Dalla posta".
  * Nessun server in mezzo: si parla direttamente con Gmail.
  */
 object MailStore {
