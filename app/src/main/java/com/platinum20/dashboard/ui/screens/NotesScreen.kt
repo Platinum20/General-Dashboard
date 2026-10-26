@@ -345,12 +345,13 @@ fun NotesScreen(
     var editingParcel by remember { mutableStateOf<Parcel?>(null) }
     editingDate?.let { CountdownDialog(countdown = it, onDismiss = { editingDate = null }, onDeleted = { c -> offerUndo("Data eliminata") { NotesStore.restoreCountdown(c) } }) }
     editingParcel?.let { ParcelDialog(it, onDismiss = { editingParcel = null }, onDeleted = { p -> offerUndo("Pacco eliminato") { NotesStore.restoreParcel(p) } }) }
-    // Gli eventi del calendario sono cose con scadenza come le altre: si leggono ogni volta che si torna qui.
-    var events by remember { mutableStateOf(emptyList<CalendarEvent>()) }
+    // Gli eventi del calendario sono cose con scadenza come le altre: si rileggono ogni volta che si torna qui,
+    // ma la pagina parte da quelli già letti, così le card sono subito alla loro grandezza e non si allargano.
+    var events by remember { mutableStateOf(NotesEvents.cached(context)) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle) {
         lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            events = CalendarRepository.eventsFrom(context, LocalDate.now(), EVENT_DAYS).values.flatten()
+            events = NotesEvents.load(context)
         }
     }
     // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
@@ -1204,4 +1205,16 @@ private fun ChecklistView(text: String, onChange: (String) -> Unit, modifier: Mo
             )
         }
     }
+}
+
+/** Gli ultimi eventi letti per la pagina Note: tornando sulla pagina ci sono già, senza comparire dopo. */
+private object NotesEvents {
+    private var last: List<CalendarEvent>? = null
+
+    /** La prima volta li legge subito (una query locale di pochi millisecondi), poi usa quelli già letti. */
+    fun cached(context: android.content.Context): List<CalendarEvent> =
+        last ?: kotlinx.coroutines.runBlocking { load(context) }
+
+    suspend fun load(context: android.content.Context): List<CalendarEvent> =
+        CalendarRepository.eventsFrom(context, LocalDate.now(), EVENT_DAYS).values.flatten().also { last = it }
 }
