@@ -66,7 +66,8 @@ fun NotesSearchPanel(
 ) {
     var more by remember { mutableStateOf(emptySet<SearchKind>()) }
     var query by rememberSaveable { mutableStateOf("") }
-    var open by remember { mutableStateOf<SearchHit?>(null) }
+    // Ogni risultato si apre a schermo intero, come gli eventi del calendario.
+    val openItem = rememberOpenItem()
     BackHandler(onBack = onClose)
     LaunchedEffect(query) { onQuery(query) }
     val hits = if (showNotes) NotesSearch.search(data, query) else emptyList()
@@ -102,9 +103,11 @@ fun NotesSearchPanel(
                         HitRow(hit, data) {
                             when (hit.kind) {
                                 SearchKind.NOTE -> onOpenNote(hit.id)
-                                SearchKind.EXPENSE -> onOpenExpenses()
-                                SearchKind.PARCEL -> onOpenParcels()
-                                else -> open = hit
+                                SearchKind.EXPENSE -> openItem(ItemKind.EXPENSE, hit.id)
+                                SearchKind.PARCEL -> openItem(ItemKind.PARCEL, hit.id)
+                                SearchKind.TASK -> openItem(ItemKind.TASK, hit.id)
+                                SearchKind.DATE -> openItem(ItemKind.DATE, hit.id)
+                                SearchKind.HABIT -> openItem(ItemKind.HABIT, hit.id)
                             }
                         }
                     }
@@ -127,16 +130,6 @@ fun NotesSearchPanel(
                     modifier = Modifier.padding(16.dp),
                 )
             }
-        }
-    }
-
-    val close = { open = null }
-    open?.let { hit ->
-        when (hit.kind) {
-            SearchKind.TASK -> data.tasks.firstOrNull { it.id == hit.id }?.let { TaskEditDialog(it, onDismiss = close) }
-            SearchKind.HABIT -> data.habits.firstOrNull { it.id == hit.id }?.let { HabitDialog(it, onDismiss = close) }
-            SearchKind.DATE -> data.countdowns.firstOrNull { it.id == hit.id }?.let { CountdownDialog(it, onDismiss = close) }
-            else -> Unit
         }
     }
 }

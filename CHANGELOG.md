@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.191.0
+## 1.194.0
 **Miro, una voce giovane per la lettura**
 - Fra le voci di lettura c'è Miro, un ragazzo che parla in modo naturale: è la prima a sinistra e funziona senza internet dopo averla scaricata una volta (circa 65 MB)
 - La voce del telefono non si sceglie più: restano Miro, Paola e Riccardo. Se avevi quella del telefono, ora leggerà Miro
+## 1.192.0
+**Ogni cosa si apre come un evento**
+- Toccando un promemoria, una data o un conto alla rovescia, un pacco, un'abitudine, una spesa o una spesa fissa si apre la stessa pagina a schermo intero degli eventi del calendario: titolo col pallino, una scheda con quando, ripetizione e stato, e in alto Modifica ed Elimina
+- Sotto la scheda c'è l'azione di tutti i giorni: segna come fatto, fatta oggi, è arrivato, traccia la spedizione
+- Anche i risultati della ricerca nelle Note aprono questa pagina
+
 ## 1.190.0
 **Una vera linea del tempo**
 - In Note › Prossimi giorni la linea a destra è una vera linea del tempo: le tacche sono distanziate secondo i giorni che passano fra una cosa e l'altra, con il giorno scritto accanto ("Oggi", "Dom", "30", "3 nov"); i salti di mesi si accorciano per non schiacciare la settimana
