@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.178.0
+**Avviso aggiornamenti quasi subito**
+- Canvas controlla le nuove versioni ogni 15 minuti invece che ogni 6 ore, e una volta appena la apri: l'avviso arriva poco dopo l'uscita
+
 ## 1.176.0
 **Oggi: card media sempre presente e tutte le card in Personalizza**
 - La card media non sparisce più quando c'è il mini player: mentre qualcosa suona mostra quello, come in Media

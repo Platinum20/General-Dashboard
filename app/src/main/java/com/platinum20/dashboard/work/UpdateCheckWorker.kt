@@ -12,7 +12,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -26,7 +28,7 @@ import com.platinum20.dashboard.update.UpdateRepository
 import com.platinum20.dashboard.update.compareVersions
 import java.util.concurrent.TimeUnit
 
-/** Controlla ogni tanto le release su GitHub e avvisa quando ne esce una nuova. */
+/** Controlla spesso le release su GitHub e avvisa appena ne esce una nuova. */
 class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -80,23 +82,35 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
 
     companion object {
         private const val WORK = "update_check"
+        private const val WORK_NOW = "update_check_now"
+        internal const val CHECK_MINUTES = 15L
         private const val CHANNEL = "updates"
         private const val NOTIFICATION_ID = 2
         private const val PREFS = "update_check"
         private const val KEY_NOTIFIED = "notified_version"
 
-        /** Avvia il controllo periodico (ogni 6 ore, con la rete), o lo ferma se disattivato. */
+        /**
+         * Avvia il controllo ogni 15 minuti (il minimo che Android concede, con la rete) più uno subito,
+         * così l'avviso arriva appena esce una versione; lo ferma se disattivato.
+         * UPDATE porta al nuovo intervallo anche chi aveva ancora il vecchio controllo ogni 6 ore.
+         */
         fun schedule(context: Context) {
             AppSettings.init(context)
             val wm = WorkManager.getInstance(context)
             if (!AppSettings.updateNotify.value) {
                 wm.cancelUniqueWork(WORK)
+                wm.cancelUniqueWork(WORK_NOW)
                 return
             }
-            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(CHECK_MINUTES, TimeUnit.MINUTES)
+                .setConstraints(network)
                 .build()
-            wm.enqueueUniquePeriodicWork(WORK, ExistingPeriodicWorkPolicy.KEEP, request)
+            wm.enqueueUniquePeriodicWork(WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
+            wm.enqueueUniqueWork(
+                WORK_NOW, ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<UpdateCheckWorker>().setConstraints(network).build(),
+            )
         }
 
         /** Toglie l'avviso quando l'utente apre la schermata Aggiornamenti. */
