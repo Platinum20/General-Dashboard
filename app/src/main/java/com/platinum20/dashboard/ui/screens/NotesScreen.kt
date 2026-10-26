@@ -424,12 +424,14 @@ fun NotesScreen(
         // Completati tiene solo quello che non sta già nel passato della linea del tempo.
         val inPast = past.flatMap { it.rows }.map { it.key }.toSet()
         val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
-        val doneShown = done.filter { "task-${it.id}" !in inPast }
+        // I promemoria senza data spuntati restano in Note, in fondo; qui solo quelli con una data.
+        val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
+        val doneUndated = done.filter { it.dueAt == null }
         // In ordine di inserimento, le più nuove in cima: la linea del tempo a destra segue questo ordine.
         val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
         val today = LocalDate.now()
         val empty = if (section == NotesSection.DATED) timeline.isEmpty() && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
-        else undatedTasks.isEmpty() && notes.isEmpty()
+        else undatedTasks.isEmpty() && notes.isEmpty() && doneUndated.isEmpty()
         val groups = past + timeline
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
@@ -535,16 +537,31 @@ fun NotesScreen(
                     }
                 }
             }
+            // Sotto, i promemoria senza data già spuntati.
+            if (show(NotesSection.UNDATED) && doneUndated.isNotEmpty()) {
+                item(key = "undated-done-header") {
+                    SectionHeader(
+                        "Completati",
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
+                        action = "Elimina",
+                        onAction = {
+                            NotesStore.clearDone { it.dueAt == null }
+                            offerUndo(doneUndated, if (doneUndated.size == 1) "Eliminato 1 completato" else "Eliminati ${doneUndated.size} completati")
+                        },
+                    )
+                }
+                item(key = "undated-done") { Box(Modifier.animateItem()) { TaskGroup(null, doneUndated, onTaskDeleted) } }
+            }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
                 item(key = "done-header") {
                     SectionHeader(
                         "Completati",
                         modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
-                        action = if (done.isNotEmpty()) "Elimina" else null,
+                        action = if (doneShown.isNotEmpty()) "Elimina" else null,
                         onAction = {
-                            NotesStore.clearDone()
-                            offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
+                            NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
+                            offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
                         },
                     )
                 }

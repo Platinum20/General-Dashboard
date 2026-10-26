@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.204.0
+**Spese sulla linea del tempo, e i promemoria spuntati restano in Note**
+- Le spese del mese stanno sulla stessa linea del tempo di Prossimi giorni e Note: le più recenti in cima, il giorno a destra, la linea che si allunga fra giorni lontani
+- Un promemoria senza data spuntato resta in Note, in fondo sotto Completati, invece di finire in Prossimi giorni
+
 ## 1.203.0
 **Note sulla linea del tempo, e la linea sotto il +**
 - Anche Note è una linea del tempo, uguale a Prossimi giorni: promemoria da spuntare e appunti insieme, per quando li hai scritti, i più nuovi in cima; le note fissate restano in cima

@@ -369,7 +369,8 @@ object NotesStore {
         removed.forEach { syncReminder(it.id) }
     }
 
-    fun clearDone() = update { d -> d.copy(tasks = d.tasks.filter { !it.done }) }
+    /** Elimina i promemoria spuntati; [which] sceglie quali (in Note solo quelli senza data, in Prossimi giorni quelli con). */
+    fun clearDone(which: (TaskItem) -> Boolean = { true }) = update { d -> d.copy(tasks = d.tasks.filter { !it.done || !which(it) }) }
 
     /** Restituisce l'id della data salvata (per l'"Annulla"), null se il titolo è vuoto. */
     fun saveCountdown(id: Long?, title: String, date: LocalDate, yearly: Boolean): Long? {
