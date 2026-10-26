@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.176.0
+**Avviso aggiornamenti quasi subito**
+- Canvas controlla le nuove versioni ogni 15 minuti invece che ogni 6 ore, e una volta appena la apri: l'avviso arriva poco dopo l'uscita
+
 ## 1.175.0
 **Note: gli eventi del calendario ci sono subito**
 - Aprendo o tornando su Note gli eventi in corso (come un appuntamento di oggi) sono già nella card, che non si allarga più un attimo dopo
