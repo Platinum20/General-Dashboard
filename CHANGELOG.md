@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.196.0
+**Dalla posta solo le mail importanti**
+- In Oggi la card Dalla posta mostra solo le mail importanti non lette
+- Pacchi, spese e scadenze trovati in mail, notifiche e SMS si salvano da soli in Note, senza "Aggiungi": se qualcosa non va, lo annulli dalla notifica o da Impostazioni › Compila da solo
+- Via la card La tua settimana
+
 ## 1.195.0
 **La linea del tempo a destra, uguale in Oggi e in Note**
 - Nella card Prossimi giorni i nomi stanno a sinistra e la linea con i giorni a destra; le cose mostrate sono 8

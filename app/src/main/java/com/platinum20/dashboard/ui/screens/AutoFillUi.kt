@@ -148,7 +148,6 @@ fun AutoFillScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     AutoFill.init(context)
     val enabled by AutoFill.enabled.collectAsStateWithLifecycle()
-    val autoSave by AutoFill.autoSave.collectAsStateWithLifecycle()
     val items by AutoFill.items.collectAsStateWithLifecycle()
     var allowed by remember { mutableStateOf(AutoFill.listenerAllowed(context)) }
     var smsAllowed by remember { mutableStateOf(SmsScanner.canRead(context)) }
@@ -168,8 +167,8 @@ fun AutoFillScreen(onBack: () -> Unit) {
             scanning = false
             smsResult = when (n) {
                 0 -> "Niente di nuovo negli SMS degli ultimi ${SmsScanner.DAYS} giorni"
-                1 -> "Trovata 1 cosa: la vedi in Oggi"
-                else -> "Trovate $n cose: le vedi in Oggi"
+                1 -> "Trovata 1 cosa: salvata in Note"
+                else -> "Trovate $n cose: salvate in Note"
             }
         }
     }
@@ -221,7 +220,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                         title = "Compila da solo",
                         subtitle = when {
                             !enabled -> "Spento"
-                            allowed -> "Acceso · le cose trovate compaiono in Oggi"
+                            allowed -> "Acceso · le cose trovate vanno in Note"
                             else -> "Manca l'accesso alle notifiche"
                         },
                         onClick = toggle,
@@ -243,16 +242,6 @@ fun AutoFillScreen(onBack: () -> Unit) {
                             subtitle = "Succede alle app installate dall'APK: apri Info app, tocca ⋮ in alto e scegli \"Consenti impostazioni con limitazioni\", poi riprova",
                             onClick = { openAppInfo(context) },
                             trailing = { TextButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
-                        )
-                    }
-                    if (enabled) {
-                        RowDivider()
-                        SettingsItem(
-                            icon = Icons.Outlined.Bolt,
-                            title = "Salva senza chiedere",
-                            subtitle = if (autoSave) "Salva subito; in Oggi e nella notifica puoi annullare" else "Prima te lo propone in Oggi",
-                            onClick = { AutoFill.setAutoSave(!autoSave) },
-                            trailing = { Switch(checked = autoSave, onCheckedChange = hapticToggle { AutoFill.setAutoSave(it) }) },
                         )
                     }
                 }

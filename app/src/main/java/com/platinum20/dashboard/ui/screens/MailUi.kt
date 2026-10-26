@@ -91,40 +91,24 @@ private fun rememberGmailConnect(onConnected: () -> Unit): GmailConnect {
 }
 
 /**
- * In Oggi, una card sola per quello che arriva da mail, notifiche e SMS: in cima le cose
- * trovate da aggiungere in un tocco, sotto le mail importanti non lette (si aprono in Canvas).
+ * In Oggi, le mail importanti non lette (si aprono in Canvas). Le cose trovate in mail,
+ * notifiche e SMS non passano di qui: si salvano da sole in Note.
  */
 @Composable
 fun FromMailCard(onOpenMail: (String) -> Unit) {
     val context = LocalContext.current
-    AutoFill.init(context)
     MailStore.init(context)
-    val items by AutoFill.items.collectAsStateWithLifecycle()
-    val autoFill by AutoFill.enabled.collectAsStateWithLifecycle()
     val gmail by GmailAuth.connected.collectAsStateWithLifecycle()
     val mails by MailStore.important.collectAsStateWithLifecycle()
     val needsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
     val haptic = rememberHaptic()
     val scope = rememberCoroutineScope()
     val connect = rememberGmailConnect(onConnected = { scope.launch { runCatching { MailStore.sync(context) } } })
-    // L'invito ad attivare Compila da solo sta in fondo a Oggi (InvitesRow), non qui.
-    val found = remember(items, autoFill, gmail) {
-        if (autoFill || gmail) AutoFillRules.visible(items, System.currentTimeMillis()).take(6) else emptyList()
-    }
     val mail = if (gmail) mails else emptyList()
     val consent = gmail && needsConsent
-    if (found.isEmpty() && mail.isEmpty() && !consent) return
+    if (mail.isEmpty() && !consent) return
 
-    val pending = found.count { it.state == SuggestionState.PENDING }
-    val count = pending + mail.size
-    Section(
-        title = if (count > 0) "Dalla posta · $count" else "Dalla posta",
-        action = if (pending > 1) "Aggiungi tutti" else if (pending == 0 && found.isNotEmpty()) "Ok" else null,
-        onAction = {
-            haptic(Haptic.CONFIRM)
-            if (pending > 0) AutoFill.acceptAll() else AutoFill.clearRecent()
-        },
-    ) {
+    Section(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
             if (consent) {
                 Row(
@@ -143,17 +127,8 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                     TextButton(enabled = !connect.busy, onClick = { haptic(Haptic.TICK); connect.start() }) { Text("Ricollega") }
                 }
             }
-            found.forEachIndexed { index, s ->
-                if (index > 0 || consent) RowDivider()
-                SuggestionRow(
-                    s,
-                    onAccept = { haptic(Haptic.CONFIRM); AutoFill.accept(s.id) },
-                    onDismiss = { haptic(Haptic.TICK); AutoFill.dismiss(s.id) },
-                    onUndo = { haptic(Haptic.TICK); AutoFill.undo(s.id) },
-                )
-            }
             mail.forEachIndexed { index, m ->
-                if (index > 0 || consent || found.isNotEmpty()) RowDivider()
+                if (index > 0 || consent) RowDivider()
                 MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })
             }
         }
