@@ -504,6 +504,8 @@ private fun ThemePicker(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
                 text,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp),
             )
         }
