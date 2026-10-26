@@ -71,6 +71,19 @@ class CalendarDaysTest {
     }
 
     @Test
+    fun festivitaDaDueCalendariUnaSola() {
+        val santi = LocalDate.of(2026, 11, 1)
+        val events = listOf(
+            CalendarEvent(10, "Tutti i Santi", utc(santi), utc(santi.plusDays(1)), allDay = true, location = "", color = 0),
+            CalendarEvent(20, "Tutti i santi ", utc(santi), utc(santi.plusDays(1)), allDay = true, location = "", color = 1),
+            CalendarEvent(30, "Riunione", ms(santi.atTime(9, 0)), ms(santi.atTime(10, 0)), allDay = false, location = "", color = 0),
+            CalendarEvent(31, "Riunione", ms(santi.atTime(15, 0)), ms(santi.atTime(16, 0)), allDay = false, location = "", color = 0),
+        )
+        // Stesso nome nello stesso giorno: uno solo. Due riunioni a orari diversi restano due.
+        assertEquals(listOf(10L, 30L, 31L), CalendarDays.group(events, santi, days = 1, zone = zone).getValue(santi).map { it.eventId })
+    }
+
+    @Test
     fun durate() {
         assertEquals(3_600_000L, CalendarDays.durationMs("P3600S"))
         assertEquals(5_400_000L, CalendarDays.durationMs("PT1H30M"))

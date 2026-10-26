@@ -452,13 +452,14 @@ private fun CanvasNavBar(
         ) {
             // La pillola scelta è una sola e scivola da una scheda all'altra: il bordo davanti corre,
             // quello dietro la segue, così si allunga un attimo come una goccia e poi si richiude.
-            val pills = remember { mutableStateMapOf<String, Pair<Float, Float>>() }
+            val pills = remember { mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>() }
             val left = remember { Animatable(0f) }
             val right = remember { Animatable(0f) }
             var placed by remember { mutableStateOf(false) }
             val target = currentRoute?.let { pills[it] }
             LaunchedEffect(target) {
-                val (l, r) = target ?: return@LaunchedEffect
+                val l = target?.left ?: return@LaunchedEffect
+                val r = target.right
                 if (!placed) {
                     left.snapTo(l)
                     right.snapTo(r)
@@ -474,11 +475,13 @@ private fun CanvasNavBar(
                 modifier = Modifier
                     .padding(horizontal = 6.dp)
                     .drawBehind {
+                        // Alta quanto la pillola della scheda (non quanto la barra), centrata come lei.
+                        val pill = target ?: return@drawBehind
                         if (placed) drawRoundRect(
                             color = indicator,
-                            topLeft = Offset(left.value, 0f),
-                            size = Size((right.value - left.value).coerceAtLeast(0f), size.height),
-                            cornerRadius = CornerRadius(size.height / 2, size.height / 2),
+                            topLeft = Offset(left.value, pill.top),
+                            size = Size((right.value - left.value).coerceAtLeast(0f), pill.height),
+                            cornerRadius = CornerRadius(pill.height / 2, pill.height / 2),
                         )
                     },
                 verticalAlignment = Alignment.CenterVertically,
@@ -491,8 +494,8 @@ private fun CanvasNavBar(
                         badge = if (dest.route == Routes.NOTES) dueToday else 0,
                         onClick = { haptic(Haptic.TICK); onSelect(dest) },
                         modifier = Modifier.onPlaced { c ->
-                            val x = c.positionInParent().x
-                            pills[dest.route] = x to x + c.size.width
+                            val p = c.positionInParent()
+                            pills[dest.route] = androidx.compose.ui.geometry.Rect(p.x, p.y, p.x + c.size.width, p.y + c.size.height)
                         },
                     )
                 }

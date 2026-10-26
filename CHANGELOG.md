@@ -1,12 +1,17 @@
 # Changelog
 
-## 1.142.0
-**Impostazioni rifatte da capo**
+## 1.143.0
+**Impostazioni rifatte da capo, barra in basso sistemata**
+- La pillola scura della scheda scelta torna della sua misura, dentro la barra (nella 1.141 usciva sopra e sotto)
 - Una pagina sola, corta, ordinata per quello che vuoi fare invece che per sezione: Aspetto, Cosa ti avvisa, Home, Fa da solo, Account, I tuoi dati, Informazioni. Niente più chip in alto
 - In cima la card di Canvas con la versione: toccandola vedi novità e aggiornamenti
 - Il tema si sceglie guardandolo: tre anteprime in miniatura con i colori veri, quella scelta ha l'anello
 - Tutte le notifiche in un gruppo solo (mattino, pioggia, nuove versioni); orario e prova del mattino compaiono scivolando solo quando la notifica è accesa
 - Ogni card che si tocca, in tutta l'app, si abbassa appena sotto il dito; le righe piccole in cima alle sezioni ("3 nuove") cambiano con un movimento morbido
+
+## 1.142.0
+**Niente festività doppie**
+- Se lo stesso evento arriva da due calendari (per esempio "Tutti i Santi" nelle festività di Google e in quelle del telefono) se ne vede uno solo, in Oggi, nel Calendario, nelle Note e nel widget
 
 ## 1.141.0
 **Nuova UI, parte 1: tutto si muove con fluidità**
