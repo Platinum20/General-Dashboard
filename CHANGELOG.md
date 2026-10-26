@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.142.0
+**Niente festività doppie**
+- Se lo stesso evento arriva da due calendari (per esempio "Tutti i Santi" nelle festività di Google e in quelle del telefono) se ne vede uno solo, in Oggi, nel Calendario, nelle Note e nel widget
+
 ## 1.141.0
 **Nuova UI, parte 1: tutto si muove con fluidità**
 - Passando da una sezione all'altra la pagina scivola dal lato della sua scheda (Note arriva da destra di Home), con curve morbide e senza scatti
