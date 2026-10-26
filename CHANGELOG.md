@@ -1,9 +1,13 @@
 # Changelog
 
-## 1.153.0
+## 1.156.0
 **Annulla il vocale scorrendo a sinistra**
 - Mentre detti tenendo premuto il +, fai scorrere il dito verso sinistra: accanto al microfono compare "Scorri per annullare" con un cestino che segue il dito e si fa rosso; arrivato in fondo la registrazione viene buttata senza salvare niente, come su WhatsApp
 - Trascinare in su per bloccare e in giù per le Impostazioni funzionano come prima
+
+## 1.154.0
+**Descrizioni dei temi su una riga**
+- In Aspetto la descrizione di ogni tema è più corta e sta su una sola riga (Puro: "Bianco di giorno, nero AMOLED di sera")
 
 ## 1.152.0
 **Bolla del + su una riga**
