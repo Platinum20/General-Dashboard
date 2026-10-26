@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.ui.geometry.Offset
@@ -114,7 +115,7 @@ internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
+fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit, onOpenQueue: () -> Unit = {}) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
     val view = LocalView.current
@@ -153,7 +154,17 @@ fun PlayerScreen(onBack: () -> Unit, onWatchVideo: (String) -> Unit) {
                 subtitle = now?.source?.label?.uppercase(),
                 onBack = onBack,
                 transparent = true,
-            )
+            ) {
+                // La coda unica: cosa viene dopo, di qualunque fonte.
+                val queue by com.platinum20.dashboard.media.PlayQueue.state.collectAsState()
+                IconButton(onClick = onOpenQueue) {
+                    androidx.compose.material3.BadgedBox(badge = {
+                        if (queue.upcoming.isNotEmpty()) androidx.compose.material3.Badge { Text("${queue.upcoming.size}") }
+                    }) {
+                        Icon(Icons.Outlined.QueueMusic, contentDescription = "Coda")
+                    }
+                }
+            }
         },
     ) { inner ->
         val current = now

@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.QueueMusic
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.material.icons.outlined.Settings
@@ -123,7 +124,7 @@ private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
+fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit = {}) {
     val context = LocalContext.current
     val now by YtPlayer.now.collectAsState()
     // Avvisi brevi del player (es. sottotitoli che YouTube non dà): il video intanto continua.
@@ -196,6 +197,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit) {
                     }
                 },
                 modifier = if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+                onOpenQueue = onOpenQueue,
             )
             if (immersive) return@Column
 
@@ -270,6 +272,7 @@ private fun VideoArea(
     onDragBy: (Float) -> Unit,
     onDragEnd: (velocity: Float) -> Unit,
     modifier: Modifier,
+    onOpenQueue: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val player = remember { YtPlayer.player(context) }
@@ -399,7 +402,11 @@ private fun VideoArea(
                             if (menu != null) VideoMenus(stream, now, menu!!, onPage = { menu = it })
                         }
                     }
-                    IconButton(onClick = { YtPlayer.next(context) }) {
+                    IconButton(onClick = onOpenQueue) {
+                        Icon(Icons.Outlined.QueueMusic, contentDescription = "Coda", tint = Color.White)
+                    }
+                    // Prima la coda unica, se no il prossimo video consigliato.
+                    IconButton(onClick = { if (!com.platinum20.dashboard.media.PlayQueue.next(context)) YtPlayer.next(context) }) {
                         Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
                     }
                 }

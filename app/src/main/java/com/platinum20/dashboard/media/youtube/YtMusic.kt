@@ -39,7 +39,12 @@ object YtMusic {
     /** Ascolta [video] in solo audio; i brani dopo di lui in [list] seguono da soli. */
     fun play(context: Context, video: YtVideo, list: List<YtVideo>) {
         val from = list.indexOfFirst { it.id == video.id }.coerceAtLeast(0)
-        YtPlayer.queue = list.drop(from).map { it.watchUrl }
-        YtPlayer.play(context, video.watchUrl, audioOnly = true)
+        // Vanno nella coda unica: si vedono, si spostano e si mischiano con le altre fonti.
+        com.platinum20.dashboard.media.PlayQueue.playList(context, list.map { it.asQueueItem() }, from)
     }
+
+    fun YtVideo.asQueueItem() = com.platinum20.dashboard.media.ResumeItem(
+        com.platinum20.dashboard.media.ResumeKind.MUSIC, id, title, channel.removeSuffix(" - Topic"), thumbnail,
+        durationMs = durationSec * 1000L, at = System.currentTimeMillis(),
+    )
 }

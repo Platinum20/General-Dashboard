@@ -264,6 +264,8 @@ class MainActivity : ComponentActivity() {
         DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.
         AdBlocker.init(this)
+        // La coda di ascolto ritrovata com'era.
+        com.platinum20.dashboard.media.PlayQueue.init(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
@@ -342,6 +344,8 @@ object Routes {
     const val PODCAST = "media/podcast"
     /** Il player grande unico (musica, radio, podcast). */
     const val PLAYER = "media/player"
+    /** Sotto il player: il mini player resta nascosto, la coda mostra già cosa suona. */
+    const val QUEUE = "media/player/queue"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
     const val LOGIN = "settings/login/{service}"
 
@@ -1071,8 +1075,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.PLAYER) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
+                    onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
                     onWatchVideo = { link -> navController.navigate(Routes.youtubeWatch(link)) { popUpTo(Routes.PLAYER) { inclusive = true } } },
                 )
+            }
+            composable(Routes.QUEUE) {
+                com.platinum20.dashboard.ui.screens.QueueScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 Routes.YOUTUBE_WATCH,
@@ -1084,6 +1092,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 YouTubeWatchScreen(
                     url = entry.arguments?.getString("url"),
                     onBack = { navController.popBackStack() },
+                    onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
                 )
             }
             composable(Routes.YOUTUBE_FEED) {

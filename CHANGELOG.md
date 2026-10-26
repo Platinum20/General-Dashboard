@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.150.0
+**Coda unica per tutto quello che ascolti e guardi**
+- Una sola coda per YouTube, YouTube Music, Spotify, radio e podcast: le cose si mischiano e avanti/indietro passano da una fonte all'altra; finito un brano parte il successivo, di qualunque fonte sia
+- Tieni premuto un video, una canzone, una radio o un episodio: oltre a "Salva nelle note" c'è "Aggiungi alla coda"
+- La coda si apre dal tasto in alto nel player (con il numero di cose in arrivo) e dalla pagina del video: tocca per saltare lì, frecce per spostare su e giù, X per togliere, "Svuota" per ricominciare
+- Un album o una playlist di Spotify entra in coda brano per brano, come le liste di YouTube Music
+- Indietro: all'inizio; nei primi 3 secondi la cosa prima nella coda. Con la radio, avanti e indietro si muovono nella coda
+- Spotify: il riproduttore si prepara già quando apri Media, così la musica parte subito; play e pausa seguono lo stato vero (prima a volte restava "play" mentre la musica suonava)
+- La coda resta com'era anche chiudendo l'app
+
 ## 1.149.0
 **Torna la pillola di prima**
 - La pillola della barra in basso torna esattamente com'era fino alla 1.140: si allarga con il suo piccolo rimbalzo e il nome compare dentro

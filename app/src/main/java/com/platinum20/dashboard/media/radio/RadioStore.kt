@@ -102,6 +102,12 @@ object RadioStore {
         NowPlaying.pauseOthers(null, podcast = false)
         com.platinum20.dashboard.media.podcast.PodcastStore.yieldPlayer()
         com.platinum20.dashboard.media.Playback.starting(com.platinum20.dashboard.media.PlaySource.RADIO)
+        com.platinum20.dashboard.media.PlayQueue.started(
+            com.platinum20.dashboard.media.ResumeItem(
+                com.platinum20.dashboard.media.ResumeKind.RADIO, station.id, station.name, "Radio", station.logo,
+                at = System.currentTimeMillis(), station = station,
+            ),
+        )
         current = station
         _now.value = RadioNow(station, playing = false, buffering = true, track = "", error = null)
         val recent = (listOf(station) + _recent.value.filter { it.id != station.id }).take(10)
