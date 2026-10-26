@@ -42,4 +42,29 @@ class SavedLinksTest {
     fun plainNotesHaveNoLink() {
         assertNull(SavedLinks.find("Spesa\nlatte, pane"))
     }
+
+    @Test
+    fun alreadySavedIsFoundByUrlOrMediaKey() {
+        val article = SavedLink.Article("https://example.com/a/", "Open", "Titolo")
+        val song = SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, "spotify:track:abc", "Brano", "Artista", positionMs = 5_000, at = 1L))
+        val notes = listOf(
+            Note(1, SavedLinks.noteText(article.copy(title = "Titolo cambiato"))),
+            Note(2, SavedLinks.noteText(song)),
+            Note(3, "Una nota qualsiasi"),
+        )
+        // Stesso indirizzo (anche senza la barra finale): è già salvato.
+        assertEquals(listOf(1L), SavedLinks.notesWith(notes, article.copy(url = "https://example.com/a")).map { it.id })
+        // Stesso brano, altro punto di ascolto: è lo stesso.
+        assertEquals(listOf(2L), SavedLinks.notesWith(notes, SavedLink.Media(song.item.copy(positionMs = 60_000))).map { it.id })
+        assertEquals(emptyList<Note>(), SavedLinks.notesWith(notes, SavedLink.Article("https://example.com/b", "Open", "Altro")))
+    }
+
+    @Test
+    fun shareTextHasAnOpenableLink() {
+        val video = SavedLink.Media(ResumeItem(ResumeKind.YOUTUBE, "xyz", "Video", "Canale", at = 1L))
+        assertEquals("Video\nCanale\nhttps://youtu.be/xyz", SavedLinks.shareText(video))
+        val song = SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, "spotify:track:abc", "Brano", "Artista", at = 1L))
+        assertEquals("Brano\nArtista\nhttps://open.spotify.com/track/abc", SavedLinks.shareText(song))
+        assertEquals("Titolo\nhttps://example.com/a", SavedLinks.shareText(SavedLink.Article("https://example.com/a", "Open", "Titolo")))
+    }
 }

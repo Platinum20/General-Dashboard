@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.168.0
+**Note: le cose salvate si salvano una volta sola**
+- Su un articolo già nelle note il tasto in alto a destra diventa "Rimuovi dalle note" (segnalibro pieno) e lo toglie; niente più copie della stessa notizia
+- Lo stesso per canzoni, video, radio e podcast: tenendoli premuti, se sono già nelle note il fumetto dice "Rimuovi dalle note"
+- Tenendo premuta una nota compare un menu: Fissa in alto, Condividi, Elimina. Per le cose salvate non c'è più la matita con il titolo e il link: si gestiscono da qui
+- Condividi manda il titolo con un link che si apre ovunque (YouTube, Spotify, l'articolo)
+
 ## 1.167.0
 **Una voce molto più naturale per le notizie**
 - Notizie e punto del giorno ora li legge una voce neurale (Piper) che gira sul telefono: intonazione e pause molto più naturali, gratis e anche senza internet

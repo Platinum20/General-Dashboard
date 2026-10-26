@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BookmarkAdded
+import androidx.compose.material.icons.rounded.BookmarkRemove
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +15,7 @@ import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.youtube.YtVideo
+import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.openResumeItem
 import org.json.JSONObject
@@ -120,10 +122,56 @@ object SavedLinks {
         append(encode(link))
     }
 
-    /** Crea la nota e fa volare il pallino alle Note, con "Annulla". */
+    /** Chi è la cosa salvata: l'indirizzo dell'articolo, o il tipo e la chiave del media (non il punto a cui si era). */
+    fun identity(link: SavedLink): String = when (link) {
+        is SavedLink.Media -> "media:${link.item.kind}:${link.item.key}"
+        is SavedLink.Article -> "article:${link.url.trim().trimEnd('/')}"
+    }
+
+    /** Le note che contengono già questa cosa: se ce n'è una, il tasto diventa "Rimuovi dalle note". */
+    fun notesWith(notes: List<Note>, link: SavedLink): List<Note> {
+        val id = identity(link)
+        return notes.filter { note -> find(note.text)?.let(::identity) == id }
+    }
+
+    /** Il testo da condividere: titolo e un indirizzo che si apre anche fuori da Canvas, quando c'è. */
+    fun shareText(link: SavedLink): String {
+        val url = when (link) {
+            is SavedLink.Article -> link.url
+            is SavedLink.Media -> when (link.item.kind) {
+                ResumeKind.YOUTUBE -> "https://youtu.be/${link.item.key}"
+                ResumeKind.MUSIC -> "https://music.youtube.com/watch?v=${link.item.key}"
+                ResumeKind.SPOTIFY -> link.item.key.removePrefix("spotify:track:")
+                    .takeIf { it != link.item.key }?.let { "https://open.spotify.com/track/$it" }.orEmpty()
+                else -> ""
+            }
+        }
+        return listOf(link.title, link.subtitle.takeIf { link is SavedLink.Media }.orEmpty(), url)
+            .filter { it.isNotBlank() }.joinToString("\n")
+    }
+
+    /** Toglie dalle note ogni copia della cosa, con "Annulla". */
+    fun remove(context: Context, link: SavedLink) {
+        offered = null
+        NotesStore.init(context)
+        val removed = notesWith(NotesStore.data.value.notes, link)
+        if (removed.isEmpty()) return
+        removed.forEach { NotesStore.deleteNote(it.id) }
+        CaptureFeedback.show(
+            CaptureNotice(
+                CaptureMode.NOTE,
+                "Tolto dalle note: ${link.title}",
+                undo = { removed.forEach(NotesStore::restoreNote) },
+                icon = Icons.Rounded.BookmarkRemove,
+            ),
+        )
+    }
+
+    /** Crea la nota e fa volare il pallino alle Note, con "Annulla". Se c'è già, non la ripete. */
     fun save(context: Context, link: SavedLink) {
         offered = null
         NotesStore.init(context)
+        if (notesWith(NotesStore.data.value.notes, link).isNotEmpty()) return
         val id = NotesStore.saveNote(null, noteText(link)) ?: return
         CaptureFeedback.show(
             CaptureNotice(

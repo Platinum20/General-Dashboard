@@ -1257,7 +1257,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 NotesScreen(
                     bottomPadding = padding,
                     onOpenNote = { openNote(it) },
-                    onEditNote = { navController.navigate(Routes.noteEdit(it)) },
                     onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
                 )
             }

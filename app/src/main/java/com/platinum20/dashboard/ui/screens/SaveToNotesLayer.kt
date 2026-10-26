@@ -31,6 +31,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.BookmarkRemove
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.notes.NotesStore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -66,6 +69,8 @@ internal fun BoxScope.SaveToNotesLayer() {
     val offered = SavedLinks.offered
     val context = LocalContext.current
     val haptic = rememberHaptic()
+    NotesStore.init(context)
+    val notes by NotesStore.data.collectAsStateWithLifecycle()
     // L'ultima offerta resta disegnata mentre il fumetto si chiude.
     var last by remember { mutableStateOf<SavedLink?>(null) }
     // Portando il fumetto di lato si annulla, con lo stesso gesto che chiude il mini player.
@@ -120,12 +125,17 @@ internal fun BoxScope.SaveToNotesLayer() {
                     android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
+            // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
+            val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
             OfferRow(
-                icon = Icons.Rounded.BookmarkAdd,
-                title = "Salva nelle note",
+                icon = if (saved) Icons.Rounded.BookmarkRemove else Icons.Rounded.BookmarkAdd,
+                title = if (saved) "Rimuovi dalle note" else "Salva nelle note",
                 detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
                 shape = shape,
-            ) { haptic(Haptic.CONFIRM); SavedLinks.save(context, link) }
+            ) {
+                haptic(Haptic.CONFIRM)
+                if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
+            }
         }
         }
     }
