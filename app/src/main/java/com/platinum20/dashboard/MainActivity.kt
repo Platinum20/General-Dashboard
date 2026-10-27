@@ -1227,7 +1227,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.PODCAST) {
                 ListenScreen(start = ListenTab.PODCAST, onBack = { navController.popBackStack() })
             }
-            composable(Routes.PLAYER) {
+            composable(
+                Routes.PLAYER,
+                // Chiuso verso il mini player: la pagina resta ferma finché il video non è arrivato.
+                popExitTransition = { if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit else null },
+            ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
@@ -1259,9 +1263,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(
                 Routes.YOUTUBE_WATCH,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
-                // Il video sale dal basso e, chiuso (anche trascinandolo giù), ridiscende verso il mini player.
+                // Il video sale dal basso; chiuso (trascinandolo giù o col tasto) vola nel mini player, col gesto indietro scende.
                 enterTransition = { slideInVertically(pageSpring) { it / 3 } + fadeIn(tween(200)) },
-                popExitTransition = { slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200)) },
+                popExitTransition = {
+                    if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit
+                    else slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200))
+                },
             ) { entry ->
                 // Lo stesso player unico: con un video mostra la pagina del video.
                 PlayerScreen(

@@ -14,11 +14,13 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.animation.fadeIn
@@ -192,46 +194,81 @@ fun YouTubeWatchScreen(
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
     val immersive = fullscreen || inPip
-    // Trascinando giù il video tutta la pagina scende con il dito e rimpicciolisce, come una carta;
-    // lasciata abbastanza in basso scivola via e il video resta nel mini player.
+    // Trascinando giù il video lui segue il dito e rimpicciolisce, la pagina sotto sbiadisce; lasciato
+    // abbastanza in basso (o col tasto giù) vola sulla miniatura del mini player, dove sta davvero.
     val dismiss = remember { Animatable(0f) }
+    val dock = remember { Animatable(0f) }
     var screenHeight by remember { mutableIntStateOf(1) }
+    var flyFrom by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+    val videoAt = remember { arrayOfNulls<androidx.compose.ui.layout.LayoutCoordinates>(1) }
+    val density = LocalDensity.current.density
+    fun videoStart() = videoAt[0]?.takeIf { it.isAttached }?.boundsInRoot()
+    fun videoNow(start: androidx.compose.ui.geometry.Rect): androidx.compose.ui.geometry.Rect {
+        // Il mini player non ancora misurato: si punta comunque in basso a sinistra.
+        val target = MiniDock.target(density)
+            ?: MiniDock.thumb(androidx.compose.ui.geometry.Rect(0f, 0f, start.right, screenHeight.toFloat()), 0f, false, density)
+        return flyFrom?.let { MiniDock.fly(it, target, dock.value) }
+            ?: MiniDock.dragged(start, target, dismiss.value, screenHeight.toFloat())
+    }
+    fun pageFade() = (1f - MiniDock.shrink(dismiss.value, screenHeight.toFloat())) * (1f - dock.value)
+    fun dockAway() {
+        if (flyFrom != null) return
+        val from = videoStart()?.let { videoNow(it) } ?: return onBack()
+        flyFrom = from
+        MiniDock.docking = true
+        // Si torna subito alla pagina di prima (che entra sotto), intanto il video vola.
+        onBack()
+        scope.launch {
+            try {
+                dock.animateTo(1f, tween(MiniDock.FLY_MS, easing = Motion.Standard))
+            } finally {
+                MiniDock.docking = false
+            }
+        }
+    }
+    val background = if (immersive) Color.Black else MaterialTheme.colorScheme.background
     Surface(
-        color = if (immersive) Color.Black else MaterialTheme.colorScheme.background,
+        color = Color.Transparent,
+        contentColor = if (immersive) Color.White else MaterialTheme.colorScheme.onBackground,
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { screenHeight = it.height.coerceAtLeast(1) }
-            .graphicsLayer {
-                val f = (dismiss.value / screenHeight).coerceIn(0f, 1f)
-                translationY = dismiss.value
-                scaleX = 1f - 0.12f * f
-                scaleY = scaleX
-                transformOrigin = TransformOrigin(0.5f, 0f)
-                alpha = 1f - 0.5f * f
-                shape = RoundedCornerShape((32 * f).dp)
-                clip = f > 0f
-            },
+            .drawBehind { drawRect(background, alpha = if (immersive) 1f else pageFade()) },
     ) {
         Column(if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()) {
             VideoArea(
                 now = now,
                 fullscreen = fullscreen,
                 inPip = inPip,
-                onBack = onBack,
+                onBack = { if (immersive) onBack() else dockAway() },
                 onToggleFullscreen = { fullscreen = !fullscreen },
                 onRetry = { (now?.link ?: url)?.let { YtPlayer.play(context, it) } },
-                onDragBy = { amount -> scope.launch { dismiss.snapTo((dismiss.value + amount).coerceAtLeast(0f)) } },
+                onDragBy = { amount ->
+                    // Il gesto arriva misurato sul video, che intanto si è rimpicciolito: si riporta allo schermo.
+                    val scale = videoStart()?.let { MiniDock.layer(it, videoNow(it)).scaleY } ?: 1f
+                    if (flyFrom == null) scope.launch { dismiss.snapTo((dismiss.value + amount * scale).coerceAtLeast(0f)) }
+                },
                 onDragEnd = { velocity ->
-                    scope.launch {
-                        if (dismiss.value > screenHeight * 0.15f || velocity > 1_200f) {
-                            dismiss.animateTo(screenHeight.toFloat(), tween(220, easing = FastOutLinearInEasing))
-                            onBack()
-                        } else {
-                            dismiss.animateTo(0f, Springs.bouncy())
-                        }
+                    if (dismiss.value > screenHeight * 0.15f || velocity > 1_200f) {
+                        dockAway()
+                    } else {
+                        scope.launch { dismiss.animateTo(0f, Springs.bouncy()) }
                     }
                 },
-                modifier = if (immersive) Modifier.fillMaxSize() else Modifier.fillMaxWidth().aspectRatio(16f / 9f),
+                modifier = if (immersive) Modifier.fillMaxSize() else Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .onGloballyPositioned { videoAt[0] = it }
+                    .graphicsLayer {
+                        val start = videoStart() ?: return@graphicsLayer
+                        val rect = videoNow(start)
+                        val layer = MiniDock.layer(start, rect)
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        scaleX = layer.scaleX
+                        scaleY = layer.scaleY
+                        translationX = layer.dx
+                        translationY = layer.dy
+                    },
                 onOpenQueue = onOpenQueue,
             )
             if (immersive) return@Column
@@ -249,7 +286,7 @@ fun YouTubeWatchScreen(
                 state = listState,
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = pageFade() },
             ) {
                 val stream = now?.stream
                 item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }, onOpenChannel = onOpenChannel) }

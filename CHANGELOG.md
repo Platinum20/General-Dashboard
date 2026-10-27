@@ -1,10 +1,16 @@
 # Changelog
 
-## 1.261.0
+## 1.262.0
 **YouTube: tutti i video di un canale**
 - Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
 - Anche da Video › Canali ora vedi tutti i video del canale, non solo gli ultimi 15, dal più recente al più vecchio
 - Scorrendo in fondo arrivano da soli i video più vecchi, fino al primo
+
+## 1.261.0
+**Il video chiuso vola nel mini player**
+- Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
+- Lasciato (o col tasto giù) vola fin dentro la miniatura del mini player, in basso a sinistra o in alto se l'hai messo lì, e il mini player lo prende senza saltare fuori
+- Intanto la pagina di prima torna sotto, senza più il video che sparisce a metà schermo
 
 ## 1.259.0
 **Spese: il mese segue il dito**
