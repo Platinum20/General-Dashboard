@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material.icons.outlined.SkipNext
 import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
 import com.platinum20.dashboard.news.voice.NeuralVoice
@@ -975,6 +976,7 @@ private fun UpdateNotifySetting() {
 private fun VideoFilterSettings() {
     val shorts by AppSettings.hideShorts.collectAsState()
     val live by AppSettings.hideLive.collectAsState()
+    val autoplay by AppSettings.autoplayNext.collectAsState()
     SettingsItem(
         icon = Icons.Outlined.OndemandVideo,
         accent = TileAccent.ORANGE,
@@ -991,6 +993,15 @@ private fun VideoFilterSettings() {
         subtitle = "Niente live in corso o in arrivo in Video",
         onClick = { AppSettings.setHideLive(!live) },
         trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.SkipNext,
+        accent = TileAccent.ORANGE,
+        title = "Riproduci il video successivo",
+        subtitle = "Finito un video, ne parte uno proposto",
+        onClick = { AppSettings.setAutoplayNext(!autoplay) },
+        trailing = { Switch(checked = autoplay, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setAutoplayNext(on) }) },
     )
 }
 

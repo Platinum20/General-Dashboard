@@ -44,6 +44,32 @@ object YouTubeStore {
             YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
         }
 
+    private val _channels = MutableStateFlow(Loadable<List<YtChannel>>())
+    /** I canali a cui sei iscritto (scheda Canali di Video). */
+    val channels: StateFlow<Loadable<List<YtChannel>>> = _channels.asStateFlow()
+
+    fun refreshChannels(context: Context, force: Boolean = false) =
+        load(context, _channels, force, FeedCache.channels, web = { YouTubeWeb.subscriptions(it) }) { token -> YouTubeApi.subscriptions(token) }
+
+    private val _channelVideos = MutableStateFlow<Map<String, Loadable<List<YtVideo>>>>(emptyMap())
+    /** Gli ultimi video di ogni canale aperto dalla scheda Canali. */
+    val channelVideos: StateFlow<Map<String, Loadable<List<YtVideo>>>> = _channelVideos.asStateFlow()
+
+    fun loadChannel(channel: YtChannel, force: Boolean = false) {
+        val state = _channelVideos.value[channel.id]
+        if (!force && state != null && (state.loading || fresh(state))) return
+        _channelVideos.update { it + (channel.id to (state ?: Loadable()).copy(loading = true, error = null)) }
+        scope.launch {
+            val result = try {
+                Loadable(data = YouTubeApi.channelVideos(channel), loadedAt = System.currentTimeMillis())
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                (state ?: Loadable()).copy(loading = false, error = e.userMessage("I video del canale non arrivano, riprova tra poco."))
+            }
+            _channelVideos.update { it + (channel.id to result) }
+        }
+    }
+
     private val _home = MutableStateFlow(Loadable<List<YtVideo>>())
     /** La Home di YouTube (video consigliati): c'è solo con l'accesso a YouTube fatto nell'app. */
     val home: StateFlow<Loadable<List<YtVideo>>> = _home.asStateFlow()
@@ -103,6 +129,8 @@ object YouTubeStore {
         _search.value = Loadable()
         _home.value = Loadable()
         _history.value = Loadable()
+        _channels.value = Loadable()
+        _channelVideos.value = emptyMap()
     }
 
     /** Dati finti per le foto automatiche delle schermate (solo test). */

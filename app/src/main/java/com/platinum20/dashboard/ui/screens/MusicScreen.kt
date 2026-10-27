@@ -263,7 +263,6 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
                 Column(
                     Modifier
                         .width(128.dp)
-                        .clip(MaterialTheme.shapes.medium)
                         .bouncyPress(0.96f)
                         .clickable { onOpen(release) },
                 ) {
@@ -331,7 +330,7 @@ private fun CoverTile(item: SpItem, onClick: () -> Unit) {
     Column(
         Modifier
             .width(128.dp)
-            .clip(MaterialTheme.shapes.medium)
+            // Niente clip arrotondato sulla card intera: tagliava la prima lettera dell'ultima riga.
             .bouncyPress(0.96f)
             // Tenendo premuto un brano si salva nelle note.
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
@@ -363,7 +362,6 @@ private fun MixRow(mixes: List<SpMix>) {
                 Column(
                     Modifier
                         .width(128.dp)
-                        .clip(MaterialTheme.shapes.medium)
                         .bouncyPress(0.96f)
                         .clickable { playTracks(context, mix.tracks, null) },
                 ) {

@@ -90,6 +90,7 @@ import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtPlaylist
+import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import kotlinx.coroutines.delay
@@ -97,17 +98,18 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-private val youTubeTabs = listOf("Home", "Iscrizioni", "Cronologia")
+private val youTubeTabs = listOf("Home", "Iscrizioni", "Cronologia", "Canali")
 private const val TAB_HOME = 0
 private const val TAB_SUBS = 1
 private const val TAB_HISTORY = 2
+private const val TAB_CHANNELS = 3
 
 /** Le tue liste di YouTube, nella fila di riquadri in cima a Video: si aprono come pagine. */
 private enum class YtList(val title: String) { PLAYLISTS("Playlist"), LIKED("Mi piace"), LATER("Più tardi") }
 
 /**
  * Il tuo YouTube nell'app: in cima i riquadri delle tue liste e dei video del telefono, sotto tre schede
- * (Home, Iscrizioni, Cronologia). Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
+ * (Home, Iscrizioni, Cronologia, Canali) larghe in parti uguali fino al bordo. Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,11 +131,16 @@ fun YouTubeFeedScreen(
     var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
     var list by rememberSaveable { mutableStateOf<YtList?>(null) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
+    var openChannel by remember { mutableStateOf<YtChannel?>(null) }
     // Escludi Shorts / live si scelgono una volta in Impostazioni › Fa da solo.
     val hideShorts by AppSettings.hideShorts.collectAsState()
     val hideLive by AppSettings.hideLive.collectAsState()
-    BackHandler(enabled = openPlaylist != null || list != null) {
-        if (openPlaylist != null) openPlaylist = null else list = null
+    BackHandler(enabled = openPlaylist != null || openChannel != null || list != null) {
+        when {
+            openPlaylist != null -> openPlaylist = null
+            openChannel != null -> openChannel = null
+            else -> list = null
+        }
     }
 
     val subs by YouTubeStore.subscriptions.collectAsState()
@@ -143,9 +150,10 @@ fun YouTubeFeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopLevelBar(
-                title = openPlaylist?.title ?: list?.title ?: "Video",
+                title = openPlaylist?.title ?: openChannel?.title ?: list?.title ?: "Video",
                 subtitle = when {
                     openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
+                    openChannel != null -> "Canale · gli ultimi video"
                     list == YtList.LATER -> "I video salvati nelle note"
                     list != null -> "YouTube"
                     fresh > 0 -> "$fresh video nuovi oggi"
@@ -154,6 +162,7 @@ fun YouTubeFeedScreen(
                 onBack = {
                     when {
                         openPlaylist != null -> openPlaylist = null
+                        openChannel != null -> openChannel = null
                         list != null -> list = null
                         else -> onBack()
                     }
@@ -173,6 +182,11 @@ fun YouTubeFeedScreen(
             val playlist = openPlaylist
             if (playlist != null) {
                 PlaylistVideos(playlist, onPlay)
+                return@Column
+            }
+            val channel = openChannel
+            if (channel != null) {
+                ChannelVideos(channel, hideShorts, hideLive, onPlay)
                 return@Column
             }
             when (list) {
@@ -201,17 +215,19 @@ fun YouTubeFeedScreen(
             }
             // Prima le tue liste (si aprono come pagine), poi le schede proprio sopra i video che cambiano.
             ListTiles(onOpen = { list = it }, onOpenPhone = onOpenPhone)
+            // Le quattro schede in parti uguali fino al bordo destro: niente da scorrere di lato.
             Row(
-                Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 youTubeTabs.forEachIndexed { index, label ->
-                    CanvasChip(selected = tab == index, onClick = { tab = index }, label = label)
+                    CanvasTabChip(selected = tab == index, onClick = { tab = index }, label = label, modifier = Modifier.weight(1f))
                 }
             }
             when (tab) {
                 TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
                 TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, onPlay)
+                TAB_CHANNELS -> ChannelsTab(onOpen = { openChannel = it })
                 else -> HistoryTab(onPlay)
             }
         }
@@ -478,6 +494,74 @@ private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Un canale nella scheda Canali, con il suo ultimo video (se è tra le Iscrizioni scaricate). */
+internal data class ChannelLine(val channel: YtChannel, val latest: Instant?, val avatar: String)
+
+/** Prima i canali che hanno pubblicato da poco, poi gli altri in ordine alfabetico. */
+internal fun channelLines(channels: List<YtChannel>, recent: List<YtVideo>): List<ChannelLine> {
+    val newest = recent.filter { it.channelId.isNotBlank() }.groupBy { it.channelId }
+    return channels.distinctBy { it.id }.map { c ->
+        val videos = newest[c.id].orEmpty()
+        ChannelLine(
+            channel = c,
+            latest = videos.mapNotNull { it.published }.maxOrNull(),
+            avatar = c.thumbnail.ifBlank { videos.firstOrNull { it.channelAvatar.isNotBlank() }?.channelAvatar.orEmpty() },
+        )
+    }.sortedWith(compareByDescending<ChannelLine> { it.latest ?: Instant.MIN }.thenBy { it.channel.title.lowercase() })
+}
+
+/** I canali a cui sei iscritto: un tocco e vedi solo i video di quel canale. */
+@Composable
+private fun ChannelsTab(onOpen: (YtChannel) -> Unit) {
+    val context = LocalContext.current
+    val state by YouTubeStore.channels.collectAsState()
+    val subs by YouTubeStore.subscriptions.collectAsState()
+    LaunchedEffect(Unit) { YouTubeStore.refreshChannels(context) }
+    val lines = remember(state.data, subs.data) { channelLines(state.data.orEmpty(), subs.data.orEmpty()) }
+    FeedList(state, empty = "Non segui ancora nessun canale") {
+        items(lines, key = { it.channel.id }) { line ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .bouncyPress(0.97f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable { onOpen(line.channel.copy(thumbnail = line.avatar)) }
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ChannelAvatar(line.avatar, line.channel.title, 44)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(line.channel.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    line.latest?.let {
+                        Text(
+                            "Ultimo video ${relativeTime(it)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Gli ultimi video di un canale, con gli stessi filtri (Shorts, live) delle altre schede. */
+@Composable
+private fun ChannelVideos(channel: YtChannel, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
+    val all by YouTubeStore.channelVideos.collectAsState()
+    val state = all[channel.id] ?: Loadable(loading = true)
+    LaunchedEffect(channel.id) { YouTubeStore.loadChannel(channel) }
+    val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive)
+    FeedList(state, empty = "Nessun video recente") {
+        if (pick.shorts.isNotEmpty()) {
+            item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
+        }
+        items(pick.videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
     }
 }
 
