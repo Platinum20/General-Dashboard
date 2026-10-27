@@ -772,13 +772,13 @@ private fun TimeBar(
             enabled = duration > 0,
             colors = sliderColors,
             // Pallino piccolo come su YouTube, al posto della stanghetta alta di Material.
-            thumb = { Box(Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF2D2D))) },
+            thumb = { SeekDot(Color(0xFFFF2D2D), 12.dp) },
             track = { state ->
                 // Barra sottile quanto i segmenti di SponsorBlock, che ci stanno sopra allineati.
                 val buffer = if (duration > 0) buffered.toFloat() / duration else 0f
                 VideoTrack(state.value, buffer, if (duration > 0) marks else emptyList(), duration)
             },
-            modifier = Modifier.height(28.dp).offset(y = (-4).dp),
+            modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
         )
     }
 }
@@ -1283,18 +1283,40 @@ private fun SponsorSkipButton(modifier: Modifier) {
     }
 }
 
+/** Altezza dello Slider delle barre del tempo: pallino e barra stanno al centro di questa fascia. */
+internal val SEEK_HEIGHT = 28.dp
+
+/**
+ * Il pallino delle barre del tempo, al centro di una fascia alta [SEEK_HEIGHT] come la barra
+ * ([SeekTrack]): con pezzi di altezze diverse lo Slider non li allinea al centro.
+ */
+@Composable
+internal fun SeekDot(color: Color, size: androidx.compose.ui.unit.Dp) {
+    Box(Modifier.height(SEEK_HEIGHT), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(size).clip(CircleShape).background(color))
+    }
+}
+
+/** La barra sottile (4dp) al centro della fascia alta [SEEK_HEIGHT], come il pallino. */
+@Composable
+internal fun SeekTrack(draw: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
+    Box(Modifier.fillMaxWidth().height(SEEK_HEIGHT), contentAlignment = Alignment.Center) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(4.dp), onDraw = draw)
+    }
+}
+
 /**
  * La barra del tempo del video: fondo, parte già scaricata, parte vista e sopra i segmenti di
  * SponsorBlock, tutti alti uguali (4dp) e larghi quanto la barra.
  */
 @Composable
 private fun VideoTrack(played: Float, buffered: Float, marks: List<SbSegment>, durationMs: Long) {
-    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(4.dp)) {
+    SeekTrack {
         val h = size.height
         drawRect(Color.White.copy(alpha = 0.3f), size = Size(size.width, h))
         drawRect(Color.White.copy(alpha = 0.45f), size = Size(buffered.coerceIn(0f, 1f) * size.width, h))
         drawRect(Color(0xFFFF2D2D), size = Size(played.coerceIn(0f, 1f) * size.width, h))
-        if (durationMs <= 0) return@Canvas
+        if (durationMs <= 0) return@SeekTrack
         for (m in marks) {
             val start = (m.startMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
             // Il momento clou è un punto: una tacca larga 3dp.
