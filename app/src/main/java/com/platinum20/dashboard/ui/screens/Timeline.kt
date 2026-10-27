@@ -126,11 +126,13 @@ fun TimelineRow(
     start: Dp = 16.dp,
     /** Tenendo premuto: di solito il fumetto di vetro con le azioni ([ActionBubble]). */
     onLongClick: (() -> Unit)? = null,
+    /** Vibrare al cambio di mese: solo nelle pagine aperte, non nelle card di anteprima (Antonio). */
+    monthTick: Boolean = true,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
-    entry.month?.let { TimelineMonthMarker(it, start = start, top = top) }
+    entry.month?.let { TimelineMonthMarker(it, start = start, top = top, tick = monthTick) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -260,11 +262,11 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
  * Scorrendoci sopra vibra appena (Antonio), così si sente quando si passa da un mese all'altro.
  */
 @Composable
-fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true) {
+fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true, tick: Boolean = true) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
     Row(
-        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).monthTick(),
+        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = color)

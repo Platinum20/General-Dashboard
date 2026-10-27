@@ -84,7 +84,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import coil3.compose.AsyncImage
@@ -256,18 +258,19 @@ private fun MusicHome(onOpen: (SpItem) -> Unit) {
 private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRelease) -> Unit) {
     val today = LocalDate.now()
     val fresh = NewReleases.unseen(list, seen)
+    val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(if (fresh > 0) "Nuove uscite · $fresh da ascoltare" else "Nuove uscite", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(list, key = { "release-${it.item.id}" }) { release ->
                 Column(
                     Modifier
-                        .width(128.dp)
+                        .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { onOpen(release) },
                 ) {
                     Box {
-                        Cover(release.item.image, MaterialTheme.shapes.medium, 128)
+                        Cover(release.item.image, MaterialTheme.shapes.medium, tile)
                         if (release.item.id !in seen) {
                             Box(
                                 Modifier
@@ -294,16 +297,29 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
     }
 }
 
+/** Larghezza delle copertine: tre intere per schermo, così nessuna resta tagliata al bordo. */
+@Composable
+private fun coverTileWidth(): Dp = CoverTiles.width(LocalConfiguration.current.screenWidthDp).dp
+
+/** Calcolo puro delle copertine di Musica, separato per i test. */
+internal object CoverTiles {
+    const val PER_SCREEN = 3
+    const val EDGE = 16
+    const val GAP = 12
+
+    /** Tre copertine più i margini e gli spazi tra loro riempiono esattamente lo schermo. */
+    fun width(screenDp: Int): Int = (screenDp - 2 * EDGE - (PER_SCREEN - 1) * GAP) / PER_SCREEN
+}
+
 /**
- * Nome sotto una copertina: due righe sempre riservate, così i nomi lunghi si leggono
- * interi e le card della stessa fila restano allineate.
+ * Nome sotto una copertina: fino a due righe, così i nomi lunghi si leggono interi; il
+ * sottotitolo segue subito sotto, senza il vuoto di una riga riservata.
  */
 @Composable
 private fun CoverTitle(text: String, centered: Boolean = false) {
     Text(
         text,
         style = MaterialTheme.typography.titleSmall,
-        minLines = 2,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         textAlign = if (centered) TextAlign.Center else TextAlign.Start,
@@ -327,16 +343,16 @@ private fun LazyListScope.coverRow(title: String, list: List<SpItem>, onItem: (S
 @Composable
 private fun CoverTile(item: SpItem, onClick: () -> Unit) {
     val round = item.kind == SpKind.ARTIST
+    val tile = coverTileWidth()
     Column(
         Modifier
-            .width(128.dp)
-            // Niente clip arrotondato sulla card intera: tagliava la prima lettera dell'ultima riga.
+            .width(tile)
             .bouncyPress(0.96f)
             // Tenendo premuto un brano si salva nelle note.
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
         horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
     ) {
-        Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, 128)
+        Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile)
         Spacer(Modifier.height(6.dp))
         CoverTitle(item.title, centered = round)
         if (!round) {
@@ -355,18 +371,19 @@ private fun CoverTile(item: SpItem, onClick: () -> Unit) {
 @Composable
 private fun MixRow(mixes: List<SpMix>) {
     val context = LocalContext.current
+    val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader("Mix per te", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(mixes, key = { it.id }) { mix ->
                 Column(
                     Modifier
-                        .width(128.dp)
+                        .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { playTracks(context, mix.tracks, null) },
                 ) {
                     Box {
-                        Cover(mix.image, MaterialTheme.shapes.medium, 128)
+                        Cover(mix.image, MaterialTheme.shapes.medium, tile)
                         Text(
                             "Mix",
                             style = MaterialTheme.typography.labelLarge,
@@ -459,7 +476,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
     FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto") {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96)
+                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96.dp)
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(parent.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -501,7 +518,7 @@ private fun ItemRow(item: SpItem, onClick: () -> Unit) {
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56)
+            Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56.dp)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -518,17 +535,17 @@ private fun ItemRow(item: SpItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Cover(url: String, shape: Shape, sizeDp: Int) {
+private fun Cover(url: String, shape: Shape, size: Dp) {
     Box(
         Modifier
-            .size(sizeDp.dp)
+            .size(size)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
         Icon(Icons.Outlined.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         if (url.isNotBlank()) {
-            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
+            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(size))
         }
     }
 }

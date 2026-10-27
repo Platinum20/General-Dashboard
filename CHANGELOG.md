@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.239.0
+## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**
 - In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video
 - Le quattro schede ora sono larghe uguali e arrivano fino al bordo destro, senza scorrere di lato
 - In Impostazioni › Fa da solo c'è "Riproduci il video successivo": spento, finito un video non ne parte un altro da solo
-- In Musica la prima lettera sotto le copertine non viene più tagliata dall'angolo arrotondato
+## 1.241.0
+**Niente vibrazione nelle card**
+- Scorrendo la Home o la pagina Note, le card (Prossimi giorni, Note, Spese) non vibrano più al cambio di mese: la vibrazione resta solo dentro la pagina aperta
+
+## 1.240.0
+**Copertine di Musica pulite**
+- In Musica ogni fila mostra tre copertine intere: nessuna resta tagliata sul bordo destro, le altre arrivano scorrendo
+- La prima lettera sotto le copertine non viene più tagliata
+- Il nome dell'artista sta subito sotto il titolo, senza lo spazio vuoto in mezzo
 
 ## 1.238.0
 **Video: schermo acceso, volume col dito, swipe per lo schermo intero**
