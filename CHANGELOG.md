@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.260.0
+**Spotify: niente più rotella infinita**
+- Se il riproduttore di Spotify non manda il suo stato, l'app lo chiede direttamente a Spotify: tempo, durata e play/pausa tornano giusti in un paio di secondi
+- Il tasto play mentre un brano sta partendo non lo fa più ricominciare da capo
+- Pausa, play e salti nel brano funzionano anche in quel caso
+
 ## 1.257.0
 **YouTube: le anteprime non danno più errore**
 - Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
