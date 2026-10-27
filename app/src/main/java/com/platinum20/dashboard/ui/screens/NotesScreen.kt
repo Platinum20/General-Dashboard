@@ -223,20 +223,20 @@ private fun NotesOverview(
 ) {
     val dated = timeline.flatMap { d -> d.rows.map { d to it } }
     val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
-    val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
-    val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
+    val datedRows = timelineEntries(timeline, LocalDate.now()).take(com.platinum20.dashboard.today.Upcoming.MAX)
     LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Le stesse card con la linea del tempo di Oggi (Antonio), mai nascoste: sono la porta delle tre parti.
         item(key = "dated") {
             TimelineCard(
                 NotesSection.DATED.title,
-                timelineEntries(timeline, LocalDate.now()).map { it.first }.take(com.platinum20.dashboard.today.Upcoming.MAX),
+                datedRows.map { it.first },
                 onOpen = { onOpen(NotesSection.DATED) },
                 empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno.",
                 modifier = Modifier.animateItem()
                     .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
                     .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
                 count = (dated.size + habitsLeft).takeIf { it > 0 }?.toString(),
+                ticks = datedRows.map { (_, row) -> row.task?.takeIf { !it.done }?.let { tickTask(it.id) } },
             )
         }
         item(key = "undated") {
@@ -245,7 +245,6 @@ private fun NotesOverview(
                 LocalDate.now(),
                 onOpen = { onOpen(NotesSection.UNDATED) },
                 modifier = Modifier.animateItem(),
-                count = (undatedTasks.size + notes.size).takeIf { it > 0 }?.toString(),
             )
         }
         item(key = "money") {
@@ -255,8 +254,6 @@ private fun NotesOverview(
                 LocalDate.now(),
                 onOpen = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
                 modifier = Modifier.animateItem(),
-                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, java.time.YearMonth.now()).takeIf { it > 0 }
-                    ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
             )
         }
     }
@@ -595,11 +592,10 @@ fun NotesScreen(
                         entries.forEachIndexed { index, (entry, row) ->
                             // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
                             if (index == nowIndex && index > 0) {
-                                TimelineNowMarker(Modifier.onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() })
+                                TimelineNowMarker(Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() })
                             }
                             TimelineRow(
                                 entry,
-                                start = 0.dp,
                                 top = index > 0,
                                 bottom = index < entries.lastIndex,
                                 onClick = {
@@ -637,7 +633,6 @@ fun NotesScreen(
                         entries.forEachIndexed { index, (entry, row) ->
                             TimelineRow(
                                 entry,
-                                start = 0.dp,
                                 top = index > 0,
                                 bottom = index < entries.lastIndex,
                                 onClick = {

@@ -172,7 +172,14 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
             color = item.event?.color ?: 0,
         )
     }
-    TimelineCard("Prossimi giorni", entries, onOpenAll, empty = "Niente in programma nei prossimi giorni.")
+    TimelineCard(
+        "Prossimi giorni",
+        entries,
+        onOpenAll,
+        empty = "Niente in programma nei prossimi giorni.",
+        count = items.size.takeIf { it > 0 }?.toString(),
+        ticks = shown.map { item -> item.task?.let { tickTask(it.id) } },
+    )
 }
 
 /**
@@ -187,6 +194,8 @@ fun TimelineCard(
     empty: String,
     modifier: Modifier = Modifier,
     count: String? = null,
+    /** Per ogni riga, la spunta: le cose da fare si fanno dalla card, senza entrare (Antonio). */
+    ticks: List<(() -> Unit)?> = emptyList(),
 ) {
     Section(
         title = title,
@@ -205,7 +214,7 @@ fun TimelineCard(
                 )
             }
             entries.forEachIndexed { index, entry ->
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen, onIcon = ticks.getOrNull(index))
             }
         }
     }
@@ -216,7 +225,15 @@ fun TimelineCard(
  * con icona e colore della categoria. Toccando la card si apre la pagina intera.
  */
 @Composable
-fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, count: String? = null) {
+fun MoneyCard(
+    data: NotesData,
+    today: LocalDate,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+    // Il totale del mese, come nella pagina Note (Antonio: lo stesso numero ovunque).
+    count: String? = com.platinum20.dashboard.notes.Expenses.total(data.expenses, YearMonth.from(today)).takeIf { it > 0 }
+        ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
+) {
     TimelineCard(
         "Spese",
         expenseEntries(data.expenses, today).take(Upcoming.MAX).map { it.first },
@@ -232,15 +249,29 @@ fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: M
  * delle altre card. Toccando la card si apre Note › Note.
  */
 @Composable
-fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, count: String? = null) {
+fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val tasks = data.tasks.filter { !it.done && it.dueAt == null }
+    val rows = undatedEntries(tasks, data.notes, today).take(Upcoming.MAX)
     TimelineCard(
         "Note",
-        undatedEntries(data.tasks.filter { !it.done && it.dueAt == null }, data.notes, today).take(Upcoming.MAX).map { it.first },
+        rows.map { it.first },
         onOpen,
         empty = "Tutto quello senza data: cose da fare e appunti.",
         modifier = modifier.captureTarget(CaptureMode.NOTE),
-        count = count,
+        // Quante note e cose da fare restano, come nella pagina Note.
+        count = (tasks.size + data.notes.size).takeIf { it > 0 }?.toString(),
+        ticks = rows.map { (_, row) -> row.task?.let { tickTask(it.id) } },
     )
+}
+
+/** La spunta di una cosa da fare dentro una card: vibra e la segna fatta. */
+@Composable
+internal fun tickTask(id: Long): () -> Unit {
+    val haptic = rememberHaptic()
+    return {
+        haptic(Haptic.CONFIRM)
+        com.platinum20.dashboard.notes.NotesStore.toggleTask(id)
+    }
 }
 
 /** Si mostra la card Note solo se c'è qualcosa: una nota o una cosa da fare senza data. */

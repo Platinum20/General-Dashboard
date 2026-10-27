@@ -190,7 +190,6 @@ fun ExpensesTab(
                     entries.forEachIndexed { index, (entry, expense) ->
                         TimelineRow(
                             entry,
-                            start = 0.dp,
                             top = index > 0,
                             bottom = index < entries.lastIndex,
                             onClick = { openItem(ItemKind.EXPENSE, expense.id) },
