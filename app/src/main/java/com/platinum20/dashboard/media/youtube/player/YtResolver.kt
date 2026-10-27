@@ -74,7 +74,8 @@ data class YtComment(
     val hearted: Boolean = false,
 )
 
-data class YtCommentPage(val comments: List<YtComment>, val next: Page?)
+/** [disabled]: l'autore ha spento i commenti (diverso da "ancora nessuno"). */
+data class YtCommentPage(val comments: List<YtComment>, val next: Page?, val disabled: Boolean = false)
 
 /** Stato dei commenti sotto il video: un errore di rete non deve sembrare "nessun commento". */
 sealed interface YtComments {
@@ -146,7 +147,9 @@ object YtResolver {
         val url = "https://www.youtube.com/watch?v=$id"
         if (page == null) {
             val info = CommentsInfo.getInfo(ServiceList.YouTube, url)
-            YtCommentPage(info.relatedItems.map(::comment), info.nextPage)
+            // Lista vuota per un errore di estrazione: deve dire "non riesco", non "nessun commento".
+            if (info.relatedItems.isEmpty() && !info.isCommentsDisabled) info.errors.firstOrNull()?.let { throw it }
+            YtCommentPage(info.relatedItems.map(::comment), info.nextPage, info.isCommentsDisabled)
         } else {
             val more = CommentsInfo.getMoreItems(ServiceList.YouTube, url, page)
             YtCommentPage(more.items.map(::comment), more.nextPage)
@@ -242,7 +245,7 @@ object YtResolver {
             subscribers = info.uploaderSubscriberCount,
             likes = info.likeCount,
             description = info.description?.content.orEmpty().let { raw ->
-                if ('<' in raw) Html.fromHtml(raw, Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
+                if ('<' in raw) Html.fromHtml(YtText.descriptionHtml(raw), Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
             },
             dashManifest = if (live) null else dashManifest(info.videoOnlyStreams, audio, info.duration),
             subtitles = subtitles,

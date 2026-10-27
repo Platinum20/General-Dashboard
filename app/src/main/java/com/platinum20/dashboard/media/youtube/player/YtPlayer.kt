@@ -23,6 +23,8 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.youtube.YtHistory
+import com.platinum20.dashboard.media.youtube.YtPremiere
+import com.platinum20.dashboard.media.youtube.YtUpcomingException
 import com.platinum20.dashboard.media.youtube.YtWatched
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
@@ -51,6 +53,8 @@ data class YtNow(
     /** Punto e durata in millisecondi, per la barra del tempo del player unico. */
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    /** Anteprima non ancora iniziata: la schermata mostra l'attesa invece dell'errore. */
+    val upcoming: YtUpcomingException? = null,
 )
 
 /**
@@ -220,9 +224,16 @@ object YtPlayer {
         val link = "https://www.youtube.com/watch?v=$id"
         appContext = context.applicationContext
         _now.value = YtNow(link = link, stream = null, audioOnly = audioOnly)
-        val stream = runCatching { YtResolver.resolve(link, preferredHeight(context)) }
-            .onFailure { _now.value = YtNow(link, null, loading = false, audioOnly = audioOnly, error = "Non riesco ad aprire il video: ${it.message ?: "errore"}") }
-            .getOrThrow()
+        val stream = runCatching { YtResolver.resolve(link, preferredHeight(context)) }.getOrElse { e ->
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            // Un'anteprima non ancora iniziata non è un errore: si aspetta col conto alla rovescia.
+            val upcoming = YtPremiere.check(id)
+            _now.value = YtNow(
+                link, null, loading = false, audioOnly = audioOnly, upcoming = upcoming,
+                error = upcoming?.message ?: "Non riesco ad aprire il video: ${e.message ?: "errore"}",
+            )
+            throw upcoming ?: e
+        }
         val auto = preferredHeight(context) == 0 && stream.dashManifest != null
         YtHistory.init(context)
         if (!audioOnly) pickSubtitle(stream)?.let { sub -> prepareCaption(context, sub) }
