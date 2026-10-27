@@ -1,12 +1,14 @@
 # Changelog
 
-## 1.216.0
+## 1.217.0
 **Treni, menu sulla linea e Spese**
 - I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
 - Nella pagina del viaggio: titolo pulito, treno, carrozza, posto e PNR; spariscono le note automatiche di Google
 - Tenendo premuto qualcosa sulla linea del tempo (Prossimi giorni, Note, Spese) sale il fumetto di vetro in basso con le azioni: fatto, rimanda a domani, condividi, fissa, elimina
 - Spese: il mese si cambia trascinando il riepilogo di lato, niente più frecce
 - Spese: le categorie tornano una per riga, e l'importo viene per primo, anche nelle spese sulla linea
+
+## 1.216.0
 **Le note lunghe come un foglio**
 - Aprendo una nota non c'è più la fila di pulsanti in alto: solo Indietro e la riga di quando l'hai modificata
 - Il titolo (la prima riga) è grande, il testo ha più aria e margini più larghi, come una pagina
