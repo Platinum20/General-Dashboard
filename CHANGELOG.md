@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.252.0
+**Spotify di nuovo fluido**
+- Il play funziona sempre: anche a fine coda (riparte il brano), se Spotify si è scollegato o se lo tocchi mentre il brano sta ancora arrivando (prima lo faceva ricominciare)
+- Alcuni brani restavano in "caricamento" senza barra: Spotify li suonava da un'altra copia (stesso brano, altro album) e l'app non li riconosceva
+- Se a fine brano Spotify passava da solo a una sua canzone, ora parte quella dopo della tua coda
+- Dopo uno skip la barra del tempo c'è subito, con la durata giusta; dopo un salto nel brano non torna indietro
+- La barra del tempo del player è sottile col pallino piccolo, come quella dei video di YouTube
+
 ## 1.250.0
 **Chiave di Spotify di nuovo nelle impostazioni**
 - Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)

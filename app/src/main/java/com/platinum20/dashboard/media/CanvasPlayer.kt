@@ -286,6 +286,8 @@ object CanvasPlayer {
             if (_queue.value.now != null) load(true, null)
             return
         }
+        // Spotify finito da solo a coda finita: il play lo fa ripartire da capo.
+        if (external() != null && !n.playing && endedId == n.entryId) return load(true, 0)
         external()?.let { if (n.playing) it.pause() else { pauseOthers(); it.resume() }; return }
         val p = exo ?: return load(true, null)
         when {
