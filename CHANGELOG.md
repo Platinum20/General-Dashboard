@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.238.0
+**Spese anche dentro Note**
+- Toccando la card Spese in Note si apre la pagina Spese dentro Note, non più in Oggi: la barra resta su Note e indietro torna alle Note
+- La pagina è la stessa di Oggi, con le stesse spese
+
 ## 1.237.0
 **Più tardi = i video salvati nelle note**
 - In Video il riquadro Più tardi mostra i video di YouTube che hai nelle note, dal più recente: quelli salvati tenendo premuto e i link di YouTube incollati o condivisi
