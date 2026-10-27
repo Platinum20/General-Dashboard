@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.238.0
+**Video: schermo acceso, volume col dito, swipe per lo schermo intero**
+- Mentre un video va lo schermo non si spegne più
+- A schermo intero, col telefono in orizzontale, scorri su o giù per alzare o abbassare il volume (con una piccola barra in alto)
+- Col video in verticale, uno swipe verso l'alto sul video lo apre a schermo intero
+
 ## 1.237.0
 **Più tardi = i video salvati nelle note**
 - In Video il riquadro Più tardi mostra i video di YouTube che hai nelle note, dal più recente: quelli salvati tenendo premuto e i link di YouTube incollati o condivisi
