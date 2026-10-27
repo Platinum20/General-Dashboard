@@ -17,6 +17,17 @@ object VideoSwipe {
     /** Swipe su sul video in verticale: basta un po' di strada verso l'alto, o uno scatto. */
     fun opensFullscreen(travelledPx: Float, velocityY: Float, thresholdPx: Float): Boolean =
         travelledPx < 0f && (-travelledPx > thresholdPx || velocityY < -1_000f)
+
+    /**
+     * Pinch a schermo intero, come su YouTube: allargando le dita il video riempie lo schermo
+     * (taglia le bande nere), stringendo torna intero. [zoom] è lo zoom accumulato del gesto;
+     * restituisce il nuovo stato, o null se il gesto non è ancora abbastanza deciso.
+     */
+    fun pinchFill(zoom: Float, filled: Boolean): Boolean? = when {
+        !filled && zoom > 1.12f -> true
+        filled && zoom < 0.89f -> false
+        else -> null
+    }
 }
 
 /**

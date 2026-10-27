@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.253.0
+## 1.256.0
 **Pagina del video YouTube più pulita**
 - Mi piace e Non mi piace stanno a destra, sulla riga del canale
 - Sotto, tre tasti larghi uguali su una riga: Commenti, Correlati, Condividi; commenti e video correlati si aprono solo toccandoli
@@ -8,6 +8,18 @@
 - Descrizione su due righe senza riquadro, con i link veri: un video di YouTube parte nell'app, gli altri link si copiano
 - Commenti: se YouTube non li dà si vede "Non riesco a caricare i commenti" con Riprova; "Commenti disattivati" solo se li ha spenti l'autore
 
+## 1.254.0
+**Video a schermo intero: pinch per riempire lo schermo**
+- Come su YouTube: a schermo intero allarghi due dita e il video riempie tutto lo schermo, senza bande nere (taglia un po' i bordi); stringi e torna intero
+- Per un attimo compare "Riempi lo schermo" o "Adatta"; il trascinamento su/giù per il volume resta com'era
+
+## 1.252.0
+**Spotify di nuovo fluido**
+- Il play funziona sempre: anche a fine coda (riparte il brano), se Spotify si è scollegato o se lo tocchi mentre il brano sta ancora arrivando (prima lo faceva ricominciare)
+- Alcuni brani restavano in "caricamento" senza barra: Spotify li suonava da un'altra copia (stesso brano, altro album) e l'app non li riconosceva
+- Se a fine brano Spotify passava da solo a una sua canzone, ora parte quella dopo della tua coda
+- Dopo uno skip la barra del tempo c'è subito, con la durata giusta; dopo un salto nel brano non torna indietro
+- La barra del tempo del player è sottile col pallino piccolo, come quella dei video di YouTube
 ## 1.251.0
 **Video: barra del tempo sottile**
 - La barra del tempo dei video è sottile quanto i segmenti di SponsorBlock, che ora le stanno sopra perfettamente allineati
