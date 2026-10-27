@@ -52,13 +52,13 @@ events/tasks/dates/parcels/charges, drawn with the shared `ui/screens/Timeline.k
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
 `NotesScreen.kt` (overview of 2 cards: DATED "Prossimi giorni" = everything with a day incl. calendar
 events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `NotesNav.open(section)` opens one from
-elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now),
-`DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; now only on the undated Note page via `noteMarks`, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
+elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt; pages draw it on the background (no card), `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
+`DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; Modifica opens their old dialog). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
-type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo),
+type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → receipt = expense text, else text for CaptureGuess; was the Spese "scontrino" card until 1.202),
 `Dictation.kt`/`VoiceCapture.kt` (in-app speech, no Google dialog), `SavedLink.kt`,
 `QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).

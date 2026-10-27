@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -343,3 +345,63 @@ internal fun noteMarks(notes: List<com.platinum20.dashboard.notes.Note>, today: 
 
 private val shortDay = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
 private val shortDayYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN)
+
+/** Una riga della linea del tempo delle Note: un promemoria da spuntare o una nota. */
+internal data class UndatedRow(val task: TaskItem? = null, val note: com.platinum20.dashboard.notes.Note? = null)
+
+/**
+ * Note come linea del tempo, uguale a Prossimi giorni: promemoria senza data e note insieme, per quando
+ * li hai scritti, i più nuovi in cima. Le note fissate restano in cima, con "Fissata" al posto del giorno.
+ */
+internal fun undatedEntries(
+    tasks: List<TaskItem>,
+    notes: List<com.platinum20.dashboard.notes.Note>,
+    today: LocalDate,
+    zone: ZoneId = ZoneId.systemDefault(),
+): List<Pair<TimelineEntry, UndatedRow>> {
+    fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
+    val pinned = notes.filter { it.pinned }.sortedByDescending { it.createdAt }
+    val rows = (tasks.map { it.createdAt to UndatedRow(task = it) } + notes.filter { !it.pinned }.map { it.createdAt to UndatedRow(note = it) })
+        .sortedByDescending { it.first }
+    val out = mutableListOf<Pair<TimelineEntry, UndatedRow>>()
+    pinned.forEachIndexed { i, n ->
+        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = NOTE_ICON) to UndatedRow(note = n)
+    }
+    var previous: LocalDate? = null
+    rows.forEach { (at, row) ->
+        val day = dayOf(at)
+        val first = day != previous
+        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(day, previous!!) else 0f
+        val entry = when {
+            row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
+                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap)
+            else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
+                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = NOTE_ICON)
+        }
+        out += entry to row
+        previous = day
+    }
+    return out
+}
+
+/**
+ * Spese come linea del tempo, uguale alle altre: una riga per spesa, le più recenti in cima, il giorno a
+ * destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
+ */
+internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
+    var previous: LocalDate? = null
+    return expenses.sortedByDescending { it.date }.map { e ->
+        val first = e.date != previous
+        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(e.date, previous!!) else 0f
+        previous = e.date
+        TimelineEntry(
+            "expense-${e.id}",
+            com.platinum20.dashboard.today.BriefKind.MONEY,
+            e.text.ifEmpty { e.category.label } + " · " + Expenses.format(e.cents),
+            if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
+            gap,
+        ) to e
+    }
+}
+
+private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes

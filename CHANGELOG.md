@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.205.0
+**Linea del tempo più pulita, e una piccola resistenza prima del passato**
+- In Prossimi giorni, Note e Spese la linea sta direttamente sulla pagina, senza i bordi della card ai lati, e in fondo c'è spazio sopra la barra
+- Fra adesso e il passato c'è il segno "OGGI" ben visibile; scorrendo verso il passato la lista si ferma lì con una vibrazione leggera, e se insisti col dito ci entri
+- Le date passate e quelle di un altro mese hanno il mese ("Dom 4 ott"), i titoli hanno più spazio e i salti fra giorni lontani sono più corti, anche nella card di Oggi
+
+## 1.204.0
+**Spese sulla linea del tempo, e i promemoria spuntati restano in Note**
+- Le spese del mese stanno sulla stessa linea del tempo di Prossimi giorni e Note: le più recenti in cima, il giorno a destra, la linea che si allunga fra giorni lontani
+- Un promemoria senza data spuntato resta in Note, in fondo sotto Completati, invece di finire in Prossimi giorni
+
+## 1.203.0
+**Note sulla linea del tempo, e la linea sotto il +**
+- Anche Note è una linea del tempo, uguale a Prossimi giorni: promemoria da spuntare e appunti insieme, per quando li hai scritti, i più nuovi in cima; le note fissate restano in cima
+- In tutte le linee del tempo la data viene prima e la linea sta tutta a destra, allineata al centro del + in basso
+
+## 1.202.0
+**Allega una foto dalla barra**
+- Quando scrivi con il +, tutto a sinistra nella barra c'è la graffetta: scatti una foto o ne scegli una dalla galleria
+- Canvas la legge sul telefono e capisce cosa farne: uno scontrino diventa una spesa, un biglietto o un invito con la data diventa una scadenza, il resto una nota. Controlli e invii come sempre
+- In Spese non c'è più il pulsante dello scontrino né il campo in cima: le spese si aggiungono dal +
+
 ## 1.200.0
 **Prossimi giorni arriva fino all'anno dopo**
 - Note › Prossimi giorni e la card in Oggi guardano avanti più di un anno di calendario, non più solo due mesi

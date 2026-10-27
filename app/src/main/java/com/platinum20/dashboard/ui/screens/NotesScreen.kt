@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -424,25 +425,17 @@ fun NotesScreen(
         // Completati tiene solo quello che non sta già nel passato della linea del tempo.
         val inPast = past.flatMap { it.rows }.map { it.key }.toSet()
         val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
-        val doneShown = done.filter { "task-${it.id}" !in inPast }
+        // I promemoria senza data spuntati restano in Note, in fondo; qui solo quelli con una data.
+        val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
+        val doneUndated = done.filter { it.dueAt == null }
         // In ordine di inserimento, le più nuove in cima: la linea del tempo a destra segue questo ordine.
         val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
-        val shownNotes = if (allNotes || section == NotesSection.UNDATED) notes else notes.take(NOTES_PREVIEW)
         val today = LocalDate.now()
         val empty = if (section == NotesSection.DATED) timeline.isEmpty() && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
-        else undatedTasks.isEmpty() && notes.isEmpty()
+        else undatedTasks.isEmpty() && notes.isEmpty() && doneUndated.isEmpty()
         val groups = past + timeline
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
-        // In Note la linea del tempo a destra, per data di inserimento: dove comincia ogni giorno nella lista
-        // (stesso ordine degli item sotto). Prossimi giorni ha invece la sua linea dentro la card.
-        val marks = when (section) {
-            NotesSection.UNDATED -> noteMarks(notes, today, first = (if (empty) 1 else 0) + 1 + (if (undatedTasks.isNotEmpty()) 1 else 0))
-            else -> emptyList()
-        }
-        val listPadding = if (marks.size >= 2) PaddingValues(
-            start = 16.dp, end = DayScrollbarGutter,
-            top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding(),
-        ) else padding
+        val listPadding = padding
 
         // Si apre sempre da adesso: il passato sta sopra, scorrendo in su.
         val timelineIndex = (if (empty) 1 else 0) + (if (invite) 1 else 0)
@@ -453,8 +446,15 @@ fun NotesScreen(
                 runCatching { listState.scrollToItem(timelineIndex, offset) }
             }
         }
+        // Fra adesso e passato una piccola resistenza, con una vibrazione.
+        val barrier = rememberPastBarrier(listState, timelineIndex, if (section == NotesSection.DATED) nowOffset else null)
         Box(Modifier.fillMaxSize()) {
-        LazyColumn(state = listState, contentPadding = listPadding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LazyColumn(
+            state = listState,
+            contentPadding = listPadding,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.nestedScroll(barrier),
+        ) {
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
@@ -477,35 +477,36 @@ fun NotesScreen(
                 item(key = "timeline") {
                     val entries = timelineEntries(groups, today)
                     val nowIndex = entries.indexOfFirst { !it.first.past }
-                    CanvasCard(
+                    // Sullo sfondo, senza card: la linea è la pagina.
+                    Column(
                         Modifier.fillMaxWidth()
                             .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                             .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT),
                     ) {
-                        Column(Modifier.padding(vertical = 6.dp)) {
-                            entries.forEachIndexed { index, (entry, row) ->
-                                TimelineRow(
-                                    entry,
-                                    modifier = if (index == nowIndex && index > 0) Modifier.onGloballyPositioned {
-                                        nowOffset = it.positionInParent().y.roundToInt()
-                                    } else Modifier,
-                                    top = index > 0,
-                                    bottom = index < entries.lastIndex,
-                                    onClick = {
-                                        row.task?.let { openItem(ItemKind.TASK, it.id) }
-                                        row.countdown?.let { openItem(ItemKind.DATE, it.id) }
-                                        row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
-                                        row.event?.let { onOpenEvent(it) }
-                                        row.charge?.let { openItem(ItemKind.FIXED, it.id) }
-                                    },
-                                    onIcon = row.task?.takeIf { !it.done }?.let { task ->
-                                        {
-                                            haptic(Haptic.CONFIRM)
-                                            NotesStore.toggleTask(task.id)
-                                        }
-                                    },
-                                )
+                        entries.forEachIndexed { index, (entry, row) ->
+                            // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
+                            if (index == nowIndex && index > 0) {
+                                TimelineNowMarker(Modifier.onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() })
                             }
+                            TimelineRow(
+                                entry,
+                                start = 0.dp,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = {
+                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                    row.countdown?.let { openItem(ItemKind.DATE, it.id) }
+                                    row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
+                                    row.event?.let { onOpenEvent(it) }
+                                    row.charge?.let { openItem(ItemKind.FIXED, it.id) }
+                                },
+                                onIcon = row.task?.takeIf { !it.done }?.let { task ->
+                                    {
+                                        haptic(Haptic.CONFIRM)
+                                        NotesStore.toggleTask(task.id)
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -517,34 +518,47 @@ fun NotesScreen(
                 }
                 habitRows()
             }
-            // Senza scadenza: le cose da fare prima o poi e gli appunti.
+            // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni,
+            // per quando li hai scritti, i più nuovi in cima.
             if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
-                item(key = "undated-header") {
+                item(key = "undated-timeline") {
+                    val entries = undatedEntries(undatedTasks, notes, today)
+                    Column(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
+                        entries.forEachIndexed { index, (entry, row) ->
+                            TimelineRow(
+                                entry,
+                                start = 0.dp,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = {
+                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                    row.note?.let { onOpenNote(it.id) }
+                                },
+                                onIcon = row.task?.let { task ->
+                                    {
+                                        haptic(Haptic.CONFIRM)
+                                        NotesStore.toggleTask(task.id)
+                                    }
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+            // Sotto, i promemoria senza data già spuntati.
+            if (show(NotesSection.UNDATED) && doneUndated.isNotEmpty()) {
+                item(key = "undated-done-header") {
                     SectionHeader(
-                        "Senza data",
-                        modifier = Modifier.padding(top = if (section == null && groups.isNotEmpty()) 12.dp else 0.dp, bottom = 4.dp)
-                            .captureTarget(CaptureMode.NOTE),
-                        action = when {
-                            notes.size <= NOTES_PREVIEW || section == NotesSection.UNDATED -> null
-                            allNotes -> "Meno note"
-                            else -> "Tutte le note · ${notes.size}"
+                        "Completati",
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
+                        action = "Elimina",
+                        onAction = {
+                            NotesStore.clearDone { it.dueAt == null }
+                            offerUndo(doneUndated, if (doneUndated.size == 1) "Eliminato 1 completato" else "Eliminati ${doneUndated.size} completati")
                         },
-                        onAction = { allNotes = !allNotes },
                     )
                 }
-                if (undatedTasks.isNotEmpty()) {
-                    item(key = "undated-tasks") { Box(Modifier.animateItem()) { TaskGroup(null, undatedTasks, onTaskDeleted) } }
-                }
-                items(shownNotes, key = { "note-${it.id}" }) { note ->
-                    NoteCard(
-                        note,
-                        onOpen = { onOpenNote(note.id) },
-                        onDelete = {
-                            NotesStore.deleteNote(note.id)
-                            offerUndo("Nota eliminata") { NotesStore.restoreNote(note) }
-                        },
-                        modifier = Modifier.animateItem().padding(bottom = 4.dp))
-                }
+                item(key = "undated-done") { Box(Modifier.animateItem()) { TaskGroup(null, doneUndated, onTaskDeleted) } }
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
@@ -552,10 +566,10 @@ fun NotesScreen(
                     SectionHeader(
                         "Completati",
                         modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
-                        action = if (done.isNotEmpty()) "Elimina" else null,
+                        action = if (doneShown.isNotEmpty()) "Elimina" else null,
                         onAction = {
-                            NotesStore.clearDone()
-                            offerUndo(done, if (done.size == 1) "Eliminato 1 completato" else "Eliminati ${done.size} completati")
+                            NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
+                            offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
                         },
                     )
                 }
@@ -564,15 +578,9 @@ fun NotesScreen(
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
                 }
             }
+            // Spazio in fondo: l'ultima riga non finisce sotto la barra.
+            item(key = "bottom-space") { Spacer(Modifier.height(72.dp)) }
         }
-        // Allineata al + in basso: in cima comincia sotto il titolo, in fondo si ferma sopra la barra.
-        DayScrollbar(
-            listState,
-            marks,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = listPadding.calculateTopPadding(), bottom = listPadding.calculateBottomPadding(), end = 6.dp),
-        )
         }
     }
 }

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyListScope
@@ -76,80 +75,27 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
-private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
- * Spese: si scrivono come un messaggio ("12,50 pizza"), la categoria si indovina dalle parole.
- * In alto il totale del mese, il budget e dove vanno i soldi.
+ * Spese: il totale del mese, il budget e dove vanno i soldi. Si aggiungono solo dal +
+ * ("12,50 pizza", "ogni mese il 5 affitto 650"), la categoria si indovina dalle parole.
  */
 @Composable
 fun ExpensesTab(
     data: NotesData,
     padding: PaddingValues,
     onDeleted: (Expense) -> Unit = {},
-    /** Fotografa uno scontrino: sta qui, con le spese, invece che in cima alla pagina Note. */
-    onReceipt: (() -> Unit)? = null,
-    readingReceipt: Boolean = false,
 ) {
     var month by remember { mutableStateOf(YearMonth.now()) }
-    var draft by rememberSaveable { mutableStateOf("") }
     var editingBudget by remember { mutableStateOf(false) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
-    val fixedDraft = remember(draft) { Expenses.parseFixed(draft) }
-    val parsed = remember(draft) { if (fixedDraft != null) null else Expenses.parse(draft) }
-    val haptic = rememberHaptic()
-    val add = {
-        // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
-        val saved = if (fixedDraft != null) NotesStore.addFixedExpense(draft) else NotesStore.addExpense(draft)
-        if (saved != null) {
-            haptic(Haptic.CONFIRM)
-            draft = ""
-        }
-    }
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (onReceipt != null) item(key = "receipt") {
-            CanvasCard(onClick = { if (!readingReceipt) onReceipt() }, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                SettingsItem(
-                    icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                    accent = TileAccent.GREEN,
-                    title = if (readingReceipt) "Leggo lo scontrino…" else "Fotografa uno scontrino",
-                    subtitle = "Canvas legge totale e negozio, tu controlli e salvi",
-                )
-            }
-        }
-        item {
-            OutlinedTextField(
-                value = draft,
-                onValueChange = { draft = it },
-                placeholder = { Text("Es. 12,50 pizza · ogni mese il 5 affitto 650") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { add() }),
-                trailingIcon = {
-                    if (parsed != null || fixedDraft != null) IconButton(onClick = add) { Icon(Icons.Outlined.Add, contentDescription = "Aggiungi") }
-                },
-                shape = MaterialTheme.shapes.large,
-                colors = canvasFieldColors(),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (draft.isNotBlank()) {
-                Text(
-                    fixedDraft?.let { "Ogni mese il ${it.day} · ${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
-                        ?: parsed?.let { "${Expenses.format(it.cents)} · ${it.category.label}" + if (it.text.isNotEmpty()) " · ${it.text}" else "" }
-                        ?: "Scrivi anche l'importo",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (parsed != null || fixedDraft != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 12.dp, top = 4.dp),
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-        }
         item {
             CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
@@ -263,34 +209,19 @@ fun ExpensesTab(
                 }
             }
         }
-        // Un giorno = un'etichetta e una card con le sue spese, come le altre liste dell'app.
-        inMonth.groupBy { it.date }.forEach { (day, spent) ->
-            item(key = "day-$day") {
-                Column {
-                    Text(
-                        when (day) {
-                            LocalDate.now() -> "Oggi"
-                            LocalDate.now().minusDays(1) -> "Ieri"
-                            else -> day.format(dayHeader).replaceFirstChar { it.uppercase() }
-                        }.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 8.dp),
-                    )
-                    CanvasCard(modifier = Modifier.fillMaxWidth()) {
-                        spent.forEachIndexed { i, expense ->
-                            if (i > 0) RowDivider()
-                            Row(
-                                Modifier.fillMaxWidth().clickable { openItem(ItemKind.EXPENSE, expense.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(expense.text.ifEmpty { expense.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(expense.category.label + if (expense.fixedId != null) " · fissa" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text(Expenses.format(expense.cents), style = MaterialTheme.typography.titleMedium)
-                            }
-                        }
+        // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
+        if (inMonth.isNotEmpty()) {
+            item(key = "timeline") {
+                val entries = expenseEntries(inMonth, LocalDate.now())
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    entries.forEachIndexed { index, (entry, expense) ->
+                        TimelineRow(
+                            entry,
+                            start = 0.dp,
+                            top = index > 0,
+                            bottom = index < entries.lastIndex,
+                            onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                        )
                     }
                 }
             }
