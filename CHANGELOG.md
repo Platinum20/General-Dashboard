@@ -6,6 +6,9 @@
 - Tocchi un brano in coda e parte solo lui: quelli prima non vengono più saltati, restano lì dopo
 - In fondo alla coda c'è "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani, prima degli stessi artisti
 - Mentre sistemi la coda si vede il mini player
+**Video a schermo intero: barra del volume a sinistra, anche coi tasti**
+- La barra del volume è verticale, tutta a sinistra
+- Coi tasti del telefono, a schermo intero, compare questa barra invece di quella di sistema
 
 ## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**

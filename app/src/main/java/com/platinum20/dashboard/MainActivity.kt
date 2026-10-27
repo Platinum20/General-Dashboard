@@ -281,6 +281,14 @@ data class OpenRequest(
 class MainActivity : ComponentActivity() {
     private val openRequest = mutableStateOf<OpenRequest?>(null)
 
+    /** Video di YouTube a schermo intero: i tasti del volume mostrano la barra del player, non quella di sistema. */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean =
+        com.platinum20.dashboard.ui.screens.FullscreenVolume.onKey(this, keyCode) || super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean =
+        (com.platinum20.dashboard.ui.screens.FullscreenVolume.active &&
+            com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(keyCode)) || super.onKeyUp(keyCode, event)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
