@@ -659,12 +659,12 @@ private fun TimeBar(
             },
             enabled = duration > 0,
             colors = sliderColors,
+            // Pallino piccolo come su YouTube, al posto della stanghetta alta di Material.
+            thumb = { Box(Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF2D2D))) },
             track = { state ->
-                // I segmenti di SponsorBlock colorati sulla barra, come nell'estensione.
-                Box(contentAlignment = Alignment.Center) {
-                    SliderDefaults.Track(sliderState = state, colors = sliderColors, enabled = duration > 0)
-                    if (marks.isNotEmpty() && duration > 0) SponsorMarks(marks, duration, Modifier.matchParentSize())
-                }
+                // Barra sottile quanto i segmenti di SponsorBlock, che ci stanno sopra allineati.
+                val buffer = if (duration > 0) buffered.toFloat() / duration else 0f
+                VideoTrack(state.value, buffer, if (duration > 0) marks else emptyList(), duration)
             },
             modifier = Modifier.height(28.dp).offset(y = (-4).dp),
         )
@@ -1148,18 +1148,24 @@ private fun SponsorSkipButton(modifier: Modifier) {
     }
 }
 
-/** I segmenti sulla barra del tempo: strisce sottili col colore del tipo. */
+/**
+ * La barra del tempo del video: fondo, parte già scaricata, parte vista e sopra i segmenti di
+ * SponsorBlock, tutti alti uguali (4dp) e larghi quanto la barra.
+ */
 @Composable
-private fun SponsorMarks(marks: List<SbSegment>, durationMs: Long, modifier: Modifier) {
-    androidx.compose.foundation.Canvas(modifier) {
-        val h = 4.dp.toPx()
-        val top = (size.height - h) / 2
+private fun VideoTrack(played: Float, buffered: Float, marks: List<SbSegment>, durationMs: Long) {
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(4.dp)) {
+        val h = size.height
+        drawRect(Color.White.copy(alpha = 0.3f), size = Size(size.width, h))
+        drawRect(Color.White.copy(alpha = 0.45f), size = Size(buffered.coerceIn(0f, 1f) * size.width, h))
+        drawRect(Color(0xFFFF2D2D), size = Size(played.coerceIn(0f, 1f) * size.width, h))
+        if (durationMs <= 0) return@Canvas
         for (m in marks) {
             val start = (m.startMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
             // Il momento clou è un punto: una tacca larga 3dp.
             val end = if (m.type == SbType.POI) start + 3.dp.toPx()
             else (m.endMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
-            drawRect(Color(m.category.color), topLeft = Offset(start, top), size = Size((end - start).coerceAtLeast(2f), h))
+            drawRect(Color(m.category.color), topLeft = Offset(start, 0f), size = Size((end - start).coerceAtLeast(2f), h))
         }
     }
 }
