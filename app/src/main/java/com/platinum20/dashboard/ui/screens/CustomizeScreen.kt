@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.RestartAlt
@@ -141,6 +142,7 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
     HomeCard.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
+    HomeCard.NOTES -> Icons.AutoMirrored.Outlined.Notes
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.MAIL -> Icons.Outlined.Mail
     HomeCard.RECAP -> Icons.Outlined.Newspaper
@@ -150,6 +152,7 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
     HomeCard.MONEY -> TileAccent.GREEN
+    HomeCard.NOTES -> TileAccent.ORANGE
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.MAIL -> TileAccent.ORANGE
     HomeCard.RECAP -> TileAccent.GREEN

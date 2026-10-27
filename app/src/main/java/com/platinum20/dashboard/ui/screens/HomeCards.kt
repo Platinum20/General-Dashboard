@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
 import android.content.Context
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.HomeCard
@@ -133,7 +133,7 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
 /** Niente più inviti per il calendario: si può sempre consentire da Info app. */
 internal fun hideAgenda(context: Context) {
     CalendarAsk.setOff(context)
-    Toast.makeText(context, "Ok, niente calendario: lo puoi consentire in Info app › Autorizzazioni", Toast.LENGTH_LONG).show()
+    CaptureFeedback.tell(context, "Ok, niente calendario: lo puoi consentire da Info app", actionLabel = "Info app", action = { openAppInfo(context) })
 }
 
 /** Scadenza di un promemoria, in rosso se già passata. */
@@ -155,57 +155,57 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 @Composable
 fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () -> Unit) {
     val shown = items.take(Upcoming.MAX)
-    Section(title = "Prossimi giorni") {
-        Column(Modifier.padding(vertical = 6.dp)) {
-            if (shown.isEmpty()) {
+    // Il mese che si legge in quel punto: quello di oggi, poi quello dell'ultimo segno (giorni corti, "Dom 1").
+    var shownMonth = YearMonth.from(today)
+    val entries = shown.mapIndexed { index, item ->
+        val first = index == 0 || shown[index - 1].day != item.day
+        // Il segno del mese quando si passa al mese dopo (anche in cima, se si comincia già dal prossimo).
+        val month = if (first) Upcoming.monthBreak(if (index == 0) today else shown[index - 1].day, item.day, today) else null
+        if (month != null) shownMonth = YearMonth.from(item.day)
+        TimelineEntry(
+            key = "$index",
+            kind = item.kind,
+            text = (item.time?.let { "$it  " } ?: "") + item.text,
+            dayLabel = if (first) Upcoming.dayLabel(item.day, today, shownMonth) else null,
+            gapDp = if (first && index > 0) Upcoming.gapDp(shown[index - 1].day, item.day) else 0f,
+            month = month,
+            color = item.event?.color ?: 0,
+        )
+    }
+    TimelineCard("Prossimi giorni", entries, onOpenAll, empty = "Niente in programma nei prossimi giorni.")
+}
+
+/**
+ * La card con la linea del tempo, uguale in Oggi e nella pagina Note (Antonio): il titolo sopra, a destra
+ * quanto c'è, dentro le prime righe. Si tocca ovunque per aprire la sezione, senza link in fondo.
+ */
+@Composable
+fun TimelineCard(
+    title: String,
+    entries: List<TimelineEntry>,
+    onOpen: () -> Unit,
+    empty: String,
+    modifier: Modifier = Modifier,
+    count: String? = null,
+) {
+    Section(
+        title = title,
+        modifier = modifier,
+        trailing = {
+            count?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp)) }
+        },
+    ) {
+        Column(Modifier.clickable(onClick = onOpen).padding(vertical = 6.dp)) {
+            if (entries.isEmpty()) {
                 Text(
-                    "Niente in programma nei prossimi giorni.",
+                    empty,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
-            // La linea del tempo: i nomi a sinistra, la linea con i giorni a destra; fra due giorni lontani
-            // la linea si allunga. Uguale in Note › Prossimi giorni, dove c'è tutto.
-            shown.forEachIndexed { index, item ->
-                val first = index == 0 || shown[index - 1].day != item.day
-                TimelineRow(
-                    TimelineEntry(
-                        key = "$index",
-                        kind = item.kind,
-                        text = (item.time?.let { "$it  " } ?: "") + item.text,
-                        dayLabel = if (first) Upcoming.dayLabel(item.day, today) else null,
-                        gapDp = if (first && index > 0) Upcoming.gapDp(shown[index - 1].day, item.day) else 0f,
-                        // Il segno del mese quando si passa al mese dopo (anche in cima, se si comincia già dal prossimo).
-                        month = if (first) Upcoming.monthBreak(if (index == 0) today else shown[index - 1].day, item.day, today) else null,
-                        color = item.event?.color ?: 0,
-                    ),
-                    top = index > 0,
-                    bottom = index < shown.lastIndex,
-                    onClick = onOpenAll,
-                )
-            }
-            // Toccando la card si apre tutto quello che arriva, senza limite di giorni.
-            val more = items.size - shown.size
-            RowDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpenAll)
-                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    if (more > 0) "Tutto quello che arriva · altre $more" else "Tutto quello che arriva",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f).padding(vertical = 8.dp),
-                )
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                )
+            entries.forEachIndexed { index, entry ->
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen)
             }
         }
     }
@@ -213,51 +213,38 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
 
 /**
  * Spese in Oggi: le ultime [Upcoming.MAX] spese sulla stessa linea del tempo di "Prossimi giorni" (Antonio),
- * con icona e colore della categoria. Sotto, il totale del mese; si tocca per la pagina intera.
+ * con icona e colore della categoria. Toccando la card si apre la pagina intera.
  */
 @Composable
-fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
-    val month = YearMonth.from(today)
-    val total = Expenses.total(data.expenses, month)
-    val entries = expenseEntries(data.expenses, today).take(Upcoming.MAX)
-    Section(title = "Spese", modifier = Modifier.captureTarget(CaptureMode.EXPENSE)) {
-        Column(Modifier.padding(vertical = 6.dp)) {
-            if (entries.isEmpty()) {
-                Text(
-                    "Nessuna spesa ancora.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                )
-            }
-            entries.forEachIndexed { index, (entry, _) ->
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen)
-            }
-            RowDivider()
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onOpen)
-                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "Tutte le spese · " + month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN) + " " + Expenses.format(total),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(vertical = 8.dp),
-                )
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
-        }
-    }
+fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, count: String? = null) {
+    TimelineCard(
+        "Spese",
+        expenseEntries(data.expenses, today).take(Upcoming.MAX).map { it.first },
+        onOpen,
+        empty = "Nessuna spesa ancora.",
+        modifier = modifier.captureTarget(CaptureMode.EXPENSE),
+        count = count,
+    )
 }
+
+/**
+ * Note in Oggi (Antonio): le ultime [Upcoming.MAX] note e cose da fare senza data, sulla stessa linea del tempo
+ * delle altre card. Toccando la card si apre Note › Note.
+ */
+@Composable
+fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, count: String? = null) {
+    TimelineCard(
+        "Note",
+        undatedEntries(data.tasks.filter { !it.done && it.dueAt == null }, data.notes, today).take(Upcoming.MAX).map { it.first },
+        onOpen,
+        empty = "Tutto quello senza data: cose da fare e appunti.",
+        modifier = modifier.captureTarget(CaptureMode.NOTE),
+        count = count,
+    )
+}
+
+/** Si mostra la card Note solo se c'è qualcosa: una nota o una cosa da fare senza data. */
+val NotesData.hasNotes: Boolean get() = notes.isNotEmpty() || tasks.any { !it.done && it.dueAt == null }
 
 /** Si mostra la card Spese solo con qualcosa dentro: una spesa o una fissa. */
 val NotesData.hasMoney: Boolean get() = expenses.isNotEmpty() || fixedExpenses.isNotEmpty()

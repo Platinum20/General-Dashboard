@@ -66,6 +66,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.foundation.layout.Column
 import com.platinum20.dashboard.capture.Dictation
 import android.content.Intent
@@ -150,7 +151,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
-import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
@@ -1006,7 +1006,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = topDestinations.any { it.route == currentRoute }
+    // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1019,11 +1020,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val notesProblem by NotesStore.readProblem.collectAsState()
     LaunchedEffect(notesProblem) {
         if (notesProblem != null) {
-            Toast.makeText(
-                context,
-                "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup",
-                Toast.LENGTH_LONG,
-            ).show()
+            CaptureFeedback.tell(context, "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup")
             NotesStore.readProblemShown()
         }
     }
@@ -1044,7 +1041,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val voiceScope = rememberCoroutineScope()
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
+        if (granted) CaptureFeedback.tell(context, "Ora tieni premuto il + e parla", Icons.Rounded.Mic)
     }
     SongId.init(context)
     // Un vocale senza parole ma con suono è musica: Canvas la riconosce, la fa partire su Spotify e la mette in "Sentite da Canvas".
@@ -1079,7 +1076,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 return@start false
             }
             !dictation.available -> {
-                Toast.makeText(context, "Dettatura non disponibile su questo telefono", Toast.LENGTH_SHORT).show()
+                CaptureFeedback.tell(context, "Dettatura non disponibile su questo telefono", Icons.Rounded.MicOff)
                 return@start false
             }
         }
@@ -1139,7 +1136,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 CanvasNavBar(
-                    currentRoute = currentRoute,
+                    // Spese è una card di Oggi: la barra accende Oggi.
+                    currentRoute = if (currentRoute == Routes.EXPENSES) Routes.HOME else currentRoute,
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.
@@ -1316,7 +1314,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
             composable(Routes.EXPENSES) {
-                ExpensesScreen(onBack = { navController.popBackStack() })
+                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })

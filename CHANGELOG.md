@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.222.0
+**Si modifica tutto nella pagina, card uguali ovunque**
+- Promemoria, date, pacchi, abitudini e spese si modificano direttamente nella pagina a schermo intero: il titolo si scrive, scadenza, ripetizione, avviso, data, categoria e importo si toccano. Niente più finestra "Modifica"
+- I promemoria senza data che spunti restano sulla linea del tempo di Note, nel giorno in cui li hai fatti (barrati); via la sezione "Completati"
+- Nuova card Note in Oggi: le ultime 5 note e cose da fare sulla linea del tempo. Si sposta in Personalizza come le altre
+- Le card di Oggi non hanno più il link in fondo: si tocca la card ovunque per aprire la sezione
+- La pagina Note usa le stesse card di Oggi, con quanto c'è a destra del titolo, sempre visibili
+
+## 1.221.0
+**Media: tre riquadri alti uguali**
+- In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
+- Titoli e descrizioni stanno su una riga sola (Musica "Spotify e YT", Video "YouTube e file", Radio "e podcast")
+
+## 1.218.0
+**Spese con la barra, date più corte, categorie più furbe**
+- Spese ha la barra in basso e il +, come le altre pagine
+- Sotto il segno del mese le date sono corte ("Dom 1" invece di "Dom 1 nov", senza l'anno)
+- Le categorie riconoscono più negozi (traghetti come Onorato, telefono come Windtre, farmacie, distributori, supermercati); le spese rimaste in "Altro" si risistemano da sole
+- I nomi dei negozi tagliati dalla carta finiscono con i puntini
+
+## 1.217.0
+**Treni, menu sulla linea e Spese**
+- I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
+- Nella pagina del viaggio: titolo pulito, treno, carrozza, posto e PNR; spariscono le note automatiche di Google
+- Tenendo premuto qualcosa sulla linea del tempo (Prossimi giorni, Note, Spese) sale il fumetto di vetro in basso con le azioni: fatto, rimanda a domani, condividi, fissa, elimina
+- Spese: il mese si cambia trascinando il riepilogo di lato, niente più frecce
+- Spese: le categorie tornano una per riga, e l'importo viene per primo, anche nelle spese sulla linea
+
+## 1.216.0
+**Le note lunghe come un foglio**
+- Aprendo una nota non c'è più la fila di pulsanti in alto: solo Indietro e la riga di quando l'hai modificata
+- Il titolo (la prima riga) è grande, il testo ha più aria e margini più larghi, come una pagina
+- In fondo, sopra la tastiera: il pulsante per farne una lista, quante parole ci sono (e i minuti di lettura se è lunga) e "Altro", che apre il fumetto in vetro con Fissa in alto, Condividi ed Elimina
+- Nella linea del tempo le note con foto o da spuntare hanno la loro icona, e le liste mostrano quante voci sono fatte ("2/5")
+
+## 1.215.0
+**Avvisi e menu tutti nel fumetto di vetro**
+- Gli avvisi che erano rimasti grigi di sistema ora salgono nel fumetto di vetro in basso, chiudibile di lato: errori di Spotify, "In coda", backup, dettatura, avvisi dei video
+- Eliminare un evento del calendario chiede conferma nel fumetto, non più in una finestra al centro
+- Nel nuovo evento, la scelta del calendario sale nel fumetto invece del menu a tendina
+- Se il permesso del calendario è negato, il tasto "Info app" è dentro il fumetto
+
 ## 1.213.0
 **Leonardo al posto di Miro**
 - Miro aveva un accento straniero: al suo posto c'è Leonardo, una voce maschile italiana naturale (lo stesso parlante di Riccardo, ma con una qualità molto più alta). È la prima a sinistra e si scarica una volta sola, circa 65 MB

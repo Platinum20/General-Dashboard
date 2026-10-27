@@ -13,6 +13,8 @@ import com.platinum20.dashboard.notes.ParcelHints
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
@@ -37,6 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Repeat
@@ -101,18 +104,34 @@ fun ExpensesTab(
         // Il riepilogo del mese, compatto: così la linea del tempo sale.
         item {
             CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { month = month.minusMonths(1) }) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Mese prima")
+                // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
+                val haptic = rememberHaptic()
+                val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+                var drag by remember { mutableStateOf(0f) }
+                Column(
+                    Modifier
+                        .pointerInput(threshold) {
+                            detectHorizontalDragGestures(
+                                onDragStart = { drag = 0f },
+                                onDragEnd = { drag = 0f },
+                                onDragCancel = { drag = 0f },
+                            ) { change, amount ->
+                                drag += amount
+                                MonthSwipe.target(month, drag, threshold, YearMonth.now())?.let {
+                                    change.consume()
+                                    month = it
+                                    drag = 0f
+                                    haptic(Haptic.TICK)
+                                }
+                            }
                         }
+                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             month.format(monthFormat).replaceFirstChar { it.uppercase() },
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        IconButton(onClick = { month = month.plusMonths(1) }, enabled = month < YearMonth.now()) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mese dopo")
-                        }
                         Spacer(Modifier.weight(1f))
                         Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                     }
@@ -128,11 +147,10 @@ fun ExpensesTab(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(start = 12.dp),
                         )
                     }
                     val split = Expenses.byCategory(data.expenses, month)
-                    if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(start = 12.dp, top = 8.dp))
+                    if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
                 }
             }
         }
@@ -167,7 +185,7 @@ fun ExpensesTab(
         // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
         if (inMonth.isNotEmpty()) {
             item(key = "timeline") {
-                val entries = expenseEntries(inMonth, LocalDate.now())
+                val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
                 Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     entries.forEachIndexed { index, (entry, expense) ->
                         TimelineRow(
@@ -176,6 +194,15 @@ fun ExpensesTab(
                             top = index > 0,
                             bottom = index < entries.lastIndex,
                             onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                            onLongClick = {
+                                ActionBubble.show(
+                                    BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
+                                    BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                                        NotesStore.deleteExpense(expense.id)
+                                        onDeleted(expense)
+                                    },
+                                )
+                            },
                         )
                     }
                 }
@@ -196,7 +223,7 @@ fun ExpensesTab(
 
 }
 
-private fun centsOf(text: String): Long? {
+internal fun centsOf(text: String): Long? {
     val clean = text.replace("€", "").filterNot { it.isWhitespace() }
     // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
     val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean
@@ -458,9 +485,8 @@ fun ParcelDialog(
 
 /**
  * Come si divide il mese: una barra con un pezzo per categoria, nei colori delle icone sulla linea, e
- * sotto le categorie con il loro pallino.
+ * sotto una riga per categoria con il suo pallino.
  */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun CategoryBar(split: List<Pair<com.platinum20.dashboard.notes.ExpenseCategory, Long>>, modifier: Modifier = Modifier) {
     val sum = split.sumOf { it.second }.coerceAtLeast(1L)
@@ -473,21 +499,23 @@ private fun CategoryBar(split: List<Pair<com.platinum20.dashboard.notes.ExpenseC
                 )
             }
         }
-        androidx.compose.foundation.layout.FlowRow(
-            Modifier.padding(top = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            split.forEach { (category, cents) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(category.color())))
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        "${category.label} ${Expenses.format(cents)}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+        // Una riga per categoria, l'importo per primo.
+        split.sortedByDescending { it.second }.forEach { (category, cents) ->
+            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(category.color())))
+                Spacer(Modifier.width(10.dp))
+                Text(Expenses.format(cents), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(84.dp))
+                Text(category.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+    }
+}
+
+/** Trascinando il riepilogo di Spese: oltre [threshold] px si cambia mese, mai oltre quello di [now]. Logica pura. */
+internal object MonthSwipe {
+    fun target(month: YearMonth, drag: Float, threshold: Float, now: YearMonth): YearMonth? = when {
+        drag >= threshold -> month.minusMonths(1)
+        drag <= -threshold && month < now -> month.plusMonths(1)
+        else -> null
     }
 }

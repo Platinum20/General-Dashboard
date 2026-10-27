@@ -177,6 +177,8 @@ class NotesUiLogicTest {
         )
         val entries = timelineEntries(groups, today, zone).map { it.first }
         assertEquals(listOf(null, "OTTOBRE", null, "NOVEMBRE", null), entries.map { it.month })
+        // Il mese è già nel segno: "Mar 3", non "Mar 3 nov"; prima del primo segno il giorno resta intero.
+        assertEquals(listOf("Mer 16 set", "Sab 24", "Domani", "Mar 3", null), entries.map { it.dayLabel })
     }
 
     @Test fun passatoSopraLaLinea() {
@@ -204,7 +206,8 @@ class NotesUiLogicTest {
         val entries = timelineEntries(past, today, zone).map { it.first }
         // I promemoria fatti restano nel passato anche se vecchi: non c'è più un limite.
         assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
-        assertEquals(listOf("Mar 28 lug", "Ven 23 ott", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+        // Sotto il segno OTTOBRE il giorno è corto.
+        assertEquals(listOf("Mar 28 lug", "Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
         assertEquals(listOf(null, "OTTOBRE", null, null, null), entries.map { it.month })
     }
 
@@ -222,9 +225,34 @@ class NotesUiLogicTest {
             zone = zone,
         ).map { it.first }
         assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
-        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21 ott"), entries.map { it.dayLabel })
+        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
         // Fra oggi e mercoledì scorso quattro giorni vuoti.
         assertEquals(16f, entries[3].gapDp, 0.01f)
+    }
+
+    @Test fun fattiSullaLineaDelleNote() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val entries = undatedEntries(
+            tasks = listOf(TaskItem(1, "Prova", createdAt = at(today, 9))),
+            notes = emptyList(),
+            today = today,
+            zone = zone,
+            // Scritto tre giorni fa, spuntato oggi alle 10: sta in cima, a oggi.
+            done = listOf(TaskItem(2, "Sessi", done = true, createdAt = at(today.minusDays(3), 9), doneAt = at(today, 10))),
+        ).map { it.first }
+        assertEquals(listOf("Sessi", "Prova"), entries.map { it.text })
+        assertEquals(listOf(true, false), entries.map { it.done })
+    }
+
+    @Test fun meseTrascinando() {
+        val now = java.time.YearMonth.of(2026, 10)
+        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
+        assertEquals(java.time.YearMonth.of(2026, 9), swipe.target(now, 60f, 56f, now))
+        assertEquals(null, swipe.target(now, -60f, 56f, now))
+        assertEquals(now, swipe.target(java.time.YearMonth.of(2026, 9), -60f, 56f, now))
+        assertEquals(null, swipe.target(now, 20f, 56f, now))
     }
 
     @Test fun speseSullaLineaDelTempo() {
@@ -237,9 +265,9 @@ class NotesUiLogicTest {
             ),
             today,
         ).map { it.first }
-        assertEquals(listOf("Oggi", null, "Ven 23 ott"), entries.map { it.dayLabel })
-        assertEquals("Benzina", entries[0].text)
-        assertEquals(true, entries[0].trailing != null)
+        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
+        // L'importo per primo, il nome dopo.
+        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[0].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))

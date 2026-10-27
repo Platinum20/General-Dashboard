@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalHospital
@@ -71,6 +73,8 @@ data class TimelineEntry(
     val trailing: String? = null,
     /** Il mese che comincia con questa riga ("NOVEMBRE"): sopra si disegna il segno del mese. */
     val month: String? = null,
+    /** Un promemoria fatto: spunta piena e nome barrato. */
+    val done: Boolean = false,
 )
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -109,6 +113,7 @@ fun BriefKind.timelineIcon(): ImageVector = when (this) {
  * Una riga della linea del tempo. [top]/[bottom]: se la linea continua sopra e sotto il pallino.
  * [onIcon]: per i promemoria in Note, toccando il cerchio a sinistra si segna fatto.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TimelineRow(
     entry: TimelineEntry,
@@ -119,7 +124,10 @@ fun TimelineRow(
     onIcon: (() -> Unit)? = null,
     /** 16 dp dentro una card (Oggi); 0 nelle pagine, dove la linea sta sullo sfondo senza card. */
     start: Dp = 16.dp,
+    /** Tenendo premuto: di solito il fumetto di vetro con le azioni ([ActionBubble]). */
+    onLongClick: (() -> Unit)? = null,
 ) {
+    val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
     entry.month?.let { TimelineMonthMarker(it, start = start, top = top) }
@@ -128,17 +136,20 @@ fun TimelineRow(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick?.let { long -> { haptic(Haptic.LONG_PRESS); long() } },
+            )
             .padding(start = start, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
-        if (onIcon != null) {
+        if (onIcon != null || entry.done) {
             Icon(
-                Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = "Fatto",
-                tint = tint,
-                modifier = Modifier.size(20.dp).clip(CircleShape).clickable(onClick = onIcon),
+                if (entry.done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = if (entry.done) "Da fare" else "Fatto",
+                tint = if (entry.done) MaterialTheme.colorScheme.primary else tint,
+                modifier = Modifier.size(20.dp).clip(CircleShape).then(if (onIcon != null) Modifier.clickable(onClick = onIcon) else Modifier),
             )
             Spacer(Modifier.width(8.dp))
         } else {
@@ -148,7 +159,8 @@ fun TimelineRow(
         Text(
             entry.text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            color = if (entry.past || entry.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (entry.done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(vertical = 7.dp),

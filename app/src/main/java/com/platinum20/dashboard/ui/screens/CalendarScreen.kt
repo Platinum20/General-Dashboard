@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -38,8 +39,7 @@ import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -47,9 +47,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -73,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.calendar.CalendarDays
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarInfo
@@ -170,19 +168,15 @@ fun EventDetailScreen(
     var event by remember { mutableStateOf<EventDetail?>(null) }
     var missing by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
-    var confirmDelete by remember { mutableStateOf(false) }
     var askWrite by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val snackbar = remember { SnackbarHostState() }
     // Mai fallire in silenzio: un messaggio, e con il permesso negato per sempre la strada per Info app.
     fun tell(text: String, status: PermissionStatus = PermissionStatus.GRANTED) {
-        scope.launch {
-            val result = snackbar.showSnackbar(
-                text,
-                actionLabel = if (status == PermissionStatus.BLOCKED) CalendarPermission.actionLabel(status) else null,
-                withDismissAction = status != PermissionStatus.BLOCKED,
-            )
-            if (result == SnackbarResult.ActionPerformed) openAppInfo(context)
-        }
+        val blocked = status == PermissionStatus.BLOCKED
+        CaptureFeedback.tell(
+            context, text, Icons.Outlined.EventBusy,
+            actionLabel = if (blocked) CalendarPermission.actionLabel(status) else null,
+            action = if (blocked) ({ openAppInfo(context) }) else null,
+        )
     }
     val writeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) askWrite?.invoke() else {
@@ -209,18 +203,46 @@ fun EventDetailScreen(
     DetailPage(
         onBack = onBack,
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
-        onDelete = if (writable) ({ confirmDelete = true }) else null,
-        snackbar = snackbar,
+        // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
+        onDelete = if (writable) ({
+            current?.let { ev -> ActionBubble.show(
+                BubbleAction(
+                    Icons.Outlined.Delete,
+                    "Elimina l'evento",
+                    detail = if (ev.recurring) "Tutte le volte, anche dal calendario del telefono" else "Sparisce anche dal calendario del telefono",
+                    danger = true,
+                ) {
+                    withWrite {
+                        scope.launch {
+                            if (CalendarRepository.delete(context, ev.id)) {
+                                haptic(Haptic.CONFIRM)
+                                onBack()
+                            } else {
+                                tell(CalendarPermission.DELETE_FAILED)
+                            }
+                        }
+                    }
+                },
+            ) }
+        }) else null,
     ) {
         if (current == null) {
             if (missing) DetailMissing(Icons.Outlined.EventBusy, "Questo evento non c'è più.")
         } else {
             val zone = ZoneId.systemDefault()
-            val from = if (begin > 0) begin else current.begin
-            val to = if (begin > 0 && end > 0) end else current.end
-            DetailTitle(current.title, if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
+            // Un treno si apre dalla partenza o dall'arrivo: si mostra sempre tutto il viaggio.
+            val train = com.platinum20.dashboard.calendar.Trips.destination(current.title) != null
+            val from = if (begin > 0 && !train) begin else current.begin
+            val to = if (begin > 0 && end > 0 && !train) end else current.end
+            val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description) else emptyList()
+            val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
+            DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
             CanvasCard(Modifier.fillMaxWidth()) {
                 DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                ticket.forEach { (label, value) ->
+                    RowDivider()
+                    DetailRow(Icons.Outlined.Train, "$label $value")
+                }
                 if (current.recurring) {
                     RowDivider()
                     DetailRow(Icons.Outlined.Repeat, "Si ripete")
@@ -234,44 +256,16 @@ fun EventDetailScreen(
                     DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
                 }
             }
-            if (current.description.isNotBlank()) {
+            // Con i dati del biglietto già sopra, le note del treno non dicono altro.
+            if (notes.isNotBlank() && ticket.isEmpty()) {
                 Section(title = "Note") {
-                    DetailRow(Icons.AutoMirrored.Outlined.Notes, current.description.trim(), maxLines = Int.MAX_VALUE)
+                    DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
                 }
             }
             if (!current.writable) {
                 DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
             }
         }
-    }
-
-    if (confirmDelete && current != null) {
-        CanvasDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text("Eliminare l'evento?") },
-            text = {
-                Text(
-                    if (current.recurring) "Si ripete: verranno eliminate tutte le volte, anche dal calendario del telefono."
-                    else "Sparisce anche dal calendario del telefono."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    withWrite {
-                        scope.launch {
-                            if (CalendarRepository.delete(context, current.id)) {
-                                haptic(Haptic.CONFIRM)
-                                onBack()
-                            } else {
-                                tell(CalendarPermission.DELETE_FAILED)
-                            }
-                        }
-                    }
-                }) { Text("Elimina") }
-            },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Annulla") } },
-        )
     }
 }
 
@@ -398,7 +392,6 @@ private fun EventForm(
     val zone = ZoneId.systemDefault()
     var pickStart by remember { mutableStateOf(false) }
     var pickEnd by remember { mutableStateOf(false) }
-    var calendarMenu by remember { mutableStateOf(false) }
     val toggle = hapticToggle { onChange(draft.copy(allDay = it)) }
 
     Column(
@@ -438,29 +431,29 @@ private fun EventForm(
             }
             if (calendars.size > 1 && isNew) {
                 RowDivider()
-                Box {
-                    val chosen = calendars.firstOrNull { it.id == draft.calendarId }
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { calendarMenu = true }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ColorDot(chosen?.color ?: 0)
-                        Spacer(Modifier.width(14.dp))
-                        Text(chosen?.name.orEmpty(), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Text("Calendario", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    DropdownMenu(expanded = calendarMenu, onDismissRequest = { calendarMenu = false }) {
-                        calendars.forEach { cal ->
-                            DropdownMenuItem(
-                                text = { Text(if (cal.account.isNotBlank() && cal.account != cal.name) "${cal.name} · ${cal.account}" else cal.name) },
-                                leadingIcon = { ColorDot(cal.color) },
-                                onClick = { onChange(draft.copy(calendarId = cal.id)); calendarMenu = false },
+                val chosen = calendars.firstOrNull { it.id == draft.calendarId }
+                // La scelta del calendario sale nel solito fumetto in basso, come ogni menu di Canvas.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            ActionBubble.show(
+                                *calendars.map { cal ->
+                                    BubbleAction(
+                                        if (cal.id == draft.calendarId) Icons.Outlined.CheckCircle else Icons.Outlined.CalendarMonth,
+                                        cal.name,
+                                        detail = cal.account.takeIf { it.isNotBlank() && it != cal.name }.orEmpty(),
+                                    ) { onChange(draft.copy(calendarId = cal.id)) }
+                                }.toTypedArray(),
                             )
                         }
-                    }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ColorDot(chosen?.color ?: 0)
+                    Spacer(Modifier.width(14.dp))
+                    Text(chosen?.name.orEmpty(), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Text("Calendario", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

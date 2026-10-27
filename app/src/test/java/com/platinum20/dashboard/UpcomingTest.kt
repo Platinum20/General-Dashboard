@@ -79,6 +79,15 @@ class UpcomingTest {
     }
 
     @Test
+    fun giornoCortoSottoIlMese() {
+        val nov = java.time.YearMonth.of(2026, 11)
+        assertEquals("Dom 1", Upcoming.dayLabel(LocalDate.of(2026, 11, 1), today, nov))
+        assertEquals("Ven 1", Upcoming.dayLabel(LocalDate.of(2027, 1, 1), today, java.time.YearMonth.of(2027, 1)))
+        assertEquals("Dom 1 nov", Upcoming.dayLabel(LocalDate.of(2026, 11, 1), today, null))
+        assertEquals("Domani", Upcoming.dayLabel(today.plusDays(1), today, java.time.YearMonth.from(today)))
+    }
+
+    @Test
     fun segnoDelMese() {
         assertEquals(null, Upcoming.monthBreak(null, today.plusDays(10), today))
         assertEquals(null, Upcoming.monthBreak(today, today.plusDays(2), today))

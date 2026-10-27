@@ -1,5 +1,14 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.notes.NoteText
+import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.text.BasicTextField
 import com.platinum20.dashboard.Routes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -66,6 +75,8 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Update
+import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -215,106 +226,42 @@ private fun NotesOverview(
     val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
     val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
     LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Le stesse card con la linea del tempo di Oggi (Antonio), mai nascoste: sono la porta delle tre parti.
         item(key = "dated") {
-            NotesCategoryCard(
-                title = NotesSection.DATED.title,
-                icon = Icons.Outlined.Event,
-                accent = TileAccent.BLUE,
-                count = (dated.size + data.habits.size).takeIf { it > 0 }?.toString(),
-                lines = dated.take(3).map { (day, row) -> day.shortLabel() to row.title() } +
-                    listOfNotNull(habitsLeft.takeIf { it > 0 }?.let { "Oggi" to if (it == 1) "1 abitudine da fare" else "$it abitudini da fare" }),
-                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno",
+            TimelineCard(
+                NotesSection.DATED.title,
+                timelineEntries(timeline, LocalDate.now()).map { it.first }.take(com.platinum20.dashboard.today.Upcoming.MAX),
+                onOpen = { onOpen(NotesSection.DATED) },
+                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno.",
                 modifier = Modifier.animateItem()
                     .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
                     .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
-                onClick = { onOpen(NotesSection.DATED) },
+                count = (dated.size + habitsLeft).takeIf { it > 0 }?.toString(),
             )
         }
         item(key = "undated") {
-            NotesCategoryCard(
-                title = NotesSection.UNDATED.title,
-                icon = Icons.Outlined.EditNote,
-                accent = TileAccent.ORANGE,
+            NotesCard(
+                data,
+                LocalDate.now(),
+                onOpen = { onOpen(NotesSection.UNDATED) },
+                modifier = Modifier.animateItem(),
                 count = (undatedTasks.size + notes.size).takeIf { it > 0 }?.toString(),
-                lines = (undatedTasks.map { "Da fare" to it.text } + notes.map { "Nota" to it.text.lineSequence().first().trim() }).take(3),
-                empty = "Tutto quello senza data: cose da fare e appunti",
-                modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
-                onClick = { onOpen(NotesSection.UNDATED) },
             )
         }
-        // Spese torna anche in Note (Antonio, 1.212): la pagina è la stessa della card di Oggi.
         item(key = "money") {
             val inApp = LocalInAppNav.current
-            val month = java.time.YearMonth.now()
-            val recent = data.expenses.sortedByDescending { it.date }
-            NotesCategoryCard(
-                title = "Spese",
-                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                accent = TileAccent.GREEN,
-                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month).takeIf { it > 0 }
+            MoneyCard(
+                data,
+                LocalDate.now(),
+                onOpen = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
+                modifier = Modifier.animateItem(),
+                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, java.time.YearMonth.now()).takeIf { it > 0 }
                     ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
-                lines = recent.take(3).map {
-                    com.platinum20.dashboard.today.Upcoming.dayLabel(it.date, LocalDate.now()) to
-                        "${com.platinum20.dashboard.notes.Expenses.displayName(it)} ${com.platinum20.dashboard.notes.Expenses.format(it.cents)}"
-                },
-                empty = "Quanto spendi nel mese, per giorno e per categoria",
-                modifier = Modifier.animateItem().captureTarget(CaptureMode.EXPENSE),
-                onClick = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
             )
         }
     }
 }
 
-/** Il titolo di una cosa con scadenza, qualunque sia. */
-private fun DueRow.title(): String =
-    task?.text ?: countdown?.title ?: parcel?.title ?: event?.title ?: charge?.let { "Addebito: ${it.text.ifEmpty { it.category.label }}" } ?: ""
-
-/** Una card della pagina Note: icona, nome del tipo, quanto c'è a destra e le prime righe sotto. */
-@Composable
-private fun NotesCategoryCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    accent: TileAccent,
-    count: String?,
-    lines: List<Pair<String, String>>,
-    empty: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.extraLarge, modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
-                Spacer(Modifier.width(12.dp))
-                Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                if (count != null) {
-                    Text(count, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            if (lines.isEmpty()) {
-                Text(empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else lines.forEach { (label, text) ->
-                Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(96.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-    }
-}
 
 /** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
 internal const val NOTES_PREVIEW = 4
@@ -385,6 +332,78 @@ fun NotesScreen(
     // Ogni cosa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
     val haptic = rememberHaptic()
+    // Tenendo premuta una riga della linea del tempo: il fumetto di vetro in basso con le azioni (Antonio).
+    fun share(text: String) {
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+            .putExtra(android.content.Intent.EXTRA_TEXT, text)
+        context.startActivity(android.content.Intent.createChooser(send, null))
+    }
+    fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
+        BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
+            haptic(Haptic.CONFIRM)
+            NotesStore.toggleTask(t.id)
+        },
+        t.dueAt?.takeIf { !t.done }?.let { due ->
+            BubbleAction(Icons.Outlined.Update, "Rimanda a domani") {
+                val zone = ZoneId.systemDefault()
+                val time = java.time.Instant.ofEpochMilli(due).atZone(zone).toLocalTime()
+                NotesStore.snoozeTask(t.id, LocalDate.now().plusDays(1).atTime(time).atZone(zone).toInstant().toEpochMilli())
+            }
+        },
+        BubbleAction(Icons.Outlined.Share, "Condividi") { share(t.text) },
+        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+            NotesStore.deleteTask(t.id)
+            offerUndo(listOf(t), "Promemoria eliminato")
+        },
+    )
+    fun dueActions(row: DueRow) {
+        val actions = when {
+            row.task != null -> taskActions(row.task)
+            row.event != null -> listOf(
+                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.event.title) { onOpenEvent(row.event) },
+                BubbleAction(Icons.Outlined.Share, "Condividi") {
+                    share(row.event.title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(java.time.Instant.ofEpochMilli(row.event.begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now()))
+                },
+            )
+            row.countdown != null -> listOf(
+                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.countdown.title) { openItem(ItemKind.DATE, row.countdown.id) },
+                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                    NotesStore.deleteCountdown(row.countdown.id)
+                    offerUndo("Data eliminata") { NotesStore.restoreCountdown(row.countdown) }
+                },
+            )
+            row.parcel != null -> listOf(
+                BubbleAction(Icons.Outlined.LocalShipping, "Apri", detail = row.parcel.title) { openItem(ItemKind.PARCEL, row.parcel.id) },
+                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                    NotesStore.deleteParcel(row.parcel.id)
+                    offerUndo("Pacco eliminato") { NotesStore.restoreParcel(row.parcel) }
+                },
+            )
+            row.charge != null -> listOf(
+                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.charge.text.ifEmpty { row.charge.category.label }) { openItem(ItemKind.FIXED, row.charge.id) },
+                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                    NotesStore.deleteFixedExpense(row.charge.id)
+                    offerUndo("Spesa fissa eliminata") { NotesStore.restoreFixedExpense(row.charge) }
+                },
+            )
+            else -> emptyList()
+        }
+        if (actions.isNotEmpty()) ActionBubble.show(*actions.toTypedArray())
+    }
+    fun noteActions(n: Note) {
+        ActionBubble.show(
+            BubbleAction(
+                if (n.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
+                if (n.pinned) "Togli da in alto" else "Fissa in alto",
+                detail = n.title,
+            ) { NotesStore.togglePin(n.id) },
+            BubbleAction(Icons.Outlined.Share, "Condividi") { share(n.text) },
+            BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                NotesStore.deleteNote(n.id)
+                offerUndo("Nota eliminata") { NotesStore.restoreNote(n) }
+            },
+        )
+    }
     // Gli eventi del calendario sono cose con scadenza come le altre: si rileggono ogni volta che si torna qui,
     // ma la pagina parte da quelli già letti, così le card sono subito alla loro grandezza e non si allargano.
     var events by remember { mutableStateOf(NotesEvents.cached(context)) }
@@ -590,6 +609,7 @@ fun NotesScreen(
                                     row.event?.let { onOpenEvent(it) }
                                     row.charge?.let { openItem(ItemKind.FIXED, it.id) }
                                 },
+                                onLongClick = { dueActions(row) },
                                 onIcon = row.task?.takeIf { !it.done }?.let { task ->
                                     {
                                         haptic(Haptic.CONFIRM)
@@ -610,9 +630,9 @@ fun NotesScreen(
             }
             // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni,
             // per quando li hai scritti, i più nuovi in cima.
-            if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
+            if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty() || doneUndated.isNotEmpty())) {
                 item(key = "undated-timeline") {
-                    val entries = undatedEntries(undatedTasks, notes, today)
+                    val entries = undatedEntries(undatedTasks, notes, today, done = doneUndated)
                     Column(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
                         entries.forEachIndexed { index, (entry, row) ->
                             TimelineRow(
@@ -624,6 +644,10 @@ fun NotesScreen(
                                     row.task?.let { openItem(ItemKind.TASK, it.id) }
                                     row.note?.let { onOpenNote(it.id) }
                                 },
+                                onLongClick = {
+                                    row.task?.let { ActionBubble.show(*taskActions(it).toTypedArray()) }
+                                    row.note?.let { noteActions(it) }
+                                },
                                 onIcon = row.task?.let { task ->
                                     {
                                         haptic(Haptic.CONFIRM)
@@ -634,21 +658,6 @@ fun NotesScreen(
                         }
                     }
                 }
-            }
-            // Sotto, i promemoria senza data già spuntati.
-            if (show(NotesSection.UNDATED) && doneUndated.isNotEmpty()) {
-                item(key = "undated-done-header") {
-                    SectionHeader(
-                        "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
-                        action = "Elimina",
-                        onAction = {
-                            NotesStore.clearDone { it.dueAt == null }
-                            offerUndo(doneUndated, if (doneUndated.size == 1) "Eliminato 1 completato" else "Eliminati ${doneUndated.size} completati")
-                        },
-                    )
-                }
-                item(key = "undated-done") { Box(Modifier.animateItem()) { TaskGroup(null, doneUndated, onTaskDeleted) } }
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
@@ -1095,7 +1104,11 @@ private object DeletedNote {
     }
 }
 
-/** Editor di una nota: si salva da solo quando si esce. */
+/**
+ * Editor di una nota: un foglio, niente barra di pulsanti in alto. Sopra solo Indietro e la riga
+ * di quando è stata toccata; il titolo è la prima riga, grande. In fondo, sopra la tastiera, la
+ * lista e "Altro", che apre il fumetto in vetro (fissa, condividi, elimina). Si salva da sola.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
@@ -1104,10 +1117,11 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     var id by remember { mutableStateOf(noteId) }
     var text by rememberSaveable { mutableStateOf(noteId?.let { NotesStore.note(it)?.text }.orEmpty()) }
     var deleted by remember { mutableStateOf(false) }
-    // Le note con voci da spuntare si aprono come lista; la matita torna al testo.
+    // Le note con voci da spuntare si aprono come lista; il pulsante in fondo torna al testo.
     var checkMode by rememberSaveable { mutableStateOf(noteId != null && Checklist.hasItems(text)) }
     val data by NotesStore.data.collectAsStateWithLifecycle()
-    val pinned = id?.let { current -> data.notes.firstOrNull { it.id == current }?.pinned } ?: false
+    val current = id?.let { now -> data.notes.firstOrNull { it.id == now } }
+    val pinned = current?.pinned ?: false
     val haptic = rememberHaptic()
     // Quando era stata toccata l'ultima volta, prima di aprirla adesso.
     val lastEdited = remember { noteId?.let { NotesStore.note(it)?.updatedAt } }
@@ -1116,75 +1130,94 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         onDispose { if (!deleted) NotesStore.saveNote(id, text) }
     }
 
+    fun more() {
+        haptic(Haptic.LONG_PRESS)
+        ActionBubble.show(
+            *listOfNotNull(
+                id?.let { noteId ->
+                    BubbleAction(
+                        if (pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
+                        if (pinned) "Togli da in alto" else "Fissa in alto",
+                    ) {
+                        haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                        NotesStore.togglePin(noteId)
+                    }
+                },
+                if (text.isBlank()) null else BubbleAction(Icons.Outlined.Share, "Condividi") {
+                    val share = android.content.Intent(android.content.Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .putExtra(android.content.Intent.EXTRA_TEXT, text)
+                    context.startActivity(android.content.Intent.createChooser(share, null))
+                },
+                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                    deleted = true
+                    id?.let { noteId ->
+                        NotesStore.note(noteId)?.let(DeletedNote::put)
+                        NotesStore.deleteNote(noteId)
+                    }
+                    onBack()
+                },
+            ).toTypedArray(),
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(if (noteId == null) "Nuova nota" else "Nota")
-                        if (lastEdited != null) {
-                            Text(
-                                "Modificata " + relativeTime(Instant.ofEpochMilli(lastEdited)),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 4.dp, end = 24.dp, top = 4.dp),
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                }
+                // La riga sopra il titolo, come nelle altre pagine: quando, e se è fissata.
+                Text(
+                    buildString {
+                        append(if (lastEdited == null) "Nuova nota" else "Modificata " + relativeTime(Instant.ofEpochMilli(lastEdited)))
+                        if (pinned) append(" · fissata")
+                    }.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 20.dp, top = 4.dp),
+                )
+            }
+        },
+        bottomBar = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                RoundIconButton(
+                    if (checkMode) Icons.AutoMirrored.Outlined.Notes else Icons.Outlined.ChecklistIcon,
+                    if (checkMode) "Torna al testo" else "Fai una lista",
+                ) {
+                    haptic(Haptic.TOGGLE_ON)
+                    if (checkMode) {
+                        checkMode = false
+                    } else {
+                        text = Checklist.toList(text)
+                        id = NotesStore.saveNote(id, text) ?: id
+                        checkMode = true
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        if (checkMode) {
-                            checkMode = false
-                        } else {
-                            text = Checklist.toList(text)
-                            id = NotesStore.saveNote(id, text) ?: id
-                            checkMode = true
-                        }
-                    }) {
-                        if (checkMode) {
-                            Icon(Icons.Outlined.Edit, contentDescription = "Modifica il testo")
-                        } else {
-                            Icon(Icons.Outlined.ChecklistIcon, contentDescription = "Lista")
-                        }
-                    }
-                    // Fissa in alto: lo stesso della pressione lunga nella lista, ma visibile.
-                    IconButton(onClick = {
-                        id?.let {
-                            haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
-                            NotesStore.togglePin(it)
-                        }
-                    }, enabled = id != null) {
-                        if (pinned) {
-                            Icon(Icons.Filled.PushPinFilled, contentDescription = "Togli da in alto", tint = MaterialTheme.colorScheme.primary)
-                        } else {
-                            Icon(Icons.Outlined.PushPin, contentDescription = "Fissa in alto")
-                        }
-                    }
-                    IconButton(onClick = {
-                        val share = android.content.Intent(android.content.Intent.ACTION_SEND)
-                            .setType("text/plain")
-                            .putExtra(android.content.Intent.EXTRA_TEXT, text)
-                        context.startActivity(android.content.Intent.createChooser(share, null))
-                    }, enabled = text.isNotBlank()) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Condividi")
-                    }
-                    IconButton(onClick = {
-                        deleted = true
-                        id?.let { noteId ->
-                            NotesStore.note(noteId)?.let(DeletedNote::put)
-                            NotesStore.deleteNote(noteId)
-                        }
-                        onBack()
-                    }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Elimina")
-                    }
-                },
-            )
+                }
+                Text(
+                    (if (checkMode) Checklist.progressLabel(text) else NoteText.stats(text)).orEmpty(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") { more() }
+            }
         },
     ) { inner ->
         if (checkMode) {
@@ -1196,43 +1229,53 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(inner)
-                    .imePadding(),
+                    .padding(inner),
             )
             return@Scaffold
         }
-        val photo = id?.let { current -> data.notes.firstOrNull { it.id == current }?.photo }.orEmpty()
+        val photo = current?.photo.orEmpty()
+        val body = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 26.sp,
+        )
         Column(
             Modifier
                 .fillMaxSize()
                 .padding(inner)
-                .imePadding(),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
-        if (photo.isNotEmpty()) {
-            NotePhoto(photo, Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().heightIn(max = 360.dp), crop = false)
-        }
-        TextField(
-            value = text,
-            onValueChange = {
-                text = it
-                // Salvataggio continuo: niente perso se l'app viene chiusa.
-                id = NotesStore.saveNote(id, it) ?: id
-            },
-            placeholder = { Text("Scrivi… la prima riga fa da titolo") },
-            textStyle = TextStyle.Default.merge(MaterialTheme.typography.bodyLarge),
-            visualTransformation = rememberTitleLine(),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .autoFocus(enabled = noteId == null),
-        )
+            if (photo.isNotEmpty()) {
+                NotePhoto(photo, Modifier.padding(bottom = 16.dp).fillMaxWidth().heightIn(max = 360.dp), crop = false)
+            }
+            BasicTextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    // Salvataggio continuo: niente perso se l'app viene chiusa.
+                    id = NotesStore.saveNote(id, it) ?: id
+                },
+                textStyle = body,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                visualTransformation = rememberTitleLine(),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                decorationBox = { field ->
+                    Box {
+                        // Vuota: si vede dove va il titolo e dove il resto.
+                        if (text.isEmpty()) {
+                            Column {
+                                Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                                Text("Scrivi qui…", style = body, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                            }
+                        }
+                        field()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 320.dp)
+                    .autoFocus(enabled = noteId == null),
+            )
         }
     }
 }
@@ -1253,16 +1296,19 @@ private fun NotePhoto(path: String, modifier: Modifier, crop: Boolean = true) {
 /** Dove finisce il titolo di una nota: la prima riga, come nella lista delle Note. */
 internal fun noteTitleEnd(text: String): Int = text.indexOf('\n').let { if (it < 0) text.length else it }
 
-/** La prima riga dell'editor più grande e in grassetto: si vede che è il titolo. */
+/** La prima riga dell'editor grande e in grassetto, con aria sotto: si vede che è il titolo. */
 @Composable
 private fun rememberTitleLine(): VisualTransformation {
-    val title = MaterialTheme.typography.titleLarge
+    val title = MaterialTheme.typography.headlineSmall
     return remember(title) {
         VisualTransformation { text ->
             val end = noteTitleEnd(text.text)
             val styled = buildAnnotatedString {
                 append(text)
-                if (end > 0) addStyle(SpanStyle(fontSize = title.fontSize, fontWeight = FontWeight.SemiBold), 0, end)
+                if (end > 0) {
+                    addStyle(SpanStyle(fontSize = title.fontSize, fontWeight = FontWeight.SemiBold, letterSpacing = title.letterSpacing), 0, end)
+                    addStyle(ParagraphStyle(lineHeight = title.lineHeight), 0, end)
+                }
             }
             TransformedText(styled, OffsetMapping.Identity)
         }
@@ -1280,17 +1326,15 @@ private fun ChecklistView(text: String, onChange: (String) -> Unit, modifier: Mo
         onChange(Checklist.add(text, draft))
         draft = ""
     }
-    LazyColumn(modifier, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
+    LazyColumn(modifier, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
+        // Lo stesso titolo dell'editor di testo; quante voci sono fatte lo dice la barra in fondo.
         item(key = "title") {
-            Column(Modifier.padding(bottom = 8.dp)) {
-                Text(
-                    text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty().ifEmpty { "Lista" },
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Checklist.progressLabel(text)?.let { progress ->
-                    Text(progress, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+            Text(
+                text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty().ifEmpty { "Lista" },
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+            )
         }
         items(Checklist.lines(text), key = { it.index }) { line ->
             when (line) {
