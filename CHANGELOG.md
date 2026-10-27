@@ -5,6 +5,8 @@
 - In Impostazioni › Media, SponsorBlock è una riga sola con acceso o spento e il tempo risparmiato; i dieci tipi di segmento stanno nella sua pagina
 - "Accedi" a YouTube e Spotify ha lo stesso tasto di "Collega" e "Cerca"
 - Il riepilogo delle Notifiche non conta più pioggia e nuove versioni se le notifiche sono bloccate
+
+## 1.272.0
 **Video di YouTube anche quando YouTube fa il controllo "non sei un bot"**
 - Motore dei video aggiornato come quello di NewPipe: chiede i video in un modo che YouTube blocca molto meno, anche col 4G
 - Se YouTube blocca lo stesso, l'app riprova da sola una volta prima di arrendersi
