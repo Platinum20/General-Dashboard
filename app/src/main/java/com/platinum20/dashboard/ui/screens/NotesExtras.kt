@@ -185,7 +185,7 @@ fun ExpensesTab(
         // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
         if (inMonth.isNotEmpty()) {
             item(key = "timeline") {
-                val entries = expenseEntries(inMonth, LocalDate.now())
+                val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
                 Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     entries.forEachIndexed { index, (entry, expense) ->
                         TimelineRow(

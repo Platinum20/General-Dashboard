@@ -228,6 +228,8 @@ object NotesStore {
         _data.value = loaded
         _readProblem.value = copy?.name
         applyFixedExpenses()
+        // Le categorie imparano parole nuove: quelle rimaste in "Altro" si risistemano da sole.
+        update { d -> Expenses.recategorized(d.expenses).let { if (it == d.expenses) d else d.copy(expenses = it) } }
     }
 
     fun readProblemShown() {

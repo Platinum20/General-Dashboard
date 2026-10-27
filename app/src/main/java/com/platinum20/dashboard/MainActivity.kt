@@ -1006,7 +1006,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = topDestinations.any { it.route == currentRoute }
+    // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1135,7 +1136,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 CanvasNavBar(
-                    currentRoute = currentRoute,
+                    // Spese è una card di Oggi: la barra accende Oggi.
+                    currentRoute = if (currentRoute == Routes.EXPENSES) Routes.HOME else currentRoute,
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.
@@ -1312,7 +1314,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
             composable(Routes.EXPENSES) {
-                ExpensesScreen(onBack = { navController.popBackStack() })
+                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })

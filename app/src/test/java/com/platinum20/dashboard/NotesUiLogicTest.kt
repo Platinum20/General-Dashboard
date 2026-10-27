@@ -177,6 +177,8 @@ class NotesUiLogicTest {
         )
         val entries = timelineEntries(groups, today, zone).map { it.first }
         assertEquals(listOf(null, "OTTOBRE", null, "NOVEMBRE", null), entries.map { it.month })
+        // Il mese è già nel segno: "Mar 3", non "Mar 3 nov"; prima del primo segno il giorno resta intero.
+        assertEquals(listOf("Mer 16 set", "Sab 24", "Domani", "Mar 3", null), entries.map { it.dayLabel })
     }
 
     @Test fun passatoSopraLaLinea() {
@@ -204,7 +206,8 @@ class NotesUiLogicTest {
         val entries = timelineEntries(past, today, zone).map { it.first }
         // I promemoria fatti restano nel passato anche se vecchi: non c'è più un limite.
         assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
-        assertEquals(listOf("Mar 28 lug", "Ven 23 ott", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+        // Sotto il segno OTTOBRE il giorno è corto.
+        assertEquals(listOf("Mar 28 lug", "Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
         assertEquals(listOf(null, "OTTOBRE", null, null, null), entries.map { it.month })
     }
 
@@ -222,7 +225,7 @@ class NotesUiLogicTest {
             zone = zone,
         ).map { it.first }
         assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
-        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21 ott"), entries.map { it.dayLabel })
+        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
         // Fra oggi e mercoledì scorso quattro giorni vuoti.
         assertEquals(16f, entries[3].gapDp, 0.01f)
     }
@@ -246,7 +249,7 @@ class NotesUiLogicTest {
             ),
             today,
         ).map { it.first }
-        assertEquals(listOf("Oggi", null, "Ven 23 ott"), entries.map { it.dayLabel })
+        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
         // L'importo per primo, il nome dopo.
         assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[0].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER

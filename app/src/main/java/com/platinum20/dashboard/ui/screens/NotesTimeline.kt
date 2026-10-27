@@ -293,6 +293,7 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
     var previous: LocalDate? = null
     // Il mese si confronta con la riga prima; da adesso in poi con oggi, così sotto "OGGI" non si ripete il mese.
     var monthPrevious: LocalDate? = null
+    var shown: java.time.YearMonth? = null
     var reachedNow = false
     return groups.flatMap { g ->
         val day = g.day
@@ -305,11 +306,14 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
         if (day != null && !g.late) {
             previous = day
             monthPrevious = day
+            // Da qui in giù il mese si legge già: nel segno appena messo, o sotto "OGGI" il mese di oggi.
+            if (month != null) shown = java.time.YearMonth.from(day)
+            else if (!g.past && shown == null) shown = java.time.YearMonth.from(today)
         }
         val label = when {
             g.late -> "Scaduti"
             day == null -> "Senza data"
-            else -> com.platinum20.dashboard.today.Upcoming.dayLabel(day, today)
+            else -> com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown)
         }
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
@@ -384,16 +388,20 @@ internal fun undatedEntries(
         out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = n.icon(), trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
     }
     var previous: LocalDate? = null
+    // Le più nuove in cima: finché non c'è un segno, il mese è quello di oggi.
+    var shown: java.time.YearMonth? = java.time.YearMonth.from(today)
     rows.forEach { (at, row) ->
         val day = dayOf(at)
         val first = day != previous
         val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(day, previous!!) else 0f
         val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, day, today)
+        if (month != null) shown = java.time.YearMonth.from(day)
+        val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, month = month)
+                label, gap, month = month)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
-                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = row.note.icon(),
+                label, gap, icon = row.note.icon(),
                 trailing = NoteText.badge(row.note.text), month = month)
         }
         out += entry to row
@@ -406,19 +414,26 @@ internal fun undatedEntries(
  * Spese come linea del tempo, uguale alle altre: una riga per spesa, le più recenti in cima, il giorno a
  * destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
  */
-internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
+internal fun expenseEntries(
+    expenses: List<com.platinum20.dashboard.notes.Expense>,
+    today: LocalDate,
+    /** Il mese già scritto sopra la linea (il riepilogo della pagina Spese): lì i giorni sono corti. */
+    header: java.time.YearMonth? = java.time.YearMonth.from(today),
+): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
     var previous: LocalDate? = null
+    var shown = header
     return expenses.sortedByDescending { it.date }.map { e ->
         val first = e.date != previous
         val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(e.date, previous!!) else 0f
         val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, e.date, today)
+        if (month != null) shown = java.time.YearMonth.from(e.date)
         previous = e.date
         TimelineEntry(
             "expense-${e.id}",
             com.platinum20.dashboard.today.BriefKind.MONEY,
             // L'importo per primo (Antonio), come l'ora degli eventi.
             "${Expenses.format(e.cents)}  ${Expenses.displayName(e)}",
-            if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
+            if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today, shown) else null,
             gap,
             // Icona e colore dicono la categoria, come la barra del riepilogo.
             color = e.category.color(),
