@@ -55,7 +55,7 @@ object FeedCache {
         .put("p", v.published?.toEpochMilli() ?: 0L).put("s", v.isShort).put("d", v.durationSec)
         .put("l", v.live).put("u", v.upcoming).put("a", v.channelAvatar)
         .put("v", v.views).put("ut", v.uploadedText).put("w", v.watchedPercent)
-        .put("st", v.startsAt?.epochSecond ?: 0L)
+        .put("st", v.startsAt?.epochSecond ?: 0L).put("m", v.membersOnly)
 
     private fun video(o: JSONObject) = YtVideo(
         id = o.getString("id"),
@@ -72,6 +72,7 @@ object FeedCache {
         uploadedText = o.optString("ut"),
         watchedPercent = o.optInt("w"),
         startsAt = o.optLong("st").takeIf { it > 0 }?.let { Instant.ofEpochSecond(it) },
+        membersOnly = o.optBoolean("m"),
     )
 
     private fun <T> JSONArray.objects(map: (JSONObject) -> T): List<T> = (0 until length()).map { map(getJSONObject(it)) }

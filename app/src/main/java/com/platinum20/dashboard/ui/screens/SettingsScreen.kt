@@ -70,6 +70,7 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
@@ -1178,6 +1179,7 @@ private fun UpdateNotifySetting() {
 private fun VideoFilterSettings() {
     val shorts by AppSettings.hideShorts.collectAsState()
     val live by AppSettings.hideLive.collectAsState()
+    val members by AppSettings.hideMembers.collectAsState()
     SettingsItem(
         icon = Icons.Outlined.OndemandVideo,
         accent = TileAccent.ORANGE,
@@ -1194,6 +1196,15 @@ private fun VideoFilterSettings() {
         subtitle = "Niente live in corso o in arrivo in Video",
         onClick = { AppSettings.setHideLive(!live) },
         trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.Lock,
+        accent = TileAccent.ORANGE,
+        title = "Escludi video per membri",
+        subtitle = "Niente video riservati agli iscritti a pagamento",
+        onClick = { AppSettings.setHideMembers(!members) },
+        trailing = { Switch(checked = members, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideMembers(on) }) },
     )
 }
 

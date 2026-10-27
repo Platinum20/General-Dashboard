@@ -95,6 +95,7 @@ object AppSettings {
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
     private const val KEY_HIDE_LIVE = "video_hide_live"
+    private const val KEY_HIDE_MEMBERS = "video_hide_members"
     private const val KEY_AUTOPLAY_NEXT = "video_autoplay_next"
     private const val KEY_SPONSORBLOCK = "video_sponsorblock"
     private const val KEY_SPONSOR_ACTION = "video_sponsorblock_"
@@ -128,6 +129,9 @@ object AppSettings {
     private val _hideLive = MutableStateFlow(false)
     /** In Video niente live, in corso o in arrivo. */
     val hideLive: StateFlow<Boolean> = _hideLive.asStateFlow()
+    private val _hideMembers = MutableStateFlow(true)
+    /** In Video niente video riservati ai membri dei canali (acceso di default). */
+    val hideMembers: StateFlow<Boolean> = _hideMembers.asStateFlow()
     private val _autoplayNext = MutableStateFlow(true)
     /** Finito un video di YouTube (e la coda), parte da solo uno di quelli proposti, come su YouTube. */
     val autoplayNext: StateFlow<Boolean> = _autoplayNext.asStateFlow()
@@ -191,6 +195,7 @@ object AppSettings {
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
         _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
+        _hideMembers.value = prefs.getBoolean(KEY_HIDE_MEMBERS, true)
         _autoplayNext.value = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
         _sponsorBlock.value = prefs.getBoolean(KEY_SPONSORBLOCK, true)
         _sponsorActions.value = SbCategory.entries.associateWith { category ->
@@ -248,6 +253,11 @@ object AppSettings {
     fun setHideLive(enabled: Boolean) {
         _hideLive.value = enabled
         prefs.edit().putBoolean(KEY_HIDE_LIVE, enabled).apply()
+    }
+
+    fun setHideMembers(enabled: Boolean) {
+        _hideMembers.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_MEMBERS, enabled).apply()
     }
 
     fun setAutoplayNext(enabled: Boolean) {

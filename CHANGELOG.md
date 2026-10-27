@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.283.0
+**Niente video per membri**
+- In Video spariscono i video riservati a chi paga l'abbonamento al canale: senza iscrizione non si possono guardare
+- Lo scegli in Impostazioni › Media con "Escludi video per membri", accanto a Escludi Shorts ed Escludi live (acceso di default)
+
 ## 1.282.0
 **Il video vola davvero nel mini player**
 - Trascinandolo giù il video si rimpicciolisce mentre segue il dito, e lasciato va a posarsi sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai spostato lì)
