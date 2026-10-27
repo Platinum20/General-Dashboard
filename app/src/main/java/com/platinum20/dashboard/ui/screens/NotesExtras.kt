@@ -78,7 +78,7 @@ private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIA
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
- * Spese: il totale del mese, il budget e dove vanno i soldi. Si aggiungono solo dal +
+ * Spese: il totale del mese e dove vanno i soldi. Si aggiungono solo dal +
  * ("12,50 pizza", "ogni mese il 5 affitto 650"), la categoria si indovina dalle parole.
  */
 @Composable
@@ -88,7 +88,6 @@ fun ExpensesTab(
     onDeleted: (Expense) -> Unit = {},
 ) {
     var month by remember { mutableStateOf(YearMonth.now()) }
-    var editingBudget by remember { mutableStateOf(false) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
@@ -96,90 +95,50 @@ fun ExpensesTab(
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
 
     LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // Il riepilogo del mese, compatto: così la linea del tempo sale.
         item {
             CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
+                Column(Modifier.padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { month = month.minusMonths(1) }) {
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Mese prima")
                         }
                         Text(
                             month.format(monthFormat).replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleSmall,
                         )
                         IconButton(onClick = { month = month.plusMonths(1) }, enabled = month < YearMonth.now()) {
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Mese dopo")
                         }
-                    }
-                    Text(Expenses.format(total), style = MaterialTheme.typography.displaySmall)
-                    if (previous > 0) {
-                        val diff = total - previous
-                        Text(
-                            "Il mese prima ${Expenses.format(previous)}" +
-                                if (month == YearMonth.now()) "" else if (diff > 0) " · +${Expenses.format(diff)}" else " · -${Expenses.format(-diff)}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                     }
                     val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
-                    if (fixedCents > 0) {
+                    val lines = listOfNotNull(
+                        previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
+                        if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
+                    )
+                    if (lines.isNotEmpty()) {
                         Text(
-                            "Fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}",
+                            lines.joinToString(" · "),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(start = 12.dp),
                         )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    val budget = data.budgetCents
-                    Row(
-                        Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { editingBudget = true }.padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (budget == null) {
-                            Text("Imposta un budget mensile", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                        } else {
-                            Column(Modifier.fillMaxWidth()) {
-                                val over = total > budget
-                                LinearProgressIndicator(
-                                    progress = { (total.toFloat() / budget).coerceIn(0f, 1f) },
-                                    color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                                Spacer(Modifier.height(4.dp))
-                                Text(
-                                    if (over) "Budget ${Expenses.format(budget)} superato di ${Expenses.format(total - budget)}"
-                                    else "Budget ${Expenses.format(budget)} · restano ${Expenses.format(budget - total)}" +
-                                        // Le fisse ancora da arrivare sono già impegnate: il "al giorno" conta solo il resto.
-                                        if (month == YearMonth.now()) " (${dailyLeft(budget - total - Expenses.fixedStillDue(data.fixedExpenses, LocalDate.now()))} al giorno)" else "",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
                     }
                     val split = Expenses.byCategory(data.expenses, month)
                     if (split.size > 1) {
-                        Spacer(Modifier.height(8.dp))
-                        split.forEach { (category, cents) ->
-                            Row(Modifier.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(category.label, style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(76.dp))
-                                LinearProgressIndicator(
-                                    progress = { cents.toFloat() / total.coerceAtLeast(1) },
-                                    modifier = Modifier.weight(1f),
-                                    drawStopIndicator = {},
-                                )
-                                Text(
-                                    Expenses.format(cents),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(start = 8.dp).width(72.dp),
-                                )
-                            }
-                        }
+                        Text(
+                            split.joinToString(" · ") { (category, cents) -> "${category.label} ${Expenses.format(cents)}" },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 12.dp, top = 2.dp),
+                        )
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
         }
         if (data.fixedExpenses.isNotEmpty()) {
             item(key = "fixed") {
@@ -230,7 +189,7 @@ fun ExpensesTab(
             item {
                 Text(
                     "Nessuna spesa in questo mese. Scrivila come un messaggio, \"12,50 pizza\" o \"benzina 40€\": " +
-                        "la categoria si sceglie da sola. Con un budget, Oggi ti avvisa quando ti avvicini al limite.",
+                        "la categoria si sceglie da sola.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp),
@@ -239,13 +198,6 @@ fun ExpensesTab(
         }
     }
 
-    if (editingBudget) BudgetDialog(data.budgetCents, onDismiss = { editingBudget = false })
-}
-
-private fun dailyLeft(cents: Long): String {
-    val today = LocalDate.now()
-    val days = today.lengthOfMonth() - today.dayOfMonth + 1
-    return Expenses.format((cents / days).coerceAtLeast(0))
 }
 
 private fun centsOf(text: String): Long? {
@@ -253,40 +205,6 @@ private fun centsOf(text: String): Long? {
     // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
     val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean
     return number.toBigDecimalOrNull()?.movePointRight(2)?.toLong()
-}
-
-@Composable
-private fun BudgetDialog(current: Long?, onDismiss: () -> Unit) {
-    var text by remember { mutableStateOf(current?.let { (it / 100).toString() }.orEmpty()) }
-    val save = {
-        NotesStore.setBudget(centsOf(text))
-        onDismiss()
-    }
-    CanvasDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Budget mensile") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text("Es. 600") },
-                suffix = { Text("€") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { save() }),
-                modifier = Modifier.autoFocus(enabled = current == null),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = save) { Text("Salva") }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                NotesStore.setBudget(null)
-                onDismiss()
-            }) { Text("Togli") }
-        },
-    )
 }
 
 @Composable

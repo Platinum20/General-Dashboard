@@ -280,7 +280,7 @@ object Briefing {
             habits = notes.habits,
             parcels = notes.parcels,
             expenses = notes.expenses,
-            budgetCents = notes.budgetCents,
+            budgetCents = null,
             fixedExpenses = notes.fixedExpenses,
             max = max,
             relative = relative,

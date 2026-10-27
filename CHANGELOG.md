@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.208.0
+**Spese più pulita**
+- Il riepilogo del mese in cima è compatto: mese e totale su una riga, sotto il mese prima e le categorie in una riga sola
+- L'importo di ogni spesa si vede sempre, si accorcia solo il nome
+- I nomi presi male dalle notifiche (come "fronte di") diventano "Spesa" o la categoria
+- Via il budget mensile, anche dalla card in Oggi e da Adesso
+
 ## 1.207.0
 **Paola e Miro parlano davvero**
 - Paola e Miro non partivano e leggeva al loro posto la voce del telefono: ora si sentono le loro voci, come Riccardo

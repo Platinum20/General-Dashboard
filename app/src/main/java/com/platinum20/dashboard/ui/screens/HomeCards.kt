@@ -210,14 +210,13 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
 }
 
 /**
- * Spese, in Oggi dalla 1.186: il totale del mese, il budget e il prossimo addebito. Si tocca per la pagina
+ * Spese, in Oggi dalla 1.186: il totale del mese e il prossimo addebito (il budget è stato tolto nella 1.208). Si tocca per la pagina
  * intera (mesi, categorie, fisse, scontrino). Compare solo quando c'è qualcosa da dire.
  */
 @Composable
 fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
     val month = YearMonth.from(today)
     val total = Expenses.total(data.expenses, month)
-    val budget = data.budgetCents
     val next = data.fixedExpenses.minByOrNull { it.nextDate(today) }
     Section(title = "Spese", modifier = Modifier.captureTarget(CaptureMode.EXPENSE)) {
         Row(
@@ -235,16 +234,6 @@ fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
-                if (budget != null) {
-                    val over = total > budget
-                    Text(
-                        if (over) "Budget superato di ${Expenses.format(total - budget)}"
-                        else "Restano ${Expenses.format(budget - total)} del budget",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (over) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
                 next?.let {
                     val day = it.nextDate(today)
                     Text(
@@ -266,5 +255,5 @@ fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
     }
 }
 
-/** Si mostra la card Spese solo con qualcosa dentro: una spesa, una fissa o un budget. */
-val NotesData.hasMoney: Boolean get() = expenses.isNotEmpty() || fixedExpenses.isNotEmpty() || budgetCents != null
+/** Si mostra la card Spese solo con qualcosa dentro: una spesa o una fissa. */
+val NotesData.hasMoney: Boolean get() = expenses.isNotEmpty() || fixedExpenses.isNotEmpty()

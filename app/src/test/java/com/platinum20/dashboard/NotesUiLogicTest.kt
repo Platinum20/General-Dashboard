@@ -212,7 +212,12 @@ class NotesUiLogicTest {
             today,
         ).map { it.first }
         assertEquals(listOf("Oggi", null, "Ven 23 ott"), entries.map { it.dayLabel })
-        assertEquals(true, entries[0].text.startsWith("Benzina · "))
+        assertEquals("Benzina", entries[0].text)
+        assertEquals(true, entries[0].trailing != null)
+        val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
+        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
+        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
+        assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
         assertEquals(8f, entries[2].gapDp)
     }
 

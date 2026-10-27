@@ -57,6 +57,8 @@ data class TimelineEntry(
     val past: Boolean = false,
     /** L'icona a sinistra, se non è quella del tipo (le note). */
     val icon: ImageVector? = null,
+    /** Sempre visibile dopo il nome, che si accorcia lui (l'importo delle spese). */
+    val trailing: String? = null,
 )
 
 /** L'icona piccola di una riga: evento, promemoria, data, pacco o addebito. */
@@ -116,6 +118,9 @@ fun TimelineRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(vertical = 7.dp),
         )
+        entry.trailing?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+        }
         Spacer(Modifier.width(8.dp))
         val first = entry.dayLabel != null
         Text(
