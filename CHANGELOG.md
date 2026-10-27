@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.278.0
+**Aggiornamenti: il tasto non sta più sotto il mini player**
+- Se sta suonando qualcosa, "Controlla e aggiorna" sale sopra il mini player invece di restarci sotto
+
 ## 1.277.0
 **Aggiornamenti automatici**
 - Le nuove versioni si scaricano e si installano da sole, senza toccare nulla (Android 12 o più recente)
