@@ -121,6 +121,19 @@ object Expenses {
 
     fun format(cents: Long): String = currency.format(cents / 100.0)
 
+    /** Parole che non chiudono mai un nome: "fronte di" è un pezzo di notifica preso male. */
+    private val dangling = setOf("di", "a", "da", "in", "con", "su", "per", "tra", "fra", "il", "lo", "la", "i", "gli", "le", "del", "della", "al", "alla", "e", "un", "una")
+
+    /**
+     * Il nome da mostrare di una spesa: il testo se è un nome vero, altrimenti la categoria ("Spesa" per Altro).
+     * Un testo che finisce con una preposizione o un articolo è un pezzo di frase, non un nome.
+     */
+    fun displayName(e: Expense): String {
+        val text = e.text.trim()
+        val last = text.substringAfterLast(' ').lowercase()
+        return if (text.isEmpty() || last in dangling) (if (e.category == ExpenseCategory.OTHER) "Spesa" else e.category.label) else text
+    }
+
     fun total(list: List<Expense>, month: YearMonth): Long =
         list.filter { YearMonth.from(it.date) == month }.sumOf { it.cents }
 

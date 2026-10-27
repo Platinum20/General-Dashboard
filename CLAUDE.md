@@ -58,7 +58,7 @@ Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica,
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
-type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → receipt = expense text, else text for CaptureGuess; was the Spese "scontrino" card until 1.202),
+type from text: never ask the user the type), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → `decide`: receipt = expense text, date/parcel code = text in the bar, else note with the photo (`Note.photo` = file in filesDir/note-photos, shown by `NotePhoto` in NotesScreen); was the Spese "scontrino" card until 1.202),
 `Dictation.kt`/`VoiceCapture.kt` (in-app speech, no Google dialog), `SavedLink.kt`,
 `QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
@@ -78,7 +78,8 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
   (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
   `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
   `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
-  adapters over CanvasPlayer. Leftover: VideoPlayerScreen (phone videos) still has its own ExoPlayer.
+  adapters over CanvasPlayer. `VideoPlayerScreen` (route media/video) is only the picker for phone
+  videos/files/links: `MediaLauncher.playVideo` plays them on CanvasPlayer (ResumeKind.VIDEO).
 - `media/youtube/` (YouTubeWeb/Api/Store, YtMusic, YtHistory, YtFavorites) + `player/`
   (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
 - `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyPlayer` = own hidden

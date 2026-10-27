@@ -17,7 +17,7 @@ import com.platinum20.dashboard.notes.NotesStore
 
 /**
  * Spese, una pagina sua dalla 1.186: ci si arriva dalla card Spese di Oggi (prima stava in Note).
- * Il mese, il budget e le fisse. Lo scontrino ora si allega dalla graffetta della barra.
+ * Il mese e le fisse. Lo scontrino ora si allega dalla graffetta della barra.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

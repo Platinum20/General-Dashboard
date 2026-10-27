@@ -199,7 +199,7 @@ fun HomeScreen(
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
             fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Briefing.CARD_MAX,
         )
     }
@@ -225,7 +225,7 @@ fun HomeScreen(
     LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
         val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = notes.budgetCents,
+            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
             fixedExpenses = notes.fixedExpenses,
         )
         DashboardWidget.saveBriefing(context, lines)

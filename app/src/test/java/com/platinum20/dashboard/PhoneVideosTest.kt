@@ -2,6 +2,9 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.media.PhoneVideo
 import com.platinum20.dashboard.media.PhoneVideos
+import com.platinum20.dashboard.media.EngineNow
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.VideoEntry
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -53,5 +56,16 @@ class PhoneVideosTest {
         assertEquals(PhoneVideos.Invite.ASK, PhoneVideos.invite(deniedOnce = false, rationale = false))
         assertEquals(PhoneVideos.Invite.ASK, PhoneVideos.invite(deniedOnce = true, rationale = true))
         assertEquals(PhoneVideos.Invite.OPEN_SETTINGS, PhoneVideos.invite(deniedOnce = true, rationale = false))
+    }
+
+    /** Un video del telefono è una voce del player unico: stessa coda, riparte da dove era. */
+    @Test fun videoDelTelefonoNelPlayerUnico() {
+        val entry = VideoEntry(uri = "content://media/external/video/media/7", title = "VID_7", positionMs = 40_000, durationMs = 120_000)
+        val item = ResumeItem.fromVideo(entry)
+        assertEquals(ResumeKind.VIDEO, item.kind)
+        assertEquals(entry.uri, item.key)
+        assertEquals(40_000L, item.positionMs)
+        assertEquals("Video del telefono", item.subtitle)
+        assertEquals(true, EngineNow(1, item).hasVideo)
     }
 }

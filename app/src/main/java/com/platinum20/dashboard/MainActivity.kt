@@ -180,6 +180,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.platinum20.dashboard.media.MediaLauncher
 import com.platinum20.dashboard.media.MediaService
 import com.platinum20.dashboard.media.youtubeWatchUrl
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
@@ -362,7 +363,6 @@ object Routes {
     const val VIDEO = "media/video"
     const val VIDEO_PATTERN = "media/video?uri={uri}"
 
-    fun video(uri: String) = "media/video?uri=${Uri.encode(uri)}"
     const val YOUTUBE_FEED = "media/youtube"
     const val SPOTIFY_FEED = "media/spotify"
     const val RADIO = "media/radio"
@@ -996,7 +996,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                             SpotifyPlayer.playLink(context, request.url)
                             navController.navigate(Routes.PLAYER)
                         }
-                        else -> navController.navigate(Routes.video(request.url))
+                        else -> navController.navigate(MediaLauncher.playVideo(context, Uri.parse(request.url)))
                     }
                 }
             }
@@ -1253,9 +1253,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 arguments = listOf(navArgument("uri") { type = NavType.StringType; nullable = true; defaultValue = null }),
             ) { entry ->
                 VideoPlayerScreen(
-                    startUri = entry.arguments?.getString("uri"),
                     onBack = { navController.popBackStack() },
                     onOpenYouTube = { navController.navigate(Routes.youtubeWatch(it)) },
+                    onOpenPlayer = { navController.navigate(Routes.PLAYER) },
                 )
             }
             composable(
