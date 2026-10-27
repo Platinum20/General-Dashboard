@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.206.0
+**La foto allegata diventa una nota**
+- Se nella foto allegata con la graffetta non c'è uno scontrino, una data o un codice di spedizione, Canvas la salva come nota con la foto (si può annullare dal fumetto)
+- Quello che avevi già scritto nella barra fa da titolo, il testo letto nella foto resta nella nota, così la ritrovi cercando
+- Nelle Note la foto si vede in anteprima e, aprendo la nota, per intero
+
 ## 1.204.0
 **Spese sulla linea del tempo, e i promemoria spuntati restano in Note**
 - Le spese del mese stanno sulla stessa linea del tempo di Prossimi giorni e Note: le più recenti in cima, il giorno a destra, la linea che si allunga fra giorni lontani
