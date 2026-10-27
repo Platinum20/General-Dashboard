@@ -363,11 +363,11 @@ object YtPlayer {
     }
 
     /** Segna il video in "Continua" con il punto a cui si è (lo chiama il player unico). */
-    internal fun remember(p: ExoPlayer) {
+    internal fun remember(p: ExoPlayer, at: Long = System.currentTimeMillis()) {
         val stream = _now.value?.stream ?: return
         // Il player sta ancora caricando questo video: la posizione è quella del video di prima.
         if (p.currentMediaItem?.mediaId != stream.id) return
-        MediaHistory.record(resumeEntry(stream, p.currentPosition, p.duration, System.currentTimeMillis(), _now.value?.audioOnly == true))
+        MediaHistory.record(resumeEntry(stream, p.currentPosition, p.duration, at, _now.value?.audioOnly == true))
     }
 
     /** La voce di "Riprendi" per [stream] arrivato a [positionMs]: funzione pura, provata nei test. */
