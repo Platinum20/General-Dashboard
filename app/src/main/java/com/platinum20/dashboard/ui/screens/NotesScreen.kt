@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -867,6 +868,8 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
         Row(Modifier.padding(16.dp)) {
             // L'anteprima di quello che si è salvato: copertina, miniatura del video, foto dell'articolo.
             saved?.takeIf { it.image.isNotBlank() }?.let { SavedPreview(it, it.image) }
+            // La foto allegata con la graffetta.
+            if (note.photo.isNotEmpty()) NotePhoto(note.photo, Modifier.padding(end = 12.dp).size(width = 96.dp, height = 64.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     saved?.takeIf { it.image.isBlank() }?.let {
@@ -1109,6 +1112,16 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             )
             return@Scaffold
         }
+        val photo = id?.let { current -> data.notes.firstOrNull { it.id == current }?.photo }.orEmpty()
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(inner)
+                .imePadding(),
+        ) {
+        if (photo.isNotEmpty()) {
+            NotePhoto(photo, Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().heightIn(max = 360.dp), crop = false)
+        }
         TextField(
             value = text,
             onValueChange = {
@@ -1127,12 +1140,25 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 unfocusedIndicatorColor = Color.Transparent,
             ),
             modifier = Modifier
-                .fillMaxSize()
-                .padding(inner)
-                .imePadding()
+                .fillMaxWidth()
+                .weight(1f)
                 .autoFocus(enabled = noteId == null),
         )
+        }
     }
+}
+
+/** La foto di una nota, dal file salvato nell'app: ritagliata nella lista, intera nell'editor. */
+@Composable
+private fun NotePhoto(path: String, modifier: Modifier, crop: Boolean = true) {
+    coil3.compose.AsyncImage(
+        model = java.io.File(path),
+        contentDescription = "Foto",
+        contentScale = if (crop) androidx.compose.ui.layout.ContentScale.Crop else androidx.compose.ui.layout.ContentScale.Fit,
+        modifier = modifier
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 /** Dove finisce il titolo di una nota: la prima riga, come nella lista delle Note. */
