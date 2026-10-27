@@ -206,6 +206,12 @@ object NeuralVoice {
         }
     }
 
+    /**
+     * Un quarto di secondo di campioni float, in byte interi di campione: a 22050 Hz (Paola, Miro)
+     * il vecchio conto dava 22050 byte, non multiplo di 4, e il telefono rifiutava l'AudioTrack.
+     */
+    internal fun bufferBytes(rate: Int, min: Int): Int = maxOf(min, rate / 4 * 4)
+
     private fun openTrack(rate: Int): AudioTrack {
         val min = AudioTrack.getMinBufferSize(rate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
         return AudioTrack.Builder()
@@ -223,7 +229,7 @@ object NeuralVoice {
                     .build(),
             )
             .setTransferMode(AudioTrack.MODE_STREAM)
-            .setBufferSizeInBytes(maxOf(min, rate * 4 / 4))
+            .setBufferSizeInBytes(bufferBytes(rate, min))
             .build()
     }
 }

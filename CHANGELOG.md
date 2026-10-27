@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.207.0
+**Paola e Miro parlano davvero**
+- Paola e Miro non partivano e leggeva al loro posto la voce del telefono: ora si sentono le loro voci, come Riccardo
+- Se una voce non parte, un tocco sulla riga sotto le voci mostra l'errore per intero
+
 ## 1.205.0
 **Linea del tempo più pulita, e una piccola resistenza prima del passato**
 - In Prossimi giorni, Note e Spese la linea sta direttamente sulla pagina, senza i bordi della card ai lati, e in fondo c'è spazio sopra la barra
