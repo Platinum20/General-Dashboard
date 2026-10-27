@@ -310,7 +310,7 @@ class NotesUiLogicTest {
         assertEquals(listOf("Oggi", "12 set"), marks.map { it.tick })
     }
 
-    /** Spese si chiudeva all'apertura: prima della misura il conto andava in overflow (1.230). */
+    /** Spese si chiudeva all'apertura: prima della misura il conto andava in overflow (1.231). */
     @Test fun spazioSottoOggiSenzaOverflow() {
         assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = null))
         assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = null))
