@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.238.0
+**Copertine di Musica pulite**
+- In Musica ogni fila mostra tre copertine intere: nessuna resta tagliata sul bordo destro, le altre arrivano scorrendo
+- La prima lettera sotto le copertine non viene più tagliata
+- Il nome dell'artista sta subito sotto il titolo, senza lo spazio vuoto in mezzo
+
 ## 1.237.0
 **Più tardi = i video salvati nelle note**
 - In Video il riquadro Più tardi mostra i video di YouTube che hai nelle note, dal più recente: quelli salvati tenendo premuto e i link di YouTube incollati o condivisi
