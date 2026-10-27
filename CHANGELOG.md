@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.251.0
+**Pagina del video YouTube più pulita**
+- Mi piace e Non mi piace stanno a destra, sulla riga del canale
+- Sotto, tre tasti larghi uguali su una riga: Commenti, Correlati, Condividi; commenti e video correlati si aprono solo toccandoli
+- La data dice "7 ore fa" invece del codice
+- Descrizione su due righe senza riquadro, con i link veri: un video di YouTube parte nell'app, gli altri link si copiano
+- Commenti: se YouTube non li dà si vede "Non riesco a caricare i commenti" con Riprova; "Commenti disattivati" solo se li ha spenti l'autore
+
 ## 1.250.0
 **Chiave di Spotify di nuovo nelle impostazioni**
 - Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)
