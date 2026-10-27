@@ -93,7 +93,7 @@ object FeedCache {
     // --- Spotify ---
 
     private fun item(i: SpItem) = JSONObject()
-        .put("id", i.id).put("u", i.uri).put("k", i.kind.name).put("t", i.title).put("s", i.subtitle).put("i", i.image)
+        .put("id", i.id).put("u", i.uri).put("k", i.kind.name).put("t", i.title).put("s", i.subtitle).put("i", i.image).put("d", i.durationMs)
 
     private fun item(o: JSONObject) = SpItem(
         id = o.getString("id"),
@@ -102,6 +102,7 @@ object FeedCache {
         title = o.optString("t"),
         subtitle = o.optString("s"),
         image = o.optString("i"),
+        durationMs = o.optLong("d"),
     )
 
     private fun items(list: List<SpItem>) = list.toArray(::item)
