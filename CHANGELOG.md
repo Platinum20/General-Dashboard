@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.259.0
+**Spese: il mese segue il dito**
+- Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
+- Una piccola vibrazione ti dice quando, lasciando, cambierà mese
+- Il mese nuovo entra scorrendo dal lato opposto (trascini a sinistra, arriva da destra)
+
 ## 1.257.0
 **YouTube: le anteprime non danno più errore**
 - Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
