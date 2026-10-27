@@ -99,6 +99,10 @@ import com.platinum20.dashboard.autofill.AutoFill
 import androidx.compose.material.icons.outlined.AutoAwesome
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.youtube.YouTubeStore
@@ -138,6 +142,10 @@ fun SettingsScreen(
     val layout by AppSettings.homeLayout.collectAsState()
     val haptic = rememberHaptic()
     val loggedIn by Accounts.loggedIn.collectAsState()
+    remember { YouTubeAuth.init(context); SpotifyAuth.init(context) }
+    val scope = rememberCoroutineScope()
+    val youTubeOfficial by YouTubeAuth.connected.collectAsState()
+    val spotifyOfficial by SpotifyAuth.connected.collectAsState()
     AutoFill.init(context)
     val autoFillOn by AutoFill.enabled.collectAsState()
     // La località si legge dalle preferenze: si rilegge tornando dalla scelta della città.
@@ -191,6 +199,8 @@ fun SettingsScreen(
                     MorningSettings()
                     RowDivider()
                     RainAlertSetting()
+                    RowDivider()
+                    RadioAlarmSetting()
                     RowDivider()
                     UpdateNotifySetting()
                 }
@@ -255,7 +265,13 @@ fun SettingsScreen(
                 SettingsBlock("Account") {
                     // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
                     MediaService.entries.forEachIndexed { index, service ->
-                        val connected = service in loggedIn
+                        // Il collegamento ufficiale stava nella chiave in alto di Musica e Video.
+                        val official = when (service) {
+                            MediaService.YOUTUBE -> youTubeOfficial
+                            MediaService.SPOTIFY -> spotifyOfficial
+                        }
+                        val connected = service in loggedIn || official
+                        val connectOfficial = rememberOfficialConnect(service)
                         if (index > 0) RowDivider()
                         SettingsItem(
                             icon = when (service) {
@@ -267,15 +283,24 @@ fun SettingsScreen(
                                 MediaService.SPOTIFY -> TileAccent.GREEN
                             },
                             title = service.label,
-                            subtitle = if (connected) "Collegato · feed e player in Media" else "Non collegato",
+                            subtitle = when {
+                                official -> "Collegamento ufficiale · feed e player in Media"
+                                connected -> "Collegato · tocca per il collegamento ufficiale"
+                                else -> "Non collegato"
+                            },
+                            onClick = if (connected && !official) connectOfficial else null,
                             trailing = {
                                 if (connected) {
                                     TextButton(onClick = {
                                         haptic(Haptic.TICK)
                                         Accounts.logout(service)
                                         when (service) {
-                                            MediaService.YOUTUBE -> YouTubeStore.clear()
+                                            MediaService.YOUTUBE -> {
+                                                scope.launch { YouTubeAuth.disconnect(context) }
+                                                YouTubeStore.clear()
+                                            }
                                             MediaService.SPOTIFY -> {
+                                                SpotifyAuth.disconnect()
                                                 SpotifyWebSession.clear()
                                                 SpotifyStore.clear()
                                             }

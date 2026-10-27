@@ -159,6 +159,7 @@ import com.platinum20.dashboard.ui.screens.PullToSearchIndicator
 import com.platinum20.dashboard.ui.screens.LocalOpenSearch
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
 import com.platinum20.dashboard.ui.screens.rememberPullToSearch
+import com.platinum20.dashboard.ui.screens.SearchFilter
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
 import com.platinum20.dashboard.ui.screens.InAppLinks
@@ -357,6 +358,8 @@ object Routes {
     const val CUSTOMIZE = "home/customize"
     const val EXPENSES = "home/expenses"
     const val SEARCH = "home/search"
+    const val SEARCH_PATTERN = "home/search?f={f}"
+    fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}"
     const val MEDIA = "media"
@@ -1164,9 +1167,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque.
-        val pullSearch = rememberPullToSearch(enabled = showBottomBar) {
-            navController.navigate(Routes.SEARCH) { launchSingleTop = true }
+        // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque; dentro Musica,
+        // Video e Radio e podcast parte già ristretta a quella fonte (al posto delle loro ricerche).
+        val pageFilter = SearchFilter.forRoute(currentRoute)
+        val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
+            navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
         Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
         NavHost(
@@ -1265,8 +1270,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     ?: MediaService.YOUTUBE
                 LoginScreen(service = service, onDone = { navController.popBackStack() })
             }
-            composable(Routes.SEARCH) {
+            composable(
+                Routes.SEARCH_PATTERN,
+                arguments = listOf(navArgument("f") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
                 SearchScreen(
+                    initialFilter = entry.arguments?.getString("f")
+                        ?.let { f -> SearchFilter.entries.firstOrNull { it.name == f } } ?: SearchFilter.ALL,
                     onBack = { navController.popBackStack() },
                     onOpenNote = { openNote(it) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },

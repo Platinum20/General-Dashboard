@@ -62,9 +62,21 @@ import java.time.format.DateTimeFormatter
 private val eventHour = DateTimeFormatter.ofPattern("HH:mm")
 
 /** I filtri di Cerca ovunque: Tutto, oppure una sola parte dell'app. */
-private enum class SearchFilter(val label: String) {
+internal enum class SearchFilter(val label: String) {
     ALL("Tutto"), NOTES("Note"), AGENDA("Agenda"), NEWS("Notizie"),
-    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio"), PODCAST("Podcast"),
+    // Radio e podcast insieme, come la loro pagina in Media.
+    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio e podcast");
+
+    companion object {
+        /** Il filtro già scelto quando si tira giù dentro una pagina di Media (es. "media/spotify" → Musica). */
+        fun forRoute(route: String?): SearchFilter? = when {
+            route == null -> null
+            route.startsWith("media/spotify") -> MUSIC
+            route.startsWith("media/youtube") || route.startsWith("media/video") -> VIDEO
+            route.startsWith("media/radio") || route.startsWith("media/podcast") -> RADIO
+            else -> null
+        }
+    }
 }
 
 /** Quello che si trova in rete per la ricerca: Spotify, YouTube, radio e podcast. */
@@ -93,6 +105,8 @@ fun SearchScreen(
     /** Qualcosa è partito nel player condiviso: si apre il player. */
     onOpenPlayer: () -> Unit = {},
     onWatch: (String) -> Unit = {},
+    /** Aperta da una pagina di Media: parte già ristretta a quella fonte. */
+    initialFilter: SearchFilter = SearchFilter.ALL,
 ) {
     val context = LocalContext.current
     NotesStore.init(context)
@@ -107,7 +121,7 @@ fun SearchScreen(
     val scope = rememberCoroutineScope()
     val today = remember { LocalDate.now() }
     var events by remember { mutableStateOf<Map<LocalDate, List<CalendarEvent>>>(emptyMap()) }
-    var filter by rememberSaveable { mutableStateOf(SearchFilter.ALL) }
+    var filter by rememberSaveable { mutableStateOf(initialFilter) }
     var query by remember { mutableStateOf("") }
     var media by remember { mutableStateOf(MediaHits()) }
     // Le fonti aperte con "Mostra altri": le altre restano corte.
@@ -189,7 +203,7 @@ fun SearchScreen(
                 val music = if (fresh && shows(SearchFilter.MUSIC)) media.spotify.filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE } else emptyList()
                 val videos = if (fresh && shows(SearchFilter.VIDEO)) media.videos else emptyList()
                 val radio = if (fresh && shows(SearchFilter.RADIO)) media.radio else emptyList()
-                val pods = if (shows(SearchFilter.PODCAST) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
+                val pods = if (shows(SearchFilter.RADIO) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
                 if (music.isNotEmpty()) item(key = "music") {
                     SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }) { item ->
                         ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {

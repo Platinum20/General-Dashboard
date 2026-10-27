@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.227.0
+**Musica più semplice, solo Spotify**
+- Musica è una pagina sola che scorre: nuove uscite, Mix per te, le tue playlist, ascoltati di recente, brani che ti piacciono, album salvati, ognuna in una fila che scorre di lato
+- Nuovi "Mix per te": uno per ognuno dei tuoi artisti più ascoltati, con i suoi brani e altri tuoi, ordine nuovo ogni giorno (Spotify non dà i suoi Daily Mix alle app personali)
+- YouTube Music tolto dall'app
+- Niente più tasti in alto in Musica e Video: per cercare trascini giù, e Cerca ovunque parte già su Musica, Video o Radio e podcast
+- Il collegamento ufficiale di Spotify e YouTube si fa in Impostazioni › Account
+- La sveglia con la radio è in Impostazioni › Cosa ti avvisa, e lì scegli anche la stazione
+- In Cerca ovunque radio e podcast sono un filtro solo
+
 ## 1.226.0
 **Tutte le linee del tempo nello stesso verso**
 - Note e Spese vanno come Prossimi giorni: il passato sopra, le cose più recenti in fondo
