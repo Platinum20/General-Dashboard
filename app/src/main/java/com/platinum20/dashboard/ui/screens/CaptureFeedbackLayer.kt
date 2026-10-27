@@ -152,7 +152,7 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
                             haptic(Haptic.TICK)
                             notice = null
                             scope.launch { undo() }
-                        }) { Text("Annulla") }
+                        }) { Text(n.actionLabel) }
                     } else {
                         Spacer(Modifier.width(12.dp))
                     }

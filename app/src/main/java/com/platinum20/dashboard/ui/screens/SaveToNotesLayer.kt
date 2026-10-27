@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeKind
 import androidx.activity.compose.BackHandler
@@ -92,7 +93,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 haptic(Haptic.CONFIRM)
                 SavedLinks.dismiss()
                 CanvasPlayer.add(media)
-                android.widget.Toast.makeText(context, "In coda: ${media.title}", android.widget.Toast.LENGTH_SHORT).show()
+                CaptureFeedback.tell(context, "In coda: ${media.title}", Icons.Rounded.QueueMusic)
             }
         }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
