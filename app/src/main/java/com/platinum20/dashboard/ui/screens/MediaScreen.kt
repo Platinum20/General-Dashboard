@@ -3,6 +3,8 @@ package com.platinum20.dashboard.ui.screens
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.Routes
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -173,12 +175,13 @@ fun MediaScreen(
         ) {
             // Le tre sezioni, una accanto all'altra: il colore dell'icona le distingue a colpo d'occhio.
             item(key = "sections") {
-                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Tutte alte uguali (Antonio): la riga prende l'altezza della più alta e ognuna la riempie.
+                Row(Modifier.padding(horizontal = 16.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SectionTile(
                         icon = Icons.Outlined.GraphicEq,
                         accent = TileAccent.GREEN,
                         title = "Musica",
-                        subtitle = if (spotifyOn) "Spotify e YouTube Music" else "YouTube Music",
+                        subtitle = if (spotifyOn) "Spotify e YT" else "YouTube Music",
                         active = now?.source == PlaySource.SPOTIFY || now?.source == PlaySource.MUSIC,
                         onClick = onOpenMusic,
                     )
@@ -186,15 +189,15 @@ fun MediaScreen(
                         icon = Icons.Outlined.OndemandVideo,
                         accent = TileAccent.ORANGE,
                         title = "Video",
-                        subtitle = if (youTubeOn) "YouTube e telefono" else "Telefono e link",
+                        subtitle = if (youTubeOn) "YouTube e file" else "Telefono e link",
                         active = now?.source == PlaySource.VIDEO,
                         onClick = onOpenVideo,
                     )
                     SectionTile(
                         icon = Icons.Outlined.Mic,
                         accent = TileAccent.PURPLE,
-                        title = "Radio e podcast",
-                        subtitle = if (podcasts > 0) "$podcasts podcast" else "In diretta e on demand",
+                        title = "Radio",
+                        subtitle = if (podcasts > 0) "e $podcasts podcast" else "e podcast",
                         active = now?.source == PlaySource.RADIO || now?.source == PlaySource.PODCAST,
                         onClick = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) },
                     )
@@ -241,7 +244,7 @@ private fun RowScope.SectionTile(
 ) {
     CanvasCard(
         onClick = onClick,
-        modifier = Modifier.weight(1f).heightIn(min = 124.dp).bouncyPress(),
+        modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 124.dp).bouncyPress(),
         shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column(Modifier.padding(12.dp)) {
@@ -253,12 +256,12 @@ private fun RowScope.SectionTile(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }

@@ -8,6 +8,11 @@
 - Le card di Oggi non hanno più il link in fondo: si tocca la card ovunque per aprire la sezione
 - La pagina Note usa le stesse card di Oggi, con quanto c'è a destra del titolo, sempre visibili
 
+## 1.221.0
+**Media: tre riquadri alti uguali**
+- In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
+- Titoli e descrizioni stanno su una riga sola (Musica "Spotify e YT", Video "YouTube e file", Radio "e podcast")
+
 ## 1.218.0
 **Spese con la barra, date più corte, categorie più furbe**
 - Spese ha la barra in basso e il +, come le altre pagine
