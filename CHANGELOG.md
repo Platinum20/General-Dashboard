@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.278.0
+**Le novità dopo ogni aggiornamento**
+- Al primo avvio dopo un aggiornamento sale un fumetto di vetro con le novità della versione, una volta sola
+- Si chiude toccandolo, toccando fuori o portandolo di lato
+- Alla prima installazione non compare
+
 ## 1.276.0
 **I video YouTube restano in Continua**
 - In Media, Continua tiene fino a 12 voci per ogni fonte: ascoltare tanta musica su Spotify non fa più sparire i video YouTube lasciati a metà
