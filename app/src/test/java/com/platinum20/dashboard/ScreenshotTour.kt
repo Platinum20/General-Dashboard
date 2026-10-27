@@ -20,7 +20,14 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.testing.WorkManagerTestInitHelper
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.outlined.Share
 import com.platinum20.dashboard.news.NewsStore
+import com.platinum20.dashboard.ui.screens.ActionBubble
+import com.platinum20.dashboard.ui.screens.BubbleAction
+import com.platinum20.dashboard.ui.screens.ItemKind
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.weather.GeoPlace
 import com.platinum20.dashboard.weather.WeatherStore
@@ -152,6 +159,8 @@ class ScreenshotTour {
             visit("Radio", p + "33_radio_podcast", waitMs = 6_000)
         } else missing += p + "30_media"
 
+        deepPages(p)
+
         // Le Impostazioni si aprono tenendo premuta una sezione della barra (qui l'azione del titolo).
         if (action("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
@@ -179,6 +188,46 @@ class ScreenshotTour {
             } else missing += p + "51_imp_info"
         } else missing += p + "40_impostazioni"
         assertTrue("Schermate attese che il giro non ha fotografato: ${missing.joinToString()}", missing.isEmpty())
+    }
+
+    /**
+     * Le pagine profonde (dettagli, editor, Spese, player, coda, nuovo evento), aperte per rotta:
+     * così si confrontano fra loro senza dipendere da dove stanno i tocchi. In ognuna anche il fumetto delle azioni.
+     */
+    private fun deepPages(p: String) {
+        val data = NotesStore.data.value
+        val pages = listOfNotNull(
+            data.tasks.firstOrNull()?.let { "60_dettaglio_promemoria" to Routes.noteItem(ItemKind.TASK, it.id) },
+            data.countdowns.firstOrNull()?.let { "61_dettaglio_data" to Routes.noteItem(ItemKind.DATE, it.id) },
+            data.parcels.firstOrNull()?.let { "62_dettaglio_pacco" to Routes.noteItem(ItemKind.PARCEL, it.id) },
+            data.expenses.firstOrNull()?.let { "63_dettaglio_spesa" to Routes.noteItem(ItemKind.EXPENSE, it.id) },
+            data.habits.firstOrNull()?.let { "64_dettaglio_abitudine" to Routes.noteItem(ItemKind.HABIT, it.id) },
+            "65_evento_nuovo" to Routes.calendarEdit(null),
+            data.notes.firstOrNull()?.let { "66_editor_nota" to Routes.noteEdit(it.id) },
+            "67_spese" to Routes.EXPENSES,
+            "68_recap" to Routes.RECAP,
+            "69_player" to Routes.PLAYER,
+            "70_coda" to Routes.QUEUE,
+            "71_video_youtube" to Routes.youtubeWatch(),
+        )
+        for ((name, route) in pages) {
+            val open = tourNavigate
+            if (open == null) { missing += p + name; continue }
+            scenario?.onActivity { open(route) }
+            settle(1_500); shot(p + name)
+            back()
+        }
+        // Il fumetto delle azioni (tieni premuto su una riga), sopra la pagina Note.
+        scenario?.onActivity {
+            ActionBubble.show(
+                BubbleAction(Icons.Outlined.PushPin, "Fissa in alto") {},
+                BubbleAction(Icons.Outlined.Share, "Condividi") {},
+                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {},
+            )
+        }
+        settle(1_000); shot(p + "72_fumetto_azioni")
+        scenario?.onActivity { ActionBubble.dismiss() }
+        settle(500)
     }
 
     /**
