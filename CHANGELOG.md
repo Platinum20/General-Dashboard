@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.225.0
+**Giorgio per la lettura**
+- La prima voce a sinistra ora è Giorgio, la voce maschile che hai scelto: si scarica una volta sola, circa 65 MB
+- Leonardo esce dall'elenco e lo spazio che occupava viene liberato
+
 ## 1.223.0
 **Card allineate e cose da fare spuntabili dalla card**
 - Nelle pagine Prossimi giorni, Note e Spese le icone partono alla stessa distanza dal bordo delle card di Oggi
