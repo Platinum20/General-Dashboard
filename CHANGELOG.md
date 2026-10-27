@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.277.0
+**Aggiornamenti automatici**
+- Le nuove versioni si scaricano e si installano da sole, senza toccare nulla (Android 12 o più recente)
+- Mai mentre usi l'app o ascolti qualcosa: aspetta che la lasci, riprova ogni 15 minuti
+- Dopo l'aggiornamento arriva una notifica "Canvas aggiornata alla …" con le novità
+- La prima volta Android chiede comunque una conferma; se un'installazione non va, torna la notifica "Tocca per aggiornare"
+- In Impostazioni › Notifiche la riga si chiama "Aggiornamenti automatici"
+
 ## 1.276.0
 **I video YouTube restano in Continua**
 - In Media, Continua tiene fino a 12 voci per ogni fonte: ascoltare tanta musica su Spotify non fa più sparire i video YouTube lasciati a metà
