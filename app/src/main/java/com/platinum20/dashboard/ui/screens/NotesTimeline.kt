@@ -416,13 +416,13 @@ internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expens
         TimelineEntry(
             "expense-${e.id}",
             com.platinum20.dashboard.today.BriefKind.MONEY,
-            Expenses.displayName(e),
+            // L'importo per primo (Antonio), come l'ora degli eventi.
+            "${Expenses.format(e.cents)}  ${Expenses.displayName(e)}",
             if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
             gap,
             // Icona e colore dicono la categoria, come la barra del riepilogo.
             color = e.category.color(),
             icon = e.category.icon(),
-            trailing = Expenses.format(e.cents),
             month = month,
         ) to e
     }

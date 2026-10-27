@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -109,6 +110,7 @@ fun BriefKind.timelineIcon(): ImageVector = when (this) {
  * Una riga della linea del tempo. [top]/[bottom]: se la linea continua sopra e sotto il pallino.
  * [onIcon]: per i promemoria in Note, toccando il cerchio a sinistra si segna fatto.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TimelineRow(
     entry: TimelineEntry,
@@ -119,7 +121,10 @@ fun TimelineRow(
     onIcon: (() -> Unit)? = null,
     /** 16 dp dentro una card (Oggi); 0 nelle pagine, dove la linea sta sullo sfondo senza card. */
     start: Dp = 16.dp,
+    /** Tenendo premuto: di solito il fumetto di vetro con le azioni ([ActionBubble]). */
+    onLongClick: (() -> Unit)? = null,
 ) {
+    val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
     entry.month?.let { TimelineMonthMarker(it, start = start, top = top) }
@@ -128,7 +133,10 @@ fun TimelineRow(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick?.let { long -> { haptic(Haptic.LONG_PRESS); long() } },
+            )
             .padding(start = start, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {

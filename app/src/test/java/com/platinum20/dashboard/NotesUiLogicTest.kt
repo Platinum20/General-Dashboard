@@ -227,6 +227,15 @@ class NotesUiLogicTest {
         assertEquals(16f, entries[3].gapDp, 0.01f)
     }
 
+    @Test fun meseTrascinando() {
+        val now = java.time.YearMonth.of(2026, 10)
+        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
+        assertEquals(java.time.YearMonth.of(2026, 9), swipe.target(now, 60f, 56f, now))
+        assertEquals(null, swipe.target(now, -60f, 56f, now))
+        assertEquals(now, swipe.target(java.time.YearMonth.of(2026, 9), -60f, 56f, now))
+        assertEquals(null, swipe.target(now, 20f, 56f, now))
+    }
+
     @Test fun speseSullaLineaDelTempo() {
         val today = LocalDate.of(2026, 10, 26)
         val entries = expenseEntries(
@@ -238,8 +247,8 @@ class NotesUiLogicTest {
             today,
         ).map { it.first }
         assertEquals(listOf("Oggi", null, "Ven 23 ott"), entries.map { it.dayLabel })
-        assertEquals("Benzina", entries[0].text)
-        assertEquals(true, entries[0].trailing != null)
+        // L'importo per primo, il nome dopo.
+        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[0].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
