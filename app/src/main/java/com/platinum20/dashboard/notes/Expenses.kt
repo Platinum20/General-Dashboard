@@ -53,11 +53,11 @@ data class FixedExpense(
 }
 
 enum class ExpenseCategory(val label: String, val words: List<String>) {
-    FOOD("Spesa", listOf("spesa", "supermercato", "conad", "coop", "lidl", "esselunga", "eurospin", "carrefour", "pane", "frutta", "mercato", "md ", "despar", "pam")),
+    FOOD("Spesa", listOf("penny", " aldi", "famila", "sigma", "crai", "tigre", "todis", "in's", "dok ", "iper", "spesa", "supermercato", "conad", "coop", "lidl", "esselunga", "eurospin", "carrefour", "pane", "frutta", "mercato", "md ", "despar", "pam")),
     EATING_OUT("Fuori", listOf("pizza", "ristorante", "bar", "caffè", "caffe", "cena", "pranzo", "aperitivo", "sushi", "panino", "gelato", "kebab", "birra", "colazione", "mcdonald", "deliveroo", "glovo", "just eat")),
-    TRANSPORT("Trasporti", listOf("benzina", "diesel", "gasolio", "carburante", "autostrada", "pedaggio", "treno", "bus", "autobus", "taxi", "parcheggio", "trenitalia", "italo", "biglietto", "metro", "auto", "gomme", "tagliando", "bollo", "meccanico")),
-    HOME("Casa", listOf("bolletta", "luce", "gas", "acqua", "affitto", "condominio", "internet", "telefono", "ricarica", "tari", "ikea", "casa", "fibra")),
-    HEALTH("Salute", listOf("farmacia", "medicina", "medico", "dentista", "visita", "analisi", "ticket", "palestra", "ottico")),
+    TRANSPORT("Trasporti", listOf("onorato", "moby", "tirrenia", "grimaldi", "traghett", "ryanair", "easyjet", "wizz", "ita airways", "flixbus", "uber", "free now", "freenow", "telepass", " q8", " eni ", "enilive", " esso", "tamoil", "atac", "gtt", "trenord", "benzina", "diesel", "gasolio", "carburante", "autostrada", "pedaggio", "treno", "bus", "autobus", "taxi", "parcheggio", "trenitalia", "italo", "biglietto", "metro", "auto", "gomme", "tagliando", "bollo", "meccanico")),
+    HOME("Casa", listOf("windtre", "wind tre", "wind", " tim ", "vodafone", "iliad", "fastweb", "kena", "enel", "hera", "a2a", "edison", "acea", "bolletta", "luce", "gas", "acqua", "affitto", "condominio", "internet", "telefono", "ricarica", "tari", "ikea", "casa", "fibra")),
+    HEALTH("Salute", listOf("farmac", "parafarmac", "sanitari", "ospedale", "farmacia", "medicina", "medico", "dentista", "visita", "analisi", "ticket", "palestra", "ottico")),
     FUN("Svago", listOf("cinema", "netflix", "spotify", "concerto", "libro", "gioco", "steam", "playstation", "disney", "prime", "amazon", "regalo", "vestiti", "scarpe", "abbonamento", "viaggio", "hotel")),
     OTHER("Altro", emptyList());
 
@@ -131,7 +131,18 @@ object Expenses {
     fun displayName(e: Expense): String {
         val text = e.text.trim()
         val last = text.substringAfterLast(' ').lowercase()
-        return if (text.isEmpty() || last in dangling) (if (e.category == ExpenseCategory.OTHER) "Spesa" else e.category.label) else text
+        if (text.isEmpty() || last in dangling) return if (e.category == ExpenseCategory.OTHER) "Spesa" else e.category.label
+        // I nomi dei negozi sulle carte arrivano tagliati a 25 lettere ("Farmacenter Dottor Moresc"): si dice che continua.
+        return if (text.length >= CARD_NAME && text.last().isLetter()) "$text…" else text
+    }
+
+    /** Quante lettere tiene il nome del negozio nelle notifiche della carta. */
+    private const val CARD_NAME = 25
+
+    /** Le spese finite in "Altro" che ora si riconoscono (nuove parole delle categorie): la categoria giusta. */
+    fun recategorized(list: List<Expense>): List<Expense> = list.map { e ->
+        if (e.category != ExpenseCategory.OTHER) e
+        else ExpenseCategory.guess(e.text).let { if (it == ExpenseCategory.OTHER) e else e.copy(category = it) }
     }
 
     fun total(list: List<Expense>, month: YearMonth): Long =

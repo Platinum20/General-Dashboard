@@ -121,6 +121,17 @@ object Upcoming {
             if (day.isBefore(today) || day.month != today.month || day.isAfter(today.plusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
     }
 
+    /**
+     * Il giorno quando il mese è già scritto sopra (il segno del mese, o il mese di oggi): solo "Dom 1",
+     * senza mese né anno (Antonio). [shown] = il mese che si legge in quel punto della linea.
+     */
+    fun dayLabel(day: LocalDate, today: LocalDate, shown: java.time.YearMonth?): String = when {
+        day == today || day == today.plusDays(1) || day == today.minusDays(1) -> dayLabel(day, today)
+        java.time.YearMonth.from(day) == shown ->
+            day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}"
+        else -> dayLabel(day, today)
+    }
+
     private fun Long.at(zone: ZoneId): String = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     private fun Long.day(zone: ZoneId): LocalDate = Instant.ofEpochMilli(this).atZone(zone).toLocalDate()
 }

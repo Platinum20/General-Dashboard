@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.218.0
+**Spese con la barra, date più corte, categorie più furbe**
+- Spese ha la barra in basso e il +, come le altre pagine
+- Sotto il segno del mese le date sono corte ("Dom 1" invece di "Dom 1 nov", senza l'anno)
+- Le categorie riconoscono più negozi (traghetti come Onorato, telefono come Windtre, farmacie, distributori, supermercati); le spese rimaste in "Altro" si risistemano da sole
+- I nomi dei negozi tagliati dalla carta finiscono con i puntini
+
 ## 1.217.0
 **Treni, menu sulla linea e Spese**
 - I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
