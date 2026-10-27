@@ -37,14 +37,14 @@ object Upcoming {
     const val MAX = 8
 
     /** Lo spazio massimo fra due giorni sulla linea della card. */
-    const val MAX_GAP_DP = 36f
+    const val MAX_GAP_DP = 20f
 
     /**
      * Lo spazio in più (dp) fra due righe della card: zero se sono giorni di fila, poi 6 dp per ogni giorno
-     * vuoto in mezzo, fino a [MAX_GAP_DP]. Così la linea mostra quanto tempo passa fra una cosa e l'altra.
+     * vuoto in mezzo (4 dp), fino a [MAX_GAP_DP]: anche mesi vuoti restano corti. Così la linea mostra quanto tempo passa fra una cosa e l'altra.
      */
     fun gapDp(from: LocalDate, to: LocalDate): Float =
-        (6f * (java.time.temporal.ChronoUnit.DAYS.between(from, to) - 1)).coerceIn(0f, MAX_GAP_DP)
+        (4f * (java.time.temporal.ChronoUnit.DAYS.between(from, to) - 1)).coerceIn(0f, MAX_GAP_DP)
 
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -88,7 +88,7 @@ object Upcoming {
 
     /**
      * "Oggi", "Domani", "Ieri", poi "Mer 28": il giorno della settimana con il numero non si confonde con oggi.
-     * Oltre quattro settimane anche il mese ("Mar 9 dic"); in un altro anno il giorno, il mese e l'anno
+     * Con il mese ("Dom 4 ott") nel passato e fuori dal mese corrente; in un altro anno il giorno, il mese e l'anno
      * ("9 feb 2027"). Uguale in Oggi e in Note.
      */
     fun dayLabel(day: LocalDate, today: LocalDate): String = when {
@@ -97,7 +97,7 @@ object Upcoming {
         day == today.minusDays(1) -> "Ieri"
         day.year != today.year -> "${day.dayOfMonth} " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) + " ${day.year}"
         else -> day.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.ITALIAN).replaceFirstChar { it.uppercase() } + " ${day.dayOfMonth}" +
-            if (day.isAfter(today.plusDays(27)) || day.isBefore(today.minusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
+            if (day.isBefore(today) || day.month != today.month || day.isAfter(today.plusDays(27))) " " + day.month.getDisplayName(TextStyle.SHORT, Locale.ITALIAN) else ""
     }
 
     private fun Long.at(zone: ZoneId): String = Instant.ofEpochMilli(this).atZone(zone).format(hour)

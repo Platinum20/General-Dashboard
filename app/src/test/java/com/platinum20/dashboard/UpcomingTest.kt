@@ -68,7 +68,7 @@ class UpcomingTest {
         // Giorni di fila: nessuno spazio in più; più giorni in mezzo, più spazio, fino a un massimo.
         assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(1)))
         assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(2)))
-        assertEquals(12f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)))
+        assertEquals(8f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)))
         assertEquals(Upcoming.MAX_GAP_DP, Upcoming.gapDp(today.plusDays(1), today.plusDays(50)))
     }
 

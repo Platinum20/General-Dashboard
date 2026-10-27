@@ -1,10 +1,21 @@
 # Changelog
 
-## 1.206.0
+## 1.209.0
 **La foto allegata diventa una nota**
 - Se nella foto allegata con la graffetta non c'è uno scontrino, una data o un codice di spedizione, Canvas la salva come nota con la foto (si può annullare dal fumetto)
 - Quello che avevi già scritto nella barra fa da titolo, il testo letto nella foto resta nella nota, così la ritrovi cercando
 - Nelle Note la foto si vede in anteprima e, aprendo la nota, per intero
+
+## 1.207.0
+**Paola e Miro parlano davvero**
+- Paola e Miro non partivano e leggeva al loro posto la voce del telefono: ora si sentono le loro voci, come Riccardo
+- Se una voce non parte, un tocco sulla riga sotto le voci mostra l'errore per intero
+
+## 1.205.0
+**Linea del tempo più pulita, e una piccola resistenza prima del passato**
+- In Prossimi giorni, Note e Spese la linea sta direttamente sulla pagina, senza i bordi della card ai lati, e in fondo c'è spazio sopra la barra
+- Fra adesso e il passato c'è il segno "OGGI" ben visibile; scorrendo verso il passato la lista si ferma lì con una vibrazione leggera, e se insisti col dito ci entri
+- Le date passate e quelle di un altro mese hanno il mese ("Dom 4 ott"), i titoli hanno più spazio e i salti fra giorni lontani sono più corti, anche nella card di Oggi
 
 ## 1.204.0
 **Spese sulla linea del tempo, e i promemoria spuntati restano in Note**
