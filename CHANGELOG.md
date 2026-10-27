@@ -1,10 +1,21 @@
 # Changelog
 
-## 1.260.0
+## 1.262.0
 **Spotify: niente più rotella infinita**
 - Se il riproduttore di Spotify non manda il suo stato, l'app lo chiede direttamente a Spotify: tempo, durata e play/pausa tornano giusti in un paio di secondi
 - Il tasto play mentre un brano sta partendo non lo fa più ricominciare da capo
 - Pausa, play e salti nel brano funzionano anche in quel caso
+## 1.261.0
+**Il video chiuso vola nel mini player**
+- Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
+- Lasciato (o col tasto giù) vola fin dentro la miniatura del mini player, in basso a sinistra o in alto se l'hai messo lì, e il mini player lo prende senza saltare fuori
+- Intanto la pagina di prima torna sotto, senza più il video che sparisce a metà schermo
+
+## 1.259.0
+**Spese: il mese segue il dito**
+- Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
+- Una piccola vibrazione ti dice quando, lasciando, cambierà mese
+- Il mese nuovo entra scorrendo dal lato opposto (trascini a sinistra, arriva da destra)
 
 ## 1.257.0
 **YouTube: le anteprime non danno più errore**
