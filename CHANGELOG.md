@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.208.0
+## 1.210.0
 **Spese più pulita**
 - Il riepilogo del mese in cima è compatto: mese e totale su una riga, sotto il mese prima e le categorie in una riga sola
 - L'importo di ogni spesa si vede sempre, si accorcia solo il nome
 - I nomi presi male dalle notifiche (come "fronte di") diventano "Spesa" o la categoria
 - Via il budget mensile, anche dalla card in Oggi e da Adesso
+
+## 1.209.0
+**La foto allegata diventa una nota**
+- Se nella foto allegata con la graffetta non c'è uno scontrino, una data o un codice di spedizione, Canvas la salva come nota con la foto (si può annullare dal fumetto)
+- Quello che avevi già scritto nella barra fa da titolo, il testo letto nella foto resta nella nota, così la ritrovi cercando
+- Nelle Note la foto si vede in anteprima e, aprendo la nota, per intero
 
 ## 1.207.0
 **Paola e Miro parlano davvero**
