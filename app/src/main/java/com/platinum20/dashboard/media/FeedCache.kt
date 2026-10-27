@@ -6,6 +6,7 @@ import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.spotify.SpLibrary
 import com.platinum20.dashboard.media.spotify.SpProfile
 import com.platinum20.dashboard.media.spotify.SpRelease
+import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.net.DiskCache
@@ -54,6 +55,7 @@ object FeedCache {
         .put("p", v.published?.toEpochMilli() ?: 0L).put("s", v.isShort).put("d", v.durationSec)
         .put("l", v.live).put("u", v.upcoming).put("a", v.channelAvatar)
         .put("v", v.views).put("ut", v.uploadedText).put("w", v.watchedPercent)
+        .put("st", v.startsAt?.epochSecond ?: 0L)
 
     private fun video(o: JSONObject) = YtVideo(
         id = o.getString("id"),
@@ -69,6 +71,7 @@ object FeedCache {
         views = o.optLong("v", -1),
         uploadedText = o.optString("ut"),
         watchedPercent = o.optInt("w"),
+        startsAt = o.optLong("st").takeIf { it > 0 }?.let { Instant.ofEpochSecond(it) },
     )
 
     private fun <T> JSONArray.objects(map: (JSONObject) -> T): List<T> = (0 until length()).map { map(getJSONObject(it)) }
@@ -83,10 +86,16 @@ object FeedCache {
         { array -> array.objects { YtPlaylist(it.getString("id"), it.optString("t"), it.optString("i"), it.optInt("n")) } },
     )
 
+    val channels = FeedCodec<List<YtChannel>>(
+        "yt-canali.json",
+        { list -> list.toArray { JSONObject().put("id", it.id).put("t", it.title).put("i", it.thumbnail) } },
+        { array -> array.objects { YtChannel(it.getString("id"), it.optString("t"), it.optString("i")) } },
+    )
+
     // --- Spotify ---
 
     private fun item(i: SpItem) = JSONObject()
-        .put("id", i.id).put("u", i.uri).put("k", i.kind.name).put("t", i.title).put("s", i.subtitle).put("i", i.image)
+        .put("id", i.id).put("u", i.uri).put("k", i.kind.name).put("t", i.title).put("s", i.subtitle).put("i", i.image).put("d", i.durationMs)
 
     private fun item(o: JSONObject) = SpItem(
         id = o.getString("id"),
@@ -95,6 +104,7 @@ object FeedCache {
         title = o.optString("t"),
         subtitle = o.optString("s"),
         image = o.optString("i"),
+        durationMs = o.optLong("d"),
     )
 
     private fun items(list: List<SpItem>) = list.toArray(::item)

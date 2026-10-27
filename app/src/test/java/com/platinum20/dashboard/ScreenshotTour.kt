@@ -154,13 +154,28 @@ class ScreenshotTour {
         // Le Impostazioni si aprono tenendo premuta una sezione della barra (qui l'azione del titolo).
         if (action("Impostazioni")) {
             settle(1_500); shot(p + "40_impostazioni")
-            // La card in cima apre novità e aggiornamenti: prima di scorrere.
-            visit("novità e aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000, substring = true)
-            visit("Località del meteo", p + "44_localita")
-            visit("Card della Home", p + "45_personalizza")
-            visit("Compila le note", p + "43_compila_da_solo")
-            scroll(down = true)
-            shot(p + "42_impostazioni_fondo")
+            // Il menu: ogni riga apre la sua pagina (Note apre subito "Compila le note").
+            if (tap("Home")) {
+                settle(1_000); shot(p + "44_imp_home")
+                visit("Località del meteo", p + "44_localita")
+                visit("Card della Home", p + "45_personalizza")
+                back()
+            } else missing += p + "44_imp_home"
+            visit("Note", p + "43_compila_da_solo")
+            visit("News", p + "46_imp_news")
+            if (tap("Media")) {
+                settle(1_000); shot(p + "47_imp_media")
+                scroll(down = true); shot(p + "47_imp_media_fondo")
+                back()
+            } else missing += p + "47_imp_media"
+            visit("Notifiche", p + "48_imp_notifiche")
+            visit("Account", p + "49_imp_account")
+            visit("Dati", p + "50_imp_dati")
+            if (tap("Informazioni")) {
+                settle(1_000); shot(p + "51_imp_info")
+                visit("novità e aggiornamenti", p + "41_aggiornamenti", waitMs = 6_000, substring = true)
+                back()
+            } else missing += p + "51_imp_info"
         } else missing += p + "40_impostazioni"
         assertTrue("Schermate attese che il giro non ha fotografato: ${missing.joinToString()}", missing.isEmpty())
     }

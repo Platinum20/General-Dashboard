@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
@@ -75,6 +77,7 @@ import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlin.math.roundToInt
@@ -132,28 +135,79 @@ fun ExpensesTab(
     ) {
         // Il riepilogo del mese, compatto e sempre in cima (Antonio): la lista scorre sotto,
         // e niente del passato sbuca sopra OGGI.
-        CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        // Il riepilogo all'apertura fa un piccolo giro a sinistra e a destra (Antonio): si capisce che si trascina
+        // di lato per cambiare mese. Mentre lo trascini segue il dito con un po' di elastico; quando lasciandolo
+        // cambierebbe mese vibra, e il nuovo mese entra dal lato opposto a quello verso cui l'hai spinto.
+        val nudge = remember { androidx.compose.animation.core.Animatable(0f) }
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val nudgePx = with(density) { 14.dp.toPx() }
+        val threshold = with(density) { 56.dp.toPx() }
+        var cardWidth by remember { mutableStateOf(0f) }
+        var shownMonth by remember { mutableStateOf(month) }
+        androidx.compose.runtime.LaunchedEffect(month) {
+            if (month == shownMonth) {
+                kotlinx.coroutines.delay(Motion.ENTER_MS.toLong())
+                nudge.animateTo(-nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS / 2, easing = Motion.Standard))
+                nudge.animateTo(nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Standard))
+                nudge.animateTo(0f, Motion.settle())
+            } else {
+                val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
+                nudge.snapTo(if (month > shownMonth) width else -width)
+                shownMonth = month
+                nudge.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Decelerate))
+            }
+        }
+        val haptic = rememberHaptic()
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var drag by remember { mutableStateOf(0f) }
+        var armed by remember { mutableStateOf(false) }
+        CanvasCard(
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { cardWidth = it.width.toFloat() }
+                // Il gesto sta fuori dal graphicsLayer: la card che si sposta non falsa il trascinamento.
+                .pointerInput(threshold) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { drag = 0f; armed = false },
+                        onDragEnd = {
+                            val target = MonthSwipe.target(month, drag, threshold, YearMonth.now())
+                            val out = drag
+                            drag = 0f
+                            armed = false
+                            scope.launch {
+                                if (target != null) {
+                                    // Esce dal lato verso cui l'hai spinto, poi entra il nuovo mese dall'altro.
+                                    val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
+                                    nudge.animateTo(if (out < 0) -width else width, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Accelerate))
+                                    month = target
+                                } else {
+                                    nudge.animateTo(0f, Motion.settle())
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            drag = 0f
+                            armed = false
+                            scope.launch { nudge.animateTo(0f, Motion.settle()) }
+                        },
+                    ) { change, amount ->
+                        change.consume()
+                        drag += amount
+                        val can = MonthSwipe.target(month, drag, threshold, YearMonth.now()) != null
+                        if (can != armed) {
+                            armed = can
+                            if (can) haptic(Haptic.THRESHOLD)
+                        }
+                        val blocked = drag < 0 && month >= YearMonth.now()
+                        scope.launch { nudge.snapTo(MonthSwipe.follow(drag, threshold, blocked)) }
+                    }
+                }
+                .graphicsLayer { translationX = nudge.value },
+        ) {
             // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
-            val haptic = rememberHaptic()
-            val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
-            var drag by remember { mutableStateOf(0f) }
             Column(
                 Modifier
-                    .pointerInput(threshold) {
-                        detectHorizontalDragGestures(
-                            onDragStart = { drag = 0f },
-                            onDragEnd = { drag = 0f },
-                            onDragCancel = { drag = 0f },
-                        ) { change, amount ->
-                            drag += amount
-                            MonthSwipe.target(month, drag, threshold, YearMonth.now())?.let {
-                                change.consume()
-                                month = it
-                                drag = 0f
-                                haptic(Haptic.TICK)
-                            }
-                        }
-                    }
                     .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -243,39 +297,34 @@ fun ExpensesTab(
                                 },
                             )
                         }
-                        if (nowAt == entries.size) {
-                            TimelineNowMarker(nowMarker)
-                            // Oggi senza spese: lo diciamo, invece di lasciare la pagina vuota.
-                            EmptyExpensesLine("Nessuna spesa per oggi")
-                        }
+                        if (nowAt == entries.size) TimelineNowMarker(nowMarker)
                     }
                 }
-            }
-            if (inMonth.isEmpty()) {
-                item { EmptyExpensesLine("Nessuna spesa in questo mese") }
             }
             item(key = "now-room") {
                 // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
                 val density = androidx.compose.ui.platform.LocalDensity.current
+                val viewport = listState.layoutInfo.viewportSize.height
+                val bottom = with(density) { padding.calculateBottomPadding().roundToPx() }
+                // Niente spese oggi o nel mese: "Nessuna spesa" al centro dello spazio che resta sotto (Antonio).
+                val empty = inMonth.isEmpty() || (month == YearMonth.now() && inMonth.none { it.date == LocalDate.now() })
                 val room = with(density) {
-                    nowRoom(listState.layoutInfo.viewportSize.height, padding.calculateBottomPadding().roundToPx(), nowOffset?.let { timelineHeight - it }).toDp()
+                    val below = nowOffset?.let { timelineHeight - it } ?: if (inMonth.isEmpty()) 0 else null
+                    nowRoom(viewport, bottom, below).toDp()
                 }
-                Spacer(Modifier.height(room))
+                Box(Modifier.fillMaxWidth().height(room), contentAlignment = Alignment.Center) {
+                    if (empty && room > 48.dp) {
+                        Text(
+                            "Nessuna spesa",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }
-}
-
-/** Una riga sola quando non c'è niente da mostrare (Antonio: la pagina vuota sembrava rotta). */
-@Composable
-private fun EmptyExpensesLine(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-    )
 }
 
 internal fun centsOf(text: String): Long? {
@@ -572,5 +621,14 @@ internal object MonthSwipe {
         drag >= threshold -> month.minusMonths(1)
         drag <= -threshold && month < now -> month.plusMonths(1)
         else -> null
+    }
+
+    /**
+     * Quanto si sposta la card trascinando di [drag] px: segue il dito con elastico, sempre meno oltre la soglia.
+     * Verso un mese che non c'è ancora ([blocked]) resiste molto di più.
+     */
+    fun follow(drag: Float, threshold: Float, blocked: Boolean = false): Float {
+        val limit = threshold * (if (blocked) 0.5f else 2.2f)
+        return (limit * kotlin.math.tanh(drag / limit)).toFloat()
     }
 }

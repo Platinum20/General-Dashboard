@@ -39,6 +39,7 @@ import com.platinum20.dashboard.news.RecapSpeaker
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Headphones
@@ -75,17 +76,6 @@ fun RecapScreen(
             TopLevelBar(
                 title = "Il punto del giorno",
                 onBack = onBack,
-                actions = {
-                    if (state.themes.isNotEmpty()) {
-                        RoundIconButton(
-                            if (listening != null) Icons.Filled.Stop else Icons.Outlined.Headphones,
-                            if (listening != null) "Smetti di ascoltare" else "Ascolta",
-                        ) {
-                            if (listening != null) RecapSpeaker.stop()
-                            else listen(0)
-                        }
-                    }
-                },
             )
         },
     ) { inner ->
@@ -99,13 +89,39 @@ fun RecapScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // L'ascolto sta nella pagina, non in alto: nessuna pagina ha più tasti nella barra del titolo.
                 item {
-                    Text(
-                        "I temi di cui parlano più testate nelle ultime 24 ore, raggruppati in automatico.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+                    CanvasCard(
+                        onClick = { if (listening != null) RecapSpeaker.stop() else listen(0) },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                if (listening != null) Icons.Filled.Stop else Icons.Outlined.Headphones,
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    if (listening != null) "Smetti di ascoltare" else "Ascolta il punto del giorno",
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    "${state.themes.size} temi di cui parlano più testate nelle ultime 24 ore",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
                 }
                 itemsIndexed(state.themes) { index, theme ->
                     CanvasCard(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.fillMaxWidth()) {

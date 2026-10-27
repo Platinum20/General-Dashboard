@@ -1,9 +1,161 @@
 # Changelog
 
-## 1.238.0
+## 1.275.0
 **Spese anche dentro Note**
 - Toccando la card Spese in Note si apre la pagina Spese dentro Note, non più in Oggi: la barra resta su Note e indietro torna alle Note
 - La pagina è la stessa di Oggi, con le stesse spese
+
+## 1.273.0
+**SponsorBlock nella sua pagina**
+- In Impostazioni › Media, SponsorBlock è una riga sola con acceso o spento e il tempo risparmiato; i dieci tipi di segmento stanno nella sua pagina
+- "Accedi" a YouTube e Spotify ha lo stesso tasto di "Collega" e "Cerca"
+- Il riepilogo delle Notifiche non conta più pioggia e nuove versioni se le notifiche sono bloccate
+
+## 1.272.0
+**Video di YouTube anche quando YouTube fa il controllo "non sei un bot"**
+- Motore dei video aggiornato come quello di NewPipe: chiede i video in un modo che YouTube blocca molto meno, anche col 4G
+- Se YouTube blocca lo stesso, l'app riprova da sola una volta prima di arrendersi
+- Gli errori sono una riga in italiano (per esempio "YouTube blocca questa rete per un po'"), mai il testo inglese, sempre con Riprova
+
+## 1.271.0
+**Niente più tasti nella barra del titolo**
+- Il punto del giorno: "Ascolta" è la prima card della pagina, grande, invece dell'icona in alto
+- Meteo: via "Località" e il tasto per aggiornare; la località si sceglie in Impostazioni › Home e la pagina si aggiorna da sola o tirando giù
+- Aggiornamenti: via l'icona per ricaricare, basta "Controlla e aggiorna" in basso
+- Card della Home (prima "Personalizza Oggi"): "Ripristina l'ordine iniziale" sta in fondo alla lista
+## 1.270.0
+**Volume col dito meno sensibile**
+- A schermo intero il volume cambia solo dopo un tratto deciso in verticale, non al primo movimento
+- Se il dito parte dal bordo alto o basso (tendina delle notifiche, chiudere l'app) il volume non si tocca
+- Una piccola vibrazione a ogni tacca di volume
+
+## 1.268.0
+**Il video ora si rimpicciolisce davvero verso il mini player**
+- Chiudendo il video lui diventa piccolo e vola sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai messo lì), invece di scendere soltanto
+
+## 1.266.0
+**Impostazioni con un menu**
+- La pagina è corta: in cima il tema, sotto un menu che apre una pagina per ogni cosa
+- Home, Note, News e Media nell'ordine della barra in basso, poi Notifiche, Account, Dati e Informazioni
+- Ogni riga del menu dice com'è adesso, per esempio quali notifiche sono accese o quali account sono collegati
+- "Riempi la coda in automatico" lascia il fondo della coda e va in Impostazioni › Media, con "Riproduci il video successivo"
+- Le descrizioni stanno tutte su una riga
+## 1.265.0
+**Pallino della barra del tempo centrato**
+- Il pallino della barra del tempo sta al centro della barra, nei video di YouTube e nel player della musica
+
+## 1.264.0
+**YouTube: tutti i video di un canale**
+- Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
+- Anche da Video › Canali ora vedi tutti i video del canale, non solo gli ultimi 15, dal più recente al più vecchio
+- Scorrendo in fondo arrivano da soli i video più vecchi, fino al primo
+
+## 1.262.0
+**Spotify: niente più rotella infinita**
+- Se il riproduttore di Spotify non manda il suo stato, l'app lo chiede direttamente a Spotify: tempo, durata e play/pausa tornano giusti in un paio di secondi
+- Il tasto play mentre un brano sta partendo non lo fa più ricominciare da capo
+- Pausa, play e salti nel brano funzionano anche in quel caso
+
+## 1.261.0
+**Il video chiuso vola nel mini player**
+- Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
+- Lasciato (o col tasto giù) vola fin dentro la miniatura del mini player, in basso a sinistra o in alto se l'hai messo lì, e il mini player lo prende senza saltare fuori
+- Intanto la pagina di prima torna sotto, senza più il video che sparisce a metà schermo
+
+## 1.259.0
+**Spese: il mese segue il dito**
+- Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
+- Una piccola vibrazione ti dice quando, lasciando, cambierà mese
+- Il mese nuovo entra scorrendo dal lato opposto (trascini a sinistra, arriva da destra)
+
+## 1.257.0
+**YouTube: le anteprime non danno più errore**
+- Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
+- «Avvisami»: una notifica ti avvisa quando comincia, e toccandola si apre il video
+- Passato l'orario il video riprova da solo e parte appena YouTube lo avvia; dopo si guarda come un video normale
+- Nei feed le anteprime mostrano «ANTEPRIMA · 20:00» (o DOMANI, o la data) sulla copertina
+
+## 1.256.0
+**Pagina del video YouTube più pulita**
+- Mi piace e Non mi piace stanno a destra, sulla riga del canale
+- Sotto, tre tasti larghi uguali su una riga: Commenti, Correlati, Condividi; commenti e video correlati si aprono solo toccandoli
+- La data dice "7 ore fa" invece del codice
+- Descrizione su due righe senza riquadro, con i link veri: un video di YouTube parte nell'app, gli altri link si copiano
+- Commenti: se YouTube non li dà si vede "Non riesco a caricare i commenti" con Riprova; "Commenti disattivati" solo se li ha spenti l'autore
+
+## 1.254.0
+**Video a schermo intero: pinch per riempire lo schermo**
+- Come su YouTube: a schermo intero allarghi due dita e il video riempie tutto lo schermo, senza bande nere (taglia un po' i bordi); stringi e torna intero
+- Per un attimo compare "Riempi lo schermo" o "Adatta"; il trascinamento su/giù per il volume resta com'era
+
+## 1.252.0
+**Spotify di nuovo fluido**
+- Il play funziona sempre: anche a fine coda (riparte il brano), se Spotify si è scollegato o se lo tocchi mentre il brano sta ancora arrivando (prima lo faceva ricominciare)
+- Alcuni brani restavano in "caricamento" senza barra: Spotify li suonava da un'altra copia (stesso brano, altro album) e l'app non li riconosceva
+- Se a fine brano Spotify passava da solo a una sua canzone, ora parte quella dopo della tua coda
+- Dopo uno skip la barra del tempo c'è subito, con la durata giusta; dopo un salto nel brano non torna indietro
+- La barra del tempo del player è sottile col pallino piccolo, come quella dei video di YouTube
+## 1.251.0
+**Video: barra del tempo sottile**
+- La barra del tempo dei video è sottile quanto i segmenti di SponsorBlock, che ora le stanno sopra perfettamente allineati
+- Il cursore è un pallino piccolo, come su YouTube
+
+## 1.250.0
+**Chiave di Spotify di nuovo nelle impostazioni**
+- Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)
+- Toccando Spotify o YouTube in Account riparte sempre il collegamento ufficiale, anche dopo «Esci»
+
+## 1.249.0
+**YouTube: SponsorBlock e Non mi piace**
+- I video di YouTube saltano da soli sponsor e altre parti inutili, con i dati pubblici di SponsorBlock: compare "Saltato: Sponsor" con Annulla per tornare indietro
+- Ogni tipo di segmento (sponsor, autopromozione, richieste di iscriversi, sigla, titoli di coda, anteprime, gancio iniziale, divagazioni, parti senza musica, momento clou, accesso esclusivo) si regola in Impostazioni › Fa da solo › SponsorBlock: salta da solo, mostra il tasto Salta, solo nella barra o ignora
+- I segmenti sono colorati sulla barra del tempo del video; il tasto "Salta" o "Vai al momento clou" appare sul video
+- Nella pagina del video torna il tasto Non mi piace con la stima di Return YouTube Dislike (toccandolo vedi la percentuale di Mi piace); si spegne in Impostazioni
+- Nelle impostazioni vedi quanti salti hai fatto e quanto tempo hai risparmiato
+
+## 1.248.0
+**Coda più comoda: scorri per togliere e si riempie da sola**
+- Per togliere un brano dalla coda lo porti di lato (verso sinistra), al posto della X; in fondo compare "Annulla"
+- Tocchi un brano in coda e parte solo lui: quelli prima non vengono più saltati, restano lì dopo
+- In fondo alla coda c'è "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani, prima degli stessi artisti
+- Mentre sistemi la coda si vede il mini player
+
+## 1.247.0
+**Spese più viva**
+- Quando non ci sono spese c'è scritto solo "Nessuna spesa", al centro dello spazio vuoto sotto
+- Aprendo Spese il riepilogo fa un piccolo giro a sinistra e a destra, per ricordarti che lo trascini di lato per cambiare mese; il mese nuovo entra dal lato giusto
+- In tutte le linee del tempo, quando arrivi su OGGI la scritta pulsa e appare una freccetta, oltre alla vibrazione
+
+## 1.244.0
+**Video senza il riquadro "In pausa"**
+- In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
+
+## 1.243.0
+**Video a schermo intero: barra del volume a sinistra, anche coi tasti**
+- La barra del volume è verticale, tutta a sinistra
+- Coi tasti del telefono, a schermo intero, compare questa barra invece di quella di sistema
+
+## 1.242.0
+**Video: scheda Canali e scelta sul video successivo**
+- In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video
+- Le quattro schede ora sono larghe uguali e arrivano fino al bordo destro, senza scorrere di lato
+- In Impostazioni › Fa da solo c'è "Riproduci il video successivo": spento, finito un video non ne parte un altro da solo
+
+## 1.241.0
+**Niente vibrazione nelle card**
+- Scorrendo la Home o la pagina Note, le card (Prossimi giorni, Note, Spese) non vibrano più al cambio di mese: la vibrazione resta solo dentro la pagina aperta
+
+## 1.240.0
+**Copertine di Musica pulite**
+- In Musica ogni fila mostra tre copertine intere: nessuna resta tagliata sul bordo destro, le altre arrivano scorrendo
+- La prima lettera sotto le copertine non viene più tagliata
+- Il nome dell'artista sta subito sotto il titolo, senza lo spazio vuoto in mezzo
+
+## 1.238.0
+**Video: schermo acceso, volume col dito, swipe per lo schermo intero**
+- Mentre un video va lo schermo non si spegne più
+- A schermo intero, col telefono in orizzontale, scorri su o giù per alzare o abbassare il volume (con una piccola barra in alto)
+- Col video in verticale, uno swipe verso l'alto sul video lo apre a schermo intero
 
 ## 1.237.0
 **Più tardi = i video salvati nelle note**

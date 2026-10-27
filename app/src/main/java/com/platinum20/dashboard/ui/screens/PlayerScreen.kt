@@ -119,7 +119,12 @@ internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
  * [startUrl]: un video di YouTube da far partire aprendo la pagina.
  */
 @Composable
-fun PlayerScreen(onBack: () -> Unit, onOpenQueue: () -> Unit = {}, startUrl: String? = null) {
+fun PlayerScreen(
+    onBack: () -> Unit,
+    onOpenQueue: () -> Unit = {},
+    startUrl: String? = null,
+    onOpenChannel: (com.platinum20.dashboard.media.youtube.YtChannel) -> Unit = {},
+) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
     var starting by remember { mutableStateOf(startUrl != null) }
@@ -128,7 +133,7 @@ fun PlayerScreen(onBack: () -> Unit, onOpenQueue: () -> Unit = {}, startUrl: Str
         starting = false
     }
     if (starting || now?.source == PlaySource.VIDEO) {
-        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue)
+        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue, onOpenChannel = onOpenChannel)
     } else {
         AudioPlayer(onBack, onOpenQueue)
     }
@@ -400,9 +405,13 @@ private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * La barra del tempo, sottile come quella dei video di YouTube: linea di 4dp e pallino piccolo.
+ * C'è anche mentre il brano dopo si carica (a zero), così dopo uno skip non sparisce e ricompare.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TimeBar(now: Playing) {
-    val context = LocalContext.current
     if (now.live) {
         Text(
             "● In diretta",
@@ -411,23 +420,39 @@ private fun TimeBar(now: Playing) {
         )
         return
     }
-    if (now.durationMs <= 0) return
     // Mentre si trascina la barra segue il dito; lasciata, il player salta lì.
     var dragging by remember { mutableStateOf<Float?>(null) }
+    val duration = now.durationMs
     val position = livePosition(now)
+    val accent = MaterialTheme.colorScheme.primary
+    val rest = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
     Slider(
-        value = dragging ?: (position.toFloat() / now.durationMs).coerceIn(0f, 1f),
+        value = dragging ?: if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f,
         enabled = now.canSeek,
         onValueChange = { dragging = it },
         onValueChangeFinished = {
-            dragging?.let { Playback.seekTo((it * now.durationMs).toLong()) }
+            dragging?.let { Playback.seekTo((it * duration).toLong()) }
             dragging = null
         },
+        thumb = {
+            SeekDot(if (now.canSeek) accent else rest, if (dragging != null) 16.dp else 12.dp)
+        },
+        track = { state ->
+            SeekTrack {
+                drawRoundRect(rest, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2))
+                drawRoundRect(
+                    accent,
+                    size = androidx.compose.ui.geometry.Size(state.value.coerceIn(0f, 1f) * size.width, size.height),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2),
+                )
+            }
+        },
+        modifier = Modifier.height(SEEK_HEIGHT),
     )
     Row {
-        Text(clockLabel(dragging?.let { (it * now.durationMs).toLong() } ?: position), style = MaterialTheme.typography.labelMedium)
+        Text(clockLabel(dragging?.let { (it * duration).toLong() } ?: position), style = MaterialTheme.typography.labelMedium)
         Spacer(Modifier.weight(1f))
-        Text(clockLabel(now.durationMs), style = MaterialTheme.typography.labelMedium)
+        Text(if (duration > 0) clockLabel(duration) else "–:––", style = MaterialTheme.typography.labelMedium)
     }
 }
 

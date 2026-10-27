@@ -34,7 +34,7 @@ object SpotifyAuth {
     const val REDIRECT_URI = "com.platinum20.dashboard://spotify-callback"
     private const val PREFS = "spotify_api"
     // App "Canvas" registrata da Antonio su developer.spotify.com (il Client ID è pubblico, non è un segreto).
-    private const val DEFAULT_CLIENT_ID = "802a1bc467c041538598820b98e20f63"
+    const val DEFAULT_CLIENT_ID = "802a1bc467c041538598820b98e20f63"
     private const val KEY_CLIENT_ID = "client_id"
     private const val KEY_ACCESS = "access_token"
     private const val KEY_REFRESH = "refresh_token"
@@ -148,6 +148,24 @@ object SpotifyAuth {
             _error.value = "Il collegamento con Spotify è scaduto, ricollegati"
             null
         }
+    }
+
+    /**
+     * Ripulisce il Client ID incollato: vuoto = quello predefinito, altrimenti 32 caratteri
+     * esadecimali (spazi e maiuscole tollerati). Null se non è un Client ID valido.
+     */
+    fun normalizeClientId(input: String): String? {
+        val id = input.filterNot { it.isWhitespace() }.lowercase()
+        if (id.isEmpty()) return DEFAULT_CLIENT_ID
+        return id.takeIf { it.length == 32 && it.all { c -> c in '0'..'9' || c in 'a'..'f' } }
+    }
+
+    /** Cambia la chiave (Client ID): con un'app diversa i vecchi token non valgono più. */
+    fun setClientId(id: String) {
+        if (id == _clientId.value) return
+        prefs.edit().apply { if (id == DEFAULT_CLIENT_ID) remove(KEY_CLIENT_ID) else putString(KEY_CLIENT_ID, id) }.apply()
+        _clientId.value = id
+        disconnect()
     }
 
     fun disconnect() {

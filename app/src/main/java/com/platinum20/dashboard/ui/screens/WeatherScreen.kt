@@ -93,21 +93,6 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
             TopLevelBar(
                 title = "Meteo",
                 onBack = onBack,
-                actions = {
-                    // Un'etichetta: l'icona da sola non diceva cosa faceva.
-                    TextButton(onClick = onPickPlace) {
-                        Icon(Icons.Outlined.Place, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.size(6.dp))
-                        Text("Località")
-                    }
-                    if (state.loading) {
-                        CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
-                    } else {
-                        IconButton(onClick = { WeatherStore.refresh(context, force = true) }) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Aggiorna")
-                        }
-                    }
-                },
             )
         },
     ) { inner ->

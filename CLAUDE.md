@@ -74,21 +74,21 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Media** (Musica / Video / Radio e podcast)
 - `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue
-  (pure ops in `QueueOps.kt`, `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
+  (pure ops in `QueueOps.kt`: tap = `pick` (plays it, others stay), swipe-remove + `restore` undo; `QueueFill` = "Riempi in automatico" Spotify top-up toggle at the queue bottom; `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
   Spotify plugs in as `ExternalBackend`. `PlayerService.kt` = the one MediaSession/notification
   (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
   `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
   `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
   adapters over CanvasPlayer. `VideoPlayerScreen` (route media/video) is only the picker for phone
   videos/files/links: `MediaLauncher.playVideo` plays them on CanvasPlayer (ResumeKind.VIDEO).
-- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites; YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
+- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites, `SponsorBlock` (hash-prefix fetch, pure `step`/`marks`, 200 ms loop started by `YtPlayer.load`, per-category `SbAction` in `AppSettings.sponsorActions`, Settings › Fa da solo; skip button + bar marks in YouTubeWatchScreen), `YtVotes` (Return YouTube Dislike, `AppSettings.dislikes`); `YtPremiere` (anteprime: `YtPlayer.load` failure → `check` reads the start time from the watch page → `YtNow.upcoming` → `PremiereWait.kt` countdown + "Avvisami" (`PremiereReminderWorker`) + auto retry; feed badge `badge(YtVideo.startsAt)`); YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
   (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
 - `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyMixes` = our "Mix per te" (Spotify-made playlists are 403 for personal apps), `SpotifyPlayer` = own hidden
   WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
 - `media/MediaWebViews.kt`: any WebView in Compose must go through `WebView.inFrame(ctx)`.
 - Screens: `MediaScreen`, `MusicScreen` (Spotify only, one page of horizontal `coverRow`s), `ListenScreen` (one page, no chips: `radioSections` in RadioScreen + `podcastSections`/`PodcastPage` in PodcastScreen),
-  `YouTubeFeedScreen` (`ListTiles` row on top = Playlist/Mi piace/Più tardi (= YouTube videos in the notes, `SavedLinks.youtubeVideos`)/Telefono, then chips Home/Iscrizioni/Cronologia; Escludi Shorts/live = `AppSettings.hideShorts/hideLive` in Settings › Fa da solo, applied by pure `pickFeed`), `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
-  `FloatingPlayer` (mini player). `PlayerScreen` is the single player route: video layout
+  `YouTubeFeedScreen` (`ListTiles` row on top = Playlist/Mi piace/Più tardi (= YouTube videos in the notes, `SavedLinks.youtubeVideos`)/Telefono, then 4 equal-width `CanvasTabChip`s Home/Iscrizioni/Cronologia/Canali (Canali = `YouTubeStore.channels` ordered by pure `channelLines`, tap = `ChannelVideos` = ALL the channel's videos newest first, paged by `YtResolver.channelVideos` (NewPipe Videos tab, RSS fallback) + `YouTubeStore.loadMoreChannel` at the list bottom; same page from the watch page channel row = route `media/channel/{id}` `YouTubeChannelScreen`); `AppSettings.autoplayNext` gates the suggested video after the queue ends (`CanvasPlayer.ended`); Escludi Shorts/live = `AppSettings.hideShorts/hideLive` in Settings › Fa da solo, applied by pure `pickFeed`), `YouTubeWatchScreen` (gestures: pure `VideoSwipe.kt` = swipe up to fullscreen, fullscreen volume drag + keys, pinch fill/fit), `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
+  `FloatingPlayer` (mini player; `MiniDock.kt` = closing the video page flies the video onto the mini player's real thumbnail, `MiniDock.docking` + `holdExit` on the player routes). `PlayerScreen` is the single player route: video layout
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).
 
@@ -101,7 +101,7 @@ GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
-`SettingsScreen.kt` (groups by intent; `RadioAlarmSetting.kt` = Sveglia con la radio in Cosa ti avvisa; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
+`SettingsScreen.kt` (main page = theme + menu rows with one-line state (`SettingsSummary`); each row opens `SettingsPageScreen(SettingsPage)` on route `settings/page/{page}`: HOME, NEWS, MEDIA (coda, video successivo, Video filters, SponsorBlock row → SPONSORBLOCK page, canzoni, ad block), ALERTS, ACCOUNTS, DATA, INFO; the Note row opens AutoFillScreen directly; every persistent toggle belongs here, not in other screens; `RadioAlarmSetting.kt` = Sveglia con la radio in Notifiche; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per
 feature (`*Test.kt`). Test class names must be unique across the package. `ScreenshotTour`,
@@ -160,7 +160,9 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - `git push --delete` fails (proxy); merged branches just stay.
 - Use `git fetch origin main && git merge --ff-only origin/main` rather than `git pull`/`reset --hard`.
 - Maven Central gives 429: use repo1.maven.org. NewPipeExtractor must stay current (JitPack,
-  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`).
+  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`). Since 1.272 it is pinned to the same commit the
+  NewPipe app uses (visionOS client, survives the "not a bot" check; v0.26.5 did not): follow NewPipe's
+  `gradle/libs.versions.toml`, never go back to an older tag. Extractor errors → Italian via `YtErrors`.
 - Robolectric: guard GraphicsLayer use with `nativeCanvas.isHardwareAccelerated`; don't wait on
   `Playback.now` across tests (singleton bound to an earlier test's looper).
 - Backlog lives in `BACKLOG.md` on the orphan branch `backlog`.

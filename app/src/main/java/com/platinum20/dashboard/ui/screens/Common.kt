@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
@@ -583,6 +585,40 @@ fun CanvasChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: 
         ),
         modifier = modifier.bouncyPress(0.94f),
     )
+}
+
+/**
+ * Come [CanvasChip] ma prende tutta la larghezza che le danno (schede in parti uguali fino al bordo):
+ * testo centrato che si rimpicciolisce quanto basta per stare su una riga, così non si scorre di lato.
+ */
+@Composable
+fun CanvasTabChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val base = MaterialTheme.typography.labelLarge
+    var style by remember(label, base) { mutableStateOf(base) }
+    Surface(
+        selected = selected,
+        onClick = onClick,
+        shape = CircleShape,
+        color = if (selected) colors.onSurface else colors.card,
+        contentColor = if (selected) colors.surface else colors.onSurfaceVariant,
+        border = if (selected) null else BorderStroke(1.dp, colors.outlineVariant),
+        modifier = modifier.height(32.dp).bouncyPress(0.94f),
+    ) {
+        Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                style = style,
+                maxLines = 1,
+                softWrap = false,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+                onTextLayout = { layout ->
+                    if (layout.hasVisualOverflow && style.fontSize.value > 10f) style = style.copy(fontSize = (style.fontSize.value - 0.5f).sp)
+                },
+            )
+        }
+    }
 }
 
 /**
