@@ -215,6 +215,8 @@ import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.PlacePickerScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
+import com.platinum20.dashboard.ui.screens.SettingsPage
+import com.platinum20.dashboard.ui.screens.SettingsPageScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.screens.AutoFillScreen
@@ -353,9 +355,9 @@ object Routes {
     const val HOME = "home"
     const val NEWS = "news"
     const val SETTINGS = "settings"
-    const val SETTINGS_PATTERN = "settings?section={section}"
+    const val SETTINGS_PAGE = "settings/page/{page}"
     /** Le Impostazioni aperte alla parte di una sezione della barra ([HOME], [NEWS], [NOTES], [MEDIA]). */
-    fun settings(section: String? = null) = if (section == null) SETTINGS else "settings?section=$section"
+    fun settingsPage(page: SettingsPage) = "settings/page/${page.name}"
     const val UPDATES = "settings/updates"
     const val AUTOFILL = "settings/autofill"
     const val MAIL = "home/mail/{id}"
@@ -1213,7 +1215,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
                     onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onOpenSettings = { navController.navigate(Routes.settings(Routes.MEDIA)) },
+                    onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
                 )
             }
             // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
@@ -1356,17 +1358,21 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                 )
             }
-            composable(
-                Routes.SETTINGS_PATTERN,
-                arguments = listOf(navArgument("section") { type = NavType.StringType; nullable = true; defaultValue = null }),
-            ) { entry ->
+            composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    initialSection = entry.arguments?.getString("section"),
+                    onBack = { navController.popBackStack() },
+                    onOpenPage = { navController.navigate(Routes.settingsPage(it)) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                )
+            }
+            composable(Routes.SETTINGS_PAGE, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
+                val page = SettingsPage.entries.firstOrNull { it.name == entry.arguments?.getString("page") } ?: SettingsPage.HOME
+                SettingsPageScreen(
+                    page = page,
                     onBack = { navController.popBackStack() },
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
-                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
             }

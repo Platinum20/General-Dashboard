@@ -149,7 +149,6 @@ fun QueueScreen(onBack: () -> Unit) {
                     )
                 }
             }
-            item(key = "autofill") { AutoFillRow(Modifier.padding(top = 12.dp).animateItem()) }
         }
     }
 }
@@ -191,24 +190,6 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
             },
             handle = handle,
             onTap = { CanvasPlayer.jump(entry.id) },
-        )
-    }
-}
-
-/** L'interruttore in fondo alla coda: finita la coda di Spotify, altri tuoi brani arrivano da soli. */
-@Composable
-private fun AutoFillRow(modifier: Modifier = Modifier) {
-    val connected by SpotifyAuth.connected.collectAsState()
-    if (!connected) return
-    val on by CanvasPlayer.autoFill.collectAsState()
-    CanvasCard(modifier.fillMaxWidth()) {
-        SettingsItem(
-            icon = Icons.Outlined.AutoAwesome,
-            accent = TileAccent.GREEN,
-            title = "Riempi in automatico",
-            subtitle = "Altri tuoi brani di Spotify a fine coda",
-            onClick = { CanvasPlayer.setAutoFill(!on) },
-            trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> CanvasPlayer.setAutoFill(v) }) },
         )
     }
 }
