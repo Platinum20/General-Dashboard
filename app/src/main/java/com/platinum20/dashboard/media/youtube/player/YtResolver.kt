@@ -2,6 +2,7 @@ package com.platinum20.dashboard.media.youtube.player
 
 import android.text.Html
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.NewPipe
@@ -16,6 +17,7 @@ import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.extractor.stream.VideoStream
 import org.schabi.newpipe.extractor.search.SearchInfo
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.comments.CommentsInfo
@@ -238,7 +240,7 @@ object YtResolver {
     suspend fun resolve(link: String, maxHeight: Int = 0): YtStream = withContext(Dispatchers.IO) {
         init()
         val id = videoId(link) ?: throw IllegalArgumentException("Link di YouTube non valido")
-        val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
+        val info = streamInfo(id)
         val live = info.streamType == StreamType.LIVE_STREAM || info.streamType == StreamType.AUDIO_LIVE_STREAM
 
         val audios = info.audioStreams.filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
@@ -304,6 +306,21 @@ object YtResolver {
     }
 
     /**
+     * Il controllo "non sei un bot" di YouTube su reti condivise (4G) spesso passa al secondo colpo:
+     * un solo nuovo tentativo poco dopo, poi l'errore. Mai a raffica, se no il blocco si allunga.
+     */
+    private suspend fun streamInfo(id: String): StreamInfo {
+        val url = "https://www.youtube.com/watch?v=$id"
+        return try {
+            StreamInfo.getInfo(ServiceList.YouTube, url)
+        } catch (e: Exception) {
+            if (!YtErrors.isBotCheck(e)) throw e
+            delay(1_500)
+            StreamInfo.getInfo(ServiceList.YouTube, url)
+        }
+    }
+
+    /**
      * Manifest DASH costruito dai flussi MP4 (H.264) di ogni qualità più l'audio scelto: con questo
      * ExoPlayer parte dalla qualità più alta e scende solo se la rete non ce la fa (come l'app di YouTube).
      * Null se mancano gli indici dei file (servono per saltare nel video) o c'è una sola qualità.
@@ -352,6 +369,8 @@ object YtResolver {
         return when {
             client.startsWith("ANDROID") -> "com.google.android.youtube/19.44.38 (Linux; U; Android 14) gzip"
             client.startsWith("IOS") -> "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)"
+            // Dal 2026 i flussi arrivano dal client visionOS: si usa lo stesso user agent di NewPipe.
+            client.startsWith("VISIONOS") -> YoutubeParsingHelper.getVisionOsUserAgent(null)
             else -> NewPipeDownloader.USER_AGENT
         }
     }
