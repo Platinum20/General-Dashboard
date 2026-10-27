@@ -147,7 +147,7 @@ fun YouTubeFeedScreen(
                 title = openPlaylist?.title ?: openChannel?.title ?: list?.title ?: "Video",
                 subtitle = when {
                     openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
-                    openChannel != null -> "Canale · gli ultimi video"
+                    openChannel != null -> "Tutti i video, dal più recente"
                     list == YtList.LATER -> "I video salvati nelle note"
                     list != null -> "YouTube"
                     fresh > 0 -> "$fresh video nuovi oggi"
@@ -500,18 +500,50 @@ private fun ChannelsTab(onOpen: (YtChannel) -> Unit) {
     }
 }
 
-/** Gli ultimi video di un canale, con gli stessi filtri (Shorts, live) delle altre schede. */
+/**
+ * La pagina di un canale aperta da fuori (tocco sul canale nella pagina del video): la stessa lista
+ * di tutti i video della scheda Canali.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun YouTubeChannelScreen(channel: YtChannel, onBack: () -> Unit, onPlay: (String) -> Unit) {
+    val hideShorts by AppSettings.hideShorts.collectAsState()
+    val hideLive by AppSettings.hideLive.collectAsState()
+    Scaffold(
+        topBar = { TopLevelBar(title = channel.title, subtitle = "Tutti i video, dal più recente", onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            ChannelVideos(channel, hideShorts, hideLive, onPlay)
+        }
+    }
+}
+
+/**
+ * Tutti i video di un canale in ordine cronologico, dal più recente: arrivando in fondo si carica la
+ * pagina dopo, finché il canale non ne ha più. Stessi filtri (Shorts, live) delle altre schede.
+ */
 @Composable
 private fun ChannelVideos(channel: YtChannel, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
     val all by YouTubeStore.channelVideos.collectAsState()
+    val more by YouTubeStore.channelHasMore.collectAsState()
     val state = all[channel.id] ?: Loadable(loading = true)
     LaunchedEffect(channel.id) { YouTubeStore.loadChannel(channel) }
     val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive)
-    FeedList(state, empty = "Nessun video recente") {
+    val count = state.data.orEmpty().size
+    FeedList(state, empty = "Nessun video in questo canale") {
         if (pick.shorts.isNotEmpty()) {
             item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
         }
         items(pick.videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
+        if (channel.id in more) {
+            // Composto solo quando si arriva vicino al fondo della lista: lì parte la pagina dopo.
+            item(key = "more") {
+                LaunchedEffect(count) { YouTubeStore.loadMoreChannel(channel) }
+                Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(Modifier.size(24.dp))
+                }
+            }
+        }
     }
 }
 

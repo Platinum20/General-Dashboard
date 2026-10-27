@@ -1,17 +1,24 @@
 # Changelog
 
-## 1.263.0
+## 1.266.0
 **Impostazioni con un menu**
 - La pagina è corta: in cima il tema, sotto un menu che apre una pagina per ogni cosa
 - Home, Note, News e Media nell'ordine della barra in basso, poi Notifiche, Account, Dati e Informazioni
 - Ogni riga del menu dice com'è adesso, per esempio quali notifiche sono accese o quali account sono collegati
 - "Riempi la coda in automatico" lascia il fondo della coda e va in Impostazioni › Media, con "Riproduci il video successivo"
 - Le descrizioni stanno tutte su una riga
+## 1.264.0
+**YouTube: tutti i video di un canale**
+- Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
+- Anche da Video › Canali ora vedi tutti i video del canale, non solo gli ultimi 15, dal più recente al più vecchio
+- Scorrendo in fondo arrivano da soli i video più vecchi, fino al primo
+
 ## 1.262.0
 **Spotify: niente più rotella infinita**
 - Se il riproduttore di Spotify non manda il suo stato, l'app lo chiede direttamente a Spotify: tempo, durata e play/pausa tornano giusti in un paio di secondi
 - Il tasto play mentre un brano sta partendo non lo fa più ricominciare da capo
 - Pausa, play e salti nel brano funzionano anche in quel caso
+
 ## 1.261.0
 **Il video chiuso vola nel mini player**
 - Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
