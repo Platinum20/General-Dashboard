@@ -50,6 +50,8 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -84,6 +86,13 @@ fun FloatingPlayer(
 ) {
     val context = LocalContext.current
     RadioStore.init(context)
+    // Dove starebbe la barra, misurato sempre (anche sul player grande): lì vola il video quando lo chiudi.
+    Box(
+        modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .onGloballyPositioned { MiniDock.frame = it.boundsInRoot() }
+    )
     val playing by Playback.now.collectAsState()
     val now = shown ?: playing ?: return
     // Sulle schermate dei player la barra non serve: c'è già il player grande.
@@ -100,14 +109,18 @@ fun FloatingPlayer(
         var barH by remember { mutableIntStateOf(0) }
         val range = (maxH - barH).coerceAtLeast(1f)
         // In alto o in basso, ricordato anche ruotando lo schermo; in basso all'inizio.
-        var atTop by rememberSaveable { mutableStateOf(false) }
-        val y = remember { Animatable(1f) }
-        LaunchedEffect(atTop) { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
+        var atTop by rememberSaveable { mutableStateOf(MiniDock.atTop) }
+        val y = remember { Animatable(if (atTop) 0f else 1f) }
+        LaunchedEffect(atTop) {
+            MiniDock.atTop = atTop
+            y.animateTo(if (atTop) 0f else 1f, Springs.bouncy())
+        }
         val scope = rememberCoroutineScope()
         val view = LocalView.current
         var dragging by remember { mutableStateOf(false) }
         // Comparsa: la barra "salta fuori" invece di apparire di colpo.
-        val appear = remember { Animatable(0f) }
+        // Arrivando dal player grande invece è già lì: il video ci è appena volato dentro.
+        val appear = remember { Animatable(if (MiniDock.docking) 1f else 0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
         val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
         // Per chiudere: si porta di lato, come una notifica. Il dito la muove liberamente (di lato e
@@ -174,9 +187,12 @@ fun FloatingPlayer(
                     scaleX = sc
                     scaleY = sc
                     // Sbiadisce allontanandosi di lato.
-                    alpha = appear.value.coerceIn(0f, 1f) * (1f - 0.6f * (kotlin.math.abs(x.value) / maxW).coerceIn(0f, 1f))
+                    alpha = (if (MiniDock.docking) 0f else 1f) * appear.value.coerceIn(0f, 1f) * (1f - 0.6f * (kotlin.math.abs(x.value) / maxW).coerceIn(0f, 1f))
                 }
-                .onSizeChanged { barH = it.height }
+                .onSizeChanged {
+                    barH = it.height
+                    MiniDock.barHeight = it.height.toFloat()
+                }
                 .glass(MaterialTheme.shapes.extraLarge)
                 .pointerInput(range, maxW) {
                     val tracker = VelocityTracker()
@@ -282,7 +298,8 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                     .background(if (now.isVideo) Color.Black else MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
-                if (now.isVideo) {
+                // Mentre il video vola qui dal player grande lo schermo resta a lui: si aggancia all'arrivo.
+                if (now.isVideo && !MiniDock.docking) {
                     AndroidView(
                         factory = { ctx ->
                             androidx.media3.ui.PlayerView(ctx).apply {
@@ -294,7 +311,7 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                         onRelease = { it.player = null },
                         modifier = Modifier.fillMaxSize(),
                     )
-                } else {
+                } else if (!now.isVideo) {
                     Icon(sourceIcon(now.source), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
                     else if (now.artwork.isNotBlank()) {
