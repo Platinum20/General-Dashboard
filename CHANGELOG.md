@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.244.0
+**Video senza il riquadro "In pausa"**
+- In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
+
 ## 1.243.0
 **Video a schermo intero: barra del volume a sinistra, anche coi tasti**
 - La barra del volume è verticale, tutta a sinistra
