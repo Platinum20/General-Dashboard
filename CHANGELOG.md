@@ -1,8 +1,19 @@
 # Changelog
 
-## 1.278.0
+## 1.280.0
 **Aggiornamenti: il tasto non sta più sotto il mini player**
 - Se sta suonando qualcosa, "Controlla e aggiorna" sale sopra il mini player invece di restarci sotto
+
+## 1.279.0
+**Spese anche dentro Note**
+- Toccando la card Spese in Note si apre la pagina Spese dentro Note, non più in Oggi: la barra resta su Note e indietro torna alle Note
+- La pagina è la stessa di Oggi, con le stesse spese
+
+## 1.278.0
+**Le novità dopo ogni aggiornamento**
+- Al primo avvio dopo un aggiornamento sale un fumetto di vetro con le novità della versione, una volta sola
+- Si chiude toccandolo, toccando fuori o portandolo di lato
+- Alla prima installazione non compare
 
 ## 1.277.0
 **Aggiornamenti automatici**

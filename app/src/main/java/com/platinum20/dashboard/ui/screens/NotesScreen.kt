@@ -252,7 +252,7 @@ private fun NotesOverview(
             MoneyCard(
                 data,
                 LocalDate.now(),
-                onOpen = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
+                onOpen = { inApp?.openRoute?.invoke(Routes.NOTES_EXPENSES) },
                 modifier = Modifier.animateItem(),
             )
         }
@@ -462,7 +462,7 @@ fun NotesScreen(
                 padding = padding,
                 onClose = { searching = false },
                 onOpenNote = { onOpenNote(it) },
-                onOpenExpenses = { searching = false; inApp?.openRoute?.invoke(Routes.EXPENSES) },
+                onOpenExpenses = { searching = false; inApp?.openRoute?.invoke(Routes.NOTES_EXPENSES) },
             )
             return@Scaffold
         }
