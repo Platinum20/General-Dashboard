@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.251.0
+**Video: barra del tempo sottile**
+- La barra del tempo dei video è sottile quanto i segmenti di SponsorBlock, che ora le stanno sopra perfettamente allineati
+- Il cursore è un pallino piccolo, come su YouTube
+
 ## 1.250.0
 **Chiave di Spotify di nuovo nelle impostazioni**
 - Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)
