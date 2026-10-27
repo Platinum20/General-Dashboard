@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.platinum20.dashboard.MediaClickTour</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.platinum20.dashboard.MediaClickTour</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.platinum20.dashboard.html">com.platinum20.dashboard</a> &gt; MediaClickTour</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">1</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">2m31.38s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a href="#">Tests</a>
+</li>
+<li>
+<a href="#">Standard output</a>
+</li>
+<li>
+<a href="#">Standard error</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">ogniTastoFaQualcosa</td>
+<td class="success">2m31.38s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+<div class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre># Collaudo di Media
+
+## Media (3 elementi)
+- ✅ Musica
+- ✅ Video
+- ✅ Radio
+
+## Musica (3 elementi)
+- ✅ Accedi a Spotify
+- ✅ Oppure usa il collegamento ufficiale di Spotify → finestra
+- ✅ Indietro
+
+## Video (4 elementi)
+- ✅ Accedi a YouTube
+- ✅ Oppure collega l'API ufficiale di Google
+- ✅ Guarda i video del telefono
+- ✅ Indietro
+
+## Radio e podcast (13 elementi)
+- ✅ Radio Armisa
+- ✅ Aggiungi alle preferite
+- ✅ Radio 24 il sole 24 ore
+- ✅ Rai Radio 1
+- ✅ Radio Deejay
+- ✅ Radio Italia Solo Musica Italiana
+- ⚪ Radio Kiss Kiss (non più a schermo)
+- ⚪ RTL 102.5 (non più a schermo)
+- ⚪ Radio 105 Network (non più a schermo)
+- ⚪ 50s 60s RETRO HITS (non più a schermo)
+- ⚪ Rai Radio 3 (non più a schermo)
+- ⚪ Virgin Radio Italia (non più a schermo)
+- ✅ Indietro
+
+
+**Senza effetto: 0**
+
+</pre>
+</span>
+</div>
+<div class="tab">
+<h2>Standard error</h2>
+<span class="code">
+<pre>android.os.ServiceManager$ServiceNotFoundException: No service published for: media_metrics
+	at android.os.ServiceManager.getServiceOrThrow(ServiceManager.java:203)
+	at android.app.SystemServiceRegistry$131.createService(SystemServiceRegistry.java:1577)
+	at android.app.SystemServiceRegistry$131.createService(SystemServiceRegistry.java:1572)
+	at android.app.SystemServiceRegistry$CachedServiceFetcher.getService(SystemServiceRegistry.java:2231)
+	at android.app.SystemServiceRegistry.getSystemService(SystemServiceRegistry.java:1812)
+	at android.app.ContextImpl.getSystemService(ContextImpl.java:2241)
+	at jdk.internal.reflect.GeneratedMethodAccessor38.invoke(Unknown Source)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.robolectric.shadows.ShadowContextImpl$_ContextImpl_$$Reflector48.getSystemService(Unknown Source)
+	at org.robolectric.shadows.ShadowContextImpl.getSystemService(ShadowContextImpl.java:84)
+	at android.app.ContextImpl.getSystemService(ContextImpl.java)
+	at android.content.ContextWrapper.getSystemService(ContextWrapper.java:936)
+	at androidx.media3.exoplayer.analytics.MediaMetricsListener.create(MediaMetricsListener.java:104)
+	at androidx.media3.exoplayer.ExoPlayerImpl$Api31.registerMediaMetricsListener(ExoPlayerImpl.java:3406)
+	at androidx.media3.exoplayer.ExoPlayerImpl.&lt;init&gt;(ExoPlayerImpl.java:354)
+	at androidx.media3.exoplayer.ExoPlayer$Builder.build(ExoPlayer.java:1353)
+	at com.platinum20.dashboard.media.CanvasPlayer.build(CanvasPlayer.kt:467)
+	at com.platinum20.dashboard.media.CanvasPlayer.player(CanvasPlayer.kt:274)
+	at com.platinum20.dashboard.media.CanvasPlayer.load(CanvasPlayer.kt:360)
+	at com.platinum20.dashboard.media.CanvasPlayer.play(CanvasPlayer.kt:148)
+	at com.platinum20.dashboard.media.radio.RadioStore.play(RadioStore.kt:104)
+	at com.platinum20.dashboard.media.radio.RadioStore.play$default(RadioStore.kt:98)
+	at com.platinum20.dashboard.ui.screens.RadioScreenKt.StationRow$lambda$12$lambda$11(RadioScreen.kt:98)
+	at androidx.compose.foundation.CombinedClickableNodeImpl$clickPointerInput$5.invoke-k-4lQ0M(Clickable.kt:792)
+	at androidx.compose.foundation.CombinedClickableNodeImpl$clickPointerInput$5.invoke(Clickable.kt:778)
+	at androidx.compose.foundation.gestures.TapGestureDetectorKt$detectTapGestures$2$1.invokeSuspend(TapGestureDetector.kt:138)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTaskKt.resume(DispatchedTask.kt:163)
+	at kotlinx.coroutines.DispatchedTaskKt.dispatch(DispatchedTask.kt:152)
+	at kotlinx.coroutines.CancellableContinuationImpl.dispatchResume(CancellableContinuationImpl.kt:470)
+	at kotlinx.coroutines.CancellableContinuationImpl.resumeImpl$kotlinx_coroutines_core(CancellableContinuationImpl.kt:504)
+	at kotlinx.coroutines.CancellableContinuationImpl.resumeImpl$kotlinx_coroutines_core$default(CancellableContinuationImpl.kt:493)
+	at kotlinx.coroutines.CancellableContinuationImpl.resumeWith(CancellableContinuationImpl.kt:359)
+	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl$PointerEventHandlerCoroutine.offerPointerEvent(SuspendingPointerInputFilter.kt:719)
+	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl.dispatchPointerEvent(SuspendingPointerInputFilter.kt:598)
+	at androidx.compose.ui.input.pointer.SuspendingPointerInputModifierNodeImpl.onPointerEvent-H0pRuoY(SuspendingPointerInputFilter.kt:620)
+	at androidx.compose.foundation.AbstractClickableNode.onPointerEvent-H0pRuoY(Clickable.kt:1044)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:387)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:373)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:373)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:373)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:373)
+	at androidx.compose.ui.input.pointer.Node.dispatchMainEventPass(HitPathTracker.kt:373)
+	at androidx.compose.ui.input.pointer.NodeParent.dispatchMainEventPass(HitPathTracker.kt:229)
+	at androidx.compose.ui.input.pointer.HitPathTracker.dispatchChanges(HitPathTracker.kt:144)
+	at androidx.compose.ui.input.pointer.PointerInputEventProcessor.process-BIzXfog(PointerInputEventProcessor.kt:120)
+	at androidx.compose.ui.platform.AndroidComposeView.sendMotionEvent-8iAsVTc(AndroidComposeView.android.kt:1994)
+	at androidx.compose.ui.platform.AndroidComposeView.handleMotionEvent-8iAsVTc(AndroidComposeView.android.kt:1945)
+	at androidx.compose.ui.platform.AndroidComposeView.dispatchTouchEvent(AndroidComposeView.android.kt:1829)
+	at androidx.compose.ui.test.AndroidInputDispatcher_androidKt$createInputDispatcher$2.invoke(AndroidInputDispatcher.android.kt:68)
+	at androidx.compose.ui.test.AndroidInputDispatcher_androidKt$createInputDispatcher$2.invoke(AndroidInputDispatcher.android.kt:63)
+	at androidx.compose.ui.test.AndroidInputDispatcher.sendAndRecycleEvent(AndroidInputDispatcher.android.kt:597)
+	at androidx.compose.ui.test.AndroidInputDispatcher.access$sendAndRecycleEvent(AndroidInputDispatcher.android.kt:83)
+	at androidx.compose.ui.test.AndroidInputDispatcher$flush$1.invoke(AndroidInputDispatcher.android.kt:562)
+	at androidx.compose.ui.test.AndroidInputDispatcher$flush$1.invoke(AndroidInputDispatcher.android.kt:548)
+	at androidx.compose.ui.test.AndroidSynchronization_androidKt.runOnUiThread(AndroidSynchronization.android.kt:33)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidTestOwner.runOnUiThread(ComposeUiTest.android.kt:539)
+	at androidx.compose.ui.test.AndroidInputDispatcher.flush(AndroidInputDispatcher.android.kt:548)
+	at androidx.compose.ui.test.MultiModalInjectionScopeImpl.dispose$ui_test_release(MultiModalInjectionScope.kt:141)
+	at androidx.compose.ui.test.ActionsKt.performTouchInput(Actions.kt:399)
+	at androidx.compose.ui.test.Actions_androidKt.performClickImpl(Actions.android.kt:20)
+	at androidx.compose.ui.test.ActionsKt.performClick(Actions.kt:54)
+	at com.platinum20.dashboard.MediaClickTour.tap(MediaClickTour.kt:179)
+	at com.platinum20.dashboard.MediaClickTour.checkPage(MediaClickTour.kt:100)
+	at com.platinum20.dashboard.MediaClickTour.ogniTastoFaQualcosa(MediaClickTour.kt:77)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.internal.runners.statements.RunBefores.evaluate(RunBefores.java:26)
+	at org.junit.internal.runners.statements.RunAfters.evaluate(RunAfters.java:27)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:272)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1$evaluate$1.invoke(AndroidComposeTestRule.android.kt:271)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$AndroidComposeUiTestImpl.withDisposableContent(ComposeUiTest.android.kt:505)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1$1.invoke(ComposeUiTest.android.kt:333)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withComposeIdlingResource(ComposeUiTest.android.kt:385)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withComposeIdlingResource(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1$1.invoke(ComposeUiTest.android.kt:332)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withWindowRecomposer(ComposeUiTest.android.kt:359)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withWindowRecomposer(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1$1.invoke(ComposeUiTest.android.kt:331)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.withTestCoroutines(ComposeUiTest.android.kt:372)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.access$withTestCoroutines(ComposeUiTest.android.kt:219)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1$1.invoke(ComposeUiTest.android.kt:330)
+	at androidx.compose.ui.test.IdlingStrategy.withStrategy(IdlingStrategy.android.kt:52)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1$1.invoke(ComposeUiTest.android.kt:329)
+	at androidx.compose.ui.test.IdlingResourceRegistry.withRegistry(IdlingResourceRegistry.jvm.kt:155)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment$runTest$1.invoke(ComposeUiTest.android.kt:328)
+	at androidx.compose.ui.test.ComposeRootRegistry.withRegistry(ComposeRootRegistry.android.kt:146)
+	at androidx.compose.ui.test.AndroidComposeUiTestEnvironment.runTest(ComposeUiTest.android.kt:327)
+	at androidx.compose.ui.test.junit4.AndroidComposeTestRule$apply$1.evaluate(AndroidComposeTestRule.android.kt:271)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.robolectric.RobolectricTestRunner$HelperTestRunner$1.evaluate(RobolectricTestRunner.java:502)
+	at org.robolectric.internal.SandboxTestRunner$2.lambda$evaluate$2(SandboxTestRunner.java:285)
+	at org.robolectric.internal.bytecode.Sandbox.lambda$runOnMainThread$0(Sandbox.java:104)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</pre>
+</span>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 8.14.3</a> at Oct 27, 2026, 7:47:41 PM</p>
+</div>
+</div>
+</body>
+</html>
