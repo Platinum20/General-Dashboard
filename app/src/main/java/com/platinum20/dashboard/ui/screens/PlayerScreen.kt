@@ -435,11 +435,10 @@ private fun TimeBar(now: Playing) {
             dragging = null
         },
         thumb = {
-            val size = if (dragging != null) 16.dp else 12.dp
-            Box(Modifier.size(size).clip(CircleShape).background(if (now.canSeek) accent else rest))
+            SeekDot(if (now.canSeek) accent else rest, if (dragging != null) 16.dp else 12.dp)
         },
         track = { state ->
-            androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(4.dp)) {
+            SeekTrack {
                 drawRoundRect(rest, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2))
                 drawRoundRect(
                     accent,
@@ -448,7 +447,7 @@ private fun TimeBar(now: Playing) {
                 )
             }
         },
-        modifier = Modifier.height(28.dp),
+        modifier = Modifier.height(SEEK_HEIGHT),
     )
     Row {
         Text(clockLabel(dragging?.let { (it * duration).toLong() } ?: position), style = MaterialTheme.typography.labelMedium)
