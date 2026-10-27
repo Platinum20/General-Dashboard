@@ -97,6 +97,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -108,6 +109,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -368,6 +371,9 @@ private fun VideoArea(
     var volumeShown by remember { mutableStateOf(false) }
     var volumeDragging by remember { mutableStateOf(false) }
     var volumeKeys by remember { mutableIntStateOf(0) }
+    val haptic = rememberHaptic()
+    val gestureTop by rememberUpdatedState(WindowInsets.systemGestures.getTop(LocalDensity.current))
+    val gestureBottom by rememberUpdatedState(WindowInsets.systemGestures.getBottom(LocalDensity.current))
     // Pinch a schermo intero: true = il video riempie lo schermo (niente bande), con un avviso breve.
     var fill by rememberSaveable { mutableStateOf(false) }
     var fillHint by remember { mutableIntStateOf(0) }
@@ -459,25 +465,49 @@ private fun VideoArea(
                 // A schermo intero (telefono in orizzontale) su/giù è il volume del telefono.
                 val stream = android.media.AudioManager.STREAM_MUSIC
                 val max = audio.getStreamMaxVolume(stream)
-                var start = 0
-                var draggedUp = 0f
-                detectVerticalDragGestures(
-                    onDragStart = {
-                        start = audio.getStreamVolume(stream)
-                        draggedUp = 0f
-                        volume = if (max > 0) start / max.toFloat() else 0f
-                        volumeShown = true
-                        volumeDragging = true
-                    },
-                    onDragEnd = { volumeDragging = false },
-                    onDragCancel = { volumeDragging = false },
-                    onVerticalDrag = { _, amount ->
-                        draggedUp -= amount
-                        val level = VideoSwipe.volumeAfter(start, max, draggedUp, size.height.toFloat())
-                        if (level != audio.getStreamVolume(stream)) audio.setStreamVolume(stream, level, 0)
-                        volume = if (max > 0) level / max.toFloat() else 0f
-                    },
-                )
+                val deadZone = 40.dp.toPx()
+                // Bordi alto e basso: i gesti di sistema più un margine, così tendina e chiusura non toccano il volume.
+                val margin = 32.dp.toPx()
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val h = size.height.toFloat()
+                    if (!VideoSwipe.volumeCanStart(down.position.y, h, gestureTop + margin, gestureBottom + margin)) return@awaitEachGesture
+                    var armed = false
+                    var anchorY = 0f
+                    var start = 0
+                    var last = 0
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed || event.changes.count { it.pressed } > 1) break
+                            if (!armed) {
+                                if (change.isConsumed) break
+                                val d = change.position - down.position
+                                if (!VideoSwipe.volumeArmed(d.x, d.y, deadZone)) continue
+                                armed = true
+                                // Si conta dal punto in cui finisce la zona morta: niente salto iniziale.
+                                anchorY = change.position.y
+                                start = audio.getStreamVolume(stream)
+                                last = start
+                                volume = if (max > 0) start / max.toFloat() else 0f
+                                volumeShown = true
+                                volumeDragging = true
+                            }
+                            change.consume()
+                            val level = VideoSwipe.volumeAfter(start, max, anchorY - change.position.y, h)
+                            if (level != last) {
+                                audio.setStreamVolume(stream, level, 0)
+                                last = level
+                                // Una piccola vibrazione a ogni tacca.
+                                haptic(Haptic.TICK)
+                            }
+                            volume = if (max > 0) level / max.toFloat() else 0f
+                        }
+                    } finally {
+                        volumeDragging = false
+                    }
+                }
             }
             .pointerInput(fullscreen, inPip) {
                 if (fullscreen || inPip) return@pointerInput
