@@ -30,6 +30,8 @@ data class YtVideo(
     /** In diretta adesso (o in arrivo, con [upcoming]). */
     val live: Boolean = false,
     val upcoming: Boolean = false,
+    /** Inizio dell'anteprima o della diretta in programma, se si conosce. */
+    val startsAt: Instant? = null,
     /** Foto del canale, se si conosce. */
     val channelAvatar: String = "",
     /** Visualizzazioni e data come le scrive YouTube ("3 giorni fa"), quando non c'è [published]. */
@@ -161,7 +163,7 @@ object YouTubeApi {
     suspend fun withDetails(token: String, videos: List<YtVideo>): List<YtVideo> {
         val details = mutableMapOf<String, JSONObject>()
         for (chunk in videos.map { it.id }.distinct().chunked(50)) {
-            val page = runCatching { get(token, "videos", mapOf("part" to "contentDetails,snippet", "id" to chunk.joinToString(","))) }
+            val page = runCatching { get(token, "videos", mapOf("part" to "contentDetails,snippet,liveStreamingDetails", "id" to chunk.joinToString(","))) }
                 .getOrNull() ?: break
             val items = page.optJSONArray("items") ?: continue
             for (i in 0 until items.length()) items.optJSONObject(i)?.let { details[it.optString("id")] = it }
@@ -171,7 +173,12 @@ object YouTubeApi {
             val seconds = runCatching { java.time.Duration.parse(item.optJSONObject("contentDetails")?.optString("duration")).seconds.toInt() }
                 .getOrDefault(0)
             val broadcast = item.optJSONObject("snippet")?.optString("liveBroadcastContent").orEmpty()
-            video.copy(durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming")
+            val scheduled = item.optJSONObject("liveStreamingDetails")?.optString("scheduledStartTime").orEmpty()
+                .let { runCatching { Instant.parse(it) }.getOrNull() }
+            video.copy(
+                durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming",
+                startsAt = scheduled.takeIf { broadcast == "upcoming" },
+            )
         }
     }
 

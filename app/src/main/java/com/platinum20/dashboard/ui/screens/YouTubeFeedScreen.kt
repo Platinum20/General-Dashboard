@@ -727,12 +727,12 @@ internal fun compactCount(n: Long): String = when {
     else -> n.toString()
 }
 
-/** Durata, IN DIRETTA o IN ARRIVO sull'anteprima. */
+/** Durata, IN DIRETTA o ANTEPRIMA (con l'orario d'inizio) sulla copertina. */
 @Composable
 private fun VideoBadge(video: YtVideo, modifier: Modifier) {
     val text = when {
         video.live -> "● IN DIRETTA"
-        video.upcoming -> "IN ARRIVO"
+        video.upcoming -> com.platinum20.dashboard.media.youtube.YtPremiere.badge(video.startsAt)
         video.isShort -> "SHORT"
         video.durationSec > 0 -> formatDuration(video.durationSec * 1000L)
         else -> return

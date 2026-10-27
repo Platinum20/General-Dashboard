@@ -432,7 +432,8 @@ object CanvasPlayer {
     }
 
     private fun message(item: ResumeItem, e: Throwable): String = when (item.kind) {
-        ResumeKind.YOUTUBE, ResumeKind.MUSIC -> "Non riesco ad aprirlo, riprova più tardi"
+        ResumeKind.YOUTUBE, ResumeKind.MUSIC ->
+            if (e is com.platinum20.dashboard.media.youtube.YtUpcomingException) e.message.orEmpty() else "Non riesco ad aprirlo, riprova più tardi"
         ResumeKind.RADIO -> "Stazione non raggiungibile"
         ResumeKind.PODCAST -> "Episodio non raggiungibile"
         ResumeKind.SPOTIFY -> e.message ?: "Spotify non risponde, riprova"
