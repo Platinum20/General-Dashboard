@@ -75,6 +75,7 @@ import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import kotlin.math.roundToInt
@@ -132,7 +133,24 @@ fun ExpensesTab(
     ) {
         // Il riepilogo del mese, compatto e sempre in cima (Antonio): la lista scorre sotto,
         // e niente del passato sbuca sopra OGGI.
-        CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        // Il riepilogo all'apertura fa un piccolo giro a sinistra e a destra (Antonio): si capisce che si trascina
+        // di lato per cambiare mese. Cambiando mese, il nuovo entra dal lato da cui arriva.
+        val nudge = remember { androidx.compose.animation.core.Animatable(0f) }
+        val nudgePx = with(androidx.compose.ui.platform.LocalDensity.current) { 14.dp.toPx() }
+        var shownMonth by remember { mutableStateOf(month) }
+        androidx.compose.runtime.LaunchedEffect(month) {
+            if (month == shownMonth) {
+                kotlinx.coroutines.delay(Motion.ENTER_MS.toLong())
+                nudge.animateTo(-nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS / 2, easing = Motion.Standard))
+                nudge.animateTo(nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Standard))
+                nudge.animateTo(0f, Motion.settle())
+            } else {
+                nudge.snapTo(if (month > shownMonth) 2 * nudgePx else -2 * nudgePx)
+                shownMonth = month
+                nudge.animateTo(0f, Motion.settle())
+            }
+        }
+        CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().graphicsLayer { translationX = nudge.value }) {
             // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
             val haptic = rememberHaptic()
             val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
@@ -243,39 +261,34 @@ fun ExpensesTab(
                                 },
                             )
                         }
-                        if (nowAt == entries.size) {
-                            TimelineNowMarker(nowMarker)
-                            // Oggi senza spese: lo diciamo, invece di lasciare la pagina vuota.
-                            EmptyExpensesLine("Nessuna spesa per oggi")
-                        }
+                        if (nowAt == entries.size) TimelineNowMarker(nowMarker)
                     }
                 }
-            }
-            if (inMonth.isEmpty()) {
-                item { EmptyExpensesLine("Nessuna spesa in questo mese") }
             }
             item(key = "now-room") {
                 // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
                 val density = androidx.compose.ui.platform.LocalDensity.current
+                val viewport = listState.layoutInfo.viewportSize.height
+                val bottom = with(density) { padding.calculateBottomPadding().roundToPx() }
+                // Niente spese oggi o nel mese: "Nessuna spesa" al centro dello spazio che resta sotto (Antonio).
+                val empty = inMonth.isEmpty() || (month == YearMonth.now() && inMonth.none { it.date == LocalDate.now() })
                 val room = with(density) {
-                    nowRoom(listState.layoutInfo.viewportSize.height, padding.calculateBottomPadding().roundToPx(), nowOffset?.let { timelineHeight - it }).toDp()
+                    val below = nowOffset?.let { timelineHeight - it } ?: if (inMonth.isEmpty()) 0 else null
+                    nowRoom(viewport, bottom, below).toDp()
                 }
-                Spacer(Modifier.height(room))
+                Box(Modifier.fillMaxWidth().height(room), contentAlignment = Alignment.Center) {
+                    if (empty && room > 48.dp) {
+                        Text(
+                            "Nessuna spesa",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }
-}
-
-/** Una riga sola quando non c'è niente da mostrare (Antonio: la pagina vuota sembrava rotta). */
-@Composable
-private fun EmptyExpensesLine(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        maxLines = 1,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-    )
 }
 
 internal fun centsOf(text: String): Long? {

@@ -1,11 +1,21 @@
 # Changelog
 
-## 1.246.0
+## 1.248.0
 **Coda più comoda: scorri per togliere e si riempie da sola**
 - Per togliere un brano dalla coda lo porti di lato (verso sinistra), al posto della X; in fondo compare "Annulla"
 - Tocchi un brano in coda e parte solo lui: quelli prima non vengono più saltati, restano lì dopo
 - In fondo alla coda c'è "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani, prima degli stessi artisti
 - Mentre sistemi la coda si vede il mini player
+
+## 1.247.0
+**Spese più viva**
+- Quando non ci sono spese c'è scritto solo "Nessuna spesa", al centro dello spazio vuoto sotto
+- Aprendo Spese il riepilogo fa un piccolo giro a sinistra e a destra, per ricordarti che lo trascini di lato per cambiare mese; il mese nuovo entra dal lato giusto
+- In tutte le linee del tempo, quando arrivi su OGGI la scritta pulsa e appare una freccetta, oltre alla vibrazione
+
+## 1.244.0
+**Video senza il riquadro "In pausa"**
+- In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
 
 ## 1.243.0
 **Video a schermo intero: barra del volume a sinistra, anche coi tasti**
