@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.274.0
+**I video YouTube restano in Continua**
+- In Media, Continua tiene fino a 12 voci per ogni fonte: ascoltare tanta musica su Spotify non fa più sparire i video YouTube lasciati a metà
+
 ## 1.273.0
 **SponsorBlock nella sua pagina**
 - In Impostazioni › Media, SponsorBlock è una riga sola con acceso o spento e il tempo risparmiato; i dieci tipi di segmento stanno nella sua pagina
