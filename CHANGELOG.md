@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.236.0
+**Spese più chiara**
+- Il riepilogo del mese resta sempre fisso in cima: la lista delle spese scorre sotto e non spunta più niente sopra
+- Se oggi non hai speso niente, sotto OGGI c'è scritto "Nessuna spesa per oggi" invece di una pagina vuota
+
 ## 1.235.0
 **Notifica del mattino più ordinata**
 - Niente più notizie: restano nella sezione News
