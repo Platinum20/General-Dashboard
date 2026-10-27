@@ -1,0 +1,2 @@
+it_IT-leonardo-kirys: 22050 Hz, 10.8 s, tono mediano 145 Hz
+it_IT-giorgio-kirys: 22050 Hz, 10.4 s, tono mediano 139 Hz
