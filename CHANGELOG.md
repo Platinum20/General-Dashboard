@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.230.0
+**Nomi interi nelle card di Musica**
+- In Musica i nomi di playlist, album, brani, artisti e Mix stanno su due righe: non vengono più tagliati dopo poche lettere
+- Le card di una stessa fila restano allineate anche con nomi di lunghezza diversa
+
 ## 1.229.0
 **Radio e podcast in una pagina sola**
 - Niente più pillole Radio e Podcast: scorri e trovi radio preferite e recenti, i tuoi podcast con gli ultimi episodi, le radio più ascoltate in Italia
