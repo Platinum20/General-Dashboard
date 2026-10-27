@@ -72,6 +72,10 @@ import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -98,9 +102,29 @@ fun ExpensesTab(
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
-    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
+    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
+    val listState = rememberReselectListState(Routes.NOTES)
+    // Come Prossimi giorni (Antonio): nel mese di oggi la pagina si apre su "OGGI" in cima allo schermo,
+    // le spese di prima stanno sopra, dietro una piccola resistenza.
+    var nowOffset by remember(month) { mutableStateOf<Int?>(null) }
+    var timelineHeight by remember(month) { mutableStateOf(0) }
+    var startedAtNow by remember { mutableStateOf(false) }
+    val timelineIndex = 1 + (if (data.fixedExpenses.isNotEmpty()) 1 else 0)
+    androidx.compose.runtime.LaunchedEffect(nowOffset) {
+        val offset = nowOffset
+        if (offset != null && !startedAtNow) {
+            startedAtNow = true
+            runCatching { listState.scrollToItem(timelineIndex, offset) }
+        }
+    }
+    val barrier = rememberPastBarrier(listState, timelineIndex, nowOffset)
 
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    LazyColumn(
+        state = listState,
+        contentPadding = padding,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.nestedScroll(barrier),
+    ) {
         // Il riepilogo del mese, compatto: così la linea del tempo sale.
         item {
             CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
@@ -186,8 +210,12 @@ fun ExpensesTab(
         if (inMonth.isNotEmpty()) {
             item(key = "timeline") {
                 val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
-                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                // "OGGI" solo nel mese di oggi: prima delle spese di oggi, o in fondo.
+                val nowAt = if (month == YearMonth.now()) nowIndex(entries.map { it.first }) else -1
+                val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { timelineHeight = it.size.height }) {
                     entries.forEachIndexed { index, (entry, expense) ->
+                        if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
                         TimelineRow(
                             entry,
                             top = index > 0,
@@ -204,6 +232,7 @@ fun ExpensesTab(
                             },
                         )
                     }
+                    if (nowAt == entries.size) TimelineNowMarker(nowMarker)
                 }
             }
         }
@@ -218,8 +247,14 @@ fun ExpensesTab(
                 )
             }
         }
+        item(key = "now-room") {
+            // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val below = nowOffset?.let { timelineHeight - it } ?: Int.MAX_VALUE
+            val room = with(density) { (listState.layoutInfo.viewportSize.height - padding.calculateBottomPadding().roundToPx() - below).coerceAtLeast(0).toDp() }
+            Spacer(Modifier.height(room))
+        }
     }
-
 }
 
 internal fun centsOf(text: String): Long? {

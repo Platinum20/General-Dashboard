@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.224.0
+**Tutte le linee del tempo nello stesso verso**
+- Note e Spese vanno come Prossimi giorni: il passato sopra, le cose più recenti in fondo
+- Anche le card Note e Spese in Oggi: la più recente in fondo, le precedenti sopra
+- Ogni linea del tempo si apre su "OGGI" in cima allo schermo, anche se sotto c'è poco; il passato si raggiunge scorrendo in su, con la stessa piccola resistenza
+- Le note fissate stanno in fondo a Note, sotto quelle di oggi
+
 ## 1.223.0
 **Card allineate e cose da fare spuntabili dalla card**
 - Nelle pagine Prossimi giorni, Note e Spese le icone partono alla stessa distanza dal bordo delle card di Oggi

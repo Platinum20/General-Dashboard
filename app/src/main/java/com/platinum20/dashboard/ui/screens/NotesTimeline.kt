@@ -370,8 +370,9 @@ private val shortDayYear = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITAL
 internal data class UndatedRow(val task: TaskItem? = null, val note: com.platinum20.dashboard.notes.Note? = null)
 
 /**
- * Note come linea del tempo, uguale a Prossimi giorni: promemoria senza data e note insieme, per quando
- * li hai scritti, i più nuovi in cima. Le note fissate restano in cima, con "Fissata" al posto del giorno.
+ * Note come linea del tempo, nello stesso verso di Prossimi giorni (Antonio): promemoria senza data e note
+ * per quando li hai scritti, le più vecchie in alto e le più nuove in fondo, vicino al +. Le note fissate
+ * stanno in fondo, sotto le altre, con "Fissate" al posto del giorno. [limit] = solo le ultime (le card in Oggi).
  */
 internal fun undatedEntries(
     tasks: List<TaskItem>,
@@ -380,24 +381,23 @@ internal fun undatedEntries(
     zone: ZoneId = ZoneId.systemDefault(),
     /** I promemoria senza data già fatti: sulla linea nel giorno in cui li hai spuntati (Antonio). */
     done: List<TaskItem> = emptyList(),
+    limit: Int? = null,
 ): List<Pair<TimelineEntry, UndatedRow>> {
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
-    val pinned = notes.filter { it.pinned }.sortedByDescending { it.createdAt }
-    val rows = (tasks.map { it.createdAt to UndatedRow(task = it) } + notes.filter { !it.pinned }.map { it.createdAt to UndatedRow(note = it) } +
+    val pinned = notes.filter { it.pinned }.sortedBy { it.createdAt }.let { p -> limit?.let { p.takeLast(it) } ?: p }
+    val all = (tasks.map { it.createdAt to UndatedRow(task = it) } + notes.filter { !it.pinned }.map { it.createdAt to UndatedRow(note = it) } +
         done.map { (it.doneAt ?: it.createdAt) to UndatedRow(task = it) })
-        .sortedByDescending { it.first }
+        .sortedBy { it.first }
+    val rows = limit?.let { all.takeLast((it - pinned.size).coerceAtLeast(0)) } ?: all
     val out = mutableListOf<Pair<TimelineEntry, UndatedRow>>()
-    pinned.forEachIndexed { i, n ->
-        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = n.icon(), trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
-    }
     var previous: LocalDate? = null
-    // Le più nuove in cima: finché non c'è un segno, il mese è quello di oggi.
     var shown: java.time.YearMonth? = java.time.YearMonth.from(today)
     rows.forEach { (at, row) ->
         val day = dayOf(at)
         val first = day != previous
-        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(day, previous!!) else 0f
-        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, day, today)
+        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
+        // In cima il mese della prima riga, se non è quello di oggi; poi a ogni cambio di mese.
+        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous ?: today, day, today)
         if (month != null) shown = java.time.YearMonth.from(day)
         val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
@@ -410,25 +410,39 @@ internal fun undatedEntries(
         out += entry to row
         previous = day
     }
+    pinned.forEachIndexed { i, n ->
+        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = n.icon(), trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
+    }
     return out
 }
 
 /**
- * Spese come linea del tempo, uguale alle altre: una riga per spesa, le più recenti in cima, il giorno a
- * destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
+ * Dove va il segno "OGGI" in una linea che è quasi tutta passato (Note, Spese): prima della prima riga di oggi
+ * o delle fissate, altrimenti in fondo ([entries] size). Sopra il passato, sotto oggi.
+ */
+internal fun nowIndex(entries: List<TimelineEntry>): Int =
+    entries.indexOfFirst { it.dayLabel == "Oggi" || it.dayLabel == "Fissate" }.takeIf { it >= 0 } ?: entries.size
+
+/**
+ * Spese come linea del tempo, nello stesso verso delle altre (Antonio): le più vecchie in alto, le più recenti
+ * in fondo, il giorno a destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
+ * [limit] = solo le ultime (la card in Oggi).
  */
 internal fun expenseEntries(
     expenses: List<com.platinum20.dashboard.notes.Expense>,
     today: LocalDate,
     /** Il mese già scritto sopra la linea (il riepilogo della pagina Spese): lì i giorni sono corti. */
     header: java.time.YearMonth? = java.time.YearMonth.from(today),
+    limit: Int? = null,
 ): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
     var previous: LocalDate? = null
     var shown = header
-    return expenses.sortedByDescending { it.date }.map { e ->
+    val sorted = expenses.sortedBy { it.date }.let { e -> limit?.let { e.takeLast(it) } ?: e }
+    return sorted.map { e ->
         val first = e.date != previous
-        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(e.date, previous!!) else 0f
-        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, e.date, today)
+        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, e.date) else 0f
+        // In cima il mese della prima riga, se non è quello già scritto sopra.
+        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous ?: header?.atDay(1) ?: today, e.date, today)
         if (month != null) shown = java.time.YearMonth.from(e.date)
         previous = e.date
         TimelineEntry(
