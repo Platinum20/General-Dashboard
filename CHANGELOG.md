@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.247.0
+**Spese più viva**
+- Quando non ci sono spese c'è scritto solo "Nessuna spesa", al centro dello spazio vuoto sotto
+- Aprendo Spese il riepilogo fa un piccolo giro a sinistra e a destra, per ricordarti che lo trascini di lato per cambiare mese; il mese nuovo entra dal lato giusto
+- In tutte le linee del tempo, quando arrivi su OGGI la scritta pulsa e appare una freccetta, oltre alla vibrazione
+
 ## 1.243.0
 **Video a schermo intero: barra del volume a sinistra, anche coi tasti**
 - La barra del volume è verticale, tutta a sinistra
