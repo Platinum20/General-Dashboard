@@ -1,10 +1,16 @@
 # Changelog
 
-## 1.238.0
+## 1.240.0
 **Copertine di Musica pulite**
 - In Musica ogni fila mostra tre copertine intere: nessuna resta tagliata sul bordo destro, le altre arrivano scorrendo
 - La prima lettera sotto le copertine non viene più tagliata
 - Il nome dell'artista sta subito sotto il titolo, senza lo spazio vuoto in mezzo
+
+## 1.238.0
+**Video: schermo acceso, volume col dito, swipe per lo schermo intero**
+- Mentre un video va lo schermo non si spegne più
+- A schermo intero, col telefono in orizzontale, scorri su o giù per alzare o abbassare il volume (con una piccola barra in alto)
+- Col video in verticale, uno swipe verso l'alto sul video lo apre a schermo intero
 
 ## 1.237.0
 **Più tardi = i video salvati nelle note**
