@@ -84,6 +84,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.notes.DateIdeas
@@ -164,14 +165,18 @@ import androidx.compose.foundation.border
 object NotesNav {
     val request = kotlinx.coroutines.flow.MutableStateFlow<NotesSection?>(null)
 
-    fun open(section: NotesSection) {
+    /** Aperta dalla card di Oggi: "indietro" torna a Oggi, non alla pagina Note. */
+    var fromHome = false
+
+    fun open(section: NotesSection, fromHome: Boolean = false) {
+        this.fromHome = fromHome
         request.value = section
     }
 }
 
 /**
  * Le due parti delle Note (1.187): "Prossimi giorni", tutto quello che arriva un giorno (con il Calendario
- * dentro, lo stesso nome della card di Oggi), e "Note", tutto quello senza data. Le spese stanno in Oggi.
+ * dentro, lo stesso nome della card di Oggi), e "Note", tutto quello senza data. Spese ha la sua card qui e in Oggi.
  */
 enum class NotesSection(val title: String) { DATED("Prossimi giorni"), UNDATED("Note") }
 
@@ -231,6 +236,26 @@ private fun NotesOverview(
                 empty = "Tutto quello senza data: cose da fare e appunti",
                 modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
                 onClick = { onOpen(NotesSection.UNDATED) },
+            )
+        }
+        // Spese torna anche in Note (Antonio, 1.212): la pagina è la stessa della card di Oggi.
+        item(key = "money") {
+            val inApp = LocalInAppNav.current
+            val month = java.time.YearMonth.now()
+            val recent = data.expenses.sortedByDescending { it.date }
+            NotesCategoryCard(
+                title = "Spese",
+                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
+                accent = TileAccent.GREEN,
+                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month).takeIf { it > 0 }
+                    ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
+                lines = recent.take(3).map {
+                    com.platinum20.dashboard.today.Upcoming.dayLabel(it.date, LocalDate.now()) to
+                        "${com.platinum20.dashboard.notes.Expenses.displayName(it)} ${com.platinum20.dashboard.notes.Expenses.format(it.cents)}"
+                },
+                empty = "Quanto spendi nel mese, per giorno e per categoria",
+                modifier = Modifier.animateItem().captureTarget(CaptureMode.EXPENSE),
+                onClick = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
             )
         }
     }
@@ -310,13 +335,24 @@ fun NotesScreen(
     var allNotes by rememberSaveable { mutableStateOf(false) }
     val inApp = LocalInAppNav.current
     val scope = rememberCoroutineScope()
+    var backToHome by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         NotesNav.request.collect { wanted ->
             if (wanted != null) {
                 section = wanted
                 searching = false
+                backToHome = NotesNav.fromHome
+                NotesNav.fromHome = false
                 NotesNav.request.value = null
             }
+        }
+    }
+    // Indietro da una parte: alla pagina Note, o a Oggi se ci si è arrivati dalla sua card.
+    fun closeSection() {
+        section = null
+        if (backToHome) {
+            backToHome = false
+            inApp?.openTab?.invoke(Routes.HOME)
         }
     }
 
@@ -359,7 +395,7 @@ fun NotesScreen(
 
 
     // Con una pillola accesa, "indietro" torna a tutta la pagina.
-    androidx.activity.compose.BackHandler(enabled = section != null && !searching) { section = null }
+    androidx.activity.compose.BackHandler(enabled = section != null && !searching) { closeSection() }
     // Ogni pagina (i tre tipi, o uno solo) parte dalla cima.
     LaunchedEffect(section) { runCatching { listState.scrollToItem(0) } }
     val timeline = dueDays(data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses)
@@ -388,7 +424,7 @@ fun NotesScreen(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
-                onBack = if (section != null) ({ section = null }) else null,
+                onBack = if (section != null) ({ closeSection() }) else null,
             )
         },
     ) { inner ->
@@ -448,13 +484,37 @@ fun NotesScreen(
             }
         }
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
+        // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.
+        val nearEnd by remember {
+            derivedStateOf {
+                val info = listState.layoutInfo
+                val item = info.visibleItemsInfo.firstOrNull { it.key == "timeline" }
+                item != null && item.offset + item.size < info.viewportEndOffset + 1500
+            }
+        }
+        var grown by remember { mutableStateOf(0) }
+        LaunchedEffect(nearEnd, grown, section, calendarGranted) {
+            if (nearEnd && section == NotesSection.DATED && calendarGranted && NotesEvents.grow()) {
+                val before = events.size
+                events = NotesEvents.load(context)
+                // Un anno intero senza niente di nuovo: il calendario è finito, ci si ferma qui.
+                if (events.size == before) NotesEvents.stop()
+                kotlinx.coroutines.delay(300)
+                grown++
+            }
+        }
         val barrier = rememberPastBarrier(listState, timelineIndex, if (section == NotesSection.DATED) nowOffset else null)
         Box(Modifier.fillMaxSize()) {
+        // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
             state = listState,
-            contentPadding = listPadding,
+            contentPadding = PaddingValues(
+                start = listPadding.calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                end = listPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
+                bottom = listPadding.calculateBottomPadding(),
+            ),
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding()).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -1258,8 +1318,26 @@ private object NotesEvents {
     fun cached(context: android.content.Context): List<CalendarEvent> =
         last ?: kotlinx.coroutines.runBlocking { load(context) }
 
+    /** Quanti giorni avanti: cresce di un anno alla volta scorrendo in fondo, così la linea non finisce mai. */
+    var days = EVENT_DAYS
+        private set
+
+    /** Un anno in più, fino a [MAX_DAYS]: false quando non si può andare oltre. */
+    fun grow(): Boolean {
+        if (days >= MAX_DAYS) return false
+        days += 365
+        return true
+    }
+
+    private const val MAX_DAYS = 365 * 30
+
+    /** Niente più da caricare: la linea resta com'è. */
+    fun stop() {
+        days = MAX_DAYS
+    }
+
     suspend fun load(context: android.content.Context): List<CalendarEvent> =
         // Anche gli ultimi [PAST_DAYS] giorni: il passato della linea del tempo.
-        CalendarRepository.eventsFrom(context, LocalDate.now().minusDays(PAST_DAYS.toLong()), PAST_DAYS + EVENT_DAYS)
+        CalendarRepository.eventsFrom(context, LocalDate.now().minusDays(PAST_DAYS.toLong()), PAST_DAYS + days)
             .values.flatten().also { last = it }
 }

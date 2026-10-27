@@ -18,6 +18,8 @@ class InAppNav(
     val newEvent: (LocalDate) -> Unit,
     /** Una pagina qualsiasi dell'app (vedi Routes). */
     val openRoute: (String) -> Unit = {},
+    /** Una delle quattro sezioni della barra, come toccarla. */
+    val openTab: (String) -> Unit = {},
 )
 
 val LocalInAppNav = staticCompositionLocalOf<InAppNav?> { null }

@@ -942,6 +942,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
             openRoute = { navController.navigate(it) },
+            openTab = { navController.switchTab(it) },
         )
     }
     CompositionLocalProvider(

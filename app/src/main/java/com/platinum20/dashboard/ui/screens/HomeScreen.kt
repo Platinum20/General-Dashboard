@@ -288,7 +288,7 @@ fun HomeScreen(
                 today = minute.toLocalDate(),
                 onOpenAll = {
                     haptic(Haptic.TICK)
-                    NotesNav.open(NotesSection.DATED)
+                    NotesNav.open(NotesSection.DATED, fromHome = true)
                     onOpenNotes()
                 },
             )

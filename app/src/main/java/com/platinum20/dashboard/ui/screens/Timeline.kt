@@ -19,6 +19,16 @@ import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalHospital
+import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.SportsEsports
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import com.platinum20.dashboard.notes.ExpenseCategory
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,7 +69,31 @@ data class TimelineEntry(
     val icon: ImageVector? = null,
     /** Sempre visibile dopo il nome, che si accorcia lui (l'importo delle spese). */
     val trailing: String? = null,
+    /** Il mese che comincia con questa riga ("NOVEMBRE"): sopra si disegna il segno del mese. */
+    val month: String? = null,
 )
+
+/** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
+fun ExpenseCategory.icon(): ImageVector = when (this) {
+    ExpenseCategory.FOOD -> Icons.Outlined.ShoppingCart
+    ExpenseCategory.EATING_OUT -> Icons.Outlined.Restaurant
+    ExpenseCategory.TRANSPORT -> Icons.Outlined.DirectionsCar
+    ExpenseCategory.HOME -> Icons.Outlined.Home
+    ExpenseCategory.HEALTH -> Icons.Outlined.LocalHospital
+    ExpenseCategory.FUN -> Icons.Outlined.SportsEsports
+    ExpenseCategory.OTHER -> Icons.AutoMirrored.Outlined.ReceiptLong
+}
+
+/** Il colore di una categoria (ARGB), lo stesso per l'icona sulla linea e per la barra del riepilogo. */
+fun ExpenseCategory.color(): Int = when (this) {
+    ExpenseCategory.FOOD -> 0xFF43A047.toInt()
+    ExpenseCategory.EATING_OUT -> 0xFFFB8C00.toInt()
+    ExpenseCategory.TRANSPORT -> 0xFF1E88E5.toInt()
+    ExpenseCategory.HOME -> 0xFF8E24AA.toInt()
+    ExpenseCategory.HEALTH -> 0xFFE53935.toInt()
+    ExpenseCategory.FUN -> 0xFF00ACC1.toInt()
+    ExpenseCategory.OTHER -> 0xFF8D8D8D.toInt()
+}
 
 /** L'icona piccola di una riga: evento, promemoria, data, pacco o addebito. */
 fun BriefKind.timelineIcon(): ImageVector = when (this) {
@@ -88,6 +122,7 @@ fun TimelineRow(
 ) {
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
+    entry.month?.let { TimelineMonthMarker(it, start = start, top = top) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -205,6 +240,61 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
                 drawCircle(primary, 6.dp.toPx(), Offset(size.width / 2, size.height / 2))
             },
         )
+    }
+}
+
+/**
+ * Il cambio di mese, come "OGGI" ma più tenue: il nome del mese, una riga fino alla linea e un pallino.
+ * Scorrendoci sopra vibra appena (Antonio), così si sente quando si passa da un mese all'altro.
+ */
+@Composable
+fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true) {
+    val color = MaterialTheme.colorScheme.onSurfaceVariant
+    val line = MaterialTheme.colorScheme.outlineVariant
+    Row(
+        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).monthTick(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+        Spacer(Modifier.width(10.dp))
+        Box(
+            Modifier.weight(1f).height(2.dp).drawBehind {
+                drawLine(line, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.5.dp.toPx())
+            },
+        )
+        Box(
+            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
+                val x = size.width / 2
+                val mid = size.height / 2
+                if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
+                drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
+                drawLine(line, Offset(0f, mid), Offset(x, mid), 1.5.dp.toPx())
+                drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
+            },
+        )
+    }
+}
+
+/** Quando un segno del mese attraversa la riga immaginaria a [MonthCross.LINE] dello schermo. Logica pura. */
+object MonthCross {
+    /** Dove sta la riga: un terzo dall'alto, sotto la barra del titolo, dove l'occhio legge. */
+    const val LINE = 0.3f
+
+    /** [previous] null = appena comparso: niente vibrazione all'apertura. */
+    fun crossed(previous: Float?, now: Float, line: Float): Boolean =
+        previous != null && (previous < line) != (now < line)
+}
+
+/** Una vibrazione leggera quando questo segno passa la riga di [MonthCross], in su o in giù. */
+@Composable
+private fun Modifier.monthTick(): Modifier {
+    val haptic = rememberHaptic()
+    val last = androidx.compose.runtime.remember { floatArrayOf(Float.NaN) }
+    return onGloballyPositioned { c ->
+        val y = c.positionInWindow().y + c.size.height / 2f
+        val line = c.findRootCoordinates().size.height * MonthCross.LINE
+        if (MonthCross.crossed(last[0].takeIf { !it.isNaN() }, y, line)) haptic(Haptic.TICK)
+        last[0] = y
     }
 }
 

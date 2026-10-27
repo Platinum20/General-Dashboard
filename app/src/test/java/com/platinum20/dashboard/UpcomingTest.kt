@@ -68,8 +68,24 @@ class UpcomingTest {
         // Giorni di fila: nessuno spazio in più; più giorni in mezzo, più spazio, fino a un massimo.
         assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(1)))
         assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(2)))
-        assertEquals(8f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)))
+        // Scala logaritmica: 1 giorno vuoto 4 dp, 2 → 10, 4 → 16, 8 → 22, poi il massimo.
+        assertEquals(4f, Upcoming.gapDp(today.plusDays(1), today.plusDays(3)), 0.01f)
+        assertEquals(10f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)), 0.01f)
+        assertEquals(16f, Upcoming.gapDp(today.plusDays(1), today.plusDays(6)), 0.01f)
+        assertEquals(22f, Upcoming.gapDp(today.plusDays(1), today.plusDays(10)), 0.01f)
         assertEquals(Upcoming.MAX_GAP_DP, Upcoming.gapDp(today.plusDays(1), today.plusDays(50)))
+        // Vale anche all'indietro (note e spese, dalle più nuove).
+        assertEquals(10f, Upcoming.gapDp(today.plusDays(4), today.plusDays(1)), 0.01f)
+    }
+
+    @Test
+    fun segnoDelMese() {
+        assertEquals(null, Upcoming.monthBreak(null, today.plusDays(10), today))
+        assertEquals(null, Upcoming.monthBreak(today, today.plusDays(2), today))
+        assertEquals("NOVEMBRE", Upcoming.monthBreak(today, LocalDate.of(2026, 11, 2), today))
+        assertEquals("GENNAIO 2027", Upcoming.monthBreak(LocalDate.of(2026, 12, 30), LocalDate.of(2027, 1, 4), today))
+        // Andando indietro: il mese della riga sotto.
+        assertEquals("SETTEMBRE", Upcoming.monthBreak(today, LocalDate.of(2026, 9, 28), today))
     }
 
     @Test

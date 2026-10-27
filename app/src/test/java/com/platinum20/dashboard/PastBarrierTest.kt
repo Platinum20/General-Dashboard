@@ -38,4 +38,13 @@ class PastBarrierTest {
         assertEquals(0f, step(0f, -10f, pull = 40f).consumed)
         assertEquals(false, step(-200f, -10f, unlocked = true).unlocked)
     }
+
+    /** Il segno del mese vibra solo quando passa la riga, non quando compare. */
+    @Test fun meseAttraversato() {
+        val m = com.platinum20.dashboard.ui.screens.MonthCross
+        assertEquals(false, m.crossed(null, 100f, 300f))
+        assertEquals(false, m.crossed(500f, 400f, 300f))
+        assertEquals(true, m.crossed(320f, 280f, 300f))
+        assertEquals(true, m.crossed(280f, 320f, 300f))
+    }
 }

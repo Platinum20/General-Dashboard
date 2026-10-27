@@ -176,6 +176,8 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
                         text = (item.time?.let { "$it  " } ?: "") + item.text,
                         dayLabel = if (first) Upcoming.dayLabel(item.day, today) else null,
                         gapDp = if (first && index > 0) Upcoming.gapDp(shown[index - 1].day, item.day) else 0f,
+                        // Il segno del mese quando si passa al mese dopo (anche in cima, se si comincia già dal prossimo).
+                        month = if (first) Upcoming.monthBreak(if (index == 0) today else shown[index - 1].day, item.day, today) else null,
                         color = item.event?.color ?: 0,
                     ),
                     top = index > 0,
@@ -210,47 +212,49 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
 }
 
 /**
- * Spese, in Oggi dalla 1.186: il totale del mese e il prossimo addebito (il budget è stato tolto nella 1.211). Si tocca per la pagina
- * intera (mesi, categorie, fisse, scontrino). Compare solo quando c'è qualcosa da dire.
+ * Spese in Oggi: le ultime [Upcoming.MAX] spese sulla stessa linea del tempo di "Prossimi giorni" (Antonio),
+ * con icona e colore della categoria. Sotto, il totale del mese; si tocca per la pagina intera.
  */
 @Composable
 fun MoneyCard(data: NotesData, today: LocalDate, onOpen: () -> Unit) {
     val month = YearMonth.from(today)
     val total = Expenses.total(data.expenses, month)
-    val next = data.fixedExpenses.minByOrNull { it.nextDate(today) }
+    val entries = expenseEntries(data.expenses, today).take(Upcoming.MAX)
     Section(title = "Spese", modifier = Modifier.captureTarget(CaptureMode.EXPENSE)) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .bouncyPress(0.98f)
-                .clickable(onClick = onOpen)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
+        Column(Modifier.padding(vertical = 6.dp)) {
+            if (entries.isEmpty()) {
                 Text(
-                    month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN).replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.labelMedium,
+                    "Nessuna spesa ancora.",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
-                Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
-                next?.let {
-                    val day = it.nextDate(today)
-                    Text(
-                        "Prossimo addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)} · " +
-                            if (day == today) "oggi" else Upcoming.dayLabel(day, today).lowercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
             }
-            Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
-            )
+            entries.forEachIndexed { index, (entry, _) ->
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen)
+            }
+            RowDivider()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpen)
+                    .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Tutte le spese · " + month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN) + " " + Expenses.format(total),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                )
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
         }
     }
 }
