@@ -44,8 +44,8 @@ class VoiceEngineCheck {
     @Test
     fun piperParla() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        // Leonardo suona a 22050 Hz: è il caso che sul telefono non apriva l'audio.
-        val voice = ReadingVoice.LEONARDO
+        // Giorgio suona a 22050 Hz: è il caso che sul telefono non apriva l'audio.
+        val voice = ReadingVoice.GIORGIO
         val dir = File(context.filesDir, "voices/${voice.archive}")
         // La rete dell'emulatore a volte parte tardi: qualche tentativo prima di arrendersi.
         val files = (1..5).firstNotNullOfOrNull { attempt ->
