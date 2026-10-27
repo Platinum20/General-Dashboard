@@ -1,8 +1,13 @@
 # Changelog
 
-## 1.243.0
+## 1.244.0
 **Video senza il riquadro "In pausa"**
 - In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
+
+## 1.243.0
+**Video a schermo intero: barra del volume a sinistra, anche coi tasti**
+- La barra del volume è verticale, tutta a sinistra
+- Coi tasti del telefono, a schermo intero, compare questa barra invece di quella di sistema
 
 ## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**
