@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.232.0
+**Nomi interi nelle card di Musica**
+- In Musica i nomi di playlist, album, brani, artisti e Mix stanno su due righe: non vengono più tagliati dopo poche lettere
+- Le card di una stessa fila restano allineate anche con nomi di lunghezza diversa
+
 ## 1.231.0
 **Spese non si chiude più all'apertura**
 - La pagina Spese si apriva e l'app si chiudeva subito: un conto sbagliato sullo spazio sotto "OGGI". Ora si apre normalmente

@@ -281,7 +281,7 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text(release.item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    CoverTitle(release.item.title)
                     Text(
                         release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today),
                         style = MaterialTheme.typography.bodySmall,
@@ -293,6 +293,23 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
             }
         }
     }
+}
+
+/**
+ * Nome sotto una copertina: due righe sempre riservate, così i nomi lunghi si leggono
+ * interi e le card della stessa fila restano allineate.
+ */
+@Composable
+private fun CoverTitle(text: String, centered: Boolean = false) {
+    Text(
+        text,
+        style = MaterialTheme.typography.titleSmall,
+        minLines = 2,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = if (centered) TextAlign.Center else TextAlign.Start,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** Una sezione di Musica: titolo e copertine in fila orizzontale. */
@@ -322,7 +339,7 @@ private fun CoverTile(item: SpItem, onClick: () -> Unit) {
     ) {
         Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, 128)
         Spacer(Modifier.height(6.dp))
-        Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        CoverTitle(item.title, centered = round)
         if (!round) {
             Text(
                 item.subtitle,
@@ -365,7 +382,7 @@ private fun MixRow(mixes: List<SpMix>) {
                         )
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text(mix.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    CoverTitle(mix.title)
                     Text(
                         mix.subtitle,
                         style = MaterialTheme.typography.bodySmall,
