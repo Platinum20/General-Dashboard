@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.245.0
+**Chiave di Spotify di nuovo nelle impostazioni**
+- Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)
+- Toccando Spotify o YouTube in Account riparte sempre il collegamento ufficiale, anche dopo «Esci»
+
 ## 1.243.0
 **Video a schermo intero: barra del volume a sinistra, anche coi tasti**
 - La barra del volume è verticale, tutta a sinistra

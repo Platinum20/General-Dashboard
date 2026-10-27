@@ -53,6 +53,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.GraphicEq
@@ -158,6 +159,8 @@ fun SettingsScreen(
     }
     var showLicenses by remember { mutableStateOf(false) }
     var editSongToken by remember { mutableStateOf(false) }
+    var editSpotifyKey by remember { mutableStateOf(false) }
+    val spotifyClientId by SpotifyAuth.clientId.collectAsState()
     SongId.init(context)
     val songToken by SongId.token.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -289,10 +292,10 @@ fun SettingsScreen(
                             title = service.label,
                             subtitle = when {
                                 official -> "Collegamento ufficiale · feed e player in Media"
-                                connected -> "Collegato · tocca per il collegamento ufficiale"
-                                else -> "Non collegato"
+                                else -> "Tocca per il collegamento ufficiale"
                             },
-                            onClick = if (connected && !official) connectOfficial else null,
+                            // Il collegamento ufficiale si rifà sempre da qui, anche dopo «Esci».
+                            onClick = if (!official) connectOfficial else null,
                             trailing = {
                                 if (connected) {
                                     TextButton(onClick = {
@@ -316,6 +319,16 @@ fun SettingsScreen(
                             },
                         )
                     }
+                    RowDivider()
+                    SettingsItem(
+                        icon = Icons.Outlined.Key,
+                        accent = TileAccent.GREEN,
+                        title = "Chiave di Spotify",
+                        subtitle = "Client ID dell'app su developer.spotify.com",
+                        value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
+                        showChevron = true,
+                        onClick = { editSpotifyKey = true },
+                    )
                 }
             }
 
@@ -380,6 +393,44 @@ fun SettingsScreen(
                 TextButton(onClick = { SongId.setToken(value); editSongToken = false }) { Text("Salva") }
             },
             dismissButton = { TextButton(onClick = { editSongToken = false }) { Text("Annulla") } },
+        )
+    }
+
+    if (editSpotifyKey) {
+        var value by remember { mutableStateOf(spotifyClientId) }
+        val valid = SpotifyAuth.normalizeClientId(value)
+        CanvasDialog(
+            onDismissRequest = { editSpotifyKey = false },
+            title = { Text("Chiave di Spotify") },
+            text = {
+                Column {
+                    Text(
+                        "Il Client ID dell'app creata su developer.spotify.com. Vuoto = quella predefinita di Canvas. " +
+                            "Se la cambi, ricollega Spotify dalla riga sopra.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        singleLine = true,
+                        isError = valid == null,
+                        label = { Text("Client ID") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = valid != null,
+                    onClick = { valid?.let(SpotifyAuth::setClientId); editSpotifyKey = false },
+                ) { Text("Salva") }
+            },
+            dismissButton = {
+                TextButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
+                    Text("Ripristina")
+                }
+            },
         )
     }
 
