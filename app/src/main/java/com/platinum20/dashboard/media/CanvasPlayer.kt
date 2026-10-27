@@ -107,6 +107,9 @@ object CanvasPlayer {
     /** Voce già chiusa per "finito": un secondo avviso dello stesso finale non fa saltare due voci. */
     private var endedId = -1L
     private var lastSaved = 0L
+    /** L'ultima volta che la voce corrente suonava davvero (0: mai da quando è caricata). È l'ora di "Continua":
+     *  una voce in pausa (es. Spotify sempre acceso) non torna in cima solo perché il player si chiude. */
+    private var playedAt = 0L
 
     /** Chi suona le voci di Spotify (sostituibile nei test). */
     internal var spotify: ExternalBackend? = SpotifyPlayer
@@ -351,6 +354,7 @@ object CanvasPlayer {
         saveProgress()
         loadJob?.cancel()
         externalJob?.cancel()
+        playedAt = 0L
         val wasExternal = external()
         val item = entry.item
         if (wasExternal != null && item.kind != ResumeKind.SPOTIFY) wasExternal.stop()
@@ -428,7 +432,10 @@ object CanvasPlayer {
                     durationMs = s.durationMs.takeIf { it > 0 } ?: n.durationMs,
                     error = s.error,
                 )
-                if (s?.playing == true) pauseOthers()
+                if (s?.playing == true) {
+                    playedAt = System.currentTimeMillis()
+                    pauseOthers()
+                }
             }
         }
     }
@@ -527,6 +534,7 @@ object CanvasPlayer {
             streamTitle = if (n.live) p.mediaMetadata.title?.toString()?.trim()?.takeIf { it != n.item.title }.orEmpty() else "",
         )
         if (p.isPlaying) {
+            playedAt = System.currentTimeMillis()
             startTicker()
             if (System.currentTimeMillis() - lastSaved > 10_000) saveProgress()
         } else ticker?.cancel()
@@ -549,21 +557,23 @@ object CanvasPlayer {
         val n = _now.value ?: return
         val p = exo ?: return
         lastSaved = System.currentTimeMillis()
+        // Non ha suonato da quando è caricata: niente di nuovo da segnare, e l'ora resta quella vera.
+        val at = playedAt.takeIf { it > 0 } ?: return
         when (n.item.kind) {
-            ResumeKind.YOUTUBE, ResumeKind.MUSIC -> YtPlayer.remember(p)
+            ResumeKind.YOUTUBE, ResumeKind.MUSIC -> YtPlayer.remember(p, at)
             ResumeKind.PODCAST -> if (p.currentMediaItem != null) {
                 val duration = p.duration.takeIf { it > 0 } ?: n.durationMs
                 val position = if (p.playbackState == Player.STATE_ENDED) duration else p.currentPosition
-                PodcastStore.saveProgress(n.item, position, duration)
+                PodcastStore.saveProgress(n.item, position, duration, at)
             }
             ResumeKind.VIDEO -> if (p.currentMediaItem != null && p.duration > 0) {
-                MediaHistory.record(n.item.copy(positionMs = p.currentPosition, durationMs = p.duration, at = lastSaved))
+                MediaHistory.record(n.item.copy(positionMs = p.currentPosition, durationMs = p.duration, at = at))
                 // I Recenti di "Sul telefono" ripartono dallo stesso punto.
                 VideoLibrary.init(context())
                 VideoLibrary.updatePosition(n.item.key, p.currentPosition, p.duration)
             }
             ResumeKind.SPOTIFY -> spotify?.state?.value?.let { s ->
-                MediaHistory.record(n.item.copy(positionMs = s.positionMs, durationMs = s.durationMs, at = lastSaved))
+                MediaHistory.record(n.item.copy(positionMs = s.positionMs, durationMs = s.durationMs, at = at))
             }
             ResumeKind.RADIO -> Unit
         }
