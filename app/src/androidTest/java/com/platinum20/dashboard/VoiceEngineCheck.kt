@@ -24,7 +24,7 @@ import java.io.File
 class VoiceEngineCheck {
     private val tag = "VoiceCheck"
 
-    /** Ogni voce col suo modello: Paola e Miro non partivano sul telefono mentre Riccardo sì. */
+    /** Ogni voce col suo modello: Paola e Miro non partivano (22050 Hz) sul telefono mentre Riccardo sì. */
     @Test
     fun ogniVoceParla() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -44,8 +44,8 @@ class VoiceEngineCheck {
     @Test
     fun piperParla() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        // Miro suona a 22050 Hz: è il caso che sul telefono non apriva l'audio.
-        val voice = ReadingVoice.MIRO
+        // Leonardo suona a 22050 Hz: è il caso che sul telefono non apriva l'audio.
+        val voice = ReadingVoice.LEONARDO
         val dir = File(context.filesDir, "voices/${voice.archive}")
         // La rete dell'emulatore a volte parte tardi: qualche tentativo prima di arrendersi.
         val files = (1..5).firstNotNullOfOrNull { attempt ->
