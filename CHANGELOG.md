@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.268.0
+**Il video ora si rimpicciolisce davvero verso il mini player**
+- Chiudendo il video lui diventa piccolo e vola sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai messo lì), invece di scendere soltanto
+
 ## 1.266.0
 **Impostazioni con un menu**
 - La pagina è corta: in cima il tema, sotto un menu che apre una pagina per ogni cosa
