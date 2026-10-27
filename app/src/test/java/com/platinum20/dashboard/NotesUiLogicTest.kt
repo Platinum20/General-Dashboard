@@ -230,6 +230,22 @@ class NotesUiLogicTest {
         assertEquals(16f, entries[3].gapDp, 0.01f)
     }
 
+    @Test fun fattiSullaLineaDelleNote() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val entries = undatedEntries(
+            tasks = listOf(TaskItem(1, "Prova", createdAt = at(today, 9))),
+            notes = emptyList(),
+            today = today,
+            zone = zone,
+            // Scritto tre giorni fa, spuntato oggi alle 10: sta in cima, a oggi.
+            done = listOf(TaskItem(2, "Sessi", done = true, createdAt = at(today.minusDays(3), 9), doneAt = at(today, 10))),
+        ).map { it.first }
+        assertEquals(listOf("Sessi", "Prova"), entries.map { it.text })
+        assertEquals(listOf(true, false), entries.map { it.done })
+    }
+
     @Test fun meseTrascinando() {
         val now = java.time.YearMonth.of(2026, 10)
         val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe

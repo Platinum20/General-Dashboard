@@ -69,7 +69,8 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 t.text.ifBlank { "(Senza titolo)" },
                 listOfNotNull(
                     DetailLine(LineKind.WHEN, t.dueAt?.let { "Avviso: " + dueLabel(it) } ?: "Senza scadenza"),
-                    t.repeat?.let { DetailLine(LineKind.REPEAT, "Si ripete " + it.label) },
+                    // Con una scadenza si vede sempre se si ripete: è la riga che si tocca per cambiarlo.
+                    t.dueAt?.let { DetailLine(LineKind.REPEAT, t.repeat?.let { "Si ripete " + it.label } ?: "Non si ripete") },
                     DetailLine(LineKind.STATUS, if (t.done) "Fatto" else "Da fare"),
                 ),
             )
@@ -81,7 +82,7 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 listOfNotNull(
                     DetailLine(LineKind.WHEN, longDate(next)),
                     DetailLine(LineKind.STATUS, daysText(c.daysLeft(today)) + (c.yearsAtNext(today)?.let { " · compie $it anni" } ?: "")),
-                    if (c.yearly) DetailLine(LineKind.REPEAT, "Ogni anno") else null,
+                    DetailLine(LineKind.REPEAT, if (c.yearly) "Ogni anno" else "Una volta sola"),
                 ),
             )
         }
@@ -97,7 +98,7 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                             else -> "Data di arrivo non nota"
                         },
                     ),
-                    p.code.takeIf { it.isNotBlank() }?.let { DetailLine(LineKind.CODE, "$it · ${p.carrier.label}") },
+                    DetailLine(LineKind.CODE, p.code.takeIf { it.isNotBlank() }?.let { "$it · ${p.carrier.label}" } ?: "Nessun codice"),
                     DetailLine(LineKind.STATUS, if (p.delivered) "Arrivato" else "In viaggio"),
                 ),
             )
@@ -107,6 +108,7 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 h.title,
                 listOf(
                     DetailLine(LineKind.REPEAT, if (h.weekly) "${h.perWeek} volte a settimana" else "Ogni giorno"),
+                    DetailLine(LineKind.WHEN, h.remindAt?.let { "Avviso alle " + it.format(DateTimeFormatter.ofPattern("HH:mm")) } ?: "Nessun avviso"),
                     DetailLine(LineKind.STATUS, h.statusLine(now).text + HabitReminder.suffix(h)),
                 ),
             )
@@ -160,7 +162,7 @@ private fun undo(message: String, restore: () -> Unit) {
 
 /**
  * La pagina a schermo intero di promemoria, date, pacchi, abitudini e spese: la stessa dell'evento
- * (titolo col pallino, una scheda di righe, Modifica ed Elimina in alto). Modifica apre il solito dialogo.
+ * (titolo col pallino, una scheda di righe, Elimina in alto). Si modifica qui dentro: il titolo si scrive, le righe si toccano.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -168,7 +170,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     val data by NotesStore.data.collectAsState()
     val haptic = rememberHaptic()
     val inApp = LocalInAppNav.current
-    var editing by remember { mutableStateOf(false) }
+    var picker by remember { mutableStateOf<Picker?>(null) }
     val detail = itemDetail(data, kind, id)
     // Eliminata dal dialogo o da qui: si torna indietro e l'"Annulla" resta in fondo.
     fun gone(message: String, restore: () -> Unit) {
@@ -184,23 +186,25 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e -> { NotesStore.deleteExpense(id); gone("Spesa eliminata") { NotesStore.restoreExpense(e) } } }
         ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f -> { NotesStore.deleteFixedExpense(id); gone("Spesa fissa tolta") { NotesStore.restoreFixedExpense(f) } } }
     }
-    // Le spese fisse non hanno un dialogo: si tolgono e si riscrivono.
-    val canEdit = detail != null && kind != ItemKind.FIXED
-
     DetailPage(
         onBack = onBack,
-        onEdit = if (canEdit) ({ editing = true }) else null,
+        onEdit = null,
         onDelete = delete,
     ) {
         if (detail == null) {
             DetailMissing(Icons.Outlined.EventBusy, "Questa cosa non c'è più.")
             return@DetailPage
         }
-        DetailTitle(detail.title, kind.dot())
+        // Si modifica tutto qui, senza dialogo (Antonio): il titolo si scrive, le righe si toccano.
+        EditableDetailTitle("$kind-$id", detail.title, kind.dot()) { title -> rename(kind, id, data, title) }
         CanvasCard(Modifier.fillMaxWidth()) {
             detail.lines.forEachIndexed { i, line ->
                 if (i > 0) RowDivider()
-                DetailRow(line.kind.icon(), line.text)
+                when (val edit = lineEdit(kind, id, data, line.kind)) {
+                    null -> DetailRow(line.kind.icon(), line.text)
+                    is LineEdit.Tap -> DetailTapRow(line.kind.icon(), line.text, onClick = { picker = edit.picker ?: run { edit.onClick(); null } }, onClear = edit.onClear)
+                    is LineEdit.Field -> DetailFieldRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.number, edit.onCommit)
+                }
             }
         }
         // L'azione di tutti i giorni a portata di pollice, sotto la scheda.
@@ -246,25 +250,118 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         }
     }
 
-    if (editing) {
-        val close = { editing = false }
-        when (kind) {
-            ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
-                TaskEditDialog(t, onDismiss = close, onDeleted = { gone("Promemoria eliminato") { NotesStore.restoreTask(it) } })
+    when (val p = picker) {
+        null -> Unit
+        is Picker.DateTime -> DateTimePickDialog(p.initial, onDismiss = { picker = null }) { p.onPick(it); picker = null }
+        is Picker.Date -> DatePickDialog(p.initial, onDismiss = { picker = null }) { p.onPick(it); picker = null }
+        is Picker.Time -> TimePickDialog(p.initial, onDismiss = { picker = null }) { p.onPick(it); picker = null }
+    }
+}
+
+/** Le scelte che si aprono toccando una riga: data e ora, solo data, solo ora. */
+private sealed interface Picker {
+    class DateTime(val initial: Long?, val onPick: (Long) -> Unit) : Picker
+    class Date(val initial: LocalDate, val onPick: (LocalDate) -> Unit) : Picker
+    class Time(val initial: java.time.LocalTime, val onPick: (java.time.LocalTime) -> Unit) : Picker
+}
+
+/** Come si cambia una riga: toccandola (un picker o il fumetto) o scrivendoci dentro. */
+private sealed interface LineEdit {
+    class Tap(val picker: Picker? = null, val onClick: () -> Unit = {}, val onClear: (() -> Unit)? = null) : LineEdit
+    class Field(val value: String, val placeholder: String, val number: Boolean, val onCommit: (String) -> Unit) : LineEdit
+}
+
+private fun centsText(cents: Long): String = "%d,%02d".format(cents / 100, cents % 100)
+
+/** Il nuovo titolo, salvato nel posto giusto per ogni tipo. */
+private fun rename(kind: ItemKind, id: Long, data: NotesData, title: String) {
+    when (kind) {
+        ItemKind.TASK -> NotesStore.editTask(id, title)
+        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { NotesStore.saveCountdown(id, title, it.date, it.yearly) }
+        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { NotesStore.saveParcel(id, title, it.code, it.expected) }
+        ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { NotesStore.saveHabit(id, title, it.perWeek, it.remindAt) }
+        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { NotesStore.saveExpense(it.copy(text = title)) }
+        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { NotesStore.saveFixedExpense(it.copy(text = title)) }
+    }
+}
+
+/** Per ogni riga della scheda, come si modifica; null = si legge e basta (lo stato, i giorni che mancano). */
+private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind): LineEdit? {
+    fun categories(current: com.platinum20.dashboard.notes.ExpenseCategory, pick: (com.platinum20.dashboard.notes.ExpenseCategory) -> Unit) =
+        LineEdit.Tap(onClick = {
+            ActionBubble.show(*com.platinum20.dashboard.notes.ExpenseCategory.entries.map { c ->
+                BubbleAction(c.icon(), c.label, detail = if (c == current) "adesso" else "") { pick(c) }
+            }.toTypedArray())
+        })
+    return when (kind) {
+        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
+            when (line) {
+                LineKind.WHEN -> LineEdit.Tap(
+                    Picker.DateTime(t.dueAt) { NotesStore.setTaskDue(id, it) },
+                    onClear = t.dueAt?.let { { NotesStore.setTaskRepeat(id, null); NotesStore.setTaskDue(id, null) } },
+                )
+                LineKind.REPEAT -> LineEdit.Tap(onClick = {
+                    ActionBubble.show(
+                        BubbleAction(Icons.Outlined.Repeat, "Non si ripete") { NotesStore.setTaskRepeat(id, null) },
+                        *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
+                            BubbleAction(Icons.Outlined.Repeat, r.label.replaceFirstChar { it.uppercase() }) { NotesStore.setTaskRepeat(id, r) }
+                        }.toTypedArray(),
+                    )
+                })
+                else -> null
             }
-            ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { c ->
-                CountdownDialog(c, onDismiss = close, onDeleted = { gone("Data eliminata") { NotesStore.restoreCountdown(it) } })
+        }
+        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { c ->
+            when (line) {
+                LineKind.WHEN -> LineEdit.Tap(Picker.Date(c.date) { NotesStore.saveCountdown(id, c.title, it, c.yearly) })
+                LineKind.REPEAT -> LineEdit.Tap(onClick = { NotesStore.saveCountdown(id, c.title, c.date, !c.yearly) })
+                else -> null
             }
-            ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
-                ParcelDialog(p, onDismiss = close, onDeleted = { gone("Pacco eliminato") { NotesStore.restoreParcel(it) } })
+        }
+        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
+            when (line) {
+                LineKind.WHEN -> if (p.delivered) null else LineEdit.Tap(
+                    Picker.Date(p.expected ?: LocalDate.now()) { NotesStore.saveParcel(id, p.title, p.code, it) },
+                    onClear = p.expected?.let { { NotesStore.saveParcel(id, p.title, p.code, null) } },
+                )
+                LineKind.CODE -> LineEdit.Field(p.code, "Codice di tracciamento", number = false) { NotesStore.saveParcel(id, p.title, it, p.expected) }
+                else -> null
             }
-            ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h ->
-                HabitDialog(h, onDismiss = close, onDeleted = { gone("Abitudine eliminata") { NotesStore.restoreHabit(it) } })
+        }
+        ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h ->
+            when (line) {
+                LineKind.REPEAT -> LineEdit.Tap(onClick = {
+                    ActionBubble.show(
+                        BubbleAction(Icons.Outlined.Repeat, "Ogni giorno") { NotesStore.saveHabit(id, h.title, 0, h.remindAt) },
+                        *(1..6).map { n -> BubbleAction(Icons.Outlined.Repeat, "$n volte a settimana") { NotesStore.saveHabit(id, h.title, n, h.remindAt) } }.toTypedArray(),
+                    )
+                })
+                LineKind.WHEN -> LineEdit.Tap(
+                    Picker.Time(h.remindAt ?: java.time.LocalTime.of(21, 0)) { NotesStore.saveHabit(id, h.title, h.perWeek, it) },
+                    onClear = h.remindAt?.let { { NotesStore.saveHabit(id, h.title, h.perWeek, null) } },
+                )
+                else -> null
             }
-            ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e ->
-                ExpenseDialog(e, onDismiss = close, onDeleted = { gone("Spesa eliminata") { NotesStore.restoreExpense(it) } })
+        }
+        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e ->
+            when (line) {
+                LineKind.AMOUNT -> LineEdit.Field(centsText(e.cents), "Importo", number = true) { text ->
+                    centsOf(text)?.takeIf { it > 0 }?.let { NotesStore.saveExpense(e.copy(cents = it)) }
+                }
+                LineKind.WHEN -> LineEdit.Tap(Picker.Date(e.date) { NotesStore.saveExpense(e.copy(date = it)) })
+                LineKind.CATEGORY -> categories(e.category) { NotesStore.saveExpense(e.copy(category = it)) }
+                else -> null
             }
-            ItemKind.FIXED -> Unit
+        }
+        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f ->
+            when (line) {
+                LineKind.AMOUNT -> LineEdit.Field(centsText(f.cents), "Importo", number = true) { text ->
+                    centsOf(text.removeSuffix("al mese").trim())?.takeIf { it > 0 }?.let { NotesStore.saveFixedExpense(f.copy(cents = it)) }
+                }
+                LineKind.REPEAT -> LineEdit.Tap(Picker.Date(LocalDate.now().withDayOfMonth(f.day.coerceIn(1, 28))) { NotesStore.saveFixedExpense(f.copy(day = it.dayOfMonth)) })
+                LineKind.CATEGORY -> categories(f.category) { NotesStore.saveFixedExpense(f.copy(category = it)) }
+                else -> null
+            }
         }
     }
 }

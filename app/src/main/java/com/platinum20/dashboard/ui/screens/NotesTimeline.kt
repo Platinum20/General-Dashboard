@@ -378,10 +378,13 @@ internal fun undatedEntries(
     notes: List<com.platinum20.dashboard.notes.Note>,
     today: LocalDate,
     zone: ZoneId = ZoneId.systemDefault(),
+    /** I promemoria senza data già fatti: sulla linea nel giorno in cui li hai spuntati (Antonio). */
+    done: List<TaskItem> = emptyList(),
 ): List<Pair<TimelineEntry, UndatedRow>> {
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val pinned = notes.filter { it.pinned }.sortedByDescending { it.createdAt }
-    val rows = (tasks.map { it.createdAt to UndatedRow(task = it) } + notes.filter { !it.pinned }.map { it.createdAt to UndatedRow(note = it) })
+    val rows = (tasks.map { it.createdAt to UndatedRow(task = it) } + notes.filter { !it.pinned }.map { it.createdAt to UndatedRow(note = it) } +
+        done.map { (it.doneAt ?: it.createdAt) to UndatedRow(task = it) })
         .sortedByDescending { it.first }
     val out = mutableListOf<Pair<TimelineEntry, UndatedRow>>()
     pinned.forEachIndexed { i, n ->
@@ -399,7 +402,7 @@ internal fun undatedEntries(
         val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                label, gap, month = month)
+                label, gap, month = month, done = row.task.done)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
                 label, gap, icon = row.note.icon(),
                 trailing = NoteText.badge(row.note.text), month = month)

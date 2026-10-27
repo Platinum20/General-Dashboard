@@ -226,106 +226,42 @@ private fun NotesOverview(
     val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
     val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
     LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Le stesse card con la linea del tempo di Oggi (Antonio), mai nascoste: sono la porta delle tre parti.
         item(key = "dated") {
-            NotesCategoryCard(
-                title = NotesSection.DATED.title,
-                icon = Icons.Outlined.Event,
-                accent = TileAccent.BLUE,
-                count = (dated.size + data.habits.size).takeIf { it > 0 }?.toString(),
-                lines = dated.take(3).map { (day, row) -> day.shortLabel() to row.title() } +
-                    listOfNotNull(habitsLeft.takeIf { it > 0 }?.let { "Oggi" to if (it == 1) "1 abitudine da fare" else "$it abitudini da fare" }),
-                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno",
+            TimelineCard(
+                NotesSection.DATED.title,
+                timelineEntries(timeline, LocalDate.now()).map { it.first }.take(com.platinum20.dashboard.today.Upcoming.MAX),
+                onOpen = { onOpen(NotesSection.DATED) },
+                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno.",
                 modifier = Modifier.animateItem()
                     .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
                     .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
-                onClick = { onOpen(NotesSection.DATED) },
+                count = (dated.size + habitsLeft).takeIf { it > 0 }?.toString(),
             )
         }
         item(key = "undated") {
-            NotesCategoryCard(
-                title = NotesSection.UNDATED.title,
-                icon = Icons.Outlined.EditNote,
-                accent = TileAccent.ORANGE,
+            NotesCard(
+                data,
+                LocalDate.now(),
+                onOpen = { onOpen(NotesSection.UNDATED) },
+                modifier = Modifier.animateItem(),
                 count = (undatedTasks.size + notes.size).takeIf { it > 0 }?.toString(),
-                lines = (undatedTasks.map { "Da fare" to it.text } + notes.map { "Nota" to it.text.lineSequence().first().trim() }).take(3),
-                empty = "Tutto quello senza data: cose da fare e appunti",
-                modifier = Modifier.animateItem().captureTarget(CaptureMode.NOTE),
-                onClick = { onOpen(NotesSection.UNDATED) },
             )
         }
-        // Spese torna anche in Note (Antonio, 1.212): la pagina è la stessa della card di Oggi.
         item(key = "money") {
             val inApp = LocalInAppNav.current
-            val month = java.time.YearMonth.now()
-            val recent = data.expenses.sortedByDescending { it.date }
-            NotesCategoryCard(
-                title = "Spese",
-                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                accent = TileAccent.GREEN,
-                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, month).takeIf { it > 0 }
+            MoneyCard(
+                data,
+                LocalDate.now(),
+                onOpen = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
+                modifier = Modifier.animateItem(),
+                count = com.platinum20.dashboard.notes.Expenses.total(data.expenses, java.time.YearMonth.now()).takeIf { it > 0 }
                     ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
-                lines = recent.take(3).map {
-                    com.platinum20.dashboard.today.Upcoming.dayLabel(it.date, LocalDate.now()) to
-                        "${com.platinum20.dashboard.notes.Expenses.displayName(it)} ${com.platinum20.dashboard.notes.Expenses.format(it.cents)}"
-                },
-                empty = "Quanto spendi nel mese, per giorno e per categoria",
-                modifier = Modifier.animateItem().captureTarget(CaptureMode.EXPENSE),
-                onClick = { inApp?.openRoute?.invoke(Routes.EXPENSES) },
             )
         }
     }
 }
 
-/** Il titolo di una cosa con scadenza, qualunque sia. */
-private fun DueRow.title(): String =
-    task?.text ?: countdown?.title ?: parcel?.title ?: event?.title ?: charge?.let { "Addebito: ${it.text.ifEmpty { it.category.label }}" } ?: ""
-
-/** Una card della pagina Note: icona, nome del tipo, quanto c'è a destra e le prime righe sotto. */
-@Composable
-private fun NotesCategoryCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    accent: TileAccent,
-    count: String?,
-    lines: List<Pair<String, String>>,
-    empty: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.extraLarge, modifier = modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
-                Spacer(Modifier.width(12.dp))
-                Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                if (count != null) {
-                    Text(count, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.outline,
-                )
-            }
-            Spacer(Modifier.height(10.dp))
-            if (lines.isEmpty()) {
-                Text(empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else lines.forEach { (label, text) ->
-                Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.width(96.dp),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-    }
-}
 
 /** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
 internal const val NOTES_PREVIEW = 4
@@ -694,9 +630,9 @@ fun NotesScreen(
             }
             // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni,
             // per quando li hai scritti, i più nuovi in cima.
-            if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
+            if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty() || doneUndated.isNotEmpty())) {
                 item(key = "undated-timeline") {
-                    val entries = undatedEntries(undatedTasks, notes, today)
+                    val entries = undatedEntries(undatedTasks, notes, today, done = doneUndated)
                     Column(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
                         entries.forEachIndexed { index, (entry, row) ->
                             TimelineRow(
@@ -722,21 +658,6 @@ fun NotesScreen(
                         }
                     }
                 }
-            }
-            // Sotto, i promemoria senza data già spuntati.
-            if (show(NotesSection.UNDATED) && doneUndated.isNotEmpty()) {
-                item(key = "undated-done-header") {
-                    SectionHeader(
-                        "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
-                        action = "Elimina",
-                        onAction = {
-                            NotesStore.clearDone { it.dueAt == null }
-                            offerUndo(doneUndated, if (doneUndated.size == 1) "Eliminato 1 completato" else "Eliminati ${doneUndated.size} completati")
-                        },
-                    )
-                }
-                item(key = "undated-done") { Box(Modifier.animateItem()) { TaskGroup(null, doneUndated, onTaskDeleted) } }
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {

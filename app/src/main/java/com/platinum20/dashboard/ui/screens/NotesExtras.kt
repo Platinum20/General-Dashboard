@@ -223,7 +223,7 @@ fun ExpensesTab(
 
 }
 
-private fun centsOf(text: String): Long? {
+internal fun centsOf(text: String): Long? {
     val clean = text.replace("€", "").filterNot { it.isWhitespace() }
     // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
     val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean

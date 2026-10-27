@@ -3,6 +3,9 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -121,5 +124,85 @@ fun DetailMissing(icon: ImageVector, text: String) {
         Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/**
+ * Il titolo che si scrive direttamente nella pagina (Antonio: niente dialogo per modificare). Si salva
+ * da solo mezzo secondo dopo l'ultima lettera; vuoto non si salva.
+ */
+@Composable
+fun EditableDetailTitle(key: Any, value: String, dot: Color, onCommit: (String) -> Unit) {
+    var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
+    val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
+    androidx.compose.runtime.LaunchedEffect(text) {
+        kotlinx.coroutines.delay(500)
+        if (text.isNotBlank() && text.trim() != value.trim()) commit(text.trim())
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
+        Box(Modifier.size(10.dp).clip(CircleShape).background(dot))
+        Spacer(Modifier.width(12.dp))
+        androidx.compose.foundation.text.BasicTextField(
+            value = text,
+            onValueChange = { text = it },
+            textStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences),
+            modifier = Modifier.weight(1f),
+            decorationBox = { inner ->
+                if (text.isEmpty()) Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.outline)
+                inner()
+            },
+        )
+    }
+}
+
+/** Una riga che si tocca per cambiarla (data, ripetizione, categoria…), con la X per toglierla se si può. */
+@Composable
+fun DetailTapRow(icon: ImageVector, text: String, onClick: () -> Unit, onClear: (() -> Unit)? = null) {
+    Row(
+        Modifier.fillMaxWidth().bouncyPress(0.98f).clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f)) { DetailRow(icon, text) }
+        onClear?.let {
+            androidx.compose.material3.IconButton(onClick = it) {
+                Icon(androidx.compose.material.icons.Icons.Outlined.Close, contentDescription = "Togli", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/** Una riga in cui si scrive (importo, codice del pacco): si salva da sola quando smetti di scrivere. */
+@Composable
+fun DetailFieldRow(key: Any, icon: ImageVector, value: String, placeholder: String, number: Boolean = false, onCommit: (String) -> Unit) {
+    var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
+    val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
+    androidx.compose.runtime.LaunchedEffect(text) {
+        kotlinx.coroutines.delay(600)
+        if (text.trim() != value.trim()) commit(text.trim())
+    }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(14.dp))
+        androidx.compose.foundation.text.BasicTextField(
+            value = text,
+            onValueChange = { text = it },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardType = if (number) androidx.compose.ui.text.input.KeyboardType.Decimal else androidx.compose.ui.text.input.KeyboardType.Text,
+                capitalization = if (number) androidx.compose.ui.text.input.KeyboardCapitalization.None else androidx.compose.ui.text.input.KeyboardCapitalization.Characters,
+            ),
+            modifier = Modifier.weight(1f),
+            decorationBox = { inner ->
+                if (text.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                inner()
+            },
+        )
     }
 }
