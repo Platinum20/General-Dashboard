@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.219.0
+**Media: tre riquadri alti uguali**
+- In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
+- Titoli e descrizioni stanno su una riga sola ("Spotify e YT", "YouTube e file", "Radio · e podcast")
+
 ## 1.217.0
 **Treni, menu sulla linea e Spese**
 - I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
