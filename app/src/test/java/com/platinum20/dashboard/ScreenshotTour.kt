@@ -132,7 +132,8 @@ class ScreenshotTour {
         if (tap("Note")) {
             settle(1_500); shot(p + "20_note")
             // Le due parti: ognuna si apre nella sua pagina ("indietro" torna alle due).
-            if (tap("Prossimi giorni")) {
+            // Il titolo sta fuori dalla card: si apre toccando una riga (tutta la card apre la pagina).
+            if (tap("commercialista", substring = true)) {
                 settle(800); shot(p + "21_note_con_scadenza")
                 scroll(down = true)
                 shot(p + "22_note_fondo")
