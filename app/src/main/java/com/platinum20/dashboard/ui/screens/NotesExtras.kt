@@ -250,8 +250,9 @@ fun ExpensesTab(
         item(key = "now-room") {
             // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
             val density = androidx.compose.ui.platform.LocalDensity.current
-            val below = nowOffset?.let { timelineHeight - it } ?: Int.MAX_VALUE
-            val room = with(density) { (listState.layoutInfo.viewportSize.height - padding.calculateBottomPadding().roundToPx() - below).coerceAtLeast(0).toDp() }
+            val room = with(density) {
+                nowRoom(listState.layoutInfo.viewportSize.height, padding.calculateBottomPadding().roundToPx(), nowOffset?.let { timelineHeight - it }).toDp()
+            }
             Spacer(Modifier.height(room))
         }
     }
