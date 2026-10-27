@@ -43,6 +43,13 @@ object MiniDock {
     private const val THUMB_INSET = 8f
     private const val BAR_GUESS = 70f
 
+    /**
+     * Quanto spazio lasciare in fondo, in dp, a una pagina senza barra delle sezioni (editor delle note)
+     * perché il mini player in basso non copra i suoi tasti: niente se non suona nulla o se sta in alto.
+     */
+    fun bottomRoom(playing: Boolean, atTop: Boolean, barHeight: Float, density: Float): Float =
+        if (!playing || atTop) 0f else (if (barHeight > 0f) barHeight / density else BAR_GUESS) + 6f
+
     /** Dove sta la miniatura del video nel mini player, in px. */
     fun thumb(frame: Rect, barHeight: Float, atTop: Boolean, density: Float): Rect {
         val bar = if (barHeight > 0f) barHeight else BAR_GUESS * density

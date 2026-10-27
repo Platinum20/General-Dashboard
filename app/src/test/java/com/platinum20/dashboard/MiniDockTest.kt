@@ -55,4 +55,12 @@ class MiniDockTest {
         assertEquals(0f, MiniDock.bottomReserveDp(playing = true, atTop = true), 0f)
         assertEquals(0f, MiniDock.bottomReserveDp(playing = false, atTop = false), 0f)
     }
+
+    @Test
+    fun editorLeavesRoomOnlyForABottomMiniPlayer() {
+        assertEquals(76f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 210f, density = 3f), 0.01f)
+        assertEquals(76f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 0f, density = 3f), 0.01f)
+        assertEquals(0f, MiniDock.bottomRoom(playing = true, atTop = true, barHeight = 210f, density = 3f), 0.01f)
+        assertEquals(0f, MiniDock.bottomRoom(playing = false, atTop = false, barHeight = 210f, density = 3f), 0.01f)
+    }
 }
