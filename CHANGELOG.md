@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.210.0
+**I video del telefono suonano nel player unico**
+- Un video del telefono, un file scelto a mano o un link si aprono nello stesso player di YouTube, musica e podcast: stessa coda, una sola notifica, e il mini player quando esci
+- Riprendono da dove li avevi lasciati, anche dai Recenti e da Continua
+
 ## 1.209.0
 **La foto allegata diventa una nota**
 - Se nella foto allegata con la graffetta non c'è uno scontrino, una data o un codice di spedizione, Canvas la salva come nota con la foto (si può annullare dal fumetto)
