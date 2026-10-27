@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.274.0
+## 1.276.0
 **I video YouTube restano in Continua**
 - In Media, Continua tiene fino a 12 voci per ogni fonte: ascoltare tanta musica su Spotify non fa più sparire i video YouTube lasciati a metà
 - L'ordine di Continua segue quando una cosa suonava davvero: Spotify in pausa nel mini player non torna più in cima da solo
