@@ -119,6 +119,7 @@ import com.platinum20.dashboard.media.youtube.player.YtComment
 import com.platinum20.dashboard.media.youtube.player.YtNow
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
+import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.player.YtStream
 import com.platinum20.dashboard.media.youtube.player.YtText
 import androidx.compose.material.icons.outlined.VideoLibrary
@@ -147,7 +148,13 @@ private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit = {}) {
+fun YouTubeWatchScreen(
+    url: String?,
+    onBack: () -> Unit,
+    onOpenQueue: () -> Unit = {},
+    /** Tocco sul canale (foto o nome): la pagina con tutti i suoi video. */
+    onOpenChannel: (YtChannel) -> Unit = {},
+) {
     val context = LocalContext.current
     val now by YtPlayer.now.collectAsState()
     // Avvisi brevi del player (es. sottotitoli che YouTube non dà): il video intanto continua.
@@ -282,7 +289,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = pageFade() },
             ) {
                 val stream = now?.stream
-                item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }) }
+                item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }, onOpenChannel = onOpenChannel) }
                 if (stream != null) {
                     if (stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
@@ -779,7 +786,13 @@ private fun TimeBar(
 private enum class WatchPanel { COMMENTS, RELATED }
 
 @Composable
-private fun TitleBlock(now: YtNow?, stream: YtStream?, panel: WatchPanel?, onPanel: (WatchPanel) -> Unit) {
+private fun TitleBlock(
+    now: YtNow?,
+    stream: YtStream?,
+    panel: WatchPanel?,
+    onPanel: (WatchPanel) -> Unit,
+    onOpenChannel: (YtChannel) -> Unit = {},
+) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
@@ -830,21 +843,34 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, panel: WatchPanel?, onPan
         val favorites by YtFavorites.items.collectAsState()
         val liked = favorites.any { it.id == stream.id }
         val haptic = rememberHaptic()
-        // Canale a sinistra, Mi piace e Non mi piace a destra sulla stessa riga.
+        // Canale a sinistra (un tocco apre tutti i suoi video), Mi piace e Non mi piace a destra sulla stessa riga.
+        val channelId = YtResolver.channelId(stream.channelUrl)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (stream.channel.isNotBlank()) {
-                ChannelAvatar(stream.channelAvatar, stream.channel, 40)
-                Spacer(Modifier.width(12.dp))
-            }
-            Column(Modifier.weight(1f)) {
-                Text(stream.channel, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                stream.subscribers.takeIf { it >= 0 }?.let {
-                    Text(
-                        "${compactCount(it)} iscritti",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
+            Row(
+                Modifier
+                    .weight(1f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .then(
+                        if (channelId != null) {
+                            Modifier.clickable { onOpenChannel(YtChannel(channelId, stream.channel, stream.channelAvatar)) }
+                        } else Modifier
+                    ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (stream.channel.isNotBlank()) {
+                    ChannelAvatar(stream.channelAvatar, stream.channel, 40)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(stream.channel, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    stream.subscribers.takeIf { it >= 0 }?.let {
+                        Text(
+                            "${compactCount(it)} iscritti",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.width(8.dp))

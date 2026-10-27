@@ -119,7 +119,12 @@ internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
  * [startUrl]: un video di YouTube da far partire aprendo la pagina.
  */
 @Composable
-fun PlayerScreen(onBack: () -> Unit, onOpenQueue: () -> Unit = {}, startUrl: String? = null) {
+fun PlayerScreen(
+    onBack: () -> Unit,
+    onOpenQueue: () -> Unit = {},
+    startUrl: String? = null,
+    onOpenChannel: (com.platinum20.dashboard.media.youtube.YtChannel) -> Unit = {},
+) {
     val context = LocalContext.current
     val now by Playback.now.collectAsState()
     var starting by remember { mutableStateOf(startUrl != null) }
@@ -128,7 +133,7 @@ fun PlayerScreen(onBack: () -> Unit, onOpenQueue: () -> Unit = {}, startUrl: Str
         starting = false
     }
     if (starting || now?.source == PlaySource.VIDEO) {
-        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue)
+        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue, onOpenChannel = onOpenChannel)
     } else {
         AudioPlayer(onBack, onOpenQueue)
     }

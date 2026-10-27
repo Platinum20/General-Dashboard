@@ -383,6 +383,10 @@ object Routes {
     /** Sotto il player: qui il mini player si vede (si sistema la coda e si vede cosa suona). */
     const val QUEUE = "media/player/queue"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
+    /** Tutti i video di un canale YouTube (dal tocco sul canale nella pagina del video). */
+    const val YOUTUBE_CHANNEL = "media/channel/{id}?title={title}&avatar={avatar}"
+    fun youtubeChannel(c: com.platinum20.dashboard.media.youtube.YtChannel) =
+        "media/channel/${c.id}?title=${Uri.encode(c.title)}&avatar=${Uri.encode(c.thumbnail)}"
     const val LOGIN = "settings/login/{service}"
 
     /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
@@ -1231,6 +1235,26 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
+                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
+                )
+            }
+            composable(
+                Routes.YOUTUBE_CHANNEL,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("avatar") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                val args = entry.arguments
+                com.platinum20.dashboard.ui.screens.YouTubeChannelScreen(
+                    channel = com.platinum20.dashboard.media.youtube.YtChannel(
+                        args?.getString("id").orEmpty(),
+                        args?.getString("title").orEmpty(),
+                        args?.getString("avatar").orEmpty(),
+                    ),
+                    onBack = { navController.popBackStack() },
+                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(Routes.QUEUE) {
@@ -1251,6 +1275,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     startUrl = entry.arguments?.getString("url"),
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
+                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
             composable(Routes.YOUTUBE_FEED) {

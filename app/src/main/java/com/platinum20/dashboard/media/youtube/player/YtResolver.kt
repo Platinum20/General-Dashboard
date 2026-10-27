@@ -21,6 +21,11 @@ import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.comments.CommentsInfo
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem
 import com.platinum20.dashboard.media.youtube.YtVideo
+import org.schabi.newpipe.extractor.InfoItem
+import org.schabi.newpipe.extractor.channel.ChannelInfo
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabInfo
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabs
+import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler
 
 /** Un video di YouTube pronto per il player nativo: indirizzi dei flussi e dati da mostrare. */
 data class YtStream(
@@ -52,7 +57,12 @@ data class YtStream(
     val subtitles: List<YtSubtitle> = emptyList(),
     /** Video correlati, come li propone YouTube sotto al video. */
     val related: List<YtVideo> = emptyList(),
+    /** Indirizzo del canale su YouTube: serve per aprire la pagina del canale toccandolo. */
+    val channelUrl: String = "",
 )
+
+/** Una pagina dei video di un canale, dal più recente; [next] è null quando sono finiti. */
+class YtChannelPage(val videos: List<YtVideo>, val tab: ListLinkHandler, val next: Page?)
 
 data class YtQuality(val height: Int, val url: String)
 
@@ -156,6 +166,41 @@ object YtResolver {
         }
     }
 
+    /** L'id del canale (UC…) da un indirizzo come youtube.com/channel/UC…; null se non c'è. */
+    fun channelId(url: String): String? = Regex("""/channel/(UC[A-Za-z0-9_-]{22})""").find(url)?.groupValues?.get(1)
+
+    /**
+     * Tutti i video di un canale (scheda Video, come sul canale in YouTube), una pagina alla volta:
+     * senza [more] la prima, poi la successiva passando la pagina avuta prima. Il feed RSS ne dà solo 15.
+     */
+    suspend fun channelVideos(channelId: String, more: YtChannelPage? = null): YtChannelPage = withContext(Dispatchers.IO) {
+        init()
+        val service = ServiceList.YouTube
+        val items: List<InfoItem>
+        val tab: ListLinkHandler
+        val next: Page?
+        if (more?.next != null) {
+            tab = more.tab
+            val page = ChannelTabInfo.getMoreItems(service, tab, more.next)
+            items = page.items
+            next = page.nextPage
+        } else {
+            val info = ChannelInfo.getInfo(service, "https://www.youtube.com/channel/$channelId")
+            tab = info.tabs.firstOrNull { ChannelTabs.VIDEOS in it.contentFilters }
+                ?: throw IllegalStateException("Questo canale non ha video")
+            val first = ChannelTabInfo.getInfo(service, tab)
+            items = first.relatedItems
+            next = first.nextPage
+        }
+        val videos = items.filterIsInstance<StreamInfoItem>().mapNotNull { item ->
+            video(item)?.copy(
+                channelId = channelId,
+                published = runCatching { item.uploadDate?.offsetDateTime()?.toInstant() }.getOrNull(),
+            )
+        }
+        YtChannelPage(videos, tab, next?.takeIf { videos.isNotEmpty() })
+    }
+
     private fun comment(c: CommentsInfoItem): YtComment {
         val raw = c.commentText?.content.orEmpty()
         return YtComment(
@@ -250,6 +295,7 @@ object YtResolver {
             dashManifest = if (live) null else dashManifest(info.videoOnlyStreams, audio, info.duration),
             subtitles = subtitles,
             related = info.relatedItems.filterIsInstance<StreamInfoItem>().mapNotNull(::video),
+            channelUrl = info.uploaderUrl.orEmpty(),
         ).also {
             if (it.hlsUrl == null && it.muxedUrl == null && (it.videoUrl == null || it.audioUrl == null) && it.audioUrl == null) {
                 throw IllegalStateException("Nessun flusso riproducibile per questo video")
