@@ -273,11 +273,11 @@ object PodcastStore {
     internal fun resumeMs(id: String, durationMs: Long): Long = PodcastProgress.resumeAt(_positions.value[id] ?: 0, durationMs)
 
     /** Il player unico segna dove si è arrivati nell'episodio. */
-    internal fun saveProgress(item: ResumeItem, positionMs: Long, durationMs: Long) {
+    internal fun saveProgress(item: ResumeItem, positionMs: Long, durationMs: Long, at: Long = System.currentTimeMillis()) {
         if (!::prefs.isInitialized) return
         // Anche in "Continua" di Media, insieme a video, musica e radio.
         MediaHistory.init(appContext)
-        MediaHistory.record(item.copy(positionMs = positionMs, durationMs = durationMs.takeIf { it > 0 } ?: item.durationMs, at = System.currentTimeMillis()))
+        MediaHistory.record(item.copy(positionMs = positionMs, durationMs = durationMs.takeIf { it > 0 } ?: item.durationMs, at = at))
         val id = item.key
         val map = (_positions.value - id + (id to positionMs)).entries.toList().takeLast(MAX_POSITIONS).associate { it.key to it.value }
         _positions.value = map

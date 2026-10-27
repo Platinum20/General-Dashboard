@@ -150,7 +150,7 @@ private fun StatusCard(state: UpdateUiState) {
         status is UpdateStatus.Installing -> Triple(
             Icons.Outlined.CloudDownload,
             "Installazione avviata",
-            "Conferma nella finestra di Android per passare alla ${status.release.version}.",
+            "Canvas si chiude e passa alla ${status.release.version}; la prima volta Android chiede conferma.",
         )
         status is UpdateStatus.Downloading -> Triple(
             Icons.Outlined.CloudDownload,

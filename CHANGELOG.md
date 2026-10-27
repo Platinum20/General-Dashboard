@@ -1,9 +1,28 @@
 # Changelog
 
-## 1.275.0
+## 1.279.0
 **Spese anche dentro Note**
 - Toccando la card Spese in Note si apre la pagina Spese dentro Note, non più in Oggi: la barra resta su Note e indietro torna alle Note
 - La pagina è la stessa di Oggi, con le stesse spese
+
+## 1.278.0
+**Le novità dopo ogni aggiornamento**
+- Al primo avvio dopo un aggiornamento sale un fumetto di vetro con le novità della versione, una volta sola
+- Si chiude toccandolo, toccando fuori o portandolo di lato
+- Alla prima installazione non compare
+
+## 1.277.0
+**Aggiornamenti automatici**
+- Le nuove versioni si scaricano e si installano da sole, senza toccare nulla (Android 12 o più recente)
+- Mai mentre usi l'app o ascolti qualcosa: aspetta che la lasci, riprova ogni 15 minuti
+- Dopo l'aggiornamento arriva una notifica "Canvas aggiornata alla …" con le novità
+- La prima volta Android chiede comunque una conferma; se un'installazione non va, torna la notifica "Tocca per aggiornare"
+- In Impostazioni › Notifiche la riga si chiama "Aggiornamenti automatici"
+
+## 1.276.0
+**I video YouTube restano in Continua**
+- In Media, Continua tiene fino a 12 voci per ogni fonte: ascoltare tanta musica su Spotify non fa più sparire i video YouTube lasciati a metà
+- L'ordine di Continua segue quando una cosa suonava davvero: Spotify in pausa nel mini player non torna più in cima da solo
 
 ## 1.273.0
 **SponsorBlock nella sua pagina**

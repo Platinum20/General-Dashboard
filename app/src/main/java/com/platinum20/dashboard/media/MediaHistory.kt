@@ -75,7 +75,8 @@ data class ResumeItem(
 object MediaHistory {
     private const val PREFS = "media_history"
     private const val KEY_ITEMS = "items"
-    private const val MAX_ITEMS = 15
+    /** Voci tenute per ogni fonte: una sessione di Spotify (una voce a brano) non spinge fuori i video di YouTube. */
+    internal const val PER_KIND = 12
 
     private var prefs: SharedPreferences? = null
     private val _items = MutableStateFlow<List<ResumeItem>>(emptyList())
@@ -93,7 +94,7 @@ object MediaHistory {
     }
 
     fun record(item: ResumeItem) {
-        save((listOf(item) + _items.value.filterNot { it.kind == item.kind && it.key == item.key }).take(MAX_ITEMS))
+        save(trim(listOf(item) + _items.value.filterNot { it.kind == item.kind && it.key == item.key }))
     }
 
     /** Toglie le voci di un tipo (es. YouTube quando si svuota la sua cronologia) e restituisce le tolte. */
@@ -105,8 +106,13 @@ object MediaHistory {
 
     /** Rimette le voci tolte con [removeKind], dal più recente, senza doppioni. */
     fun restore(items: List<ResumeItem>) {
-        val merged = (_items.value + items).distinctBy { it.kind to it.key }.sortedByDescending { it.at }.take(MAX_ITEMS)
-        save(merged)
+        save(trim((_items.value + items).distinctBy { it.kind to it.key }.sortedByDescending { it.at }))
+    }
+
+    /** Le più recenti [PER_KIND] voci di ogni fonte, nell'ordine dato: funzione pura, provata nei test. */
+    internal fun trim(items: List<ResumeItem>): List<ResumeItem> {
+        val seen = mutableMapOf<ResumeKind, Int>()
+        return items.filter { item -> seen.merge(item.kind, 1, Int::plus)!! <= PER_KIND }
     }
 
     private fun save(list: List<ResumeItem>) {

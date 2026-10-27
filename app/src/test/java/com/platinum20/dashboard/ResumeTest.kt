@@ -1,6 +1,7 @@
 package com.platinum20.dashboard
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.Resume
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
@@ -82,5 +83,15 @@ class ResumeTest {
         assertEquals(item, HomeResume.pick(listOf(item), nowMs, somethingPlaying = false))
         assertEquals(null, HomeResume.pick(listOf(item), nowMs, somethingPlaying = true))
         assertTrue(HomeResume.detail(item).endsWith("12:30 di 45:00"))
+    }
+
+    @Test
+    fun tantiBraniSpotifyNonTolgonoIVideoYouTube() {
+        val songs = List(40) { ResumeItem(ResumeKind.SPOTIFY, "spotify:track:$it", "Brano $it", at = now - it) }
+        val video = yt("bbbbbbbbbbb", now - hour, 60_000, 900_000)
+        val kept = MediaHistory.trim(songs + video)
+        assertEquals(MediaHistory.PER_KIND, kept.count { it.kind == ResumeKind.SPOTIFY })
+        assertTrue(video in kept)
+        assertEquals(video, Resume.pick(kept).first { it.kind == ResumeKind.YOUTUBE })
     }
 }

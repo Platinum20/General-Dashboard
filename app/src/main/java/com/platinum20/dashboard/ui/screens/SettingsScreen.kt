@@ -122,6 +122,7 @@ import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.AppTheme
 import com.platinum20.dashboard.settings.HomeCard
+import com.platinum20.dashboard.update.ApkInstaller
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.work.MorningWorker
@@ -1134,7 +1135,7 @@ private fun RainAlertSetting() {
     )
 }
 
-/** Avviso delle nuove versioni: prima stava solo dentro Aggiornamenti. */
+/** Aggiornamenti automatici: si installano da soli, o arriva l'avviso dove Android non lo permette. */
 @Composable
 private fun UpdateNotifySetting() {
     val context = LocalContext.current
@@ -1148,9 +1149,11 @@ private fun UpdateNotifySetting() {
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) set(true)
     }
-    val blocked = enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
+    // Quando si installano da soli le notifiche non servono.
+    val silent = ApkInstaller.canInstallSilently(context)
+    val blocked = enabled && !silent && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
     val toggle = {
-        if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+        if (!silent && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             set(!enabled)
@@ -1159,8 +1162,12 @@ private fun UpdateNotifySetting() {
     SettingsItem(
         icon = Icons.Outlined.SystemUpdate,
         accent = TileAccent.NEUTRAL,
-        title = "Avviso nuove versioni",
-        subtitle = if (blocked) "Notifiche bloccate: tocca per consentirle" else "Una notifica quando esce un aggiornamento",
+        title = "Aggiornamenti automatici",
+        subtitle = when {
+            silent -> "Si installano da soli quando non usi l'app"
+            blocked -> "Notifiche bloccate: tocca per consentirle"
+            else -> "Una notifica quando esce un aggiornamento"
+        },
         onClick = toggle,
         trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
     )
