@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -167,7 +168,7 @@ fun DetailTapRow(icon: ImageVector, text: String, onClick: () -> Unit, onClear: 
         Box(Modifier.weight(1f)) { DetailRow(icon, text) }
         onClear?.let {
             androidx.compose.material3.IconButton(onClick = it) {
-                Icon(androidx.compose.material.icons.Icons.Outlined.Close, contentDescription = "Togli", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Outlined.Close, contentDescription = "Togli", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
