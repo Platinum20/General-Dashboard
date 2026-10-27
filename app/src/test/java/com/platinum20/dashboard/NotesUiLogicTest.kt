@@ -152,7 +152,7 @@ class NotesUiLogicTest {
         assertEquals(listOf("Bolletta", "09:30  Dentista", "18:00  Spesa", "07:00  Treno"), entries.map { it.text })
         assertEquals(listOf(true, false, false, false), entries.map { it.late })
         // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
-        assertEquals(listOf(0f, 0f, 0f, 18f), entries.map { it.gapDp })
+        assertEquals(listOf(0f, 0f, 0f, 12f), entries.map { it.gapDp })
     }
 
     @Test fun passatoSopraLaLinea() {
@@ -179,7 +179,7 @@ class NotesUiLogicTest {
         assertEquals(true, past.all { it.past })
         val entries = timelineEntries(past, today, zone).map { it.first }
         assertEquals(listOf("Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
-        assertEquals(listOf("Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+        assertEquals(listOf("Ven 23 ott", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
     }
 
     @Test fun noteSullaLineaDelTempo() {
@@ -196,9 +196,9 @@ class NotesUiLogicTest {
             zone = zone,
         ).map { it.first }
         assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
-        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
+        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21 ott"), entries.map { it.dayLabel })
         // Fra oggi e mercoledì scorso quattro giorni vuoti.
-        assertEquals(24f, entries[3].gapDp)
+        assertEquals(16f, entries[3].gapDp)
     }
 
     @Test fun speseSullaLineaDelTempo() {
@@ -211,9 +211,9 @@ class NotesUiLogicTest {
             ),
             today,
         ).map { it.first }
-        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
+        assertEquals(listOf("Oggi", null, "Ven 23 ott"), entries.map { it.dayLabel })
         assertEquals(true, entries[0].text.startsWith("Benzina · "))
-        assertEquals(12f, entries[2].gapDp)
+        assertEquals(8f, entries[2].gapDp)
     }
 
     private object DueRowFor {

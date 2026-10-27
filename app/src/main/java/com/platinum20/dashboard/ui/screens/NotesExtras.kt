@@ -213,16 +213,15 @@ fun ExpensesTab(
         if (inMonth.isNotEmpty()) {
             item(key = "timeline") {
                 val entries = expenseEntries(inMonth, LocalDate.now())
-                CanvasCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(vertical = 6.dp)) {
-                        entries.forEachIndexed { index, (entry, expense) ->
-                            TimelineRow(
-                                entry,
-                                top = index > 0,
-                                bottom = index < entries.lastIndex,
-                                onClick = { openItem(ItemKind.EXPENSE, expense.id) },
-                            )
-                        }
+                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    entries.forEachIndexed { index, (entry, expense) ->
+                        TimelineRow(
+                            entry,
+                            start = 0.dp,
+                            top = index > 0,
+                            bottom = index < entries.lastIndex,
+                            onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                        )
                     }
                 }
             }

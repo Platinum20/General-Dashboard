@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,6 +81,8 @@ fun TimelineRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onIcon: (() -> Unit)? = null,
+    /** 16 dp dentro una card (Oggi); 0 nelle pagine, dove la linea sta sullo sfondo senza card. */
+    start: Dp = 16.dp,
 ) {
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
@@ -89,7 +92,7 @@ fun TimelineRow(
             .height(IntrinsicSize.Min)
             .bouncyPress(0.98f)
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = LINE_END),
+            .padding(start = start, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
@@ -125,7 +128,6 @@ fun TimelineRow(
             },
             maxLines = 1,
             textAlign = TextAlign.End,
-            modifier = Modifier.width(TIMELINE_LABEL),
         )
         Spacer(Modifier.width(4.dp))
         TimelineGutter(
@@ -142,7 +144,6 @@ fun TimelineRow(
     }
 }
 
-private val TIMELINE_LABEL = 76.dp
 private val GUTTER = 22.dp
 
 /**
@@ -173,4 +174,100 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
             dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
         },
     )
+}
+
+/**
+ * Il confine fra passato e adesso nelle pagine con il passato sopra: "Oggi" ben visibile e una riga che
+ * arriva fino alla linea, con il pallino grande. Lì la lista fa un po' di resistenza (vedi [PastBarrier]).
+ */
+@Composable
+fun TimelineNowMarker(modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    Row(
+        modifier.fillMaxWidth().height(32.dp).padding(end = LINE_END),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("OGGI", style = MaterialTheme.typography.labelMedium, color = primary)
+        Spacer(Modifier.width(10.dp))
+        Box(
+            Modifier.weight(1f).height(2.dp).drawBehind {
+                drawLine(primary, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
+            },
+        )
+        Box(
+            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
+                drawLine(primary, Offset(0f, size.height / 2), Offset(size.width / 2, size.height / 2), 2.dp.toPx())
+                drawCircle(primary, 6.dp.toPx(), Offset(size.width / 2, size.height / 2))
+            },
+        )
+    }
+}
+
+/**
+ * La piccola resistenza fra adesso e passato (Antonio): scorrendo verso il passato la lista si ferma sul
+ * confine "Oggi" con una vibrazione leggera; se il dito insiste per [threshold] px si passa, con un'altra
+ * vibrazione. Un lancio (fling) si ferma sul confine. Logica pura, per i test.
+ */
+object PastBarrier {
+    /** [consumed] = quanto scorrimento trattiene la barriera; [bump]/[through] = quando vibrare. */
+    data class Step(val consumed: Float, val pull: Float, val unlocked: Boolean, val bump: Boolean = false, val through: Boolean = false)
+
+    /**
+     * [boundary]: dove sta il confine rispetto al bordo alto della lista (px; 0 = proprio in cima, negativo = già
+     * passato sopra, positivo = si sta guardando il passato). [delta] > 0 = si scorre verso il passato.
+     */
+    fun step(boundary: Float?, delta: Float, pull: Float, unlocked: Boolean, threshold: Float, fling: Boolean): Step {
+        if (boundary == null) return Step(0f, pull, unlocked)
+        // Già nel passato: niente resistenza finché non si torna ad adesso.
+        if (boundary > 1f) return Step(0f, 0f, true)
+        // Tornati ben dentro adesso: la resistenza si riarma.
+        val armed = if (boundary < -threshold) false else unlocked
+        if (delta <= 0f || armed) return Step(0f, if (delta <= 0f) 0f else pull, armed)
+        val room = -boundary
+        if (delta <= room) return Step(0f, pull, false)
+        val excess = delta - room
+        if (fling) return Step(excess, pull, false)
+        val total = pull + excess
+        if (total >= threshold) return Step(0f, 0f, true, through = true)
+        return Step(excess, total, false, bump = pull == 0f)
+    }
+}
+
+/** La [PastBarrier] collegata a una lista: [itemIndex] è l'item con la linea, [offset] dove sta "Oggi" dentro l'item. */
+@Composable
+fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListState, itemIndex: Int, offset: Int?): androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    val haptic = rememberHaptic()
+    val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+    val index by androidx.compose.runtime.rememberUpdatedState(itemIndex)
+    val at by androidx.compose.runtime.rememberUpdatedState(offset)
+    return androidx.compose.runtime.remember(listState, haptic, threshold) {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            var pull = 0f
+            var unlocked = false
+            fun boundary(): Float? {
+                val o = at ?: return null
+                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+                return when {
+                    item != null -> (item.offset + o).toFloat()
+                    listState.firstVisibleItemIndex > index -> -1e9f
+                    else -> 1e9f
+                }
+            }
+            override fun onPreScroll(available: Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource): Offset {
+                val s = PastBarrier.step(
+                    boundary(), available.y, pull, unlocked, threshold,
+                    fling = source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput,
+                )
+                pull = s.pull
+                unlocked = s.unlocked
+                if (s.bump) haptic(Haptic.TICK)
+                if (s.through) haptic(Haptic.THRESHOLD)
+                return Offset(0f, s.consumed)
+            }
+            override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
+                pull = 0f
+                return androidx.compose.ui.unit.Velocity.Zero
+            }
+        }
+    }
 }

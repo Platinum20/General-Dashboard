@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -445,8 +446,15 @@ fun NotesScreen(
                 runCatching { listState.scrollToItem(timelineIndex, offset) }
             }
         }
+        // Fra adesso e passato una piccola resistenza, con una vibrazione.
+        val barrier = rememberPastBarrier(listState, timelineIndex, if (section == NotesSection.DATED) nowOffset else null)
         Box(Modifier.fillMaxSize()) {
-        LazyColumn(state = listState, contentPadding = listPadding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LazyColumn(
+            state = listState,
+            contentPadding = listPadding,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.nestedScroll(barrier),
+        ) {
             if (empty) {
                 item(key = "empty") {
                     EmptyHint(
@@ -469,35 +477,36 @@ fun NotesScreen(
                 item(key = "timeline") {
                     val entries = timelineEntries(groups, today)
                     val nowIndex = entries.indexOfFirst { !it.first.past }
-                    CanvasCard(
+                    // Sullo sfondo, senza card: la linea è la pagina.
+                    Column(
                         Modifier.fillMaxWidth()
                             .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                             .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT),
                     ) {
-                        Column(Modifier.padding(vertical = 6.dp)) {
-                            entries.forEachIndexed { index, (entry, row) ->
-                                TimelineRow(
-                                    entry,
-                                    modifier = if (index == nowIndex && index > 0) Modifier.onGloballyPositioned {
-                                        nowOffset = it.positionInParent().y.roundToInt()
-                                    } else Modifier,
-                                    top = index > 0,
-                                    bottom = index < entries.lastIndex,
-                                    onClick = {
-                                        row.task?.let { openItem(ItemKind.TASK, it.id) }
-                                        row.countdown?.let { openItem(ItemKind.DATE, it.id) }
-                                        row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
-                                        row.event?.let { onOpenEvent(it) }
-                                        row.charge?.let { openItem(ItemKind.FIXED, it.id) }
-                                    },
-                                    onIcon = row.task?.takeIf { !it.done }?.let { task ->
-                                        {
-                                            haptic(Haptic.CONFIRM)
-                                            NotesStore.toggleTask(task.id)
-                                        }
-                                    },
-                                )
+                        entries.forEachIndexed { index, (entry, row) ->
+                            // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
+                            if (index == nowIndex && index > 0) {
+                                TimelineNowMarker(Modifier.onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() })
                             }
+                            TimelineRow(
+                                entry,
+                                start = 0.dp,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = {
+                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                    row.countdown?.let { openItem(ItemKind.DATE, it.id) }
+                                    row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
+                                    row.event?.let { onOpenEvent(it) }
+                                    row.charge?.let { openItem(ItemKind.FIXED, it.id) }
+                                },
+                                onIcon = row.task?.takeIf { !it.done }?.let { task ->
+                                    {
+                                        haptic(Haptic.CONFIRM)
+                                        NotesStore.toggleTask(task.id)
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -514,25 +523,24 @@ fun NotesScreen(
             if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty())) {
                 item(key = "undated-timeline") {
                     val entries = undatedEntries(undatedTasks, notes, today)
-                    CanvasCard(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
-                        Column(Modifier.padding(vertical = 6.dp)) {
-                            entries.forEachIndexed { index, (entry, row) ->
-                                TimelineRow(
-                                    entry,
-                                    top = index > 0,
-                                    bottom = index < entries.lastIndex,
-                                    onClick = {
-                                        row.task?.let { openItem(ItemKind.TASK, it.id) }
-                                        row.note?.let { onOpenNote(it.id) }
-                                    },
-                                    onIcon = row.task?.let { task ->
-                                        {
-                                            haptic(Haptic.CONFIRM)
-                                            NotesStore.toggleTask(task.id)
-                                        }
-                                    },
-                                )
-                            }
+                    Column(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
+                        entries.forEachIndexed { index, (entry, row) ->
+                            TimelineRow(
+                                entry,
+                                start = 0.dp,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = {
+                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
+                                    row.note?.let { onOpenNote(it.id) }
+                                },
+                                onIcon = row.task?.let { task ->
+                                    {
+                                        haptic(Haptic.CONFIRM)
+                                        NotesStore.toggleTask(task.id)
+                                    }
+                                },
+                            )
                         }
                     }
                 }
@@ -570,6 +578,8 @@ fun NotesScreen(
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
                 }
             }
+            // Spazio in fondo: l'ultima riga non finisce sotto la barra.
+            item(key = "bottom-space") { Spacer(Modifier.height(72.dp)) }
         }
         }
     }
