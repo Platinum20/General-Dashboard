@@ -62,7 +62,7 @@ import java.time.format.DateTimeFormatter
 private val eventHour = DateTimeFormatter.ofPattern("HH:mm")
 
 /** I filtri di Cerca ovunque: Tutto, oppure una sola parte dell'app. */
-internal enum class SearchFilter(val label: String) {
+enum class SearchFilter(val label: String) {
     ALL("Tutto"), NOTES("Note"), AGENDA("Agenda"), NEWS("Notizie"),
     // Radio e podcast insieme, come la loro pagina in Media.
     MUSIC("Musica"), VIDEO("Video"), RADIO("Radio e podcast");
