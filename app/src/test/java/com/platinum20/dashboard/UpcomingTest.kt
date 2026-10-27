@@ -103,4 +103,12 @@ class UpcomingTest {
         val items = Upcoming.build(today, mapOf(far to listOf(event(9, "Concerto", far, 21))), emptyList(), emptyList(), zone = zone)
         assertEquals(listOf("Concerto"), items.map { it.text })
     }
+
+    @Test
+    fun promemoriaSiSpuntaDallaCard() {
+        // La riga porta il promemoria: dalla card in Oggi si spunta senza entrare.
+        val d1 = today.plusDays(1)
+        val items = Upcoming.build(today, emptyMap(), listOf(TaskItem(7, "Bolletta", dueAt = ms(d1.atTime(8, 0)))), emptyList(), zone = zone)
+        assertEquals(7L, items.single().task?.id)
+    }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.223.0
+**Card allineate e cose da fare spuntabili dalla card**
+- Nelle pagine Prossimi giorni, Note e Spese le icone partono alla stessa distanza dal bordo delle card di Oggi
+- Le card di Oggi mostrano in alto a destra quanto c'è, come nella pagina Note
+- Le cose da fare si spuntano direttamente dalla card, in Oggi e nella pagina Note, senza entrare
+
 ## 1.222.0
 **Si modifica tutto nella pagina, card uguali ovunque**
 - Promemoria, date, pacchi, abitudini e spese si modificano direttamente nella pagina a schermo intero: il titolo si scrive, scadenza, ripetizione, avviso, data, categoria e importo si toccano. Niente più finestra "Modifica"
