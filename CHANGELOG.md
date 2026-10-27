@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.216.0
+**Le note lunghe come un foglio**
+- Aprendo una nota non c'è più la fila di pulsanti in alto: solo Indietro e la riga di quando l'hai modificata
+- Il titolo (la prima riga) è grande, il testo ha più aria e margini più larghi, come una pagina
+- In fondo, sopra la tastiera: il pulsante per farne una lista, quante parole ci sono (e i minuti di lettura se è lunga) e "Altro", che apre il fumetto in vetro con Fissa in alto, Condividi ed Elimina
+- Nella linea del tempo le note con foto o da spuntare hanno la loro icona, e le liste mostrano quante voci sono fatte ("2/5")
+
 ## 1.215.0
 **Avvisi e menu tutti nel fumetto di vetro**
 - Gli avvisi che erano rimasti grigi di sistema ora salgono nel fumetto di vetro in basso, chiudibile di lato: errori di Spotify, "In coda", backup, dettatura, avvisi dei video
