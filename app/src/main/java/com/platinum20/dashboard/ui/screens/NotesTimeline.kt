@@ -417,6 +417,14 @@ internal fun undatedEntries(
 }
 
 /**
+ * Lo spazio vuoto in fondo perché "OGGI" possa stare in cima allo schermo. [below] = quanto c'è sotto OGGI,
+ * null finché non è misurato: allora niente spazio. Prima era Int.MAX_VALUE e sottraendo il margine
+ * il conto andava in overflow, un'altezza enorme che faceva chiudere Spese all'apertura.
+ */
+internal fun nowRoom(viewport: Int, bottomPadding: Int, below: Int?): Int =
+    if (below == null) 0 else (viewport.toLong() - bottomPadding - below).coerceIn(0, viewport.coerceAtLeast(0).toLong()).toInt()
+
+/**
  * Dove va il segno "OGGI" in una linea che è quasi tutta passato (Note, Spese): prima della prima riga di oggi
  * o delle fissate, altrimenti in fondo ([entries] size). Sopra il passato, sotto oggi.
  */

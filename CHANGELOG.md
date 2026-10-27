@@ -1,9 +1,18 @@
 # Changelog
 
-## 1.230.0
+## 1.233.0
 **Video più ordinato**
 - In cima Playlist, Mi piace, Più tardi e Telefono; sotto le schede Home, Iscrizioni e Cronologia, proprio sopra i video che cambiano
 - Escludi Shorts ed Escludi live non stanno più tra le schede: li scegli una volta in Impostazioni › Fa da solo e restano anche dopo aver chiuso l'app
+
+## 1.232.0
+**Nomi interi nelle card di Musica**
+- In Musica i nomi di playlist, album, brani, artisti e Mix stanno su due righe: non vengono più tagliati dopo poche lettere
+- Le card di una stessa fila restano allineate anche con nomi di lunghezza diversa
+
+## 1.231.0
+**Spese non si chiude più all'apertura**
+- La pagina Spese si apriva e l'app si chiudeva subito: un conto sbagliato sullo spazio sotto "OGGI". Ora si apre normalmente
 
 ## 1.229.0
 **Radio e podcast in una pagina sola**
