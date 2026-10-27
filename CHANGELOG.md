@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.254.0
+**Video a schermo intero: pinch per riempire lo schermo**
+- Come su YouTube: a schermo intero allarghi due dita e il video riempie tutto lo schermo, senza bande nere (taglia un po' i bordi); stringi e torna intero
+- Per un attimo compare "Riempi lo schermo" o "Adatta"; il trascinamento su/giù per il volume resta com'era
+
 ## 1.252.0
 **Spotify di nuovo fluido**
 - Il play funziona sempre: anche a fine coda (riparte il brano), se Spotify si è scollegato o se lo tocchi mentre il brano sta ancora arrivando (prima lo faceva ricominciare)

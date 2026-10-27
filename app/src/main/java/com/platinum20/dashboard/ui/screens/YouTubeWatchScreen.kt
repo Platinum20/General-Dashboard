@@ -25,7 +25,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -307,6 +311,10 @@ private fun VideoArea(
     var volumeShown by remember { mutableStateOf(false) }
     var volumeDragging by remember { mutableStateOf(false) }
     var volumeKeys by remember { mutableIntStateOf(0) }
+    // Pinch a schermo intero: true = il video riempie lo schermo (niente bande), con un avviso breve.
+    var fill by rememberSaveable { mutableStateOf(false) }
+    var fillHint by remember { mutableIntStateOf(0) }
+    val zoomed = fill && fullscreen && !inPip
     // A schermo intero i tasti del volume passano da qui: si vede la nostra barra, non quella di sistema.
     val keysActive = fullscreen && !inPip
     androidx.compose.runtime.DisposableEffect(keysActive) {
@@ -336,6 +344,12 @@ private fun VideoArea(
             controls = false
         }
     }
+    LaunchedEffect(fillHint) {
+        if (fillHint > 0) {
+            delay(1_200)
+            fillHint = 0
+        }
+    }
     LaunchedEffect(flashKey) {
         if (seekFlash != 0) {
             delay(600)
@@ -357,6 +371,31 @@ private fun VideoArea(
                         flashKey++
                     },
                 )
+            }
+            .pointerInput(fullscreen, inPip) {
+                if (!fullscreen || inPip) return@pointerInput
+                // Due dita a schermo intero: pinch per riempire o adattare. Visto per primo e consumato,
+                // così il trascinamento del volume si ferma e non cambia nulla mentre si pizzica.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    var zoom = 1f
+                    var decided = false
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val fingers = event.changes.count { it.pressed }
+                        if (fingers >= 2) {
+                            zoom *= event.calculateZoom()
+                            if (!decided) {
+                                VideoSwipe.pinchFill(zoom, fill)?.let {
+                                    fill = it
+                                    fillHint++
+                                    decided = true
+                                }
+                            }
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
             }
             .pointerInput(fullscreen, inPip) {
                 if (!fullscreen || inPip) return@pointerInput
@@ -422,7 +461,10 @@ private fun VideoArea(
                 }
             },
             // Se il player è stato ricreato (dopo una chiusura) lo schermo passa a quello nuovo.
-            update = { view -> YtPlayer.current()?.let { if (view.player !== it) view.player = it } },
+            update = { view ->
+                YtPlayer.current()?.let { if (view.player !== it) view.player = it }
+                view.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
+            },
             onRelease = { it.player = null },
             modifier = Modifier.fillMaxSize(),
         )
@@ -456,6 +498,24 @@ private fun VideoArea(
 
         // SponsorBlock: il tasto per saltare il segmento (o andare al momento clou), anche a comandi nascosti.
         if (!inPip && error == null) SponsorSkipButton(Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 64.dp))
+
+        // L'avviso del pinch, in alto al centro: per un attimo dice cosa è cambiato.
+        AnimatedVisibility(
+            visible = fillHint > 0 && fullscreen && !inPip,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 28.dp),
+        ) {
+            Text(
+                if (fill) "Riempi lo schermo" else "Adatta",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
 
         // L'indicatore del volume: una barra verticale tutta a sinistra, col dito o coi tasti.
         AnimatedVisibility(
