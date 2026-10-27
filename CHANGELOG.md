@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.261.0
+**Il video chiuso vola nel mini player**
+- Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
+- Lasciato (o col tasto giù) vola fin dentro la miniatura del mini player, in basso a sinistra o in alto se l'hai messo lì, e il mini player lo prende senza saltare fuori
+- Intanto la pagina di prima torna sotto, senza più il video che sparisce a metà schermo
+
 ## 1.259.0
 **Spese: il mese segue il dito**
 - Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
