@@ -5,11 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.platinum20.dashboard.BuildConfig
 import com.platinum20.dashboard.net.userMessage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 sealed interface UpdateStatus {
@@ -46,6 +48,14 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         refreshReleases()
+        // L'esito dell'installazione arriva dopo, da UpdateInstallReceiver.
+        viewModelScope.launch {
+            ApkInstaller.failure.collect { message ->
+                if (message != null && _state.value.status is UpdateStatus.Installing) {
+                    _state.update { it.copy(status = UpdateStatus.Error(message)) }
+                }
+            }
+        }
     }
 
     fun refreshReleases() {
@@ -105,10 +115,12 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(status = UpdateStatus.NeedsPermission(release, apk)) }
             return
         }
-        runCatching { ApkInstaller.install(ctx, apk) }
-            .onSuccess { _state.update { it.copy(status = UpdateStatus.Installing(release)) } }
-            .onFailure {
-                _state.update { it.copy(status = UpdateStatus.Error("Impossibile avviare l'installazione. Riprova tra poco.")) }
-            }
+        viewModelScope.launch {
+            _state.update { it.copy(status = UpdateStatus.Installing(release)) }
+            runCatching { withContext(Dispatchers.IO) { ApkInstaller.install(ctx, apk, release.version, fromUi = true) } }
+                .onFailure {
+                    _state.update { it.copy(status = UpdateStatus.Error("Impossibile avviare l'installazione. Riprova tra poco.")) }
+                }
+        }
     }
 }
