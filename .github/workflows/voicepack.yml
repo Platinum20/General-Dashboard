@@ -1,0 +1,62 @@
+name: Impacchetta voci Piper
+
+# Le voci italiane della community (kirys79/piper_italiano, CC BY 4.0) non esistono già pronte per
+# sherpa-onnx: qui si scaricano, si impacchettano come le ufficiali e si pubblicano nella
+# pre-release "voci" (l'aggiornamento dell'app ignora le pre-release). I campioni .wav e il tono
+# misurato finiscono nel ramo screenshots, sotto voice-samples/.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - ".github/workflows/voicepack.yml"
+      - "scripts/pack_piper_voice.py"
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HF: https://huggingface.co/kirys79/piper_italiano/resolve/main
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dipendenze
+        run: pip install onnx numpy sherpa-onnx==1.12.26
+      - name: Pronuncia di espeak-ng (dalla voce ufficiale di Paola)
+        run: |
+          curl -sSL https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-it_IT-paola-medium.tar.bz2 | tar xj -C "$RUNNER_TEMP"
+      - name: Impacchetta e fai parlare
+        run: |
+          set -e
+          mkdir -p out
+          LIC="Voce Piper italiana di kirys79 (https://huggingface.co/kirys79/piper_italiano), dati Multilingual LibriSpeech. Licenza CC BY 4.0."
+          ESPEAK="$RUNNER_TEMP/vits-piper-it_IT-paola-medium/espeak-ng-data"
+          for v in "Leonardo leonardo-epoch=2024-step=996300 leonardo" "Giorgio giorgio-epoch=5028-step=1098436 giorgio"; do
+            set -- $v
+            dir="vits-piper-it_IT-$3-kirys"
+            curl -sSfL -o "$RUNNER_TEMP/$3.onnx" "$HF/$1/$2.onnx"
+            curl -sSfL -o "$RUNNER_TEMP/$3.json" "$HF/$1/$2.json"
+            python3 scripts/pack_piper_voice.py "$RUNNER_TEMP/$3.onnx" "$RUNNER_TEMP/$3.json" "$ESPEAK" "out/$dir" "it_IT-$3-kirys" "$LIC" | tee -a out/toni.txt
+            tar cjf "out/$dir.tar.bz2" -C out "$dir"
+            ls -la "out/$dir.tar.bz2"
+          done
+      - name: Pubblica nella pre-release voci
+        run: |
+          gh release view voci >/dev/null 2>&1 || gh release create voci --prerelease --title "Voci di lettura" --notes "Voci Piper impacchettate per sherpa-onnx. Non è una versione dell'app."
+          gh release upload voci out/*.tar.bz2 --clobber
+      - name: Campioni nel ramo screenshots
+        run: |
+          DEST="voice-samples/${{ github.run_number }}"
+          mkdir -p "$RUNNER_TEMP/s" && cp out/*.wav out/toni.txt "$RUNNER_TEMP/s/"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git fetch origin screenshots && git checkout -B screenshots origin/screenshots
+          mkdir -p "$DEST" && cp "$RUNNER_TEMP/s/"* "$DEST/"
+          git add "$DEST" && git commit -m "Campioni voci $DEST" >/dev/null
+          for i in 1 2 3; do git push origin screenshots && break; git pull -q --rebase origin screenshots; done

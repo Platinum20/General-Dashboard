@@ -65,7 +65,7 @@ type from text: never ask the user the type), `CaptureSave.kt` (single save path
 
 **News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,
 `NewsHistory` "N nuove"/"Già viste", `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
-(`VoiceStore` Piper voice choice/download, `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
+(`VoiceStore` Piper voice choice/download (Leonardo = community voice repacked by `voicepack.yml` + `scripts/pack_piper_voice.py` into the prerelease `voci`), `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
 the sherpa AAR is downloaded by `app/build.gradle.kts` into ignored `app/libs/`; `net/HeavyDownloads.kt`
 = "solo col Wi-Fi" gate for voices + update APKs; LiveChecks really downloads a voice), `news/reader/` (ArticleExtractor,
 PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallback for 403 sites.

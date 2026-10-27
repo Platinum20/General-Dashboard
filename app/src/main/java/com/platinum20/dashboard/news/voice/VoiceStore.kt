@@ -22,21 +22,31 @@ import java.net.URL
 /**
  * Le voci che leggono notizie e punto del giorno: tre reti neurali Piper sul telefono (offline,
  * gratis), scaricate una volta sola. La voce del telefono resta solo come ripiego finché non c'è.
- * Miro è la voce maschile giovane (tono medio ~120 Hz) di OpenVoiceOS, licenza CC BY-NC-SA.
+ * Leonardo è lo stesso parlante di Riccardo in qualità più alta (kirys79, CC BY 4.0): non esiste
+ * già pronta per sherpa-onnx, la impacchetta voicepack.yml nella pre-release "voci" del repo.
  */
-enum class ReadingVoice(val label: String, val description: String, val archive: String, val sizeMb: Int) {
-    MIRO("Miro", "Maschile, giovane e naturale", "vits-piper-it_IT-miro-high", 65),
+enum class ReadingVoice(
+    val label: String,
+    val description: String,
+    val archive: String,
+    val sizeMb: Int,
+    private val home: String = SHERPA_MODELS,
+) {
+    LEONARDO("Leonardo", "Maschile, naturale", "vits-piper-it_IT-leonardo-kirys", 65, CANVAS_VOICES),
     PAOLA("Paola", "Femminile, la più naturale", "vits-piper-it_IT-paola-medium", 60),
     RICCARDO("Riccardo", "Maschile, più leggera", "vits-piper-it_IT-riccardo-x_low", 30);
 
     /** I modelli Piper già convertiti per sherpa-onnx, con i dati di pronuncia di espeak-ng. */
-    val url: String get() = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/$archive.tar.bz2"
+    val url: String get() = "$home/$archive.tar.bz2"
 
     companion object {
-        val DEFAULT = MIRO
+        val DEFAULT = LEONARDO
         fun of(name: String?): ReadingVoice = entries.firstOrNull { it.name == name } ?: DEFAULT
     }
 }
+
+private const val SHERPA_MODELS = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models"
+private const val CANVAS_VOICES = "https://github.com/Platinum20/General-Dashboard/releases/download/voci"
 
 /** I file che servono a sherpa-onnx per una voce Piper. */
 data class VoiceFiles(val model: File, val tokens: File, val dataDir: File)
@@ -60,6 +70,9 @@ object VoiceStore {
         if (::root.isInitialized) return
         AppSettings.init(context)
         root = File(context.applicationContext.filesDir, "voices")
+        // Le voci tolte dall'elenco (Miro) non restano a occupare spazio.
+        val known = ReadingVoice.entries.map { it.archive }.toSet()
+        root.listFiles()?.filter { it.name !in known && !it.name.endsWith(".part") }?.forEach { it.deleteRecursively() }
         _status.value = ReadingVoice.entries
             .associateWith { if (files(it) != null) VoiceStatus.Ready else VoiceStatus.Missing }
     }

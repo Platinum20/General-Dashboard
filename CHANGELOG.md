@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.214.0
+**Treni, menu sulla linea e Spese**
+- I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
+- Nella pagina del viaggio: titolo pulito, treno, carrozza, posto e PNR; spariscono le note automatiche di Google
+- Tenendo premuto qualcosa sulla linea del tempo (Prossimi giorni, Note, Spese) sale il fumetto di vetro in basso con le azioni: fatto, rimanda a domani, condividi, fissa, elimina
+- Spese: il mese si cambia trascinando il riepilogo di lato, niente più frecce
+- Spese: le categorie tornano una per riga, e l'importo viene per primo, anche nelle spese sulla linea
+
+## 1.213.0
+**Leonardo al posto di Miro**
+- Miro aveva un accento straniero: al suo posto c'è Leonardo, una voce maschile italiana naturale (lo stesso parlante di Riccardo, ma con una qualità molto più alta). È la prima a sinistra e si scarica una volta sola, circa 65 MB
+- Se avevi scaricato Miro, lo spazio che occupava viene liberato
+
 ## 1.212.0
 **Linee del tempo: mesi, spazi giusti e Spese**
 - A ogni cambio di mese c'è un segno con il nome ("NOVEMBRE"), come quello di "Oggi" ma più tenue, in tutte le linee del tempo; passandoci sopra vibra appena
