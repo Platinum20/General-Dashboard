@@ -160,7 +160,9 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - `git push --delete` fails (proxy); merged branches just stay.
 - Use `git fetch origin main && git merge --ff-only origin/main` rather than `git pull`/`reset --hard`.
 - Maven Central gives 429: use repo1.maven.org. NewPipeExtractor must stay current (JitPack,
-  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`).
+  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`). Since 1.272 it is pinned to the same commit the
+  NewPipe app uses (visionOS client, survives the "not a bot" check; v0.26.5 did not): follow NewPipe's
+  `gradle/libs.versions.toml`, never go back to an older tag. Extractor errors → Italian via `YtErrors`.
 - Robolectric: guard GraphicsLayer use with `nativeCanvas.isHardwareAccelerated`; don't wait on
   `Playback.now` across tests (singleton bound to an earlier test's looper).
 - Backlog lives in `BACKLOG.md` on the orphan branch `backlog`.
