@@ -74,7 +74,8 @@ object CalendarRepository {
                 }
             }
         }
-        CalendarDays.group(events, first, days, zone)
+        // I treni di Gmail: un viaggio solo, con partenza e arrivo.
+        CalendarDays.group(Trips.shape(events), first, days, zone)
     }
 
     /** Tutto quello che serve per la scheda di un evento; null se non esiste più. */

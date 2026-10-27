@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -216,11 +217,19 @@ fun EventDetailScreen(
             if (missing) DetailMissing(Icons.Outlined.EventBusy, "Questo evento non c'è più.")
         } else {
             val zone = ZoneId.systemDefault()
-            val from = if (begin > 0) begin else current.begin
-            val to = if (begin > 0 && end > 0) end else current.end
-            DetailTitle(current.title, if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
+            // Un treno si apre dalla partenza o dall'arrivo: si mostra sempre tutto il viaggio.
+            val train = com.platinum20.dashboard.calendar.Trips.destination(current.title) != null
+            val from = if (begin > 0 && !train) begin else current.begin
+            val to = if (begin > 0 && end > 0 && !train) end else current.end
+            val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description) else emptyList()
+            val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
+            DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
             CanvasCard(Modifier.fillMaxWidth()) {
                 DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                ticket.forEach { (label, value) ->
+                    RowDivider()
+                    DetailRow(Icons.Outlined.Train, "$label $value")
+                }
                 if (current.recurring) {
                     RowDivider()
                     DetailRow(Icons.Outlined.Repeat, "Si ripete")
@@ -234,9 +243,10 @@ fun EventDetailScreen(
                     DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
                 }
             }
-            if (current.description.isNotBlank()) {
+            // Con i dati del biglietto già sopra, le note del treno non dicono altro.
+            if (notes.isNotBlank() && ticket.isEmpty()) {
                 Section(title = "Note") {
-                    DetailRow(Icons.AutoMirrored.Outlined.Notes, current.description.trim(), maxLines = Int.MAX_VALUE)
+                    DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
                 }
             }
             if (!current.writable) {
