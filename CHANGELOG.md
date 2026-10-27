@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.266.0
+**Impostazioni con un menu**
+- La pagina è corta: in cima il tema, sotto un menu che apre una pagina per ogni cosa
+- Home, Note, News e Media nell'ordine della barra in basso, poi Notifiche, Account, Dati e Informazioni
+- Ogni riga del menu dice com'è adesso, per esempio quali notifiche sono accese o quali account sono collegati
+- "Riempi la coda in automatico" lascia il fondo della coda e va in Impostazioni › Media, con "Riproduci il video successivo"
+- Le descrizioni stanno tutte su una riga
 ## 1.265.0
 **Pallino della barra del tempo centrato**
 - Il pallino della barra del tempo sta al centro della barra, nei video di YouTube e nel player della musica
