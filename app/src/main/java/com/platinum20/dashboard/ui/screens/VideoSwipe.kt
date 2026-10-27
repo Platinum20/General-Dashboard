@@ -18,3 +18,33 @@ object VideoSwipe {
     fun opensFullscreen(travelledPx: Float, velocityY: Float, thresholdPx: Float): Boolean =
         travelledPx < 0f && (-travelledPx > thresholdPx || velocityY < -1_000f)
 }
+
+/**
+ * Tasti del volume col video a schermo intero: li prende l'Activity, cambia il volume senza
+ * la barra di sistema e avvisa il player, che mostra la sua barra a sinistra.
+ */
+object FullscreenVolume {
+    /** Vero solo mentre un video di YouTube è a schermo intero. */
+    @Volatile
+    var active = false
+
+    private val _changes = kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+    val changes: kotlinx.coroutines.flow.SharedFlow<Unit> = _changes
+
+    /** true = tasto consumato (volume su/giù a schermo intero), false = lo gestisce il sistema. */
+    fun onKey(context: android.content.Context, keyCode: Int): Boolean {
+        if (!active) return false
+        val direction = when (keyCode) {
+            android.view.KeyEvent.KEYCODE_VOLUME_UP -> android.media.AudioManager.ADJUST_RAISE
+            android.view.KeyEvent.KEYCODE_VOLUME_DOWN -> android.media.AudioManager.ADJUST_LOWER
+            else -> return false
+        }
+        val audio = context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager
+        audio.adjustStreamVolume(android.media.AudioManager.STREAM_MUSIC, direction, 0)
+        _changes.tryEmit(Unit)
+        return true
+    }
+
+    fun isVolumeKey(keyCode: Int) =
+        keyCode == android.view.KeyEvent.KEYCODE_VOLUME_UP || keyCode == android.view.KeyEvent.KEYCODE_VOLUME_DOWN
+}

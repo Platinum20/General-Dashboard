@@ -297,7 +297,23 @@ private fun VideoArea(
     var volume by remember { mutableStateOf(0f) }
     var volumeShown by remember { mutableStateOf(false) }
     var volumeDragging by remember { mutableStateOf(false) }
-    LaunchedEffect(volumeShown, volumeDragging) {
+    var volumeKeys by remember { mutableIntStateOf(0) }
+    // A schermo intero i tasti del volume passano da qui: si vede la nostra barra, non quella di sistema.
+    val keysActive = fullscreen && !inPip
+    androidx.compose.runtime.DisposableEffect(keysActive) {
+        FullscreenVolume.active = keysActive
+        onDispose { FullscreenVolume.active = false }
+    }
+    LaunchedEffect(Unit) {
+        FullscreenVolume.changes.collect {
+            val stream = android.media.AudioManager.STREAM_MUSIC
+            val max = audio.getStreamMaxVolume(stream)
+            volume = if (max > 0) audio.getStreamVolume(stream) / max.toFloat() else 0f
+            volumeShown = true
+            volumeKeys++
+        }
+    }
+    LaunchedEffect(volumeShown, volumeDragging, volumeKeys) {
         if (volumeShown && !volumeDragging) {
             delay(800)
             volumeShown = false
@@ -429,30 +445,30 @@ private fun VideoArea(
             }
         }
 
-        // L'indicatore del volume: una piccola pillola in alto al centro mentre si scorre.
+        // L'indicatore del volume: una barra verticale tutta a sinistra, col dito o coi tasti.
         AnimatedVisibility(
             visible = volumeShown && fullscreen && !inPip,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+            modifier = Modifier.align(Alignment.CenterStart).padding(start = 24.dp),
         ) {
-            Row(
+            Column(
                 Modifier
                     .clip(CircleShape)
                     .background(Color.Black.copy(alpha = 0.55f))
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(horizontal = 8.dp, vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Box(Modifier.width(4.dp).height(140.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.25f))) {
+                    Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(volume.coerceIn(0f, 1f)).background(Color.White))
+                }
+                Spacer(Modifier.height(10.dp))
                 Icon(
                     if (volume <= 0f) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = "Volume",
                     tint = Color.White,
                     modifier = Modifier.size(20.dp),
                 )
-                Spacer(Modifier.width(10.dp))
-                Box(Modifier.width(120.dp).height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.25f))) {
-                    Box(Modifier.fillMaxHeight().fillMaxWidth(volume.coerceIn(0f, 1f)).background(Color.White))
-                }
             }
         }
 

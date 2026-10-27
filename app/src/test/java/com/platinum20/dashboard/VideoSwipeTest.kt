@@ -23,4 +23,11 @@ class VideoSwipeTest {
         assertFalse(VideoSwipe.opensFullscreen(-20f, 0f, 100f))
         assertFalse(VideoSwipe.opensFullscreen(150f, 2_000f, 100f))
     }
+
+    @Test
+    fun onlyVolumeKeysAreTaken() {
+        assertTrue(com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(android.view.KeyEvent.KEYCODE_VOLUME_UP))
+        assertTrue(com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(android.view.KeyEvent.KEYCODE_VOLUME_DOWN))
+        assertFalse(com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(android.view.KeyEvent.KEYCODE_BACK))
+    }
 }
