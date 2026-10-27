@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.265.0
+**Pallino della barra del tempo centrato**
+- Il pallino della barra del tempo sta al centro della barra, nei video di YouTube e nel player della musica
+
 ## 1.264.0
 **YouTube: tutti i video di un canale**
 - Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
