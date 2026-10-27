@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import android.Manifest
 import android.content.Context
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.HomeCard
@@ -133,7 +133,7 @@ fun rememberAgenda(refreshKey: Int = 0): AgendaState {
 /** Niente più inviti per il calendario: si può sempre consentire da Info app. */
 internal fun hideAgenda(context: Context) {
     CalendarAsk.setOff(context)
-    Toast.makeText(context, "Ok, niente calendario: lo puoi consentire in Info app › Autorizzazioni", Toast.LENGTH_LONG).show()
+    CaptureFeedback.tell(context, "Ok, niente calendario: lo puoi consentire da Info app", actionLabel = "Info app", action = { openAppInfo(context) })
 }
 
 /** Scadenza di un promemoria, in rosso se già passata. */

@@ -1,12 +1,18 @@
 # Changelog
 
-## 1.214.0
+## 1.216.0
 **Treni, menu sulla linea e Spese**
 - I treni che Google Calendar prende da Gmail non sono più doppi: un viaggio solo, con "Partenza treno per…" all'ora di partenza e "Arrivo treno a…" all'ora di arrivo
 - Nella pagina del viaggio: titolo pulito, treno, carrozza, posto e PNR; spariscono le note automatiche di Google
 - Tenendo premuto qualcosa sulla linea del tempo (Prossimi giorni, Note, Spese) sale il fumetto di vetro in basso con le azioni: fatto, rimanda a domani, condividi, fissa, elimina
 - Spese: il mese si cambia trascinando il riepilogo di lato, niente più frecce
 - Spese: le categorie tornano una per riga, e l'importo viene per primo, anche nelle spese sulla linea
+## 1.215.0
+**Avvisi e menu tutti nel fumetto di vetro**
+- Gli avvisi che erano rimasti grigi di sistema ora salgono nel fumetto di vetro in basso, chiudibile di lato: errori di Spotify, "In coda", backup, dettatura, avvisi dei video
+- Eliminare un evento del calendario chiede conferma nel fumetto, non più in una finestra al centro
+- Nel nuovo evento, la scelta del calendario sale nel fumetto invece del menu a tendina
+- Se il permesso del calendario è negato, il tasto "Info app" è dentro il fumetto
 
 ## 1.213.0
 **Leonardo al posto di Miro**
