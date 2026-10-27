@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.271.0
+**Niente più tasti nella barra del titolo**
+- Il punto del giorno: "Ascolta" è la prima card della pagina, grande, invece dell'icona in alto
+- Meteo: via "Località" e il tasto per aggiornare; la località si sceglie in Impostazioni › Home e la pagina si aggiorna da sola o tirando giù
+- Aggiornamenti: via l'icona per ricaricare, basta "Controlla e aggiorna" in basso
+- Card della Home (prima "Personalizza Oggi"): "Ripristina l'ordine iniziale" sta in fondo alla lista
 ## 1.270.0
 **Volume col dito meno sensibile**
 - A schermo intero il volume cambia solo dopo un tratto deciso in verticale, non al primo movimento
