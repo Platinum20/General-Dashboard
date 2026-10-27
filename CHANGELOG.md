@@ -5,6 +5,7 @@
 - Quando non ci sono spese c'è scritto solo "Nessuna spesa", al centro dello spazio vuoto sotto
 - Aprendo Spese il riepilogo fa un piccolo giro a sinistra e a destra, per ricordarti che lo trascini di lato per cambiare mese; il mese nuovo entra dal lato giusto
 - In tutte le linee del tempo, quando arrivi su OGGI la scritta pulsa e appare una freccetta, oltre alla vibrazione
+
 ## 1.244.0
 **Video senza il riquadro "In pausa"**
 - In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
