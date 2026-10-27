@@ -540,7 +540,8 @@ private fun VideoArea(
     ) {
         AndroidView(
             factory = { ctx ->
-                PlayerView(ctx).apply {
+                // Su TextureView: così il video si rimpicciolisce davvero mentre vola nel mini player.
+                (android.view.LayoutInflater.from(ctx).inflate(com.platinum20.dashboard.R.layout.video_texture_player, null) as PlayerView).apply {
                     this.player = player
                     useController = false
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
