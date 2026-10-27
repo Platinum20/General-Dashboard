@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -72,133 +73,53 @@ import java.time.ZonedDateTime
 internal val podcastIdeas = listOf("Il Post", "Muschio Selvaggio", "Geopop", "Tintoria", "Storia")
 
 /**
- * La parte Podcast di "Radio e podcast": quelli seguiti qui e quelli salvati su Spotify insieme,
- * con gli ultimi episodi, la ricerca e la pagina di ogni podcast ([open], gestita da chi la contiene).
+ * La parte podcast della pagina unica "Radio e podcast": quelli seguiti qui e quelli salvati su
+ * Spotify insieme, poi gli ultimi episodi. Senza podcast seguiti, qualche idea da cui partire.
  */
-@Composable
-internal fun PodcastBody(open: Podcast?, onOpen: (Podcast?) -> Unit) {
-    val context = LocalContext.current
-    PodcastStore.init(context)
-    val search by PodcastStore.search.collectAsState()
-    val followedHere by PodcastStore.followed.collectAsState()
-    val spotify by PodcastStore.spotify.collectAsState()
-    val followed = remember(followedHere, spotify) { PodcastStore.merge(followedHere, spotify) }
-    val latest by PodcastStore.latest.collectAsState()
-    val now by PodcastStore.now.collectAsState()
-    var query by rememberSaveable { mutableStateOf("") }
-    var searching by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-
-    val runSearch: (String) -> Unit = { text ->
-        query = text
-        searching = true
-        PodcastStore.search(text)
-    }
-
-    Column(Modifier.fillMaxSize()) {
-        if (open != null) {
-            PodcastPage(open, now)
-            return@Column
-        }
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
-                query = it
-                if (it.isBlank()) {
-                    searching = false
-                    PodcastStore.clearSearch()
-                }
-            },
-            placeholder = { Text("Cerca un podcast") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            trailingIcon = if (query.isNotEmpty()) {
-                {
-                    IconButton(onClick = {
-                        query = ""
-                        searching = false
-                        PodcastStore.clearSearch()
-                    }) { Icon(Icons.Outlined.Close, contentDescription = "Cancella") }
-                }
-            } else null,
-            singleLine = true,
-            colors = canvasFieldColors(),
-            shape = MaterialTheme.shapes.large,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = { runSearch(query) }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        if (searching) {
-            FeedList(search, empty = "Nessun podcast trovato") {
-                items(search.data.orEmpty(), key = { "search-${it.feedUrl}" }) { result ->
-                    PodcastRow(result, onOpen = { onOpen(result) })
-                }
-            }
-        } else {
-            HomeList(
-                followed = followed,
-                latest = latest,
-                now = now,
-                onOpen = { onOpen(it) },
-                onIdea = runSearch,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomeList(
+internal fun LazyListScope.podcastSections(
     followed: List<Podcast>,
     latest: Loadable<List<Episode>>,
     now: PodcastNow?,
-    onOpen: (Podcast) -> Unit,
+    positions: Map<String, Long>,
+    ideas: Loadable<List<Podcast>>?,
     onIdea: (String) -> Unit,
+    onOpen: (Podcast) -> Unit,
 ) {
-    val positions by PodcastStore.positions.collectAsState()
     if (followed.isEmpty()) {
         // Primo uso: niente pagina vuota, ma da dove cominciare.
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CanvasCard(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconTile(Icons.Outlined.Mic, TileAccent.PURPLE)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Segui i tuoi podcast", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Qui arrivano i nuovi episodi, e ognuno riparte dal punto in cui eri.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+        item(key = "podcast-start") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionHeader("Podcast per iniziare", Modifier.padding(top = 8.dp))
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    podcastIdeas.forEach { idea -> CanvasChip(selected = false, onClick = { onIdea(idea) }, label = idea) }
                 }
             }
-            SectionHeader("Per iniziare")
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                podcastIdeas.forEach { idea -> CanvasChip(selected = false, onClick = { onIdea(idea) }, label = idea) }
-            }
         }
+        items(ideas?.data.orEmpty(), key = { "idea-${it.feedUrl}" }) { result -> PodcastRow(result, onOpen = { onOpen(result) }) }
         return
     }
-    FeedList(latest, empty = "Nessun episodio nei podcast che segui") {
-        item(key = "followed") {
-            Column {
-                SectionHeader("I tuoi podcast")
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    followed.forEach { podcast -> FollowedTile(podcast, onClick = { onOpen(podcast) }) }
-                }
+    item(key = "followed") {
+        Column {
+            SectionHeader("I tuoi podcast", Modifier.padding(top = 8.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                followed.forEach { podcast -> FollowedTile(podcast, onClick = { onOpen(podcast) }) }
             }
         }
-        item(key = "latest-header") { SectionHeader("Ultimi episodi") }
-        items(latest.data.orEmpty(), key = { "latest-${it.id}" }) { episode ->
+    }
+    val episodes = latest.data.orEmpty()
+    if (episodes.isNotEmpty()) {
+        item(key = "latest-header") { SectionHeader("Ultimi episodi", Modifier.padding(top = 8.dp)) }
+        items(episodes.take(LATEST_SHOWN), key = { "latest-${it.id}" }) { episode ->
             EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = true)
         }
     }
 }
 
+/** Gli ultimi episodi nella pagina unica: abbastanza per scegliere, senza seppellire le radio. */
+private const val LATEST_SHOWN = 8
+
 @Composable
-private fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
+internal fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
     val all by PodcastStore.episodes.collectAsState()
     val followed by PodcastStore.followed.collectAsState()
     val positions by PodcastStore.positions.collectAsState()

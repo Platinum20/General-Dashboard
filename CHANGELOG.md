@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.229.0
+**Radio e podcast in una pagina sola**
+- Niente più pillole Radio e Podcast: scorri e trovi radio preferite e recenti, i tuoi podcast con gli ultimi episodi, le radio più ascoltate in Italia
+- Niente più campi di ricerca: trascini giù e cerchi già tra radio e podcast
+
 ## 1.228.0
 **Video più semplice**
 - Restano tre schede: Home, Iscrizioni e Cronologia
