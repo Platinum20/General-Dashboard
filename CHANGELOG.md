@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.256.0
+**YouTube: le anteprime non danno più errore**
+- Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
+- «Avvisami»: una notifica ti avvisa quando comincia, e toccandola si apre il video
+- Passato l'orario il video riprova da solo e parte appena YouTube lo avvia; dopo si guarda come un video normale
+- Nei feed le anteprime mostrano «ANTEPRIMA · 20:00» (o DOMANI, o la data) sulla copertina
+
 ## 1.254.0
 **Video a schermo intero: pinch per riempire lo schermo**
 - Come su YouTube: a schermo intero allarghi due dita e il video riempie tutto lo schermo, senza bande nere (taglia un po' i bordi); stringi e torna intero
