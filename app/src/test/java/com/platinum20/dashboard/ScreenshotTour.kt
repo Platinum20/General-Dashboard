@@ -148,7 +148,7 @@ class ScreenshotTour {
             settle(2_000); shot(p + "30_media")
             visit("Musica", p + "31_musica")
             visit("Video", p + "32_video")
-            visit("Radio e podcast", p + "33_radio_podcast", waitMs = 6_000)
+            visit("Radio", p + "33_radio_podcast", waitMs = 6_000)
         } else missing += p + "30_media"
 
         // Le Impostazioni si aprono tenendo premuta una sezione della barra (qui l'azione del titolo).
