@@ -55,12 +55,14 @@ object SpotifyPlayer : ExternalBackend {
     /** Dopo un salto nel brano le letture vecchie (arrivate prima del salto) si ignorano. */
     private var seekTarget = 0L
     private var seekUntil = 0L
+    /** L'uri con cui Spotify chiama il nostro brano, se diverso (letto dal server). */
+    private var alias: String? = null
 
     /**
      * Una lettura della pagina. [linked] è l'uri chiesto quando Spotify suona un'altra copia dello
      * stesso brano (relinking: stesso brano su un altro album o in un altro paese).
      */
-    internal data class Reading(val uri: String, val paused: Boolean, val positionMs: Long, val durationMs: Long, val at: Long, val linked: String = "") {
+    internal data class Reading(val uri: String, val paused: Boolean, val positionMs: Long, val durationMs: Long, val at: Long, val linked: String = "", val server: Boolean = false) {
         fun isFor(target: String) = uri == target || linked == target
     }
 
@@ -165,6 +167,7 @@ object SpotifyPlayer : ExternalBackend {
         last = null
         askedAt = System.currentTimeMillis()
         seekUntil = 0
+        alias = null
         _state.value = ExternalState(playing = false, loading = true, positionMs = startMs, durationMs = item.durationMs)
         start(context)
         playJob?.cancel()
@@ -176,7 +179,29 @@ object SpotifyPlayer : ExternalBackend {
                 restart(context)
                 result = runCatching { send(item.key, startMs) }
             }
-            result.exceptionOrNull()?.let { fail(spotifyMessage(it)) }
+            result.exceptionOrNull()?.let { fail(spotifyMessage(it)); return@launch }
+            watch(item.key)
+        }
+    }
+
+    /**
+     * Se la pagina tace (o parla di un brano con un altro uri) si chiede a Spotify cosa suona sul
+     * nostro riproduttore: così la barra, il tempo e play/pausa sono giusti anche quando gli eventi
+     * dell'SDK non arrivano (prima restava la rotella e il play faceva ripartire il brano da capo).
+     */
+    private suspend fun watch(uri: String) {
+        while (target == uri) {
+            // In pausa basta ogni tanto.
+            delay(if (last?.paused == true) WATCH_MS * 4 else WATCH_MS)
+            if (target != uri) return
+            val fresh = last?.let { System.currentTimeMillis() - it.at < WATCH_MS } ?: false
+            if (fresh) continue
+            val token = SpotifyAuth.token() ?: continue
+            val playback = runCatching { SpotifyApi.playback(token) }.getOrNull() ?: continue
+            if (target != uri || playback.device != DEVICE_NAME) continue
+            // Sul nostro riproduttore c'è il nostro brano (magari con un altro uri): da qui in poi vale anche quello.
+            playback.item?.uri?.takeIf { it != uri }?.let { alias = it }
+            onReading(Reading(uri, !playback.playing, playback.progressMs, playback.durationMs, System.currentTimeMillis(), server = true))
         }
     }
 
@@ -198,14 +223,22 @@ object SpotifyPlayer : ExternalBackend {
         if (last == null && target != null) pauseOnStart = true
         _state.value = _state.value?.copy(playing = false)
         js("cp.pause()")
+        // La pagina non risponde: il comando passa da Spotify.
+        if (last?.server == true) command { SpotifyApi.pause(it) }
+    }
+
+    private fun command(block: suspend (String) -> Unit) {
+        scope.launch { SpotifyAuth.token()?.let { runCatching { block(it) } } }
     }
 
     override fun resume() {
         val s = _state.value
         val now = System.currentTimeMillis()
-        // Sta già partendo: un altro play lo farebbe ricominciare da capo, basta togliere la pausa chiesta.
-        if (target != null && s?.error == null && last == null && now - askedAt < LOAD_PATIENCE_MS) {
+        // Sta ancora partendo: un altro play lo farebbe ricominciare da capo (era il "riparte sempre
+        // dall'inizio"), basta togliere la pausa chiesta; se tarda si chiede a Spotify di suonare.
+        if (target != null && s?.error == null && last == null) {
             pauseOnStart = false
+            if (now - askedAt > LOAD_PATIENCE_MS) command { SpotifyApi.resume(it) }
             return
         }
         val context = appContext ?: return
@@ -222,6 +255,12 @@ object SpotifyPlayer : ExternalBackend {
             return
         }
         js("cp.resume()")
+        if (last?.server == true) {
+            // Lo stato arriva dal server, non subito: niente controllo che rimanderebbe il brano.
+            command { SpotifyApi.resume(it) }
+            _state.value = _state.value?.copy(playing = true)
+            return
+        }
         // Se dopo un po' non suona ancora, il riproduttore non l'ha preso: si rimanda il brano.
         val uri = target
         resumeCheck?.cancel()
@@ -240,6 +279,7 @@ object SpotifyPlayer : ExternalBackend {
     override fun seekTo(positionMs: Long) {
         val to = positionMs.coerceAtLeast(0)
         js("cp.seek($to)")
+        if (last?.server == true) command { SpotifyApi.seek(it, to) }
         seekTarget = to
         seekUntil = System.currentTimeMillis() + 2_000
         _state.value = _state.value?.copy(positionMs = to)
@@ -259,7 +299,7 @@ object SpotifyPlayer : ExternalBackend {
     private fun onReading(reading: Reading) {
         val uri = target ?: return
         val before = last
-        if (!reading.isFor(uri)) {
+        if (!reading.isFor(uri) && (alias == null || reading.uri != alias)) {
             // A fine brano Spotify può passare da solo a un altro (la sua riproduzione automatica):
             // per noi è finito, si ferma il suo e parte la voce dopo della nostra coda.
             if (movedOn(before, reading)) {
@@ -309,6 +349,10 @@ object SpotifyPlayer : ExternalBackend {
     /** Quanto si aspetta che Spotify faccia partire il brano prima di richiederlo. */
     private const val LOAD_PATIENCE_MS = 8_000L
     private const val RESUME_CHECK_MS = 3_000L
+    /** Ogni quanto, se la pagina tace, si chiede a Spotify lo stato. */
+    private const val WATCH_MS = 2_500L
+    /** Il nome del nostro riproduttore tra i dispositivi di Spotify (lo stesso della pagina). */
+    private const val DEVICE_NAME = "Canvas"
 
     internal fun endedForTest(beforePos: Long, beforePaused: Boolean, nowPos: Long, nowPaused: Boolean, duration: Long, gapMs: Long): Boolean =
         ended(Reading("u", beforePaused, beforePos, duration, 0), Reading("u", nowPaused, nowPos, duration, gapMs))

@@ -1,10 +1,16 @@
 # Changelog
 
-## 1.262.0
+## 1.264.0
 **YouTube: tutti i video di un canale**
 - Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
 - Anche da Video › Canali ora vedi tutti i video del canale, non solo gli ultimi 15, dal più recente al più vecchio
 - Scorrendo in fondo arrivano da soli i video più vecchi, fino al primo
+
+## 1.262.0
+**Spotify: niente più rotella infinita**
+- Se il riproduttore di Spotify non manda il suo stato, l'app lo chiede direttamente a Spotify: tempo, durata e play/pausa tornano giusti in un paio di secondi
+- Il tasto play mentre un brano sta partendo non lo fa più ricominciare da capo
+- Pausa, play e salti nel brano funzionano anche in quel caso
 
 ## 1.261.0
 **Il video chiuso vola nel mini player**
