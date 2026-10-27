@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.268.0
+**Il video ora si rimpicciolisce davvero verso il mini player**
+- Chiudendo il video lui diventa piccolo e vola sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai messo lì), invece di scendere soltanto
+
 ## 1.265.0
 **Pallino della barra del tempo centrato**
 - Il pallino della barra del tempo sta al centro della barra, nei video di YouTube e nel player della musica
