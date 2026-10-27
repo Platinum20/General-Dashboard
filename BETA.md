@@ -3,7 +3,7 @@
 Stato del beta tester automatico ("Canvas: beta tester", ogni 4 ore). La prima riga dice l'ultima
 versione già provata: se l'ultima release GitHub è questa, il giro si ferma subito.
 
-**Ultima versione testata: 1.273.0**
+**Ultima versione testata: 1.273.0** (più la correzione 1.280.0; 1.274-1.279 da provare)
 
 ## 2026-10-27 · da 1.261.0 a 1.273.0
 
@@ -16,10 +16,12 @@ versione già provata: se l'ultima release GitHub è questa, il giro si ferma su
 - Foto controllate: Note, Il punto del giorno ("Ascolta" in cima), Meteo, Impostazioni e sottopagine
   (Media, Notifiche, Account), Aggiornamenti. Testi su una riga, nessuna schermata vuota.
 
+### Corretto
+
+- **Aggiornamenti (1.271)**: il mini player in basso copriva l'unico tasto "Controlla e aggiorna".
+  Ora la barra lascia lo spazio del mini player (MiniDock.bottomReserveDp). Rilasciato in 1.280.0 (#226).
+- Giri fotografici di nuovo verdi (#223).
+
 ### Problemi aperti
 
-- **Aggiornamenti (1.271)**: tolta l'icona in alto, l'unico tasto "Controlla e aggiorna" sta in fondo
-  ed è coperto dal mini player quando qualcosa suona (foto 41_aggiornamenti). Correzione pronta
-  (spazio del mini player sotto la barra, ~76 dp se il mini player è in basso) ma non applicata:
-  UpdatesScreen.kt era in mano al branch claude/project-thread-3kv4wu (aggiornamento automatico).
-  Da fare al prossimo giro se quel branch è chiuso.
+- Nessuno. Le versioni 1.274-1.279 uscite durante questo giro restano da provare al prossimo.
