@@ -27,7 +27,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,6 +120,12 @@ import com.platinum20.dashboard.media.youtube.player.YtNow
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.media.youtube.player.YtStream
+import com.platinum20.dashboard.media.youtube.player.YtText
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.withLink
 import kotlinx.coroutines.delay
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.ui.geometry.Offset
@@ -149,7 +159,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
     }
     val feed by YouTubeStore.subscriptions.collectAsState()
     var fullscreen by rememberSaveable { mutableStateOf(false) }
-    var showComments by rememberSaveable { mutableStateOf(false) }
+    var panel by rememberSaveable { mutableStateOf<WatchPanel?>(null) }
 
     LaunchedEffect(url) { url?.let { YtPlayer.play(context, it) } }
 
@@ -162,7 +172,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
     LaunchedEffect(upNext.map { it.id }, currentId) {
         YtPlayer.queue = listOfNotNull(currentId?.let { "https://www.youtube.com/watch?v=$it" }) + upNext.map { it.watchUrl }
     }
-    val thread = now?.stream?.id?.takeIf { showComments }?.let { commentsFor(it) }
+    val thread = now?.stream?.id?.takeIf { panel == WatchPanel.COMMENTS }?.let { commentsFor(it) }
     val scope = rememberCoroutineScope()
 
     val inPip = rememberPictureInPicture(enabled = now?.playing == true)
@@ -258,9 +268,9 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
 
             val listState = androidx.compose.foundation.lazy.rememberLazyListState()
             val stream0 = now?.stream
-            // Toccato "Commenti": la lista scorre fino a loro.
-            LaunchedEffect(showComments) {
-                if (showComments && stream0 != null) {
+            // Toccato "Commenti" o "Correlati": la lista scorre fino a loro.
+            LaunchedEffect(panel) {
+                if (panel != null && stream0 != null) {
                     val index = 1 + (if (stream0.description.isNotBlank()) 1 else 0) + (if (stream0.chapters.size > 1) 1 else 0)
                     listState.animateScrollToItem(index)
                 }
@@ -272,12 +282,11 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
                 modifier = Modifier.fillMaxSize().graphicsLayer { alpha = pageFade() },
             ) {
                 val stream = now?.stream
-                item(key = "title") { TitleBlock(now, stream, showComments, onToggleComments = { showComments = !showComments }) }
+                item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }) }
                 if (stream != null) {
                     if (stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
-                    if (showComments) {
-                        item(key = "comments-h") { SectionHeader("Commenti") }
+                    if (panel == WatchPanel.COMMENTS) {
                         when {
                             thread == null || !thread.loaded -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
                             thread.failed && thread.comments.isEmpty() -> item(key = "comments-f") {
@@ -291,7 +300,10 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
                                 }
                             }
                             thread.comments.isEmpty() -> item(key = "comments-e") {
-                                Text("Nessun commento (o commenti disattivati)", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    if (thread.disabled) "Commenti disattivati" else "Nessun commento",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             else -> {
                                 items(thread.comments.size, key = { "c$it" }) { CommentRow(stream.id, thread.comments[it]) }
@@ -302,9 +314,14 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
                         }
                     }
                 }
-                if (upNext.isNotEmpty()) {
-                    item(key = "next-h") { SectionHeader(if (related.isNotEmpty()) "Video correlati" else "Prossimi dai canali che segui") }
-                    items(upNext, key = { it.id }) { video -> VideoRow(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
+                // I correlati non stanno sempre sotto: si aprono dal tasto "Correlati".
+                if (panel == WatchPanel.RELATED) {
+                    if (upNext.isEmpty()) {
+                        item(key = "next-e") { Text("Nessun video correlato", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    } else {
+                        if (related.isEmpty()) item(key = "next-h") { SectionHeader("Prossimi dai canali che segui") }
+                        items(upNext, key = { it.id }) { video -> VideoRow(video, onClick = { YtPlayer.play(context, video.watchUrl) }) }
+                    }
                 }
             }
         }
@@ -344,6 +361,10 @@ private fun VideoArea(
     var volumeShown by remember { mutableStateOf(false) }
     var volumeDragging by remember { mutableStateOf(false) }
     var volumeKeys by remember { mutableIntStateOf(0) }
+    // Pinch a schermo intero: true = il video riempie lo schermo (niente bande), con un avviso breve.
+    var fill by rememberSaveable { mutableStateOf(false) }
+    var fillHint by remember { mutableIntStateOf(0) }
+    val zoomed = fill && fullscreen && !inPip
     // A schermo intero i tasti del volume passano da qui: si vede la nostra barra, non quella di sistema.
     val keysActive = fullscreen && !inPip
     androidx.compose.runtime.DisposableEffect(keysActive) {
@@ -373,6 +394,12 @@ private fun VideoArea(
             controls = false
         }
     }
+    LaunchedEffect(fillHint) {
+        if (fillHint > 0) {
+            delay(1_200)
+            fillHint = 0
+        }
+    }
     LaunchedEffect(flashKey) {
         if (seekFlash != 0) {
             delay(600)
@@ -394,6 +421,31 @@ private fun VideoArea(
                         flashKey++
                     },
                 )
+            }
+            .pointerInput(fullscreen, inPip) {
+                if (!fullscreen || inPip) return@pointerInput
+                // Due dita a schermo intero: pinch per riempire o adattare. Visto per primo e consumato,
+                // così il trascinamento del volume si ferma e non cambia nulla mentre si pizzica.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    var zoom = 1f
+                    var decided = false
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val fingers = event.changes.count { it.pressed }
+                        if (fingers >= 2) {
+                            zoom *= event.calculateZoom()
+                            if (!decided) {
+                                VideoSwipe.pinchFill(zoom, fill)?.let {
+                                    fill = it
+                                    fillHint++
+                                    decided = true
+                                }
+                            }
+                            event.changes.forEach { it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
             }
             .pointerInput(fullscreen, inPip) {
                 if (!fullscreen || inPip) return@pointerInput
@@ -459,7 +511,10 @@ private fun VideoArea(
                 }
             },
             // Se il player è stato ricreato (dopo una chiusura) lo schermo passa a quello nuovo.
-            update = { view -> YtPlayer.current()?.let { if (view.player !== it) view.player = it } },
+            update = { view ->
+                YtPlayer.current()?.let { if (view.player !== it) view.player = it }
+                view.resizeMode = if (zoomed) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
+            },
             onRelease = { it.player = null },
             modifier = Modifier.fillMaxSize(),
         )
@@ -493,6 +548,24 @@ private fun VideoArea(
 
         // SponsorBlock: il tasto per saltare il segmento (o andare al momento clou), anche a comandi nascosti.
         if (!inPip && error == null) SponsorSkipButton(Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 64.dp))
+
+        // L'avviso del pinch, in alto al centro: per un attimo dice cosa è cambiato.
+        AnimatedVisibility(
+            visible = fillHint > 0 && fullscreen && !inPip,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 28.dp),
+        ) {
+            Text(
+                if (fill) "Riempi lo schermo" else "Adatta",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
 
         // L'indicatore del volume: una barra verticale tutta a sinistra, col dito o coi tasti.
         AnimatedVisibility(
@@ -695,8 +768,11 @@ private fun TimeBar(
     }
 }
 
+/** Cosa si apre sotto al video: i commenti o i correlati (mai tutti e due in automatico). */
+private enum class WatchPanel { COMMENTS, RELATED }
+
 @Composable
-private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, onToggleComments: () -> Unit) {
+private fun TitleBlock(now: YtNow?, stream: YtStream?, panel: WatchPanel?, onPanel: (WatchPanel) -> Unit) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
@@ -721,10 +797,12 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
         Text(
             listOfNotNull(
                 stream.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
-                stream.uploaded.takeIf { it.isNotBlank() },
+                stream.uploaded.takeIf { it.isNotBlank() }?.let { YtText.age(it, System.currentTimeMillis()) },
             ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         // SponsorBlock: tutto il video è promozione (es. prodotto avuto dal marchio).
         if (label != null) {
@@ -737,32 +815,32 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
                 Text(label.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
             }
         }
-        if (stream.channel.isNotBlank()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                ChannelAvatar(stream.channelAvatar, stream.channel, 40)
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(stream.channel, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    stream.subscribers.takeIf { it >= 0 }?.let {
-                        Text(
-                            "${compactCount(it)} iscritti",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-        // Mi piace, commenti e condividi: tastini tondi uno accanto all'altro, tutti da toccare.
         YtFavorites.init(context)
         val favorites by YtFavorites.items.collectAsState()
         val liked = favorites.any { it.id == stream.id }
         val haptic = rememberHaptic()
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Canale a sinistra, Mi piace e Non mi piace a destra sulla stessa riga.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (stream.channel.isNotBlank()) {
+                ChannelAvatar(stream.channelAvatar, stream.channel, 40)
+                Spacer(Modifier.width(12.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(stream.channel, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                stream.subscribers.takeIf { it >= 0 }?.let {
+                    Text(
+                        "${compactCount(it)} iscritti",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+            Spacer(Modifier.width(8.dp))
             PillButton(
                 icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
                 // Se YouTube nasconde i Mi piace si usa la stima di Return YouTube Dislike.
-                label = ((stream.likes.takeIf { it > 0 } ?: votes?.likes?.takeIf { it > 0 })?.let { compactCount(it) } ?: "Mi piace"),
+                label = (stream.likes.takeIf { it > 0 } ?: votes?.likes?.takeIf { it > 0 })?.let { compactCount(it) },
                 selected = liked,
                 description = if (liked) "Togli Mi piace" else "Mi piace",
             ) {
@@ -773,6 +851,7 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
                 )
             }
             votes?.takeIf { it.dislikes >= 0 }?.let { v ->
+                Spacer(Modifier.width(6.dp))
                 PillButton(
                     icon = Icons.Outlined.ThumbDown,
                     label = compactCount(v.dislikes),
@@ -783,14 +862,27 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
                     CaptureFeedback.tell(context, "Stima di Return YouTube Dislike$rating", Icons.Outlined.ThumbDown)
                 }
             }
+        }
+        // Sotto, a parte: tre tasti larghi uguali; commenti e correlati si aprono solo da qui.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val wide = Modifier.weight(1f)
             PillButton(
                 icon = Icons.AutoMirrored.Outlined.Comment,
                 label = "Commenti",
-                selected = showComments,
-                description = if (showComments) "Nascondi i commenti" else "Mostra i commenti",
-                onClick = onToggleComments,
+                selected = panel == WatchPanel.COMMENTS,
+                description = if (panel == WatchPanel.COMMENTS) "Nascondi i commenti" else "Mostra i commenti",
+                modifier = wide,
+                onClick = { onPanel(WatchPanel.COMMENTS) },
             )
-            PillButton(icon = Icons.Outlined.Share, label = "Condividi", selected = false, description = "Condividi il video") {
+            PillButton(
+                icon = Icons.Outlined.VideoLibrary,
+                label = "Correlati",
+                selected = panel == WatchPanel.RELATED,
+                description = if (panel == WatchPanel.RELATED) "Nascondi i video correlati" else "Mostra i video correlati",
+                modifier = wide,
+                onClick = { onPanel(WatchPanel.RELATED) },
+            )
+            PillButton(icon = Icons.Outlined.Share, label = "Condividi", selected = false, description = "Condividi il video", modifier = wide) {
                 val send = android.content.Intent(android.content.Intent.ACTION_SEND)
                     .setType("text/plain")
                     .putExtra(android.content.Intent.EXTRA_SUBJECT, stream.title)
@@ -801,21 +893,32 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
     }
 }
 
+/** Tastino tondo: sempre su una riga sola; senza [label] resta solo l'icona. */
 @Composable
-private fun PillButton(icon: ImageVector, label: String, selected: Boolean, description: String, onClick: () -> Unit) {
+private fun PillButton(
+    icon: ImageVector,
+    label: String?,
+    selected: Boolean,
+    description: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
     Row(
-        Modifier
+        modifier
             .clip(CircleShape)
             .background(if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.card)
             .bouncyPress()
             .clickable(onClickLabel = description, onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color)
+        Icon(icon, contentDescription = if (label == null) description else null, tint = color, modifier = Modifier.size(18.dp))
+        if (label != null) {
+            Spacer(Modifier.width(6.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -905,21 +1008,60 @@ private fun VideoMenus(stream: YtStream, now: YtNow?, page: VideoMenu, onPage: (
 private fun speedLabel(speed: Float): String =
     if (speed == 1f) "normale" else (if (speed % 1f == 0f) "${speed.toInt()}" else speed.toString().replace('.', ',')) + "×"
 
-/** Descrizione in una card: tre righe, tocca per leggerla tutta. */
+/**
+ * Descrizione senza riquadro: due righe, tocca per leggerla tutta. I link sono veri: un video di
+ * YouTube parte qui, gli altri si copiano (niente browser esterno).
+ */
 @Composable
 private fun Description(stream: YtStream) {
+    val context = LocalContext.current
     var expanded by rememberSaveable(stream.id) { mutableStateOf(false) }
-    CanvasCard(Modifier.fillMaxWidth(), onClick = { expanded = !expanded }) {
-        Column(Modifier.padding(14.dp)) {
-            Text(
-                stream.description,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!expanded) {
-                Text("altro", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    val linkColor = MaterialTheme.colorScheme.primary
+    val text = remember(stream.description, linkColor) {
+        val raw = stream.description
+        androidx.compose.ui.text.buildAnnotatedString {
+            var at = 0
+            for (range in YtText.links(raw)) {
+                append(raw.substring(at, range.first))
+                val link = raw.substring(range)
+                val url = if (link.startsWith("http")) link else "https://$link"
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = url,
+                        styles = TextLinkStyles(SpanStyle(color = linkColor)),
+                        linkInteractionListener = {
+                            if (YtResolver.videoId(url) != null) {
+                                YtPlayer.play(context, url)
+                            } else {
+                                val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+                                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Link", url))
+                                CaptureFeedback.tell(context, "Link copiato")
+                            }
+                        },
+                    )
+                ) { append(link) }
+                at = range.last + 1
             }
+            append(raw.substring(at))
+        }
+    }
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null,
+                onClickLabel = if (expanded) "Riduci la descrizione" else "Leggi tutta la descrizione",
+            ) { expanded = !expanded },
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = if (expanded) Int.MAX_VALUE else 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (!expanded) {
+            Text("altro", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -958,6 +1100,8 @@ private class CommentThread {
     var loaded by mutableStateOf(false)
     /** L'ultima richiesta non è andata (rete): un errore non deve sembrare "nessun commento". */
     var failed by mutableStateOf(false)
+    /** I commenti li ha spenti l'autore. */
+    var disabled by mutableStateOf(false)
 
     suspend fun load(videoId: String, page: Page?) {
         if (loading) return
@@ -966,6 +1110,7 @@ private class CommentThread {
             .onSuccess {
                 comments.addAll(it.comments)
                 next = it.next
+                disabled = it.disabled
                 failed = false
             }
             .onFailure { failed = true }

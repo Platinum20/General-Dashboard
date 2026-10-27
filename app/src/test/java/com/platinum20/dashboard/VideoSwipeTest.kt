@@ -30,4 +30,13 @@ class VideoSwipeTest {
         assertTrue(com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(android.view.KeyEvent.KEYCODE_VOLUME_DOWN))
         assertFalse(com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(android.view.KeyEvent.KEYCODE_BACK))
     }
+
+    @Test
+    fun pinchFillsAndFits() {
+        assertEquals(true, VideoSwipe.pinchFill(1.3f, filled = false))
+        assertEquals(null, VideoSwipe.pinchFill(1.05f, filled = false))
+        assertEquals(null, VideoSwipe.pinchFill(1.3f, filled = true))
+        assertEquals(false, VideoSwipe.pinchFill(0.8f, filled = true))
+        assertEquals(null, VideoSwipe.pinchFill(0.8f, filled = false))
+    }
 }

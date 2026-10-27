@@ -352,11 +352,12 @@ private fun MiniPlayer(now: Playing, onExpand: () -> Unit) {
                 }
             }
         }
-        // Il tempo che scorre, sottile sul bordo basso; in diretta niente barra.
-        if (now.durationMs > 0 && !now.live) {
+        // Il tempo che scorre, sottile sul bordo basso; in diretta niente barra. Resta (a zero) anche
+        // mentre il brano dopo si carica, così dopo uno skip non sparisce.
+        if (!now.live) {
             val position = livePosition(now)
             androidx.compose.material3.LinearProgressIndicator(
-                progress = { (position.toFloat() / now.durationMs).coerceIn(0f, 1f) },
+                progress = { if (now.durationMs > 0) (position.toFloat() / now.durationMs).coerceIn(0f, 1f) else 0f },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 6.dp).height(2.dp),
                 drawStopIndicator = {},
             )
