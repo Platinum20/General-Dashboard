@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.243.0
+**Video a schermo intero: barra del volume a sinistra, anche coi tasti**
+- La barra del volume è verticale, tutta a sinistra
+- Coi tasti del telefono, a schermo intero, compare questa barra invece di quella di sistema
+
 ## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**
 - In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video
