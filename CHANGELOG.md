@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.213.0
+**Leonardo al posto di Miro**
+- Miro aveva un accento straniero: al suo posto c'è Leonardo, una voce maschile italiana naturale (lo stesso parlante di Riccardo, ma con una qualità molto più alta). È la prima a sinistra e si scarica una volta sola, circa 65 MB
+- Se avevi scaricato Miro, lo spazio che occupava viene liberato
+
 ## 1.212.0
 **Linee del tempo: mesi, spazi giusti e Spese**
 - A ogni cambio di mese c'è un segno con il nome ("NOVEMBRE"), come quello di "Oggi" ma più tenue, in tutte le linee del tempo; passandoci sopra vibra appena
