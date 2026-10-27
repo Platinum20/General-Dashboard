@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.256.0
+## 1.257.0
 **YouTube: le anteprime non danno più errore**
 - Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
 - «Avvisami»: una notifica ti avvisa quando comincia, e toccandola si apre il video
 - Passato l'orario il video riprova da solo e parte appena YouTube lo avvia; dopo si guarda come un video normale
 - Nei feed le anteprime mostrano «ANTEPRIMA · 20:00» (o DOMANI, o la data) sulla copertina
+
+## 1.256.0
+**Pagina del video YouTube più pulita**
+- Mi piace e Non mi piace stanno a destra, sulla riga del canale
+- Sotto, tre tasti larghi uguali su una riga: Commenti, Correlati, Condividi; commenti e video correlati si aprono solo toccandoli
+- La data dice "7 ore fa" invece del codice
+- Descrizione su due righe senza riquadro, con i link veri: un video di YouTube parte nell'app, gli altri link si copiano
+- Commenti: se YouTube non li dà si vede "Non riesco a caricare i commenti" con Riprova; "Commenti disattivati" solo se li ha spenti l'autore
 
 ## 1.254.0
 **Video a schermo intero: pinch per riempire lo schermo**
