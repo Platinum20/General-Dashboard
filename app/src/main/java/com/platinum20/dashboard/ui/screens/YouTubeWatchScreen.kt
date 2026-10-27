@@ -558,7 +558,8 @@ internal fun timeLabel(positionMs: Long, playerDurationMs: Long, knownSec: Long)
     return "${formatDuration(positionMs.coerceAtLeast(0))} / $total"
 }
 
-/** Minutaggio sul video: tempo trascorso, durata, barra da trascinare e schermo intero. */
+@OptIn(UnstableApi::class)
+@kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @OptIn(UnstableApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun TimeBar(
