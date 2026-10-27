@@ -80,6 +80,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.Surface
@@ -146,6 +147,8 @@ enum class SettingsPage(val title: String) {
     ACCOUNTS("Account"),
     DATA("Dati"),
     INFO("Informazioni"),
+    /** Non sta nel menu: si apre dalla riga SponsorBlock di Media, i tipi di segmento sono tanti. */
+    SPONSORBLOCK("SponsorBlock"),
 }
 
 /** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
@@ -195,6 +198,7 @@ fun SettingsScreen(
     val morning by AppSettings.morning.collectAsState()
     val rain by AppSettings.rainAlert.collectAsState()
     val updates by AppSettings.updateNotify.collectAsState()
+    val canNotify = MorningWorker.canNotify(context) || Build.VERSION.SDK_INT < 33
     val alarm by RadioAlarm.settings.collectAsState()
     val voice by AppSettings.readingVoice.collectAsState()
     val wifiOnly by AppSettings.wifiOnlyDownloads.collectAsState()
@@ -250,9 +254,9 @@ fun SettingsScreen(
                     MenuRow(Icons.Outlined.NotificationsActive, TileAccent.ORANGE, "Notifiche",
                         SettingsSummary.alerts(
                             morning = morning.timeLabel.takeIf { morning.enabled },
-                            rain = rain,
+                            rain = rain && canNotify,
                             radio = alarm.timeLabel.takeIf { alarm.enabled },
-                            updates = updates,
+                            updates = updates && canNotify,
                         )) { onOpenPage(SettingsPage.ALERTS) }
                     RowDivider()
                     MenuRow(Icons.Outlined.AccountCircle, TileAccent.GREEN, "Account",
@@ -289,6 +293,7 @@ fun SettingsPageScreen(
     onCustomize: () -> Unit,
     onLogin: (MediaService) -> Unit,
     onPickPlace: () -> Unit,
+    onOpenPage: (SettingsPage) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     Scaffold(
@@ -315,8 +320,15 @@ fun SettingsPageScreen(
                             AutoplaySetting()
                         }
                     }
-                    item { SettingsBlock("Video") { VideoFilterSettings(); RowDivider(); DislikeSettings() } }
-                    item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
+                    item {
+                        SettingsBlock("Video") {
+                            VideoFilterSettings()
+                            RowDivider()
+                            DislikeSettings()
+                            RowDivider()
+                            SponsorBlockRow { onOpenPage(SettingsPage.SPONSORBLOCK) }
+                        }
+                    }
                     item { SettingsBlock("Altro") { SongIdSetting(); RowDivider(); AdBlockSettings() } }
                 }
                 SettingsPage.ALERTS -> item {
@@ -338,6 +350,7 @@ fun SettingsPageScreen(
                         BackupSettings()
                     }
                 }
+                SettingsPage.SPONSORBLOCK -> item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
                 SettingsPage.INFO -> {
                     item { AppHero(onClick = onOpenUpdates) }
                     item { InfoBlock() }
@@ -429,7 +442,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                             }
                         }) { Text("Esci") }
                     } else {
-                        OutlinedButton(onClick = { onLogin(service) }, border = cardBorder()) { Text("Accedi") }
+                        FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
                     }
                 },
             )
@@ -529,6 +542,28 @@ private fun SongIdSetting() {
             dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
+}
+
+/** La riga di Media che apre la pagina di SponsorBlock: dice se è acceso e quanto ha fatto risparmiare. */
+@Composable
+private fun SponsorBlockRow(onClick: () -> Unit) {
+    val context = LocalContext.current
+    val enabled by AppSettings.sponsorBlock.collectAsState()
+    SponsorBlock.init(context)
+    val stats by SponsorBlock.stats.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.FastForward,
+        accent = TileAccent.GREEN,
+        title = "SponsorBlock",
+        subtitle = when {
+            !enabled -> "Salta sponsor e intermezzi nei video"
+            stats.skips == 0 -> "Cosa saltare, tipo per tipo"
+            else -> "${stats.skips} salti · ${savedLabel(stats.savedMs)} risparmiati"
+        },
+        value = if (enabled) "Acceso" else "Spento",
+        showChevron = true,
+        onClick = onClick,
+    )
 }
 
 /** Riempi la coda: stava in fondo alla coda, ora sta con le altre impostazioni del player. */

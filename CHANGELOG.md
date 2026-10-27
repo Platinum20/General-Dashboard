@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.272.0
+**SponsorBlock nella sua pagina**
+- In Impostazioni › Media, SponsorBlock è una riga sola con acceso o spento e il tempo risparmiato; i dieci tipi di segmento stanno nella sua pagina
+- "Accedi" a YouTube e Spotify ha lo stesso tasto di "Collega" e "Cerca"
+- Il riepilogo delle Notifiche non conta più pioggia e nuove versioni se le notifiche sono bloccate
 ## 1.271.0
 **Niente più tasti nella barra del titolo**
 - Il punto del giorno: "Ascolta" è la prima card della pagina, grande, invece dell'icona in alto
