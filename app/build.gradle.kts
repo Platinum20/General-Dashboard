@@ -25,6 +25,13 @@ if (!sherpaOnnxAar.exists()) {
     partial.renameTo(sherpaOnnxAar)
 }
 
+// Le novità di questa versione (la sua sezione di CHANGELOG.md), per il fumetto che compare
+// una volta sola al primo avvio dopo l'aggiornamento.
+val whatsNew: String = rootProject.file("CHANGELOG.md").readLines().let { lines ->
+    val start = lines.indexOfFirst { it.trim() == "## " + versionProps.getProperty("VERSION_NAME") }
+    if (start < 0) "" else lines.drop(start + 1).takeWhile { !it.startsWith("## ") }.joinToString("\n").trim()
+}
+
 val keystorePath: String? = System.getenv("KEYSTORE_FILE")
 val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 
@@ -41,6 +48,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GITHUB_REPO", "\"Platinum20/General-Dashboard\"")
+        val escaped = whatsNew.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+        buildConfigField("String", "WHATS_NEW", "\"$escaped\"")
     }
 
     if (project.hasProperty("releaseCheck")) testBuildType = "release"

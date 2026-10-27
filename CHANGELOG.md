@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.278.0
+**Le novità dopo ogni aggiornamento**
+- Al primo avvio dopo un aggiornamento sale un fumetto di vetro con le novità della versione, una volta sola
+- Si chiude toccandolo, toccando fuori o portandolo di lato
+- Alla prima installazione non compare
+
 ## 1.277.0
 **Aggiornamenti automatici**
 - Le nuove versioni si scaricano e si installano da sole, senza toccare nulla (Android 12 o più recente)
