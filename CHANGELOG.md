@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.211.0
+**Spese più pulita**
+- Il riepilogo del mese in cima è compatto: mese e totale su una riga, sotto il mese prima e le categorie in una riga sola
+- L'importo di ogni spesa si vede sempre, si accorcia solo il nome
+- I nomi presi male dalle notifiche (come "fronte di") diventano "Spesa" o la categoria
+- Via il budget mensile, anche dalla card in Oggi e da Adesso
+
 ## 1.210.0
 **I video del telefono suonano nel player unico**
 - Un video del telefono, un file scelto a mano o un link si aprono nello stesso player di YouTube, musica e podcast: stessa coda, una sola notifica, e il mini player quando esci

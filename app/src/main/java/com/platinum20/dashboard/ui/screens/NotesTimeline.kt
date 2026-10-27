@@ -397,9 +397,10 @@ internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expens
         TimelineEntry(
             "expense-${e.id}",
             com.platinum20.dashboard.today.BriefKind.MONEY,
-            e.text.ifEmpty { e.category.label } + " · " + Expenses.format(e.cents),
+            Expenses.displayName(e),
             if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
             gap,
+            trailing = Expenses.format(e.cents),
         ) to e
     }
 }
