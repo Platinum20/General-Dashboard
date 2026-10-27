@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.228.0
+**Video più semplice**
+- Restano tre schede: Home, Iscrizioni e Cronologia
+- Filtri "Escludi Shorts" ed "Escludi live" accanto alle schede
+- Playlist, Mi piace, Più tardi e i video del telefono sono riquadri in cima: un tocco e si aprono
+- Niente più scheda Cerca: trascini giù e cerchi già nei video
+
 ## 1.227.0
 **Musica più semplice, solo Spotify**
 - Musica è una pagina sola che scorre: nuove uscite, Mix per te, le tue playlist, ascoltati di recente, brani che ti piacciono, album salvati, ognuna in una fila che scorre di lato
