@@ -91,6 +91,8 @@ object AppSettings {
     private const val KEY_RAIN_ALERT = "rain_alert"
     private const val KEY_READING_VOICE = "reading_voice"
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
+    private const val KEY_HIDE_SHORTS = "video_hide_shorts"
+    private const val KEY_HIDE_LIVE = "video_hide_live"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -114,6 +116,12 @@ object AppSettings {
     private val _wifiOnlyDownloads = MutableStateFlow(false)
     /** Voci e aggiornamenti si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
     val wifiOnlyDownloads: StateFlow<Boolean> = _wifiOnlyDownloads.asStateFlow()
+    private val _hideShorts = MutableStateFlow(true)
+    /** In Video niente Shorts nella Home e nelle Iscrizioni (acceso di default). */
+    val hideShorts: StateFlow<Boolean> = _hideShorts.asStateFlow()
+    private val _hideLive = MutableStateFlow(false)
+    /** In Video niente live, in corso o in arrivo. */
+    val hideLive: StateFlow<Boolean> = _hideLive.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -163,6 +171,8 @@ object AppSettings {
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
+        _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
+        _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -187,6 +197,16 @@ object AppSettings {
     fun setWifiOnlyDownloads(enabled: Boolean) {
         _wifiOnlyDownloads.value = enabled
         prefs.edit().putBoolean(KEY_WIFI_ONLY, enabled).apply()
+    }
+
+    fun setHideShorts(enabled: Boolean) {
+        _hideShorts.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_SHORTS, enabled).apply()
+    }
+
+    fun setHideLive(enabled: Boolean) {
+        _hideLive.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_LIVE, enabled).apply()
     }
 
     fun setReadingVoice(voice: ReadingVoice) {

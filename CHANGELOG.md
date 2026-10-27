@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.233.0
+**Video più ordinato**
+- In cima Playlist, Mi piace, Più tardi e Telefono; sotto le schede Home, Iscrizioni e Cronologia, proprio sopra i video che cambiano
+- Escludi Shorts ed Escludi live non stanno più tra le schede: li scegli una volta in Impostazioni › Fa da solo e restano anche dopo aver chiuso l'app
+
 ## 1.232.0
 **Nomi interi nelle card di Musica**
 - In Musica i nomi di playlist, album, brani, artisti e Mix stanno su due righe: non vengono più tagliati dopo poche lettere
