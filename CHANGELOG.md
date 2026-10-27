@@ -3,7 +3,7 @@
 ## 1.219.0
 **Media: tre riquadri alti uguali**
 - In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
-- Titoli e descrizioni stanno su una riga sola ("Spotify e YT", "YouTube e file", "Radio · e podcast")
+- Titoli e descrizioni stanno su una riga sola (Musica "Spotify e YT", Video "YouTube e file", Radio "e podcast")
 
 ## 1.217.0
 **Treni, menu sulla linea e Spese**
