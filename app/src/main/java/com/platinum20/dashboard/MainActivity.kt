@@ -1399,6 +1399,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
+                    onOpenPage = { navController.navigate(Routes.settingsPage(it)) },
                 )
             }
             composable(Routes.AUTOFILL) {
