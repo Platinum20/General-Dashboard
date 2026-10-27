@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.269.0
+**Video di YouTube anche quando YouTube fa il controllo "non sei un bot"**
+- Motore dei video aggiornato come quello di NewPipe: chiede i video in un modo che YouTube blocca molto meno, anche col 4G
+- Se YouTube blocca lo stesso, l'app riprova da sola una volta prima di arrendersi
+- Gli errori sono una riga in italiano (per esempio "YouTube blocca questa rete per un po'"), mai il testo inglese, sempre con Riprova
+
 ## 1.268.0
 **Il video ora si rimpicciolisce davvero verso il mini player**
 - Chiudendo il video lui diventa piccolo e vola sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai messo lì), invece di scendere soltanto
