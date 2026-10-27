@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 /**
- * Su un emulatore vero: scarica la voce Riccardo, la fa parlare col motore Piper e poi prova il
+ * Su un emulatore vero: scarica ogni voce, la fa parlare col motore Piper e poi prova il
  * percorso dell'app (RecapSpeaker con la voce scelta). Parte solo nel workflow voicecheck.yml.
  */
 @RunWith(AndroidJUnit4::class)
@@ -44,7 +44,8 @@ class VoiceEngineCheck {
     @Test
     fun piperParla() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val voice = ReadingVoice.RICCARDO
+        // Miro suona a 22050 Hz: è il caso che sul telefono non apriva l'audio.
+        val voice = ReadingVoice.MIRO
         val dir = File(context.filesDir, "voices/${voice.archive}")
         // La rete dell'emulatore a volte parte tardi: qualche tentativo prima di arrendersi.
         val files = (1..5).firstNotNullOfOrNull { attempt ->
@@ -56,7 +57,7 @@ class VoiceEngineCheck {
         val probe = runCatching { NeuralVoice.probe(voice, files, "Ciao, questa è una prova della voce.") }
         Log.i(tag, "motore: ${probe.getOrNull()} ${probe.exceptionOrNull()?.stackTraceToString() ?: ""}")
 
-        // Il percorso vero: Riccardo scelta in Impostazioni, poi una lettura come dalla notizia.
+        // Il percorso vero: la voce scelta in Impostazioni, poi una lettura come dalla notizia.
         AppSettings.init(context)
         AppSettings.setReadingVoice(voice)
         VoiceStore.init(context)
