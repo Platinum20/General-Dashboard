@@ -49,6 +49,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -154,6 +156,13 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
 
     val inPip = rememberPictureInPicture(enabled = now?.playing == true)
     FullscreenEffect(enabled = fullscreen && !inPip)
+    // Mentre un video va lo schermo non si spegne (soprattutto a schermo intero, dove nessuno lo tocca).
+    val rootView = androidx.compose.ui.platform.LocalView.current
+    val keepOn = now?.playing == true
+    androidx.compose.runtime.DisposableEffect(rootView, keepOn) {
+        rootView.keepScreenOn = keepOn
+        onDispose { rootView.keepScreenOn = false }
+    }
     BackHandler(enabled = fullscreen) { fullscreen = false }
 
     val immersive = fullscreen || inPip
@@ -258,7 +267,8 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
 
 /**
  * Il video con i nostri comandi: tocco = mostra/nasconde, doppio tocco a sinistra/destra = ∓10 s,
- * trascinare giù = torna indietro lasciando il video nella bolla.
+ * trascinare giù = torna indietro lasciando il video nella bolla, swipe su = schermo intero;
+ * a schermo intero su/giù regola il volume.
  */
 @OptIn(UnstableApi::class)
 @Composable
@@ -282,6 +292,17 @@ private fun VideoArea(
     val playing = now?.playing == true
     // Menu delle impostazioni aperto sul video (null = chiuso).
     var menu by remember { mutableStateOf<VideoMenu?>(null) }
+    // Volume regolato col dito a schermo intero: il valore (0..1) e se l'indicatore è visibile.
+    val audio = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
+    var volume by remember { mutableStateOf(0f) }
+    var volumeShown by remember { mutableStateOf(false) }
+    var volumeDragging by remember { mutableStateOf(false) }
+    LaunchedEffect(volumeShown, volumeDragging) {
+        if (volumeShown && !volumeDragging) {
+            delay(800)
+            volumeShown = false
+        }
+    }
 
     // I comandi spariscono da soli dopo 3 secondi mentre il video va (non con un menu aperto).
     LaunchedEffect(controls, playing, flashKey, menu) {
@@ -313,6 +334,31 @@ private fun VideoArea(
                 )
             }
             .pointerInput(fullscreen, inPip) {
+                if (!fullscreen || inPip) return@pointerInput
+                // A schermo intero (telefono in orizzontale) su/giù è il volume del telefono.
+                val stream = android.media.AudioManager.STREAM_MUSIC
+                val max = audio.getStreamMaxVolume(stream)
+                var start = 0
+                var draggedUp = 0f
+                detectVerticalDragGestures(
+                    onDragStart = {
+                        start = audio.getStreamVolume(stream)
+                        draggedUp = 0f
+                        volume = if (max > 0) start / max.toFloat() else 0f
+                        volumeShown = true
+                        volumeDragging = true
+                    },
+                    onDragEnd = { volumeDragging = false },
+                    onDragCancel = { volumeDragging = false },
+                    onVerticalDrag = { _, amount ->
+                        draggedUp -= amount
+                        val level = VideoSwipe.volumeAfter(start, max, draggedUp, size.height.toFloat())
+                        if (level != audio.getStreamVolume(stream)) audio.setStreamVolume(stream, level, 0)
+                        volume = if (max > 0) level / max.toFloat() else 0f
+                    },
+                )
+            }
+            .pointerInput(fullscreen, inPip) {
                 if (fullscreen || inPip) return@pointerInput
                 val tracker = VelocityTracker()
                 // Misurato sullo schermo: la pagina scende con il dito, quindi la posizione sul video resta ferma.
@@ -322,7 +368,16 @@ private fun VideoArea(
                         tracker.resetTracking()
                         travelled = 0f
                     },
-                    onDragEnd = { onDragEnd(tracker.calculateVelocity().y) },
+                    onDragEnd = {
+                        val velocity = tracker.calculateVelocity().y
+                        // Swipe su: il video si apre a schermo intero, la pagina resta dov'è.
+                        if (VideoSwipe.opensFullscreen(travelled, velocity, 48.dp.toPx())) {
+                            onDragEnd(0f)
+                            onToggleFullscreen()
+                        } else {
+                            onDragEnd(velocity)
+                        }
+                    },
                     onDragCancel = { onDragEnd(0f) },
                     onVerticalDrag = { change, amount ->
                         travelled += amount
@@ -371,6 +426,33 @@ private fun VideoArea(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(if (seekFlash > 0) "+10 s" else "−10 s", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            }
+        }
+
+        // L'indicatore del volume: una piccola pillola in alto al centro mentre si scorre.
+        AnimatedVisibility(
+            visible = volumeShown && fullscreen && !inPip,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+        ) {
+            Row(
+                Modifier
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (volume <= 0f) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Volume",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Box(Modifier.width(120.dp).height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.25f))) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(volume.coerceIn(0f, 1f)).background(Color.White))
+                }
             }
         }
 
