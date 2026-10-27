@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.235.0
+**Notifica del mattino più ordinata**
+- Niente più notizie: restano nella sezione News
+- Tre gruppi staccati da uno spazio: il meteo, "Oggi" (le stesse cose di Adesso nella Home: impegni, scadenze, date, pacchi) e "Da fare" (le cose senza scadenza oggi)
+- L'aria compare solo quando è moderata o peggio, la pioggia sta col meteo
+
 ## 1.233.0
 **Video più ordinato**
 - In cima Playlist, Mi piace, Più tardi e Telefono; sotto le schede Home, Iscrizioni e Cronologia, proprio sopra i video che cambiano

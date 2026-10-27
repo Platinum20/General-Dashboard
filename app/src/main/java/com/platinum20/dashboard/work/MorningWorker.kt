@@ -8,7 +8,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.os.Build
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -27,21 +32,20 @@ import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
 import com.platinum20.dashboard.widget.DashboardWidget
 import java.time.Duration
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-/** Notifica del mattino: meteo, impegni, promemoria e temi del giorno. */
+/** Notifica del mattino: meteo, la giornata come in "Adesso" e le cose da fare. Le notizie no. */
 class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -65,9 +69,28 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             ?: WeatherStore.cached(context)
         val themes = runCatching { NewsRecap.build(NewsStore.load(force = true).items) }.getOrDefault(emptyList())
         if (themes.isNotEmpty()) DashboardWidget.saveRecap(context, themes)
-        val events = runCatching { CalendarRepository.eventsOn(context) }.getOrDefault(emptyList())
         NotesStore.init(context)
-        val tasks = NotesStore.data.value.openTasks
+        val notes = NotesStore.data.value
+        val zone = ZoneId.systemDefault()
+        val day = LocalDate.now(zone)
+        val calendar = CalendarRepository.hasPermission(context)
+        // Le stesse righe di "Adesso" nella Home: tutta la giornata, orari assoluti (la notifica resta lì ore).
+        val adesso = Briefing.build(
+            now = LocalDateTime.now(zone),
+            forecast = forecast,
+            today = if (calendar) runCatching { CalendarRepository.eventsOn(context, day) }.getOrNull() else null,
+            tomorrow = null,
+            tasks = notes.openTasks,
+            countdowns = notes.countdowns,
+            zone = zone,
+            max = Briefing.CARD_MAX,
+            relative = false,
+            habits = notes.habits,
+            parcels = notes.parcels,
+            fixedExpenses = notes.fixedExpenses,
+            withTomorrow = false,
+            wholeDay = true,
+        )
 
         val title = if (forecast != null) {
             val c = forecast.current
@@ -75,53 +98,16 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         } else {
             "Buongiorno!"
         }
-        val lines = mutableListOf<String>()
-        forecast?.today?.let { d ->
-            lines += "Oggi max ${d.max.asTemp()}, min ${d.min.asTemp()}" +
-                if (d.precipitationProbability >= 30) ", pioggia ${d.precipitationProbability}%" else ""
-        }
-        forecast?.rainAlert?.let { lines += "☔ $it" }
-        forecast?.air?.let { lines += "Aria: ${it.label.lowercase()}" }
-        val time = DateTimeFormatter.ofPattern("HH:mm")
-        val zone = ZoneId.systemDefault()
-        if (events.isNotEmpty()) {
-            lines += ""
-            lines += "📅 " + if (events.size == 1) "1 impegno" else "${events.size} impegni"
-            events.take(3).forEach { e ->
-                val at = if (e.allDay) "tutto il giorno" else Instant.ofEpochMilli(e.begin).atZone(zone).format(time)
-                lines += "• $at ${e.title}"
-            }
-            more(events.size)?.let { lines += it }
-        }
-        if (tasks.isNotEmpty()) {
-            lines += ""
-            lines += "✅ " + if (tasks.size == 1) "1 cosa da fare" else "${tasks.size} cose da fare"
-            val now = System.currentTimeMillis()
-            val today = LocalDate.now(zone)
-            tasks.take(3).forEach { t ->
-                val dueAt = t.dueAt
-                val at = when {
-                    dueAt == null -> ""
-                    dueAt < now -> "⚠️ scaduto · "
-                    Instant.ofEpochMilli(dueAt).atZone(zone).toLocalDate() == today ->
-                        Instant.ofEpochMilli(dueAt).atZone(zone).format(time) + " "
-                    else -> ""
-                }
-                lines += "• $at${t.text}"
-            }
-            more(tasks.size)?.let { lines += it }
-        }
-        NotesStore.data.value.upcoming.filter { it.daysLeft() <= 1 }.forEach {
-            lines += if (it.daysLeft() == 0L) "🎉 Oggi: ${it.title}" else "⏳ Domani: ${it.title}"
-        }
-        if (themes.isNotEmpty()) {
-            lines += ""
-            lines += "📰 Il punto del giorno"
-            themes.take(3).forEach { lines += "• ${it.headline.title}" }
-        }
-        // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella schermata Oggi.
-        val brief = runCatching { Briefing.load(context, relative = true, max = 1) }.getOrDefault(emptyList()).firstOrNull()
-        val summary = brief?.text ?: lines.firstOrNull { it.isNotBlank() } ?: "Apri Canvas per il riepilogo della giornata."
+        val groups = MorningText.groups(
+            today = forecast?.today,
+            air = forecast?.air,
+            adesso = adesso,
+            tasks = notes.openTasks,
+            endOfDay = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli(),
+        )
+        // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella Home.
+        val summary = adesso.firstOrNull { it.kind != BriefKind.WEATHER }?.text
+            ?: groups.firstOrNull()?.lines?.firstOrNull() ?: "Apri Canvas per il riepilogo della giornata."
 
         ensureChannel(context)
         val intent = Intent(context, MainActivity::class.java)
@@ -131,7 +117,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(summary)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n").trim()))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(render(groups)))
             .setContentIntent(
                 PendingIntent.getActivity(context, 100, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             )
@@ -144,11 +130,27 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         }
     }
 
-    /** "…e altri N" quando la lista è più lunga delle tre righe mostrate. */
-    private fun more(total: Int): String? = when (val rest = total - 3) {
-        in Int.MIN_VALUE..0 -> null
-        1 -> "…e un altro"
-        else -> "…e altri $rest"
+    /**
+     * Gruppi staccati da una riga vuota a mezza altezza, titoli in grassetto. Una riga davvero vuota
+     * Android la toglie dalle notifiche: lo spazio non separabile invece resta.
+     */
+    private fun render(groups: List<MorningGroup>): CharSequence {
+        val text = SpannableStringBuilder()
+        groups.forEachIndexed { i, group ->
+            if (i > 0) {
+                val from = text.length
+                text.append("\u00A0\n")
+                text.setSpan(RelativeSizeSpan(0.6f), from, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            group.header?.let {
+                val from = text.length
+                text.append(it).append('\n')
+                text.setSpan(StyleSpan(Typeface.BOLD), from, from + it.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            group.lines.forEach { line -> text.append(if (group.header != null) "• $line" else line).append('\n') }
+        }
+        while (text.isNotEmpty() && text.last() == '\n') text.delete(text.length - 1, text.length)
+        return text
     }
 
     companion object {
@@ -192,7 +194,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
             val channel = NotificationChannel(CHANNEL, "Notifica del mattino", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Meteo, impegni e notizie ogni mattina"
+                description = "Meteo, impegni e cose da fare ogni mattina"
             }
             manager.createNotificationChannel(channel)
         }
