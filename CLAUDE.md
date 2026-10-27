@@ -101,7 +101,7 @@ GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
-`SettingsScreen.kt` (groups by intent; `RadioAlarmSetting.kt` = Sveglia con la radio in Cosa ti avvisa; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
+`SettingsScreen.kt` (main page = theme + menu rows with one-line state (`SettingsSummary`); each row opens `SettingsPageScreen(SettingsPage)` on route `settings/page/{page}`: HOME, NEWS, MEDIA (coda, video successivo, Video filters, SponsorBlock, canzoni, ad block), ALERTS, ACCOUNTS, DATA, INFO; the Note row opens AutoFillScreen directly; every persistent toggle belongs here, not in other screens; `RadioAlarmSetting.kt` = Sveglia con la radio in Notifiche; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per
 feature (`*Test.kt`). Test class names must be unique across the package. `ScreenshotTour`,
