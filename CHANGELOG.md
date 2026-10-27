@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.215.0
+**Avvisi e menu tutti nel fumetto di vetro**
+- Gli avvisi che erano rimasti grigi di sistema ora salgono nel fumetto di vetro in basso, chiudibile di lato: errori di Spotify, "In coda", backup, dettatura, avvisi dei video
+- Eliminare un evento del calendario chiede conferma nel fumetto, non più in una finestra al centro
+- Nel nuovo evento, la scelta del calendario sale nel fumetto invece del menu a tendina
+- Se il permesso del calendario è negato, il tasto "Info app" è dentro il fumetto
+
 ## 1.213.0
 **Leonardo al posto di Miro**
 - Miro aveva un accento straniero: al suo posto c'è Leonardo, una voce maschile italiana naturale (lo stesso parlante di Riccardo, ma con una qualità molto più alta). È la prima a sinistra e si scarica una volta sola, circa 65 MB
