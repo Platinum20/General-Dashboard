@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.241.0
+**Niente vibrazione nelle card**
+- Scorrendo la Home o la pagina Note, le card (Prossimi giorni, Note, Spese) non vibrano più al cambio di mese: la vibrazione resta solo dentro la pagina aperta
+
 ## 1.240.0
 **Copertine di Musica pulite**
 - In Musica ogni fila mostra tre copertine intere: nessuna resta tagliata sul bordo destro, le altre arrivano scorrendo

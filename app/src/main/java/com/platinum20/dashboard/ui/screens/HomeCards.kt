@@ -214,7 +214,7 @@ fun TimelineCard(
                 )
             }
             entries.forEachIndexed { index, entry ->
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen, onIcon = ticks.getOrNull(index))
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen, onIcon = ticks.getOrNull(index), monthTick = false)
             }
         }
     }
