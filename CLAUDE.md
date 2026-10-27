@@ -40,7 +40,7 @@ create something it lists, so the next thread doesn't have to explore.
 
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses, `NotesCard` (HomeCard.NOTES), all via the shared `TimelineCard` (whole card clickable, also used by the Note overview)),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
-`home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
+`home/expenses`, Spese moved here from Note in 1.186; same screen on `Routes.NOTES_EXPENSES` = `notes/expenses` from the Note card, nav bar on Note). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
 = every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 400 days (`Upcoming.DAYS`, also Notes' `EVENT_DAYS`) of
 events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp` = log-scaled gap, `Upcoming.monthBreak` → `TimelineEntry.month` = `TimelineMonthMarker` 'NOVEMBRE' with haptic via `MonthCross`; Timeline.kt also has `ExpenseCategory.icon()/color()`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
@@ -100,7 +100,7 @@ GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
-`work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
+`work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update; `WhatsNew` + `ui/screens/WhatsNewLayer.kt` = one-time glass bubble with this version's CHANGELOG section, copied into `BuildConfig.WHATS_NEW` by `app/build.gradle.kts`),
 `SettingsScreen.kt` (main page = theme + menu rows with one-line state (`SettingsSummary`); each row opens `SettingsPageScreen(SettingsPage)` on route `settings/page/{page}`: HOME, NEWS, MEDIA (coda, video successivo, Video filters, SponsorBlock row → SPONSORBLOCK page, canzoni, ad block), ALERTS, ACCOUNTS, DATA, INFO; the Note row opens AutoFillScreen directly; every persistent toggle belongs here, not in other screens; `RadioAlarmSetting.kt` = Sveglia con la radio in Notifiche; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per

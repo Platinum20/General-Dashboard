@@ -52,6 +52,12 @@ object MiniDock {
         return Rect(left, y, left + THUMB_W * density, y + THUMB_H * density)
     }
 
+    /**
+     * Quanto lasciare libero in fondo a una barra fissa (es. "Controlla e aggiorna") perché il mini
+     * player in basso non la copra: la barra stimata più il suo margine, in dp.
+     */
+    fun bottomReserveDp(playing: Boolean, atTop: Boolean): Float = if (playing && !atTop) BAR_GUESS + 6f else 0f
+
     /** La miniatura adesso, o null se il mini player non è mai stato misurato. */
     fun target(density: Float): Rect? = frame?.let { thumb(it, barHeight, atTop, density) }
 

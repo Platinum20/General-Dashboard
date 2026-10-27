@@ -47,4 +47,12 @@ class MiniDockTest {
         assertEquals(72f, layer.dx, 0.01f)
         assertEquals(1814f - 80f, layer.dy, 0.01f)
     }
+
+    /** Beta 1.271: in Aggiornamenti il mini player in basso copriva "Controlla e aggiorna". */
+    @Test
+    fun fixedBottomBarLeavesRoomForTheMiniPlayer() {
+        assertEquals(76f, MiniDock.bottomReserveDp(playing = true, atTop = false), 0f)
+        assertEquals(0f, MiniDock.bottomReserveDp(playing = true, atTop = true), 0f)
+        assertEquals(0f, MiniDock.bottomReserveDp(playing = false, atTop = false), 0f)
+    }
 }
