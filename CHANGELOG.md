@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.280.0
+**Aggiornamenti: il tasto non sta più sotto il mini player**
+- Se sta suonando qualcosa, "Controlla e aggiorna" sale sopra il mini player invece di restarci sotto
+
 ## 1.279.0
 **Spese anche dentro Note**
 - Toccando la card Spese in Note si apre la pagina Spese dentro Note, non più in Oggi: la barra resta su Note e indietro torna alle Note
