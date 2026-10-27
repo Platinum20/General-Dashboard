@@ -210,7 +210,7 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
 }
 
 /**
- * Spese, in Oggi dalla 1.186: il totale del mese e il prossimo addebito (il budget è stato tolto nella 1.210). Si tocca per la pagina
+ * Spese, in Oggi dalla 1.186: il totale del mese e il prossimo addebito (il budget è stato tolto nella 1.211). Si tocca per la pagina
  * intera (mesi, categorie, fisse, scontrino). Compare solo quando c'è qualcosa da dire.
  */
 @Composable
