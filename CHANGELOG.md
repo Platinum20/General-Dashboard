@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.230.0
+## 1.231.0
 **Nomi interi nelle card di Musica**
 - In Musica i nomi di playlist, album, brani, artisti e Mix stanno su due righe: non vengono più tagliati dopo poche lettere
 - Le card di una stessa fila restano allineate anche con nomi di lunghezza diversa
