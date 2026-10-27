@@ -507,6 +507,9 @@ object CanvasPlayer {
             }
             ResumeKind.VIDEO -> if (p.currentMediaItem != null && p.duration > 0) {
                 MediaHistory.record(n.item.copy(positionMs = p.currentPosition, durationMs = p.duration, at = lastSaved))
+                // I Recenti di "Sul telefono" ripartono dallo stesso punto.
+                VideoLibrary.init(context())
+                VideoLibrary.updatePosition(n.item.key, p.currentPosition, p.duration)
             }
             ResumeKind.SPOTIFY -> spotify?.state?.value?.let { s ->
                 MediaHistory.record(n.item.copy(positionMs = s.positionMs, durationMs = s.durationMs, at = lastSaved))

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.206.0
+**I video del telefono suonano nel player unico**
+- Un video del telefono, un file scelto a mano o un link si aprono nello stesso player di YouTube, musica e podcast: stessa coda, una sola notifica, e il mini player quando esci
+- Riprendono da dove li avevi lasciati, anche dai Recenti e da Continua
+
 ## 1.205.0
 **Linea del tempo più pulita, e una piccola resistenza prima del passato**
 - In Prossimi giorni, Note e Spese la linea sta direttamente sulla pagina, senza i bordi della card ai lati, e in fondo c'è spazio sopra la barra
