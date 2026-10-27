@@ -5,6 +5,7 @@
 - Motore dei video aggiornato come quello di NewPipe: chiede i video in un modo che YouTube blocca molto meno, anche col 4G
 - Se YouTube blocca lo stesso, l'app riprova da sola una volta prima di arrendersi
 - Gli errori sono una riga in italiano (per esempio "YouTube blocca questa rete per un po'"), mai il testo inglese, sempre con Riprova
+
 ## 1.271.0
 **Niente più tasti nella barra del titolo**
 - Il punto del giorno: "Ascolta" è la prima card della pagina, grande, invece dell'icona in alto
