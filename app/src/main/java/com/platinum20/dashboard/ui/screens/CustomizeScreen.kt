@@ -49,6 +49,8 @@ import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Newspaper
 import com.platinum20.dashboard.settings.HomeCard
+import com.platinum20.dashboard.settings.HomeLayout
+import androidx.compose.material3.TextButton
 
 /** Ordine e visibilità delle card della Dashboard. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,13 +61,8 @@ fun CustomizeScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopLevelBar(
-                title = "Personalizza Oggi",
+                title = "Card della Home",
                 onBack = onBack,
-                actions = {
-                    IconButton(onClick = AppSettings::resetLayout) {
-                        Icon(Icons.Outlined.RestartAlt, contentDescription = "Ripristina")
-                    }
-                },
             )
         },
     ) { inner ->
@@ -90,7 +87,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
         ) {
             item(key = 0) {
                 Text(
-                    "Trascina la maniglia per cambiare l'ordine delle card in Oggi; l'interruttore le mostra o le nasconde.",
+                    "Trascina la maniglia per cambiare l'ordine delle card nella Home; l'interruttore le mostra o le nasconde.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
@@ -133,6 +130,13 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     Spacer(Modifier.width(4.dp))
                     Switch(checked = visible, onCheckedChange = toggle)
                 }
+            }
+            item(key = 1) {
+                TextButton(
+                    onClick = AppSettings::resetLayout,
+                    enabled = layout != HomeLayout.DEFAULT,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) { Text("Ripristina l'ordine iniziale") }
             }
         }
     }

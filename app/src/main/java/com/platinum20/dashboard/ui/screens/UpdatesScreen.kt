@@ -89,11 +89,6 @@ fun UpdatesScreen(
             TopLevelBar(
                 title = "Aggiornamenti",
                 onBack = onBack,
-                actions = {
-                    IconButton(onClick = viewModel::refreshReleases, enabled = !state.loadingReleases) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Ricarica changelog")
-                    }
-                },
                 scrollBehavior = scrollBehavior,
             )
         },
