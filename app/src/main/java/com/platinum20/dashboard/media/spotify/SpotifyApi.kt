@@ -19,6 +19,8 @@ data class SpItem(
     val title: String,
     val subtitle: String,
     val image: String,
+    /** Durata del brano o dell'episodio: la barra del tempo c'è da subito, prima che Spotify risponda. */
+    val durationMs: Long = 0,
 ) {
     val webUrl: String get() = "https://open.spotify.com/${kind.name.lowercase()}/$id"
 }
@@ -282,6 +284,6 @@ object SpotifyApi {
             SpKind.SHOW -> optString("publisher")
             SpKind.EPISODE -> optString("release_date")
         }
-        return SpItem(id, optString("uri"), kind, optString("name"), subtitle, image())
+        return SpItem(id, optString("uri"), kind, optString("name"), subtitle, image(), optLong("duration_ms"))
     }
 }
