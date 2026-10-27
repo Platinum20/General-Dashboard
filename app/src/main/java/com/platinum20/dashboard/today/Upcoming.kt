@@ -33,18 +33,39 @@ object Upcoming {
     /** Quanti giorni guarda avanti, domani compreso: più di un anno, come il calendario in Note > Prossimi giorni. */
     const val DAYS = 400
 
-    /** Quante righe al massimo (Antonio: 8): è un riassunto, il resto è in Note > Prossimi giorni. */
-    const val MAX = 8
+    /** Quante righe al massimo (Antonio: 5): è un riassunto, il resto è in Note > Prossimi giorni. */
+    const val MAX = 5
 
-    /** Lo spazio massimo fra due giorni sulla linea della card. */
-    const val MAX_GAP_DP = 20f
+    /** Lo spazio più piccolo (un giorno vuoto in mezzo) e il più grande sulla linea. */
+    const val MIN_GAP_DP = 4f
+    const val MAX_GAP_DP = 28f
+
+    /** Quanto cresce lo spazio ogni volta che i giorni vuoti raddoppiano. */
+    const val GAP_STEP_DP = 6f
 
     /**
-     * Lo spazio in più (dp) fra due righe della card: zero se sono giorni di fila, poi 6 dp per ogni giorno
-     * vuoto in mezzo (4 dp), fino a [MAX_GAP_DP]: anche mesi vuoti restano corti. Così la linea mostra quanto tempo passa fra una cosa e l'altra.
+     * Lo spazio in più (dp) fra due righe: zero se sono giorni di fila, poi cresce come il logaritmo dei giorni
+     * vuoti in mezzo (1 = 4 dp, 2 = 10, 4 = 16, 8 = 22, da 16 in su 28). Così si legge quanto tempo passa,
+     * ma senza buchi enormi fra cose lontane.
      */
-    fun gapDp(from: LocalDate, to: LocalDate): Float =
-        (4f * (java.time.temporal.ChronoUnit.DAYS.between(from, to) - 1)).coerceIn(0f, MAX_GAP_DP)
+    fun gapDp(from: LocalDate, to: LocalDate): Float {
+        val empty = kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(from, to)) - 1
+        if (empty <= 0) return 0f
+        val log2 = kotlin.math.ln(empty.toDouble()) / kotlin.math.ln(2.0)
+        return (MIN_GAP_DP + GAP_STEP_DP * log2.toFloat()).coerceAtMost(MAX_GAP_DP)
+    }
+
+    private val monthName = DateTimeFormatter.ofPattern("LLLL", java.util.Locale.ITALIAN)
+
+    /**
+     * Il segno del mese sopra una riga: il mese di [day] in maiuscolo ("NOVEMBRE", con l'anno se non è
+     * quello di [today]), solo se la riga prima ([previous]) era in un altro mese. Vale in tutti e due i versi.
+     */
+    fun monthBreak(previous: LocalDate?, day: LocalDate, today: LocalDate): String? {
+        if (previous == null || java.time.YearMonth.from(previous) == java.time.YearMonth.from(day)) return null
+        val name = day.format(monthName).uppercase(java.util.Locale.ITALIAN)
+        return if (day.year == today.year) name else "$name ${day.year}"
+    }
 
     private val hour = DateTimeFormatter.ofPattern("HH:mm")
 

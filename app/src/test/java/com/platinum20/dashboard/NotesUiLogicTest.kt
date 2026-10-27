@@ -15,6 +15,8 @@ import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
+import com.platinum20.dashboard.today.Upcoming
+import com.platinum20.dashboard.ui.screens.color
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
@@ -152,7 +154,29 @@ class NotesUiLogicTest {
         assertEquals(listOf("Bolletta", "09:30  Dentista", "18:00  Spesa", "07:00  Treno"), entries.map { it.text })
         assertEquals(listOf(true, false, false, false), entries.map { it.late })
         // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
-        assertEquals(listOf(0f, 0f, 0f, 12f), entries.map { it.gapDp })
+        assertEquals(listOf(0f, 0f, 0f), entries.take(3).map { it.gapDp })
+        assertEquals(Upcoming.gapDp(today.plusDays(1), today.plusDays(5)), entries[3].gapDp)
+        assertEquals(true, entries[3].gapDp > 10f)
+        // Tutto in ottobre: nessun segno del mese.
+        assertEquals(true, entries.all { it.month == null })
+    }
+
+    @Test fun segnoDelMeseSullaLinea() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun ms(d: LocalDate) = d.atTime(9, 0).atZone(zone).toInstant().toEpochMilli()
+        val nov = LocalDate.of(2026, 11, 3)
+        val groups = listOf(
+            DueDay(today.minusDays(40), false, listOf(DueRowFor.task(1, "Settembre", ms(today.minusDays(40)), today.minusDays(40))), past = true),
+            DueDay(today.minusDays(2), false, listOf(DueRowFor.task(2, "Ottobre", ms(today.minusDays(2)), today.minusDays(2))), past = true),
+            DueDay(today.plusDays(1), false, listOf(DueRowFor.task(3, "Domani", ms(today.plusDays(1)), today.plusDays(1)))),
+            DueDay(nov, false, listOf(
+                DueRowFor.task(4, "Novembre", ms(nov), nov),
+                DueRowFor.task(5, "Ancora", ms(nov), nov),
+            )),
+        )
+        val entries = timelineEntries(groups, today, zone).map { it.first }
+        assertEquals(listOf(null, "OTTOBRE", null, "NOVEMBRE", null), entries.map { it.month })
     }
 
     @Test fun passatoSopraLaLinea() {
@@ -175,11 +199,13 @@ class NotesUiLogicTest {
             now = now,
             zone = zone,
         )
-        assertEquals(listOf(today.minusDays(3), today.minusDays(1), today), past.map { it.day })
+        assertEquals(listOf(today.minusDays(90), today.minusDays(3), today.minusDays(1), today), past.map { it.day })
         assertEquals(true, past.all { it.past })
         val entries = timelineEntries(past, today, zone).map { it.first }
-        assertEquals(listOf("Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
-        assertEquals(listOf("Ven 23 ott", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+        // I promemoria fatti restano nel passato anche se vecchi: non c'è più un limite.
+        assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
+        assertEquals(listOf("Mar 28 lug", "Ven 23 ott", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
+        assertEquals(listOf(null, "OTTOBRE", null, null, null), entries.map { it.month })
     }
 
     @Test fun noteSullaLineaDelTempo() {
@@ -198,7 +224,7 @@ class NotesUiLogicTest {
         assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
         assertEquals(listOf("Fissate", "Oggi", null, "Mer 21 ott"), entries.map { it.dayLabel })
         // Fra oggi e mercoledì scorso quattro giorni vuoti.
-        assertEquals(16f, entries[3].gapDp)
+        assertEquals(16f, entries[3].gapDp, 0.01f)
     }
 
     @Test fun speseSullaLineaDelTempo() {
@@ -218,7 +244,9 @@ class NotesUiLogicTest {
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
-        assertEquals(8f, entries[2].gapDp)
+        assertEquals(10f, entries[2].gapDp, 0.01f)
+        // Icona e colore della categoria.
+        assertEquals(com.platinum20.dashboard.notes.ExpenseCategory.values().first().color(), entries[0].color)
     }
 
     private object DueRowFor {

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.212.0
+**Linee del tempo: mesi, spazi giusti e Spese**
+- A ogni cambio di mese c'è un segno con il nome ("NOVEMBRE"), come quello di "Oggi" ma più tenue, in tutte le linee del tempo; passandoci sopra vibra appena
+- Lo spazio fra due giorni cresce in scala logaritmica: si capisce quanto tempo passa, ma niente buchi enormi
+- In Oggi, Prossimi giorni mostra 5 cose e la card Spese è una linea del tempo con le ultime 5 spese
+- Ogni spesa ha l'icona e il colore della sua categoria; il riepilogo del mese ha una barra con gli stessi colori
+- Spese è di nuovo anche in Note, come terza parte
+- Se apri la linea del tempo dalla card di Oggi, indietro torni a Oggi
+- All'apertura non si vede più un pezzo di riga passata sopra "Oggi"
+- I promemoria con data che spunti finiscono nel passato della linea, nel giorno in cui li hai fatti
+- Il calendario in Note › Prossimi giorni si carica man mano che scorri, in avanti e indietro nel passato, senza fermarsi
+
 ## 1.211.0
 **Spese più pulita**
 - Il riepilogo del mese in cima è compatto: mese e totale su una riga, sotto il mese prima e le categorie in una riga sola
