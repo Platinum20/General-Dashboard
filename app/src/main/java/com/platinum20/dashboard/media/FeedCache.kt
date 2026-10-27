@@ -6,6 +6,7 @@ import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.spotify.SpLibrary
 import com.platinum20.dashboard.media.spotify.SpProfile
 import com.platinum20.dashboard.media.spotify.SpRelease
+import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.net.DiskCache
@@ -81,6 +82,12 @@ object FeedCache {
         "yt-playlist.json",
         { list -> list.toArray { JSONObject().put("id", it.id).put("t", it.title).put("i", it.thumbnail).put("n", it.count) } },
         { array -> array.objects { YtPlaylist(it.getString("id"), it.optString("t"), it.optString("i"), it.optInt("n")) } },
+    )
+
+    val channels = FeedCodec<List<YtChannel>>(
+        "yt-canali.json",
+        { list -> list.toArray { JSONObject().put("id", it.id).put("t", it.title).put("i", it.thumbnail) } },
+        { array -> array.objects { YtChannel(it.getString("id"), it.optString("t"), it.optString("i")) } },
     )
 
     // --- Spotify ---

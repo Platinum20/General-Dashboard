@@ -16,6 +16,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.AdaptiveTrackSelection
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
+import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.media.podcast.PodcastStore
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
@@ -445,7 +446,8 @@ object CanvasPlayer {
         endedId = n.entryId
         saveProgress()
         if (next()) return
-        // Coda finita su un video di YouTube: si continua con quelli proposti, come su YouTube.
+        // Coda finita su un video di YouTube: si continua con quelli proposti, come su YouTube (se lo vuoi).
+        if (!AppSettings.autoplayNext.value) return
         val suggested = if (n.item.kind == ResumeKind.YOUTUBE) YtPlayer.suggestedAfter(n.item.key) else null
         val id = suggested?.let(YtResolver::videoId)
         if (id != null) {

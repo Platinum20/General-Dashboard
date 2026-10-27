@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.242.0
+**Video: scheda Canali e scelta sul video successivo**
+- In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video
+- Le quattro schede ora sono larghe uguali e arrivano fino al bordo destro, senza scorrere di lato
+- In Impostazioni › Fa da solo c'è "Riproduci il video successivo": spento, finito un video non ne parte un altro da solo
+
 ## 1.241.0
 **Niente vibrazione nelle card**
 - Scorrendo la Home o la pagina Note, le card (Prossimi giorni, Note, Spese) non vibrano più al cambio di mese: la vibrazione resta solo dentro la pagina aperta

@@ -93,6 +93,7 @@ object AppSettings {
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
     private const val KEY_HIDE_LIVE = "video_hide_live"
+    private const val KEY_AUTOPLAY_NEXT = "video_autoplay_next"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -122,6 +123,9 @@ object AppSettings {
     private val _hideLive = MutableStateFlow(false)
     /** In Video niente live, in corso o in arrivo. */
     val hideLive: StateFlow<Boolean> = _hideLive.asStateFlow()
+    private val _autoplayNext = MutableStateFlow(true)
+    /** Finito un video di YouTube (e la coda), parte da solo uno di quelli proposti, come su YouTube. */
+    val autoplayNext: StateFlow<Boolean> = _autoplayNext.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -173,6 +177,7 @@ object AppSettings {
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
         _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
+        _autoplayNext.value = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -207,6 +212,11 @@ object AppSettings {
     fun setHideLive(enabled: Boolean) {
         _hideLive.value = enabled
         prefs.edit().putBoolean(KEY_HIDE_LIVE, enabled).apply()
+    }
+
+    fun setAutoplayNext(enabled: Boolean) {
+        _autoplayNext.value = enabled
+        prefs.edit().putBoolean(KEY_AUTOPLAY_NEXT, enabled).apply()
     }
 
     fun setReadingVoice(voice: ReadingVoice) {

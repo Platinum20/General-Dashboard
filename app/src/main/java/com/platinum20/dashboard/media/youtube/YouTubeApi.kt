@@ -189,6 +189,11 @@ object YouTubeApi {
             .sortedByDescending { it.published }
     }
 
+    /** Gli ultimi video di un canale (feed RSS pubblico, una quindicina), i più recenti prima. */
+    suspend fun channelVideos(channel: YtChannel): List<YtVideo> = withContext(Dispatchers.IO) {
+        channelFeed(channel.id).map { it.copy(channelAvatar = channel.thumbnail) }.sortedByDescending { it.published }
+    }
+
     private fun channelFeed(channelId: String): List<YtVideo> {
         val conn = (URL("https://www.youtube.com/feeds/videos.xml?channel_id=$channelId").openConnection() as HttpURLConnection).apply {
             connectTimeout = 5_000
