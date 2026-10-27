@@ -230,7 +230,7 @@ object YtPlayer {
             val upcoming = YtPremiere.check(id)
             _now.value = YtNow(
                 link, null, loading = false, audioOnly = audioOnly, upcoming = upcoming,
-                error = upcoming?.message ?: "Non riesco ad aprire il video: ${e.message ?: "errore"}",
+                error = upcoming?.message ?: YtErrors.message(e),
             )
             throw upcoming ?: e
         }
