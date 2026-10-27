@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.230.0
+**Spese non si chiude più all'apertura**
+- La pagina Spese si apriva e l'app si chiudeva subito: un conto sbagliato sullo spazio sotto "OGGI". Ora si apre normalmente
+
 ## 1.229.0
 **Radio e podcast in una pagina sola**
 - Niente più pillole Radio e Podcast: scorri e trovi radio preferite e recenti, i tuoi podcast con gli ultimi episodi, le radio più ascoltate in Italia

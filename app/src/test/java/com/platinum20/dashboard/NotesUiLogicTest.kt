@@ -24,6 +24,7 @@ import com.platinum20.dashboard.ui.screens.expenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
+import com.platinum20.dashboard.ui.screens.nowRoom
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -307,5 +308,14 @@ class NotesUiLogicTest {
         val marks = noteMarks(notes, today, first = 1, zone = zone)
         assertEquals(listOf(2, 4), marks.map { it.index })
         assertEquals(listOf("Oggi", "12 set"), marks.map { it.tick })
+    }
+
+    /** Spese si chiudeva all'apertura: prima della misura il conto andava in overflow (1.230). */
+    @Test fun spazioSottoOggiSenzaOverflow() {
+        assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = null))
+        assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = null))
+        assertEquals(1200, nowRoom(viewport = 2000, bottomPadding = 300, below = 500))
+        assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = 5000))
+        assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = 100))
     }
 }

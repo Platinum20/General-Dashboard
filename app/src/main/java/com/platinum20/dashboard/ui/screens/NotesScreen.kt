@@ -683,8 +683,7 @@ fun NotesScreen(
             item(key = "bottom-space") {
                 // Si apre su "OGGI" in cima allo schermo anche con poco sotto (Antonio): il resto resta vuoto.
                 val density = androidx.compose.ui.platform.LocalDensity.current
-                val below = nowOffset?.let { timelineHeight - it } ?: Int.MAX_VALUE
-                val room = with(density) { (listState.layoutInfo.viewportSize.height - below).coerceAtLeast(0).toDp() }
+                val room = with(density) { nowRoom(listState.layoutInfo.viewportSize.height, 0, nowOffset?.let { timelineHeight - it }).toDp() }
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
