@@ -10,7 +10,7 @@
 - Se apri la linea del tempo dalla card di Oggi, indietro torni a Oggi
 - All'apertura non si vede più un pezzo di riga passata sopra "Oggi"
 - I promemoria con data che spunti finiscono nel passato della linea, nel giorno in cui li hai fatti
-- Il calendario in Note › Prossimi giorni si carica man mano che scorri, senza fermarsi dopo un anno
+- Il calendario in Note › Prossimi giorni si carica man mano che scorri, in avanti e indietro nel passato, senza fermarsi
 
 ## 1.211.0
 **Spese più pulita**

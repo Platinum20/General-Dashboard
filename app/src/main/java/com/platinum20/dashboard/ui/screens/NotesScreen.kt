@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.gestures.scrollBy
+import kotlinx.coroutines.flow.first
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
@@ -503,6 +505,31 @@ fun NotesScreen(
                 if (events.size == before) NotesEvents.stop()
                 kotlinx.coroutines.delay(300)
                 grown++
+            }
+        }
+        // Lo stesso in cima, verso il passato (Antonio): un altro pezzo di calendario alla volta. Le righe nuove
+        // entrano sopra, quindi la lista scorre di quanto è cresciuta e quello che stai guardando resta fermo.
+        val nearStart by remember(section) {
+            derivedStateOf {
+                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "timeline" }
+                startedAtNow && item != null && item.offset > -1500
+            }
+        }
+        var grownPast by remember { mutableStateOf(0) }
+        LaunchedEffect(nearStart, grownPast, section, calendarGranted) {
+            if (nearStart && section == NotesSection.DATED && calendarGranted && NotesEvents.growPast()) {
+                val before = events.size
+                val oldOffset = nowOffset
+                events = NotesEvents.load(context)
+                if (events.size == before) NotesEvents.stopPast()
+                else {
+                    val newOffset = kotlinx.coroutines.withTimeoutOrNull(1000) {
+                        androidx.compose.runtime.snapshotFlow { nowOffset }.first { it != oldOffset }
+                    }
+                    if (oldOffset != null && newOffset != null) runCatching { listState.scrollBy((newOffset - oldOffset).toFloat()) }
+                }
+                kotlinx.coroutines.delay(300)
+                grownPast++
             }
         }
         val barrier = rememberPastBarrier(listState, timelineIndex, if (section == NotesSection.DATED) nowOffset else null)
@@ -1338,8 +1365,22 @@ private object NotesEvents {
         days = MAX_DAYS
     }
 
+    /** Quanti giorni indietro: parte da [PAST_DAYS] e cresce scorrendo in cima, a blocchi di sei mesi. */
+    var past = PAST_DAYS
+        private set
+
+    fun growPast(): Boolean {
+        if (past >= MAX_DAYS) return false
+        past += 182
+        return true
+    }
+
+    fun stopPast() {
+        past = MAX_DAYS
+    }
+
     suspend fun load(context: android.content.Context): List<CalendarEvent> =
-        // Anche gli ultimi [PAST_DAYS] giorni: il passato della linea del tempo.
-        CalendarRepository.eventsFrom(context, LocalDate.now().minusDays(PAST_DAYS.toLong()), PAST_DAYS + days)
+        // Anche il passato ([past] giorni): sta sopra "Oggi" sulla linea del tempo.
+        CalendarRepository.eventsFrom(context, LocalDate.now().minusDays(past.toLong()), past + days)
             .values.flatten().also { last = it }
 }
