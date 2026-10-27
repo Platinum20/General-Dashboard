@@ -130,7 +130,7 @@ fun YouTubeWatchScreen(url: String?, onBack: () -> Unit, onOpenQueue: () -> Unit
     // Avvisi brevi del player (es. sottotitoli che YouTube non dà): il video intanto continua.
     androidx.compose.runtime.LaunchedEffect(now?.notice) {
         now?.notice?.let {
-            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_SHORT).show()
+            com.platinum20.dashboard.capture.CaptureFeedback.tell(context, it)
             YtPlayer.consumeNotice()
         }
     }

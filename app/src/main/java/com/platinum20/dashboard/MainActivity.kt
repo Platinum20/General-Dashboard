@@ -66,6 +66,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.MicOff
 import androidx.compose.foundation.layout.Column
 import com.platinum20.dashboard.capture.Dictation
 import android.content.Intent
@@ -150,7 +151,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
-import android.widget.Toast
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.platinum20.dashboard.adblock.AdBlocker
@@ -1019,11 +1019,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val notesProblem by NotesStore.readProblem.collectAsState()
     LaunchedEffect(notesProblem) {
         if (notesProblem != null) {
-            Toast.makeText(
-                context,
-                "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup",
-                Toast.LENGTH_LONG,
-            ).show()
+            CaptureFeedback.tell(context, "Non sono riuscito a leggere le note: ne ho salvato una copia, puoi ripristinare un backup")
             NotesStore.readProblemShown()
         }
     }
@@ -1044,7 +1040,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val voiceScope = rememberCoroutineScope()
     DisposableEffect(Unit) { onDispose { dictation.cancel() } }
     val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) Toast.makeText(context, "Ora tieni premuto il + e parla", Toast.LENGTH_SHORT).show()
+        if (granted) CaptureFeedback.tell(context, "Ora tieni premuto il + e parla", Icons.Rounded.Mic)
     }
     SongId.init(context)
     // Un vocale senza parole ma con suono è musica: Canvas la riconosce, la fa partire su Spotify e la mette in "Sentite da Canvas".
@@ -1079,7 +1075,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 return@start false
             }
             !dictation.available -> {
-                Toast.makeText(context, "Dettatura non disponibile su questo telefono", Toast.LENGTH_SHORT).show()
+                CaptureFeedback.tell(context, "Dettatura non disponibile su questo telefono", Icons.Rounded.MicOff)
                 return@start false
             }
         }
