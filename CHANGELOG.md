@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.220.0
+## 1.222.0
 **Si modifica tutto nella pagina, card uguali ovunque**
 - Promemoria, date, pacchi, abitudini e spese si modificano direttamente nella pagina a schermo intero: il titolo si scrive, scadenza, ripetizione, avviso, data, categoria e importo si toccano. Niente più finestra "Modifica"
 - I promemoria senza data che spunti restano sulla linea del tempo di Note, nel giorno in cui li hai fatti (barrati); via la sezione "Completati"
