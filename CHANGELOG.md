@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.214.0
+**Le note lunghe come un foglio**
+- Aprendo una nota non c'è più la fila di pulsanti in alto: solo Indietro e la riga di quando l'hai modificata
+- Il titolo (la prima riga) è grande, il testo ha più aria e margini più larghi, come una pagina
+- In fondo, sopra la tastiera: il pulsante per farne una lista, quante parole ci sono (e i minuti di lettura se è lunga) e "Altro", che apre il fumetto in vetro con Fissa in alto, Condividi ed Elimina
+- Nella linea del tempo le note con foto o da spuntare hanno la loro icona, e le liste mostrano quante voci sono fatte ("2/5")
+
 ## 1.213.0
 **Leonardo al posto di Miro**
 - Miro aveva un accento straniero: al suo posto c'è Leonardo, una voce maschile italiana naturale (lo stesso parlante di Riccardo, ma con una qualità molto più alta). È la prima a sinistra e si scarica una volta sola, circa 65 MB

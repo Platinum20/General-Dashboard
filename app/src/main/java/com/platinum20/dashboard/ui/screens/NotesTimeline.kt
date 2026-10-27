@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Image
+import com.platinum20.dashboard.notes.NoteText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -378,7 +381,7 @@ internal fun undatedEntries(
         .sortedByDescending { it.first }
     val out = mutableListOf<Pair<TimelineEntry, UndatedRow>>()
     pinned.forEachIndexed { i, n ->
-        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = NOTE_ICON) to UndatedRow(note = n)
+        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = n.icon(), trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
     }
     var previous: LocalDate? = null
     rows.forEach { (at, row) ->
@@ -390,7 +393,8 @@ internal fun undatedEntries(
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
                 if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, month = month)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
-                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = NOTE_ICON, month = month)
+                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = row.note.icon(),
+                trailing = NoteText.badge(row.note.text), month = month)
         }
         out += entry to row
         previous = day
@@ -425,3 +429,10 @@ internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expens
 }
 
 private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes
+
+/** Si vede subito che nota è: con la foto, una lista da spuntare, o testo. */
+private fun com.platinum20.dashboard.notes.Note.icon() = when {
+    photo.isNotEmpty() -> Icons.Outlined.Image
+    com.platinum20.dashboard.notes.Checklist.hasItems(text) -> Icons.Outlined.Checklist
+    else -> NOTE_ICON
+}
