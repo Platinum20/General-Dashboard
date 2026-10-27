@@ -23,13 +23,14 @@ import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,10 +46,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.QueueEntry
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
 
 private fun ResumeItem.queueIcon(): ImageVector = when (kind) {
     ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
@@ -77,7 +80,8 @@ private fun ResumeItem.sourceLabel(): String = when (kind) {
 
 /**
  * La coda unica: in cima quello che suona, sotto quello che viene dopo, di qualunque fonte.
- * Un tocco salta lì; trascinando la maniglia si sceglie cosa viene dopo; la X toglie.
+ * Un tocco fa partire quella voce (le altre restano); la maniglia sceglie cosa viene dopo; portandola
+ * di lato si toglie, con "Annulla". In fondo "Riempi in automatico" per non restare senza musica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,15 +142,14 @@ fun QueueScreen(onBack: () -> Unit) {
             if (upcoming.isNotEmpty()) {
                 item(key = "h-next") { SectionHeader("Dopo", Modifier.padding(top = 8.dp)) }
                 items(upcoming, key = { it.id }) { entry ->
-                    QueueRow(
+                    SwipeQueueRow(
                         entry,
-                        current = false,
                         modifier = (if (reorder.isDragging(entry.id)) Modifier else Modifier.animateItem()).reorderItem(reorder, entry.id),
                         handle = Modifier.reorderHandle(reorder, entry.id) { view.haptic(Haptic.GRAB) },
-                        onTap = { CanvasPlayer.jump(entry.id) },
                     )
                 }
             }
+            item(key = "autofill") { AutoFillRow(Modifier.padding(top = 12.dp).animateItem()) }
         }
     }
 }
@@ -165,9 +168,48 @@ internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
             SectionHeader("In coda · ${next.size}", Modifier.weight(1f))
             TextButton(onClick = onOpenQueue) { Text("Apri") }
         }
-        next.take(3).forEach { entry ->
-            QueueRow(entry, current = false, onTap = { CanvasPlayer.jump(entry.id) })
-        }
+        next.take(3).forEach { entry -> androidx.compose.runtime.key(entry.id) { SwipeQueueRow(entry) } }
+    }
+}
+
+/** Una voce che viene dopo: un tocco la fa partire, portata di lato esce dalla coda (con "Annulla"). */
+@Composable
+private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, handle: Modifier? = null) {
+    val context = LocalContext.current
+    val swipe = rememberSwipeAwayState()
+    Box(modifier) {
+        SwipeAwayMark(swipe)
+        QueueRow(
+            entry,
+            current = false,
+            modifier = Modifier.swipeAway(swipe) {
+                val index = CanvasPlayer.queue.value.entries.indexOfFirst { it.id == entry.id }
+                CanvasPlayer.remove(entry.id)
+                CaptureFeedback.tell(context, "Tolto dalla coda", Icons.Outlined.RemoveCircleOutline, "Annulla") {
+                    CanvasPlayer.restore(entry, index)
+                }
+            },
+            handle = handle,
+            onTap = { CanvasPlayer.jump(entry.id) },
+        )
+    }
+}
+
+/** L'interruttore in fondo alla coda: finita la coda di Spotify, altri tuoi brani arrivano da soli. */
+@Composable
+private fun AutoFillRow(modifier: Modifier = Modifier) {
+    val connected by SpotifyAuth.connected.collectAsState()
+    if (!connected) return
+    val on by CanvasPlayer.autoFill.collectAsState()
+    CanvasCard(modifier.fillMaxWidth()) {
+        SettingsItem(
+            icon = Icons.Outlined.AutoAwesome,
+            accent = TileAccent.GREEN,
+            title = "Riempi in automatico",
+            subtitle = "Altri tuoi brani di Spotify a fine coda",
+            onClick = { CanvasPlayer.setAutoFill(!on) },
+            trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> CanvasPlayer.setAutoFill(v) }) },
+        )
     }
 }
 
@@ -208,9 +250,6 @@ private fun QueueRow(
             )
         }
         if (!current) {
-            IconButton(onClick = { CanvasPlayer.remove(entry.id) }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Rounded.Close, contentDescription = "Togli dalla coda")
-            }
             if (handle != null) {
                 Icon(
                     Icons.Rounded.DragHandle,

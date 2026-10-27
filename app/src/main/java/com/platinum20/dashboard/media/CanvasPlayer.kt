@@ -18,7 +18,11 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.media.podcast.PodcastStore
+import com.platinum20.dashboard.media.spotify.SpKind
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
+import com.platinum20.dashboard.media.spotify.SpotifyPlayer.asQueueItem
+import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.news.RecapSpeaker
@@ -29,8 +33,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 
 /** Quello che il player unico sta suonando, uguale per tutte le fonti. */
@@ -88,6 +94,7 @@ object CanvasPlayer {
     private const val PREFS = "play_queue"
     private const val KEY = "queue"
     private const val KEY_CURRENT = "queue_current"
+    private const val KEY_AUTOFILL = "queue_autofill"
 
     private val scope = MainScope()
     private var exo: ExoPlayer? = null
@@ -110,6 +117,11 @@ object CanvasPlayer {
     private val _now = MutableStateFlow<EngineNow?>(null)
     val now: StateFlow<EngineNow?> = _now.asStateFlow()
 
+    private val _autoFill = MutableStateFlow(true)
+    /** "Riempi in automatico": a coda di Spotify quasi finita si aggiungono altri tuoi brani. */
+    val autoFill: StateFlow<Boolean> = _autoFill.asStateFlow()
+    private var filling: Job? = null
+
     fun init(context: Context) {
         if (appContext != null) return
         val app = context.applicationContext
@@ -121,6 +133,7 @@ object CanvasPlayer {
             }.getOrDefault(emptyList()).mapIndexed { i, it -> QueueEntry(i + 1L, it) }
             nextId = entries.size + 1L
             _queue.value = QueueState(entries, p.getInt(KEY_CURRENT, -1).coerceIn(-1, entries.size - 1))
+            _autoFill.value = p.getBoolean(KEY_AUTOFILL, true)
         }
     }
 
@@ -177,10 +190,42 @@ object CanvasPlayer {
         if (!next()) stop()
     }
 
-    /** Salta a una voce della coda e la fa partire. */
+    /** Fa partire una voce della coda: esce da "Dopo", le altre restano dove sono. */
     fun jump(id: Long) {
-        setQueue(QueueOps.jump(_queue.value, id))
+        setQueue(QueueOps.pick(_queue.value, id))
         load(true, null)
+    }
+
+    /** "Annulla" dopo averla tolta: torna al suo posto. */
+    fun restore(entry: QueueEntry, index: Int) = setQueue(QueueOps.restore(_queue.value, entry, index))
+
+    fun setAutoFill(enabled: Boolean) {
+        _autoFill.value = enabled
+        prefs?.edit()?.putBoolean(KEY_AUTOFILL, enabled)?.apply()
+        if (enabled) topUp() else filling?.cancel()
+    }
+
+    /** Coda di Spotify quasi finita: altri tuoi brani (più ascoltati, salvati, recenti) in fondo. */
+    private fun topUp() {
+        if (!_autoFill.value || filling?.isActive == true || !QueueFill.needed(_queue.value)) return
+        if (!SpotifyAuth.connected.value) return
+        filling = scope.launch {
+            SpotifyStore.refreshHome()
+            SpotifyStore.refreshLibrary()
+            // Prima volta dall'avvio: si aspetta che arrivino (dalla copia salvata o dalla rete).
+            val home = withTimeoutOrNull(15_000) { SpotifyStore.home.first { it.data != null || (!it.loading && it.error != null) } }?.data
+            val library = withTimeoutOrNull(5_000) { SpotifyStore.library.first { it.data != null || (!it.loading && it.error != null) } }?.data
+            val pool = (home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty()).filter { it.kind == SpKind.TRACK }.map { it.asQueueItem() }
+            val state = _queue.value
+            if (!_autoFill.value || !QueueFill.needed(state)) return@launch
+            var filled = state
+            QueueFill.pick(state, pool, System.currentTimeMillis()).forEach { filled = QueueOps.add(filled, it, id()) }
+            if (filled === state) return@launch
+            setQueue(filled)
+            // Arrivati quando la coda era già finita: si riparte da soli.
+            val n = _now.value
+            if (n != null && endedId == n.entryId) next()
+        }
     }
 
     /** Avanti nella coda, se c'è qualcosa dopo. */
@@ -217,6 +262,7 @@ object CanvasPlayer {
         val array = JSONArray()
         trimmed.entries.forEach { array.put(it.item.toJson()) }
         prefs?.edit()?.putString(KEY, array.toString())?.putInt(KEY_CURRENT, trimmed.current)?.apply()
+        topUp()
     }
 
     private fun id(): Long = nextId++

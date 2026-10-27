@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.243.0
+**Coda più comoda: scorri per togliere e si riempie da sola**
+- Per togliere un brano dalla coda lo porti di lato (verso sinistra), al posto della X; in fondo compare "Annulla"
+- Tocchi un brano in coda e parte solo lui: quelli prima non vengono più saltati, restano lì dopo
+- In fondo alla coda c'è "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani, prima degli stessi artisti
+- Mentre sistemi la coda si vede il mini player
+
 ## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**
 - In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video

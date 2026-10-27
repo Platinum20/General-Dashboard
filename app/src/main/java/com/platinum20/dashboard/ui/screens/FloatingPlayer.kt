@@ -87,7 +87,8 @@ fun FloatingPlayer(
     val playing by Playback.now.collectAsState()
     val now = shown ?: playing ?: return
     // Sulle schermate dei player la barra non serve: c'è già il player grande.
-    if (currentRoute?.startsWith(com.platinum20.dashboard.Routes.PLAYER) == true) return
+    // Solo il player: la coda ("media/player/queue") lo tiene, così si vede cosa suona mentre la sistemi.
+    if (currentRoute == com.platinum20.dashboard.Routes.PLAYER) return
     if (currentRoute?.startsWith("media/watch") == true) return
 
     BoxWithConstraints(
