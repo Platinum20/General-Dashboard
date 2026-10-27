@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.205.0
+**Linea del tempo più pulita, e una piccola resistenza prima del passato**
+- In Prossimi giorni, Note e Spese la linea sta direttamente sulla pagina, senza i bordi della card ai lati, e in fondo c'è spazio sopra la barra
+- Fra adesso e il passato c'è il segno "OGGI" ben visibile; scorrendo verso il passato la lista si ferma lì con una vibrazione leggera, e se insisti col dito ci entri
+- Le date passate e quelle di un altro mese hanno il mese ("Dom 4 ott"), i titoli hanno più spazio e i salti fra giorni lontani sono più corti, anche nella card di Oggi
+
 ## 1.204.0
 **Spese sulla linea del tempo, e i promemoria spuntati restano in Note**
 - Le spese del mese stanno sulla stessa linea del tempo di Prossimi giorni e Note: le più recenti in cima, il giorno a destra, la linea che si allunga fra giorni lontani
