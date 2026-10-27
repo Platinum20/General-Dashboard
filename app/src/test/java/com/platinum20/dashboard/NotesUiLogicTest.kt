@@ -18,6 +18,7 @@ import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
+import com.platinum20.dashboard.ui.screens.expenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -198,6 +199,21 @@ class NotesUiLogicTest {
         assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
         // Fra oggi e mercoledì scorso quattro giorni vuoti.
         assertEquals(24f, entries[3].gapDp)
+    }
+
+    @Test fun speseSullaLineaDelTempo() {
+        val today = LocalDate.of(2026, 10, 26)
+        val entries = expenseEntries(
+            listOf(
+                com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),
+                com.platinum20.dashboard.notes.Expense(2, 4000, "Benzina", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+                com.platinum20.dashboard.notes.Expense(3, 300, "Caffè", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+            ),
+            today,
+        ).map { it.first }
+        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
+        assertEquals(true, entries[0].text.startsWith("Benzina · "))
+        assertEquals(12f, entries[2].gapDp)
     }
 
     private object DueRowFor {

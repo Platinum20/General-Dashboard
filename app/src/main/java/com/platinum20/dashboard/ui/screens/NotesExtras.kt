@@ -75,7 +75,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
-private val dayHeader = DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
@@ -210,33 +209,19 @@ fun ExpensesTab(
                 }
             }
         }
-        // Un giorno = un'etichetta e una card con le sue spese, come le altre liste dell'app.
-        inMonth.groupBy { it.date }.forEach { (day, spent) ->
-            item(key = "day-$day") {
-                Column {
-                    Text(
-                        when (day) {
-                            LocalDate.now() -> "Oggi"
-                            LocalDate.now().minusDays(1) -> "Ieri"
-                            else -> day.format(dayHeader).replaceFirstChar { it.uppercase() }
-                        }.uppercase(),
-                        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 10.dp, bottom = 8.dp),
-                    )
-                    CanvasCard(modifier = Modifier.fillMaxWidth()) {
-                        spent.forEachIndexed { i, expense ->
-                            if (i > 0) RowDivider()
-                            Row(
-                                Modifier.fillMaxWidth().clickable { openItem(ItemKind.EXPENSE, expense.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(expense.text.ifEmpty { expense.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(expense.category.label + if (expense.fixedId != null) " · fissa" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text(Expenses.format(expense.cents), style = MaterialTheme.typography.titleMedium)
-                            }
+        // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
+        if (inMonth.isNotEmpty()) {
+            item(key = "timeline") {
+                val entries = expenseEntries(inMonth, LocalDate.now())
+                CanvasCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(vertical = 6.dp)) {
+                        entries.forEachIndexed { index, (entry, expense) ->
+                            TimelineRow(
+                                entry,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                            )
                         }
                     }
                 }

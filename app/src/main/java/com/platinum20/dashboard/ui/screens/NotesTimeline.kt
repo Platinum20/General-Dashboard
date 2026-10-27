@@ -384,4 +384,24 @@ internal fun undatedEntries(
     return out
 }
 
+/**
+ * Spese come linea del tempo, uguale alle altre: una riga per spesa, le più recenti in cima, il giorno a
+ * destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
+ */
+internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
+    var previous: LocalDate? = null
+    return expenses.sortedByDescending { it.date }.map { e ->
+        val first = e.date != previous
+        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(e.date, previous!!) else 0f
+        previous = e.date
+        TimelineEntry(
+            "expense-${e.id}",
+            com.platinum20.dashboard.today.BriefKind.MONEY,
+            e.text.ifEmpty { e.category.label } + " · " + Expenses.format(e.cents),
+            if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
+            gap,
+        ) to e
+    }
+}
+
 private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes
