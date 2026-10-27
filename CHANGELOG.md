@@ -7,6 +7,10 @@
 - Ogni riga del menu dice com'è adesso, per esempio quali notifiche sono accese o quali account sono collegati
 - "Riempi la coda in automatico" lascia il fondo della coda e va in Impostazioni › Media, con "Riproduci il video successivo"
 - Le descrizioni stanno tutte su una riga
+## 1.265.0
+**Pallino della barra del tempo centrato**
+- Il pallino della barra del tempo sta al centro della barra, nei video di YouTube e nel player della musica
+
 ## 1.264.0
 **YouTube: tutti i video di un canale**
 - Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
