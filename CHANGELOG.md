@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.239.0
+**Video: scheda Canali e scelta sul video successivo**
+- In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video
+- Le quattro schede ora sono larghe uguali e arrivano fino al bordo destro, senza scorrere di lato
+- In Impostazioni › Fa da solo c'è "Riproduci il video successivo": spento, finito un video non ne parte un altro da solo
+- In Musica la prima lettera sotto le copertine non viene più tagliata dall'angolo arrotondato
+
 ## 1.238.0
 **Video: schermo acceso, volume col dito, swipe per lo schermo intero**
 - Mentre un video va lo schermo non si spegne più
