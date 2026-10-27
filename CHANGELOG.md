@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.256.0
+**Pagina del video YouTube più pulita**
+- Mi piace e Non mi piace stanno a destra, sulla riga del canale
+- Sotto, tre tasti larghi uguali su una riga: Commenti, Correlati, Condividi; commenti e video correlati si aprono solo toccandoli
+- La data dice "7 ore fa" invece del codice
+- Descrizione su due righe senza riquadro, con i link veri: un video di YouTube parte nell'app, gli altri link si copiano
+- Commenti: se YouTube non li dà si vede "Non riesco a caricare i commenti" con Riprova; "Commenti disattivati" solo se li ha spenti l'autore
+
 ## 1.254.0
 **Video a schermo intero: pinch per riempire lo schermo**
 - Come su YouTube: a schermo intero allarghi due dita e il video riempie tutto lo schermo, senza bande nere (taglia un po' i bordi); stringi e torna intero
