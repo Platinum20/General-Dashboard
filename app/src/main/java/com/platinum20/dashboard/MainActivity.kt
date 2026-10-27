@@ -380,7 +380,7 @@ object Routes {
     const val PODCAST = "media/podcast"
     /** Il player grande unico (musica, radio, podcast). */
     const val PLAYER = "media/player"
-    /** Sotto il player: il mini player resta nascosto, la coda mostra già cosa suona. */
+    /** Sotto il player: qui il mini player si vede (si sistema la coda e si vede cosa suona). */
     const val QUEUE = "media/player/queue"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
     const val LOGIN = "settings/login/{service}"

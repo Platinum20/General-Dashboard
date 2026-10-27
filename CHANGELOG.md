@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.248.0
+**Coda più comoda: scorri per togliere e si riempie da sola**
+- Per togliere un brano dalla coda lo porti di lato (verso sinistra), al posto della X; in fondo compare "Annulla"
+- Tocchi un brano in coda e parte solo lui: quelli prima non vengono più saltati, restano lì dopo
+- In fondo alla coda c'è "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani, prima degli stessi artisti
+- Mentre sistemi la coda si vede il mini player
+
 ## 1.247.0
 **Spese più viva**
 - Quando non ci sono spese c'è scritto solo "Nessuna spesa", al centro dello spazio vuoto sotto

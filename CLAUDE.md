@@ -74,7 +74,7 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Media** (Musica / Video / Radio e podcast)
 - `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue
-  (pure ops in `QueueOps.kt`, `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
+  (pure ops in `QueueOps.kt`: tap = `pick` (plays it, others stay), swipe-remove + `restore` undo; `QueueFill` = "Riempi in automatico" Spotify top-up toggle at the queue bottom; `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
   Spotify plugs in as `ExternalBackend`. `PlayerService.kt` = the one MediaSession/notification
   (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
   `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
