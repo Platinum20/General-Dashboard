@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.237.0
+**Più tardi = i video salvati nelle note**
+- In Video il riquadro Più tardi mostra i video di YouTube che hai nelle note, dal più recente: quelli salvati tenendo premuto e i link di YouTube incollati o condivisi
+- Non mostra più la playlist "Guarda più tardi" del tuo account YouTube
+
 ## 1.236.0
 **Spese più chiara**
 - Il riepilogo del mese resta sempre fisso in cima: la lista delle spese scorre sotto e non spunta più niente sopra

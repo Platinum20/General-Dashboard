@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.settings.AppSettings
+import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -145,6 +146,7 @@ fun YouTubeFeedScreen(
                 title = openPlaylist?.title ?: list?.title ?: "Video",
                 subtitle = when {
                     openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
+                    list == YtList.LATER -> "I video salvati nelle note"
                     list != null -> "YouTube"
                     fresh > 0 -> "$fresh video nuovi oggi"
                     else -> "YouTube e i video del telefono"
@@ -188,8 +190,11 @@ fun YouTubeFeedScreen(
                     return@Column
                 }
                 YtList.LATER -> {
-                    val later by YouTubeStore.watchLater.collectAsState()
-                    SimpleVideos(later, "Nessun video da guardare più tardi", onPlay, list = "WL") { YouTubeStore.refreshWatchLater(context) }
+                    // Più tardi = i video di YouTube che hai salvato nelle note, non la playlist di YouTube.
+                    NotesStore.init(context)
+                    val notes by NotesStore.data.collectAsState()
+                    val saved = remember(notes.notes) { SavedLinks.youtubeVideos(notes.notes) }
+                    SimpleVideos(Loadable(saved), "Salva un video nelle note e lo ritrovi qui", onPlay) { }
                     return@Column
                 }
                 null -> Unit
