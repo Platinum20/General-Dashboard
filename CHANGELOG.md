@@ -7,6 +7,10 @@
 - Se a fine brano Spotify passava da solo a una sua canzone, ora parte quella dopo della tua coda
 - Dopo uno skip la barra del tempo c'è subito, con la durata giusta; dopo un salto nel brano non torna indietro
 - La barra del tempo del player è sottile col pallino piccolo, come quella dei video di YouTube
+## 1.251.0
+**Video: barra del tempo sottile**
+- La barra del tempo dei video è sottile quanto i segmenti di SponsorBlock, che ora le stanno sopra perfettamente allineati
+- Il cursore è un pallino piccolo, come su YouTube
 
 ## 1.250.0
 **Chiave di Spotify di nuovo nelle impostazioni**
