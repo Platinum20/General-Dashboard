@@ -15,11 +15,13 @@ import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
@@ -247,9 +249,7 @@ fun YouTubeWatchScreen(
                 onToggleFullscreen = { fullscreen = !fullscreen },
                 onRetry = { (now?.link ?: url)?.let { YtPlayer.play(context, it) } },
                 onDragBy = { amount ->
-                    // Il gesto arriva misurato sul video, che intanto si è rimpicciolito: si riporta allo schermo.
-                    val scale = videoStart()?.let { MiniDock.layer(it, videoNow(it)).scaleY } ?: 1f
-                    if (flyFrom == null) scope.launch { dismiss.snapTo((dismiss.value + amount * scale).coerceAtLeast(0f)) }
+                    if (flyFrom == null) scope.launch { dismiss.snapTo((dismiss.value + amount).coerceAtLeast(0f)) }
                 },
                 onDragEnd = { velocity ->
                     if (dismiss.value > screenHeight * 0.15f || velocity > 1_200f) {
@@ -259,18 +259,27 @@ fun YouTubeWatchScreen(
                     }
                 },
                 modifier = if (immersive) Modifier.fillMaxSize() else Modifier
+                    // Sopra la lista: scendendo il video le passa davanti.
+                    .zIndex(1f)
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
                     .onGloballyPositioned { videoAt[0] = it }
-                    .graphicsLayer {
-                        val start = videoStart() ?: return@graphicsLayer
-                        val rect = videoNow(start)
-                        val layer = MiniDock.layer(start, rect)
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        scaleX = layer.scaleX
-                        scaleY = layer.scaleY
-                        translationX = layer.dx
-                        translationY = layer.dy
+                    // Il video cambia davvero misura e posto (non solo il disegno): la superficie del
+                    // video sul telefono segue il layout, mentre ignorava scala e spostamento del layer.
+                    .layout { measurable, constraints ->
+                        val start = videoStart()
+                        val layer = start?.let { MiniDock.layer(it, videoNow(it)) }
+                        val w = constraints.maxWidth
+                        val h = constraints.maxHeight
+                        val placeable = if (layer == null) measurable.measure(constraints) else measurable.measure(
+                            androidx.compose.ui.unit.Constraints.fixed(
+                                (w * layer.scaleX).roundToInt().coerceAtLeast(1),
+                                (h * layer.scaleY).roundToInt().coerceAtLeast(1),
+                            )
+                        )
+                        layout(w, h) {
+                            placeable.place((layer?.dx ?: 0f).roundToInt(), (layer?.dy ?: 0f).roundToInt())
+                        }
                     },
                 onOpenQueue = onOpenQueue,
             )

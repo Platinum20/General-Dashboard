@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.282.0
+**Il video vola davvero nel mini player**
+- Trascinandolo giù il video si rimpicciolisce mentre segue il dito, e lasciato va a posarsi sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai spostato lì)
+- Prima sul telefono scendeva soltanto: ora cambia proprio misura e posto
+
 ## 1.280.0
 **Aggiornamenti: il tasto non sta più sotto il mini player**
 - Se sta suonando qualcosa, "Controlla e aggiorna" sale sopra il mini player invece di restarci sotto
