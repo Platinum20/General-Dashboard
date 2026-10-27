@@ -31,7 +31,7 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
-- `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"), `SearchScreen.kt` + `search/EverywhereSearch.kt`.
+- `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"; also on Media subpages, prefiltered via `SearchFilter.forRoute` + `Routes.search(filter)`), `SearchScreen.kt` + `search/EverywhereSearch.kt`. Media subpages have no search fields or header buttons.
 - `ui/screens/SwipeAway.kt`: "drag sideways to close" (rule + `Modifier.swipeAway` + X), shared by mini player and save bubble.
 - `ui/screens/Pickers.kt` (date/time/task edit dialogs), `SaveToNotesLayer.kt`/`SaveOnLongPress.kt`
   (long-press bubble: "Salva nelle note", "Aggiungi alla coda"; also holds the shared `BottomBubble`
@@ -81,13 +81,13 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
   `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
   adapters over CanvasPlayer. `VideoPlayerScreen` (route media/video) is only the picker for phone
   videos/files/links: `MediaLauncher.playVideo` plays them on CanvasPlayer (ResumeKind.VIDEO).
-- `media/youtube/` (YouTubeWeb/Api/Store, YtMusic, YtHistory, YtFavorites) + `player/`
+- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites; YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
   (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
-- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyPlayer` = own hidden
+- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyMixes` = our "Mix per te" (Spotify-made playlists are 403 for personal apps), `SpotifyPlayer` = own hidden
   WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
 - `media/MediaWebViews.kt`: any WebView in Compose must go through `WebView.inFrame(ctx)`.
-- Screens: `MediaScreen`, `MusicScreen`, `ListenScreen`/`RadioScreen`/`PodcastScreen`,
-  `YouTubeFeedScreen`, `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
+- Screens: `MediaScreen`, `MusicScreen` (Spotify only, one page of horizontal `coverRow`s), `ListenScreen` (one page, no chips: `radioSections` in RadioScreen + `podcastSections`/`PodcastPage` in PodcastScreen),
+  `YouTubeFeedScreen` (chips Home/Iscrizioni/Cronologia + Escludi Shorts/live via pure `pickFeed`, `ListTiles` row = Playlist/Mi piace/Più tardi/Telefono), `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
   `FloatingPlayer` (mini player). `PlayerScreen` is the single player route: video layout
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).
@@ -101,7 +101,7 @@ GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
-`SettingsScreen.kt` (groups by intent), `UpdatesScreen.kt`, `LoginScreen.kt`.
+`SettingsScreen.kt` (groups by intent; `RadioAlarmSetting.kt` = Sveglia con la radio in Cosa ti avvisa; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per
 feature (`*Test.kt`). Test class names must be unique across the package. `ScreenshotTour`,

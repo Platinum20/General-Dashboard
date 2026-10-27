@@ -55,51 +55,21 @@ import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.radio.RadioStore
 import androidx.compose.runtime.remember
 
-/** La parte Radio di "Radio e podcast": le più ascoltate in Italia, ricerca nel mondo, preferite (la sveglia sta in Impostazioni). */
-@Composable
-internal fun RadioBody() {
-    val context = LocalContext.current
-    RadioStore.init(context)
-    val popular by RadioStore.popular.collectAsState()
-    val search by RadioStore.search.collectAsState()
-    val favorites by RadioStore.favorites.collectAsState()
-    val recent by RadioStore.recent.collectAsState()
-    val now by RadioStore.now.collectAsState()
-    var query by rememberSaveable { mutableStateOf("") }
-    var searching by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { RadioStore.loadPopular() }
-
-    Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
-                query = it
-                if (it.isBlank()) searching = false
-            },
-            placeholder = { Text("Cerca una radio in tutto il mondo") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            singleLine = true,
-            colors = canvasFieldColors(),
-            shape = MaterialTheme.shapes.large,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = {
-                searching = true
-                RadioStore.search(query)
-            }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        )
-        val list: Loadable<List<RadioStation>> = if (searching) search else popular
-        FeedList(list, empty = "Nessuna radio trovata") {
-            if (!searching) {
-                stationSection("Preferite", favorites, now)
-                stationSection("Ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
-                item(key = "popular-header") { SectionTitle("Le più ascoltate in Italia") }
-            }
-            items(list.data.orEmpty(), key = { "list-${it.id}" }) { StationRow(it, now) }
-        }
+/** La parte radio della pagina unica "Radio e podcast": preferite, recenti e le più ascoltate in Italia. */
+internal fun LazyListScope.radioSections(
+    popular: Loadable<List<RadioStation>>,
+    favorites: List<RadioStation>,
+    recent: List<RadioStation>,
+    now: RadioNow?,
+) {
+    stationSection("Radio preferite", favorites, now)
+    stationSection("Radio ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
+    val top = popular.data.orEmpty()
+    if (top.isNotEmpty()) {
+        item(key = "popular-header") { SectionTitle("Le radio più ascoltate in Italia") }
+        items(top, key = { "list-${it.id}" }) { StationRow(it, now) }
+    } else if (popular.loading) item(key = "popular-loading") {
+        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
     }
 }
 
