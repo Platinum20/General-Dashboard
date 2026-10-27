@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.250.0
+**Chiave di Spotify di nuovo nelle impostazioni**
+- Impostazioni › Account › «Chiave di Spotify»: vedi, cambi o ripristini il Client ID (vuoto = quello di Canvas)
+- Toccando Spotify o YouTube in Account riparte sempre il collegamento ufficiale, anche dopo «Esci»
+
 ## 1.249.0
 **YouTube: SponsorBlock e Non mi piace**
 - I video di YouTube saltano da soli sponsor e altre parti inutili, con i dati pubblici di SponsorBlock: compare "Saltato: Sponsor" con Annulla per tornare indietro
