@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.261.0
+**YouTube: tutti i video di un canale**
+- Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
+- Anche da Video › Canali ora vedi tutti i video del canale, non solo gli ultimi 15, dal più recente al più vecchio
+- Scorrendo in fondo arrivano da soli i video più vecchi, fino al primo
+
 ## 1.259.0
 **Spese: il mese segue il dito**
 - Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
