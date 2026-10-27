@@ -67,7 +67,7 @@ internal data class DueDay(
 internal const val PAST_DAYS = 60
 
 /**
- * Il passato di Prossimi giorni, dal più vecchio a ieri/adesso: promemoria fatti (nel giorno della loro scadenza),
+ * Il passato di Prossimi giorni, dal più vecchio a adesso: promemoria fatti (nel giorno in cui li hai fatti),
  * pacchi arrivati, eventi del calendario già finiti negli ultimi [PAST_DAYS] giorni. Va sopra [dueDays].
  */
 internal fun pastDays(
@@ -78,19 +78,20 @@ internal fun pastDays(
     zone: ZoneId = ZoneId.systemDefault(),
 ): List<DueDay> {
     val today = now.toLocalDate()
-    val from = today.minusDays(PAST_DAYS.toLong())
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val rows = mutableListOf<DueRow>()
-    tasks.filter { it.done && it.dueAt != null && it.dueAt < nowMs }.forEach { t ->
-        rows += DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
+    // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
+    tasks.filter { it.done && it.dueAt != null }.forEach { t ->
+        val at = t.doneAt ?: t.dueAt!!
+        if (at <= nowMs) rows += DueRow("task-${t.id}", dayOf(at), at, task = t)
     }
     parcels.forEach { p -> p.deliveredOn?.let { rows += DueRow("parcel-${p.id}", it, startOf(it), parcel = p) } }
     events.filter { it.end <= nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
         rows += DueRow("event-${e.eventId}-${e.begin}", dayOf(e.begin), if (e.allDay) startOf(dayOf(e.begin)) else e.begin, event = e)
     }
-    return rows.filter { !it.day!!.isBefore(from) && !it.day.isAfter(today) }
+    return rows.filter { !it.day!!.isAfter(today) }
         .groupBy { it.day!! }.toSortedMap()
         .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
 }
@@ -287,10 +288,21 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     var previous: LocalDate? = null
+    // Il mese si confronta con la riga prima; da adesso in poi con oggi, così sotto "OGGI" non si ripete il mese.
+    var monthPrevious: LocalDate? = null
+    var reachedNow = false
     return groups.flatMap { g ->
         val day = g.day
         val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
-        if (day != null && !g.late) previous = day
+        if (!reachedNow && !g.past && !g.late && day != null) {
+            reachedNow = true
+            monthPrevious = today
+        }
+        val month = if (!g.late && day != null) com.platinum20.dashboard.today.Upcoming.monthBreak(monthPrevious, day, today) else null
+        if (day != null && !g.late) {
+            previous = day
+            monthPrevious = day
+        }
         val label = when {
             g.late -> "Scaduti"
             day == null -> "Senza data"
@@ -316,6 +328,7 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
                 text = text,
                 dayLabel = if (i == 0) label else null,
                 gapDp = if (i == 0) gap else 0f,
+                month = if (i == 0) month else null,
                 color = r.event?.color ?: 0,
                 late = g.late,
                 past = g.past,
@@ -372,11 +385,12 @@ internal fun undatedEntries(
         val day = dayOf(at)
         val first = day != previous
         val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(day, previous!!) else 0f
+        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, day, today)
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap)
+                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, month = month)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
-                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = NOTE_ICON)
+                if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) else null, gap, icon = NOTE_ICON, month = month)
         }
         out += entry to row
         previous = day
@@ -393,6 +407,7 @@ internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expens
     return expenses.sortedByDescending { it.date }.map { e ->
         val first = e.date != previous
         val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(e.date, previous!!) else 0f
+        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous, e.date, today)
         previous = e.date
         TimelineEntry(
             "expense-${e.id}",
@@ -400,7 +415,11 @@ internal fun expenseEntries(expenses: List<com.platinum20.dashboard.notes.Expens
             Expenses.displayName(e),
             if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today) else null,
             gap,
+            // Icona e colore dicono la categoria, come la barra del riepilogo.
+            color = e.category.color(),
+            icon = e.category.icon(),
             trailing = Expenses.format(e.cents),
+            month = month,
         ) to e
     }
 }

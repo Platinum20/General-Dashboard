@@ -12,6 +12,9 @@ import com.platinum20.dashboard.notes.ParcelHint
 import com.platinum20.dashboard.notes.ParcelHints
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -129,14 +132,7 @@ fun ExpensesTab(
                         )
                     }
                     val split = Expenses.byCategory(data.expenses, month)
-                    if (split.size > 1) {
-                        Text(
-                            split.joinToString(" · ") { (category, cents) -> "${category.label} ${Expenses.format(cents)}" },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 12.dp, top = 2.dp),
-                        )
-                    }
+                    if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(start = 12.dp, top = 8.dp))
                 }
             }
         }
@@ -457,5 +453,41 @@ fun ParcelDialog(
             expected = it
             picking = false
         })
+    }
+}
+
+/**
+ * Come si divide il mese: una barra con un pezzo per categoria, nei colori delle icone sulla linea, e
+ * sotto le categorie con il loro pallino.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun CategoryBar(split: List<Pair<com.platinum20.dashboard.notes.ExpenseCategory, Long>>, modifier: Modifier = Modifier) {
+    val sum = split.sumOf { it.second }.coerceAtLeast(1L)
+    Column(modifier) {
+        Row(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape)) {
+            split.forEach { (category, cents) ->
+                Box(
+                    Modifier.weight((cents.toFloat() / sum).coerceAtLeast(0.01f)).fillMaxHeight()
+                        .background(androidx.compose.ui.graphics.Color(category.color())),
+                )
+            }
+        }
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            split.forEach { (category, cents) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(category.color())))
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "${category.label} ${Expenses.format(cents)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
