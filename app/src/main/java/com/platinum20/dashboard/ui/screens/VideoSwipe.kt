@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -13,6 +14,20 @@ object VideoSwipe {
         val delta = (draggedUpPx / heightPx * maxLevel).roundToInt()
         return (startLevel + delta).coerceIn(0, maxLevel)
     }
+
+    /**
+     * Il volume parte solo se il dito si posa lontano dai bordi alto e basso: lì il sistema ha i
+     * suoi gesti (tendina delle notifiche, chiudere l'app) e non devono cambiare il volume.
+     */
+    fun volumeCanStart(downY: Float, heightPx: Float, topEdgePx: Float, bottomEdgePx: Float): Boolean =
+        downY > topEdgePx && downY < heightPx - bottomEdgePx
+
+    /**
+     * Zona morta: il volume si muove solo dopo [deadZonePx] di strada in verticale, e solo se il
+     * gesto è più verticale che orizzontale. Un tocco o un movimento incerto non cambia nulla.
+     */
+    fun volumeArmed(dx: Float, dy: Float, deadZonePx: Float): Boolean =
+        abs(dy) > deadZonePx && abs(dy) > abs(dx) * 1.5f
 
     /** Swipe su sul video in verticale: basta un po' di strada verso l'alto, o uno scatto. */
     fun opensFullscreen(travelledPx: Float, velocityY: Float, thresholdPx: Float): Boolean =

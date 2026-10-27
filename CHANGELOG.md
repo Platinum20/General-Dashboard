@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.269.0
+## 1.271.0
 **Niente più tasti nella barra del titolo**
 - Il punto del giorno: "Ascolta" è la prima card della pagina, grande, invece dell'icona in alto
 - Meteo: via "Località" e il tasto per aggiornare; la località si sceglie in Impostazioni › Home e la pagina si aggiorna da sola o tirando giù
 - Aggiornamenti: via l'icona per ricaricare, basta "Controlla e aggiorna" in basso
 - Card della Home (prima "Personalizza Oggi"): "Ripristina l'ordine iniziale" sta in fondo alla lista
+## 1.270.0
+**Volume col dito meno sensibile**
+- A schermo intero il volume cambia solo dopo un tratto deciso in verticale, non al primo movimento
+- Se il dito parte dal bordo alto o basso (tendina delle notifiche, chiudere l'app) il volume non si tocca
+- Una piccola vibrazione a ogni tacca di volume
+
 ## 1.268.0
 **Il video ora si rimpicciolisce davvero verso il mini player**
 - Chiudendo il video lui diventa piccolo e vola sulla miniatura del mini player (in basso a sinistra, o in alto se l'hai messo lì), invece di scendere soltanto

@@ -17,6 +17,17 @@ class VideoSwipeTest {
     }
 
     @Test
+    fun volumeIgnoresSystemEdgesAndSmallMoves() {
+        // Schermo alto 1000, bordi di sistema 100 sopra e sotto.
+        assertFalse(VideoSwipe.volumeCanStart(50f, 1000f, 100f, 100f))
+        assertFalse(VideoSwipe.volumeCanStart(950f, 1000f, 100f, 100f))
+        assertTrue(VideoSwipe.volumeCanStart(500f, 1000f, 100f, 100f))
+        assertFalse(VideoSwipe.volumeArmed(0f, 30f, 40f))
+        assertTrue(VideoSwipe.volumeArmed(5f, -60f, 40f))
+        assertFalse(VideoSwipe.volumeArmed(60f, 60f, 40f))
+    }
+
+    @Test
     fun swipeUpOpensFullscreen() {
         assertTrue(VideoSwipe.opensFullscreen(-120f, 0f, 100f))
         assertTrue(VideoSwipe.opensFullscreen(-20f, -2_000f, 100f))
