@@ -368,6 +368,8 @@ object Routes {
     const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
     const val EXPENSES = "home/expenses"
+    /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
+    const val NOTES_EXPENSES = "notes/expenses"
     const val SEARCH = "home/search"
     const val SEARCH_PATTERN = "home/search?f={f}"
     fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
@@ -1025,7 +1027,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
-    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES || currentRoute == Routes.NOTES_EXPENSES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1154,8 +1156,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 CanvasNavBar(
-                    // Spese è una card di Oggi: la barra accende Oggi.
-                    currentRoute = if (currentRoute == Routes.EXPENSES) Routes.HOME else currentRoute,
+                    // Spese accende la sezione da cui la si è aperta.
+                    currentRoute = when (currentRoute) {
+                        Routes.EXPENSES -> Routes.HOME
+                        Routes.NOTES_EXPENSES -> Routes.NOTES
+                        else -> currentRoute
+                    },
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.
@@ -1367,6 +1373,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
             }
             composable(Routes.EXPENSES) {
+                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+            }
+            composable(Routes.NOTES_EXPENSES) {
                 ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
             composable(Routes.WEATHER_PLACE) {

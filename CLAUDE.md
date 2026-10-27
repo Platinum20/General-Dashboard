@@ -40,7 +40,7 @@ create something it lists, so the next thread doesn't have to explore.
 
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses, `NotesCard` (HomeCard.NOTES), all via the shared `TimelineCard` (whole card clickable, also used by the Note overview)),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
-`home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
+`home/expenses`, Spese moved here from Note in 1.186; same screen on `Routes.NOTES_EXPENSES` = `notes/expenses` from the Note card, nav bar on Note). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
 = every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 400 days (`Upcoming.DAYS`, also Notes' `EVENT_DAYS`) of
 events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp` = log-scaled gap, `Upcoming.monthBreak` → `TimelineEntry.month` = `TimelineMonthMarker` 'NOVEMBRE' with haptic via `MonthCross`; Timeline.kt also has `ExpenseCategory.icon()/color()`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
