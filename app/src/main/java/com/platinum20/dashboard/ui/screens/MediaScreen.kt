@@ -181,7 +181,7 @@ fun MediaScreen(
                         icon = Icons.Outlined.GraphicEq,
                         accent = TileAccent.GREEN,
                         title = "Musica",
-                        subtitle = if (spotifyOn) "Spotify e YT" else "YouTube Music",
+                        subtitle = if (spotifyOn) "Spotify" else "Collega Spotify",
                         active = now?.source == PlaySource.SPOTIFY || now?.source == PlaySource.MUSIC,
                         onClick = onOpenMusic,
                     )

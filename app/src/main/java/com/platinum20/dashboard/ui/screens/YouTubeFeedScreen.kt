@@ -119,9 +119,7 @@ fun YouTubeFeedScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     // Basta l'accesso a YouTube fatto nell'app; l'API ufficiale di Google resta un'alternativa.
     val connected = official || MediaService.YOUTUBE in loggedIn
-    // Collegamento ufficiale raggiungibile anche quando l'accesso nell'app c'è già ma il feed non si carica.
-    var setup by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = setup && !official) { setup = false }
+    // Il collegamento ufficiale, quando l'accesso nell'app c'è già, sta in Impostazioni › Account.
     // Si apre sulle Iscrizioni; la Home è subito a sinistra.
     var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
@@ -145,26 +143,7 @@ fun YouTubeFeedScreen(
                     else -> "YouTube e i video del telefono"
                 },
                 onBack = { if (openPlaylist != null) openPlaylist = null else onBack() },
-            ) {
-                // Senza accesso la pagina di collegamento è già quella mostrata: la chiave servirebbe a nulla.
-                if (connected && !official) RoundIconButton(Icons.Outlined.Key, "Collegamento ufficiale") { setup = !setup }
-                if (connected && openPlaylist == null) {
-                    RoundIconButton(Icons.Outlined.Search, "Cerca") { tab = TAB_SEARCH }
-                }
-                if (connected) {
-                    RoundIconButton(Icons.Outlined.Refresh, "Aggiorna") {
-                        val playlist = openPlaylist
-                        when {
-                            playlist != null -> YouTubeStore.loadPlaylist(context, playlist.id, force = true)
-                            tab == TAB_HOME -> YouTubeStore.refreshHome(context, force = true)
-                            tab == TAB_SUBS -> YouTubeStore.refreshSubscriptions(context, force = true)
-                            tab == TAB_PLAYLISTS -> YouTubeStore.refreshPlaylists(context, force = true)
-                            tab == TAB_LIKED -> YouTubeStore.refreshLiked(context, force = true)
-                            tab == TAB_LATER -> YouTubeStore.refreshWatchLater(context, force = true)
-                        }
-                    }
-                }
-            }
+            )
         },
     ) { inner ->
         Column(
@@ -172,7 +151,7 @@ fun YouTubeFeedScreen(
                 .fillMaxSize()
                 .padding(inner)
         ) {
-            if (!connected || (setup && !official)) {
+            if (!connected) {
                 ConnectYouTube(onLogin = onLogin, onOpenPhone = onOpenPhone)
                 return@Column
             }
