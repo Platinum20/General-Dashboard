@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.257.0
+**YouTube: le anteprime non danno più errore**
+- Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
+- «Avvisami»: una notifica ti avvisa quando comincia, e toccandola si apre il video
+- Passato l'orario il video riprova da solo e parte appena YouTube lo avvia; dopo si guarda come un video normale
+- Nei feed le anteprime mostrano «ANTEPRIMA · 20:00» (o DOMANI, o la data) sulla copertina
+
 ## 1.256.0
 **Pagina del video YouTube più pulita**
 - Mi piace e Non mi piace stanno a destra, sulla riga del canale
