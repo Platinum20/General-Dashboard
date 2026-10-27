@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.265.0
+**Volume col dito meno sensibile**
+- A schermo intero il volume cambia solo dopo un tratto deciso in verticale, non al primo movimento
+- Se il dito parte dal bordo alto o basso (tendina delle notifiche, chiudere l'app) il volume non si tocca
+- Una piccola vibrazione a ogni tacca di volume
+
 ## 1.264.0
 **YouTube: tutti i video di un canale**
 - Nella pagina del video tocca il canale (foto o nome): si apre la pagina con tutti i suoi video
