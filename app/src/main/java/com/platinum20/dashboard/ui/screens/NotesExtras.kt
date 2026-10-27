@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -109,7 +111,8 @@ fun ExpensesTab(
     var nowOffset by remember(month) { mutableStateOf<Int?>(null) }
     var timelineHeight by remember(month) { mutableStateOf(0) }
     var startedAtNow by remember { mutableStateOf(false) }
-    val timelineIndex = 1 + (if (data.fixedExpenses.isNotEmpty()) 1 else 0)
+    // Il riepilogo sta fuori dalla lista, fisso in cima (Antonio): la linea parte dalle fisse.
+    val timelineIndex = if (data.fixedExpenses.isNotEmpty()) 1 else 0
     androidx.compose.runtime.LaunchedEffect(nowOffset) {
         val offset = nowOffset
         if (offset != null && !startedAtNow) {
@@ -119,143 +122,160 @@ fun ExpensesTab(
     }
     val barrier = rememberPastBarrier(listState, timelineIndex, nowOffset)
 
-    LazyColumn(
-        state = listState,
-        contentPadding = padding,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.nestedScroll(barrier),
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    Column(
+        Modifier.padding(
+            start = padding.calculateStartPadding(direction),
+            end = padding.calculateEndPadding(direction),
+            top = padding.calculateTopPadding(),
+        ),
     ) {
-        // Il riepilogo del mese, compatto: così la linea del tempo sale.
-        item {
-            CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-                // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
-                val haptic = rememberHaptic()
-                val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
-                var drag by remember { mutableStateOf(0f) }
-                Column(
-                    Modifier
-                        .pointerInput(threshold) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { drag = 0f },
-                                onDragEnd = { drag = 0f },
-                                onDragCancel = { drag = 0f },
-                            ) { change, amount ->
-                                drag += amount
-                                MonthSwipe.target(month, drag, threshold, YearMonth.now())?.let {
-                                    change.consume()
-                                    month = it
-                                    drag = 0f
-                                    haptic(Haptic.TICK)
-                                }
+        // Il riepilogo del mese, compatto e sempre in cima (Antonio): la lista scorre sotto,
+        // e niente del passato sbuca sopra OGGI.
+        CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+            // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
+            val haptic = rememberHaptic()
+            val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+            var drag by remember { mutableStateOf(0f) }
+            Column(
+                Modifier
+                    .pointerInput(threshold) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { drag = 0f },
+                            onDragEnd = { drag = 0f },
+                            onDragCancel = { drag = 0f },
+                        ) { change, amount ->
+                            drag += amount
+                            MonthSwipe.target(month, drag, threshold, YearMonth.now())?.let {
+                                change.consume()
+                                month = it
+                                drag = 0f
+                                haptic(Haptic.TICK)
                             }
                         }
-                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            month.format(monthFormat).replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Spacer(Modifier.weight(1f))
-                        Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                     }
-                    val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
-                    val lines = listOfNotNull(
-                        previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
-                        if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        month.format(monthFormat).replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleSmall,
                     )
-                    if (lines.isNotEmpty()) {
-                        Text(
-                            lines.joinToString(" · "),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    val split = Expenses.byCategory(data.expenses, month)
-                    if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
+                    Spacer(Modifier.weight(1f))
+                    Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                 }
+                val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
+                val lines = listOfNotNull(
+                    previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
+                    if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
+                )
+                if (lines.isNotEmpty()) {
+                    Text(
+                        lines.joinToString(" · "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                val split = Expenses.byCategory(data.expenses, month)
+                if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
             }
         }
-        if (data.fixedExpenses.isNotEmpty()) {
-            item(key = "fixed") {
-                Column(Modifier.padding(bottom = 8.dp)) {
-                    SectionHeader("Spese fisse · ${Expenses.format(data.fixedExpenses.sumOf { it.cents })} al mese")
-                    CanvasCard(Modifier.fillMaxWidth()) {
-                        data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
-                            if (i > 0) RowDivider()
-                            Row(
-                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(10.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(
-                                        "Il ${f.day} di ogni mese · prossima ${f.nextDate(LocalDate.now()).format(fixedNext)}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
+        Spacer(Modifier.height(12.dp))
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.weight(1f).nestedScroll(barrier),
+        ) {
+            if (data.fixedExpenses.isNotEmpty()) {
+                item(key = "fixed") {
+                    Column(Modifier.padding(bottom = 8.dp)) {
+                        SectionHeader("Spese fisse · ${Expenses.format(data.fixedExpenses.sumOf { it.cents })} al mese")
+                        CanvasCard(Modifier.fillMaxWidth()) {
+                            data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
+                                if (i > 0) RowDivider()
+                                Row(
+                                    Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(
+                                            "Il ${f.day} di ogni mese · prossima ${f.nextDate(LocalDate.now()).format(fixedNext)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Text(Expenses.format(f.cents), style = MaterialTheme.typography.titleMedium)
                                 }
-                                Text(Expenses.format(f.cents), style = MaterialTheme.typography.titleMedium)
                             }
                         }
                     }
                 }
             }
-        }
-        // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
-        if (inMonth.isNotEmpty()) {
-            item(key = "timeline") {
-                val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
-                // "OGGI" solo nel mese di oggi: prima delle spese di oggi, o in fondo.
-                val nowAt = if (month == YearMonth.now()) nowIndex(entries.map { it.first }) else -1
-                val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
-                Column(Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { timelineHeight = it.size.height }) {
-                    entries.forEachIndexed { index, (entry, expense) ->
-                        if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
-                        TimelineRow(
-                            entry,
-                            top = index > 0,
-                            bottom = index < entries.lastIndex,
-                            onClick = { openItem(ItemKind.EXPENSE, expense.id) },
-                            onLongClick = {
-                                ActionBubble.show(
-                                    BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
-                                    BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                                        NotesStore.deleteExpense(expense.id)
-                                        onDeleted(expense)
-                                    },
-                                )
-                            },
-                        )
+            // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
+            if (inMonth.isNotEmpty()) {
+                item(key = "timeline") {
+                    val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
+                    // "OGGI" solo nel mese di oggi: prima delle spese di oggi, o in fondo.
+                    val nowAt = if (month == YearMonth.now()) nowIndex(entries.map { it.first }) else -1
+                    val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
+                    Column(Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { timelineHeight = it.size.height }) {
+                        entries.forEachIndexed { index, (entry, expense) ->
+                            if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
+                            TimelineRow(
+                                entry,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                                onLongClick = {
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
+                                        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                                            NotesStore.deleteExpense(expense.id)
+                                            onDeleted(expense)
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                        if (nowAt == entries.size) {
+                            TimelineNowMarker(nowMarker)
+                            // Oggi senza spese: lo diciamo, invece di lasciare la pagina vuota.
+                            EmptyExpensesLine("Nessuna spesa per oggi")
+                        }
                     }
-                    if (nowAt == entries.size) TimelineNowMarker(nowMarker)
                 }
             }
-        }
-        if (inMonth.isEmpty()) {
-            item {
-                Text(
-                    "Nessuna spesa in questo mese. Scrivila come un messaggio, \"12,50 pizza\" o \"benzina 40€\": " +
-                        "la categoria si sceglie da sola.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
-                )
+            if (inMonth.isEmpty()) {
+                item { EmptyExpensesLine("Nessuna spesa in questo mese") }
             }
-        }
-        item(key = "now-room") {
-            // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val room = with(density) {
-                nowRoom(listState.layoutInfo.viewportSize.height, padding.calculateBottomPadding().roundToPx(), nowOffset?.let { timelineHeight - it }).toDp()
+            item(key = "now-room") {
+                // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val room = with(density) {
+                    nowRoom(listState.layoutInfo.viewportSize.height, padding.calculateBottomPadding().roundToPx(), nowOffset?.let { timelineHeight - it }).toDp()
+                }
+                Spacer(Modifier.height(room))
             }
-            Spacer(Modifier.height(room))
         }
     }
+}
+
+/** Una riga sola quando non c'è niente da mostrare (Antonio: la pagina vuota sembrava rotta). */
+@Composable
+private fun EmptyExpensesLine(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+    )
 }
 
 internal fun centsOf(text: String): Long? {
