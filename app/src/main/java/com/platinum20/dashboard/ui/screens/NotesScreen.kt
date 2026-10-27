@@ -423,6 +423,8 @@ fun NotesScreen(
     val past = pastDays(data.tasks, data.parcels, events)
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     var nowOffset by remember(section) { mutableStateOf<Int?>(null) }
+    // Quanto è alta la linea del tempo: sotto "OGGI" serve spazio perché oggi stia in cima allo schermo.
+    var timelineHeight by remember(section) { mutableStateOf(0) }
     var startedAtNow by remember(section) { mutableStateOf(false) }
     // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
     var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
@@ -498,7 +500,7 @@ fun NotesScreen(
         val timelineIndex = (if (empty) 1 else 0) + (if (invite) 1 else 0)
         LaunchedEffect(section, nowOffset) {
             val offset = nowOffset
-            if (section == NotesSection.DATED && offset != null && !startedAtNow) {
+            if (offset != null && !startedAtNow) {
                 startedAtNow = true
                 runCatching { listState.scrollToItem(timelineIndex, offset) }
             }
@@ -548,7 +550,7 @@ fun NotesScreen(
                 grownPast++
             }
         }
-        val barrier = rememberPastBarrier(listState, timelineIndex, if (section == NotesSection.DATED) nowOffset else null)
+        val barrier = rememberPastBarrier(listState, timelineIndex, nowOffset)
         Box(Modifier.fillMaxSize()) {
         // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
@@ -586,6 +588,7 @@ fun NotesScreen(
                     // Sullo sfondo, senza card: la linea è la pagina.
                     Column(
                         Modifier.fillMaxWidth()
+                            .onGloballyPositioned { timelineHeight = it.size.height }
                             .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                             .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT),
                     ) {
@@ -624,13 +627,16 @@ fun NotesScreen(
                 }
                 habitRows()
             }
-            // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni,
-            // per quando li hai scritti, i più nuovi in cima.
+            // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni, nello
+            // stesso verso (Antonio): il passato sopra, i più nuovi in fondo sotto "OGGI", e la pagina si apre lì.
             if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty() || doneUndated.isNotEmpty())) {
                 item(key = "undated-timeline") {
                     val entries = undatedEntries(undatedTasks, notes, today, done = doneUndated)
-                    Column(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
+                    val nowAt = nowIndex(entries.map { it.first })
+                    val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
+                    Column(Modifier.fillMaxWidth().onGloballyPositioned { timelineHeight = it.size.height }.captureTarget(CaptureMode.NOTE)) {
                         entries.forEachIndexed { index, (entry, row) ->
+                            if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
                             TimelineRow(
                                 entry,
                                 top = index > 0,
@@ -651,6 +657,7 @@ fun NotesScreen(
                                 },
                             )
                         }
+                        if (nowAt == entries.size && entries.isNotEmpty()) TimelineNowMarker(nowMarker)
                     }
                 }
             }
@@ -673,7 +680,13 @@ fun NotesScreen(
                 }
             }
             // Spazio in fondo: l'ultima riga non finisce sotto la barra.
-            item(key = "bottom-space") { Spacer(Modifier.height(72.dp)) }
+            item(key = "bottom-space") {
+                // Si apre su "OGGI" in cima allo schermo anche con poco sotto (Antonio): il resto resta vuoto.
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val below = nowOffset?.let { timelineHeight - it } ?: Int.MAX_VALUE
+                val room = with(density) { (listState.layoutInfo.viewportSize.height - below).coerceAtLeast(0).toDp() }
+                Spacer(Modifier.height(maxOf(72.dp, room)))
+            }
         }
         }
     }

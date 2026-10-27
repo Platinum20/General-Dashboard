@@ -224,10 +224,15 @@ class NotesUiLogicTest {
             today = today,
             zone = zone,
         ).map { it.first }
-        assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
-        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
-        // Fra oggi e mercoledì scorso quattro giorni vuoti.
-        assertEquals(16f, entries[3].gapDp, 0.01f)
+        // Il passato sopra, le più nuove in fondo, poi le fissate (Antonio: stesso verso di Prossimi giorni).
+        assertEquals(listOf("Comprare lampadine", "Chiamare Luca", "Idee regalo", "Password wifi"), entries.map { it.text })
+        assertEquals(listOf("Mer 21", "Oggi", null, "Fissate"), entries.map { it.dayLabel })
+        // Fra mercoledì scorso e oggi quattro giorni vuoti.
+        assertEquals(16f, entries[1].gapDp, 0.01f)
+        // "OGGI" prima delle righe di oggi.
+        assertEquals(1, com.platinum20.dashboard.ui.screens.nowIndex(entries))
+        // Niente di oggi: "OGGI" in fondo.
+        assertEquals(1, com.platinum20.dashboard.ui.screens.nowIndex(entries.take(1)))
     }
 
     @Test fun fattiSullaLineaDelleNote() {
@@ -239,11 +244,11 @@ class NotesUiLogicTest {
             notes = emptyList(),
             today = today,
             zone = zone,
-            // Scritto tre giorni fa, spuntato oggi alle 10: sta in cima, a oggi.
+            // Scritto tre giorni fa, spuntato oggi alle 10: sta a oggi, in fondo.
             done = listOf(TaskItem(2, "Sessi", done = true, createdAt = at(today.minusDays(3), 9), doneAt = at(today, 10))),
         ).map { it.first }
-        assertEquals(listOf("Sessi", "Prova"), entries.map { it.text })
-        assertEquals(listOf(true, false), entries.map { it.done })
+        assertEquals(listOf("Prova", "Sessi"), entries.map { it.text })
+        assertEquals(listOf(false, true), entries.map { it.done })
     }
 
     @Test fun meseTrascinando() {
@@ -265,14 +270,21 @@ class NotesUiLogicTest {
             ),
             today,
         ).map { it.first }
-        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
+        // Le più recenti in fondo.
+        assertEquals(listOf("Ven 23", "Oggi", null), entries.map { it.dayLabel })
         // L'importo per primo, il nome dopo.
-        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[0].text)
+        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[1].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
-        assertEquals(10f, entries[2].gapDp, 0.01f)
+        assertEquals(10f, entries[1].gapDp, 0.01f)
+        // Nella card in Oggi solo le ultime, sempre in fondo la più recente.
+        assertEquals(listOf("Benzina", "Caffè"), expenseEntries(listOf(
+            com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),
+            com.platinum20.dashboard.notes.Expense(2, 4000, "Benzina", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+            com.platinum20.dashboard.notes.Expense(3, 300, "Caffè", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+        ), today, limit = 2).map { it.second.text })
         // Icona e colore della categoria.
         assertEquals(com.platinum20.dashboard.notes.ExpenseCategory.values().first().color(), entries[0].color)
     }

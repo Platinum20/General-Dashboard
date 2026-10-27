@@ -236,7 +236,7 @@ fun MoneyCard(
 ) {
     TimelineCard(
         "Spese",
-        expenseEntries(data.expenses, today).take(Upcoming.MAX).map { it.first },
+        expenseEntries(data.expenses, today, limit = Upcoming.MAX).map { it.first },
         onOpen,
         empty = "Nessuna spesa ancora.",
         modifier = modifier.captureTarget(CaptureMode.EXPENSE),
@@ -251,7 +251,7 @@ fun MoneyCard(
 @Composable
 fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val tasks = data.tasks.filter { !it.done && it.dueAt == null }
-    val rows = undatedEntries(tasks, data.notes, today).take(Upcoming.MAX)
+    val rows = undatedEntries(tasks, data.notes, today, limit = Upcoming.MAX)
     TimelineCard(
         "Note",
         rows.map { it.first },
