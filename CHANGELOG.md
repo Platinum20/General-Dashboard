@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.249.0
+**YouTube: SponsorBlock e Non mi piace**
+- I video di YouTube saltano da soli sponsor e altre parti inutili, con i dati pubblici di SponsorBlock: compare "Saltato: Sponsor" con Annulla per tornare indietro
+- Ogni tipo di segmento (sponsor, autopromozione, richieste di iscriversi, sigla, titoli di coda, anteprime, gancio iniziale, divagazioni, parti senza musica, momento clou, accesso esclusivo) si regola in Impostazioni › Fa da solo › SponsorBlock: salta da solo, mostra il tasto Salta, solo nella barra o ignora
+- I segmenti sono colorati sulla barra del tempo del video; il tasto "Salta" o "Vai al momento clou" appare sul video
+- Nella pagina del video torna il tasto Non mi piace con la stima di Return YouTube Dislike (toccandolo vedi la percentuale di Mi piace); si spegne in Impostazioni
+- Nelle impostazioni vedi quanti salti hai fatto e quanto tempo hai risparmiato
+
 ## 1.248.0
 **Coda più comoda: scorri per togliere e si riempie da sola**
 - Per togliere un brano dalla coda lo porti di lato (verso sinistra), al posto della X; in fondo compare "Annulla"

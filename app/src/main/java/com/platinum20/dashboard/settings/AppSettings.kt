@@ -2,6 +2,8 @@ package com.platinum20.dashboard.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.platinum20.dashboard.media.youtube.SbAction
+import com.platinum20.dashboard.media.youtube.SbCategory
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,6 +96,9 @@ object AppSettings {
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
     private const val KEY_HIDE_LIVE = "video_hide_live"
     private const val KEY_AUTOPLAY_NEXT = "video_autoplay_next"
+    private const val KEY_SPONSORBLOCK = "video_sponsorblock"
+    private const val KEY_SPONSOR_ACTION = "video_sponsorblock_"
+    private const val KEY_DISLIKES = "video_dislikes"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -126,6 +131,15 @@ object AppSettings {
     private val _autoplayNext = MutableStateFlow(true)
     /** Finito un video di YouTube (e la coda), parte da solo uno di quelli proposti, come su YouTube. */
     val autoplayNext: StateFlow<Boolean> = _autoplayNext.asStateFlow()
+    private val _sponsorBlock = MutableStateFlow(true)
+    /** SponsorBlock nei video di YouTube (acceso di default). */
+    val sponsorBlock: StateFlow<Boolean> = _sponsorBlock.asStateFlow()
+    private val _sponsorActions = MutableStateFlow(SbCategory.entries.associateWith { it.default })
+    /** Cosa fare di ogni tipo di segmento di SponsorBlock. */
+    val sponsorActions: StateFlow<Map<SbCategory, SbAction>> = _sponsorActions.asStateFlow()
+    private val _dislikes = MutableStateFlow(true)
+    /** I "Non mi piace" stimati da Return YouTube Dislike nella pagina del video. */
+    val dislikes: StateFlow<Boolean> = _dislikes.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -178,6 +192,28 @@ object AppSettings {
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
         _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
         _autoplayNext.value = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
+        _sponsorBlock.value = prefs.getBoolean(KEY_SPONSORBLOCK, true)
+        _sponsorActions.value = SbCategory.entries.associateWith { category ->
+            val saved = prefs.getString(KEY_SPONSOR_ACTION + category.key, null)
+            SbAction.entries.firstOrNull { it.key == saved && it in category.actions } ?: category.default
+        }
+        _dislikes.value = prefs.getBoolean(KEY_DISLIKES, true)
+    }
+
+    fun setSponsorBlock(enabled: Boolean) {
+        _sponsorBlock.value = enabled
+        prefs.edit().putBoolean(KEY_SPONSORBLOCK, enabled).apply()
+    }
+
+    fun setSponsorAction(category: SbCategory, action: SbAction) {
+        if (action !in category.actions) return
+        _sponsorActions.value = _sponsorActions.value + (category to action)
+        prefs.edit().putString(KEY_SPONSOR_ACTION + category.key, action.key).apply()
+    }
+
+    fun setDislikes(enabled: Boolean) {
+        _dislikes.value = enabled
+        prefs.edit().putBoolean(KEY_DISLIKES, enabled).apply()
     }
 
     fun setMorning(brief: MorningBrief) {
