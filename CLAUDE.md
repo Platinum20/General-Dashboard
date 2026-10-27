@@ -87,7 +87,7 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
   WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
 - `media/MediaWebViews.kt`: any WebView in Compose must go through `WebView.inFrame(ctx)`.
 - Screens: `MediaScreen`, `MusicScreen` (Spotify only, one page of horizontal `coverRow`s), `ListenScreen` (one page, no chips: `radioSections` in RadioScreen + `podcastSections`/`PodcastPage` in PodcastScreen),
-  `YouTubeFeedScreen` (chips Home/Iscrizioni/Cronologia + Escludi Shorts/live via pure `pickFeed`, `ListTiles` row = Playlist/Mi piace/Più tardi/Telefono), `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
+  `YouTubeFeedScreen` (`ListTiles` row on top = Playlist/Mi piace/Più tardi/Telefono, then chips Home/Iscrizioni/Cronologia; Escludi Shorts/live = `AppSettings.hideShorts/hideLive` in Settings › Fa da solo, applied by pure `pickFeed`), `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
   `FloatingPlayer` (mini player). `PlayerScreen` is the single player route: video layout
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).

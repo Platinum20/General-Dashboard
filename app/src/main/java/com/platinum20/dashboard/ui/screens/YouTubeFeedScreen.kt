@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -104,8 +105,8 @@ private const val TAB_HISTORY = 2
 private enum class YtList(val title: String) { PLAYLISTS("Playlist"), LIKED("Mi piace"), LATER("Più tardi") }
 
 /**
- * Il tuo YouTube nell'app: tre schede (Home, Iscrizioni, Cronologia) con i filtri Escludi Shorts ed
- * Escludi live, e in cima i riquadri delle tue liste e dei video del telefono. Cerca = trascinare giù.
+ * Il tuo YouTube nell'app: in cima i riquadri delle tue liste e dei video del telefono, sotto tre schede
+ * (Home, Iscrizioni, Cronologia). Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,9 +128,9 @@ fun YouTubeFeedScreen(
     var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
     var list by rememberSaveable { mutableStateOf<YtList?>(null) }
     var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
-    var hideShorts by rememberSaveable { mutableStateOf(true) }
-    var hideLive by rememberSaveable { mutableStateOf(false) }
-    val feedTab = tab == TAB_HOME || tab == TAB_SUBS
+    // Escludi Shorts / live si scelgono una volta in Impostazioni › Fa da solo.
+    val hideShorts by AppSettings.hideShorts.collectAsState()
+    val hideLive by AppSettings.hideLive.collectAsState()
     BackHandler(enabled = openPlaylist != null || list != null) {
         if (openPlaylist != null) openPlaylist = null else list = null
     }
@@ -193,33 +194,16 @@ fun YouTubeFeedScreen(
                 }
                 null -> Unit
             }
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
+            // Prima le tue liste (si aprono come pagine), poi le schede proprio sopra i video che cambiano.
+            ListTiles(onOpen = { list = it }, onOpenPhone = onOpenPhone)
+            Row(
+                Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 4.dp),
             ) {
-                items(youTubeTabs.size) { index ->
-                    CanvasChip(selected = tab == index, onClick = { tab = index }, label = youTubeTabs[index])
-                }
-                if (feedTab) {
-                    item(key = "divider") {
-                        Box(
-                            Modifier
-                                .padding(horizontal = 4.dp)
-                                .size(width = 1.dp, height = 24.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
-                        )
-                    }
-                    item(key = "shorts") {
-                        CanvasChip(selected = hideShorts, onClick = { hideShorts = !hideShorts }, label = "Escludi Shorts")
-                    }
-                    item(key = "live") {
-                        CanvasChip(selected = hideLive, onClick = { hideLive = !hideLive }, label = "Escludi live")
-                    }
+                youTubeTabs.forEachIndexed { index, label ->
+                    CanvasChip(selected = tab == index, onClick = { tab = index }, label = label)
                 }
             }
-            ListTiles(onOpen = { list = it }, onOpenPhone = onOpenPhone)
             when (tab) {
                 TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
                 TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, onPlay)

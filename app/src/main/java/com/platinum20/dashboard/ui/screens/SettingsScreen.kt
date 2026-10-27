@@ -58,6 +58,7 @@ import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
@@ -258,6 +259,8 @@ fun SettingsScreen(
                     )
                     RowDivider()
                     AdBlockSettings()
+                    RowDivider()
+                    VideoFilterSettings()
                 }
             }
 
@@ -964,6 +967,30 @@ private fun UpdateNotifySetting() {
         subtitle = if (blocked) "Notifiche bloccate: tocca per consentirle" else "Una notifica quando esce un aggiornamento",
         onClick = toggle,
         trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
+    )
+}
+
+/** I filtri di Video (prima chip nella pagina): si scelgono una volta e restano. */
+@Composable
+private fun VideoFilterSettings() {
+    val shorts by AppSettings.hideShorts.collectAsState()
+    val live by AppSettings.hideLive.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.OndemandVideo,
+        accent = TileAccent.ORANGE,
+        title = "Escludi Shorts",
+        subtitle = "Niente Shorts in Video",
+        onClick = { AppSettings.setHideShorts(!shorts) },
+        trailing = { Switch(checked = shorts, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideShorts(on) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.LiveTv,
+        accent = TileAccent.ORANGE,
+        title = "Escludi live",
+        subtitle = "Niente live in corso o in arrivo in Video",
+        onClick = { AppSettings.setHideLive(!live) },
+        trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
     )
 }
 

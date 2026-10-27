@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.230.0
+**Video più ordinato**
+- In cima Playlist, Mi piace, Più tardi e Telefono; sotto le schede Home, Iscrizioni e Cronologia, proprio sopra i video che cambiano
+- Escludi Shorts ed Escludi live non stanno più tra le schede: li scegli una volta in Impostazioni › Fa da solo e restano anche dopo aver chiuso l'app
+
 ## 1.229.0
 **Radio e podcast in una pagina sola**
 - Niente più pillole Radio e Podcast: scorri e trovi radio preferite e recenti, i tuoi podcast con gli ultimi episodi, le radio più ascoltate in Italia
