@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.capture
 
+import android.content.Context
+import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
@@ -22,6 +26,8 @@ internal data class CaptureNotice(
     val target: String? = null,
     /** False per le conferme che non salvano niente (es. "Nota eliminata · Annulla"): il fumetto sparisce senza pallino. */
     val fly: Boolean = true,
+    /** La scritta del tasto accanto al messaggio, quando c'è un'azione ([undo]). */
+    val actionLabel: String = "Annulla",
 )
 
 /**
@@ -39,6 +45,24 @@ internal object CaptureFeedback {
 
     /** False se la conferma va data in un altro modo (es. dalla finestra della condivisione). */
     fun show(notice: CaptureNotice): Boolean = active && _events.tryEmit(notice)
+
+    /**
+     * Un avviso qualsiasi (errori, "In coda", "Backup salvato") nello stesso fumetto, al posto di
+     * Toast e Snackbar. Fuori dalla schermata principale resta il Toast di sistema.
+     */
+    fun tell(
+        context: Context,
+        message: String,
+        icon: ImageVector = Icons.Outlined.Info,
+        actionLabel: String? = null,
+        action: (suspend () -> Unit)? = null,
+    ) {
+        val notice = CaptureNotice(
+            CaptureMode.NOTE, message, undo = action, icon = icon, fly = false,
+            actionLabel = actionLabel ?: "Annulla",
+        )
+        if (!show(notice)) Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
 }
 
 /**

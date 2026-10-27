@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.ResumeKind
@@ -62,8 +63,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.ScrollableTabRow
@@ -141,20 +140,19 @@ fun MusicScreen(
     val playback by SpotifyStore.playback.collectAsState()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var opened by remember { mutableStateOf<SpItem?>(null) }
-    val snackbar = remember { SnackbarHostState() }
 
     BackHandler(enabled = opened != null) { opened = null }
 
     LaunchedEffect(message) {
         message?.let {
-            snackbar.showSnackbar(it)
+            CaptureFeedback.tell(context, it)
             SpotifyStore.consumeMessage()
         }
     }
     val playerError by SpotifyPlayer.error.collectAsState()
     LaunchedEffect(playerError) {
         playerError?.let {
-            snackbar.showSnackbar(it)
+            CaptureFeedback.tell(context, it)
             SpotifyPlayer.consumeError()
         }
     }
@@ -170,7 +168,6 @@ fun MusicScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopLevelBar(
                 title = opened?.title ?: "Musica",

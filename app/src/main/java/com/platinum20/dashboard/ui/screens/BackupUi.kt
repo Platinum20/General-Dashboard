@@ -1,6 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.Icons
@@ -16,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.backup.Backup
 import com.platinum20.dashboard.backup.BackupContent
 import kotlinx.coroutines.launch
@@ -31,7 +31,7 @@ internal fun BackupSettings() {
     var last by remember { mutableStateOf(Backup.lastExport(context)) }
     var pending by remember { mutableStateOf<BackupContent?>(null) }
 
-    fun toast(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    fun toast(text: String) = CaptureFeedback.tell(context, text)
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
