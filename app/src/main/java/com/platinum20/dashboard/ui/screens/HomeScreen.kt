@@ -244,6 +244,7 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
             HomeCard.MONEY -> notes.hasMoney
+            HomeCard.NOTES -> notes.hasNotes
             else -> true
         }
     }
@@ -295,6 +296,11 @@ fun HomeScreen(
             HomeCard.MONEY -> MoneyCard(notes, minute.toLocalDate(), onOpen = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.EXPENSES)
+            })
+            HomeCard.NOTES -> NotesCard(notes, minute.toLocalDate(), onOpen = {
+                haptic(Haptic.TICK)
+                NotesNav.open(NotesSection.UNDATED, fromHome = true)
+                onOpenNotes()
             })
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->

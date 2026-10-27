@@ -38,7 +38,7 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses),
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses, `NotesCard` (HomeCard.NOTES), all via the shared `TimelineCard` (whole card clickable, also used by the Note overview)),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
@@ -55,7 +55,7 @@ events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `N
 elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt; pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
 `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
-Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; Modifica opens their old dialog). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
+Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the

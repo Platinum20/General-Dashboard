@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.222.0
+**Si modifica tutto nella pagina, card uguali ovunque**
+- Promemoria, date, pacchi, abitudini e spese si modificano direttamente nella pagina a schermo intero: il titolo si scrive, scadenza, ripetizione, avviso, data, categoria e importo si toccano. Niente più finestra "Modifica"
+- I promemoria senza data che spunti restano sulla linea del tempo di Note, nel giorno in cui li hai fatti (barrati); via la sezione "Completati"
+- Nuova card Note in Oggi: le ultime 5 note e cose da fare sulla linea del tempo. Si sposta in Personalizza come le altre
+- Le card di Oggi non hanno più il link in fondo: si tocca la card ovunque per aprire la sezione
+- La pagina Note usa le stesse card di Oggi, con quanto c'è a destra del titolo, sempre visibili
+
 ## 1.221.0
 **Media: tre riquadri alti uguali**
 - In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
