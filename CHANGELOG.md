@@ -1,9 +1,16 @@
 # Changelog
 
-## 1.219.0
+## 1.221.0
 **Media: tre riquadri alti uguali**
 - In Media i riquadri Musica, Video e Radio hanno sempre la stessa altezza
 - Titoli e descrizioni stanno su una riga sola (Musica "Spotify e YT", Video "YouTube e file", Radio "e podcast")
+
+## 1.218.0
+**Spese con la barra, date più corte, categorie più furbe**
+- Spese ha la barra in basso e il +, come le altre pagine
+- Sotto il segno del mese le date sono corte ("Dom 1" invece di "Dom 1 nov", senza l'anno)
+- Le categorie riconoscono più negozi (traghetti come Onorato, telefono come Windtre, farmacie, distributori, supermercati); le spese rimaste in "Altro" si risistemano da sole
+- I nomi dei negozi tagliati dalla carta finiscono con i puntini
 
 ## 1.217.0
 **Treni, menu sulla linea e Spese**

@@ -21,7 +21,7 @@ import com.platinum20.dashboard.notes.NotesStore
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpensesScreen(onBack: () -> Unit) {
+fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()) {
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
@@ -33,7 +33,7 @@ fun ExpensesScreen(onBack: () -> Unit) {
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding() + 12.dp,
-                bottom = inner.calculateBottomPadding() + 24.dp,
+                bottom = maxOf(inner.calculateBottomPadding(), bottomPadding.calculateBottomPadding()) + 24.dp,
             ),
             onDeleted = { e ->
                 // Eliminare è immediato, ma per qualche secondo si può tornare indietro.

@@ -22,4 +22,21 @@ class ExpensesTest {
     @Test fun bolletta() = check("bolletta luce 85,20", 8520, "Bolletta luce", ExpenseCategory.HOME)
     @Test fun altro() = check("15 regalo", 1500, "Regalo", ExpenseCategory.FUN)
     @Test fun nienteImporto() = assertNull(Expenses.parse("pizza"))
+    @Test fun nuoveCategorie() {
+        assertEquals(ExpenseCategory.TRANSPORT, ExpenseCategory.guess("Onorato"))
+        assertEquals(ExpenseCategory.HOME, ExpenseCategory.guess("Windtre"))
+        assertEquals(ExpenseCategory.HEALTH, ExpenseCategory.guess("Farmacenter Dottor Moresc"))
+        // "presso" non è un distributore.
+        assertEquals(ExpenseCategory.OTHER, ExpenseCategory.guess("pagamento presso Rossi"))
+    }
+
+    @Test fun altroSiRisistema() {
+        val e = com.platinum20.dashboard.notes.Expense(1, 6587, "Onorato", ExpenseCategory.OTHER)
+        assertEquals(ExpenseCategory.TRANSPORT, Expenses.recategorized(listOf(e)).single().category)
+    }
+
+    @Test fun nomeTagliatoDallaCarta() {
+        val e = com.platinum20.dashboard.notes.Expense(1, 1250, "Farmacenter Dottor Moresc", ExpenseCategory.HEALTH)
+        assertEquals("Farmacenter Dottor Moresc…", Expenses.displayName(e))
+    }
 }
