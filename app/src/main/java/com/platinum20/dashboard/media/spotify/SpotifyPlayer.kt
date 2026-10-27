@@ -64,6 +64,9 @@ object SpotifyPlayer : ExternalBackend {
      */
     internal data class Reading(val uri: String, val paused: Boolean, val positionMs: Long, val durationMs: Long, val at: Long, val linked: String = "", val server: Boolean = false) {
         fun isFor(target: String) = uri == target || linked == target
+
+        /** Vale per il nostro brano anche col suo [alias] letto dal server. */
+        fun isFor(target: String, alias: String?) = isFor(target) || (alias != null && uri == alias)
     }
 
     private val _state = MutableStateFlow<ExternalState?>(null)
@@ -299,7 +302,7 @@ object SpotifyPlayer : ExternalBackend {
     private fun onReading(reading: Reading) {
         val uri = target ?: return
         val before = last
-        if (!reading.isFor(uri) && (alias == null || reading.uri != alias)) {
+        if (!reading.isFor(uri, alias)) {
             // A fine brano Spotify può passare da solo a un altro (la sua riproduzione automatica):
             // per noi è finito, si ferma il suo e parte la voce dopo della nostra coda.
             if (movedOn(before, reading)) {
