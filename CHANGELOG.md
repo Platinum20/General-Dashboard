@@ -1,10 +1,23 @@
 # Changelog
 
-## 1.258.0
+## 1.261.0
 **Il video chiuso vola nel mini player**
 - Trascinando giù il video lui segue il dito e si rimpicciolisce, mentre la pagina sotto sbiadisce
 - Lasciato (o col tasto giù) vola fin dentro la miniatura del mini player, in basso a sinistra o in alto se l'hai messo lì, e il mini player lo prende senza saltare fuori
 - Intanto la pagina di prima torna sotto, senza più il video che sparisce a metà schermo
+
+## 1.259.0
+**Spese: il mese segue il dito**
+- Trascinando il riepilogo del mese di lato, la bolla si sposta con il dito, con un po' di elastico
+- Una piccola vibrazione ti dice quando, lasciando, cambierà mese
+- Il mese nuovo entra scorrendo dal lato opposto (trascini a sinistra, arriva da destra)
+
+## 1.257.0
+**YouTube: le anteprime non danno più errore**
+- Aprendo un'anteprima (o una diretta in programma) prima dell'inizio vedi la copertina con il conto alla rovescia e l'orario, invece dell'errore
+- «Avvisami»: una notifica ti avvisa quando comincia, e toccandola si apre il video
+- Passato l'orario il video riprova da solo e parte appena YouTube lo avvia; dopo si guarda come un video normale
+- Nei feed le anteprime mostrano «ANTEPRIMA · 20:00» (o DOMANI, o la data) sulla copertina
 
 ## 1.256.0
 **Pagina del video YouTube più pulita**

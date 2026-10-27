@@ -29,6 +29,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Titolo dell'editor (V16) e i tre tipi della pagina Note: con scadenza, senza scadenza, spese. */
@@ -259,6 +260,16 @@ class NotesUiLogicTest {
         assertEquals(null, swipe.target(now, -60f, 56f, now))
         assertEquals(now, swipe.target(java.time.YearMonth.of(2026, 9), -60f, 56f, now))
         assertEquals(null, swipe.target(now, 20f, 56f, now))
+    }
+
+    @Test fun meseSegueIlDito() {
+        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
+        // Segue il dito quasi 1:1 all'inizio, poi l'elastico frena.
+        assertEquals(10f, swipe.follow(10f, 56f), 0.5f)
+        assertTrue(swipe.follow(400f, 56f) < 56f * 2.2f)
+        assertEquals(-swipe.follow(80f, 56f), swipe.follow(-80f, 56f), 0.001f)
+        // Verso un mese che non c'è ancora resiste di più.
+        assertTrue(kotlin.math.abs(swipe.follow(-80f, 56f, blocked = true)) < kotlin.math.abs(swipe.follow(-80f, 56f)))
     }
 
     @Test fun speseSullaLineaDelTempo() {

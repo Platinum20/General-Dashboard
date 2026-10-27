@@ -520,7 +520,14 @@ private fun VideoArea(
         )
 
         val error = now?.error
+        val upcoming = now?.upcoming
         when {
+            upcoming != null -> PremiereWait(
+                upcoming,
+                videoId = YtResolver.videoId(now?.link.orEmpty()).orEmpty(),
+                title = com.platinum20.dashboard.media.CanvasPlayer.now.value?.item?.title.orEmpty(),
+                onRetry = onRetry,
+            )
             error != null -> Column(
                 Modifier.align(Alignment.Center).padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -776,7 +783,11 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, panel: WatchPanel?, onPan
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            stream?.title ?: if (now?.error != null) "Video non disponibile" else "Caricamento…",
+            stream?.title ?: when {
+                now?.upcoming != null -> com.platinum20.dashboard.media.CanvasPlayer.now.value?.item?.title?.ifBlank { null } ?: "Anteprima in arrivo"
+                now?.error != null -> "Video non disponibile"
+                else -> "Caricamento…"
+            },
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
