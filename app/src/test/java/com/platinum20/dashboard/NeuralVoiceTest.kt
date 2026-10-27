@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.news.voice.NeuralVoice
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import com.platinum20.dashboard.news.voice.SpeechPieces
 import com.platinum20.dashboard.news.voice.VoiceStore
@@ -73,5 +74,13 @@ class NeuralVoiceTest {
         assertEquals(ReadingVoice.MIRO, ReadingVoice.of("SYSTEM"))
         assert(ReadingVoice.MIRO.url.endsWith("vits-piper-it_IT-miro-high.tar.bz2"))
         assert(ReadingVoice.RICCARDO.url.endsWith("vits-piper-it_IT-riccardo-x_low.tar.bz2"))
+    }
+
+    @Test
+    fun `il buffer audio è sempre un numero intero di campioni float`() {
+        assertEquals(22048, NeuralVoice.bufferBytes(22050, 0))
+        assertEquals(16000, NeuralVoice.bufferBytes(16000, 0))
+        assertEquals(32768, NeuralVoice.bufferBytes(22050, 32768))
+        listOf(16000, 22050, 24000, 44100).forEach { assertEquals(0, NeuralVoice.bufferBytes(it, 0) % 4) }
     }
 }

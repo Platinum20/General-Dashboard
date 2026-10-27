@@ -174,6 +174,8 @@ data class Note(
     val pinned: Boolean = false,
     /** Quando è stata scritta: l'ordine e la linea del tempo delle Note. Le vecchie note non lo avevano: vale l'ultima modifica. */
     val createdAt: Long = updatedAt,
+    /** La foto allegata con la graffetta (file nell'app), vuota per le note di solo testo. */
+    val photo: String = "",
 ) {
     /** La prima riga fa da titolo. */
     val title: String get() = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
@@ -520,7 +522,8 @@ object NotesStore {
 
     /** Salva una nota (nuova se [id] è null) e ne restituisce l'id. Una nota vuota viene eliminata. */
     fun saveNote(id: Long?, text: String): Long? {
-        if (text.isBlank()) {
+        // Una foto senza testo resta una nota: si cancella solo con Elimina.
+        if (text.isBlank() && id?.let(::note)?.photo.isNullOrEmpty()) {
             if (id != null) deleteNote(id)
             return null
         }
@@ -529,10 +532,18 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now)
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photo.orEmpty())
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
+    }
+
+    /** Una foto in cui Canvas non ha trovato niente da fare: diventa una nota con la foto. */
+    fun addPhotoNote(text: String, photo: String): Note {
+        val now = System.currentTimeMillis()
+        val note = Note(newId(), text, now, createdAt = now, photo = photo)
+        update { d -> d.copy(notes = listOf(note) + d.notes) }
+        return note
     }
 
     fun togglePin(id: Long) = update { d ->
@@ -593,7 +604,8 @@ object NotesStore {
         })
         .put("notes", JSONArray().apply {
             d.notes.forEach {
-                put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt))
+                put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt)
+                    .apply { if (it.photo.isNotEmpty()) put("photo", it.photo) })
             }
         })
         .put("countdowns", JSONArray().apply {
@@ -675,7 +687,7 @@ object NotesStore {
             notes = (0 until notes.length()).map { i ->
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
-                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated))
+                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), o.optString("photo"))
                 }
             },
             countdowns = (0 until countdowns.length()).mapNotNull { i ->

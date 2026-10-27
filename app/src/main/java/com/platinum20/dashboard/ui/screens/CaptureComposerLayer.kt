@@ -76,9 +76,10 @@ import com.platinum20.dashboard.capture.CaptureKindTag
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CapturePreview
 import com.platinum20.dashboard.capture.PhotoAttach
+import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.ReceiptReader
+import com.platinum20.dashboard.capture.CaptureMode
 import android.net.Uri
-import android.widget.Toast
 import com.platinum20.dashboard.capture.VoiceCapture
 import kotlinx.coroutines.launch
 
@@ -151,13 +152,22 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
         if (uri == null) { CaptureComposer.attaching = false; return }
         reading(true)
         scope.launch {
-            val found = PhotoAttach.read(context, uri)
-            // La foto della fotocamera non si tiene: serviva solo a leggerla.
+            val found = PhotoAttach.decide(PhotoAttach.rows(context, uri))
+            // Se diventa una nota la foto si tiene, copiata nell'app; quella della fotocamera in cache no.
+            val kept = if (found is PhotoAttach.Found.Photo) PhotoAttach.keep(context, uri) else null
             if (cameraFile) runCatching { java.io.File(context.cacheDir, "receipts/scontrino.jpg").delete() }
             reading(false)
             CaptureComposer.attaching = false
-            if (found != null) CaptureComposer.append(found)
-            else Toast.makeText(context, "Non trovo niente da leggere in questa foto", Toast.LENGTH_LONG).show()
+            when {
+                found is PhotoAttach.Found.Text -> CaptureComposer.append(found.text)
+                kept != null -> {
+                    // Quello già scritto nella barra fa da titolo della nota.
+                    val title = CaptureComposer.text.text.trim().ifEmpty { "Foto" }
+                    val note = NotesStore.addPhotoNote(listOf(title, (found as PhotoAttach.Found.Photo).text).filter { it.isNotBlank() }.joinToString("\n"), kept)
+                    CaptureComposer.close()
+                    CaptureFeedback.show(CaptureNotice(CaptureMode.NOTE, "Foto salvata nelle note", undo = { NotesStore.deleteNote(note.id) }))
+                }
+            }
         }
     }
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->

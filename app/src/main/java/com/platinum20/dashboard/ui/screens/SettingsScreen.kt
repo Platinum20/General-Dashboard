@@ -796,6 +796,8 @@ private fun VoicePicker() {
         val line = failure?.takeIf { selectedState == VoiceStatus.Ready }
             ?.let { "${selected.label} non parte, legge la voce del telefono: $it" }
             ?: voiceLine(selected, selectedState)
+        // Un errore lungo si legge tutto con un tocco sulla riga.
+        var whole by remember { mutableStateOf(false) }
         AnimatedContent(
             line,
             transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
@@ -805,9 +807,12 @@ private fun VoicePicker() {
                 text,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = if (whole) 6 else 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { whole = !whole }
+                    .padding(start = 4.dp, top = 8.dp),
             )
         }
     }

@@ -1,9 +1,20 @@
 # Changelog
 
-## 1.206.0
+## 1.210.0
 **I video del telefono suonano nel player unico**
 - Un video del telefono, un file scelto a mano o un link si aprono nello stesso player di YouTube, musica e podcast: stessa coda, una sola notifica, e il mini player quando esci
 - Riprendono da dove li avevi lasciati, anche dai Recenti e da Continua
+
+## 1.209.0
+**La foto allegata diventa una nota**
+- Se nella foto allegata con la graffetta non c'è uno scontrino, una data o un codice di spedizione, Canvas la salva come nota con la foto (si può annullare dal fumetto)
+- Quello che avevi già scritto nella barra fa da titolo, il testo letto nella foto resta nella nota, così la ritrovi cercando
+- Nelle Note la foto si vede in anteprima e, aprendo la nota, per intero
+
+## 1.207.0
+**Paola e Miro parlano davvero**
+- Paola e Miro non partivano e leggeva al loro posto la voce del telefono: ora si sentono le loro voci, come Riccardo
+- Se una voce non parte, un tocco sulla riga sotto le voci mostra l'errore per intero
 
 ## 1.205.0
 **Linea del tempo più pulita, e una piccola resistenza prima del passato**
