@@ -74,14 +74,14 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Media** (Musica / Video / Radio e podcast)
 - `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue
-  (pure ops in `QueueOps.kt`, `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
+  (pure ops in `QueueOps.kt`: tap = `pick` (plays it, others stay), swipe-remove + `restore` undo; `QueueFill` = "Riempi in automatico" Spotify top-up toggle at the queue bottom; `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
   Spotify plugs in as `ExternalBackend`. `PlayerService.kt` = the one MediaSession/notification
   (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
   `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
   `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
   adapters over CanvasPlayer. `VideoPlayerScreen` (route media/video) is only the picker for phone
   videos/files/links: `MediaLauncher.playVideo` plays them on CanvasPlayer (ResumeKind.VIDEO).
-- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites; YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
+- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites, `SponsorBlock` (hash-prefix fetch, pure `step`/`marks`, 200 ms loop started by `YtPlayer.load`, per-category `SbAction` in `AppSettings.sponsorActions`, Settings › Fa da solo; skip button + bar marks in YouTubeWatchScreen), `YtVotes` (Return YouTube Dislike, `AppSettings.dislikes`); YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
   (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
 - `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyMixes` = our "Mix per te" (Spotify-made playlists are 403 for personal apps), `SpotifyPlayer` = own hidden
   WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).

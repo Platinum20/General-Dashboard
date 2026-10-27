@@ -27,6 +27,7 @@ import com.platinum20.dashboard.media.youtube.YtWatched
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import kotlinx.coroutines.MainScope
+import com.platinum20.dashboard.media.youtube.SponsorBlock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -229,6 +230,7 @@ object YtPlayer {
         val from = startMs?.takeIf { it > 0 } ?: if (audioOnly) 0 else YtHistory.resumeMs(stream.id)
         start(context, stream, if (auto) Mode.AUTO else Mode.FIXED, positionMs = from, play = autoplay, subtitle = pickSubtitle(stream), player = p)
         remember(p)
+        SponsorBlock.attach(context, stream.id, live = stream.hlsUrl != null)
         return stream
     }
 
@@ -251,6 +253,7 @@ object YtPlayer {
 
     /** Suona altro: i dettagli del video non servono più. */
     internal fun detach() {
+        SponsorBlock.detach()
         _now.value = null
     }
 

@@ -115,6 +115,15 @@ import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.media.youtube.player.YtStream
 import kotlinx.coroutines.delay
+import androidx.compose.material.icons.outlined.ThumbDown
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.media.youtube.SbSegment
+import com.platinum20.dashboard.media.youtube.SbType
+import com.platinum20.dashboard.media.youtube.SponsorBlock
+import com.platinum20.dashboard.media.youtube.YtVotes
+import com.platinum20.dashboard.settings.AppSettings
 
 private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
@@ -445,6 +454,9 @@ private fun VideoArea(
             }
         }
 
+        // SponsorBlock: il tasto per saltare il segmento (o andare al momento clou), anche a comandi nascosti.
+        if (!inPip && error == null) SponsorSkipButton(Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 64.dp))
+
         // L'indicatore del volume: una barra verticale tutta a sinistra, col dito o coi tasti.
         AnimatedVisibility(
             visible = volumeShown && fullscreen && !inPip,
@@ -564,6 +576,7 @@ internal fun timeLabel(positionMs: Long, playerDurationMs: Long, knownSec: Long)
 
 /** Minutaggio sul video: tempo trascorso, durata, barra da trascinare e schermo intero. */
 @OptIn(UnstableApi::class)
+@kotlin.OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun TimeBar(
     live: Boolean,
@@ -612,6 +625,15 @@ private fun TimeBar(
         }
     }
     if (!live) {
+        val sponsor by SponsorBlock.state.collectAsState()
+        val sponsorOn by AppSettings.sponsorBlock.collectAsState()
+        val actions by AppSettings.sponsorActions.collectAsState()
+        val marks = if (sponsorOn) SponsorBlock.marks(sponsor?.segments.orEmpty(), actions) else emptyList()
+        val sliderColors = SliderDefaults.colors(
+            thumbColor = Color(0xFFFF2D2D),
+            activeTrackColor = Color(0xFFFF2D2D),
+            inactiveTrackColor = Color.White.copy(alpha = if (buffered > position) 0.45f else 0.3f),
+        )
         Slider(
             value = dragging ?: if (duration > 0) position.toFloat() / duration else 0f,
             onValueChange = {
@@ -623,11 +645,14 @@ private fun TimeBar(
                 dragging = null
             },
             enabled = duration > 0,
-            colors = SliderDefaults.colors(
-                thumbColor = Color(0xFFFF2D2D),
-                activeTrackColor = Color(0xFFFF2D2D),
-                inactiveTrackColor = Color.White.copy(alpha = if (buffered > position) 0.45f else 0.3f),
-            ),
+            colors = sliderColors,
+            track = { state ->
+                // I segmenti di SponsorBlock colorati sulla barra, come nell'estensione.
+                Box(contentAlignment = Alignment.Center) {
+                    SliderDefaults.Track(sliderState = state, colors = sliderColors, enabled = duration > 0)
+                    if (marks.isNotEmpty() && duration > 0) SponsorMarks(marks, duration, Modifier.matchParentSize())
+                }
+            },
             modifier = Modifier.height(28.dp).offset(y = (-4).dp),
         )
     }
@@ -650,16 +675,31 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
             },
         )
         if (stream == null) return@Column
-        val dislikes = dislikesFor(stream.id)
+        val showDislikes by AppSettings.dislikes.collectAsState()
+        val votes = if (showDislikes) votesFor(stream.id) else null
+        val sponsor by SponsorBlock.state.collectAsState()
+        val sponsorOn by AppSettings.sponsorBlock.collectAsState()
+        val actions by AppSettings.sponsorActions.collectAsState()
+        val label = sponsor?.takeIf { sponsorOn && it.videoId == stream.id }?.let { SponsorBlock.label(it.segments, actions) }
         Text(
             listOfNotNull(
                 stream.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
                 stream.uploaded.takeIf { it.isNotBlank() },
-                dislikes?.takeIf { it > 0 }?.let { "${compactCount(it)} non mi piace" },
             ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        // SponsorBlock: tutto il video è promozione (es. prodotto avuto dal marchio).
+        if (label != null) {
+            Row(
+                Modifier.clip(CircleShape).background(Color(label.color).copy(alpha = 0.18f)).padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(label.color)))
+                Spacer(Modifier.width(6.dp))
+                Text(label.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
+            }
+        }
         if (stream.channel.isNotBlank()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ChannelAvatar(stream.channelAvatar, stream.channel, 40)
@@ -684,7 +724,8 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PillButton(
                 icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                label = (stream.likes.takeIf { it > 0 }?.let { compactCount(it) } ?: "Mi piace"),
+                // Se YouTube nasconde i Mi piace si usa la stima di Return YouTube Dislike.
+                label = ((stream.likes.takeIf { it > 0 } ?: votes?.likes?.takeIf { it > 0 })?.let { compactCount(it) } ?: "Mi piace"),
                 selected = liked,
                 description = if (liked) "Togli Mi piace" else "Mi piace",
             ) {
@@ -693,6 +734,17 @@ private fun TitleBlock(now: YtNow?, stream: YtStream?, showComments: Boolean, on
                     context,
                     YtVideo(stream.id, stream.title, stream.channel, "", null, durationSec = stream.durationSec.toInt(), channelAvatar = stream.channelAvatar),
                 )
+            }
+            votes?.takeIf { it.dislikes >= 0 }?.let { v ->
+                PillButton(
+                    icon = Icons.Outlined.ThumbDown,
+                    label = compactCount(v.dislikes),
+                    selected = false,
+                    description = "Non mi piace stimati",
+                ) {
+                    val rating = v.ratio()?.let { " · piace al $it%" }.orEmpty()
+                    CaptureFeedback.tell(context, "Stima di Return YouTube Dislike$rating", Icons.Outlined.ThumbDown)
+                }
             }
             PillButton(
                 icon = Icons.AutoMirrored.Outlined.Comment,
@@ -960,21 +1012,69 @@ private fun CommentRow(videoId: String, comment: YtComment, reply: Boolean = fal
     }
 }
 
-private val dislikeCache = mutableStateMapOf<String, Long>()
+private val voteCache = mutableStateMapOf<String, YtVotes>()
 
 /** I "Non mi piace" non li mostra più YouTube: stima pubblica di Return YouTube Dislike. */
 @Composable
-private fun dislikesFor(id: String): Long? {
+private fun votesFor(id: String): YtVotes? {
     LaunchedEffect(id) {
-        if (id in dislikeCache) return@LaunchedEffect
+        if (id in voteCache) return@LaunchedEffect
         runCatching {
             withContext(Dispatchers.IO) {
                 val connection = java.net.URL("https://returnyoutubedislikeapi.com/votes?videoId=$id").openConnection() as java.net.HttpURLConnection
                 connection.connectTimeout = 8_000
                 connection.readTimeout = 8_000
-                connection.inputStream.bufferedReader().use { JSONObject(it.readText()).optLong("dislikes", -1) }
+                connection.inputStream.bufferedReader().use { YtVotes.parse(it.readText()) }
             }
-        }.onSuccess { dislikeCache[id] = it }
+        }.onSuccess { voteCache[id] = it }
     }
-    return dislikeCache[id]
+    return voteCache[id]
+}
+
+/** Il tasto di SponsorBlock sul video: «Salta sponsor», «Vai al momento clou». */
+@Composable
+private fun SponsorSkipButton(modifier: Modifier) {
+    val state by SponsorBlock.state.collectAsState()
+    val offer = state?.offer
+    AnimatedVisibility(visible = offer != null, enter = fadeIn(), exit = fadeOut(), modifier = modifier) {
+        // Tenuto durante l'uscita: senza, il testo sparirebbe prima della dissolvenza.
+        val shown = remember { mutableStateOf(offer) }
+        if (offer != null) shown.value = offer
+        val segment = shown.value ?: return@AnimatedVisibility
+        Row(
+            Modifier
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.7f))
+                .bouncyPress()
+                .clickable(onClickLabel = "Salta") { SponsorBlock.takeOffer() }
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(segment.category.color)))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                if (segment.type == SbType.POI) "Vai al momento clou" else "Salta: ${segment.category.label}",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+            )
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+/** I segmenti sulla barra del tempo: strisce sottili col colore del tipo. */
+@Composable
+private fun SponsorMarks(marks: List<SbSegment>, durationMs: Long, modifier: Modifier) {
+    androidx.compose.foundation.Canvas(modifier) {
+        val h = 4.dp.toPx()
+        val top = (size.height - h) / 2
+        for (m in marks) {
+            val start = (m.startMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
+            // Il momento clou è un punto: una tacca larga 3dp.
+            val end = if (m.type == SbType.POI) start + 3.dp.toPx()
+            else (m.endMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
+            drawRect(Color(m.category.color), topLeft = Offset(start, top), size = Size((end - start).coerceAtLeast(2f), h))
+        }
+    }
 }

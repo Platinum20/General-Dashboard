@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Checklist
@@ -42,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -237,12 +239,39 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
 @Composable
 fun TimelineNowMarker(modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary
+    // Arrivando su OGGI, oltre alla vibrazione, "OGGI" pulsa e una freccetta in su dice che il passato sta sopra.
+    val pulse = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
+    val tick = NowPulse.ticks.intValue
+    androidx.compose.runtime.LaunchedEffect(tick) {
+        if (tick == 0) return@LaunchedEffect
+        pulse.animateTo(1f, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Decelerate))
+        pulse.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS * 2, easing = Motion.Standard))
+    }
     Row(
         modifier.fillMaxWidth().height(32.dp).padding(end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("OGGI", style = MaterialTheme.typography.labelMedium, color = primary)
-        Spacer(Modifier.width(10.dp))
+        Text(
+            "OGGI",
+            style = MaterialTheme.typography.labelMedium,
+            color = primary,
+            modifier = Modifier.graphicsLayer {
+                val k = 1f + 0.15f * pulse.value
+                scaleX = k
+                scaleY = k
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            },
+        )
+        Icon(
+            Icons.Rounded.KeyboardArrowUp,
+            contentDescription = null,
+            tint = primary,
+            modifier = Modifier.padding(start = 4.dp).size(14.dp).graphicsLayer {
+                alpha = pulse.value
+                translationY = (1f - pulse.value) * 4.dp.toPx()
+            },
+        )
+        Spacer(Modifier.width(6.dp))
         Box(
             Modifier.weight(1f).height(2.dp).drawBehind {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
@@ -251,7 +280,7 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
         Box(
             Modifier.width(GUTTER).fillMaxHeight().drawBehind {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width / 2, size.height / 2), 2.dp.toPx())
-                drawCircle(primary, 6.dp.toPx(), Offset(size.width / 2, size.height / 2))
+                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
     }
@@ -342,6 +371,12 @@ object PastBarrier {
     }
 }
 
+/** Ogni volta che una lista arriva su OGGI: i [TimelineNowMarker] a schermo pulsano. */
+object NowPulse {
+    val ticks = androidx.compose.runtime.mutableIntStateOf(0)
+    fun fire() { ticks.intValue++ }
+}
+
 /** La [PastBarrier] collegata a una lista: [itemIndex] è l'item con la linea, [offset] dove sta "Oggi" dentro l'item. */
 @Composable
 fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListState, itemIndex: Int, offset: Int?): androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
@@ -353,6 +388,7 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
             var pull = 0f
             var unlocked = false
+            var flingStopped = false
             fun boundary(): Float? {
                 val o = at ?: return null
                 val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
@@ -369,12 +405,18 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
                 )
                 pull = s.pull
                 unlocked = s.unlocked
-                if (s.bump) haptic(Haptic.TICK)
+                if (s.bump) { haptic(Haptic.TICK); NowPulse.fire() }
+                // Un lancio che si ferma su OGGI: niente vibrazione, ma OGGI pulsa una volta.
+                if (s.consumed > 0f && source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput && !flingStopped) {
+                    flingStopped = true
+                    NowPulse.fire()
+                }
                 if (s.through) haptic(Haptic.THRESHOLD)
                 return Offset(0f, s.consumed)
             }
             override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
                 pull = 0f
+                flingStopped = false
                 return androidx.compose.ui.unit.Velocity.Zero
             }
         }

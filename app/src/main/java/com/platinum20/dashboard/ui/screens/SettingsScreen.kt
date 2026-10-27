@@ -12,6 +12,15 @@ import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.LinearScale
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.ThumbDown
+import com.platinum20.dashboard.media.youtube.SbAction
+import com.platinum20.dashboard.media.youtube.SbCategory
+import com.platinum20.dashboard.media.youtube.SponsorBlock
 import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
 import com.platinum20.dashboard.news.voice.NeuralVoice
@@ -265,6 +274,10 @@ fun SettingsScreen(
                     AdBlockSettings()
                     RowDivider()
                     VideoFilterSettings()
+                    RowDivider()
+                    SponsorBlockSettings()
+                    RowDivider()
+                    DislikeSettings()
                 }
             }
 
@@ -1053,6 +1066,122 @@ private fun VideoFilterSettings() {
         subtitle = "Finito un video, ne parte uno proposto",
         onClick = { AppSettings.setAutoplayNext(!autoplay) },
         trailing = { Switch(checked = autoplay, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setAutoplayNext(on) }) },
+    )
+}
+
+/**
+ * SponsorBlock: acceso o spento e, sotto, ogni tipo di segmento con le quattro scelte
+ * dell'estensione ufficiale (salta da solo, tasto, solo nella barra, ignora).
+ */
+@Composable
+private fun SponsorBlockSettings() {
+    val context = LocalContext.current
+    val enabled by AppSettings.sponsorBlock.collectAsState()
+    val actions by AppSettings.sponsorActions.collectAsState()
+    SponsorBlock.init(context)
+    val stats by SponsorBlock.stats.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.FastForward,
+        accent = TileAccent.GREEN,
+        title = "SponsorBlock",
+        subtitle = when {
+            !enabled -> "Spento"
+            stats.skips == 0 -> "Salta sponsor e intermezzi nei video"
+            else -> "${stats.skips} salti · ${savedLabel(stats.savedMs)} risparmiati"
+        },
+        onClick = { AppSettings.setSponsorBlock(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setSponsorBlock(on) }) },
+    )
+    AnimatedVisibility(
+        visible = enabled,
+        enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
+        exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
+    ) { Column {
+        SbCategory.entries.forEach { category ->
+            RowDivider()
+            SponsorCategoryRow(category, actions[category] ?: category.default)
+        }
+    } }
+}
+
+/** Una riga per tipo di segmento: il colore della barra, cosa contiene e la scelta di adesso. */
+@Composable
+private fun SponsorCategoryRow(category: SbCategory, action: SbAction) {
+    val color = Color(category.color)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable {
+                ActionBubble.show(*category.actions.map { choice ->
+                    BubbleAction(
+                        icon = if (choice == action) Icons.Outlined.Check else sponsorIcon(choice),
+                        title = category.actionLabel(choice),
+                        detail = category.actionDetail(choice),
+                    ) { AppSettings.setSponsorAction(category, choice) }
+                }.toTypedArray())
+            }
+            .heightIn(min = 56.dp)
+            .padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(34.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(12.dp).clip(CircleShape).background(color))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(category.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                category.detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            category.shortLabel(action),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (action == SbAction.OFF) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+    }
+}
+
+private fun sponsorIcon(action: SbAction): ImageVector = when (action) {
+    SbAction.AUTO -> Icons.Outlined.FastForward
+    SbAction.MANUAL -> Icons.Outlined.TouchApp
+    SbAction.SHOW -> Icons.Outlined.LinearScale
+    SbAction.OFF -> Icons.Outlined.Block
+}
+
+/** Tempo risparmiato: "40 s", "12 min", "3 h 5 min". */
+internal fun savedLabel(ms: Long): String {
+    val minutes = ms / 60_000
+    return when {
+        ms < 60_000 -> "${ms / 1000} s"
+        minutes < 60 -> "$minutes min"
+        minutes % 60 == 0L -> "${minutes / 60} h"
+        else -> "${minutes / 60} h ${minutes % 60} min"
+    }
+}
+
+/** Return YouTube Dislike: i Non mi piace stimati accanto ai Mi piace nella pagina del video. */
+@Composable
+private fun DislikeSettings() {
+    val enabled by AppSettings.dislikes.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.ThumbDown,
+        accent = TileAccent.ORANGE,
+        title = "Mostra i Non mi piace",
+        subtitle = "Stima di Return YouTube Dislike",
+        onClick = { AppSettings.setDislikes(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setDislikes(on) }) },
     )
 }
 
