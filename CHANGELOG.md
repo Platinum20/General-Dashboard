@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.243.0
+**Video senza il riquadro "In pausa"**
+- In Video non c'è più il riquadro del video in riproduzione sotto le schede: c'è già il mini player
+
 ## 1.242.0
 **Video: scheda Canali e scelta sul video successivo**
 - In Video, dopo Cronologia c'è la scheda Canali: i canali che segui, prima quelli che hanno pubblicato da poco; tocchi un canale e vedi solo i suoi video

@@ -32,8 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.outlined.WatchLater
@@ -46,9 +44,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -68,7 +64,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -92,7 +87,6 @@ import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.YtVideo
-import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -360,14 +354,13 @@ internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean
 }
 
 /**
- * Feed di video con i filtri (Shorts, live): in cima cosa stai guardando, poi gli Short
- * in una fila orizzontale (se non sono esclusi) e i video con le anteprime grandi.
+ * Feed di video con i filtri (Shorts, live): gli Short in una fila orizzontale (se non sono esclusi)
+ * e i video con le anteprime grandi. Cosa stai guardando lo mostra già il mini player.
  */
 @Composable
 fun VideoFeed(state: Loadable<List<YtVideo>>, empty: String, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
     val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive)
     FeedList(state, empty = empty) {
-        item(key = "now") { WatchingHero(onPlay) }
         if (pick.shorts.isNotEmpty()) {
             item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
         }
@@ -381,49 +374,6 @@ private fun SimpleVideos(state: Loadable<List<YtVideo>>, empty: String, onPlay: 
     FeedList(state, empty = empty) {
         items(state.data.orEmpty(), key = { it.id }) { video ->
             VideoCard(video, onClick = { onPlay(video.watchUrl + (list?.let { "&list=$it" } ?: "")) })
-        }
-    }
-}
-
-/** Il video che stai guardando (o hai in pausa) nel player dell'app: un tocco e ci torni. */
-@Composable
-private fun WatchingHero(onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val now by YtPlayer.now.collectAsState()
-    val stream = now?.stream ?: return
-    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val container = if (dark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.inverseSurface
-    val content = if (dark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.inverseOnSurface
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clip(MaterialTheme.shapes.large)
-            .background(container)
-            .clickable { onPlay("https://www.youtube.com/watch?v=${stream.id}") }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AsyncImage(
-            model = stream.thumbnail,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.width(112.dp).aspectRatio(16f / 9f).clip(MaterialTheme.shapes.medium),
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                (if (now?.playing == true) "Stai guardando" else "In pausa").uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = content.copy(alpha = 0.7f),
-            )
-            Text(stream.title, style = MaterialTheme.typography.titleSmall, color = content, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
-        FilledIconButton(
-            onClick = { YtPlayer.toggle(context) },
-            colors = IconButtonDefaults.filledIconButtonColors(containerColor = content, contentColor = container),
-        ) {
-            Icon(if (now?.playing == true) Icons.Filled.Pause else Icons.Filled.PlayArrow, contentDescription = "Play/pausa")
         }
     }
 }
