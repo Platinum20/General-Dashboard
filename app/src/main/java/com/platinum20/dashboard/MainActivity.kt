@@ -370,6 +370,13 @@ object Routes {
     const val EXPENSES = "home/expenses"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
     const val NOTES_EXPENSES = "notes/expenses"
+
+    /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
+    fun barTab(route: String?): String? = when (route) {
+        EXPENSES -> HOME
+        NOTES_EXPENSES -> NOTES
+        else -> route
+    }
     const val SEARCH = "home/search"
     const val SEARCH_PATTERN = "home/search?f={f}"
     fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
@@ -1164,12 +1171,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 CanvasNavBar(
-                    // Spese accende la sezione da cui la si è aperta.
-                    currentRoute = when (currentRoute) {
-                        Routes.EXPENSES -> Routes.HOME
-                        Routes.NOTES_EXPENSES -> Routes.NOTES
-                        else -> currentRoute
-                    },
+                    currentRoute = Routes.barTab(currentRoute),
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.

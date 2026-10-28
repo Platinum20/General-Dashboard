@@ -290,8 +290,7 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 SourcePill(current.source)
                 Spacer(Modifier.height(8.dp))
                 Text(current.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                // "In diretta" lo dice già la riga del tempo, qui sotto: non due volte.
-                if (!(current.live && current.subtitle.equals("In diretta", ignoreCase = true))) Text(
+                if (showPlayerSubtitle(current.live, current.subtitle)) Text(
                     current.subtitle,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (current.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -324,6 +323,10 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
     }
     }
 }
+
+/** "In diretta" lo dice già la riga del tempo, sotto il titolo: non due volte. */
+internal fun showPlayerSubtitle(live: Boolean, subtitle: String): Boolean =
+    !(live && subtitle.trim().equals("In diretta", ignoreCase = true))
 
 /** Cosa fa la pagina del player quando la lasci dopo averla trascinata. */
 internal enum class PlayerRelease { CLOSE, MINI, QUEUE, STAY }
