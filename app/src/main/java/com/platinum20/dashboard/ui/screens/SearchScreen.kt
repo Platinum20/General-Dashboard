@@ -157,7 +157,7 @@ fun SearchScreen(
             padding = PaddingValues(
                 start = 16.dp, end = 16.dp,
                 top = inner.calculateTopPadding() + 8.dp,
-                bottom = inner.calculateBottomPadding() + 24.dp,
+                bottom = inner.calculateBottomPadding() + 24.dp + miniPlayerRoom(),
             ),
             onClose = onBack,
             onOpenNote = onOpenNote,

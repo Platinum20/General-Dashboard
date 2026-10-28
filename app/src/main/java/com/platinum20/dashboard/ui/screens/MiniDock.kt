@@ -3,11 +3,17 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.media.Playback
 
 /**
  * Il passaggio dal video grande al mini player: chiudendo il player il video rimpicciolisce e vola
@@ -95,4 +101,14 @@ object MiniDock {
     }
 
     data class Layer(val scaleX: Float, val scaleY: Float, val dx: Float, val dy: Float)
+}
+
+/**
+ * Lo spazio in fondo per il mini player nelle pagine senza barra delle sezioni (Impostazioni, Meteo…):
+ * senza, l'ultima riga resta sotto il mini player anche a fine lista.
+ */
+@Composable
+fun miniPlayerRoom(): Dp {
+    val playing by Playback.now.collectAsStateWithLifecycle()
+    return MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density).dp
 }

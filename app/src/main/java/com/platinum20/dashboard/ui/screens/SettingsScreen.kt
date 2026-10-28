@@ -231,7 +231,7 @@ fun SettingsScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 32.dp,
+                bottom = inner.calculateBottomPadding() + 32.dp + miniPlayerRoom(),
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
@@ -317,7 +317,7 @@ fun SettingsPageScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 32.dp,
+                bottom = inner.calculateBottomPadding() + 32.dp + miniPlayerRoom(),
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {

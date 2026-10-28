@@ -85,7 +85,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
         LazyColumn(
             contentPadding = PaddingValues(
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
         ) {
             item {

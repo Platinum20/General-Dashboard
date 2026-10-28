@@ -106,7 +106,7 @@ fun UpdatesScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding() + 4.dp,
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
