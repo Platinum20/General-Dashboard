@@ -936,9 +936,17 @@ private fun NavController.switchTab(route: String) {
     }
 }
 
+/** Solo per il giro fotografico (ScreenshotTour): apre una pagina profonda per rotta, senza toccare la UI. */
+@androidx.annotation.VisibleForTesting
+internal var tourNavigate: ((String) -> Unit)? = null
+
 @Composable
 private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    DisposableEffect(navController) {
+        tourNavigate = { navController.navigate(it) }
+        onDispose { tourNavigate = null }
+    }
     val context = LocalContext.current
     // Link, pagine e calendario si aprono sempre dentro l'app.
     val inApp = remember(navController) {

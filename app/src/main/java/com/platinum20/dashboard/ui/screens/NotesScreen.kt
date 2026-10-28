@@ -80,7 +80,6 @@ import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -1194,12 +1193,16 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             }
         },
         bottomBar = {
+            // Il mini player sta sopra tutte le pagine: qui i tasti salgono sopra di lui invece di finirci sotto.
+            val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
+            val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .imePadding()
+                    .padding(bottom = miniRoom.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 RoundIconButton(

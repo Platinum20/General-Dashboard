@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.284.0
+**Player e note più puliti**
+- Nel player di musica, radio e podcast la coda è sotto i comandi ("Coda · 3 dopo"), non più in alto; trascinando la pagina in su si apre la coda
+- Alla radio "In diretta" compare una volta sola
+- Scrivendo una nota lunga, i tasti in fondo (lista, parole, Altro) salgono sopra il mini player invece di finirci sotto
+- Il lettore degli articoli usa lo stesso carattere del resto dell'app
+
 ## 1.283.0
 **Niente video per membri**
 - In Video spariscono i video riservati a chi paga l'abbonamento al canale: senza iscrizione non si possono guardare

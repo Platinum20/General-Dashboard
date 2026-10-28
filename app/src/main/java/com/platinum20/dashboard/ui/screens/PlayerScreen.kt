@@ -61,6 +61,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -185,17 +186,7 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 subtitle = now?.source?.label?.uppercase(),
                 onBack = onBack,
                 transparent = true,
-            ) {
-                // La coda unica: cosa viene dopo, di qualunque fonte.
-                val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-                IconButton(onClick = onOpenQueue) {
-                    androidx.compose.material3.BadgedBox(badge = {
-                        if (queue.upcoming.isNotEmpty()) androidx.compose.material3.Badge { Text("${queue.upcoming.size}") }
-                    }) {
-                        Icon(Icons.Outlined.QueueMusic, contentDescription = "Coda")
-                    }
-                }
-            }
+            )
         },
     ) { inner ->
         val current = now
@@ -246,8 +237,8 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                         onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy()) } },
                         onDragEnd = {
                             val v = tracker.calculateVelocity()
-                            when {
-                                kotlin.math.abs(total.x) > w * 0.5f -> {
+                            when (playerRelease(total, Offset(v.x, v.y), w, h)) {
+                                PlayerRelease.CLOSE -> {
                                     view.haptic(Haptic.CONFIRM)
                                     scope.launch {
                                         drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), androidx.compose.animation.core.tween(200))
@@ -255,18 +246,23 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                                         onBack()
                                     }
                                 }
-                                total.y > h * 0.25f || (v.y > 1_500f && v.y > 1.5f * kotlin.math.abs(v.x) && total.y > 0f) -> {
+                                PlayerRelease.MINI -> {
                                     view.haptic(Haptic.SNAP)
                                     onBack()
                                 }
-                                else -> scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy(), initialVelocity = v.let { Offset(it.x, it.y) }) }
+                                PlayerRelease.QUEUE -> {
+                                    view.haptic(Haptic.SNAP)
+                                    scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy()) }
+                                    onOpenQueue()
+                                }
+                                PlayerRelease.STAY -> scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy(), initialVelocity = v.let { Offset(it.x, it.y) }) }
                             }
                         },
                     ) { change, amount ->
                         change.consume()
                         travelled += amount
                         tracker.addPosition(change.uptimeMillis, travelled)
-                        // In su resiste: non porta da nessuna parte.
+                        // In su resiste, e lasciandola apre la coda.
                         total = Offset(total.x + amount.x, (total.y + amount.y).coerceAtLeast(-h * 0.05f))
                         val over = kotlin.math.abs(total.x) > w * 0.5f
                         if (over != armed) {
@@ -294,7 +290,8 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 SourcePill(current.source)
                 Spacer(Modifier.height(8.dp))
                 Text(current.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
+                // "In diretta" lo dice già la riga del tempo, qui sotto: non due volte.
+                if (!(current.live && current.subtitle.equals("In diretta", ignoreCase = true))) Text(
                     current.subtitle,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (current.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -305,7 +302,15 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 TimeBar(current)
                 Spacer(Modifier.height(8.dp))
                 Controls(current)
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
+                // La coda unica (cosa viene dopo, di qualunque fonte): anche trascinando la pagina in su.
+                val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
+                TextButton(onClick = onOpenQueue, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    Icon(Icons.Outlined.QueueMusic, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo")
+                }
+                Spacer(Modifier.height(8.dp))
                 if (current.source == PlaySource.SPEECH) SpeechChapters()
                 // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
                 if (current.source == PlaySource.MUSIC) {
@@ -318,6 +323,17 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
         }
     }
     }
+}
+
+/** Cosa fa la pagina del player quando la lasci dopo averla trascinata. */
+internal enum class PlayerRelease { CLOSE, MINI, QUEUE, STAY }
+
+/** Di lato oltre metà chiude, giù oltre un quarto (o uno scatto) torna al mini player, su (o uno scatto in su) apre la coda. */
+internal fun playerRelease(total: Offset, velocity: Offset, w: Float, h: Float): PlayerRelease = when {
+    kotlin.math.abs(total.x) > w * 0.5f -> PlayerRelease.CLOSE
+    total.y > h * 0.25f || (velocity.y > 1_500f && velocity.y > 1.5f * kotlin.math.abs(velocity.x) && total.y > 0f) -> PlayerRelease.MINI
+    total.y < -h * 0.04f || (velocity.y < -1_500f && -velocity.y > 1.5f * kotlin.math.abs(velocity.x) && total.y < 0f) -> PlayerRelease.QUEUE
+    else -> PlayerRelease.STAY
 }
 
 /** I timestamp della lettura: di cosa parla e da quando; toccandone uno la voce salta lì. */
