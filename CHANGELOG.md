@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.286.0
+**Il mini player non copre più l'ultima riga**
+- Nelle pagine senza barra (Impostazioni, Meteo, Recap, Cerca ovunque, Aggiornamenti, Card della Home, posta) la lista finisce sopra il mini player: l'ultima riga si legge e si tocca
+
 ## 1.285.0
 **Impostazioni: testi interi**
 - In Impostazioni › Media "Escludi video per membri" dice "Niente video solo per abbonati", in una riga senza puntini
