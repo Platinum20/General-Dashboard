@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.285.0
+**Impostazioni: testi interi**
+- In Impostazioni › Media "Escludi video per membri" dice "Niente video solo per abbonati", in una riga senza puntini
+- Anche "Riconosci canzoni" ora si legge per intero: "Tocca per incollare il token AudD"
+
 ## 1.284.0
 **Player e note più puliti**
 - Nel player di musica, radio e podcast la coda è sotto i comandi ("Coda · 3 dopo"), non più in alto; trascinando la pagina in su si apre la coda
