@@ -133,6 +133,7 @@ object YouTubeWeb {
                         startsAt = v.optLong("start").takeIf { it > 0 }?.let { java.time.Instant.ofEpochSecond(it) },
                         channelAvatar = v.optString("avatar"),
                         watchedPercent = v.optInt("watched"),
+                        membersOnly = v.optBoolean("members"),
                     )
                 }
             }.distinctBy { it.id },
@@ -196,7 +197,8 @@ object YouTubeWeb {
       var watched = parseInt((img.match(/"startPercent":(\d+)/) || [])[1] || '0', 10);
       var avatar = '';
       try { avatar = thumb(meta.image.decoratedAvatarViewModel.avatar.avatarViewModel.image); } catch (e) {}
-      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, start: start, avatar: avatar, watched: watched});
+      var members = /MEMBERS_ONLY/.test(JSON.stringify(meta || {}));
+      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, start: start, avatar: avatar, watched: watched, members: members});
     } else if (type.indexOf('PLAYLIST') >= 0) {
       var count = 0;
       try { count = parseInt(JSON.stringify(l.contentImage).match(/"text":"(\d+)/)[1], 10) || 0; } catch (e) {}
@@ -223,7 +225,8 @@ object YouTubeWeb {
         var avatar = '';
         try { avatar = thumb(v.channelThumbnailSupportedRenderers.channelThumbnailWithLinkRenderer.thumbnail); } catch (e) {}
         if (!avatar && v.channelThumbnail) avatar = thumb(v.channelThumbnail);
-        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, start: start, avatar: avatar, watched: watched});
+        var members = /MEMBERS_ONLY/.test(overlays);
+        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, start: start, avatar: avatar, watched: watched, members: members});
       } else if (key === 'reelItemRenderer' && v.videoId) {
         videos.push({id: v.videoId, title: text(v.headline), channel: '', channelId: '', short: true});
       } else if ((key === 'gridPlaylistRenderer' || key === 'playlistRenderer') && v.playlistId) {

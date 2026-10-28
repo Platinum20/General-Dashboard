@@ -12,6 +12,7 @@ import org.schabi.newpipe.extractor.localization.ContentCountry
 import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.AudioTrackType
+import org.schabi.newpipe.extractor.stream.ContentAvailability
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
@@ -233,6 +234,7 @@ object YtResolver {
             channelAvatar = item.uploaderAvatars.maxByOrNull { it.height }?.url.orEmpty(),
             views = item.viewCount,
             uploadedText = item.textualUploadDate.orEmpty(),
+            membersOnly = item.contentAvailability == ContentAvailability.MEMBERSHIP,
         )
     }
 
