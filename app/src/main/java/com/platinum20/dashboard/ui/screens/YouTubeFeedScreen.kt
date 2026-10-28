@@ -344,9 +344,14 @@ private fun SubscriptionsTab(hideShorts: Boolean, hideLive: Boolean, onPlay: (St
 /** Quello che resta del feed con i filtri: gli Short (fila a parte) e gli altri video. */
 internal data class FeedPick(val shorts: List<YtVideo>, val videos: List<YtVideo>)
 
-/** Escludi Shorts toglie la fila degli Short; Escludi live toglie le dirette in corso e in arrivo. */
-internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean): FeedPick {
-    val kept = if (hideLive) all.filter { !it.live && !it.upcoming } else all
+/**
+ * Escludi Shorts toglie la fila degli Short; Escludi live toglie le dirette in corso e in arrivo;
+ * Escludi video per membri toglie quelli che senza abbonamento al canale non si possono guardare.
+ */
+internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean, hideMembers: Boolean = false): FeedPick {
+    val kept = all
+        .let { list -> if (hideLive) list.filter { !it.live && !it.upcoming } else list }
+        .let { list -> if (hideMembers) list.filter { !it.membersOnly } else list }
     return FeedPick(
         shorts = if (hideShorts) emptyList() else kept.filter { it.isShort },
         videos = kept.filter { !it.isShort },
@@ -359,7 +364,8 @@ internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean
  */
 @Composable
 fun VideoFeed(state: Loadable<List<YtVideo>>, empty: String, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
-    val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive)
+    val hideMembers by AppSettings.hideMembers.collectAsState()
+    val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive, hideMembers)
     FeedList(state, empty = empty) {
         if (pick.shorts.isNotEmpty()) {
             item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
@@ -528,7 +534,8 @@ private fun ChannelVideos(channel: YtChannel, hideShorts: Boolean, hideLive: Boo
     val more by YouTubeStore.channelHasMore.collectAsState()
     val state = all[channel.id] ?: Loadable(loading = true)
     LaunchedEffect(channel.id) { YouTubeStore.loadChannel(channel) }
-    val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive)
+    val hideMembers by AppSettings.hideMembers.collectAsState()
+    val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive, hideMembers)
     val count = state.data.orEmpty().size
     FeedList(state, empty = "Nessun video in questo canale") {
         if (pick.shorts.isNotEmpty()) {
