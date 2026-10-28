@@ -1,6 +1,6 @@
 # Revisione UX (routine ogni 4 ore)
 
-Ultimo commit di main revisionato: 3e396cd30842853569dffff5c74c2a81c32b8318 (1.284.0, 2026-10-28)
+Ultimo commit di main revisionato: 25800578d66456efe33cfc84660016591116c3c0 (1.286.0, 2026-10-28)
 
 ## Giro fotografico
 ScreenshotTour copre ora anche le pagine profonde, aperte per rotta con `tourNavigate` (MainActivity):
@@ -8,7 +8,19 @@ ScreenshotTour copre ora anche le pagine profonde, aperte per rotta con `tourNav
 68 Recap, 69 player, 70 coda, 71 video YouTube, 72 fumetto delle azioni. Già c'erano: Meteo, Punto,
 Cerca ovunque, composer "+", Note, Media, tutte le sottopagine di Impostazioni.
 Mancano ancora: dettaglio evento (Robolectric non ha il calendario), layout video vero (serve un video
-che suona: oggi 69/71 mostrano la radio), un CanvasDialog aperto.
+che suona: oggi 69/71 mostrano la radio). 73 = CanvasDialog aperto (token AudD, da Impostazioni › Media).
+
+## 2026-10-28 (1.286.0)
+Corretto:
+- Pagine senza barra (Impostazioni e sottopagine, Meteo, Recap, Cerca ovunque, Aggiornamenti, Card della Home,
+  posta, Compila le note, scelta località): l'ultima riga finiva sotto il mini player. Ora `miniPlayerRoom()`
+  (MiniDock.kt) aggiunge lo spazio in fondo alla lista.
+- Giro fotografico: aggiunto 73_dialogo (CanvasDialog).
+
+Controllati: nessun DropdownMenu/AlertDialog/Snackbar/Toast nuovo; player radio con "In diretta" una volta.
+
+Rimandati: le sezioni con barra (Oggi, Note, News) non aggiungono spazio per il mini player come fa Media
+(88 dp): da verificare sul telefono se l'ultima card resta coperta.
 
 ## 2026-10-28 (1.284.0)
 Corretto:
