@@ -3,7 +3,18 @@
 Stato del beta tester automatico ("Canvas: beta tester", ogni 4 ore). La prima riga dice l'ultima
 versione già provata: se l'ultima release GitHub è questa, il giro si ferma subito.
 
-**Ultima versione testata: 1.285.0**
+**Ultima versione testata: 1.286.0**
+
+## 2026-10-28 · 1.286.0
+
+- Giro screenshots.yml su main (run 106, su 1.286.0): 628 test, 0 rossi, 2 ignorati. Giri fotografici verdi.
+- Foto controllate: Impostazioni (mini player sopra la lista), dialogo AudD (73_dialogo, chiaro e scuro),
+  Aggiornamenti. Nessun crash, nessun testo tagliato.
+- Aggiunto BetaMiniPlayerRoomTest: le 9 pagine senza barra devono tenere `miniPlayerRoom()` in fondo alla lista (#233).
+
+### Problemi aperti
+
+- Nessuno.
 
 ## 2026-10-28 · da 1.274.0 a 1.284.0
 
