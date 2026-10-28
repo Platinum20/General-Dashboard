@@ -153,6 +153,16 @@ enum class SettingsPage(val title: String) {
     SPONSORBLOCK("SponsorBlock"),
 }
 
+/** Sottotitoli che il giro fotografico ha trovato tagliati: testati, devono stare in una riga. */
+internal object SettingsLines {
+    const val SONG_ID_OFF = "Tocca per incollare il token AudD"
+    const val SONG_ID_ON = "Tieni premuto + vicino alla musica"
+    const val HIDE_MEMBERS = "Niente video solo per abbonati"
+    /** Quanto ci sta accanto a un interruttore o a un valore breve ("Da attivare"). */
+    const val MAX = 34
+    val all = listOf(SONG_ID_OFF, SONG_ID_ON, HIDE_MEMBERS)
+}
+
 /** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
 internal object SettingsSummary {
     fun home(visible: Int, total: Int, place: String?): String =
@@ -511,7 +521,7 @@ private fun SongIdSetting() {
         icon = Icons.Outlined.MusicNote,
         accent = TileAccent.ORANGE,
         title = "Riconosci canzoni",
-        subtitle = if (songToken.isBlank()) "Serve il token di AudD: tocca per incollarlo" else "Tieni premuto + vicino alla musica",
+        subtitle = if (songToken.isBlank()) SettingsLines.SONG_ID_OFF else SettingsLines.SONG_ID_ON,
         value = if (songToken.isBlank()) "Da attivare" else "Attivo",
         showChevron = true,
         onClick = { editing = true },
@@ -1202,7 +1212,7 @@ private fun VideoFilterSettings() {
         icon = Icons.Outlined.Lock,
         accent = TileAccent.ORANGE,
         title = "Escludi video per membri",
-        subtitle = "Niente video riservati agli iscritti a pagamento",
+        subtitle = SettingsLines.HIDE_MEMBERS,
         onClick = { AppSettings.setHideMembers(!members) },
         trailing = { Switch(checked = members, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideMembers(on) }) },
     )
