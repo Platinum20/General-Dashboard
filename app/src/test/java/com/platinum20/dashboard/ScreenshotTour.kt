@@ -176,6 +176,13 @@ class ScreenshotTour {
             if (tap("Media")) {
                 settle(1_000); shot(p + "47_imp_media")
                 scroll(down = true); shot(p + "47_imp_media_fondo")
+                // Un CanvasDialog aperto (il token di AudD): il vetro dei dialoghi accanto alle pagine.
+                if (!exists("Riconosci canzoni")) reveal("Riconosci canzoni", substring = false)
+                if (tap("Riconosci canzoni")) {
+                    settle(1_000); shot(p + "73_dialogo")
+                    scenario?.onActivity { ShadowDialog.getLatestDialog()?.dismiss() }
+                    settle(500)
+                } else missing += p + "73_dialogo"
                 back()
             } else missing += p + "47_imp_media"
             visit("Notifiche", p + "48_imp_notifiche")
