@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.292.0
+**Continua uguale tra PC e Canvas**
+- I video lasciati a metà su YouTube dal PC compaiono in "Continua" insieme a quelli iniziati in Canvas, e ripartono dal punto in cui eri
+- E il contrario: un video lasciato a metà in Canvas, sul PC riparte dal punto in cui l'hai fermato (il punto va a YouTube quando metti in pausa o esci, e ogni 2 minuti mentre guardi)
+
 ## 1.291.0
 **Spese: categorie automatiche più precise**
 - Nuove categorie Bollette (telefono, luce, gas, internet: Windtre ora va qui, non in Casa) e Acquisti (Amazon, negozi, vestiti)
