@@ -85,6 +85,8 @@ data class YtComment(
     val repliesPage: Page? = null,
     val pinned: Boolean = false,
     val hearted: Boolean = false,
+    /** Il segno della pagina di commenti da cui viene (null = la prima): serve a ritrovarlo per Mi piace e risposte. */
+    val source: String? = null,
 )
 
 /** [disabled]: l'autore ha spento i commenti (diverso da "ancora nessuno"). */
@@ -165,7 +167,7 @@ object YtResolver {
             YtCommentPage(info.relatedItems.map(::comment), info.nextPage, info.isCommentsDisabled)
         } else {
             val more = CommentsInfo.getMoreItems(ServiceList.YouTube, url, page)
-            YtCommentPage(more.items.map(::comment), more.nextPage)
+            YtCommentPage(more.items.map { comment(it).copy(source = page.id) }, more.nextPage)
         }
     }
 

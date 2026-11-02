@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.292.0
+**Commenti YouTube: Mi piace e risposte**
+- Tocca il pollice di un commento per mettere o togliere Mi piace col tuo account YouTube
+- "Rispondi" sotto ogni commento apre il campo per scrivere; la risposta compare subito sotto
+- In cima ai commenti puoi scriverne uno nuovo sul video
+- Serve l'accesso a YouTube in Impostazioni › Account; se YouTube rifiuta, il pollice torna com'era e lo dice
+
 ## 1.291.0
 **Spese: categorie automatiche più precise**
 - Nuove categorie Bollette (telefono, luce, gas, internet: Windtre ora va qui, non in Casa) e Acquisti (Amazon, negozi, vestiti)
