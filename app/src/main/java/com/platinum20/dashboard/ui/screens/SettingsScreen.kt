@@ -411,6 +411,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
     val youTubeOfficial by YouTubeAuth.connected.collectAsState()
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
     val spotifyClientId by SpotifyAuth.clientId.collectAsState()
+    val youTubeSync by com.platinum20.dashboard.media.youtube.YtSync.status.collectAsState()
     var editSpotifyKey by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     SettingsBlock("Musica e video") {
@@ -433,7 +434,12 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                     MediaService.SPOTIFY -> TileAccent.GREEN
                 },
                 title = service.label,
-                subtitle = if (official) "Collegamento ufficiale · feed e player" else "Tocca per il collegamento ufficiale",
+                subtitle = when {
+                    // Con l'accesso fatto nell'app, YouTube si tiene uguale al PC: qui si vede com'è andata.
+                    service == MediaService.YOUTUBE && service in loggedIn && youTubeSync != null -> youTubeSync!!
+                    official -> "Collegamento ufficiale · feed e player"
+                    else -> "Tocca per il collegamento ufficiale"
+                },
                 // Il collegamento ufficiale si rifà sempre da qui, anche dopo «Esci».
                 onClick = if (!official) connectOfficial else null,
                 trailing = {
