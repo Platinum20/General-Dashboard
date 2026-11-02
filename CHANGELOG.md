@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.290.0
+**Card SIM più compatta, con gli anelli**
+- In Home la card SIM mostra un anello per giga, minuti, SMS e roaming UE, con quanto resta dentro
+- Sotto, in una riga: quando si rinnova l'offerta e il credito
+- Canvas ora legge anche i giga in roaming UE e il nome dell'offerta dalla pagina di WindTre
+
 ## 1.289.0
 **SIM: niente più numeri sbagliati**
 - Canvas non legge più i testi di WindTre (messaggi e traduzioni) come se fossero i tuoi giga o il tuo credito
