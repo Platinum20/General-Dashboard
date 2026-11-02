@@ -246,7 +246,8 @@ object YouTubeWeb {
     }
 
     // Le funzioni usate da AccountPage.run: la firma SAPISIDHASH è quella che il sito calcola dai suoi cookie.
-    private const val ACCOUNT_SCRIPT = """
+    // (Calcolata: COLLECT_FN è dichiarata più sotto.)
+    private val ACCOUNT_SCRIPT: String get() = """
 (async function() {
   window.__cvCollect = """ + COLLECT_FN + """;
   window.__cvCont = function(data) {
