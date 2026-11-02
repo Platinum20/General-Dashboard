@@ -5,7 +5,9 @@ import android.content.SharedPreferences
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.Accounts
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.notes.Note
@@ -272,6 +274,34 @@ object YtSync {
         val raw = page.run("__cvApi('browse', {browseId: 'FEhistory'}).then(function(r) { return __cvCollect(r).videos; })")
         val videos = YouTubeWeb.videos(runCatching { JSONArray(raw) }.getOrNull())
         if (videos.isNotEmpty()) YtHistory.mergeRemote(context, videos)
+        // I video lasciati a metà sul PC compaiono anche in "Continua".
+        MediaHistory.init(context)
+        MediaHistory.merge(continueItems(MediaHistory.items.value, videos, System.currentTimeMillis()))
+    }
+
+    /**
+     * I video della cronologia di YouTube ([remote], dal più recente) lasciati a metà, come voci di
+     * "Continua": i nuovi con l'ordine di YouTube, a quelli già presenti si aggiorna solo il punto se
+     * sul PC sei andato più avanti. Funzione pura, provata nei test.
+     */
+    internal fun continueItems(existing: List<ResumeItem>, remote: List<YtVideo>, now: Long): List<ResumeItem> {
+        val known = existing.filter { it.kind == ResumeKind.YOUTUBE }.associateBy { it.key }
+        return remote.withIndex()
+            .filter { (_, v) -> !v.isShort && !v.live && v.durationSec > 0 && v.watchedPercent in 2 until 95 }
+            .take(MediaHistory.PER_KIND)
+            .mapNotNull { (index, v) ->
+                val durationMs = v.durationSec * 1000L
+                val positionMs = durationMs * v.watchedPercent / 100
+                val old = known[v.id]
+                when {
+                    old == null -> ResumeItem(
+                        ResumeKind.YOUTUBE, v.id, v.title, v.channel, "https://i.ytimg.com/vi/${v.id}/hqdefault.jpg",
+                        positionMs = positionMs, durationMs = durationMs, at = now - index * 1_000L,
+                    )
+                    positionMs > old.positionMs -> old.copy(positionMs = positionMs, durationMs = durationMs)
+                    else -> null
+                }
+            }
     }
 
     /**

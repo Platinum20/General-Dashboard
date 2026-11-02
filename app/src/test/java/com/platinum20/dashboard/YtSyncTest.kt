@@ -2,6 +2,8 @@ package com.platinum20.dashboard
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.youtube.SyncPlan
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YtSync
@@ -98,5 +100,22 @@ class YtSyncTest {
         // Dove eri più avanti in Canvas non torna indietro.
         val back = YtHistory.mergedWith(merged, listOf(video("a", percent = 10)), now = 2_000_000L)
         assertEquals(50_000L, back.getValue("a").positionMs)
+    }
+
+    @Test
+    fun halfWatchedOnPcGoesToContinue() {
+        val local = listOf(ResumeItem(ResumeKind.YOUTUBE, "a", "A", positionMs = 90_000, durationMs = 100_000, at = 7L))
+        val remote = listOf(
+            video("n", percent = 40, seconds = 600), video("done", percent = 100, seconds = 60),
+            video("a", percent = 50, seconds = 100), video("x", percent = 0, seconds = 60),
+        )
+        val items = YtSync.continueItems(local, remote, now = 10_000L)
+        assertEquals(listOf("n"), items.map { it.key })
+        assertEquals(240_000L, items.single().positionMs)
+        assertEquals(10_000L, items.single().at)
+        // Più avanti sul PC: si aggiorna il punto, non quando l'hai guardato.
+        val further = YtSync.continueItems(local, listOf(video("a", percent = 93, seconds = 100)), now = 10_000L).single()
+        assertEquals(93_000L, further.positionMs)
+        assertEquals(7L, further.at)
     }
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.289.0
+**I video del PC anche in Continua**
+- I video lasciati a metà su YouTube dal PC compaiono in "Continua" insieme a quelli iniziati in Canvas, e ripartono dal punto in cui eri
+
+## 1.288.0
+**Nuova card SIM: giga, minuti e credito WindTre**
+- In Home c'è la card SIM: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e quando si rinnova l'offerta
+- La prima volta tocchi la card e accedi a WindTre sulla loro pagina ufficiale (la password va solo a WindTre); poi Canvas legge i dati da solo, senza SMS, ogni ora mentre la Home è aperta
+- Toccando la card si apre la pagina SIM con il dettaglio, "Aggiorna ora", "Accedi di nuovo" e "Scollega"
+- Se un numero esce sbagliato, "Condividi i dati letti" manda quello che WindTre ha risposto, così si corregge la lettura
+
 ## 1.287.0
 **YouTube sincronizzato con il PC**
 - Guarda più tardi è uguale ai video salvati nelle Note: quello che salvi in Canvas compare su YouTube, quello che aggiungi dal PC arriva nelle Note, e se lo togli da una parte sparisce anche dall'altra
