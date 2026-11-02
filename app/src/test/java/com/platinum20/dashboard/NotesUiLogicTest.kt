@@ -21,6 +21,7 @@ import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
 import com.platinum20.dashboard.ui.screens.expenseEntries
+import com.platinum20.dashboard.ui.screens.monthExpenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -270,6 +271,23 @@ class NotesUiLogicTest {
         assertEquals(-swipe.follow(80f, 56f), swipe.follow(-80f, 56f), 0.001f)
         // Verso un mese che non c'è ancora resiste di più.
         assertTrue(kotlin.math.abs(swipe.follow(-80f, 56f, blocked = true)) < kotlin.math.abs(swipe.follow(-80f, 56f)))
+    }
+
+    @Test fun cardSpeseSoloMeseCorrente() {
+        val today = LocalDate.of(2026, 11, 3)
+        val cat = com.platinum20.dashboard.notes.ExpenseCategory.values().first()
+        val rows = monthExpenseEntries(
+            listOf(
+                com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30)),
+                com.platinum20.dashboard.notes.Expense(2, 350, "Caffè", cat, LocalDate.of(2026, 11, 2)),
+            ),
+            today,
+            limit = 5,
+        )
+        // Ottobre resta fuori, in cima il nome del mese corrente.
+        assertEquals(1, rows.size)
+        assertEquals("NOVEMBRE", rows.first().month)
+        assertTrue(monthExpenseEntries(listOf(com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30))), today, 5).isEmpty())
     }
 
     @Test fun speseSullaLineaDelTempo() {

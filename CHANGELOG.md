@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.293.0
+**Spese: si parte dal mese corrente**
+- La card Spese in Home mostra solo le spese di questo mese, col nome del mese in cima
+- La pagina Spese si apre dall'inizio del mese invece che su "Oggi"
+- Scorrendo la pagina Spese si muove tutto, anche il riepilogo del mese in alto
+- Il mese prima ora è un numero piccolo sotto il totale, col nome del mese (es. "ottobre 203,36 €"), invece della frase "Il mese prima"
+
 ## 1.292.0
 **Continua uguale tra PC e Canvas**
 - I video lasciati a metà su YouTube dal PC compaiono in "Continua" insieme a quelli iniziati in Canvas, e ripartono dal punto in cui eri
