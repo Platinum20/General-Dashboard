@@ -2,6 +2,8 @@ package com.platinum20.dashboard
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.youtube.SyncPlan
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YtSync
@@ -98,5 +100,37 @@ class YtSyncTest {
         // Dove eri più avanti in Canvas non torna indietro.
         val back = YtHistory.mergedWith(merged, listOf(video("a", percent = 10)), now = 2_000_000L)
         assertEquals(50_000L, back.getValue("a").positionMs)
+    }
+
+    @Test
+    fun halfWatchedOnPcGoesToContinue() {
+        val local = listOf(ResumeItem(ResumeKind.YOUTUBE, "a", "A", positionMs = 90_000, durationMs = 100_000, at = 7L))
+        val remote = listOf(
+            video("n", percent = 40, seconds = 600), video("done", percent = 100, seconds = 60),
+            video("a", percent = 50, seconds = 100), video("x", percent = 0, seconds = 60),
+        )
+        val items = YtSync.continueItems(local, remote, now = 10_000L)
+        assertEquals(listOf("n"), items.map { it.key })
+        assertEquals(240_000L, items.single().positionMs)
+        assertEquals(10_000L, items.single().at)
+        // Più avanti sul PC: si aggiorna il punto, non quando l'hai guardato.
+        val further = YtSync.continueItems(local, listOf(video("a", percent = 93, seconds = 100)), now = 10_000L).single()
+        assertEquals(93_000L, further.positionMs)
+        assertEquals(7L, further.at)
+    }
+
+    @Test
+    fun canvasPositionReachesYouTubeWithoutFlooding() {
+        val min = 60_000L
+        assertEquals(null, YtSync.nextPush(null, 10_000, 600_000, playing = true, now = 0))
+        assertEquals("40:1000", YtSync.nextPush(null, 40_000, 600_000, playing = true, now = 1_000))
+        // Mentre guardi: non prima di 2 minuti e di un minuto di video in più.
+        assertEquals(null, YtSync.nextPush("40:1000", 100_000, 600_000, playing = true, now = 1_000 + min))
+        assertEquals("160:121000", YtSync.nextPush("40:1000", 160_000, 600_000, playing = true, now = 121_000))
+        // In pausa (o uscendo) si manda subito il punto.
+        assertEquals("55:2000", YtSync.nextPush("40:1000", 55_000, 600_000, playing = false, now = 2_000))
+        // Finito: una volta sola.
+        assertEquals("d", YtSync.nextPush("160:121000", 590_000, 600_000, playing = true, now = 200_000))
+        assertEquals(null, YtSync.nextPush("d", 300_000, 600_000, playing = false, now = 300_000))
     }
 }

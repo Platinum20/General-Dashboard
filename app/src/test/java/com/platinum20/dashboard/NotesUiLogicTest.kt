@@ -21,6 +21,7 @@ import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
 import com.platinum20.dashboard.ui.screens.expenseEntries
+import com.platinum20.dashboard.ui.screens.monthExpenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
@@ -272,6 +273,23 @@ class NotesUiLogicTest {
         assertTrue(kotlin.math.abs(swipe.follow(-80f, 56f, blocked = true)) < kotlin.math.abs(swipe.follow(-80f, 56f)))
     }
 
+    @Test fun cardSpeseSoloMeseCorrente() {
+        val today = LocalDate.of(2026, 11, 3)
+        val cat = com.platinum20.dashboard.notes.ExpenseCategory.values().first()
+        val rows = monthExpenseEntries(
+            listOf(
+                com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30)),
+                com.platinum20.dashboard.notes.Expense(2, 350, "Caffè", cat, LocalDate.of(2026, 11, 2)),
+            ),
+            today,
+            limit = 5,
+        )
+        // Ottobre resta fuori, in cima il nome del mese corrente.
+        assertEquals(1, rows.size)
+        assertEquals("NOVEMBRE", rows.first().month)
+        assertTrue(monthExpenseEntries(listOf(com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30))), today, 5).isEmpty())
+    }
+
     @Test fun speseSullaLineaDelTempo() {
         val today = LocalDate.of(2026, 10, 26)
         val entries = expenseEntries(
@@ -287,8 +305,8 @@ class NotesUiLogicTest {
         // L'importo per primo, il nome dopo.
         assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[1].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
-        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
-        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
+        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
+        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
         assertEquals(10f, entries[1].gapDp, 0.01f)
         // Nella card in Oggi solo le ultime, sempre in fondo la più recente.
