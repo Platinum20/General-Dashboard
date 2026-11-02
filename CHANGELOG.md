@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.295.0
+**Barra del video: niente più salti per sbaglio**
+- Toccare la barra del tempo non sposta più il video: si va avanti o indietro solo trascinando il dito di lato
+- Un trascinamento verso l'alto o il basso sulla barra non la muove (resta allo schermo intero)
+- Doppio tocco ripetuto che si somma: +10, +20, +30… (anche toccando ancora una volta sullo stesso lato subito dopo)
+- Vale anche per la barra del player di musica, radio e podcast
+
 ## 1.294.0
 **Card SIM più compatta, con gli anelli**
 - In Home la card SIM mostra un anello per giga, minuti, SMS e roaming UE, con quanto resta dentro
