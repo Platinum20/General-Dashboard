@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.290.0
+**Spese: si parte dal mese corrente**
+- La card Spese in Home mostra solo le spese di questo mese, col nome del mese in cima
+- La pagina Spese si apre dall'inizio del mese invece che su "Oggi"
+- Scorrendo la pagina Spese si muove tutto, anche il riepilogo del mese in alto
+
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
 - In Home c'è la card SIM: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e quando si rinnova l'offerta
