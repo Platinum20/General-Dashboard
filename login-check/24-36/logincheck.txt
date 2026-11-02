@@ -1,0 +1,34 @@
+--------- beginning of main
+11-02 22:50:40.647  1553  2075 W chromium: [1102/225040.647309:WARNING:net/dns/dns_config_service_android.cc:69] Failed to read DnsConfig.
+11-02 22:50:58.168  1831  2988 W chromium: [1102/225058.163825:WARNING:url_request_context_config.cc(715)] Unrecognized Cronet experimental option "enable_telemetry" with params "false
+11-02 22:50:58.168  1831  2988 W chromium: 
+11-02 22:50:59.904  1831  3040 W chromium: [1102/225059.903912:WARNING:components/cronet/url_request_context_config.cc:769] Unrecognized Cronet experimental option "enable_telemetry" with params "false
+11-02 22:50:59.904  1831  3040 W chromium: 
+11-02 22:51:04.280  2604  3158 I chromium: [1102/225104.272283:INFO:variations_seed_loader.cc(67)] Failed to open file for reading.: No such file or directory (2)
+11-02 22:51:04.282  2604  3158 I chromium: [1102/225104.282787:INFO:variations_seed_loader.cc(67)] Failed to open file for reading.: No such file or directory (2)
+11-02 22:51:05.034  2604  2604 I LoginCheck: spotify ua Mozilla/5.0 (Linux; Android 16; sdk_gphone64_x86_64 Build/BE2A.250530.026.F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.137 Mobile Safari/537.36
+11-02 22:51:05.231  2604  3209 W chromium: [WARNING:viz_main_impl.cc(85)] VizNullHypothesis is disabled (not a warning)
+11-02 22:51:05.760  3192  3235 W chromium: [WARNING:runtime_features.cc(560)] Fenced frames cannot be enabled in this configuration. Use --enable-features=FencedFrames instead.
+11-02 22:51:05.760  3192  3235 W chromium: [WARNING:runtime_features.cc(585)] Topics cannot be enabled in this configuration. Use --enable-features=BrowsingTopics in addition.
+11-02 22:51:05.761  3192  3235 W chromium: [WARNING:runtime_features.cc(606)] SharedStorage cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI in addition.
+11-02 22:51:10.171  2604  2604 I LoginCheck: spotify console ERROR requestStorageAccess: Permission denied. @https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfCVLAUAAAAALFwwRnnCJ12DalriUGbj8FW_J39&co=aHR0cHM6Ly9hY2NvdW50cy5zcG90aWZ5LmNvbTo0NDM.&hl=en&v=bSuJ2xBC8cFy7pM4Z3Hu9boH&size=invisible&anchor-ms=20000&execute-ms=30000&cb=ue503d7k7a80:259
+11-02 22:51:11.588  3398  3398 E chromium: [1102/225111.588517:ERROR:aw_component_update_service.cc(285)] No directory found for component llkgjffcdpffmhiakmfcdcblohccpfmo
+11-02 22:51:30.151  2604  2604 I LoginCheck: spotify page "https://accounts.spotify.com/it/login?continue=https%3A%2F%2 | vp=320x640 dpr=1 | root=DIV#__next 320x0@0 op=1 state=visible anims=0 h1=84/116 op=1 | Che bello rivederti E-mail Continua oppure Continua con Google Continua con Facebook Continua con Apple Non hai un account? Iscriviti Questo sito è protetto da reCAPTCHA e si applicano l\u003CgooglePrivacy"
+11-02 22:51:39.819  2604  2604 I chromium: [INFO:CONSOLE(259)] "requestStorageAccess: Permission denied.", source: https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfCVLAUAAAAALFwwRnnCJ12DalriUGbj8FW_J39&co=aHR0cHM6Ly9hY2NvdW50cy5zcG90aWZ5LmNvbTo0NDM.&hl=en&v=bSuJ2xBC8cFy7pM4Z3Hu9boH&size=invisible&anchor-ms=20000&execute-ms=30000&cb=nqy0jrljb0vg (259)
+11-02 22:51:52.260  4341  4387 I chromium: [1102/225152.257588:INFO:variations_seed_loader.cc(67)] Failed to open file for reading.: No such file or directory (2)
+11-02 22:51:52.261  4341  4387 I chromium: [1102/225152.261143:INFO:variations_seed_loader.cc(67)] Failed to open file for reading.: No such file or directory (2)
+11-02 22:51:53.139  4408  4431 W chromium: [WARNING:runtime_features.cc(560)] Fenced frames cannot be enabled in this configuration. Use --enable-features=FencedFrames instead.
+11-02 22:51:53.139  4408  4431 W chromium: [WARNING:runtime_features.cc(585)] Topics cannot be enabled in this configuration. Use --enable-features=BrowsingTopics in addition.
+11-02 22:51:53.139  4408  4431 W chromium: [WARNING:runtime_features.cc(606)] SharedStorage cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI in addition.
+11-02 22:51:53.301  4341  4443 W chromium: [WARNING:viz_main_impl.cc(85)] VizNullHypothesis is disabled (not a warning)
+11-02 22:51:54.737  4341  4480 W chromium: [1102/225154.737941:WARNING:components/cronet/url_request_context_config.cc:769] Unrecognized Cronet experimental option "enable_telemetry" with params "true
+11-02 22:51:54.737  4341  4480 W chromium: 
+11-02 22:52:00.248  2604  2604 I LoginCheck: spotify-in-app webview 320x472 layer=0 hw=true visible=true Rect(0, 144 - 320, 616) parent=FrameLayout 320x472
+11-02 22:52:00.255  2604  2604 I LoginCheck: spotify-in-app page "https://accounts.spotify.com/en/login?continue=https%3A%2F%2 | vp=320x472 dpr=1 | root=DIV#__next 320x0@0 op=1 state=visible anims=0 h1=84/116 op=1 | Welcome back Email Continue or Continue with Google Continue with Facebook Continue with Apple Don't have an account? Sign up This site is protected by reCAPTCHA and the Google Privacy Policy and Term"
+11-02 22:52:02.796  2604  2604 E chromium: [ERROR:aw_browser_terminator.cc(165)] Renderer process (3192) crash detected (code -1).
+11-02 22:52:03.195  2604  2604 I LoginCheck: spotify-authorize ua Mozilla/5.0 (Linux; Android 16; sdk_gphone64_x86_64 Build/BE2A.250530.026.F3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.137 Mobile Safari/537.36
+11-02 22:52:03.287  4552  4562 W chromium: [WARNING:runtime_features.cc(560)] Fenced frames cannot be enabled in this configuration. Use --enable-features=FencedFrames instead.
+11-02 22:52:03.287  4552  4562 W chromium: [WARNING:runtime_features.cc(585)] Topics cannot be enabled in this configuration. Use --enable-features=BrowsingTopics in addition.
+11-02 22:52:03.287  4552  4562 W chromium: [WARNING:runtime_features.cc(606)] SharedStorage cannot be enabled in this configuration. Use --enable-features=SharedStorageAPI in addition.
+11-02 22:52:04.358  2604  2604 I LoginCheck: spotify-authorize console ERROR requestStorageAccess: Permission denied. @https://www.google.com/recaptcha/enterprise/anchor?ar=1&k=6LfCVLAUAAAAALFwwRnnCJ12DalriUGbj8FW_J39&co=aHR0cHM6Ly9hY2NvdW50cy5zcG90aWZ5LmNvbTo0NDM.&hl=en&v=bSuJ2xBC8cFy7pM4Z3Hu9boH&size=invisible&anchor-ms=20000&execute-ms=30000&cb=gv7ixamh0t7k:259
+11-02 22:52:28.202  2604  2604 I LoginCheck: spotify-authorize page "https://accounts.spotify.com/en/login?continue=https%3A%2F%2 | vp=320x640 dpr=1 | root=DIV#__next 320x0@0 op=1 state=visible anims=0 h1=84/116 op=1 | Welcome back Email Continue or Continue with Google Continue with Facebook Continue with Apple Don't have an account? Sign up This site is protected by reCAPTCHA and the Google Privacy Policy and Term"
