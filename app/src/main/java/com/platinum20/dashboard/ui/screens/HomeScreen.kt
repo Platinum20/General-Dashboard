@@ -314,6 +314,10 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
+            HomeCard.SIM -> SimCard(onOpen = {
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.SIM)
+            })
             HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.RECAP -> RecapCard(
                 state = recap,
