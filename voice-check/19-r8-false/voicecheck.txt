@@ -1,0 +1,398 @@
+
+com.platinum20.dashboard.VoiceEngineCheck:
+Error in ogniVoceParla(com.platinum20.dashboard.VoiceEngineCheck):
+java.lang.AssertionError: Giorgio non genera: java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.platinum20.dashboard.VoiceEngineCheck.ogniVoceParla(VoiceEngineCheck.kt:40)
+.
+
+Time: 76.711
+There was 1 failure:
+1) ogniVoceParla(com.platinum20.dashboard.VoiceEngineCheck)
+java.lang.AssertionError: Giorgio non genera: java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at com.platinum20.dashboard.VoiceEngineCheck.ogniVoceParla(VoiceEngineCheck.kt:40)
+
+FAILURES!!!
+Tests run: 2,  Failures: 1
+
+
+--------- beginning of main
+11-02 22:50:25.147  2122  2323 W System.err: Seeding context with ref: 254379111
+11-02 22:50:25.148  2122  2323 W System.err: val in interceptor: null
+11-02 22:50:25.160  2122  2321 W System.err: Seeding context with ref: 48588978
+11-02 22:50:25.160  2122  2321 W System.err: val in interceptor: null
+11-02 22:50:25.175  2122  2328 W System.err: Seeding context with ref: 113073662
+11-02 22:50:25.189  2122  2328 W System.err: val in interceptor: null
+11-02 22:50:25.207  2122  2331 W System.err: Seeding context with ref: 28875103
+11-02 22:50:25.207  2122  2331 W System.err: val in interceptor: null
+11-02 22:50:25.207  2122  2332 W System.err: Seeding context with ref: 147746732
+11-02 22:50:25.208  2122  2332 W System.err: val in interceptor: null
+11-02 22:50:25.208  2122  2329 W System.err: Seeding context with ref: 16000117
+11-02 22:50:25.208  2122  2329 W System.err: val in interceptor: null
+11-02 22:50:25.210  2122  2321 W System.err: Seeding context with ref: 42818570
+11-02 22:50:25.211  2122  2321 W System.err: val in interceptor: null
+11-02 22:50:25.215  2122  2323 W System.err: Seeding context with ref: 32992379
+11-02 22:50:25.215  2122  2323 W System.err: val in interceptor: null
+11-02 22:50:27.103  2122  2321 W System.err: Seeding context with ref: 193518232
+11-02 22:50:27.104  2122  2323 W System.err: Seeding context with ref: 91198193
+11-02 22:50:27.106  2122  2323 W System.err: val in interceptor: null
+11-02 22:50:27.116  2122  2393 W System.err: Seeding context with ref: 69409756
+11-02 22:50:27.116  2122  2393 W System.err: val in interceptor: null
+11-02 22:50:27.116  2122  2394 W System.err: Seeding context with ref: 238869434
+11-02 22:50:27.116  2122  2394 W System.err: val in interceptor: null
+11-02 22:50:27.116  2122  2332 W System.err: Seeding context with ref: 112466376
+11-02 22:50:27.116  2122  2332 W System.err: val in interceptor: null
+11-02 22:50:27.117  2122  2331 W System.err: Seeding context with ref: 54139489
+11-02 22:50:27.117  2122  2331 W System.err: val in interceptor: null
+11-02 22:50:27.117  2122  2399 W System.err: Seeding context with ref: 200222738
+11-02 22:50:27.118  2122  2399 W System.err: val in interceptor: null
+11-02 22:50:27.118  2122  2401 W System.err: Seeding context with ref: 108157408
+11-02 22:50:27.118  2122  2401 W System.err: val in interceptor: null
+11-02 22:50:27.118  2122  2400 W System.err: Seeding context with ref: 49658851
+11-02 22:50:27.118  2122  2400 W System.err: val in interceptor: null
+11-02 22:50:27.118  2122  2403 W System.err: Seeding context with ref: 198511220
+11-02 22:50:27.118  2122  2403 W System.err: val in interceptor: null
+11-02 22:50:27.118  2122  2329 W System.err: Seeding context with ref: 112013014
+11-02 22:50:27.119  2122  2329 W System.err: val in interceptor: null
+11-02 22:50:27.119  2122  2321 W System.err: val in interceptor: null
+11-02 22:50:27.119  2122  2398 W System.err: Seeding context with ref: 211614621
+11-02 22:50:27.119  2122  2398 W System.err: val in interceptor: null
+11-02 22:50:27.119  2122  2402 W System.err: Seeding context with ref: 233914951
+11-02 22:50:27.119  2122  2402 W System.err: val in interceptor: null
+11-02 22:50:27.124  2122  2396 W System.err: Seeding context with ref: 197982598
+11-02 22:50:27.124  2122  2396 W System.err: val in interceptor: null
+11-02 22:50:27.126  2122  2408 W System.err: Seeding context with ref: 187522513
+11-02 22:50:27.126  2122  2408 W System.err: val in interceptor: null
+11-02 22:50:27.126  2122  2397 W System.err: Seeding context with ref: 156415129
+11-02 22:50:27.126  2122  2397 W System.err: val in interceptor: null
+11-02 22:50:27.127  2122  2405 W System.err: Seeding context with ref: 101777749
+11-02 22:50:27.127  2122  2405 W System.err: val in interceptor: null
+11-02 22:50:27.136  2122  2328 W System.err: Seeding context with ref: 75859192
+11-02 22:50:27.136  2122  2328 W System.err: val in interceptor: null
+11-02 22:50:27.139  2122  2406 W System.err: Seeding context with ref: 225231963
+11-02 22:50:27.139  2122  2406 W System.err: val in interceptor: null
+11-02 22:50:27.146  2122  2407 W System.err: Seeding context with ref: 6530922
+11-02 22:50:27.146  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:27.700  2122  2321 W System.err: Seeding context with ref: 93114422
+11-02 22:50:27.700  2122  2321 W System.err: val in interceptor: null
+11-02 22:50:27.702  2122  2329 W System.err: Seeding context with ref: 69815095
+11-02 22:50:27.702  2122  2329 W System.err: val in interceptor: null
+11-02 22:50:27.703  2122  2323 W System.err: Seeding context with ref: 235534500
+11-02 22:50:27.703  2122  2323 W System.err: val in interceptor: null
+11-02 22:50:27.703  2122  2394 W System.err: Seeding context with ref: 114886157
+11-02 22:50:27.704  2122  2394 W System.err: val in interceptor: null
+11-02 22:50:27.705  2122  2332 W System.err: Seeding context with ref: 247292883
+11-02 22:50:27.705  2122  2332 W System.err: val in interceptor: null
+11-02 22:50:27.705  2122  2401 W System.err: Seeding context with ref: 104968206
+11-02 22:50:27.706  2122  2401 W System.err: val in interceptor: null
+11-02 22:50:27.707  2122  2323 W System.err: Seeding context with ref: 88979906
+11-02 22:50:27.707  2122  2323 W System.err: val in interceptor: null
+11-02 22:50:27.708  2122  2329 W System.err: Seeding context with ref: 108030511
+11-02 22:50:27.708  2122  2329 W System.err: val in interceptor: null
+11-02 22:50:27.709  2122  2328 W System.err: Seeding context with ref: 136612989
+11-02 22:50:27.710  2122  2328 W System.err: val in interceptor: null
+11-02 22:50:27.769  2122  2406 W System.err: Seeding context with ref: 142010307
+11-02 22:50:27.770  2122  2406 W System.err: val in interceptor: null
+11-02 22:50:27.776  2122  2399 W System.err: Seeding context with ref: 152062016
+11-02 22:50:27.776  2122  2399 W System.err: val in interceptor: null
+11-02 22:50:27.784  2122  2483 W System.err: Seeding context with ref: 57832313
+11-02 22:50:27.784  2122  2483 W System.err: val in interceptor: null
+11-02 22:50:27.786  2122  2393 W System.err: Seeding context with ref: 260061374
+11-02 22:50:27.786  2122  2393 W System.err: val in interceptor: null
+11-02 22:50:27.788  2122  2400 W System.err: Seeding context with ref: 198589727
+11-02 22:50:27.788  2122  2400 W System.err: val in interceptor: null
+11-02 22:50:27.789  2122  2394 W System.err: Seeding context with ref: 97626220
+11-02 22:50:27.789  2122  2394 W System.err: val in interceptor: null
+11-02 22:50:27.791  2122  2480 W System.err: Seeding context with ref: 186502709
+11-02 22:50:27.791  2122  2480 W System.err: val in interceptor: null
+11-02 22:50:27.792  2122  2479 W System.err: Seeding context with ref: 42148554
+11-02 22:50:27.792  2122  2479 W System.err: val in interceptor: null
+11-02 22:50:27.794  2122  2484 W System.err: Seeding context with ref: 22449901
+11-02 22:50:27.794  2122  2484 W System.err: val in interceptor: null
+11-02 22:50:27.804  2122  2485 W System.err: Seeding context with ref: 162873634
+11-02 22:50:27.804  2122  2485 W System.err: val in interceptor: null
+11-02 22:50:27.804  2122  2396 W System.err: Seeding context with ref: 76459023
+11-02 22:50:27.805  2122  2396 W System.err: val in interceptor: null
+11-02 22:50:27.809  2122  2397 W System.err: Seeding context with ref: 90156709
+11-02 22:50:27.810  2122  2397 W System.err: val in interceptor: null
+11-02 22:50:27.814  2122  2490 W System.err: Seeding context with ref: 93583915
+11-02 22:50:27.815  2122  2490 W System.err: val in interceptor: null
+11-02 22:50:27.820  2122  2403 W System.err: Seeding context with ref: 145460283
+11-02 22:50:27.821  2122  2403 W System.err: val in interceptor: null
+11-02 22:50:27.825  2122  2331 W System.err: Seeding context with ref: 129806615
+11-02 22:50:27.825  2122  2331 W System.err: val in interceptor: null
+11-02 22:50:27.831  2122  2402 W System.err: Seeding context with ref: 132782257
+11-02 22:50:27.831  2122  2482 W System.err: Seeding context with ref: 135698692
+11-02 22:50:27.831  2122  2405 W System.err: Seeding context with ref: 160058734
+11-02 22:50:27.831  2122  2486 W System.err: Seeding context with ref: 240207795
+11-02 22:50:27.831  2122  2402 W System.err: val in interceptor: null
+11-02 22:50:27.831  2122  2486 W System.err: val in interceptor: null
+11-02 22:50:27.834  2122  2487 W System.err: Seeding context with ref: 65421680
+11-02 22:50:27.835  2122  2487 W System.err: val in interceptor: null
+11-02 22:50:27.835  2122  2405 W System.err: val in interceptor: null
+11-02 22:50:27.840  2122  2488 W System.err: Seeding context with ref: 197526684
+11-02 22:50:27.840  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:27.840  2122  2482 W System.err: val in interceptor: null
+11-02 22:50:27.840  2122  2398 W System.err: Seeding context with ref: 243060360
+11-02 22:50:27.840  2122  2398 W System.err: val in interceptor: null
+11-02 22:50:27.840  2122  2489 W System.err: Seeding context with ref: 160551546
+11-02 22:50:27.840  2122  2489 W System.err: val in interceptor: null
+11-02 22:50:27.841  2122  2407 W System.err: Seeding context with ref: 202940822
+11-02 22:50:27.841  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:27.843  2122  2408 W System.err: Seeding context with ref: 228207849
+11-02 22:50:27.843  2122  2408 W System.err: val in interceptor: null
+11-02 22:50:27.843  2122  2481 W System.err: Seeding context with ref: 107405144
+11-02 22:50:27.843  2122  2481 W System.err: val in interceptor: null
+11-02 22:50:28.627  2122  2402 W System.err: Seeding context with ref: 121737249
+11-02 22:50:28.635  2122  2402 W System.err: val in interceptor: null
+11-02 22:50:28.641  2122  2407 W System.err: Seeding context with ref: 190487622
+11-02 22:50:28.642  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:28.650  2122  2481 W System.err: Seeding context with ref: 89525767
+11-02 22:50:28.650  2122  2481 W System.err: val in interceptor: null
+11-02 22:50:28.659  2122  2408 W System.err: Seeding context with ref: 240405300
+11-02 22:50:28.660  2122  2408 W System.err: val in interceptor: null
+11-02 22:50:28.671  2122  2407 W System.err: Seeding context with ref: 117837149
+11-02 22:50:28.671  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:28.814  2122  2482 W System.err: Seeding context with ref: 143931090
+11-02 22:50:28.814  2122  2482 W System.err: val in interceptor: null
+11-02 22:50:28.814  2122  2489 W System.err: Seeding context with ref: 138118051
+11-02 22:50:28.815  2122  2489 W System.err: val in interceptor: null
+11-02 22:50:28.816  2122  2398 W System.err: Seeding context with ref: 109373088
+11-02 22:50:28.816  2122  2398 W System.err: val in interceptor: null
+11-02 22:50:28.817  2122  2402 W System.err: Seeding context with ref: 77275737
+11-02 22:50:28.817  2122  2402 W System.err: val in interceptor: null
+11-02 22:50:28.818  2122  2481 W System.err: Seeding context with ref: 73068062
+11-02 22:50:28.818  2122  2481 W System.err: val in interceptor: null
+11-02 22:50:28.818  2122  2408 W System.err: Seeding context with ref: 142128895
+11-02 22:50:28.825  2122  2408 W System.err: val in interceptor: null
+11-02 22:50:28.851  2122  2407 W System.err: Seeding context with ref: 190958796
+11-02 22:50:28.851  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:28.929  2122  2488 W System.err: Seeding context with ref: 114461461
+11-02 22:50:28.929  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:28.929  2122  2488 W System.err: Seeding context with ref: 88329770
+11-02 22:50:28.929  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:28.930  2122  2488 W System.err: Seeding context with ref: 86754331
+11-02 22:50:28.930  2122  2489 W System.err: Seeding context with ref: 21293496
+11-02 22:50:28.930  2122  2405 W System.err: Seeding context with ref: 98419601
+11-02 22:50:28.930  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:28.930  2122  2405 W System.err: val in interceptor: null
+11-02 22:50:28.931  2122  2487 W System.err: Seeding context with ref: 69772022
+11-02 22:50:28.931  2122  2487 W System.err: val in interceptor: null
+11-02 22:50:28.931  2122  2488 W System.err: Seeding context with ref: 121145079
+11-02 22:50:28.931  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:28.932  2122  2487 W System.err: Seeding context with ref: 104524132
+11-02 22:50:28.932  2122  2487 W System.err: val in interceptor: null
+11-02 22:50:28.934  2122  2486 W System.err: Seeding context with ref: 196343938
+11-02 22:50:28.934  2122  2486 W System.err: val in interceptor: null
+11-02 22:50:28.934  2122  2405 W System.err: Seeding context with ref: 25823181
+11-02 22:50:28.935  2122  2405 W System.err: val in interceptor: null
+11-02 22:50:28.935  2122  2489 W System.err: val in interceptor: null
+11-02 22:50:28.935  2122  2482 W System.err: Seeding context with ref: 132422547
+11-02 22:50:28.935  2122  2482 W System.err: val in interceptor: null
+11-02 22:50:28.938  2122  2398 W System.err: Seeding context with ref: 175060944
+11-02 22:50:28.939  2122  2398 W System.err: val in interceptor: null
+11-02 22:50:28.965  2122  2402 W System.err: Seeding context with ref: 56099068
+11-02 22:50:28.965  2122  2402 W System.err: val in interceptor: null
+11-02 22:50:28.992  2122  2488 W System.err: Seeding context with ref: 87252463
+11-02 22:50:28.993  2122  2488 W System.err: val in interceptor: null
+11-02 22:50:28.995  2122  2407 W System.err: Seeding context with ref: 255611849
+11-02 22:50:28.995  2122  2407 W System.err: val in interceptor: null
+11-02 22:50:29.006  2122  2408 W System.err: Seeding context with ref: 195912581
+11-02 22:50:29.007  2122  2408 W System.err: val in interceptor: null
+11-02 22:50:29.010  2122  2481 W System.err: Seeding context with ref: 78453454
+11-02 22:50:29.011  2122  2481 W System.err: val in interceptor: null
+11-02 22:50:32.855  2122  2481 W System.err: Seeding context with ref: 184817114
+11-02 22:50:32.855  2122  2481 W System.err: val in interceptor: null
+11-02 22:50:40.080  2720  2964 I VoiceCheck: Giorgio motore: null java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:156)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.Dns$1.lookup(Dns.java:41)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.resetNextInetSocketAddress(RouteSelector.java:178)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.nextProxy(RouteSelector.java:144)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.next(RouteSelector.java:86)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:176)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:128)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:97)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:289)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:232)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:465)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.fetch(VoiceStore.kt:157)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.install$app_debug(VoiceStore.kt:143)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.VoiceEngineCheck.ogniVoceParla(VoiceEngineCheck.kt:34)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at java.lang.reflect.Method.invoke(Native Method)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:463)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2597)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at libcore.io.Linux.android_getaddrinfo(Native Method)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:133)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:222)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at libcore.io.ForwardingOs.android_getaddrinfo(ForwardingOs.java:133)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:135)
+11-02 22:50:40.080  2720  2964 I VoiceCheck: 	... 52 more
+11-02 22:50:40.082  2720  2964 I VoiceCheck: Paola motore: null java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.Dns$1.lookup(Dns.java:41)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.resetNextInetSocketAddress(RouteSelector.java:178)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.nextProxy(RouteSelector.java:144)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.next(RouteSelector.java:86)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:176)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:128)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:97)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:289)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:232)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:465)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.fetch(VoiceStore.kt:157)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.install$app_debug(VoiceStore.kt:143)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.VoiceEngineCheck.ogniVoceParla(VoiceEngineCheck.kt:34)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at java.lang.reflect.Method.invoke(Native Method)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:463)
+11-02 22:50:40.082  2720  2964 I VoiceCheck: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2597)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: Riccardo motore: null java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:124)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:103)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at java.net.InetAddress.getAllByName(InetAddress.java:1152)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.Dns$1.lookup(Dns.java:41)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.resetNextInetSocketAddress(RouteSelector.java:178)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.nextProxy(RouteSelector.java:144)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.RouteSelector.next(RouteSelector.java:86)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findConnection(StreamAllocation.java:176)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.findHealthyConnection(StreamAllocation.java:128)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.StreamAllocation.newStream(StreamAllocation.java:97)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.connect(HttpEngine.java:289)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.http.HttpEngine.sendRequest(HttpEngine.java:232)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:465)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.fetch(VoiceStore.kt:157)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.news.voice.VoiceStore.install$app_debug(VoiceStore.kt:143)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at com.platinum20.dashboard.VoiceEngineCheck.ogniVoceParla(VoiceEngineCheck.kt:34)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at java.lang.reflect.Method.invoke(Native Method)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at androidx.test.ext.junit.runners.AndroidJUnit4.run(AndroidJUnit4.java:162)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:128)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.Suite.runChild(Suite.java:27)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:137)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at org.junit.runner.JUnitCore.run(JUnitCore.java:115)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:68)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at androidx.test.internal.runner.TestExecutor.execute(TestExecutor.java:59)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:463)
+11-02 22:50:40.085  2720  2964 I VoiceCheck: 	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2597)
+11-02 22:50:40.092  2720  2964 I VoiceCheck: download 1: java.net.UnknownHostException: Unable to resolve host "github.com": No address associated with hostname
+11-02 22:50:43.287  2122  2481 W System.err: Seeding context with ref: 127776166
+11-02 22:50:44.028  2122  3134 W System.err: val in interceptor: null
+11-02 22:50:46.995  2122  2481 W System.err: Seeding context with ref: 44629766
+11-02 22:50:56.140  2122  3134 W System.err: val in interceptor: null
+11-02 22:50:57.065  2122  2481 W System.err: Seeding context with ref: 39996404
+11-02 22:50:57.680  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:34.927  2122  2481 W System.err: Seeding context with ref: 38941536
+11-02 22:51:34.955  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:37.131  2122  2481 W System.err: Seeding context with ref: 221964510
+11-02 22:51:40.000  2720  2964 I VoiceCheck: file: VoiceFiles(model=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-giorgio-kirys/it_IT-giorgio-kirys.onnx, tokens=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-giorgio-kirys/tokens.txt, dataDir=/data/user/0/com.platinum20.dashboard/files/voices/vits-piper-it_IT-giorgio-kirys/espeak-ng-data)
+11-02 22:51:40.549  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:40.598  2122  2481 W System.err: Seeding context with ref: 152294613
+11-02 22:51:43.334  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:43.346  2122  2481 W System.err: Seeding context with ref: 63996891
+11-02 22:51:44.628  2720  2964 I VoiceCheck: motore: (63744, 22050) 
+11-02 22:51:44.652  2720  2964 I VoiceCheck: voce pronta per l'app: GIORGIO
+11-02 22:51:50.563  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:50.576  2122  2481 W System.err: Seeding context with ref: 172616017
+11-02 22:51:50.897  2122  3134 W System.err: val in interceptor: null
+11-02 22:51:56.763  2720  2964 I VoiceCheck: app: posizione massima 3286 ms, errore Piper: null
