@@ -80,6 +80,12 @@ object WindTreLink {
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
         if (early) WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.windtre.it"))
         view.webViewClient = object : WebViewClient() {
+            override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
+                // Solo l'indirizzo, mai il contenuto: dice quali chiamate fa la pagina.
+                if (request.url.host?.endsWith("windtre.it") == true) SimStore.seen(request.url.toString())
+                return null
+            }
+
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
                 // Senza lo script d'inizio pagina si aggancia appena può: perde solo le primissime richieste.
                 if (!early) view.evaluateJavascript(script, null)

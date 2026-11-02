@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.289.0
+**SIM: niente più numeri sbagliati**
+- Canvas non legge più i testi di WindTre (messaggi e traduzioni) come se fossero i tuoi giga o il tuo credito
+- I dati letti per errore dalla versione precedente vengono cancellati
+- "Condividi i dati letti" ora include anche cosa carica l'area clienti, così posso insegnare a Canvas il formato giusto
+
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
 - In Home c'è la card SIM: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e quando si rinnova l'offerta

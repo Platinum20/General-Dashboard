@@ -82,4 +82,18 @@ class WindTreParseTest {
         assertEquals("512 MB", gbLabel(0.5))
         assertEquals("tra 13 giorni", renewalLabel(LocalDate.of(2026, 11, 15), today))
     }
+
+    @Test
+    fun configurazioneIgnorata() {
+        assertTrue(WindTreParse.isConfiguration("https://apigw.windtre.it/api/v0/configuration/internationalization/it"))
+        assertTrue(!WindTreParse.isConfiguration("https://apigw.windtre.it/api/v1/lines/residual-credit"))
+    }
+
+    @Test
+    fun dizionarioDiTestiNonDaNumeri() {
+        val o = JSONObject()
+        for (i in 0 until 100) o.put("label.$i", "Ti restano $i GB su 100 GB, credito 5 euro")
+        o.put("credit", 4.2)
+        assertEquals(null, WindTreParse.fromJson(o.toString(), today))
+    }
 }
