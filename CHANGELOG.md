@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.291.0
+**Spese: categorie automatiche più precise**
+- Nuove categorie Bollette (telefono, luce, gas, internet: Windtre ora va qui, non in Casa) e Acquisti (Amazon, negozi, vestiti)
+- "Ticket" è Fuori (buoni pasto), il ticket sanitario resta in Salute
+- Riconosce molti più supermercati, bar, ristoranti, distributori e negozi, quindi meno spese in Altro
+- Le parole corte valgono solo intere: "Barbiere" non è più un bar
+- Le spese già salvate si risistemano da sole una volta; quelle che hai cambiato a mano restano come sono
+- Una spesa senza nome si chiama "Pagamento", non più "Spesa"
+
 ## 1.289.0
 **SIM: niente più numeri sbagliati**
 - Canvas non legge più i testi di WindTre (messaggi e traduzioni) come se fossero i tuoi giga o il tuo credito

@@ -24,6 +24,8 @@ import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.LocalHospital
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -85,6 +87,8 @@ fun ExpenseCategory.icon(): ImageVector = when (this) {
     ExpenseCategory.EATING_OUT -> Icons.Outlined.Restaurant
     ExpenseCategory.TRANSPORT -> Icons.Outlined.DirectionsCar
     ExpenseCategory.HOME -> Icons.Outlined.Home
+    ExpenseCategory.BILLS -> Icons.Outlined.Bolt
+    ExpenseCategory.SHOPPING -> Icons.Outlined.ShoppingBag
     ExpenseCategory.HEALTH -> Icons.Outlined.LocalHospital
     ExpenseCategory.FUN -> Icons.Outlined.SportsEsports
     ExpenseCategory.OTHER -> Icons.AutoMirrored.Outlined.ReceiptLong
@@ -96,6 +100,8 @@ fun ExpenseCategory.color(): Int = when (this) {
     ExpenseCategory.EATING_OUT -> 0xFFFB8C00.toInt()
     ExpenseCategory.TRANSPORT -> 0xFF1E88E5.toInt()
     ExpenseCategory.HOME -> 0xFF8E24AA.toInt()
+    ExpenseCategory.BILLS -> 0xFFFDD835.toInt()
+    ExpenseCategory.SHOPPING -> 0xFFD81B60.toInt()
     ExpenseCategory.HEALTH -> 0xFFE53935.toInt()
     ExpenseCategory.FUN -> 0xFF00ACC1.toInt()
     ExpenseCategory.OTHER -> 0xFF8D8D8D.toInt()
