@@ -220,6 +220,7 @@ import com.platinum20.dashboard.ui.screens.AutoFillScreen
 import com.platinum20.dashboard.ui.screens.MailScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.screens.ExpensesScreen
+import com.platinum20.dashboard.ui.screens.SimScreen
 import com.platinum20.dashboard.ui.screens.NotesNav
 import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
@@ -356,6 +357,7 @@ object Routes {
     const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
     const val EXPENSES = "home/expenses"
+    const val SIM = "home/sim"
     const val SEARCH = "home/search"
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}"
@@ -1312,6 +1314,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
+            }
+            composable(Routes.SIM) {
+                SimScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
             composable(Routes.EXPENSES) {
                 ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)

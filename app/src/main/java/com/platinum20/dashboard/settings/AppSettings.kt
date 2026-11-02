@@ -25,6 +25,7 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta DAY per le preferenze salvate: dalla 1.186 è "Prossimi giorni" (oggi sta in Adesso).
     DAY("Prossimi giorni", "I prossimi 7 giorni, tutto insieme"),
     MONEY("Spese", "Il mese, il budget e gli addebiti"),
+    SIM("SIM", "Giga, minuti e credito WindTre"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),
     RECAP("Il punto del giorno", "Le notizie principali"),
