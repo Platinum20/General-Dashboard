@@ -69,6 +69,36 @@ object YtHistory {
         persist()
     }
 
+    /** Aggiunge quello che hai visto su YouTube (dal PC): vedi [mergedWith]. */
+    fun mergeRemote(context: Context, videos: List<YtVideo>) {
+        init(context)
+        val merged = mergedWith(_items.value, videos, System.currentTimeMillis())
+        if (merged == _items.value) return
+        _items.value = merged.values.sortedByDescending { it.watchedAt }.take(MAX).associateBy { it.id }
+        persist()
+    }
+
+    /**
+     * La cronologia di Canvas più quella di YouTube ([remote], dal più recente): i video nuovi entrano
+     * con quanto ne hai visto, a quelli già presenti si aggiorna la barra solo se su YouTube sei andato
+     * più avanti. Funzione pura, provata nei test.
+     */
+    internal fun mergedWith(local: Map<String, YtWatched>, remote: List<YtVideo>, now: Long): Map<String, YtWatched> {
+        val out = LinkedHashMap(local)
+        remote.forEachIndexed { index, v ->
+            if (v.isShort || v.live) return@forEachIndexed
+            val known = out[v.id]
+            val durationMs = known?.durationMs?.takeIf { it > 0 } ?: (v.durationSec * 1000L)
+            val positionMs = if (durationMs > 0) durationMs * v.watchedPercent.coerceIn(0, 100) / 100 else 0L
+            if (known == null) {
+                out[v.id] = YtWatched(v.id, v.title, v.channel, v.channelAvatar, positionMs, durationMs, now - index * 1_000L)
+            } else if (positionMs > known.positionMs) {
+                out[v.id] = known.copy(positionMs = positionMs, durationMs = durationMs)
+            }
+        }
+        return out
+    }
+
     fun remove(id: String) {
         _items.value = _items.value - id
         persist()

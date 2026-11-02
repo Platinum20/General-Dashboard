@@ -7,6 +7,13 @@
 - Toccando la card si apre la pagina SIM con il dettaglio, "Aggiorna ora", "Accedi di nuovo" e "Scollega"
 - Se un numero esce sbagliato, "Condividi i dati letti" manda quello che WindTre ha risposto, così si corregge la lettura
 
+## 1.287.0
+**YouTube sincronizzato con il PC**
+- Guarda più tardi è uguale ai video salvati nelle Note: quello che salvi in Canvas compare su YouTube, quello che aggiungi dal PC arriva nelle Note, e se lo togli da una parte sparisce anche dall'altra
+- Il Mi piace del player va anche sul tuo YouTube, e i Mi piace messi dal PC arrivano in Canvas
+- Quello che guardi sul PC ha la barra rossa di "già visto" anche in Canvas, e quello che guardi in Canvas finisce nella cronologia di YouTube
+- Serve l'accesso a YouTube fatto nell'app (Impostazioni › Account); lì vedi anche quando è stata l'ultima sincronizzazione
+
 ## 1.286.0
 **Il mini player non copre più l'ultima riga**
 - Nelle pagine senza barra (Impostazioni, Meteo, Recap, Cerca ovunque, Aggiornamenti, Card della Home, posta) la lista finisce sopra il mini player: l'ultima riga si legge e si tocca

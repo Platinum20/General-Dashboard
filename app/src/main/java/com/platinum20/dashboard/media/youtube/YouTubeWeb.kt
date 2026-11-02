@@ -8,6 +8,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.platinum20.dashboard.media.desktopUserAgent
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -123,20 +125,7 @@ object YouTubeWeb {
             channels = list("channels") { c ->
                 c.optString("id").takeIf { it.isNotBlank() }?.let { YtChannel(it, c.optString("title"), c.optString("thumb")) }
             }.distinctBy { it.id },
-            videos = list("videos") { v ->
-                v.optString("id").takeIf { it.isNotBlank() }?.let {
-                    YtVideo(
-                        it, v.optString("title"), v.optString("channel"), v.optString("channelId"), null, v.optBoolean("short"),
-                        durationSec = durationSeconds(v.optString("length")),
-                        live = v.optBoolean("live"),
-                        upcoming = v.optLong("start") > 0,
-                        startsAt = v.optLong("start").takeIf { it > 0 }?.let { java.time.Instant.ofEpochSecond(it) },
-                        channelAvatar = v.optString("avatar"),
-                        watchedPercent = v.optInt("watched"),
-                        membersOnly = v.optBoolean("members"),
-                    )
-                }
-            }.distinctBy { it.id },
+            videos = videos(o.optJSONArray("videos")),
             playlists = list("playlists") { p ->
                 p.optString("id").takeIf { it.isNotBlank() }?.let {
                     YtPlaylist(it, p.optString("title"), p.optString("thumb"), p.optInt("count"))
@@ -145,18 +134,174 @@ object YouTubeWeb {
         )
     }
 
+    /** I video raccolti dallo script di lettura, senza doppioni. */
+    internal fun videos(array: JSONArray?): List<YtVideo> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).mapNotNull { i ->
+            val v = array.optJSONObject(i) ?: return@mapNotNull null
+            v.optString("id").takeIf { it.isNotBlank() }?.let {
+                YtVideo(
+                    it, v.optString("title"), v.optString("channel"), v.optString("channelId"), null, v.optBoolean("short"),
+                    durationSec = durationSeconds(v.optString("length")),
+                    live = v.optBoolean("live"),
+                    upcoming = v.optLong("start") > 0,
+                    startsAt = v.optLong("start").takeIf { it > 0 }?.let { java.time.Instant.ofEpochSecond(it) },
+                    channelAvatar = v.optString("avatar"),
+                    watchedPercent = v.optInt("watched"),
+                    membersOnly = v.optBoolean("members"),
+                )
+            }
+        }.distinctBy { it.id }
+    }
+
+    /**
+     * Una pagina di youtube.com aperta di nascosto col tuo accesso: da qui si fanno le stesse richieste
+     * che fa il sito (Guarda più tardi, Mi piace, cronologia), che l'API ufficiale di Google non permette.
+     */
+    class AccountPage internal constructor(private val webView: WebView) {
+        private var calls = 0
+
+        /**
+         * Esegue [expr], un'espressione JavaScript che può usare `await` e le funzioni `__cvApi(endpoint, corpo)`,
+         * `__cvCollect(dati)` e `__cvCont(dati)`, e restituisce il risultato in JSON (o un errore).
+         */
+        suspend fun run(expr: String, timeoutMs: Long = 45_000): String {
+            val id = "__cv" + (++calls)
+            val start = "(function(){window.$id=null;(async function(){try{var r=await ($expr);" +
+                "window.$id=JSON.stringify({ok:true,v:(r===undefined?null:r)});}catch(e){" +
+                "window.$id=JSON.stringify({ok:false,e:String((e&&e.message)||e)});}})();return 1;})()"
+            withContext(Dispatchers.Main) { webView.evaluateJavascript(start, null) }
+            val text = withTimeoutOrNull(timeoutMs) {
+                var found: String? = null
+                while (found == null) {
+                    delay(250)
+                    found = withContext(Dispatchers.Main) { evaluate(webView, "window.$id") }
+                }
+                found
+            } ?: throw IOException("YouTube non risponde, riprova")
+            val o = JSONObject(text)
+            if (!o.optBoolean("ok")) throw IOException("YouTube: " + o.optString("e"))
+            return o.opt("v")?.toString() ?: "null"
+        }
+    }
+
+    /** Apre la pagina del tuo account e la chiude alla fine di [block]; errore se non hai fatto l'accesso. */
+    suspend fun <T> withAccount(context: Context, block: suspend (AccountPage) -> T): T = lock.withLock {
+        val webView = withTimeoutOrNull(40_000) { withContext(Dispatchers.Main) { open(context.applicationContext, "$SITE/feed/playlists") } }
+            ?: throw IOException("YouTube non risponde, riprova")
+        try {
+            val page = AccountPage(webView)
+            val loggedIn = page.run(ACCOUNT_SCRIPT)
+            if (loggedIn != "true") throw NotLoggedIn()
+            block(page)
+        } finally {
+            withContext(Dispatchers.Main + NonCancellable) { webView.stopLoading(); webView.destroy() }
+        }
+    }
+
+    private suspend fun evaluate(webView: WebView, script: String): String? = suspendCancellableCoroutine { cont ->
+        webView.evaluateJavascript(script) { value ->
+            val text = runCatching { JSONTokener(value).nextValue() as? String }.getOrNull()
+            if (cont.isActive) cont.resume(text)
+        }
+    }
+
+    /** Carica la pagina e aspetta che la configurazione del sito (ytcfg) sia pronta. */
+    @SuppressLint("SetJavaScriptEnabled")
+    private suspend fun open(context: Context, url: String): WebView = suspendCancellableCoroutine { cont ->
+        val webView = WebView(context)
+        val handler = Handler(Looper.getMainLooper())
+        var done = false
+        fun check(attempt: Int) {
+            webView.evaluateJavascript("!!(window.ytcfg&&ytcfg.get&&ytcfg.get('INNERTUBE_API_KEY'))") { value ->
+                if (done) return@evaluateJavascript
+                if (value == "true" || attempt >= 10) {
+                    done = true
+                    if (cont.isActive) cont.resume(webView) else webView.destroy()
+                } else {
+                    handler.postDelayed({ check(attempt + 1) }, 500)
+                }
+            }
+        }
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            blockNetworkImage = true
+            mediaPlaybackRequiresUserGesture = true
+            userAgentString = desktopUserAgent(userAgentString)
+        }
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                if (!done) handler.postDelayed({ check(0) }, 300)
+            }
+        }
+        cont.invokeOnCancellation {
+            handler.post {
+                done = true
+                handler.removeCallbacksAndMessages(null)
+                webView.destroy()
+            }
+        }
+        webView.loadUrl(url)
+    }
+
+    // Le funzioni usate da AccountPage.run: la firma SAPISIDHASH è quella che il sito calcola dai suoi cookie.
+    // (Calcolata: COLLECT_FN è dichiarata più sotto.)
+    private val ACCOUNT_SCRIPT: String get() = """
+(async function() {
+  window.__cvCollect = """ + COLLECT_FN + """;
+  window.__cvCont = function(data) {
+    var s = JSON.stringify(data || {});
+    var m = s.match(/"continuationCommand":\{"token":"([^"]+)","request":"CONTINUATION_REQUEST_TYPE_BROWSE"/) ||
+            s.match(/"continuationCommand":\{"token":"([^"]+)"/);
+    return m ? m[1] : null;
+  };
+  window.__cvHash = async function(cookie, ts, origin) {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + cookie.replace(/[-_]/g, '\\$&') + '=([^;]+)'));
+    if (!m) return null;
+    var buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(ts + ' ' + m[1] + ' ' + origin));
+    return Array.from(new Uint8Array(buf)).map(function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  };
+  window.__cvApi = async function(endpoint, body) {
+    var origin = 'https://www.youtube.com';
+    var ts = Math.floor(Date.now() / 1000);
+    var auth = [];
+    var names = [['SAPISID', 'SAPISIDHASH'], ['__Secure-1PAPISID', 'SAPISID1PHASH'], ['__Secure-3PAPISID', 'SAPISID3PHASH']];
+    for (var i = 0; i < names.length; i++) {
+      var h = await __cvHash(names[i][0], ts, origin);
+      if (h) auth.push(names[i][1] + ' ' + ts + '_' + h);
+    }
+    if (!auth.length) throw new Error('accesso a YouTube scaduto');
+    body = body || {};
+    body.context = ytcfg.get('INNERTUBE_CONTEXT');
+    var res = await fetch('/youtubei/v1/' + endpoint + '?prettyPrint=false', {
+      method: 'POST', credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': auth.join(' '),
+        'X-Origin': origin,
+        'X-Goog-AuthUser': String(ytcfg.get('SESSION_INDEX') || 0),
+        'X-Goog-Visitor-Id': ytcfg.get('VISITOR_DATA') || '',
+        'X-Youtube-Client-Name': String(ytcfg.get('INNERTUBE_CONTEXT_CLIENT_NAME') || 1),
+        'X-Youtube-Client-Version': ytcfg.get('INNERTUBE_CLIENT_VERSION') || ''
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' su ' + endpoint);
+    return await res.json();
+  };
+  return !!ytcfg.get('LOGGED_IN');
+})()
+"""
+
     /** "1:02:03" o "12:34" in secondi. */
     private fun durationSeconds(text: String): Int =
         text.split(":").mapNotNull { it.trim().toIntOrNull() }.takeIf { it.size in 2..3 }?.fold(0) { acc, n -> acc * 60 + n } ?: 0
 
     // Percorre i dati della pagina (ytInitialData) e raccoglie canali, video e playlist
     // qualunque sia la struttura: YouTube la cambia spesso, i singoli blocchi molto meno.
-    private const val EXTRACT_SCRIPT = """
-(function() {
-  var data = window.ytInitialData;
-  if (!data) return JSON.stringify({ready: false});
-  var cfg = window.ytcfg && ytcfg.get ? ytcfg : null;
-  var loggedIn = !!(cfg && cfg.get('LOGGED_IN'));
+    private const val COLLECT_FN = """
+function(data) {
   var channels = [], videos = [], playlists = [];
   function text(t) {
     if (!t) return '';
@@ -239,7 +384,18 @@ object YouTubeWeb {
     }
   }
   walk(data, 0);
-  return JSON.stringify({ready: true, loggedIn: loggedIn, channels: channels, videos: videos, playlists: playlists});
+  return {channels: channels, videos: videos, playlists: playlists};
+}
+"""
+
+    private const val EXTRACT_SCRIPT = """
+(function() {
+  var data = window.ytInitialData;
+  if (!data) return JSON.stringify({ready: false});
+  var cfg = window.ytcfg && ytcfg.get ? ytcfg : null;
+  var loggedIn = !!(cfg && cfg.get('LOGGED_IN'));
+  var r = (""" + COLLECT_FN + """)(data);
+  return JSON.stringify({ready: true, loggedIn: loggedIn, channels: r.channels, videos: r.videos, playlists: r.playlists});
 })();
 """
 }

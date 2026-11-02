@@ -9,8 +9,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * I "Mi piace" messi dal player dell'app: restano sul telefono (il collegamento con YouTube è in
- * sola lettura) e compaiono in cima alla scheda Mi piace, insieme a quelli del tuo account.
+ * I "Mi piace": quelli messi dal player dell'app e quelli del tuo account YouTube, tenuti uguali
+ * da [YtSync] quando hai fatto l'accesso a YouTube nell'app.
  */
 object YtFavorites {
     private const val PREFS = "yt_favorites"
@@ -45,7 +45,15 @@ object YtFavorites {
         val liked = !isLiked(video.id)
         _items.value = toggled(_items.value, video).take(MAX)
         persist()
+        YtSync.like(context, video, liked)
         return liked
+    }
+
+    /** La lista dopo la sincronizzazione con YouTube. */
+    fun replace(context: Context, list: List<YtVideo>) {
+        init(context)
+        _items.value = list.distinctBy { it.id }.take(MAX)
+        persist()
     }
 
     /** La lista dopo il tocco su Mi piace: funzione pura, provata nei test. */

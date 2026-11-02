@@ -306,6 +306,11 @@ class MainActivity : ComponentActivity() {
         com.platinum20.dashboard.media.spotify.SpotifyAuth.init(this)
         if (com.platinum20.dashboard.media.spotify.SpotifyAuth.connected.value) com.platinum20.dashboard.media.spotify.SpotifyPlayer.start(this)
         if (savedInstanceState == null) openRequest.value = OpenRequest.from(intent)
+        // YouTube uguale al PC: Guarda più tardi = Note, Mi piace, cronologia (solo con l'accesso fatto nell'app).
+        com.platinum20.dashboard.media.youtube.YtSync.start(this)
+        lifecycle.addObserver(androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_START) com.platinum20.dashboard.media.youtube.YtSync.foreground(this)
+        })
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
         val app = applicationContext
