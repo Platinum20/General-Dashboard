@@ -1,8 +1,9 @@
 # Changelog
 
 ## 1.289.0
-**I video del PC anche in Continua**
+**Continua uguale tra PC e Canvas**
 - I video lasciati a metà su YouTube dal PC compaiono in "Continua" insieme a quelli iniziati in Canvas, e ripartono dal punto in cui eri
+- E il contrario: un video lasciato a metà in Canvas, sul PC riparte dal punto in cui l'hai fermato (il punto va a YouTube quando metti in pausa o esci, e ogni 2 minuti mentre guardi)
 
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**

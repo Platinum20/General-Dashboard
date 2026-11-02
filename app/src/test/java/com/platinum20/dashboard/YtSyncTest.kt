@@ -118,4 +118,19 @@ class YtSyncTest {
         assertEquals(93_000L, further.positionMs)
         assertEquals(7L, further.at)
     }
+
+    @Test
+    fun canvasPositionReachesYouTubeWithoutFlooding() {
+        val min = 60_000L
+        assertEquals(null, YtSync.nextPush(null, 10_000, 600_000, playing = true, now = 0))
+        assertEquals("40:1000", YtSync.nextPush(null, 40_000, 600_000, playing = true, now = 1_000))
+        // Mentre guardi: non prima di 2 minuti e di un minuto di video in più.
+        assertEquals(null, YtSync.nextPush("40:1000", 100_000, 600_000, playing = true, now = 1_000 + min))
+        assertEquals("160:121000", YtSync.nextPush("40:1000", 160_000, 600_000, playing = true, now = 121_000))
+        // In pausa (o uscendo) si manda subito il punto.
+        assertEquals("55:2000", YtSync.nextPush("40:1000", 55_000, 600_000, playing = false, now = 2_000))
+        // Finito: una volta sola.
+        assertEquals("d", YtSync.nextPush("160:121000", 590_000, 600_000, playing = true, now = 200_000))
+        assertEquals(null, YtSync.nextPush("d", 300_000, 600_000, playing = false, now = 300_000))
+    }
 }
