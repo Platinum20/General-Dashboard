@@ -72,7 +72,7 @@ class MediaClickTour {
             "Media" to listOf("Media"),
             "Musica" to listOf("Media", "Musica"),
             "Video" to listOf("Media", "Video"),
-            "Radio e podcast" to listOf("Media", "Radio e podcast"),
+            "Radio e podcast" to listOf("Media", "Radio"),
         )
         for ((name, path) in pages) checkPage(name, path)
     }

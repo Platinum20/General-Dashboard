@@ -281,6 +281,11 @@ object NotesStore {
         d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }, expenses = d.expenses.filter { it.fixedId != id })
     }
 
+    /** Una spesa fissa cambiata dalla sua pagina (nome, importo, giorno, categoria). */
+    fun saveFixedExpense(item: FixedExpense) = update { d ->
+        d.copy(fixedExpenses = d.fixedExpenses.map { if (it.id == item.id) item else it })
+    }
+
     fun restoreFixedExpense(item: FixedExpense) = update { d ->
         if (d.fixedExpenses.any { it.id == item.id }) d else d.copy(fixedExpenses = d.fixedExpenses + item)
     }

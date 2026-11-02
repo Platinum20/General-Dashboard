@@ -89,11 +89,6 @@ fun UpdatesScreen(
             TopLevelBar(
                 title = "Aggiornamenti",
                 onBack = onBack,
-                actions = {
-                    IconButton(onClick = viewModel::refreshReleases, enabled = !state.loadingReleases) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Ricarica changelog")
-                    }
-                },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -111,7 +106,7 @@ fun UpdatesScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding() + 4.dp,
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -155,7 +150,7 @@ private fun StatusCard(state: UpdateUiState) {
         status is UpdateStatus.Installing -> Triple(
             Icons.Outlined.CloudDownload,
             "Installazione avviata",
-            "Conferma nella finestra di Android per passare alla ${status.release.version}.",
+            "Canvas si chiude e passa alla ${status.release.version}; la prima volta Android chiede conferma.",
         )
         status is UpdateStatus.Downloading -> Triple(
             Icons.Outlined.CloudDownload,
@@ -314,11 +309,15 @@ private fun UpdateBar(
     onGrantPermission: () -> Unit,
 ) {
     val status = state.status
+    // Il mini player in basso coprirebbe il tasto, l'unico della pagina: si lascia il suo spazio.
+    val playing by com.platinum20.dashboard.media.Playback.now.collectAsState()
+    val reserve = MiniDock.bottomReserveDp(playing != null, MiniDock.atTop).dp
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(bottom = reserve)
                 .padding(16.dp),
         ) {
             when (status) {

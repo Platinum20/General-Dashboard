@@ -22,6 +22,8 @@ data class UpcomingItem(
     val time: String? = null,
     /** L'evento del calendario, per aprirne la scheda con un tocco. */
     val event: CalendarEvent? = null,
+    /** Il promemoria, per spuntarlo dalla card senza entrare. */
+    val task: TaskItem? = null,
 )
 
 /**
@@ -94,7 +96,7 @@ object Upcoming {
                 else timed += it.begin to UpcomingItem(day, BriefKind.EVENT, it.title, it.begin.at(zone), event = it)
             }
             tasks.filter { !it.done && it.dueAt != null && it.dueAt.day(zone) == day }.forEach {
-                timed += it.dueAt!! to UpcomingItem(day, BriefKind.TASK, it.text, it.dueAt.at(zone))
+                timed += it.dueAt!! to UpcomingItem(day, BriefKind.TASK, it.text, it.dueAt.at(zone), task = it)
             }
             parcels.filter { !it.delivered && it.expected == day }.forEach {
                 allDay += UpcomingItem(day, BriefKind.PARCEL, "Arriva: ${it.title}")

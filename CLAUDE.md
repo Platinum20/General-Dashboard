@@ -31,16 +31,16 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
-- `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"), `SearchScreen.kt` + `search/EverywhereSearch.kt`.
+- `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"; also on Media subpages, prefiltered via `SearchFilter.forRoute` + `Routes.search(filter)`), `SearchScreen.kt` + `search/EverywhereSearch.kt`. Media subpages have no search fields or header buttons.
 - `ui/screens/SwipeAway.kt`: "drag sideways to close" (rule + `Modifier.swipeAway` + X), shared by mini player and save bubble.
 - `ui/screens/Pickers.kt` (date/time/task edit dialogs), `SaveToNotesLayer.kt`/`SaveOnLongPress.kt`
   (long-press bubble: "Salva nelle note", "Aggiungi alla coda"; also holds the shared `BottomBubble`
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses),
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses, `NotesCard` (HomeCard.NOTES), all via the shared `TimelineCard` (whole card clickable, also used by the Note overview)),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
-`home/expenses`, Spese moved here from Note in 1.186). Logic in `today/`: `Briefing.kt`
+`home/expenses`, Spese moved here from Note in 1.186; same screen on `Routes.NOTES_EXPENSES` = `notes/expenses` from the Note card, nav bar on Note). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
 = every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 400 days (`Upcoming.DAYS`, also Notes' `EVENT_DAYS`) of
 events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp` = log-scaled gap, `Upcoming.monthBreak` → `TimelineEntry.month` = `TimelineMonthMarker` 'NOVEMBRE' with haptic via `MonthCross`; Timeline.kt also has `ExpenseCategory.icon()/color()`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
@@ -52,10 +52,10 @@ events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
 `NotesScreen.kt` (overview of 2 cards: DATED "Prossimi giorni" = everything with a day incl. calendar
 events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `NotesNav.open(section)` opens one from
-elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt; pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
+elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt (all timelines: past on top, open on OGGI at the top of the screen with room below, `nowIndex` for Note/Spese); pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
 `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
-Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; Modifica opens their old dialog). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
+Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
@@ -66,7 +66,7 @@ type from text: never ask the user the type), `CaptureSave.kt` (single save path
 
 **News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,
 `NewsHistory` "N nuove"/"Già viste", `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
-(`VoiceStore` Piper voice choice/download (Leonardo = community voice repacked by `voicepack.yml` + `scripts/pack_piper_voice.py` into the prerelease `voci`), `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
+(`VoiceStore` Piper voice choice/download (Giorgio = community voice repacked by `voicepack.yml` + `scripts/pack_piper_voice.py` into the prerelease `voci`), `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
 the sherpa AAR is downloaded by `app/build.gradle.kts` into ignored `app/libs/`; `net/HeavyDownloads.kt`
 = "solo col Wi-Fi" gate for voices + update APKs; LiveChecks really downloads a voice), `news/reader/` (ArticleExtractor,
 PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallback for 403 sites.
@@ -74,21 +74,21 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 
 **Media** (Musica / Video / Radio e podcast)
 - `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue
-  (pure ops in `QueueOps.kt`, `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
+  (pure ops in `QueueOps.kt`: tap = `pick` (plays it, others stay), swipe-remove + `restore` undo; `QueueFill` = "Riempi in automatico" Spotify top-up toggle at the queue bottom; `EngineNow` state); play/playList/add/next/previous/jump/moveTo.
   Spotify plugs in as `ExternalBackend`. `PlayerService.kt` = the one MediaSession/notification
   (SimpleBasePlayer mirroring CanvasPlayer). `Playback.kt` = what screens show (`Playing`,
   `PlaySource`) + speech (RecapSpeaker). `MediaLauncher.kt`: start any `ResumeItem`.
   `MediaHistory.kt` ("Continua"/"Riprendi"). `YtPlayer`, `RadioStore`, `PodcastStore` are thin
   adapters over CanvasPlayer. `VideoPlayerScreen` (route media/video) is only the picker for phone
   videos/files/links: `MediaLauncher.playVideo` plays them on CanvasPlayer (ResumeKind.VIDEO).
-- `media/youtube/` (YouTubeWeb/Api/Store, YtMusic, YtHistory, YtFavorites) + `player/`
+- `media/youtube/` (YouTubeWeb/Api/Store, YtHistory, YtFavorites, `SponsorBlock` (hash-prefix fetch, pure `step`/`marks`, 200 ms loop started by `YtPlayer.load`, per-category `SbAction` in `AppSettings.sponsorActions`, Settings › Fa da solo; skip button + bar marks in YouTubeWatchScreen), `YtVotes` (Return YouTube Dislike, `AppSettings.dislikes`); `YtPremiere` (anteprime: `YtPlayer.load` failure → `check` reads the start time from the watch page → `YtNow.upcoming` → `PremiereWait.kt` countdown + "Avvisami" (`PremiereReminderWorker`) + auto retry; feed badge `badge(YtVideo.startsAt)`); YouTube Music removed from the app in 1.227, Antonio doesn't want it) + `player/`
   (NewPipeExtractor `YtResolver`, `YtPlayer` = YouTube sources/quality/subtitles on CanvasPlayer, captions).
-- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyPlayer` = own hidden
+- `media/spotify/` (PKCE `SpotifyAuth`, `SpotifyApi`, `SpotifyStore`, `SpotifyMixes` = our "Mix per te" (Spotify-made playlists are 403 for personal apps), `SpotifyPlayer` = own hidden
   WebView with the Web Playback SDK, started in MainActivity.onCreate, audio output only), `media/radio/`, `media/podcast/`, `media/songid/SongId.kt` (AudD).
 - `media/MediaWebViews.kt`: any WebView in Compose must go through `WebView.inFrame(ctx)`.
-- Screens: `MediaScreen`, `MusicScreen`, `ListenScreen`/`RadioScreen`/`PodcastScreen`,
-  `YouTubeFeedScreen`, `YouTubeWatchScreen`, `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
-  `FloatingPlayer` (mini player). `PlayerScreen` is the single player route: video layout
+- Screens: `MediaScreen`, `MusicScreen` (Spotify only, one page of horizontal `coverRow`s), `ListenScreen` (one page, no chips: `radioSections` in RadioScreen + `podcastSections`/`PodcastPage` in PodcastScreen),
+  `YouTubeFeedScreen` (`ListTiles` row on top = Playlist/Mi piace/Più tardi (= YouTube videos in the notes, `SavedLinks.youtubeVideos`)/Telefono, then 4 equal-width `CanvasTabChip`s Home/Iscrizioni/Cronologia/Canali (Canali = `YouTubeStore.channels` ordered by pure `channelLines`, tap = `ChannelVideos` = ALL the channel's videos newest first, paged by `YtResolver.channelVideos` (NewPipe Videos tab, RSS fallback) + `YouTubeStore.loadMoreChannel` at the list bottom; same page from the watch page channel row = route `media/channel/{id}` `YouTubeChannelScreen`); `AppSettings.autoplayNext` gates the suggested video after the queue ends (`CanvasPlayer.ended`); Escludi Shorts/live = `AppSettings.hideShorts/hideLive` in Settings › Fa da solo, applied by pure `pickFeed`), `YouTubeWatchScreen` (gestures: pure `VideoSwipe.kt` = swipe up to fullscreen, fullscreen volume drag + keys, pinch fill/fit), `VideoPlayerScreen`, `PlayerScreen`, `QueueScreen`,
+  `FloatingPlayer` (mini player; `MiniDock.kt` = closing the video page flies the video onto the mini player's real thumbnail, `MiniDock.docking` + `holdExit` on the player routes). `PlayerScreen` is the single player route: video layout
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).
 
@@ -98,10 +98,12 @@ the Google app is in Testing), `MailParse` (pure: Gmail JSON, MIME/HTML to text,
 Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (`FromMailCard` = Home card "Dalla posta": only important unread mail (since 1.191 AutoFill always saves found items straight into Note, no "Aggiungi"; "La tua settimana" card removed),
 GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
 
+**SIM** (`sim/`, 1.288): `WindTreParse` (pure: any JSON/page text from WindTre area clienti → `SimStatus` giga/minuti/SMS/credito/rinnovo by key names, format not public), `SimStore` (status, linked, last 40 captured responses in filesDir, login responses never saved), `WindTreLink` (JS hook on fetch/XHR via document-start script on `*.windtre.it`, one-time official login WebView, hidden-WebView refresh hourly from the Home card). UI `ui/screens/SimUi.kt` (`SimCard` = HomeCard.SIM, `SimScreen` route `home/sim`, "Condividi i dati letti" to fix the parser from real samples).
+
 **Other**: `adblock/` (EasyList/uBO engine, `AdBlocker.attach()` on every WebView),
 `autofill/` (notification/SMS extractor), `backup/`, `widget/` (DashboardWidget, TasksWidget),
-`work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update),
-`SettingsScreen.kt` (groups by intent), `UpdatesScreen.kt`, `LoginScreen.kt`.
+`work/` (Morning, Refresh, RainAlert, UpdateCheck every 15 min + on open), `update/` (APK self-update; `WhatsNew` + `ui/screens/WhatsNewLayer.kt` = one-time glass bubble with this version's CHANGELOG section, copied into `BuildConfig.WHATS_NEW` by `app/build.gradle.kts`),
+`SettingsScreen.kt` (main page = theme + menu rows with one-line state (`SettingsSummary`); each row opens `SettingsPageScreen(SettingsPage)` on route `settings/page/{page}`: HOME, NEWS, MEDIA (coda, video successivo, Video filters, SponsorBlock row → SPONSORBLOCK page, canzoni, ad block), ALERTS, ACCOUNTS, DATA, INFO; the Note row opens AutoFillScreen directly; every persistent toggle belongs here, not in other screens; `RadioAlarmSetting.kt` = Sveglia con la radio in Notifiche; `AccountConnect.kt` = official Spotify/Google connection from Account + `SpotifyAuthDialog`), `UpdatesScreen.kt`, `LoginScreen.kt`.
 
 **Tests** `app/src/test/java/com/platinum20/dashboard/`: JVM/Robolectric unit tests, one file per
 feature (`*Test.kt`). Test class names must be unique across the package. `ScreenshotTour`,
@@ -160,7 +162,9 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - `git push --delete` fails (proxy); merged branches just stay.
 - Use `git fetch origin main && git merge --ff-only origin/main` rather than `git pull`/`reset --hard`.
 - Maven Central gives 429: use repo1.maven.org. NewPipeExtractor must stay current (JitPack,
-  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`).
+  `includeGroupByRegex("com\\.github\\.TeamNewPipe.*")`). Since 1.272 it is pinned to the same commit the
+  NewPipe app uses (visionOS client, survives the "not a bot" check; v0.26.5 did not): follow NewPipe's
+  `gradle/libs.versions.toml`, never go back to an older tag. Extractor errors → Italian via `YtErrors`.
 - Robolectric: guard GraphicsLayer use with `nativeCanvas.isHardwareAccelerated`; don't wait on
   `Playback.now` across tests (singleton bound to an earlier test's looper).
 - Backlog lives in `BACKLOG.md` on the orphan branch `backlog`.

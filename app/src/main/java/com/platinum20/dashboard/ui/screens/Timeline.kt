@@ -14,12 +14,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalHospital
@@ -41,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +75,8 @@ data class TimelineEntry(
     val trailing: String? = null,
     /** Il mese che comincia con questa riga ("NOVEMBRE"): sopra si disegna il segno del mese. */
     val month: String? = null,
+    /** Un promemoria fatto: spunta piena e nome barrato. */
+    val done: Boolean = false,
 )
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -123,11 +128,13 @@ fun TimelineRow(
     start: Dp = 16.dp,
     /** Tenendo premuto: di solito il fumetto di vetro con le azioni ([ActionBubble]). */
     onLongClick: (() -> Unit)? = null,
+    /** Vibrare al cambio di mese: solo nelle pagine aperte, non nelle card di anteprima (Antonio). */
+    monthTick: Boolean = true,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
-    entry.month?.let { TimelineMonthMarker(it, start = start, top = top) }
+    entry.month?.let { TimelineMonthMarker(it, start = start, top = top, tick = monthTick) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -141,12 +148,12 @@ fun TimelineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
-        if (onIcon != null) {
+        if (onIcon != null || entry.done) {
             Icon(
-                Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = "Fatto",
-                tint = tint,
-                modifier = Modifier.size(20.dp).clip(CircleShape).clickable(onClick = onIcon),
+                if (entry.done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = if (entry.done) "Da fare" else "Fatto",
+                tint = if (entry.done) MaterialTheme.colorScheme.primary else tint,
+                modifier = Modifier.size(20.dp).clip(CircleShape).then(if (onIcon != null) Modifier.clickable(onClick = onIcon) else Modifier),
             )
             Spacer(Modifier.width(8.dp))
         } else {
@@ -156,7 +163,8 @@ fun TimelineRow(
         Text(
             entry.text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            color = if (entry.past || entry.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (entry.done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(vertical = 7.dp),
@@ -231,12 +239,39 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
 @Composable
 fun TimelineNowMarker(modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary
+    // Arrivando su OGGI, oltre alla vibrazione, "OGGI" pulsa e una freccetta in su dice che il passato sta sopra.
+    val pulse = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
+    val tick = NowPulse.ticks.intValue
+    androidx.compose.runtime.LaunchedEffect(tick) {
+        if (tick == 0) return@LaunchedEffect
+        pulse.animateTo(1f, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Decelerate))
+        pulse.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS * 2, easing = Motion.Standard))
+    }
     Row(
         modifier.fillMaxWidth().height(32.dp).padding(end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("OGGI", style = MaterialTheme.typography.labelMedium, color = primary)
-        Spacer(Modifier.width(10.dp))
+        Text(
+            "OGGI",
+            style = MaterialTheme.typography.labelMedium,
+            color = primary,
+            modifier = Modifier.graphicsLayer {
+                val k = 1f + 0.15f * pulse.value
+                scaleX = k
+                scaleY = k
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            },
+        )
+        Icon(
+            Icons.Rounded.KeyboardArrowUp,
+            contentDescription = null,
+            tint = primary,
+            modifier = Modifier.padding(start = 4.dp).size(14.dp).graphicsLayer {
+                alpha = pulse.value
+                translationY = (1f - pulse.value) * 4.dp.toPx()
+            },
+        )
+        Spacer(Modifier.width(6.dp))
         Box(
             Modifier.weight(1f).height(2.dp).drawBehind {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
@@ -245,7 +280,7 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
         Box(
             Modifier.width(GUTTER).fillMaxHeight().drawBehind {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width / 2, size.height / 2), 2.dp.toPx())
-                drawCircle(primary, 6.dp.toPx(), Offset(size.width / 2, size.height / 2))
+                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
     }
@@ -256,11 +291,11 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
  * Scorrendoci sopra vibra appena (Antonio), così si sente quando si passa da un mese all'altro.
  */
 @Composable
-fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true) {
+fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true, tick: Boolean = true) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
     Row(
-        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).monthTick(),
+        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = color)
@@ -336,6 +371,12 @@ object PastBarrier {
     }
 }
 
+/** Ogni volta che una lista arriva su OGGI: i [TimelineNowMarker] a schermo pulsano. */
+object NowPulse {
+    val ticks = androidx.compose.runtime.mutableIntStateOf(0)
+    fun fire() { ticks.intValue++ }
+}
+
 /** La [PastBarrier] collegata a una lista: [itemIndex] è l'item con la linea, [offset] dove sta "Oggi" dentro l'item. */
 @Composable
 fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListState, itemIndex: Int, offset: Int?): androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
@@ -347,6 +388,7 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
             var pull = 0f
             var unlocked = false
+            var flingStopped = false
             fun boundary(): Float? {
                 val o = at ?: return null
                 val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
@@ -363,12 +405,18 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
                 )
                 pull = s.pull
                 unlocked = s.unlocked
-                if (s.bump) haptic(Haptic.TICK)
+                if (s.bump) { haptic(Haptic.TICK); NowPulse.fire() }
+                // Un lancio che si ferma su OGGI: niente vibrazione, ma OGGI pulsa una volta.
+                if (s.consumed > 0f && source != androidx.compose.ui.input.nestedscroll.NestedScrollSource.UserInput && !flingStopped) {
+                    flingStopped = true
+                    NowPulse.fire()
+                }
                 if (s.through) haptic(Haptic.THRESHOLD)
                 return Offset(0f, s.consumed)
             }
             override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
                 pull = 0f
+                flingStopped = false
                 return androidx.compose.ui.unit.Velocity.Zero
             }
         }

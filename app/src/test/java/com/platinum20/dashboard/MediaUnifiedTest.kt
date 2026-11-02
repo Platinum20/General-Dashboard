@@ -68,6 +68,19 @@ class MediaUnifiedTest {
     }
 
     @Test
+    fun spotifyPassatoOltreDaSolo() {
+        val before = SpotifyPlayer.Reading("spotify:track:a", false, 178_000, 180_000, 0)
+        // A fine brano Spotify suona un altro brano suo: per noi è finito.
+        assertTrue(SpotifyPlayer.movedOn(before, SpotifyPlayer.Reading("spotify:track:x", false, 1_000, 200_000, 2_000)))
+        // A metà brano un'altra lettura non vuol dire che è finito.
+        assertFalse(SpotifyPlayer.movedOn(before.copy(positionMs = 60_000), SpotifyPlayer.Reading("spotify:track:x", false, 1_000, 200_000, 2_000)))
+        // Stesso brano in un'altra copia (relinking): è sempre il nostro.
+        val relinked = SpotifyPlayer.Reading("spotify:track:b", false, 179_000, 180_000, 1_000, linked = "spotify:track:a")
+        assertTrue(relinked.isFor("spotify:track:a"))
+        assertFalse(SpotifyPlayer.movedOn(before, relinked))
+    }
+
+    @Test
     fun podcastDiSpotifySenzaDoppioni() {
         val rss = Podcast("1", "Il Caffè - Podcast", "Autore", "https://feed.example/rss", "")
         val spotify = listOf(

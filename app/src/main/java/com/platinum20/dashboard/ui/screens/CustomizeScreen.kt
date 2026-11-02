@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.RestartAlt
@@ -49,6 +50,8 @@ import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Newspaper
 import com.platinum20.dashboard.settings.HomeCard
+import com.platinum20.dashboard.settings.HomeLayout
+import androidx.compose.material3.TextButton
 
 /** Ordine e visibilità delle card della Dashboard. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,13 +62,8 @@ fun CustomizeScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopLevelBar(
-                title = "Personalizza Oggi",
+                title = "Card della Home",
                 onBack = onBack,
-                actions = {
-                    IconButton(onClick = AppSettings::resetLayout) {
-                        Icon(Icons.Outlined.RestartAlt, contentDescription = "Ripristina")
-                    }
-                },
             )
         },
     ) { inner ->
@@ -85,12 +83,12 @@ fun CustomizeScreen(onBack: () -> Unit) {
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding() + 8.dp,
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
         ) {
             item(key = 0) {
                 Text(
-                    "Trascina la maniglia per cambiare l'ordine delle card in Oggi; l'interruttore le mostra o le nasconde.",
+                    "Trascina la maniglia per cambiare l'ordine delle card nella Home; l'interruttore le mostra o le nasconde.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
@@ -134,6 +132,13 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     Switch(checked = visible, onCheckedChange = toggle)
                 }
             }
+            item(key = 1) {
+                TextButton(
+                    onClick = AppSettings::resetLayout,
+                    enabled = layout != HomeLayout.DEFAULT,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) { Text("Ripristina l'ordine iniziale") }
+            }
         }
     }
 }
@@ -142,6 +147,7 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
     HomeCard.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
+    HomeCard.NOTES -> Icons.AutoMirrored.Outlined.Notes
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.SIM -> Icons.Outlined.SimCard
     HomeCard.MAIL -> Icons.Outlined.Mail
@@ -152,6 +158,7 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
     HomeCard.MONEY -> TileAccent.GREEN
+    HomeCard.NOTES -> TileAccent.ORANGE
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.SIM -> TileAccent.BLUE
     HomeCard.MAIL -> TileAccent.ORANGE

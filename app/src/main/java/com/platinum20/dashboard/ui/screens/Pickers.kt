@@ -143,6 +143,20 @@ fun DateTimePickDialog(initial: Long?, onDismiss: () -> Unit, onConfirm: (Long) 
     }
 }
 
+/** Solo l'ora (l'avviso di un'abitudine). */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickDialog(initial: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalTime) -> Unit) {
+    val timeState = rememberTimePickerState(initialHour = initial.hour, initialMinute = initial.minute, is24Hour = true)
+    CanvasDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Avviso alle") },
+        text = { TimePicker(state = timeState) },
+        confirmButton = { TextButton(onClick = { onConfirm(LocalTime.of(timeState.hour, timeState.minute)) }) { Text("OK") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+    )
+}
+
 /**
  * Modifica di un promemoria: testo e scadenza con avviso.
  * [onDeleted] riceve il promemoria eliminato, così chi apre il dialog può offrire "Annulla".

@@ -5,6 +5,7 @@ import com.platinum20.dashboard.media.FeedCache
 import com.platinum20.dashboard.media.FeedCodec
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.userMessage
+import com.platinum20.dashboard.media.youtube.player.YtChannelPage
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +44,78 @@ object YouTubeStore {
         load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
             YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
         }
+
+    private val _channels = MutableStateFlow(Loadable<List<YtChannel>>())
+    /** I canali a cui sei iscritto (scheda Canali di Video). */
+    val channels: StateFlow<Loadable<List<YtChannel>>> = _channels.asStateFlow()
+
+    fun refreshChannels(context: Context, force: Boolean = false) =
+        load(context, _channels, force, FeedCache.channels, web = { YouTubeWeb.subscriptions(it) }) { token -> YouTubeApi.subscriptions(token) }
+
+    private val _channelVideos = MutableStateFlow<Map<String, Loadable<List<YtVideo>>>>(emptyMap())
+    /** Tutti i video di ogni canale aperto (scheda Canali o tocco sul canale nella pagina del video). */
+    val channelVideos: StateFlow<Map<String, Loadable<List<YtVideo>>>> = _channelVideos.asStateFlow()
+
+    private val _channelMore = MutableStateFlow<Map<String, YtChannelPage>>(emptyMap())
+    private val _channelHasMore = MutableStateFlow<Set<String>>(emptySet())
+    /** Canali con altri video ancora da caricare (pagina successiva di YouTube). */
+    val channelHasMore: StateFlow<Set<String>> = _channelHasMore.asStateFlow()
+
+    fun loadChannel(channel: YtChannel, force: Boolean = false) {
+        val state = _channelVideos.value[channel.id]
+        if (!force && state != null && (state.loading || fresh(state))) return
+        _channelVideos.update { it + (channel.id to (state ?: Loadable()).copy(loading = true, error = null)) }
+        scope.launch {
+            val result = try {
+                val page = YtResolver.channelVideos(channel.id)
+                keepPage(channel.id, page)
+                Loadable(data = withAvatar(page.videos, channel), loadedAt = System.currentTimeMillis())
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Se l'estrazione non va restano almeno gli ultimi video del feed RSS.
+                try {
+                    keepPage(channel.id, null)
+                    Loadable(data = YouTubeApi.channelVideos(channel), loadedAt = System.currentTimeMillis())
+                } catch (e2: Exception) {
+                    if (e2 is kotlinx.coroutines.CancellationException) throw e2
+                    (state ?: Loadable()).copy(loading = false, error = e.userMessage("I video del canale non arrivano, riprova tra poco."))
+                }
+            }
+            _channelVideos.update { it + (channel.id to result) }
+        }
+    }
+
+    private var loadingMore: String? = null
+
+    /** La pagina dopo dei video del canale: si chiama arrivando in fondo alla lista. */
+    fun loadMoreChannel(channel: YtChannel) {
+        val page = _channelMore.value[channel.id] ?: return
+        if (loadingMore == channel.id) return
+        loadingMore = channel.id
+        scope.launch {
+            try {
+                val next = YtResolver.channelVideos(channel.id, page)
+                keepPage(channel.id, next)
+                _channelVideos.update { all ->
+                    val old = all[channel.id] ?: return@update all
+                    all + (channel.id to old.copy(data = mergeChannelPage(old.data.orEmpty(), withAvatar(next.videos, channel))))
+                }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Fine silenziosa: i video già caricati restano, al prossimo arrivo in fondo si riprova.
+            } finally {
+                loadingMore = null
+            }
+        }
+    }
+
+    private fun keepPage(id: String, page: YtChannelPage?) {
+        _channelMore.update { if (page?.next != null) it + (id to page) else it - id }
+        _channelHasMore.update { if (page?.next != null) it + id else it - id }
+    }
+
+    private fun withAvatar(videos: List<YtVideo>, channel: YtChannel) =
+        videos.map { if (it.channelAvatar.isBlank()) it.copy(channelAvatar = channel.thumbnail, channel = it.channel.ifBlank { channel.title }) else it }
 
     private val _home = MutableStateFlow(Loadable<List<YtVideo>>())
     /** La Home di YouTube (video consigliati): c'è solo con l'accesso a YouTube fatto nell'app. */
@@ -103,6 +176,10 @@ object YouTubeStore {
         _search.value = Loadable()
         _home.value = Loadable()
         _history.value = Loadable()
+        _channels.value = Loadable()
+        _channelVideos.value = emptyMap()
+        _channelMore.value = emptyMap()
+        _channelHasMore.value = emptySet()
     }
 
     /** Dati finti per le foto automatiche delle schermate (solo test). */
@@ -170,3 +247,6 @@ object YouTubeStore {
         }
     }
 }
+
+/** Aggiunge in fondo una pagina di video del canale senza doppioni (YouTube a volte ne ripete uno a cavallo). */
+internal fun mergeChannelPage(old: List<YtVideo>, page: List<YtVideo>): List<YtVideo> = (old + page).distinctBy { it.id }

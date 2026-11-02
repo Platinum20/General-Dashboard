@@ -15,6 +15,7 @@ import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.youtube.YtVideo
+import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.ui.screens.openResumeItem
@@ -111,6 +112,22 @@ object SavedLinks {
     fun radio(station: RadioStation): SavedLink = SavedLink.Media(
         ResumeItem(ResumeKind.RADIO, station.id, station.name, "Radio", station.logo, at = System.currentTimeMillis(), station = station),
     )
+
+    /**
+     * I video di YouTube che hai nelle note, dal più recente: quelli salvati col fumetto e i link
+     * youtube.com/youtu.be incollati o condivisi. È la lista "Più tardi" della pagina Video.
+     */
+    fun youtubeVideos(notes: List<Note>): List<YtVideo> = notes
+        .sortedByDescending { it.createdAt }
+        .mapNotNull { note ->
+            val saved = (find(note.text) as? SavedLink.Media)?.item?.takeIf { it.kind == ResumeKind.YOUTUBE }
+            if (saved != null) return@mapNotNull YtVideo(saved.key, saved.title, saved.subtitle, "", null)
+            val url = Regex("""https?://\S*(?:youtube\.com|youtu\.be)/\S+""").find(note.text)?.value ?: return@mapNotNull null
+            val id = YtResolver.videoId(url) ?: return@mapNotNull null
+            val title = note.title.takeUnless { it.contains(url) || it.startsWith("http") } ?: "Video di YouTube"
+            YtVideo(id, title, "", "", null)
+        }
+        .distinctBy { it.id }
 
     /** Le righe di una nota senza l'indirizzo che la riapre (per le anteprime). */
     fun withoutLink(text: String): String =

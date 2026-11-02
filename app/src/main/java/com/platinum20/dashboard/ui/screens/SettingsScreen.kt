@@ -11,6 +11,16 @@ import androidx.compose.runtime.LaunchedEffect
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
 import androidx.compose.material.icons.outlined.Wifi
+import androidx.compose.material.icons.outlined.SkipNext
+import androidx.compose.material.icons.outlined.FastForward
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.TouchApp
+import androidx.compose.material.icons.outlined.LinearScale
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.ThumbDown
+import com.platinum20.dashboard.media.youtube.SbAction
+import com.platinum20.dashboard.media.youtube.SbCategory
+import com.platinum20.dashboard.media.youtube.SponsorBlock
 import com.platinum20.dashboard.net.HeavyDownloads
 import com.platinum20.dashboard.news.RecapSpeaker
 import com.platinum20.dashboard.news.voice.NeuralVoice
@@ -52,12 +62,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.LiveTv
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
@@ -68,6 +81,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.Surface
@@ -99,12 +113,17 @@ import com.platinum20.dashboard.autofill.AutoFill
 import androidx.compose.material.icons.outlined.AutoAwesome
 import com.platinum20.dashboard.media.Accounts
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.spotify.SpotifyAuth
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpotifyWebSession
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.AppTheme
 import com.platinum20.dashboard.settings.HomeCard
+import com.platinum20.dashboard.update.ApkInstaller
 import com.platinum20.dashboard.work.UpdateCheckWorker
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.work.MorningWorker
@@ -113,71 +132,110 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.automirrored.outlined.QueueMusic
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.Storage
+import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.radio.RadioAlarm
+
+/** Le sottopagine delle Impostazioni: prima le sezioni come nella barra in basso, poi l'app. */
+enum class SettingsPage(val title: String) {
+    HOME("Home"),
+    NEWS("News"),
+    MEDIA("Media"),
+    ALERTS("Notifiche"),
+    ACCOUNTS("Account"),
+    DATA("Dati"),
+    INFO("Informazioni"),
+    /** Non sta nel menu: si apre dalla riga SponsorBlock di Media, i tipi di segmento sono tanti. */
+    SPONSORBLOCK("SponsorBlock"),
+}
+
+/** Sottotitoli che il giro fotografico ha trovato tagliati: testati, devono stare in una riga. */
+internal object SettingsLines {
+    const val SONG_ID_OFF = "Tocca per incollare il token AudD"
+    const val SONG_ID_ON = "Tieni premuto + vicino alla musica"
+    const val HIDE_MEMBERS = "Niente video solo per abbonati"
+    /** Quanto ci sta accanto a un interruttore o a un valore breve ("Da attivare"). */
+    const val MAX = 34
+    val all = listOf(SONG_ID_OFF, SONG_ID_ON, HIDE_MEMBERS)
+}
+
+/** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
+internal object SettingsSummary {
+    fun home(visible: Int, total: Int, place: String?): String =
+        "$visible card su $total · meteo " + (place?.let { "di $it" } ?: "dalla posizione")
+
+    fun alerts(morning: String?, rain: Boolean, radio: String?, updates: Boolean): String {
+        val on = listOfNotNull(
+            morning?.let { "mattino alle $it" },
+            "pioggia".takeIf { rain },
+            radio?.let { "sveglia alle $it" },
+            "nuove versioni".takeIf { updates },
+        )
+        return if (on.isEmpty()) "Tutte spente" else on.joinToString(" · ").replaceFirstChar { it.uppercase() }
+    }
+
+    fun accounts(connected: List<String>): String = when (connected.size) {
+        0 -> "Nessun account collegato"
+        1 -> "${connected[0]} collegato"
+        else -> connected.dropLast(1).joinToString(", ") + " e ${connected.last()} collegati"
+    }
+}
 
 /**
- * Impostazioni, ordinate per quello che si vuole fare e non per sezione dell'app:
- * com'è fatta (aspetto), cosa ti avvisa (notifiche), cosa fa da sola, gli account, i dati.
- * Una pagina sola e corta, senza chip: ogni gruppo ha un titolo che dice a cosa serve.
- * Ogni riga mostra a destra lo stato attuale, così non serve aprirla per sapere com'è.
+ * Impostazioni: in cima il tema, poi un menu di righe che aprono ognuna la sua pagina.
+ * Le sezioni hanno l'ordine della barra in basso (Note apre subito "Compila le note", l'unica
+ * cosa che ha); sotto quelle dell'app: notifiche, account, dati, informazioni.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
-    onOpenUpdates: () -> Unit,
-    onCustomize: () -> Unit,
-    onLogin: (MediaService) -> Unit,
-    onPickPlace: () -> Unit,
-    onOpenAutoFill: () -> Unit = {},
-    /** Da dove si arriva (Routes.HOME, NEWS, NOTES, MEDIA): la pagina parte dal gruppo che le riguarda. */
-    initialSection: String? = null,
+    onOpenPage: (SettingsPage) -> Unit,
+    onOpenAutoFill: () -> Unit,
 ) {
     val context = LocalContext.current
-    val inApp = LocalInAppNav.current
     val theme by AppSettings.theme.collectAsState()
     val layout by AppSettings.homeLayout.collectAsState()
     val haptic = rememberHaptic()
     val loggedIn by Accounts.loggedIn.collectAsState()
+    remember { YouTubeAuth.init(context); SpotifyAuth.init(context); RadioAlarm.init(context); VoiceStore.init(context) }
+    val youTubeOfficial by YouTubeAuth.connected.collectAsState()
+    val spotifyOfficial by SpotifyAuth.connected.collectAsState()
     AutoFill.init(context)
     val autoFillOn by AutoFill.enabled.collectAsState()
+    val morning by AppSettings.morning.collectAsState()
+    val rain by AppSettings.rainAlert.collectAsState()
+    val updates by AppSettings.updateNotify.collectAsState()
+    val canNotify = MorningWorker.canNotify(context) || Build.VERSION.SDK_INT < 33
+    val alarm by RadioAlarm.settings.collectAsState()
+    val voice by AppSettings.readingVoice.collectAsState()
+    val wifiOnly by AppSettings.wifiOnlyDownloads.collectAsState()
     // La località si legge dalle preferenze: si rilegge tornando dalla scelta della città.
     var place by remember { mutableStateOf(WeatherStore.manualPlace(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         Accounts.refresh()
         place = WeatherStore.manualPlace(context)
     }
-    var showLicenses by remember { mutableStateOf(false) }
-    var editSongToken by remember { mutableStateOf(false) }
-    SongId.init(context)
-    val songToken by SongId.token.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    val listState = rememberLazyListState()
-    LaunchedEffect(Unit) {
-        val start = SettingsGroupKey.forSection(initialSection)
-        if (start > 0) listState.scrollToItem(start)
-    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = "Impostazioni",
-                scrollBehavior = scrollBehavior,
-                onBack = onBack,
-            )
-        },
+        topBar = { TopLevelBar(title = "Impostazioni", scrollBehavior = scrollBehavior, onBack = onBack) },
     ) { inner ->
         LazyColumn(
-            state = listState,
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 32.dp,
+                bottom = inner.calculateBottomPadding() + 32.dp + miniPlayerRoom(),
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            item(key = SettingsGroupKey.LOOK) {
+            item(key = "look") {
                 SettingsBlock("Aspetto") {
                     ThemePicker(theme) { option ->
                         if (theme != option) haptic(Haptic.TICK)
@@ -185,150 +243,293 @@ fun SettingsScreen(
                     }
                 }
             }
-
-            item(key = SettingsGroupKey.ALERTS) {
-                SettingsBlock("Cosa ti avvisa") {
-                    MorningSettings()
+            item(key = "sections") {
+                SettingsBlock("Le sezioni") {
+                    MenuRow(Icons.Outlined.Dashboard, TileAccent.BLUE, "Home",
+                        SettingsSummary.home(layout.visible.size, HomeCard.entries.size, place?.name)) { onOpenPage(SettingsPage.HOME) }
                     RowDivider()
-                    RainAlertSetting()
+                    MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Note",
+                        if (autoFillOn) "Pacchi, spese e scadenze si compilano da soli" else "Compilazione automatica spenta",
+                        onClick = onOpenAutoFill)
                     RowDivider()
-                    UpdateNotifySetting()
-                }
-            }
-
-            item(key = SettingsGroupKey.HOME) {
-                SettingsBlock("Home") {
-                    SettingsItem(
-                        icon = Icons.Outlined.Dashboard,
-                        accent = TileAccent.BLUE,
-                        title = "Card della Home",
-                        subtitle = "Quali mostrare e in che ordine",
-                        value = "${layout.visible.size} su ${HomeCard.entries.size}",
-                        showChevron = true,
-                        onClick = onCustomize,
-                    )
+                    MenuRow(Icons.Outlined.RecordVoiceOver, TileAccent.PURPLE, "News", "Voce di lettura: ${voice.label}") {
+                        onOpenPage(SettingsPage.NEWS)
+                    }
                     RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.LocationOn,
-                        accent = TileAccent.GREEN,
-                        title = "Località del meteo",
-                        subtitle = if (place != null) "Scelta a mano" else "Dalla posizione del telefono",
-                        value = place?.name ?: "Automatica",
-                        showChevron = true,
-                        onClick = onPickPlace,
-                    )
-                }
-            }
-
-            item(key = SettingsGroupKey.VOICE) {
-                SettingsBlock("Voce di lettura") { VoicePicker() }
-            }
-
-            item(key = SettingsGroupKey.AUTO) {
-                SettingsBlock("Fa da solo") {
-                    SettingsItem(
-                        icon = Icons.Outlined.AutoAwesome,
-                        accent = TileAccent.BLUE,
-                        title = "Compila le note",
-                        subtitle = "Pacchi, spese e scadenze presi da notifiche, mail e SMS",
-                        value = if (autoFillOn) "Acceso" else "Spento",
-                        showChevron = true,
-                        onClick = onOpenAutoFill,
-                    )
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.MusicNote,
-                        accent = TileAccent.ORANGE,
-                        title = "Riconosci canzoni",
-                        subtitle = if (songToken.isBlank()) "Serve il token di AudD: tocca per incollarlo"
-                        else "Tieni premuto + vicino alla musica: finisce in «${SongId.PLAYLIST_NAME}»",
-                        value = if (songToken.isBlank()) "Da attivare" else "Attivo",
-                        showChevron = true,
-                        onClick = { editSongToken = true },
-                    )
-                    RowDivider()
-                    AdBlockSettings()
-                }
-            }
-
-            item(key = SettingsGroupKey.ACCOUNTS) {
-                SettingsBlock("Account") {
-                    // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
-                    MediaService.entries.forEachIndexed { index, service ->
-                        val connected = service in loggedIn
-                        if (index > 0) RowDivider()
-                        SettingsItem(
-                            icon = when (service) {
-                                MediaService.YOUTUBE -> Icons.Outlined.OndemandVideo
-                                MediaService.SPOTIFY -> Icons.Outlined.GraphicEq
-                            },
-                            accent = when (service) {
-                                MediaService.YOUTUBE -> TileAccent.ORANGE
-                                MediaService.SPOTIFY -> TileAccent.GREEN
-                            },
-                            title = service.label,
-                            subtitle = if (connected) "Collegato · feed e player in Media" else "Non collegato",
-                            trailing = {
-                                if (connected) {
-                                    TextButton(onClick = {
-                                        haptic(Haptic.TICK)
-                                        Accounts.logout(service)
-                                        when (service) {
-                                            MediaService.YOUTUBE -> YouTubeStore.clear()
-                                            MediaService.SPOTIFY -> {
-                                                SpotifyWebSession.clear()
-                                                SpotifyStore.clear()
-                                            }
-                                        }
-                                    }) { Text("Esci") }
-                                } else {
-                                    OutlinedButton(onClick = { onLogin(service) }, border = cardBorder()) { Text("Accedi") }
-                                }
-                            },
-                        )
+                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video, SponsorBlock e pubblicità") {
+                        onOpenPage(SettingsPage.MEDIA)
                     }
                 }
             }
-
-            item(key = SettingsGroupKey.DATA) {
-                SettingsBlock("I tuoi dati") {
-                    WifiOnlySetting()
+            item(key = "app") {
+                SettingsBlock("L'app") {
+                    MenuRow(Icons.Outlined.NotificationsActive, TileAccent.ORANGE, "Notifiche",
+                        SettingsSummary.alerts(
+                            morning = morning.timeLabel.takeIf { morning.enabled },
+                            rain = rain && canNotify,
+                            radio = alarm.timeLabel.takeIf { alarm.enabled },
+                            updates = updates && canNotify,
+                        )) { onOpenPage(SettingsPage.ALERTS) }
                     RowDivider()
-                    BackupSettings()
+                    MenuRow(Icons.Outlined.AccountCircle, TileAccent.GREEN, "Account",
+                        SettingsSummary.accounts(MediaService.entries.filter { service ->
+                            service in loggedIn || when (service) {
+                                MediaService.YOUTUBE -> youTubeOfficial
+                                MediaService.SPOTIFY -> spotifyOfficial
+                            }
+                        }.map { it.label })) { onOpenPage(SettingsPage.ACCOUNTS) }
+                    RowDivider()
+                    MenuRow(Icons.Outlined.Storage, TileAccent.BLUE, "Dati",
+                        if (wifiOnly) "Backup · download solo col Wi-Fi" else "Backup e download") { onOpenPage(SettingsPage.DATA) }
+                    RowDivider()
+                    MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni",
+                        "Versione ${BuildConfig.VERSION_NAME} · novità e licenze") { onOpenPage(SettingsPage.INFO) }
                 }
             }
-
-            item(key = SettingsGroupKey.INFO) {
-                SettingsBlock("Informazioni") {
-                    SettingsItem(
-                        icon = Icons.Outlined.Code,
-                        accent = TileAccent.NEUTRAL,
-                        title = "Codice sorgente",
-                        subtitle = BuildConfig.GITHUB_REPO,
-                        showChevron = true,
-                        onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
-                    )
-                    RowDivider()
-                    SettingsItem(
-                        icon = Icons.Outlined.Info,
-                        accent = TileAccent.NEUTRAL,
-                        title = "Licenze",
-                        subtitle = "Carattere Inter, liste del blocco pubblicità, Open-Meteo",
-                        showChevron = true,
-                        onClick = { showLicenses = true },
-                    )
-                }
-            }
-
-            // In fondo l'app stessa: la versione e, toccando, le novità e gli aggiornamenti.
-            item(key = SettingsGroupKey.ABOUT) { AppHero(onClick = onOpenUpdates) }
         }
     }
+}
 
-    if (editSongToken) {
+@Composable
+private fun MenuRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
+    SettingsItem(icon = icon, accent = accent, title = title, subtitle = subtitle, showChevron = true, onClick = onClick)
+}
+
+/** Una sottopagina delle Impostazioni: stesso titolo grande con indietro, gruppi in card. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsPageScreen(
+    page: SettingsPage,
+    onBack: () -> Unit,
+    onOpenUpdates: () -> Unit,
+    onCustomize: () -> Unit,
+    onLogin: (MediaService) -> Unit,
+    onPickPlace: () -> Unit,
+    onOpenPage: (SettingsPage) -> Unit = {},
+) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = { TopLevelBar(title = page.title, subtitle = "Impostazioni", scrollBehavior = scrollBehavior, onBack = onBack) },
+    ) { inner ->
+        LazyColumn(
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = inner.calculateTopPadding(),
+                bottom = inner.calculateBottomPadding() + 32.dp + miniPlayerRoom(),
+            ),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            when (page) {
+                SettingsPage.HOME -> item { HomePage(onCustomize, onPickPlace) }
+                SettingsPage.NEWS -> item { SettingsBlock("Voce di lettura") { VoicePicker() } }
+                SettingsPage.MEDIA -> {
+                    item {
+                        SettingsBlock("Riproduzione") {
+                            QueueFillSetting()
+                            RowDivider()
+                            AutoplaySetting()
+                        }
+                    }
+                    item {
+                        SettingsBlock("Video") {
+                            VideoFilterSettings()
+                            RowDivider()
+                            DislikeSettings()
+                            RowDivider()
+                            SponsorBlockRow { onOpenPage(SettingsPage.SPONSORBLOCK) }
+                        }
+                    }
+                    item { SettingsBlock("Altro") { SongIdSetting(); RowDivider(); AdBlockSettings() } }
+                }
+                SettingsPage.ALERTS -> item {
+                    SettingsBlock("Cosa ti avvisa") {
+                        MorningSettings()
+                        RowDivider()
+                        RainAlertSetting()
+                        RowDivider()
+                        RadioAlarmSetting()
+                        RowDivider()
+                        UpdateNotifySetting()
+                    }
+                }
+                SettingsPage.ACCOUNTS -> item { AccountsPage(onLogin) }
+                SettingsPage.DATA -> item {
+                    SettingsBlock("I tuoi dati") {
+                        WifiOnlySetting()
+                        RowDivider()
+                        BackupSettings()
+                    }
+                }
+                SettingsPage.SPONSORBLOCK -> item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
+                SettingsPage.INFO -> {
+                    item { AppHero(onClick = onOpenUpdates) }
+                    item { InfoBlock() }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomePage(onCustomize: () -> Unit, onPickPlace: () -> Unit) {
+    val context = LocalContext.current
+    val layout by AppSettings.homeLayout.collectAsState()
+    var place by remember { mutableStateOf(WeatherStore.manualPlace(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { place = WeatherStore.manualPlace(context) }
+    SettingsBlock("La pagina Home") {
+        SettingsItem(
+            icon = Icons.Outlined.Dashboard,
+            accent = TileAccent.BLUE,
+            title = "Card della Home",
+            subtitle = "Quali mostrare e in che ordine",
+            value = "${layout.visible.size} su ${HomeCard.entries.size}",
+            showChevron = true,
+            onClick = onCustomize,
+        )
+        RowDivider()
+        SettingsItem(
+            icon = Icons.Outlined.LocationOn,
+            accent = TileAccent.GREEN,
+            title = "Località del meteo",
+            subtitle = if (place != null) "Scelta a mano" else "Dalla posizione del telefono",
+            value = place?.name ?: "Automatica",
+            showChevron = true,
+            onClick = onPickPlace,
+        )
+    }
+}
+
+@Composable
+private fun AccountsPage(onLogin: (MediaService) -> Unit) {
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    val scope = rememberCoroutineScope()
+    val loggedIn by Accounts.loggedIn.collectAsState()
+    remember { YouTubeAuth.init(context); SpotifyAuth.init(context) }
+    val youTubeOfficial by YouTubeAuth.connected.collectAsState()
+    val spotifyOfficial by SpotifyAuth.connected.collectAsState()
+    val spotifyClientId by SpotifyAuth.clientId.collectAsState()
+    var editSpotifyKey by remember { mutableStateOf(false) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
+    SettingsBlock("Musica e video") {
+        // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
+        MediaService.entries.forEachIndexed { index, service ->
+            val official = when (service) {
+                MediaService.YOUTUBE -> youTubeOfficial
+                MediaService.SPOTIFY -> spotifyOfficial
+            }
+            val connected = service in loggedIn || official
+            val connectOfficial = rememberOfficialConnect(service)
+            if (index > 0) RowDivider()
+            SettingsItem(
+                icon = when (service) {
+                    MediaService.YOUTUBE -> Icons.Outlined.OndemandVideo
+                    MediaService.SPOTIFY -> Icons.Outlined.GraphicEq
+                },
+                accent = when (service) {
+                    MediaService.YOUTUBE -> TileAccent.ORANGE
+                    MediaService.SPOTIFY -> TileAccent.GREEN
+                },
+                title = service.label,
+                subtitle = if (official) "Collegamento ufficiale · feed e player" else "Tocca per il collegamento ufficiale",
+                // Il collegamento ufficiale si rifà sempre da qui, anche dopo «Esci».
+                onClick = if (!official) connectOfficial else null,
+                trailing = {
+                    if (connected) {
+                        TextButton(onClick = {
+                            haptic(Haptic.TICK)
+                            Accounts.logout(service)
+                            when (service) {
+                                MediaService.YOUTUBE -> {
+                                    scope.launch { YouTubeAuth.disconnect(context) }
+                                    YouTubeStore.clear()
+                                }
+                                MediaService.SPOTIFY -> {
+                                    SpotifyAuth.disconnect()
+                                    SpotifyWebSession.clear()
+                                    SpotifyStore.clear()
+                                }
+                            }
+                        }) { Text("Esci") }
+                    } else {
+                        FilledTonalButton(onClick = { onLogin(service) }) { Text("Accedi") }
+                    }
+                },
+            )
+        }
+        RowDivider()
+        SettingsItem(
+            icon = Icons.Outlined.Key,
+            accent = TileAccent.GREEN,
+            title = "Chiave di Spotify",
+            subtitle = "Client ID dell'app su developer.spotify.com",
+            value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
+            showChevron = true,
+            onClick = { editSpotifyKey = true },
+        )
+    }
+
+    if (editSpotifyKey) {
+        var value by remember { mutableStateOf(spotifyClientId) }
+        val valid = SpotifyAuth.normalizeClientId(value)
+        CanvasDialog(
+            onDismissRequest = { editSpotifyKey = false },
+            title = { Text("Chiave di Spotify") },
+            text = {
+                Column {
+                    Text(
+                        "Il Client ID dell'app creata su developer.spotify.com. Vuoto = quella predefinita di Canvas. " +
+                            "Se la cambi, ricollega Spotify dalla riga sopra.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        singleLine = true,
+                        isError = valid == null,
+                        label = { Text("Client ID") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = valid != null,
+                    onClick = { valid?.let(SpotifyAuth::setClientId); editSpotifyKey = false },
+                ) { Text("Salva") }
+            },
+            dismissButton = {
+                TextButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
+                    Text("Ripristina")
+                }
+            },
+        )
+    }
+}
+
+/** Riconoscimento delle canzoni: il token di AudD si incolla qui e resta sul telefono. */
+@Composable
+private fun SongIdSetting() {
+    val context = LocalContext.current
+    SongId.init(context)
+    val songToken by SongId.token.collectAsState()
+    var editing by remember { mutableStateOf(false) }
+    SettingsItem(
+        icon = Icons.Outlined.MusicNote,
+        accent = TileAccent.ORANGE,
+        title = "Riconosci canzoni",
+        subtitle = if (songToken.isBlank()) SettingsLines.SONG_ID_OFF else SettingsLines.SONG_ID_ON,
+        value = if (songToken.isBlank()) "Da attivare" else "Attivo",
+        showChevron = true,
+        onClick = { editing = true },
+    )
+    if (editing) {
         var value by remember { mutableStateOf(songToken) }
         CanvasDialog(
-            onDismissRequest = { editSongToken = false },
+            onDismissRequest = { editing = false },
             title = { Text("Riconosci canzoni") },
             text = {
                 Column {
@@ -348,12 +549,72 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { SongId.setToken(value); editSongToken = false }) { Text("Salva") }
+                TextButton(onClick = { SongId.setToken(value); editing = false }) { Text("Salva") }
             },
-            dismissButton = { TextButton(onClick = { editSongToken = false }) { Text("Annulla") } },
+            dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
+}
 
+/** La riga di Media che apre la pagina di SponsorBlock: dice se è acceso e quanto ha fatto risparmiare. */
+@Composable
+private fun SponsorBlockRow(onClick: () -> Unit) {
+    val context = LocalContext.current
+    val enabled by AppSettings.sponsorBlock.collectAsState()
+    SponsorBlock.init(context)
+    val stats by SponsorBlock.stats.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.FastForward,
+        accent = TileAccent.GREEN,
+        title = "SponsorBlock",
+        subtitle = when {
+            !enabled -> "Salta sponsor e intermezzi nei video"
+            stats.skips == 0 -> "Cosa saltare, tipo per tipo"
+            else -> "${stats.skips} salti · ${savedLabel(stats.savedMs)} risparmiati"
+        },
+        value = if (enabled) "Acceso" else "Spento",
+        showChevron = true,
+        onClick = onClick,
+    )
+}
+
+/** Riempi la coda: stava in fondo alla coda, ora sta con le altre impostazioni del player. */
+@Composable
+private fun QueueFillSetting() {
+    val on by CanvasPlayer.autoFill.collectAsState()
+    SettingsItem(
+        icon = Icons.AutoMirrored.Outlined.QueueMusic,
+        accent = TileAccent.GREEN,
+        title = "Riempi la coda in automatico",
+        subtitle = "Altri tuoi brani di Spotify a fine coda",
+        onClick = { CanvasPlayer.setAutoFill(!on) },
+        trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> CanvasPlayer.setAutoFill(v) }) },
+    )
+}
+
+@Composable
+private fun InfoBlock() {
+    val inApp = LocalInAppNav.current
+    var showLicenses by remember { mutableStateOf(false) }
+    SettingsBlock("Informazioni") {
+        SettingsItem(
+            icon = Icons.Outlined.Code,
+            accent = TileAccent.NEUTRAL,
+            title = "Codice sorgente",
+            subtitle = BuildConfig.GITHUB_REPO,
+            showChevron = true,
+            onClick = { inApp?.openWeb("https://github.com/${BuildConfig.GITHUB_REPO}", "Codice sorgente") },
+        )
+        RowDivider()
+        SettingsItem(
+            icon = Icons.Outlined.Info,
+            accent = TileAccent.NEUTRAL,
+            title = "Licenze",
+            subtitle = "Inter, liste del blocco pubblicità, Open-Meteo, Piper",
+            showChevron = true,
+            onClick = { showLicenses = true },
+        )
+    }
     if (showLicenses) {
         CanvasDialog(
             onDismissRequest = { showLicenses = false },
@@ -371,31 +632,6 @@ fun SettingsScreen(
             confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("OK") } },
         )
     }
-}
-
-/** I gruppi della pagina, nell'ordine in cui compaiono (sono anche le chiavi della lista). */
-internal object SettingsGroupKey {
-    const val ABOUT = "about"
-    const val LOOK = "look"
-    const val ALERTS = "alerts"
-    const val HOME = "home"
-    const val VOICE = "voice"
-    const val AUTO = "auto"
-    const val ACCOUNTS = "accounts"
-    const val DATA = "data"
-    const val INFO = "info"
-    val order = listOf(LOOK, ALERTS, HOME, VOICE, AUTO, ACCOUNTS, DATA, INFO, ABOUT)
-
-    /** Da quale gruppo partire arrivando da una sezione: Home e meteo, quello che fa da solo, gli account. */
-    fun forSection(section: String?): Int = order.indexOf(
-        when (section) {
-            "home" -> HOME
-            "notes" -> AUTO
-            "news" -> VOICE
-            "media" -> ACCOUNTS
-            else -> LOOK
-        }
-    )
 }
 
 /** Titolo del gruppo fuori, righe dentro una card. */
@@ -607,7 +843,7 @@ internal fun SettingsItem(
                     subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -910,7 +1146,7 @@ private fun RainAlertSetting() {
     )
 }
 
-/** Avviso delle nuove versioni: prima stava solo dentro Aggiornamenti. */
+/** Aggiornamenti automatici: si installano da soli, o arriva l'avviso dove Android non lo permette. */
 @Composable
 private fun UpdateNotifySetting() {
     val context = LocalContext.current
@@ -924,9 +1160,11 @@ private fun UpdateNotifySetting() {
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) set(true)
     }
-    val blocked = enabled && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
+    // Quando si installano da soli le notifiche non servono.
+    val silent = ApkInstaller.canInstallSilently(context)
+    val blocked = enabled && !silent && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
     val toggle = {
-        if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
+        if (!silent && !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
             permission.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             set(!enabled)
@@ -935,10 +1173,178 @@ private fun UpdateNotifySetting() {
     SettingsItem(
         icon = Icons.Outlined.SystemUpdate,
         accent = TileAccent.NEUTRAL,
-        title = "Avviso nuove versioni",
-        subtitle = if (blocked) "Notifiche bloccate: tocca per consentirle" else "Una notifica quando esce un aggiornamento",
+        title = "Aggiornamenti automatici",
+        subtitle = when {
+            silent -> "Si installano da soli quando non usi l'app"
+            blocked -> "Notifiche bloccate: tocca per consentirle"
+            else -> "Una notifica quando esce un aggiornamento"
+        },
         onClick = toggle,
         trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
+    )
+}
+
+/** I filtri di Video (prima chip nella pagina): si scelgono una volta e restano. */
+@Composable
+private fun VideoFilterSettings() {
+    val shorts by AppSettings.hideShorts.collectAsState()
+    val live by AppSettings.hideLive.collectAsState()
+    val members by AppSettings.hideMembers.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.OndemandVideo,
+        accent = TileAccent.ORANGE,
+        title = "Escludi Shorts",
+        subtitle = "Niente Shorts in Video",
+        onClick = { AppSettings.setHideShorts(!shorts) },
+        trailing = { Switch(checked = shorts, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideShorts(on) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.LiveTv,
+        accent = TileAccent.ORANGE,
+        title = "Escludi live",
+        subtitle = "Niente live in corso o in arrivo in Video",
+        onClick = { AppSettings.setHideLive(!live) },
+        trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.Lock,
+        accent = TileAccent.ORANGE,
+        title = "Escludi video per membri",
+        subtitle = SettingsLines.HIDE_MEMBERS,
+        onClick = { AppSettings.setHideMembers(!members) },
+        trailing = { Switch(checked = members, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideMembers(on) }) },
+    )
+}
+
+/** Finita la coda parte un video proposto: vale per tutto il player, sta in Riproduzione. */
+@Composable
+private fun AutoplaySetting() {
+    val autoplay by AppSettings.autoplayNext.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.SkipNext,
+        accent = TileAccent.ORANGE,
+        title = "Riproduci il video successivo",
+        subtitle = "Finito un video, ne parte uno proposto",
+        onClick = { AppSettings.setAutoplayNext(!autoplay) },
+        trailing = { Switch(checked = autoplay, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setAutoplayNext(on) }) },
+    )
+}
+
+/**
+ * SponsorBlock: acceso o spento e, sotto, ogni tipo di segmento con le quattro scelte
+ * dell'estensione ufficiale (salta da solo, tasto, solo nella barra, ignora).
+ */
+@Composable
+private fun SponsorBlockSettings() {
+    val context = LocalContext.current
+    val enabled by AppSettings.sponsorBlock.collectAsState()
+    val actions by AppSettings.sponsorActions.collectAsState()
+    SponsorBlock.init(context)
+    val stats by SponsorBlock.stats.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.FastForward,
+        accent = TileAccent.GREEN,
+        title = "SponsorBlock",
+        subtitle = when {
+            !enabled -> "Spento"
+            stats.skips == 0 -> "Salta sponsor e intermezzi nei video"
+            else -> "${stats.skips} salti · ${savedLabel(stats.savedMs)} risparmiati"
+        },
+        onClick = { AppSettings.setSponsorBlock(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setSponsorBlock(on) }) },
+    )
+    AnimatedVisibility(
+        visible = enabled,
+        enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
+        exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
+    ) { Column {
+        SbCategory.entries.forEach { category ->
+            RowDivider()
+            SponsorCategoryRow(category, actions[category] ?: category.default)
+        }
+    } }
+}
+
+/** Una riga per tipo di segmento: il colore della barra, cosa contiene e la scelta di adesso. */
+@Composable
+private fun SponsorCategoryRow(category: SbCategory, action: SbAction) {
+    val color = Color(category.color)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable {
+                ActionBubble.show(*category.actions.map { choice ->
+                    BubbleAction(
+                        icon = if (choice == action) Icons.Outlined.Check else sponsorIcon(choice),
+                        title = category.actionLabel(choice),
+                        detail = category.actionDetail(choice),
+                    ) { AppSettings.setSponsorAction(category, choice) }
+                }.toTypedArray())
+            }
+            .heightIn(min = 56.dp)
+            .padding(start = 14.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(34.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(Modifier.size(12.dp).clip(CircleShape).background(color))
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(category.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                category.detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(8.dp))
+        Text(
+            category.shortLabel(action),
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (action == SbAction.OFF) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+    }
+}
+
+private fun sponsorIcon(action: SbAction): ImageVector = when (action) {
+    SbAction.AUTO -> Icons.Outlined.FastForward
+    SbAction.MANUAL -> Icons.Outlined.TouchApp
+    SbAction.SHOW -> Icons.Outlined.LinearScale
+    SbAction.OFF -> Icons.Outlined.Block
+}
+
+/** Tempo risparmiato: "40 s", "12 min", "3 h 5 min". */
+internal fun savedLabel(ms: Long): String {
+    val minutes = ms / 60_000
+    return when {
+        ms < 60_000 -> "${ms / 1000} s"
+        minutes < 60 -> "$minutes min"
+        minutes % 60 == 0L -> "${minutes / 60} h"
+        else -> "${minutes / 60} h ${minutes % 60} min"
+    }
+}
+
+/** Return YouTube Dislike: i Non mi piace stimati accanto ai Mi piace nella pagina del video. */
+@Composable
+private fun DislikeSettings() {
+    val enabled by AppSettings.dislikes.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.ThumbDown,
+        accent = TileAccent.ORANGE,
+        title = "Mostra i Non mi piace",
+        subtitle = "Stima di Return YouTube Dislike",
+        onClick = { AppSettings.setDislikes(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setDislikes(on) }) },
     )
 }
 
@@ -987,5 +1393,5 @@ private fun adBlockStatusText(status: AdBlocker.Status): String {
         "aggiornate il " + SimpleDateFormat("d MMM", Locale.ITALIAN).format(Date(it))
     } ?: "liste incluse nell'app"
     status.lastError?.let { parts += it }
-    return "EasyList, EasyPrivacy e uBlock Origin · " + parts.joinToString(" · ")
+    return parts.joinToString(" · ").replaceFirstChar { it.uppercase() }
 }

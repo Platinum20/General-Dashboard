@@ -66,7 +66,6 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -230,7 +229,6 @@ private fun ArticleContent(
 ) {
     val linkColor = MaterialTheme.colorScheme.primary
     val bodyStyle = MaterialTheme.typography.bodyLarge.copy(
-        fontFamily = FontFamily.Serif,
         fontSize = (18 * scale).sp,
         lineHeight = 1.6.em,
     )

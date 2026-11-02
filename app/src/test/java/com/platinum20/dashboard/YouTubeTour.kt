@@ -3,6 +3,9 @@ package com.platinum20.dashboard
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.view.TextureView
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
@@ -122,7 +125,20 @@ class YouTubeTour {
     private fun shot(name: String) {
         val view = compose.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        view.draw(Canvas(bitmap))
+        // Dalla 1.268 il video è una TextureView: Robolectric non ha il renderer per disegnarla, si nasconde per la foto.
+        val textures = textureViews(view).filter { it.visibility == View.VISIBLE }
+        textures.forEach { it.visibility = View.INVISIBLE }
+        try {
+            view.draw(Canvas(bitmap))
+        } finally {
+            textures.forEach { it.visibility = View.VISIBLE }
+        }
         File(outDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    private fun textureViews(view: View): List<TextureView> = when (view) {
+        is TextureView -> listOf(view)
+        is ViewGroup -> (0 until view.childCount).flatMap { textureViews(view.getChildAt(it)) }
+        else -> emptyList()
     }
 }

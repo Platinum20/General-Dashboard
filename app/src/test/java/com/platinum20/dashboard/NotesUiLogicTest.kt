@@ -24,10 +24,12 @@ import com.platinum20.dashboard.ui.screens.expenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
+import com.platinum20.dashboard.ui.screens.nowRoom
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Titolo dell'editor (V16) e i tre tipi della pagina Note: con scadenza, senza scadenza, spese. */
@@ -224,10 +226,31 @@ class NotesUiLogicTest {
             today = today,
             zone = zone,
         ).map { it.first }
-        assertEquals(listOf("Password wifi", "Idee regalo", "Chiamare Luca", "Comprare lampadine"), entries.map { it.text })
-        assertEquals(listOf("Fissate", "Oggi", null, "Mer 21"), entries.map { it.dayLabel })
-        // Fra oggi e mercoledì scorso quattro giorni vuoti.
-        assertEquals(16f, entries[3].gapDp, 0.01f)
+        // Il passato sopra, le più nuove in fondo, poi le fissate (Antonio: stesso verso di Prossimi giorni).
+        assertEquals(listOf("Comprare lampadine", "Chiamare Luca", "Idee regalo", "Password wifi"), entries.map { it.text })
+        assertEquals(listOf("Mer 21", "Oggi", null, "Fissate"), entries.map { it.dayLabel })
+        // Fra mercoledì scorso e oggi quattro giorni vuoti.
+        assertEquals(16f, entries[1].gapDp, 0.01f)
+        // "OGGI" prima delle righe di oggi.
+        assertEquals(1, com.platinum20.dashboard.ui.screens.nowIndex(entries))
+        // Niente di oggi: "OGGI" in fondo.
+        assertEquals(1, com.platinum20.dashboard.ui.screens.nowIndex(entries.take(1)))
+    }
+
+    @Test fun fattiSullaLineaDelleNote() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 10, 26)
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val entries = undatedEntries(
+            tasks = listOf(TaskItem(1, "Prova", createdAt = at(today, 9))),
+            notes = emptyList(),
+            today = today,
+            zone = zone,
+            // Scritto tre giorni fa, spuntato oggi alle 10: sta a oggi, in fondo.
+            done = listOf(TaskItem(2, "Sessi", done = true, createdAt = at(today.minusDays(3), 9), doneAt = at(today, 10))),
+        ).map { it.first }
+        assertEquals(listOf("Prova", "Sessi"), entries.map { it.text })
+        assertEquals(listOf(false, true), entries.map { it.done })
     }
 
     @Test fun meseTrascinando() {
@@ -237,6 +260,16 @@ class NotesUiLogicTest {
         assertEquals(null, swipe.target(now, -60f, 56f, now))
         assertEquals(now, swipe.target(java.time.YearMonth.of(2026, 9), -60f, 56f, now))
         assertEquals(null, swipe.target(now, 20f, 56f, now))
+    }
+
+    @Test fun meseSegueIlDito() {
+        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
+        // Segue il dito quasi 1:1 all'inizio, poi l'elastico frena.
+        assertEquals(10f, swipe.follow(10f, 56f), 0.5f)
+        assertTrue(swipe.follow(400f, 56f) < 56f * 2.2f)
+        assertEquals(-swipe.follow(80f, 56f), swipe.follow(-80f, 56f), 0.001f)
+        // Verso un mese che non c'è ancora resiste di più.
+        assertTrue(kotlin.math.abs(swipe.follow(-80f, 56f, blocked = true)) < kotlin.math.abs(swipe.follow(-80f, 56f)))
     }
 
     @Test fun speseSullaLineaDelTempo() {
@@ -249,14 +282,21 @@ class NotesUiLogicTest {
             ),
             today,
         ).map { it.first }
-        assertEquals(listOf("Oggi", null, "Ven 23"), entries.map { it.dayLabel })
+        // Le più recenti in fondo.
+        assertEquals(listOf("Ven 23", "Oggi", null), entries.map { it.dayLabel })
         // L'importo per primo, il nome dopo.
-        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[0].text)
+        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[1].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
-        assertEquals(10f, entries[2].gapDp, 0.01f)
+        assertEquals(10f, entries[1].gapDp, 0.01f)
+        // Nella card in Oggi solo le ultime, sempre in fondo la più recente.
+        assertEquals(listOf("Benzina", "Caffè"), expenseEntries(listOf(
+            com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),
+            com.platinum20.dashboard.notes.Expense(2, 4000, "Benzina", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+            com.platinum20.dashboard.notes.Expense(3, 300, "Caffè", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
+        ), today, limit = 2).map { it.second.text })
         // Icona e colore della categoria.
         assertEquals(com.platinum20.dashboard.notes.ExpenseCategory.values().first().color(), entries[0].color)
     }
@@ -279,5 +319,14 @@ class NotesUiLogicTest {
         val marks = noteMarks(notes, today, first = 1, zone = zone)
         assertEquals(listOf(2, 4), marks.map { it.index })
         assertEquals(listOf("Oggi", "12 set"), marks.map { it.tick })
+    }
+
+    /** Spese si chiudeva all'apertura: prima della misura il conto andava in overflow (1.231). */
+    @Test fun spazioSottoOggiSenzaOverflow() {
+        assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = null))
+        assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = null))
+        assertEquals(1200, nowRoom(viewport = 2000, bottomPadding = 300, below = 500))
+        assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = 5000))
+        assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = 100))
     }
 }

@@ -25,6 +25,13 @@ if (!sherpaOnnxAar.exists()) {
     partial.renameTo(sherpaOnnxAar)
 }
 
+// Le novità di questa versione (la sua sezione di CHANGELOG.md), per il fumetto che compare
+// una volta sola al primo avvio dopo l'aggiornamento.
+val whatsNew: String = rootProject.file("CHANGELOG.md").readLines().let { lines ->
+    val start = lines.indexOfFirst { it.trim() == "## " + versionProps.getProperty("VERSION_NAME") }
+    if (start < 0) "" else lines.drop(start + 1).takeWhile { !it.startsWith("## ") }.joinToString("\n").trim()
+}
+
 val keystorePath: String? = System.getenv("KEYSTORE_FILE")
 val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 
@@ -41,6 +48,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GITHUB_REPO", "\"Platinum20/General-Dashboard\"")
+        val escaped = whatsNew.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+        buildConfigField("String", "WHATS_NEW", "\"$escaped\"")
     }
 
     if (project.hasProperty("releaseCheck")) testBuildType = "release"
@@ -153,8 +162,9 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.media3:media3-session:1.5.1")
     implementation("io.coil-kt.coil3:coil-video:3.0.4")
-    // Player nativo di YouTube: ricava i flussi dei video senza pagina web (lo stesso motore di NewPipe)
-    implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
+    // Player nativo di YouTube: ricava i flussi dei video senza pagina web (lo stesso motore di NewPipe).
+    // Commit fissato come nell'app NewPipe: chiede i flussi al client visionOS, che regge il controllo anti-bot.
+    implementation("com.github.TeamNewPipe:NewPipeExtractor:e8f89145a830b4d6cae32412007f24ea8b36c73a")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.4")
     // Accesso Google per le API di YouTube (solo lettura)
     implementation("com.google.android.gms:play-services-auth:21.3.0")

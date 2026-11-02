@@ -68,14 +68,15 @@ class NeuralVoiceTest {
     }
 
     @Test
-    fun `tre voci Piper con Leonardo per prima e di serie, le voci tolte tornano a Leonardo`() {
-        assertEquals(listOf(ReadingVoice.LEONARDO, ReadingVoice.PAOLA, ReadingVoice.RICCARDO), ReadingVoice.entries)
-        assertEquals(ReadingVoice.LEONARDO, ReadingVoice.of(null))
-        assertEquals(ReadingVoice.LEONARDO, ReadingVoice.of("SYSTEM"))
-        assertEquals(ReadingVoice.LEONARDO, ReadingVoice.of("MIRO"))
+    fun `tre voci Piper con Giorgio per prima e di serie, le voci tolte tornano a Giorgio`() {
+        assertEquals(listOf(ReadingVoice.GIORGIO, ReadingVoice.PAOLA, ReadingVoice.RICCARDO), ReadingVoice.entries)
+        assertEquals(ReadingVoice.GIORGIO, ReadingVoice.of(null))
+        assertEquals(ReadingVoice.GIORGIO, ReadingVoice.of("SYSTEM"))
+        assertEquals(ReadingVoice.GIORGIO, ReadingVoice.of("MIRO"))
+        assertEquals(ReadingVoice.GIORGIO, ReadingVoice.of("LEONARDO"))
         assertEquals(
-            "https://github.com/Platinum20/General-Dashboard/releases/download/voci/vits-piper-it_IT-leonardo-kirys.tar.bz2",
-            ReadingVoice.LEONARDO.url,
+            "https://github.com/Platinum20/General-Dashboard/releases/download/voci/vits-piper-it_IT-giorgio-kirys.tar.bz2",
+            ReadingVoice.GIORGIO.url,
         )
         assert(ReadingVoice.RICCARDO.url.endsWith("vits-piper-it_IT-riccardo-x_low.tar.bz2"))
     }

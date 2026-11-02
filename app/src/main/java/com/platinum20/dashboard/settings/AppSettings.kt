@@ -2,6 +2,8 @@ package com.platinum20.dashboard.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.platinum20.dashboard.media.youtube.SbAction
+import com.platinum20.dashboard.media.youtube.SbCategory
 import com.platinum20.dashboard.news.voice.ReadingVoice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +26,8 @@ enum class HomeCard(val label: String, val description: String) {
     RESUME("Media", "Quello che suona o da riprendere"),
     // Il nome resta DAY per le preferenze salvate: dalla 1.186 è "Prossimi giorni" (oggi sta in Adesso).
     DAY("Prossimi giorni", "I prossimi 7 giorni, tutto insieme"),
-    MONEY("Spese", "Il mese, il budget e gli addebiti"),
+    MONEY("Spese", "Le ultime cinque spese"),
+    NOTES("Note", "Le ultime note e cose da fare"),
     SIM("SIM", "Giga, minuti e credito WindTre"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),
@@ -91,6 +94,13 @@ object AppSettings {
     private const val KEY_RAIN_ALERT = "rain_alert"
     private const val KEY_READING_VOICE = "reading_voice"
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
+    private const val KEY_HIDE_SHORTS = "video_hide_shorts"
+    private const val KEY_HIDE_LIVE = "video_hide_live"
+    private const val KEY_HIDE_MEMBERS = "video_hide_members"
+    private const val KEY_AUTOPLAY_NEXT = "video_autoplay_next"
+    private const val KEY_SPONSORBLOCK = "video_sponsorblock"
+    private const val KEY_SPONSOR_ACTION = "video_sponsorblock_"
+    private const val KEY_DISLIKES = "video_dislikes"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -114,6 +124,27 @@ object AppSettings {
     private val _wifiOnlyDownloads = MutableStateFlow(false)
     /** Voci e aggiornamenti si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
     val wifiOnlyDownloads: StateFlow<Boolean> = _wifiOnlyDownloads.asStateFlow()
+    private val _hideShorts = MutableStateFlow(true)
+    /** In Video niente Shorts nella Home e nelle Iscrizioni (acceso di default). */
+    val hideShorts: StateFlow<Boolean> = _hideShorts.asStateFlow()
+    private val _hideLive = MutableStateFlow(false)
+    /** In Video niente live, in corso o in arrivo. */
+    val hideLive: StateFlow<Boolean> = _hideLive.asStateFlow()
+    private val _hideMembers = MutableStateFlow(true)
+    /** In Video niente video riservati ai membri dei canali (acceso di default). */
+    val hideMembers: StateFlow<Boolean> = _hideMembers.asStateFlow()
+    private val _autoplayNext = MutableStateFlow(true)
+    /** Finito un video di YouTube (e la coda), parte da solo uno di quelli proposti, come su YouTube. */
+    val autoplayNext: StateFlow<Boolean> = _autoplayNext.asStateFlow()
+    private val _sponsorBlock = MutableStateFlow(true)
+    /** SponsorBlock nei video di YouTube (acceso di default). */
+    val sponsorBlock: StateFlow<Boolean> = _sponsorBlock.asStateFlow()
+    private val _sponsorActions = MutableStateFlow(SbCategory.entries.associateWith { it.default })
+    /** Cosa fare di ogni tipo di segmento di SponsorBlock. */
+    val sponsorActions: StateFlow<Map<SbCategory, SbAction>> = _sponsorActions.asStateFlow()
+    private val _dislikes = MutableStateFlow(true)
+    /** I "Non mi piace" stimati da Return YouTube Dislike nella pagina del video. */
+    val dislikes: StateFlow<Boolean> = _dislikes.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -163,6 +194,32 @@ object AppSettings {
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
+        _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
+        _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
+        _hideMembers.value = prefs.getBoolean(KEY_HIDE_MEMBERS, true)
+        _autoplayNext.value = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
+        _sponsorBlock.value = prefs.getBoolean(KEY_SPONSORBLOCK, true)
+        _sponsorActions.value = SbCategory.entries.associateWith { category ->
+            val saved = prefs.getString(KEY_SPONSOR_ACTION + category.key, null)
+            SbAction.entries.firstOrNull { it.key == saved && it in category.actions } ?: category.default
+        }
+        _dislikes.value = prefs.getBoolean(KEY_DISLIKES, true)
+    }
+
+    fun setSponsorBlock(enabled: Boolean) {
+        _sponsorBlock.value = enabled
+        prefs.edit().putBoolean(KEY_SPONSORBLOCK, enabled).apply()
+    }
+
+    fun setSponsorAction(category: SbCategory, action: SbAction) {
+        if (action !in category.actions) return
+        _sponsorActions.value = _sponsorActions.value + (category to action)
+        prefs.edit().putString(KEY_SPONSOR_ACTION + category.key, action.key).apply()
+    }
+
+    fun setDislikes(enabled: Boolean) {
+        _dislikes.value = enabled
+        prefs.edit().putBoolean(KEY_DISLIKES, enabled).apply()
     }
 
     fun setMorning(brief: MorningBrief) {
@@ -187,6 +244,26 @@ object AppSettings {
     fun setWifiOnlyDownloads(enabled: Boolean) {
         _wifiOnlyDownloads.value = enabled
         prefs.edit().putBoolean(KEY_WIFI_ONLY, enabled).apply()
+    }
+
+    fun setHideShorts(enabled: Boolean) {
+        _hideShorts.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_SHORTS, enabled).apply()
+    }
+
+    fun setHideLive(enabled: Boolean) {
+        _hideLive.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_LIVE, enabled).apply()
+    }
+
+    fun setHideMembers(enabled: Boolean) {
+        _hideMembers.value = enabled
+        prefs.edit().putBoolean(KEY_HIDE_MEMBERS, enabled).apply()
+    }
+
+    fun setAutoplayNext(enabled: Boolean) {
+        _autoplayNext.value = enabled
+        prefs.edit().putBoolean(KEY_AUTOPLAY_NEXT, enabled).apply()
     }
 
     fun setReadingVoice(voice: ReadingVoice) {

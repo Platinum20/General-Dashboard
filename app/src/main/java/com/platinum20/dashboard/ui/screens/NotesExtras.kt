@@ -15,11 +15,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -72,6 +76,11 @@ import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Parcel
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import kotlin.math.roundToInt
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -98,132 +107,227 @@ fun ExpensesTab(
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
-    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedByDescending { it.date }
+    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
+    val listState = rememberReselectListState(Routes.NOTES)
+    // Come Prossimi giorni (Antonio): nel mese di oggi la pagina si apre su "OGGI" in cima allo schermo,
+    // le spese di prima stanno sopra, dietro una piccola resistenza.
+    var nowOffset by remember(month) { mutableStateOf<Int?>(null) }
+    var timelineHeight by remember(month) { mutableStateOf(0) }
+    var startedAtNow by remember { mutableStateOf(false) }
+    // Il riepilogo sta fuori dalla lista, fisso in cima (Antonio): la linea parte dalle fisse.
+    val timelineIndex = if (data.fixedExpenses.isNotEmpty()) 1 else 0
+    androidx.compose.runtime.LaunchedEffect(nowOffset) {
+        val offset = nowOffset
+        if (offset != null && !startedAtNow) {
+            startedAtNow = true
+            runCatching { listState.scrollToItem(timelineIndex, offset) }
+        }
+    }
+    val barrier = rememberPastBarrier(listState, timelineIndex, nowOffset)
 
-    LazyColumn(state = rememberReselectListState(Routes.NOTES), contentPadding = padding, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        // Il riepilogo del mese, compatto: così la linea del tempo sale.
-        item {
-            CanvasCard(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-                // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
-                val haptic = rememberHaptic()
-                val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
-                var drag by remember { mutableStateOf(0f) }
-                Column(
-                    Modifier
-                        .pointerInput(threshold) {
-                            detectHorizontalDragGestures(
-                                onDragStart = { drag = 0f },
-                                onDragEnd = { drag = 0f },
-                                onDragCancel = { drag = 0f },
-                            ) { change, amount ->
-                                drag += amount
-                                MonthSwipe.target(month, drag, threshold, YearMonth.now())?.let {
-                                    change.consume()
-                                    month = it
-                                    drag = 0f
-                                    haptic(Haptic.TICK)
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    Column(
+        Modifier.padding(
+            start = padding.calculateStartPadding(direction),
+            end = padding.calculateEndPadding(direction),
+            top = padding.calculateTopPadding(),
+        ),
+    ) {
+        // Il riepilogo del mese, compatto e sempre in cima (Antonio): la lista scorre sotto,
+        // e niente del passato sbuca sopra OGGI.
+        // Il riepilogo all'apertura fa un piccolo giro a sinistra e a destra (Antonio): si capisce che si trascina
+        // di lato per cambiare mese. Mentre lo trascini segue il dito con un po' di elastico; quando lasciandolo
+        // cambierebbe mese vibra, e il nuovo mese entra dal lato opposto a quello verso cui l'hai spinto.
+        val nudge = remember { androidx.compose.animation.core.Animatable(0f) }
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val nudgePx = with(density) { 14.dp.toPx() }
+        val threshold = with(density) { 56.dp.toPx() }
+        var cardWidth by remember { mutableStateOf(0f) }
+        var shownMonth by remember { mutableStateOf(month) }
+        androidx.compose.runtime.LaunchedEffect(month) {
+            if (month == shownMonth) {
+                kotlinx.coroutines.delay(Motion.ENTER_MS.toLong())
+                nudge.animateTo(-nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS / 2, easing = Motion.Standard))
+                nudge.animateTo(nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Standard))
+                nudge.animateTo(0f, Motion.settle())
+            } else {
+                val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
+                nudge.snapTo(if (month > shownMonth) width else -width)
+                shownMonth = month
+                nudge.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Decelerate))
+            }
+        }
+        val haptic = rememberHaptic()
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        var drag by remember { mutableStateOf(0f) }
+        var armed by remember { mutableStateOf(false) }
+        CanvasCard(
+            shape = MaterialTheme.shapes.large,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { cardWidth = it.width.toFloat() }
+                // Il gesto sta fuori dal graphicsLayer: la card che si sposta non falsa il trascinamento.
+                .pointerInput(threshold) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { drag = 0f; armed = false },
+                        onDragEnd = {
+                            val target = MonthSwipe.target(month, drag, threshold, YearMonth.now())
+                            val out = drag
+                            drag = 0f
+                            armed = false
+                            scope.launch {
+                                if (target != null) {
+                                    // Esce dal lato verso cui l'hai spinto, poi entra il nuovo mese dall'altro.
+                                    val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
+                                    nudge.animateTo(if (out < 0) -width else width, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Accelerate))
+                                    month = target
+                                } else {
+                                    nudge.animateTo(0f, Motion.settle())
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            drag = 0f
+                            armed = false
+                            scope.launch { nudge.animateTo(0f, Motion.settle()) }
+                        },
+                    ) { change, amount ->
+                        change.consume()
+                        drag += amount
+                        val can = MonthSwipe.target(month, drag, threshold, YearMonth.now()) != null
+                        if (can != armed) {
+                            armed = can
+                            if (can) haptic(Haptic.THRESHOLD)
+                        }
+                        val blocked = drag < 0 && month >= YearMonth.now()
+                        scope.launch { nudge.snapTo(MonthSwipe.follow(drag, threshold, blocked)) }
+                    }
+                }
+                .graphicsLayer { translationX = nudge.value },
+        ) {
+            // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
+            Column(
+                Modifier
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        month.format(monthFormat).replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
+                }
+                val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
+                val lines = listOfNotNull(
+                    previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
+                    if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
+                )
+                if (lines.isNotEmpty()) {
+                    Text(
+                        lines.joinToString(" · "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                val split = Expenses.byCategory(data.expenses, month)
+                if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.weight(1f).nestedScroll(barrier),
+        ) {
+            if (data.fixedExpenses.isNotEmpty()) {
+                item(key = "fixed") {
+                    Column(Modifier.padding(bottom = 8.dp)) {
+                        SectionHeader("Spese fisse · ${Expenses.format(data.fixedExpenses.sumOf { it.cents })} al mese")
+                        CanvasCard(Modifier.fillMaxWidth()) {
+                            data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
+                                if (i > 0) RowDivider()
+                                Row(
+                                    Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(
+                                            "Il ${f.day} di ogni mese · prossima ${f.nextDate(LocalDate.now()).format(fixedNext)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Text(Expenses.format(f.cents), style = MaterialTheme.typography.titleMedium)
                                 }
                             }
                         }
-                        .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            month.format(monthFormat).replaceFirstChar { it.uppercase() },
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Spacer(Modifier.weight(1f))
-                        Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                     }
-                    val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
-                    val lines = listOfNotNull(
-                        previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
-                        if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
-                    )
-                    if (lines.isNotEmpty()) {
+                }
+            }
+            // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
+            if (inMonth.isNotEmpty()) {
+                item(key = "timeline") {
+                    val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
+                    // "OGGI" solo nel mese di oggi: prima delle spese di oggi, o in fondo.
+                    val nowAt = if (month == YearMonth.now()) nowIndex(entries.map { it.first }) else -1
+                    val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
+                    Column(Modifier.fillMaxWidth().padding(top = 8.dp).onGloballyPositioned { timelineHeight = it.size.height }) {
+                        entries.forEachIndexed { index, (entry, expense) ->
+                            if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
+                            TimelineRow(
+                                entry,
+                                top = index > 0,
+                                bottom = index < entries.lastIndex,
+                                onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                                onLongClick = {
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
+                                        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                                            NotesStore.deleteExpense(expense.id)
+                                            onDeleted(expense)
+                                        },
+                                    )
+                                },
+                            )
+                        }
+                        if (nowAt == entries.size) TimelineNowMarker(nowMarker)
+                    }
+                }
+            }
+            item(key = "now-room") {
+                // Oggi in cima allo schermo anche con poche spese sotto: il resto resta vuoto (Antonio).
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val viewport = listState.layoutInfo.viewportSize.height
+                val bottom = with(density) { padding.calculateBottomPadding().roundToPx() }
+                // Niente spese oggi o nel mese: "Nessuna spesa" al centro dello spazio che resta sotto (Antonio).
+                val empty = inMonth.isEmpty() || (month == YearMonth.now() && inMonth.none { it.date == LocalDate.now() })
+                val room = with(density) {
+                    val below = nowOffset?.let { timelineHeight - it } ?: if (inMonth.isEmpty()) 0 else null
+                    nowRoom(viewport, bottom, below).toDp()
+                }
+                Box(Modifier.fillMaxWidth().height(room), contentAlignment = Alignment.Center) {
+                    if (empty && room > 48.dp) {
                         Text(
-                            lines.joinToString(" · "),
-                            style = MaterialTheme.typography.labelMedium,
+                            "Nessuna spesa",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    val split = Expenses.byCategory(data.expenses, month)
-                    if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
-                }
-            }
-        }
-        if (data.fixedExpenses.isNotEmpty()) {
-            item(key = "fixed") {
-                Column(Modifier.padding(bottom = 8.dp)) {
-                    SectionHeader("Spese fisse · ${Expenses.format(data.fixedExpenses.sumOf { it.cents })} al mese")
-                    CanvasCard(Modifier.fillMaxWidth()) {
-                        data.fixedExpenses.sortedBy { it.day }.forEachIndexed { i, f ->
-                            if (i > 0) RowDivider()
-                            Row(
-                                Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(10.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text(
-                                        "Il ${f.day} di ogni mese · prossima ${f.nextDate(LocalDate.now()).format(fixedNext)}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Text(Expenses.format(f.cents), style = MaterialTheme.typography.titleMedium)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // Le spese del mese sulla stessa linea del tempo di Prossimi giorni e Note.
-        if (inMonth.isNotEmpty()) {
-            item(key = "timeline") {
-                val entries = expenseEntries(inMonth, LocalDate.now(), header = month)
-                Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    entries.forEachIndexed { index, (entry, expense) ->
-                        TimelineRow(
-                            entry,
-                            start = 0.dp,
-                            top = index > 0,
-                            bottom = index < entries.lastIndex,
-                            onClick = { openItem(ItemKind.EXPENSE, expense.id) },
-                            onLongClick = {
-                                ActionBubble.show(
-                                    BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
-                                    BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                                        NotesStore.deleteExpense(expense.id)
-                                        onDeleted(expense)
-                                    },
-                                )
-                            },
                         )
                     }
                 }
-            }
-        }
-        if (inMonth.isEmpty()) {
-            item {
-                Text(
-                    "Nessuna spesa in questo mese. Scrivila come un messaggio, \"12,50 pizza\" o \"benzina 40€\": " +
-                        "la categoria si sceglie da sola.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp),
-                )
             }
         }
     }
-
 }
 
-private fun centsOf(text: String): Long? {
+internal fun centsOf(text: String): Long? {
     val clean = text.replace("€", "").filterNot { it.isWhitespace() }
     // "1.234,50" (come lo scrive l'app sopra i mille euro): il punto separa le migliaia.
     val number = if (',' in clean) clean.replace(".", "").replace(',', '.') else clean
@@ -517,5 +621,14 @@ internal object MonthSwipe {
         drag >= threshold -> month.minusMonths(1)
         drag <= -threshold && month < now -> month.plusMonths(1)
         else -> null
+    }
+
+    /**
+     * Quanto si sposta la card trascinando di [drag] px: segue il dito con elastico, sempre meno oltre la soglia.
+     * Verso un mese che non c'è ancora ([blocked]) resiste molto di più.
+     */
+    fun follow(drag: Float, threshold: Float, blocked: Boolean = false): Float {
+        val limit = threshold * (if (blocked) 0.5f else 2.2f)
+        return (limit * kotlin.math.tanh(drag / limit)).toFloat()
     }
 }

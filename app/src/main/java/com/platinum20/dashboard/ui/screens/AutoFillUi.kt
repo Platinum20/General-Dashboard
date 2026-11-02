@@ -193,7 +193,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding(),
-                bottom = inner.calculateBottomPadding() + 16.dp,
+                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
         ) {
             item {

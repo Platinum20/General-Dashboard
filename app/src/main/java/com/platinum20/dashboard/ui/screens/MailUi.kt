@@ -270,7 +270,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
                 start = 20.dp,
                 end = 20.dp,
                 top = inner.calculateTopPadding() + 8.dp,
-                bottom = inner.calculateBottomPadding() + 24.dp,
+                bottom = inner.calculateBottomPadding() + 24.dp + miniPlayerRoom(),
             ),
         ) {
             if (mail == null) {

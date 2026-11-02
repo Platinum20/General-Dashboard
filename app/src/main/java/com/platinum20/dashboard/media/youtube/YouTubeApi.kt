@@ -30,6 +30,8 @@ data class YtVideo(
     /** In diretta adesso (o in arrivo, con [upcoming]). */
     val live: Boolean = false,
     val upcoming: Boolean = false,
+    /** Inizio dell'anteprima o della diretta in programma, se si conosce. */
+    val startsAt: Instant? = null,
     /** Foto del canale, se si conosce. */
     val channelAvatar: String = "",
     /** Visualizzazioni e data come le scrive YouTube ("3 giorni fa"), quando non c'è [published]. */
@@ -37,6 +39,8 @@ data class YtVideo(
     val uploadedText: String = "",
     /** Quanto ne hai già visto su YouTube (0-100), dalla cronologia del tuo account. */
     val watchedPercent: Int = 0,
+    /** Solo per i membri del canale (abbonamento a pagamento): senza iscrizione non si può guardare. */
+    val membersOnly: Boolean = false,
 ) {
     val thumbnail: String get() = "https://i.ytimg.com/vi/$id/mqdefault.jpg"
     val watchUrl: String get() = "https://m.youtube.com/watch?v=$id"
@@ -161,7 +165,7 @@ object YouTubeApi {
     suspend fun withDetails(token: String, videos: List<YtVideo>): List<YtVideo> {
         val details = mutableMapOf<String, JSONObject>()
         for (chunk in videos.map { it.id }.distinct().chunked(50)) {
-            val page = runCatching { get(token, "videos", mapOf("part" to "contentDetails,snippet", "id" to chunk.joinToString(","))) }
+            val page = runCatching { get(token, "videos", mapOf("part" to "contentDetails,snippet,liveStreamingDetails", "id" to chunk.joinToString(","))) }
                 .getOrNull() ?: break
             val items = page.optJSONArray("items") ?: continue
             for (i in 0 until items.length()) items.optJSONObject(i)?.let { details[it.optString("id")] = it }
@@ -171,7 +175,12 @@ object YouTubeApi {
             val seconds = runCatching { java.time.Duration.parse(item.optJSONObject("contentDetails")?.optString("duration")).seconds.toInt() }
                 .getOrDefault(0)
             val broadcast = item.optJSONObject("snippet")?.optString("liveBroadcastContent").orEmpty()
-            video.copy(durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming")
+            val scheduled = item.optJSONObject("liveStreamingDetails")?.optString("scheduledStartTime").orEmpty()
+                .let { runCatching { Instant.parse(it) }.getOrNull() }
+            video.copy(
+                durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming",
+                startsAt = scheduled.takeIf { broadcast == "upcoming" },
+            )
         }
     }
 
@@ -181,7 +190,8 @@ object YouTubeApi {
         channels.map { channel ->
             async(Dispatchers.IO) {
                 gate.withPermit {
-                    runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()).map { it.copy(channelAvatar = channel.thumbnail) }
+                    withMembers(channel.id, runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()))
+                        .map { it.copy(channelAvatar = channel.thumbnail) }
                 }
             }
         }.awaitAll().flatten()
@@ -189,8 +199,26 @@ object YouTubeApi {
             .sortedByDescending { it.published }
     }
 
-    private fun channelFeed(channelId: String): List<YtVideo> {
-        val conn = (URL("https://www.youtube.com/feeds/videos.xml?channel_id=$channelId").openConnection() as HttpURLConnection).apply {
+    /** Gli ultimi video di un canale (feed RSS pubblico, una quindicina), i più recenti prima. */
+    suspend fun channelVideos(channel: YtChannel): List<YtVideo> = withContext(Dispatchers.IO) {
+        withMembers(channel.id, channelFeed(channel.id)).map { it.copy(channelAvatar = channel.thumbnail) }.sortedByDescending { it.published }
+    }
+
+    /**
+     * Il feed RSS non dice quali video sono per i membri: li elenca la playlist nascosta "UUMO" del canale,
+     * che per i canali senza abbonamenti semplicemente non esiste.
+     */
+    private fun withMembers(channelId: String, videos: List<YtVideo>): List<YtVideo> {
+        if (videos.isEmpty()) return videos
+        val playlist = membersPlaylist(channelId) ?: return videos
+        val members = runCatching { feed("playlist_id=$playlist") }.getOrDefault(emptyList()).map { it.id }.toSet()
+        return markMembers(videos, members)
+    }
+
+    private fun channelFeed(channelId: String): List<YtVideo> = feed("channel_id=$channelId")
+
+    private fun feed(query: String): List<YtVideo> {
+        val conn = (URL("https://www.youtube.com/feeds/videos.xml?$query").openConnection() as HttpURLConnection).apply {
             connectTimeout = 5_000
             readTimeout = 8_000
             setRequestProperty("User-Agent", "GeneralDashboard/${BuildConfig.VERSION_NAME} (Android)")
@@ -267,3 +295,10 @@ object YouTubeApi {
     private fun String.unescapeHtml(): String =
         replace("&#39;", "'").replace("&quot;", "\"").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 }
+
+/** "UC…" → "UUMO…": la playlist dei video riservati ai membri del canale. */
+internal fun membersPlaylist(channelId: String): String? =
+    channelId.takeIf { it.startsWith("UC") && it.length > 2 }?.let { "UUMO" + it.drop(2) }
+
+internal fun markMembers(videos: List<YtVideo>, members: Set<String>): List<YtVideo> =
+    if (members.isEmpty()) videos else videos.map { if (it.id in members) it.copy(membersOnly = true) else it }

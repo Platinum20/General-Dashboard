@@ -2,6 +2,7 @@ package com.platinum20.dashboard.media.youtube.player
 
 import android.text.Html
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.NewPipe
@@ -11,16 +12,23 @@ import org.schabi.newpipe.extractor.localization.ContentCountry
 import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.AudioTrackType
+import org.schabi.newpipe.extractor.stream.ContentAvailability
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 import org.schabi.newpipe.extractor.stream.VideoStream
 import org.schabi.newpipe.extractor.search.SearchInfo
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.comments.CommentsInfo
 import org.schabi.newpipe.extractor.comments.CommentsInfoItem
 import com.platinum20.dashboard.media.youtube.YtVideo
+import org.schabi.newpipe.extractor.InfoItem
+import org.schabi.newpipe.extractor.channel.ChannelInfo
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabInfo
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabs
+import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler
 
 /** Un video di YouTube pronto per il player nativo: indirizzi dei flussi e dati da mostrare. */
 data class YtStream(
@@ -52,7 +60,12 @@ data class YtStream(
     val subtitles: List<YtSubtitle> = emptyList(),
     /** Video correlati, come li propone YouTube sotto al video. */
     val related: List<YtVideo> = emptyList(),
+    /** Indirizzo del canale su YouTube: serve per aprire la pagina del canale toccandolo. */
+    val channelUrl: String = "",
 )
+
+/** Una pagina dei video di un canale, dal più recente; [next] è null quando sono finiti. */
+class YtChannelPage(val videos: List<YtVideo>, val tab: ListLinkHandler, val next: Page?)
 
 data class YtQuality(val height: Int, val url: String)
 
@@ -74,7 +87,8 @@ data class YtComment(
     val hearted: Boolean = false,
 )
 
-data class YtCommentPage(val comments: List<YtComment>, val next: Page?)
+/** [disabled]: l'autore ha spento i commenti (diverso da "ancora nessuno"). */
+data class YtCommentPage(val comments: List<YtComment>, val next: Page?, val disabled: Boolean = false)
 
 /** Stato dei commenti sotto il video: un errore di rete non deve sembrare "nessun commento". */
 sealed interface YtComments {
@@ -137,16 +151,6 @@ object YtResolver {
             .mapNotNull(::video)
     }
 
-    /** Brani di YouTube Music (canzoni, non video): la stessa ricerca dell'app YouTube Music. */
-    suspend fun searchMusic(query: String): List<YtVideo> = withContext(Dispatchers.IO) {
-        init()
-        val service = ServiceList.YouTube
-        val handler = service.searchQHFactory.fromQuery(query, listOf(YoutubeSearchQueryHandlerFactory.MUSIC_SONGS), "")
-        SearchInfo.getInfo(service, handler).relatedItems
-            .filterIsInstance<StreamInfoItem>()
-            .mapNotNull(::video)
-    }
-
     /**
      * Commenti del video come li ordina YouTube: senza [page] la prima pagina, con [page] la successiva
      * oppure le risposte a un commento (la pagina presa da [YtComment.repliesPage]).
@@ -156,11 +160,48 @@ object YtResolver {
         val url = "https://www.youtube.com/watch?v=$id"
         if (page == null) {
             val info = CommentsInfo.getInfo(ServiceList.YouTube, url)
-            YtCommentPage(info.relatedItems.map(::comment), info.nextPage)
+            // Lista vuota per un errore di estrazione: deve dire "non riesco", non "nessun commento".
+            if (info.relatedItems.isEmpty() && !info.isCommentsDisabled) info.errors.firstOrNull()?.let { throw it }
+            YtCommentPage(info.relatedItems.map(::comment), info.nextPage, info.isCommentsDisabled)
         } else {
             val more = CommentsInfo.getMoreItems(ServiceList.YouTube, url, page)
             YtCommentPage(more.items.map(::comment), more.nextPage)
         }
+    }
+
+    /** L'id del canale (UC…) da un indirizzo come youtube.com/channel/UC…; null se non c'è. */
+    fun channelId(url: String): String? = Regex("""/channel/(UC[A-Za-z0-9_-]{22})""").find(url)?.groupValues?.get(1)
+
+    /**
+     * Tutti i video di un canale (scheda Video, come sul canale in YouTube), una pagina alla volta:
+     * senza [more] la prima, poi la successiva passando la pagina avuta prima. Il feed RSS ne dà solo 15.
+     */
+    suspend fun channelVideos(channelId: String, more: YtChannelPage? = null): YtChannelPage = withContext(Dispatchers.IO) {
+        init()
+        val service = ServiceList.YouTube
+        val items: List<InfoItem>
+        val tab: ListLinkHandler
+        val next: Page?
+        if (more?.next != null) {
+            tab = more.tab
+            val page = ChannelTabInfo.getMoreItems(service, tab, more.next)
+            items = page.items
+            next = page.nextPage
+        } else {
+            val info = ChannelInfo.getInfo(service, "https://www.youtube.com/channel/$channelId")
+            tab = info.tabs.firstOrNull { ChannelTabs.VIDEOS in it.contentFilters }
+                ?: throw IllegalStateException("Questo canale non ha video")
+            val first = ChannelTabInfo.getInfo(service, tab)
+            items = first.relatedItems
+            next = first.nextPage
+        }
+        val videos = items.filterIsInstance<StreamInfoItem>().mapNotNull { item ->
+            video(item)?.copy(
+                channelId = channelId,
+                published = runCatching { item.uploadDate?.offsetDateTime()?.toInstant() }.getOrNull(),
+            )
+        }
+        YtChannelPage(videos, tab, next?.takeIf { videos.isNotEmpty() })
     }
 
     private fun comment(c: CommentsInfoItem): YtComment {
@@ -193,6 +234,7 @@ object YtResolver {
             channelAvatar = item.uploaderAvatars.maxByOrNull { it.height }?.url.orEmpty(),
             views = item.viewCount,
             uploadedText = item.textualUploadDate.orEmpty(),
+            membersOnly = item.contentAvailability == ContentAvailability.MEMBERSHIP,
         )
     }
 
@@ -200,7 +242,7 @@ object YtResolver {
     suspend fun resolve(link: String, maxHeight: Int = 0): YtStream = withContext(Dispatchers.IO) {
         init()
         val id = videoId(link) ?: throw IllegalArgumentException("Link di YouTube non valido")
-        val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
+        val info = streamInfo(id)
         val live = info.streamType == StreamType.LIVE_STREAM || info.streamType == StreamType.AUDIO_LIVE_STREAM
 
         val audios = info.audioStreams.filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
@@ -252,15 +294,31 @@ object YtResolver {
             subscribers = info.uploaderSubscriberCount,
             likes = info.likeCount,
             description = info.description?.content.orEmpty().let { raw ->
-                if ('<' in raw) Html.fromHtml(raw, Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
+                if ('<' in raw) Html.fromHtml(YtText.descriptionHtml(raw), Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
             },
             dashManifest = if (live) null else dashManifest(info.videoOnlyStreams, audio, info.duration),
             subtitles = subtitles,
             related = info.relatedItems.filterIsInstance<StreamInfoItem>().mapNotNull(::video),
+            channelUrl = info.uploaderUrl.orEmpty(),
         ).also {
             if (it.hlsUrl == null && it.muxedUrl == null && (it.videoUrl == null || it.audioUrl == null) && it.audioUrl == null) {
                 throw IllegalStateException("Nessun flusso riproducibile per questo video")
             }
+        }
+    }
+
+    /**
+     * Il controllo "non sei un bot" di YouTube su reti condivise (4G) spesso passa al secondo colpo:
+     * un solo nuovo tentativo poco dopo, poi l'errore. Mai a raffica, se no il blocco si allunga.
+     */
+    private suspend fun streamInfo(id: String): StreamInfo {
+        val url = "https://www.youtube.com/watch?v=$id"
+        return try {
+            StreamInfo.getInfo(ServiceList.YouTube, url)
+        } catch (e: Exception) {
+            if (!YtErrors.isBotCheck(e)) throw e
+            delay(1_500)
+            StreamInfo.getInfo(ServiceList.YouTube, url)
         }
     }
 
@@ -313,6 +371,8 @@ object YtResolver {
         return when {
             client.startsWith("ANDROID") -> "com.google.android.youtube/19.44.38 (Linux; U; Android 14) gzip"
             client.startsWith("IOS") -> "com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 18_1_0 like Mac OS X;)"
+            // Dal 2026 i flussi arrivano dal client visionOS: si usa lo stesso user agent di NewPipe.
+            client.startsWith("VISIONOS") -> YoutubeParsingHelper.getVisionOsUserAgent(null)
             else -> NewPipeDownloader.USER_AGENT
         }
     }

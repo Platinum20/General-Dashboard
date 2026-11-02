@@ -15,6 +15,7 @@ import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.ui.screens.CaptureFeedbackLayer
 import com.platinum20.dashboard.ui.screens.SaveToNotesLayer
 import com.platinum20.dashboard.ui.screens.ActionBubbleLayer
+import com.platinum20.dashboard.ui.screens.WhatsNewLayer
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
@@ -159,6 +160,7 @@ import com.platinum20.dashboard.ui.screens.PullToSearchIndicator
 import com.platinum20.dashboard.ui.screens.LocalOpenSearch
 import com.platinum20.dashboard.ui.screens.LocalOpenSettings
 import com.platinum20.dashboard.ui.screens.rememberPullToSearch
+import com.platinum20.dashboard.ui.screens.SearchFilter
 import com.platinum20.dashboard.ui.screens.EventDetailScreen
 import com.platinum20.dashboard.ui.screens.EventEditScreen
 import com.platinum20.dashboard.ui.screens.InAppLinks
@@ -214,6 +216,8 @@ import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.PlacePickerScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
 import com.platinum20.dashboard.ui.screens.RecapScreen
+import com.platinum20.dashboard.ui.screens.SettingsPage
+import com.platinum20.dashboard.ui.screens.SettingsPageScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
 import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.screens.AutoFillScreen
@@ -281,6 +285,14 @@ data class OpenRequest(
 class MainActivity : ComponentActivity() {
     private val openRequest = mutableStateOf<OpenRequest?>(null)
 
+    /** Video di YouTube a schermo intero: i tasti del volume mostrano la barra del player, non quella di sistema. */
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean =
+        com.platinum20.dashboard.ui.screens.FullscreenVolume.onKey(this, keyCode) || super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean =
+        (com.platinum20.dashboard.ui.screens.FullscreenVolume.active &&
+            com.platinum20.dashboard.ui.screens.FullscreenVolume.isVolumeKey(keyCode)) || super.onKeyUp(keyCode, event)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.init(this)
@@ -345,9 +357,9 @@ object Routes {
     const val HOME = "home"
     const val NEWS = "news"
     const val SETTINGS = "settings"
-    const val SETTINGS_PATTERN = "settings?section={section}"
+    const val SETTINGS_PAGE = "settings/page/{page}"
     /** Le Impostazioni aperte alla parte di una sezione della barra ([HOME], [NEWS], [NOTES], [MEDIA]). */
-    fun settings(section: String? = null) = if (section == null) SETTINGS else "settings?section=$section"
+    fun settingsPage(page: SettingsPage) = "settings/page/${page.name}"
     const val UPDATES = "settings/updates"
     const val AUTOFILL = "settings/autofill"
     const val MAIL = "home/mail/{id}"
@@ -358,7 +370,18 @@ object Routes {
     const val CUSTOMIZE = "home/customize"
     const val EXPENSES = "home/expenses"
     const val SIM = "home/sim"
+    /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
+    const val NOTES_EXPENSES = "notes/expenses"
+
+    /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
+    fun barTab(route: String?): String? = when (route) {
+        EXPENSES -> HOME
+        NOTES_EXPENSES -> NOTES
+        else -> route
+    }
     const val SEARCH = "home/search"
+    const val SEARCH_PATTERN = "home/search?f={f}"
+    fun search(filter: SearchFilter?) = if (filter == null) SEARCH else "$SEARCH?f=${filter.name}"
     const val NOTES = "notes"
     const val NOTE_EDIT = "notes/edit?id={id}"
     const val MEDIA = "media"
@@ -371,9 +394,13 @@ object Routes {
     const val PODCAST = "media/podcast"
     /** Il player grande unico (musica, radio, podcast). */
     const val PLAYER = "media/player"
-    /** Sotto il player: il mini player resta nascosto, la coda mostra già cosa suona. */
+    /** Sotto il player: qui il mini player si vede (si sistema la coda e si vede cosa suona). */
     const val QUEUE = "media/player/queue"
     const val YOUTUBE_WATCH = "media/watch?url={url}"
+    /** Tutti i video di un canale YouTube (dal tocco sul canale nella pagina del video). */
+    const val YOUTUBE_CHANNEL = "media/channel/{id}?title={title}&avatar={avatar}"
+    fun youtubeChannel(c: com.platinum20.dashboard.media.youtube.YtChannel) =
+        "media/channel/${c.id}?title=${Uri.encode(c.title)}&avatar=${Uri.encode(c.thumbnail)}"
     const val LOGIN = "settings/login/{service}"
 
     /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
@@ -918,9 +945,17 @@ private fun NavController.switchTab(route: String) {
     }
 }
 
+/** Solo per il giro fotografico (ScreenshotTour): apre una pagina profonda per rotta, senza toccare la UI. */
+@androidx.annotation.VisibleForTesting
+internal var tourNavigate: ((String) -> Unit)? = null
+
 @Composable
 private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
     val navController = rememberNavController()
+    DisposableEffect(navController) {
+        tourNavigate = { navController.navigate(it) }
+        onDispose { tourNavigate = null }
+    }
     val context = LocalContext.current
     // Link, pagine e calendario si aprono sempre dentro l'app.
     val inApp = remember(navController) {
@@ -1009,7 +1044,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
-    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES || currentRoute == Routes.NOTES_EXPENSES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1138,8 +1173,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
             ) {
                 CanvasNavBar(
-                    // Spese è una card di Oggi: la barra accende Oggi.
-                    currentRoute = if (currentRoute == Routes.EXPENSES) Routes.HOME else currentRoute,
+                    currentRoute = Routes.barTab(currentRoute),
                     dueToday = dueToday,
                     onSelect = { dest ->
                         // Toccare la scheda già aperta riporta la lista in cima.
@@ -1166,9 +1200,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque.
-        val pullSearch = rememberPullToSearch(enabled = showBottomBar) {
-            navController.navigate(Routes.SEARCH) { launchSingleTop = true }
+        // Nelle sezioni della barra, trascinare giù dalla cima apre Cerca ovunque; dentro Musica,
+        // Video e Radio e podcast parte già ristretta a quella fonte (al posto delle loro ricerche).
+        val pageFilter = SearchFilter.forRoute(currentRoute)
+        val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
+            navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
         Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
         NavHost(
@@ -1202,7 +1238,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
                     onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onOpenSettings = { navController.navigate(Routes.settings(Routes.MEDIA)) },
+                    onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
                 )
             }
             // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
@@ -1212,10 +1248,34 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.PODCAST) {
                 ListenScreen(start = ListenTab.PODCAST, onBack = { navController.popBackStack() })
             }
-            composable(Routes.PLAYER) {
+            composable(
+                Routes.PLAYER,
+                // Chiuso verso il mini player: la pagina resta ferma finché il video non è arrivato.
+                popExitTransition = { if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit else null },
+            ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
+                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
+                )
+            }
+            composable(
+                Routes.YOUTUBE_CHANNEL,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("avatar") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                val args = entry.arguments
+                com.platinum20.dashboard.ui.screens.YouTubeChannelScreen(
+                    channel = com.platinum20.dashboard.media.youtube.YtChannel(
+                        args?.getString("id").orEmpty(),
+                        args?.getString("title").orEmpty(),
+                        args?.getString("avatar").orEmpty(),
+                    ),
+                    onBack = { navController.popBackStack() },
+                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(Routes.QUEUE) {
@@ -1224,15 +1284,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(
                 Routes.YOUTUBE_WATCH,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
-                // Il video sale dal basso e, chiuso (anche trascinandolo giù), ridiscende verso il mini player.
+                // Il video sale dal basso; chiuso (trascinandolo giù o col tasto) vola nel mini player, col gesto indietro scende.
                 enterTransition = { slideInVertically(pageSpring) { it / 3 } + fadeIn(tween(200)) },
-                popExitTransition = { slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200)) },
+                popExitTransition = {
+                    if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit
+                    else slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200))
+                },
             ) { entry ->
                 // Lo stesso player unico: con un video mostra la pagina del video.
                 PlayerScreen(
                     startUrl = entry.arguments?.getString("url"),
                     onBack = { navController.popBackStack() },
                     onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
+                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
             composable(Routes.YOUTUBE_FEED) {
@@ -1267,8 +1331,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     ?: MediaService.YOUTUBE
                 LoginScreen(service = service, onDone = { navController.popBackStack() })
             }
-            composable(Routes.SEARCH) {
+            composable(
+                Routes.SEARCH_PATTERN,
+                arguments = listOf(navArgument("f") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
                 SearchScreen(
+                    initialFilter = entry.arguments?.getString("f")
+                        ?.let { f -> SearchFilter.entries.firstOrNull { it.name == f } } ?: SearchFilter.ALL,
                     onBack = { navController.popBackStack() },
                     onOpenNote = { openNote(it) },
                     onOpenNotes = { navController.switchTab(Routes.NOTES) },
@@ -1321,6 +1390,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.EXPENSES) {
                 ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
+            composable(Routes.NOTES_EXPENSES) {
+                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+            }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })
             }
@@ -1336,18 +1408,23 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                 )
             }
-            composable(
-                Routes.SETTINGS_PATTERN,
-                arguments = listOf(navArgument("section") { type = NavType.StringType; nullable = true; defaultValue = null }),
-            ) { entry ->
+            composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    initialSection = entry.arguments?.getString("section"),
+                    onBack = { navController.popBackStack() },
+                    onOpenPage = { navController.navigate(Routes.settingsPage(it)) },
+                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                )
+            }
+            composable(Routes.SETTINGS_PAGE, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
+                val page = SettingsPage.entries.firstOrNull { it.name == entry.arguments?.getString("page") } ?: SettingsPage.HOME
+                SettingsPageScreen(
+                    page = page,
                     onBack = { navController.popBackStack() },
                     onOpenUpdates = { navController.navigate(Routes.UPDATES) },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onLogin = { navController.navigate(Routes.login(it)) },
-                    onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
+                    onOpenPage = { navController.navigate(Routes.settingsPage(it)) },
                 )
             }
             composable(Routes.AUTOFILL) {
@@ -1436,6 +1513,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     SaveToNotesLayer()
     ActionBubbleLayer()
+    WhatsNewLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }
     }

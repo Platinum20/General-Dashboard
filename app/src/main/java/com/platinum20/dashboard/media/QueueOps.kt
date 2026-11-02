@@ -92,6 +92,29 @@ object QueueOps {
         return if (index < 0) state else state.copy(current = index)
     }
 
+    /**
+     * Toccata una voce che viene dopo: parte lei e sparisce da "Dopo", ma quelle che c'erano prima
+     * restano in coda (non si saltano tutte fino a lì).
+     */
+    fun pick(state: QueueState, id: Long): QueueState {
+        val index = state.entries.indexOfFirst { it.id == id }
+        if (index < 0 || index == state.current) return state
+        val list = state.entries.toMutableList()
+        val entry = list.removeAt(index)
+        // Tolta una passata, la corrente scala di un posto.
+        val current = if (index < state.current) state.current - 1 else state.current
+        list.add(current + 1, entry)
+        return QueueState(list, current + 1)
+    }
+
+    /** Rimette una voce tolta al suo posto ([index] nella lista di prima), per "Annulla". */
+    fun restore(state: QueueState, entry: QueueEntry, index: Int): QueueState {
+        if (state.entries.any { it.id == entry.id }) return state
+        val at = index.coerceIn(0, state.entries.size)
+        val list = state.entries.toMutableList().apply { add(at, entry) }
+        return QueueState(list, if (state.current >= at) state.current + 1 else state.current)
+    }
+
     /** Toglie quello che deve ancora venire (la corrente e le passate restano). */
     fun clearUpcoming(state: QueueState): QueueState =
         if (state.current < 0) QueueState() else QueueState(state.entries.take(state.current + 1), state.current)
@@ -101,4 +124,37 @@ object QueueOps {
         val drop = (state.current - keep).coerceAtLeast(0)
         return if (drop == 0) state else QueueState(state.entries.drop(drop), state.current - drop)
     }
+}
+
+/**
+ * "Riempi in automatico": quando la coda di Spotify sta per finire si aggiungono altri tuoi brani.
+ * Prima quelli degli artisti dell'ultima voce (così il genere resta quello), poi gli altri mescolati;
+ * mai uno già in coda o ascoltato da poco.
+ */
+object QueueFill {
+    /** Sotto questo numero di voci dopo quella che suona si riempie. */
+    const val LOW = 3
+    /** Quante se ne aggiungono ogni volta. */
+    const val BATCH = 10
+
+    fun needed(state: QueueState): Boolean {
+        val last = state.entries.lastOrNull() ?: return false
+        return last.item.kind == ResumeKind.SPOTIFY && state.upcoming.size < LOW
+    }
+
+    fun pick(state: QueueState, pool: List<ResumeItem>, seed: Long, count: Int = BATCH): List<ResumeItem> {
+        val inQueue = state.entries.map { it.item }
+        val fresh = pool.filter { it.kind == ResumeKind.SPOTIFY && it.key.isNotBlank() }
+            .distinctBy { it.key }
+            .filter { candidate -> inQueue.none { QueueOps.same(it, candidate) } }
+        val artists = state.entries.lastOrNull()?.item?.let(::artistsOf).orEmpty().toSet()
+        val random = kotlin.random.Random(seed)
+        val (near, far) = fresh.shuffled(random).partition { t -> artistsOf(t).any { it in artists } }
+        // Al massimo metà dello stesso artista: è un riempimento, non la sua discografia.
+        val first = near.take(count / 2)
+        return (first + (far + near.drop(first.size)).take(count - first.size)).shuffled(random)
+    }
+
+    private fun artistsOf(item: ResumeItem): List<String> =
+        item.subtitle.split(", ").map { it.trim() }.filter { it.isNotBlank() }
 }
