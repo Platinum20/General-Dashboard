@@ -5,6 +5,7 @@ import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -24,11 +26,13 @@ import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Euro
 import androidx.compose.material.icons.automirrored.outlined.Login
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.SimCard
 import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,7 +53,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -90,16 +96,28 @@ private fun Allowance.label(unit: String): String = when {
     else -> "${left.toInt()} $unit"
 }
 
-/** Le righe piccole sotto i giga: minuti, SMS, credito, rinnovo. */
-private fun SimStatus.details(): List<String> = buildList {
-    minutes?.let { add("Minuti " + it.label("min")) }
-    sms?.let { add("SMS " + it.label("")) }
+/** Sotto gli anelli: rinnovo, credito, quando è stato letto. */
+internal fun SimStatus.footer(today: LocalDate = LocalDate.now()): String = buildList {
+    renewal?.let { add("Rinnovo " + it.format(WindTreParse.shortDate) + " (" + renewalLabel(it, today) + ")") }
     credit?.let { add("Credito " + euroLabel(it)) }
-    renewal?.let { add("Rinnovo " + renewalLabel(it)) }
-}.map { it.trim() }
+}.joinToString(" · ")
+
+/** Il numero dentro l'anello: "141", "7,5", "∞". */
+internal fun ringValue(a: Allowance): String = when {
+    a.unlimited -> "∞"
+    a.left >= 10 || a.left == Math.floor(a.left) -> String.format(Locale.ITALIAN, "%.0f", a.left)
+    else -> String.format(Locale.ITALIAN, "%.1f", a.left)
+}
+
+/** La riga sotto il nome: "su 200 GB", "illimitati", "su 50". */
+internal fun ringCaption(a: Allowance, unit: String): String = when {
+    a.unlimited -> "illimitati"
+    a.total != null -> ("su " + (if (unit == "GB") ringValue(Allowance(a.total)) else a.total.toInt().toString()) + " " + unit).trim()
+    else -> unit
+}
 
 /**
- * La card della Home: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e rinnovo.
+ * La card della Home, compatta: un anello per giga, minuti, SMS e roaming UE, sotto rinnovo e credito.
  * Prima del collegamento dice solo come collegarsi.
  */
 @Composable
@@ -115,11 +133,11 @@ internal fun SimCard(onOpen: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onOpen)
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 14.dp),
         ) {
             val s = status
             if (s == null || !linked) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconTile(Icons.Outlined.SimCard, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
                     Spacer(Modifier.width(12.dp))
                     Text(
@@ -133,19 +151,75 @@ internal fun SimCard(onOpen: () -> Unit) {
                 }
                 return@Column
             }
-            SimDataBlock(s)
-            val details = s.details()
-            if (details.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
+            SimRings(s)
+            val footer = s.footer()
+            Row(Modifier.padding(top = 10.dp, start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    details.joinToString(" · "),
+                    footer,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    relativeTime(Instant.ofEpochMilli(s.at)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
                 )
             }
         }
+    }
+}
+
+/** Gli anelli in fila, uno per soglia che WindTre ha dato. */
+@Composable
+private fun SimRings(s: SimStatus) {
+    val rings = listOfNotNull(
+        (s.data ?: Allowance(0.0)).let { Triple("Giga", it, "GB") },
+        s.minutes?.let { Triple("Minuti", it, "min") },
+        s.sms?.let { Triple("SMS", it, "") },
+        s.roaming?.let { Triple("UE", it, "GB") },
+    )
+    Row(Modifier.fillMaxWidth()) {
+        rings.forEach { (name, a, unit) ->
+            SimRing(name, a, unit, known = name != "Giga" || s.data != null, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun SimRing(name: String, a: Allowance, unit: String, known: Boolean, modifier: Modifier = Modifier) {
+    val f = if (a.unlimited) 1f else a.fraction
+    val low = f != null && f < 0.1f && !a.unlimited
+    val color = if (low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { f ?: 0f },
+                modifier = Modifier.fillMaxSize(),
+                color = color,
+                strokeWidth = 5.dp,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                strokeCap = StrokeCap.Round,
+                gapSize = 0.dp,
+            )
+            Text(
+                if (known) ringValue(a) else "–",
+                style = if (a.unlimited) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(name, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        if (known) Text(
+            ringCaption(a, unit),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -235,6 +309,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                 val rows = listOfNotNull(
                     s.minutes?.let { Icons.Outlined.Call to "Minuti " + it.label("min") },
                     s.sms?.let { Icons.Outlined.Sms to ("SMS " + it.label("")).trim() },
+                    s.roaming?.let { Icons.Outlined.Public to "Roaming UE " + (if (it.unlimited) "illimitati" else gbLabel(it.left) + (it.total?.let { t -> " di " + gbLabel(t) } ?: "")) },
                     s.credit?.let { Icons.Outlined.Euro to "Credito " + euroLabel(it) },
                     s.renewal?.let { Icons.Outlined.CalendarMonth to "Si rinnova " + renewalLabel(it) + " (" + it.format(WindTreParse.shortDate) + ")" },
                 )

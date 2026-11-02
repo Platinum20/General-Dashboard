@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.294.0
+**Card SIM più compatta, con gli anelli**
+- In Home la card SIM mostra un anello per giga, minuti, SMS e roaming UE, con quanto resta dentro
+- Sotto, in una riga: quando si rinnova l'offerta e il credito
+- Canvas ora legge anche i giga in roaming UE e il nome dell'offerta dalla pagina di WindTre
+
 ## 1.293.0
 **Spese: si parte dal mese corrente**
 - La card Spese in Home mostra solo le spese di questo mese, col nome del mese in cima
