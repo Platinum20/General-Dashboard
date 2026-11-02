@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.296.0
+**La coda si apre sopra il player**
+- Toccando la coda mentre guardi un video non si apre più un'altra pagina: la coda compare sopra il player, e il video resta com'era, anche a schermo intero in orizzontale
+- In orizzontale la coda entra di lato a destra, con il video ancora visibile a sinistra; in verticale sale dal basso
+- Vale anche per Spotify, la musica, la radio e i podcast
+- Si chiude toccando fuori, col gesto indietro o trascinando la parte in alto verso il bordo; dentro puoi ancora spostare, togliere e far partire le voci
+
 ## 1.294.0
 **Card SIM più compatta, con gli anelli**
 - In Home la card SIM mostra un anello per giga, minuti, SMS e roaming UE, con quanto resta dentro
