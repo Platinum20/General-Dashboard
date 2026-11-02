@@ -52,19 +52,86 @@ data class FixedExpense(
     }
 }
 
+/**
+ * Le categorie delle spese. Le parole si cercano a inizio parola ("pizza" prende "pizzeria");
+ * quelle di 4 lettere o meno solo come parola intera ("bar" non è "barbiere", "gas" non è "gasolio").
+ */
 enum class ExpenseCategory(val label: String, val words: List<String>) {
-    FOOD("Spesa", listOf("penny", " aldi", "famila", "sigma", "crai", "tigre", "todis", "in's", "dok ", "iper", "spesa", "supermercato", "conad", "coop", "lidl", "esselunga", "eurospin", "carrefour", "pane", "frutta", "mercato", "md ", "despar", "pam")),
-    EATING_OUT("Fuori", listOf("pizza", "ristorante", "bar", "caffè", "caffe", "cena", "pranzo", "aperitivo", "sushi", "panino", "gelato", "kebab", "birra", "colazione", "mcdonald", "deliveroo", "glovo", "just eat")),
-    TRANSPORT("Trasporti", listOf("onorato", "moby", "tirrenia", "grimaldi", "traghett", "ryanair", "easyjet", "wizz", "ita airways", "flixbus", "uber", "free now", "freenow", "telepass", " q8", " eni ", "enilive", " esso", "tamoil", "atac", "gtt", "trenord", "benzina", "diesel", "gasolio", "carburante", "autostrada", "pedaggio", "treno", "bus", "autobus", "taxi", "parcheggio", "trenitalia", "italo", "biglietto", "metro", "auto", "gomme", "tagliando", "bollo", "meccanico")),
-    HOME("Casa", listOf("windtre", "wind tre", "wind", " tim ", "vodafone", "iliad", "fastweb", "kena", "enel", "hera", "a2a", "edison", "acea", "bolletta", "luce", "gas", "acqua", "affitto", "condominio", "internet", "telefono", "ricarica", "tari", "ikea", "casa", "fibra")),
-    HEALTH("Salute", listOf("farmac", "parafarmac", "sanitari", "ospedale", "farmacia", "medicina", "medico", "dentista", "visita", "analisi", "ticket", "palestra", "ottico")),
-    FUN("Svago", listOf("cinema", "netflix", "spotify", "concerto", "libro", "gioco", "steam", "playstation", "disney", "prime", "amazon", "regalo", "vestiti", "scarpe", "abbonamento", "viaggio", "hotel")),
+    FOOD("Spesa", listOf(
+        "spesa", "supermercat", "supermarket", "market", "minimarket", "alimentar", "discount", "ipermercat", "iper", "ipercoop",
+        "conad", "coop", "lidl", "esselunga", "eurospin", "carrefour", "despar", "spar", "interspar", "eurospar",
+        "penny", "aldi", "famila", "sigma", "crai", "tigre", "todis", "in's", "dok", "md", "pam", "panorama", "bennet",
+        "tuodi", "simply", "auchan", "naturasi", "unes", "sisa", "nonna isa", "decò", "pewex",
+        "pane", "panett", "panific", "forno", "frutta", "fruttivendol", "macelleri", "pescheri", "salumeri", "mercato",
+    )),
+    EATING_OUT("Fuori", listOf(
+        "pizza", "pizzeri", "ristorant", "trattoria", "osteria", "bar", "caffè", "caffe", "caffetteri", "pasticceri", "bistrot",
+        "pub", "cena", "pranzo", "aperitiv", "sushi", "panin", "gelat", "kebab", "birra", "birreria", "colazione",
+        "cornetto", "cappuccino", "spritz", "tavola calda", "rosticceri", "piadin", "burger", "hamburger",
+        "mcdonald", "burger king", "kfc", "old wild west", "roadhouse", "autogrill", "starbucks",
+        "deliveroo", "glovo", "just eat", "justeat", "ticket", "ticket restaurant", "buono pasto", "buoni pasto",
+    )),
+    TRANSPORT("Trasporti", listOf(
+        "onorato", "moby", "tirrenia", "grimaldi", "traghett", "ryanair", "easyjet", "wizz", "ita airways", "volotea",
+        "aeroporto", "flixbus", "itabus", "uber", "free now", "freenow", "telepass", "q8", "eni", "enilive", "esso",
+        "tamoil", "agip", "atac", "gtt", "trenord", "benzina", "diesel", "gasolio", "carburant",
+        "distributor", "autostrad", "pedaggio", "treno", "bus", "autobus", "taxi", "parchegg", "trenitalia", "italo",
+        "metro", "autonoleggio", "noleggio", "car sharing", "share now",
+        "gomme", "gommista", "tagliando", "bollo auto", "meccanico", "officina", "carrozzeria", "revisione",
+    )),
+    HOME("Casa", listOf(
+        "affitto", "condominio", "ikea", "leroy merlin", "brico", "bricocenter", "casa", "arredament",
+        "ferramenta", "detersiv", "pulizie", "lavanderia", "tintoria", "mutuo", "tari", "idraulico", "elettricista",
+    )),
+    BILLS("Bollette", listOf(
+        "windtre", "wind tre", "wind", "tim", "vodafone", "iliad", "fastweb", "kena", "ho mobile", "very mobile",
+        "poste mobile", "postemobile", "sky", "dazn", "ricarica", "telefono", "cellulare", "internet", "fibra",
+        "enel", "hera", "a2a", "edison", "acea", "iren", "sorgenia", "eon", "e.on", "engie", "plenitude", "servizio elettrico",
+        "bolletta", "bollette", "luce", "gas", "acqua", "canone rai", "canone",
+    )),
+    HEALTH("Salute", listOf(
+        "farmac", "parafarmac", "sanitari", "ospedale", "medicin", "medico", "dentista", "odontoiatr", "visita",
+        "analisi", "ticket sanitario", "asl", "clinica", "laboratorio", "fisioterap", "palestra", "piscina", "ottic",
+        "occhiali", "lenti", "veterinari",
+    )),
+    FUN("Svago", listOf(
+        "cinema", "uci cinema", "the space", "teatro", "museo", "concerto", "ticketone", "vivaticket", "netflix", "spotify",
+        "disney", "prime video", "now tv", "apple music", "youtube premium", "twitch", "steam", "playstation", "xbox",
+        "nintendo", "gioco", "giochi", "videogioc", "libro", "libri", "libreria", "feltrinelli", "mondadori",
+        "discoteca", "serata", "biglietto concerto", "viaggio", "hotel", "albergo", "booking", "airbnb", "b&b",
+    )),
+    SHOPPING("Acquisti", listOf(
+        "amazon", "amzn", "ebay", "zalando", "shein", "temu", "aliexpress", "vinted", "subito", "decathlon",
+        "mediaworld", "unieuro", "euronics", "trony", "apple", "zara", "h&m", "primark", "ovs", "bershka", "pull&bear",
+        "uniqlo", "nike", "adidas", "foot locker", "sephora", "douglas", "acqua e sapone", "tigota", "kiko", "flying tiger",
+        "vestiti", "scarpe", "abbigliament", "regalo", "regali", "profumeri", "elettronica",
+    )),
     OTHER("Altro", emptyList());
 
     companion object {
+        /** Chi vince quando un testo tocca più categorie: le più precise prima ("ticket sanitario" è Salute, "spesa farmacia" pure). */
+        private val priority = listOf(HEALTH, TRANSPORT, BILLS, EATING_OUT, FOOD, SHOPPING, FUN, HOME)
+
+        private val patterns: Map<ExpenseCategory, Regex> = priority.associateWith { c ->
+            // Le più lunghe prima: l'alternativa che vince è la prima che combacia.
+            val alts = c.words.sortedByDescending { it.trim().length }.map { w ->
+                val q = Regex.escape(w.trim().lowercase())
+                if (w.trim().length <= 4) "$q(?![\\p{L}\\d])" else q
+            }
+            Regex("""(?<![\p{L}\d])(?:${alts.joinToString("|")})""")
+        }
+
         fun guess(text: String): ExpenseCategory {
-            val t = " ${text.lowercase()} "
-            return entries.firstOrNull { c -> c.words.any { t.contains(it) } } ?: OTHER
+            val t = text.lowercase()
+            if (t.isBlank()) return OTHER
+            // A parità, conta la parola più lunga trovata: "spesa farmacia" è più farmacia che spesa.
+            var best: ExpenseCategory? = null
+            var bestLen = 0
+            for (c in priority) {
+                val len = patterns.getValue(c).findAll(t).maxOfOrNull { it.value.length } ?: continue
+                if (len > bestLen) { best = c; bestLen = len }
+            }
+            return best ?: OTHER
         }
     }
 }
@@ -125,13 +192,14 @@ object Expenses {
     private val dangling = setOf("di", "a", "da", "in", "con", "su", "per", "tra", "fra", "il", "lo", "la", "i", "gli", "le", "del", "della", "al", "alla", "e", "un", "una")
 
     /**
-     * Il nome da mostrare di una spesa: il testo se è un nome vero, altrimenti la categoria ("Spesa" per Altro).
+     * Il nome da mostrare di una spesa: il testo se è un nome vero, altrimenti la categoria ("Pagamento" per Altro,
+     * non "Spesa", che sembrerebbe la categoria della spesa al supermercato).
      * Un testo che finisce con una preposizione o un articolo è un pezzo di frase, non un nome.
      */
     fun displayName(e: Expense): String {
         val text = e.text.trim()
         val last = text.substringAfterLast(' ').lowercase()
-        if (text.isEmpty() || last in dangling) return if (e.category == ExpenseCategory.OTHER) "Spesa" else e.category.label
+        if (text.isEmpty() || last in dangling) return if (e.category == ExpenseCategory.OTHER) "Pagamento" else e.category.label
         // I nomi dei negozi sulle carte arrivano tagliati a 25 lettere ("Farmacenter Dottor Moresc"): si dice che continua.
         return if (text.length >= CARD_NAME && text.last().isLetter()) "$text…" else text
     }
@@ -144,6 +212,22 @@ object Expenses {
         if (e.category != ExpenseCategory.OTHER) e
         else ExpenseCategory.guess(e.text).let { if (it == ExpenseCategory.OTHER) e else e.copy(category = it) }
     }
+
+    /**
+     * Una volta sola, quando nascono Bollette e Acquisti (e "ticket" passa ai buoni pasto): le spese
+     * che le vecchie parole avevano messo in Casa, Svago o Salute vanno nella categoria nuova.
+     * Solo quei passaggi, così una categoria scelta a mano altrove resta com'è.
+     */
+    fun upgradeCategory(category: ExpenseCategory, text: String): ExpenseCategory {
+        val now = ExpenseCategory.guess(text)
+        return if (category to now in categoryMoves) now else category
+    }
+
+    private val categoryMoves = setOf(
+        ExpenseCategory.HOME to ExpenseCategory.BILLS,
+        ExpenseCategory.FUN to ExpenseCategory.SHOPPING,
+        ExpenseCategory.HEALTH to ExpenseCategory.EATING_OUT,
+    )
 
     fun total(list: List<Expense>, month: YearMonth): Long =
         list.filter { YearMonth.from(it.date) == month }.sumOf { it.cents }
