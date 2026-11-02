@@ -86,6 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
+private val monthName = DateTimeFormatter.ofPattern("MMMM", Locale.ITALIAN)
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
@@ -209,21 +210,34 @@ fun ExpensesTab(
                                 Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                             }
                             val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
-                            val lines = listOfNotNull(
-                                previous.takeIf { it > 0 }?.let { "Il mese prima ${Expenses.format(it)}" },
-                                if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null,
-                            )
-                            if (lines.isNotEmpty()) {
-                                Text(
-                                    lines.joinToString(" · "),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                            // Sotto il totale, piccolo e a destra, il mese prima col suo nome (Antonio): si confronta
+                            // a colpo d'occhio, senza una frase in più. A sinistra fisse e variabili.
+                            val split = if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null
+                            val before = previous.takeIf { it > 0 }?.let {
+                                "${month.minusMonths(1).format(monthName)} ${Expenses.format(it)}"
                             }
-                            val split = Expenses.byCategory(data.expenses, month)
-                            if (split.isNotEmpty()) CategoryBar(split, Modifier.padding(top = 10.dp))
+                            if (split != null || before != null) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        split.orEmpty(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    before?.let {
+                                        Text(
+                                            it,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            }
+                            val categories = Expenses.byCategory(data.expenses, month)
+                            if (categories.isNotEmpty()) CategoryBar(categories, Modifier.padding(top = 10.dp))
                         }
                     }
                     Spacer(Modifier.height(12.dp))

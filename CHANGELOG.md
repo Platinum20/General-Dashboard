@@ -5,6 +5,7 @@
 - La card Spese in Home mostra solo le spese di questo mese, col nome del mese in cima
 - La pagina Spese si apre dall'inizio del mese invece che su "Oggi"
 - Scorrendo la pagina Spese si muove tutto, anche il riepilogo del mese in alto
+- Il mese prima ora è un numero piccolo sotto il totale, col nome del mese (es. "ottobre 203,36 €"), invece della frase "Il mese prima"
 
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
