@@ -18,6 +18,8 @@ data class SimStatus(
     val data: Allowance? = null,
     val minutes: Allowance? = null,
     val sms: Allowance? = null,
+    /** I giga in roaming UE, a parte da quelli nazionali. */
+    val roaming: Allowance? = null,
     val credit: Double? = null,
     val renewal: LocalDate? = null,
     val offer: String? = null,
@@ -30,6 +32,7 @@ data class SimStatus(
         data = data ?: other.data,
         minutes = minutes ?: other.minutes,
         sms = sms ?: other.sms,
+        roaming = roaming ?: other.roaming,
         credit = credit ?: other.credit,
         renewal = renewal ?: other.renewal,
         offer = offer ?: other.offer,
@@ -40,6 +43,7 @@ data class SimStatus(
         data?.let { put("data", it.json()) }
         minutes?.let { put("minutes", it.json()) }
         sms?.let { put("sms", it.json()) }
+        roaming?.let { put("roaming", it.json()) }
         credit?.let { put("credit", it) }
         renewal?.let { put("renewal", it.toString()) }
         offer?.let { put("offer", it) }
@@ -55,6 +59,7 @@ data class SimStatus(
                 data = allowance("data"),
                 minutes = allowance("minutes"),
                 sms = allowance("sms"),
+                roaming = allowance("roaming"),
                 credit = if (o.has("credit")) o.optDouble("credit") else null,
                 renewal = o.optString("renewal").takeIf { it.isNotBlank() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
                 offer = o.optString("offer").takeIf { it.isNotBlank() },
@@ -71,7 +76,7 @@ data class SimStatus(
  */
 object WindTreParse {
 
-    private enum class Kind { DATA, MINUTES, SMS }
+    private enum class Kind { DATA, MINUTES, SMS, ROAMING }
 
     private val leftKeys = Regex("residu|remain|availab|rimanent|left|balance", RegexOption.IGNORE_CASE)
     private val totalKeys = Regex("total|initial|totale|max|quota|threshold|soglia|amount|bundle", RegexOption.IGNORE_CASE)
@@ -93,6 +98,8 @@ object WindTreParse {
         fun walk(node: Any?, path: String) {
             when (node) {
                 is JSONObject -> {
+                    // Un dizionario di messaggi (centinaia di chiavi, quasi tutte testo) non contiene contatori.
+                    if (node.length() > 80 && node.keys().asSequence().count { node.opt(it) is String } > node.length() * 0.9) return
                     counter(node, path)?.let { counters += it }
                     for (key in node.keys()) {
                         val value = node.opt(key)
@@ -116,6 +123,7 @@ object WindTreParse {
             data = best(counters, Kind.DATA),
             minutes = best(counters, Kind.MINUTES),
             sms = best(counters, Kind.SMS),
+            roaming = best(counters, Kind.ROAMING),
             credit = credits.firstOrNull(),
             renewal = dates.minOrNull(),
             offer = offer,
@@ -161,11 +169,13 @@ object WindTreParse {
         val kind = kindOf(text) ?: kindOf(outer) ?: return null
         if (unit.isEmpty()) unit = Regex("""\b(gb|mb|kb|byte|sec|min)\b""").find(text)?.value.orEmpty()
         val scale = when (kind) {
-            Kind.DATA -> dataScale(unit, maxOf(left ?: 0.0, total ?: 0.0))
+            Kind.DATA, Kind.ROAMING -> dataScale(unit, maxOf(left ?: 0.0, total ?: 0.0))
             Kind.MINUTES -> if (unit.startsWith("sec")) 1 / 60.0 else 1.0
             Kind.SMS -> 1.0
         }
-        return kind to Allowance((left ?: 0.0) * scale, total?.let { it * scale }, unlimited)
+        // I giga in roaming UE sono un contatore a parte: non devono prendere il posto di quelli nazionali.
+        val roaming = kind == Kind.DATA && Regex("roaming|\\beu\\b|\\bue\\b", RegexOption.IGNORE_CASE).containsMatchIn("$text $outer")
+        return (if (roaming) Kind.ROAMING else kind) to Allowance((left ?: 0.0) * scale, total?.let { it * scale }, unlimited)
     }
 
     private fun kindOf(text: String): Kind? = when {
@@ -227,18 +237,28 @@ object WindTreParse {
         fun num(s: String) = s.replace(".", "").replace(',', '.').toDoubleOrNull()
             ?: s.replace(',', '.').toDoubleOrNull()
         fun gb(v: Double, unit: String) = if (unit.equals("MB", true)) v / 1024 else v
-        val data = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB|Giga)\s*(?:su|di|/)\s*(\d+(?:[.,]\d+)?)\s*(GB|MB|Giga)""", RegexOption.IGNORE_CASE)
-            .find(t)?.destructured?.let { (l, lu, tot, tu) -> Allowance(gb(num(l) ?: 0.0, lu), gb(num(tot) ?: 0.0, tu)) }
-            ?: Regex("""giga\s+illimitat""", RegexOption.IGNORE_CASE).find(t)?.let { Allowance(0.0, null, true) }
+        // Come la pagina dell'offerta: "141,4 / 200 Giga" (unità solo sul totale) o "3 GB su 10 GB".
+        val dataRe = Regex("""(\d+(?:[.,]\d+)?)\s*(GB|MB|Giga)?\s*(?:su|di|/)\s*(\d+(?:[.,]\d+)?)\s*(GB|MB|Giga)""", RegexOption.IGNORE_CASE)
+        fun dataIn(part: String) = dataRe.find(part)?.destructured?.let { (l, lu, tot, tu) ->
+            Allowance(gb(num(l) ?: 0.0, lu.ifEmpty { tu }), gb(num(tot) ?: 0.0, tu))
+        }
+        // Il roaming UE viene dopo i nazionali: si legge a parte, e i nazionali solo prima.
+        val roamingAt = Regex("""roaming""", RegexOption.IGNORE_CASE).find(t)?.range?.first
+        val national = roamingAt?.let { t.substring(0, it) } ?: t
+        val roaming = roamingAt?.let { dataIn(t.substring(it).take(200)) }
+        val data = dataIn(national)
+            ?: Regex("""giga\s+illimitat""", RegexOption.IGNORE_CASE).find(national)?.let { Allowance(0.0, null, true) }
         val minutes = Regex("""(\d+)\s*(?:min|minuti)\s*(?:su|di|/)\s*(\d+)""", RegexOption.IGNORE_CASE)
             .find(t)?.destructured?.let { (l, tot) -> Allowance(l.toDouble(), tot.toDouble()) }
             ?: Regex("""minuti\s+illimitat""", RegexOption.IGNORE_CASE).find(t)?.let { Allowance(0.0, null, true) }
         val sms = Regex("""(\d+)\s*SMS\s*(?:su|di|/)\s*(\d+)""", RegexOption.IGNORE_CASE)
             .find(t)?.destructured?.let { (l, tot) -> Allowance(l.toDouble(), tot.toDouble()) }
+            ?: Regex("""(\d+)\s*(?:su|di|/)\s*(\d+)\s*SMS""", RegexOption.IGNORE_CASE)
+                .find(t)?.destructured?.let { (l, tot) -> Allowance(l.toDouble(), tot.toDouble()) }
             ?: Regex("""SMS\s+illimitat""", RegexOption.IGNORE_CASE).find(t)?.let { Allowance(0.0, null, true) }
         val credit = Regex("""credito(?:\s+residuo)?\s*:?\s*€?\s*(\d+[.,]\d{2})""", RegexOption.IGNORE_CASE)
             .find(t)?.groupValues?.get(1)?.let { num(it) }
-        val renewalText = Regex("""(?:rinnov\w*|si rinnova|prossimo addebito)[^\n]{0,40}""", RegexOption.IGNORE_CASE).find(t)?.value
+        val renewalText = Regex("""(?:rinnov\w*|si rinnova|prossimo addebito)[^\n]{0,40}(?:\n[^\n]{0,20})?""", RegexOption.IGNORE_CASE).find(t)?.value
         val renewal = renewalText?.let { r ->
             textDate(r) ?: Regex("""(\d{1,2})[/.](\d{1,2})\b""").find(r)?.destructured?.let { (d, m) ->
                 runCatching { LocalDate.of(today.year, m.toInt(), d.toInt()) }.getOrNull()?.let { if (it.isBefore(today)) it.plusYears(1) else it }
@@ -246,8 +266,12 @@ object WindTreParse {
                 runCatching { LocalDate.of(today.year, months.indexOf(m.lowercase()) + 1, d.toInt()) }.getOrNull()?.let { if (it.isBefore(today)) it.plusYears(1) else it }
             }
         }
-        return SimStatus(data, minutes, sms, credit, renewal).takeIf { it.hasAny }
+        val offer = Regex("""\b(GO\s+\d+[\w ]{0,12}?)\s*(?:\n|nazionale|$)""", RegexOption.IGNORE_CASE).find(t)?.groupValues?.get(1)?.trim()
+        return SimStatus(data, minutes, sms, roaming, credit, renewal, offer).takeIf { it.hasAny }
     }
+
+    /** Testi e impostazioni dell'app WindTre (migliaia di messaggi): niente contatori, solo falsi allarmi. */
+    fun isConfiguration(url: String): Boolean = Regex("/configuration/|internationalization|business-message", RegexOption.IGNORE_CASE).containsMatchIn(url)
 
     /** Le parole che non si salvano mai: risposte di accesso, token, codici. */
     fun isPrivate(url: String): Boolean = Regex("login|token|auth|otp|password|session|oauth", RegexOption.IGNORE_CASE).containsMatchIn(url)

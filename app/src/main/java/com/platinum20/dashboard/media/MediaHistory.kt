@@ -120,6 +120,13 @@ object MediaHistory {
         prefs?.edit()?.putString(KEY_ITEMS, JSONArray(list.map { it.toJson() }).toString())?.apply()
     }
 
+    /** Voci che arrivano da fuori (YouTube dal PC): sostituiscono le stesse, poi tutto dal più recente. */
+    fun merge(items: List<ResumeItem>) {
+        if (items.isEmpty()) return
+        val keys = items.map { it.kind to it.key }.toSet()
+        save(trim((items + _items.value.filterNot { (it.kind to it.key) in keys }).sortedByDescending { it.at }))
+    }
+
     /** Dati finti per i test. */
     internal fun preview(items: List<ResumeItem>) {
         _items.value = items

@@ -4,7 +4,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.sim.WindTreParse
 import com.platinum20.dashboard.ui.screens.gbLabel
+import com.platinum20.dashboard.sim.Allowance
+import com.platinum20.dashboard.ui.screens.footer
 import com.platinum20.dashboard.ui.screens.renewalLabel
+import com.platinum20.dashboard.ui.screens.ringCaption
+import com.platinum20.dashboard.ui.screens.ringValue
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -39,6 +43,7 @@ class WindTreParseTest {
         assertEquals(4.20, s.credit!!, 0.001)
         assertEquals(LocalDate.of(2026, 11, 15), s.renewal)
         assertEquals("Easy Pay 150", s.offer)
+        assertEquals(1.0, s.roaming!!.total!!, 0.01)
     }
 
     @Test
@@ -81,5 +86,45 @@ class WindTreParseTest {
         assertEquals("3,5 GB", gbLabel(3.5))
         assertEquals("512 MB", gbLabel(0.5))
         assertEquals("tra 13 giorni", renewalLabel(LocalDate.of(2026, 11, 15), today))
+    }
+
+    @Test
+    fun configurazioneIgnorata() {
+        assertTrue(WindTreParse.isConfiguration("https://apigw.windtre.it/api/v0/configuration/internationalization/it"))
+        assertTrue(!WindTreParse.isConfiguration("https://apigw.windtre.it/api/v1/lines/residual-credit"))
+    }
+
+    @Test
+    fun dizionarioDiTestiNonDaNumeri() {
+        val o = JSONObject()
+        for (i in 0 until 100) o.put("label.$i", "Ti restano $i GB su 100 GB, credito 5 euro")
+        o.put("credit", 4.2)
+        assertEquals(null, WindTreParse.fromJson(o.toString(), today))
+    }
+
+    @Test
+    fun paginaDellOffertaVera() {
+        val text = "La tua Offerta\nARRICCHISCI OFFERTA\nStato: Attivo\nGO 200 XXS\nNAZIONALE\n141,4\n/ 200 Giga\nMinuti illimitati\n50\n/ 50 SMS\n" +
+            "ROAMING UE\n7,5\n/ 7,5 Giga\nRinnovo:\n07/11\nDettagli e Limitazioni"
+        val s = WindTreParse.fromText(text, today)!!
+        assertEquals(141.4, s.data!!.left, 0.01)
+        assertEquals(200.0, s.data!!.total!!, 0.01)
+        assertTrue(s.minutes!!.unlimited)
+        assertEquals(50.0, s.sms!!.left, 0.0)
+        assertEquals(7.5, s.roaming!!.total!!, 0.01)
+        assertEquals(LocalDate.of(2026, 11, 7), s.renewal)
+        assertEquals("GO 200 XXS", s.offer)
+    }
+
+    @Test
+    fun anelliDellaCard() {
+        assertEquals("141", ringValue(Allowance(141.4, 200.0)))
+        assertEquals("7,5", ringValue(Allowance(7.5, 7.5)))
+        assertEquals("∞", ringValue(Allowance(0.0, null, true)))
+        assertEquals("su 200 GB", ringCaption(Allowance(141.4, 200.0), "GB"))
+        assertEquals("su 50", ringCaption(Allowance(50.0, 50.0), ""))
+        assertEquals("illimitati", ringCaption(Allowance(0.0, null, true), "min"))
+        val st = SimStatus(credit = 4.2, renewal = LocalDate.of(2026, 11, 7))
+        assertEquals("Rinnovo 7/11 (tra 5 giorni) · Credito 4,20 €", st.footer(today))
     }
 }

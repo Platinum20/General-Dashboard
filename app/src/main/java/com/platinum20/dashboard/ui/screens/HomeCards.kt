@@ -221,7 +221,7 @@ fun TimelineCard(
 }
 
 /**
- * Spese in Oggi: le ultime [Upcoming.MAX] spese sulla stessa linea del tempo di "Prossimi giorni" (Antonio),
+ * Spese in Oggi: le ultime [Upcoming.MAX] spese del mese corrente sulla stessa linea del tempo di "Prossimi giorni" (Antonio),
  * con icona e colore della categoria. Toccando la card si apre la pagina intera.
  */
 @Composable
@@ -236,9 +236,9 @@ fun MoneyCard(
 ) {
     TimelineCard(
         "Spese",
-        expenseEntries(data.expenses, today, limit = Upcoming.MAX).map { it.first },
+        monthExpenseEntries(data.expenses, today, limit = Upcoming.MAX),
         onOpen,
-        empty = "Nessuna spesa ancora.",
+        empty = "Nessuna spesa questo mese.",
         modifier = modifier.captureTarget(CaptureMode.EXPENSE),
         count = count,
     )
