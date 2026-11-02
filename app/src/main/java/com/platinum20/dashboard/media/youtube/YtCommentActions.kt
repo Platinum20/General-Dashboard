@@ -6,7 +6,6 @@ import com.platinum20.dashboard.media.youtube.player.YtComment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONObject
 import java.io.IOException
 
 /**
@@ -99,11 +98,27 @@ object YtCommentActions {
      */
     internal fun script(videoId: String, comment: YtComment?, action: String, text: String): String =
         "(" + ACTION_FN + ")(" +
-            JSONObject.quote(videoId) + "," +
-            JSONObject.quote(comment?.id.orEmpty()) + "," +
-            (comment?.source?.let { JSONObject.quote(it) } ?: "null") + "," +
-            JSONObject.quote(action) + "," +
-            JSONObject.quote(text) + ")"
+            js(videoId) + "," +
+            js(comment?.id.orEmpty()) + "," +
+            (comment?.source?.let { js(it) } ?: "null") + "," +
+            js(action) + "," +
+            js(text) + ")"
+
+    /** Una stringa JavaScript tra virgolette: testo libero (accenti, a capo, emoji) senza rompere lo script. */
+    internal fun js(text: String): String = buildString {
+        append('"')
+        text.forEach { c ->
+            when {
+                c == '"' -> append("\\\"")
+                c == '\\' -> append("\\\\")
+                c == '\n' -> append("\\n")
+                c == '\r' -> append("\\r")
+                c < ' ' || c == '\u2028' || c == '\u2029' || c == '<' -> append("\\u").append(String.format("%04x", c.code))
+                else -> append(c)
+            }
+        }
+        append('"')
+    }
 
     // Cerca il commento sia nel formato nuovo (commentViewModel + entità della pagina) sia nel vecchio
     // (commentRenderer): YouTube cambia spesso la struttura, i nomi dei comandi molto meno.
