@@ -93,6 +93,8 @@ object WindTreParse {
         fun walk(node: Any?, path: String) {
             when (node) {
                 is JSONObject -> {
+                    // Un dizionario di messaggi (centinaia di chiavi, quasi tutte testo) non contiene contatori.
+                    if (node.length() > 80 && node.keys().asSequence().count { node.opt(it) is String } > node.length() * 0.9) return
                     counter(node, path)?.let { counters += it }
                     for (key in node.keys()) {
                         val value = node.opt(key)
@@ -248,6 +250,9 @@ object WindTreParse {
         }
         return SimStatus(data, minutes, sms, credit, renewal).takeIf { it.hasAny }
     }
+
+    /** Testi e impostazioni dell'app WindTre (migliaia di messaggi): niente contatori, solo falsi allarmi. */
+    fun isConfiguration(url: String): Boolean = Regex("/configuration/|internationalization|business-message", RegexOption.IGNORE_CASE).containsMatchIn(url)
 
     /** Le parole che non si salvano mai: risposte di accesso, token, codici. */
     fun isPrivate(url: String): Boolean = Regex("login|token|auth|otp|password|session|oauth", RegexOption.IGNORE_CASE).containsMatchIn(url)

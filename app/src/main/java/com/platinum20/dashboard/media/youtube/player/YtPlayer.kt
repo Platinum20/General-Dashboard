@@ -414,7 +414,7 @@ object YtPlayer {
             YtWatched(stream.id, stream.title, stream.channel, stream.channelAvatar, p.currentPosition, p.duration, now),
         )
         // Anche nella cronologia di YouTube, così dal PC lo vedi come già visto.
-        com.platinum20.dashboard.media.youtube.YtSync.watched(context, stream.id, p.currentPosition, p.duration)
+        com.platinum20.dashboard.media.youtube.YtSync.watched(context, stream.id, p.currentPosition, p.duration, p.isPlaying)
     }
 
     /** I server dei video di YouTube vogliono lo stesso "client" con cui sono stati chiesti i flussi. */

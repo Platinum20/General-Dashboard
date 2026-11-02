@@ -1,11 +1,31 @@
 # Changelog
 
-## 1.290.0
+## 1.293.0
 **Spese: si parte dal mese corrente**
 - La card Spese in Home mostra solo le spese di questo mese, col nome del mese in cima
 - La pagina Spese si apre dall'inizio del mese invece che su "Oggi"
 - Scorrendo la pagina Spese si muove tutto, anche il riepilogo del mese in alto
 - Il mese prima ora è un numero piccolo sotto il totale, col nome del mese (es. "ottobre 203,36 €"), invece della frase "Il mese prima"
+
+## 1.292.0
+**Continua uguale tra PC e Canvas**
+- I video lasciati a metà su YouTube dal PC compaiono in "Continua" insieme a quelli iniziati in Canvas, e ripartono dal punto in cui eri
+- E il contrario: un video lasciato a metà in Canvas, sul PC riparte dal punto in cui l'hai fermato (il punto va a YouTube quando metti in pausa o esci, e ogni 2 minuti mentre guardi)
+
+## 1.291.0
+**Spese: categorie automatiche più precise**
+- Nuove categorie Bollette (telefono, luce, gas, internet: Windtre ora va qui, non in Casa) e Acquisti (Amazon, negozi, vestiti)
+- "Ticket" è Fuori (buoni pasto), il ticket sanitario resta in Salute
+- Riconosce molti più supermercati, bar, ristoranti, distributori e negozi, quindi meno spese in Altro
+- Le parole corte valgono solo intere: "Barbiere" non è più un bar
+- Le spese già salvate si risistemano da sole una volta; quelle che hai cambiato a mano restano come sono
+- Una spesa senza nome si chiama "Pagamento", non più "Spesa"
+
+## 1.289.0
+**SIM: niente più numeri sbagliati**
+- Canvas non legge più i testi di WindTre (messaggi e traduzioni) come se fossero i tuoi giga o il tuo credito
+- I dati letti per errore dalla versione precedente vengono cancellati
+- "Condividi i dati letti" ora include anche cosa carica l'area clienti, così posso insegnare a Canvas il formato giusto
 
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
