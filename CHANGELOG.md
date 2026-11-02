@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.291.0
+**Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
+- La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
+- Aprendo Commenti o Correlati la descrizione sparisce, resta solo quello che hai scelto
+- Il tasto Non mi piace ora funziona come Mi piace: si accende e si spegne, e va anche sul tuo YouTube. Accanto c'è il numero stimato, senza più il pop-up
+- Nuovo tastino per iscriversi o disiscriversi dal canale, accanto a Mi piace e Non mi piace, sincronizzato con YouTube
+
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
 - In Home c'è la card SIM: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e quando si rinnova l'offerta
