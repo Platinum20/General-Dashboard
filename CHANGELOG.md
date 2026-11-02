@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.289.0
+**Spese: categorie automatiche più precise**
+- Nuove categorie Bollette (telefono, luce, gas, internet: Windtre ora va qui, non in Casa) e Acquisti (Amazon, negozi, vestiti)
+- "Ticket" è Fuori (buoni pasto), il ticket sanitario resta in Salute
+- Riconosce molti più supermercati, bar, ristoranti, distributori e negozi, quindi meno spese in Altro
+- Le parole corte valgono solo intere: "Barbiere" non è più un bar
+- Le spese già salvate si risistemano da sole una volta; quelle che hai cambiato a mano restano come sono
+- Una spesa senza nome si chiama "Pagamento", non più "Spesa"
+
 ## 1.288.0
 **Nuova card SIM: giga, minuti e credito WindTre**
 - In Home c'è la card SIM: i giga rimasti in grande con la barra, sotto minuti, SMS, credito e quando si rinnova l'offerta

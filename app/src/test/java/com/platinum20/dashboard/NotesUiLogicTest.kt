@@ -287,8 +287,8 @@ class NotesUiLogicTest {
         // L'importo per primo, il nome dopo.
         assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[1].text)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
-        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
-        assertEquals("Spesa", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
+        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
+        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
         assertEquals(10f, entries[1].gapDp, 0.01f)
         // Nella card in Oggi solo le ultime, sempre in fondo la più recente.

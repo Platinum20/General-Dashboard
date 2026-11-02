@@ -230,6 +230,21 @@ object NotesStore {
         applyFixedExpenses()
         // Le categorie imparano parole nuove: quelle rimaste in "Altro" si risistemano da sole.
         update { d -> Expenses.recategorized(d.expenses).let { if (it == d.expenses) d else d.copy(expenses = it) } }
+        val prefs = appContext.getSharedPreferences("notes_upgrades", Context.MODE_PRIVATE)
+        if (prefs.getInt("categories", 0) < CATEGORIES_VERSION) {
+            update(::withUpgradedCategories)
+            prefs.edit().putInt("categories", CATEGORIES_VERSION).apply()
+        }
+    }
+
+    /** Sale quando le categorie cambiano forma (1.289: Bollette e Acquisti): le spese vecchie si spostano una volta. */
+    private const val CATEGORIES_VERSION = 1
+
+    /** Le spese (e le fisse) che con le categorie nuove stanno meglio altrove; vedi [Expenses.upgradeCategory]. */
+    fun withUpgradedCategories(d: NotesData): NotesData {
+        val expenses = d.expenses.map { e -> Expenses.upgradeCategory(e.category, e.text).let { if (it == e.category) e else e.copy(category = it) } }
+        val fixed = d.fixedExpenses.map { f -> Expenses.upgradeCategory(f.category, f.text).let { if (it == f.category) f else f.copy(category = it) } }
+        return if (expenses == d.expenses && fixed == d.fixedExpenses) d else d.copy(expenses = expenses, fixedExpenses = fixed)
     }
 
     fun readProblemShown() {
