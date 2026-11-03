@@ -1,10 +1,19 @@
 # Changelog
 
-## 1.308.0
+## 1.311.0
 **Dalla Home si apre la singola cosa**
 - Toccando un evento nelle card della Home si apre il suo dettaglio, non più il calendario intero
 - Lo stesso per promemoria, date, pacchi, addebiti, spese e note: ognuno apre la sua scheda
 - Toccando il resto della card si apre la pagina intera, come prima; le spunte si mettono sempre dalla card
+
+## 1.309.0
+**Iscrizioni di nuovo con tutti i canali**
+- A volte YouTube rifiuta i feed di molti canali insieme e Iscrizioni mostrava i video di un canale solo: ora si riprova e, se un canale non risponde, restano i suoi video di prima
+- Il feed resta sempre in ordine cronologico, dal più recente
+
+## 1.308.0
+**Spese: il mese cambia tutto insieme**
+- Trascinando il riepilogo di lato, anche le spese del mese sotto scorrono via con la card ed entra il nuovo mese
 
 ## 1.307.0
 **Card SIM: un dato per riga**
