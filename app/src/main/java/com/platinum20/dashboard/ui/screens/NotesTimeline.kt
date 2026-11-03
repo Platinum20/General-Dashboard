@@ -468,6 +468,22 @@ internal fun expenseEntries(
     }
 }
 
+/**
+ * La card Spese in Oggi (Antonio): solo il mese corrente, col suo nome in cima, le ultime [limit] spese.
+ * Il totale accanto al titolo è già quello del mese, così righe e numero dicono la stessa cosa.
+ */
+internal fun monthExpenseEntries(
+    expenses: List<com.platinum20.dashboard.notes.Expense>,
+    today: LocalDate,
+    limit: Int,
+): List<TimelineEntry> {
+    val month = java.time.YearMonth.from(today)
+    val rows = expenseEntries(expenses.filter { java.time.YearMonth.from(it.date) == month }, today, limit = limit).map { it.first }
+    if (rows.isEmpty()) return rows
+    val name = com.platinum20.dashboard.today.Upcoming.monthBreak(month.atDay(1).minusDays(1), today, today)
+    return listOf(rows.first().copy(month = name)) + rows.drop(1)
+}
+
 private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes
 
 /** Si vede subito che nota è: con la foto, una lista da spuntare, o testo. */

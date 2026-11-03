@@ -5,7 +5,9 @@ import android.content.SharedPreferences
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.Accounts
+import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.MediaService
+import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.youtube.player.YtResolver
 import com.platinum20.dashboard.notes.Note
@@ -272,20 +274,47 @@ object YtSync {
         val raw = page.run("__cvApi('browse', {browseId: 'FEhistory'}).then(function(r) { return __cvCollect(r).videos; })")
         val videos = YouTubeWeb.videos(runCatching { JSONArray(raw) }.getOrNull())
         if (videos.isNotEmpty()) YtHistory.mergeRemote(context, videos)
+        // I video lasciati a metà sul PC compaiono anche in "Continua".
+        MediaHistory.init(context)
+        MediaHistory.merge(continueItems(MediaHistory.items.value, videos, System.currentTimeMillis()))
     }
 
     /**
-     * Un video guardato in Canvas va anche nella cronologia di YouTube, col punto a cui sei arrivato:
-     * una volta quando l'hai iniziato davvero e una quando l'hai finito.
+     * I video della cronologia di YouTube ([remote], dal più recente) lasciati a metà, come voci di
+     * "Continua": i nuovi con l'ordine di YouTube, a quelli già presenti si aggiorna solo il punto se
+     * sul PC sei andato più avanti. Funzione pura, provata nei test.
      */
-    fun watched(context: Context, id: String, positionMs: Long, durationMs: Long) {
-        if (positionMs < 30_000) return
+    internal fun continueItems(existing: List<ResumeItem>, remote: List<YtVideo>, now: Long): List<ResumeItem> {
+        val known = existing.filter { it.kind == ResumeKind.YOUTUBE }.associateBy { it.key }
+        return remote.withIndex()
+            .filter { (_, v) -> !v.isShort && !v.live && v.durationSec > 0 && v.watchedPercent in 2 until 95 }
+            .take(MediaHistory.PER_KIND)
+            .mapNotNull { (index, v) ->
+                val durationMs = v.durationSec * 1000L
+                val positionMs = durationMs * v.watchedPercent / 100
+                val old = known[v.id]
+                when {
+                    old == null -> ResumeItem(
+                        ResumeKind.YOUTUBE, v.id, v.title, v.channel, "https://i.ytimg.com/vi/${v.id}/hqdefault.jpg",
+                        positionMs = positionMs, durationMs = durationMs, at = now - index * 1_000L,
+                    )
+                    positionMs > old.positionMs -> old.copy(positionMs = positionMs, durationMs = durationMs)
+                    else -> null
+                }
+            }
+    }
+
+    /**
+     * Un video guardato in Canvas va anche nella cronologia di YouTube col punto a cui sei arrivato,
+     * così sul PC riparte da lì: vedi [nextPush] per quando si manda.
+     */
+    fun watched(context: Context, id: String, positionMs: Long, durationMs: Long, playing: Boolean) {
         val app = context.applicationContext
         val p = prefs(app)
-        val done = durationMs > 0 && positionMs >= durationMs - 15_000
-        val state = if (done) "d" else "s"
         val sent = readWatched(p)
-        if (sent[id] == "d" || sent[id] == state) return
+        val previous = sent[id]
+        val state = nextPush(previous, positionMs, durationMs, playing, System.currentTimeMillis()) ?: return
+        sent.remove(id)
         sent[id] = state
         writeWatched(p, sent)
         if (!active()) return
@@ -295,10 +324,31 @@ object YtSync {
                     YouTubeWeb.withAccount(app) { page -> markWatched(page, id, positionMs / 1000) }
                 }.onFailure {
                     // Riprova la prossima volta che salvi il punto.
-                    writeWatched(p, readWatched(p).apply { remove(id) })
+                    writeWatched(p, readWatched(p).apply { if (previous == null) remove(id) else put(id, previous) })
                 }
             }
         }
+    }
+
+    /**
+     * Il nuovo stato da ricordare se il punto va mandato a YouTube adesso, null se no. Stato:
+     * "secondi:quando" dell'ultimo invio, "d" se l'hai finito. Si manda appena l'hai iniziato davvero
+     * (30 s), ogni 2 minuti mentre guardi se sei andato avanti, quando metti in pausa o esci, e alla fine.
+     * Funzione pura, provata nei test.
+     */
+    internal fun nextPush(last: String?, positionMs: Long, durationMs: Long, playing: Boolean, now: Long): String? {
+        if (positionMs < 30_000 || last == "d") return null
+        if (durationMs > 0 && positionMs >= durationMs - 15_000) return "d"
+        val seconds = positionMs / 1000
+        val parts = last?.split(":")
+        val lastSeconds = parts?.getOrNull(0)?.toLongOrNull()
+        val lastAt = parts?.getOrNull(1)?.toLongOrNull() ?: 0L
+        val push = when {
+            lastSeconds == null -> true
+            playing -> kotlin.math.abs(seconds - lastSeconds) >= 60 && now - lastAt >= 120_000
+            else -> kotlin.math.abs(seconds - lastSeconds) >= 10
+        }
+        return if (push) "$seconds:$now" else null
     }
 
     /** Come fa il sito: chiede il video col tuo accesso e segnala la visione agli indirizzi di statistica. */
