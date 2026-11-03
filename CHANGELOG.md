@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.311.0
+## 1.312.0
 **Dalla Home si apre la singola cosa**
 - Toccando un evento nelle card della Home si apre il suo dettaglio, non più il calendario intero
 - Lo stesso per promemoria, date, pacchi, addebiti, spese e note: ognuno apre la sua scheda
