@@ -268,9 +268,9 @@ internal fun GmailPasswordDialog(onDismiss: () -> Unit, onLinked: () -> Unit) {
     )
 }
 
-/** Impostazioni > Compila da solo > Gmail: collega con la password per app, leggi adesso, scollega. */
+/** Impostazioni > Account > Posta: collega con la password per app, leggi adesso, scollega (righe dentro un SettingsBlock). */
 @Composable
-internal fun GmailSettingsGroup() {
+internal fun GmailAccountRows() {
     val context = LocalContext.current
     MailStore.init(context)
     val oauth by GmailAuth.connected.collectAsStateWithLifecycle()
@@ -324,7 +324,7 @@ internal fun GmailSettingsGroup() {
         if (imap || !oauth) askPassword = true else connect.start()
     }
 
-    SettingsGroup {
+    run {
         SettingsItem(
             icon = Icons.Outlined.Mail,
             title = if (connected) "Gmail collegato" else "Collega Gmail",

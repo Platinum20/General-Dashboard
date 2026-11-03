@@ -359,6 +359,7 @@ fun SettingsPageScreen(
                     // Il collegamento WindTre sta qui, non nella pagina SIM (Antonio): là restano solo i dati.
                     item { SettingsBlock("SIM") { WindTreAccountRows() } }
                     item { SettingsBlock("Conto") { RevolutAccountRows() } }
+                    item { SettingsBlock("Posta") { GmailAccountRows() } }
                 }
                 SettingsPage.DATA -> item {
                     SettingsBlock("I tuoi dati") {

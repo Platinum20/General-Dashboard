@@ -102,7 +102,7 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
 the Google app is in Testing); `MailStore.sync` picks IMAP first (`Source` interface), `MailStore.connected()`; `MailParse` (pure: Gmail JSON, MIME/HTML to text, mail to `Incoming`), `MailStore`
 (sync: new mails into `AutoFill.offer`, important unread for the Home card), `work/MailWorker` (hourly + on
 Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (`FromMailCard` = Home card "Dalla posta": only important unread mail (since 1.191 AutoFill always saves found items straight into Note, no "Aggiungi"; "La tua settimana" card removed),
-GmailSettingsGroup inside AutoFillScreen (password dialog `GmailPasswordDialog`), MailScreen route `home/mail/{id}`).
+`GmailAccountRows` in Settings › Account "Posta" (1.328, like SIM/Conto; password dialog `GmailPasswordDialog`), MailScreen route `home/mail/{id}`).
 
 **SIM** (`sim/`, 1.288): `WindTreParse` (pure: any JSON/page text from WindTre area clienti → `SimStatus` giga/minuti/SMS/credito/rinnovo by key names, format not public), `SimStore` (status, linked, last 40 captured responses in filesDir, login responses never saved), `WindTreLink` (JS hook on fetch/XHR via document-start script on `*.windtre.it`, one-time official login WebView, hidden-WebView refresh hourly from the Home card). UI `ui/screens/SimUi.kt` (`SimCard` = HomeCard.SIM, `SimScreen` route `home/sim`, "Condividi i dati letti" to fix the parser from real samples).
 
