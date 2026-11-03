@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.310.0
+**Card SIM: credito e rinnovo in fondo sulla stessa riga**
+- Il credito sta a sinistra e il rinnovo a destra, sotto giga, minuti e SMS
+- Nella pagina SIM niente più tasto "Aggiorna ora": si aggiorna tirando giù la pagina
+
 ## 1.309.0
 **Iscrizioni di nuovo con tutti i canali**
 - A volte YouTube rifiuta i feed di molti canali insieme e Iscrizioni mostrava i video di un canale solo: ora si riprova e, se un canale non risponde, restano i suoi video di prima
