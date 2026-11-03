@@ -154,7 +154,7 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
  * prossime [Upcoming.MAX] cose. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
  */
 @Composable
-fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
+internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val all = timelineEntries(groups, today, months = true, expenses = expenses)
