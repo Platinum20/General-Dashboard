@@ -57,6 +57,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.repeatOnLifecycle
@@ -737,4 +738,50 @@ fun weatherIcon(code: Int, isDay: Boolean = true): ImageVector = when (WeatherCo
     WeatherCodes.Kind.RAIN -> Icons.Outlined.Umbrella
     WeatherCodes.Kind.SNOW -> Icons.Outlined.AcUnit
     WeatherCodes.Kind.STORM -> Icons.Outlined.Thunderstorm
+}
+
+/**
+ * Il posto di un contenuto che sta arrivando: una forma grigia ferma, già della sua grandezza, al posto
+ * della rotella. Quando arrivano i dati la card non cambia altezza (Antonio le vuole ferme).
+ */
+@Composable
+fun Placeholder(width: Dp, height: Dp, modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.extraSmall) {
+    val tint = androidx.compose.material3.LocalContentColor.current
+    Box(modifier.size(width, height).clip(shape).background(tint.copy(alpha = 0.1f)))
+}
+
+/** Come [Placeholder] ma lungo quanto lo spazio che ha (una riga di testo che arriverà). */
+@Composable
+fun PlaceholderLine(fraction: Float, height: Dp = 12.dp, modifier: Modifier = Modifier) {
+    val tint = androidx.compose.material3.LocalContentColor.current
+    Box(modifier.fillMaxWidth(fraction).height(height).clip(MaterialTheme.shapes.extraSmall).background(tint.copy(alpha = 0.1f)))
+}
+
+/**
+ * Una lista che sta arrivando (notizie, video): righe grigie ferme al posto della rotella in mezzo
+ * allo schermo, così l'occhio è già dove compariranno le cose. [thumb] = con la miniatura a sinistra.
+ */
+@Composable
+fun PlaceholderList(modifier: Modifier = Modifier, rows: Int = 6, thumb: Boolean = true, label: String = "Carico…") {
+    val widths = listOf(0.86f, 0.7f, 0.78f, 0.62f, 0.82f, 0.68f)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .semantics(mergeDescendants = true) { contentDescription = label },
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(18.dp),
+    ) {
+        repeat(rows) { i ->
+            androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                if (thumb) {
+                    Placeholder(96.dp, 56.dp, shape = MaterialTheme.shapes.small)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(7.dp)) {
+                    PlaceholderLine(widths[i % widths.size], 14.dp)
+                    PlaceholderLine(widths[(i + 3) % widths.size] * 0.55f, 10.dp)
+                }
+            }
+        }
+    }
 }
