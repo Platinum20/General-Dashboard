@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.301.0
+**Player YouTube più pulito**
+- Via i tasti avanti e indietro di 10 secondi: si usa solo il doppio tocco sui lati
+- Il tasto play non ha più il cerchio intorno
+- Tolto il tasto "prossimo video" in alto a destra
+- La barra del volume a schermo intero mostra in cima il numero della tacca, ed è centrata
+
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
 - La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
