@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.341.0
+**Filtri del Calendario senza scatti**
+- Togliendo un filtro (Spese, Note, Eventi) la linea del tempo non si blocca più per un attimo: ora si disegnano solo le righe che vedi, non tutti i mesi insieme
+
 ## 1.339.0
 **Revolut in Home**
 - Nuova card Revolut, come quella della SIM: in alto il saldo totale, sotto il saldo di ogni tasca (conto e salvadanai come "Risparmi")

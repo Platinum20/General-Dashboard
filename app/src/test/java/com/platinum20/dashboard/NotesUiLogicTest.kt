@@ -24,6 +24,7 @@ import com.platinum20.dashboard.ui.screens.monthExpenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import com.platinum20.dashboard.ui.screens.nowRoom
+import com.platinum20.dashboard.ui.screens.timelineKeys
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -357,5 +358,12 @@ class NotesUiLogicTest {
         assertEquals(1200, nowRoom(viewport = 2000, bottomPadding = 300, below = 500))
         assertEquals(0, nowRoom(viewport = 2000, bottomPadding = 300, below = 5000))
         assertEquals(0, nowRoom(viewport = 0, bottomPadding = 300, below = 100))
+    }
+
+    /** Ogni riga della linea è un item della lista: chiavi sempre diverse anche se una cosa compare due volte. */
+    @Test fun chiaviDellaLineaUniche() {
+        val keys = timelineKeys(listOf("task-1", "exp-2", "task-1", "task-1"))
+        assertEquals(listOf("tl-task-1", "tl-exp-2", "tl-task-1#2", "tl-task-1#3"), keys)
+        assertEquals(keys.size, keys.toSet().size)
     }
 }
