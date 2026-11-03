@@ -86,8 +86,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -429,7 +427,7 @@ private fun VideoArea(
     }
     LaunchedEffect(flashKey) {
         if (seekFlash != 0) {
-            delay(600)
+            delay(900)
             seekFlash = 0
         }
     }
@@ -440,11 +438,19 @@ private fun VideoArea(
             .pointerInput(inPip) {
                 if (inPip) return@pointerInput
                 detectTapGestures(
-                    onTap = { controls = !controls },
+                    onTap = { offset ->
+                        // Subito dopo un doppio tocco, ogni tocco dallo stesso lato aggiunge altri 10 s.
+                        val forward = offset.x > size.width / 2
+                        if (seekFlash != 0 && (seekFlash > 0) == forward) {
+                            YtPlayer.seekBy(context, if (forward) 10_000 else -10_000)
+                            seekFlash = SeekStack.next(seekFlash, forward)
+                            flashKey++
+                        } else controls = !controls
+                    },
                     onDoubleTap = { offset ->
                         val forward = offset.x > size.width / 2
                         YtPlayer.seekBy(context, if (forward) 10_000 else -10_000)
-                        seekFlash = if (forward) 1 else -1
+                        seekFlash = SeekStack.next(seekFlash, forward)
                         flashKey++
                     },
                 )
@@ -591,7 +597,7 @@ private fun VideoArea(
             now?.loading != false -> CircularProgressIndicator(Modifier.align(Alignment.Center).size(44.dp), color = Color.White)
         }
 
-        // Il segno del doppio tocco: ±10 s sul lato toccato.
+        // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …).
         if (seekFlash != 0) {
             Box(
                 Modifier
@@ -601,7 +607,7 @@ private fun VideoArea(
                     .background(Color.White.copy(alpha = 0.12f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(if (seekFlash > 0) "+10 s" else "−10 s", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text(if (seekFlash > 0) "+$seekFlash s" else "−${-seekFlash} s", color = Color.White, style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -798,29 +804,25 @@ private fun TimeBar(
         val sponsorOn by AppSettings.sponsorBlock.collectAsState()
         val actions by AppSettings.sponsorActions.collectAsState()
         val marks = if (sponsorOn) SponsorBlock.marks(sponsor?.segments.orEmpty(), actions) else emptyList()
-        val sliderColors = SliderDefaults.colors(
-            thumbColor = Color(0xFFFF2D2D),
-            activeTrackColor = Color(0xFFFF2D2D),
-            inactiveTrackColor = Color.White.copy(alpha = if (buffered > position) 0.45f else 0.3f),
-        )
-        Slider(
+        // Tocco semplice = niente salto: si sposta solo trascinando di lato (SeekBar).
+        SeekBar(
             value = dragging ?: if (duration > 0) position.toFloat() / duration else 0f,
-            onValueChange = {
+            onSeeking = {
                 dragging = it
                 onInteract()
             },
-            onValueChangeFinished = {
-                dragging?.let { YtPlayer.seekTo(context, (it * duration).toLong()) }
+            onSeekEnd = { commit ->
+                if (commit) dragging?.let { YtPlayer.seekTo(context, (it * duration).toLong()) }
                 dragging = null
             },
             enabled = duration > 0,
-            colors = sliderColors,
-            // Pallino piccolo come su YouTube, al posto della stanghetta alta di Material.
-            thumb = { SeekDot(Color(0xFFFF2D2D), 12.dp) },
-            track = { state ->
+            // Pallino piccolo come su YouTube, più grande mentre si trascina.
+            thumb = { SeekDot(Color(0xFFFF2D2D), if (dragging != null) 16.dp else 12.dp) },
+            track = {
                 // Barra sottile quanto i segmenti di SponsorBlock, che ci stanno sopra allineati.
                 val buffer = if (duration > 0) buffered.toFloat() / duration else 0f
-                VideoTrack(state.value, buffer, if (duration > 0) marks else emptyList(), duration)
+                val played = dragging ?: if (duration > 0) position.toFloat() / duration else 0f
+                VideoTrack(played, buffer, if (duration > 0) marks else emptyList(), duration)
             },
             modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
         )
