@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.animateScrollBy
 import com.platinum20.dashboard.capture.captureTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -543,6 +544,22 @@ fun FlashNewRows(keys: List<String>, vararg resetOn: Any?) {
     }
 }
 
+/**
+ * Il lancio verso il passato che arriverebbe oltre OGGI: invece di fermarsi di colpo contro il confine,
+ * la lista frena fino a posarsi su OGGI. Restituisce quanti px scorrere (verso il passato) o null se il
+ * lancio non arriva al confine, è già sbloccato o va verso il futuro. Logica pura, per i test.
+ */
+internal fun softStopAtNow(boundary: Float?, velocity: Float, naturalDistance: Float, unlocked: Boolean): Float? {
+    if (boundary == null || unlocked || velocity <= 0f) return null
+    val room = -boundary
+    if (room <= 1f || naturalDistance <= room) return null
+    return room
+}
+
+/** Quanto dura la frenata su OGGI: come una decelerazione costante dalla velocità del lancio. */
+internal fun softStopMs(distance: Float, velocity: Float): Int =
+    if (velocity <= 0f) 400 else (2f * distance / velocity * 1000f).toInt().coerceIn(180, 600)
+
 /** Ogni volta che una lista arriva su OGGI: i [TimelineNowMarker] a schermo pulsano. */
 object NowPulse {
     val ticks = androidx.compose.runtime.mutableIntStateOf(0)
@@ -553,10 +570,12 @@ object NowPulse {
 @Composable
 fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListState, itemIndex: Int, offset: Int?): androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
     val haptic = rememberHaptic()
-    val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val threshold = with(density) { 120.dp.toPx() }
+    val decay = androidx.compose.animation.rememberSplineBasedDecay<Float>()
     val index by androidx.compose.runtime.rememberUpdatedState(itemIndex)
     val at by androidx.compose.runtime.rememberUpdatedState(offset)
-    return androidx.compose.runtime.remember(listState, haptic, threshold) {
+    return androidx.compose.runtime.remember(listState, haptic, threshold, decay) {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
             var pull = 0f
             var unlocked = false
@@ -589,7 +608,13 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
             override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
                 pull = 0f
                 flingStopped = false
-                return androidx.compose.ui.unit.Velocity.Zero
+                val v = available.y
+                val stop = softStopAtNow(boundary(), v, decay.calculateTargetValue(0f, v), unlocked)
+                    ?: return androidx.compose.ui.unit.Velocity.Zero
+                // Frena fino a OGGI invece di sbatterci contro: il lancio lo prendiamo tutto noi.
+                listState.animateScrollBy(-stop, androidx.compose.animation.core.tween(softStopMs(stop, v), easing = Motion.Decelerate))
+                NowPulse.fire()
+                return available
             }
         }
     }

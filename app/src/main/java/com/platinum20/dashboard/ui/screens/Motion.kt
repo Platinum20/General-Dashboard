@@ -42,6 +42,9 @@ object Motion {
     const val ENTER_MS = 340
     const val EXIT_MS = 160
 
+    /** Fra le sezioni della barra: più svelto di un dettaglio, così non si somma alla cascata delle card. */
+    const val TAB_MS = 280
+
     /** Di quanto scivola una pagina: un accenno, non tutta la larghezza. */
     private const val SHIFT = 10
 
@@ -50,12 +53,12 @@ object Motion {
      * (Note sta a destra di Home: entra da destra), quella vecchia scivola dall'altra parte.
      */
     fun tabEnter(forward: Boolean): EnterTransition =
-        slideInHorizontally(tween(ENTER_MS, easing = Decelerate)) { w -> (if (forward) w else -w) / SHIFT } +
-            fadeIn(tween(ENTER_MS - 80, delayMillis = 60, easing = Decelerate))
+        slideInHorizontally(tween(TAB_MS, easing = Decelerate)) { w -> (if (forward) w else -w) / SHIFT } +
+            fadeIn(tween(TAB_MS - 60, delayMillis = 40, easing = Decelerate))
 
     fun tabExit(forward: Boolean): ExitTransition =
-        slideOutHorizontally(tween(ENTER_MS, easing = Decelerate)) { w -> (if (forward) -w else w) / SHIFT } +
-            fadeOut(tween(EXIT_MS, easing = Accelerate))
+        slideOutHorizontally(tween(TAB_MS, easing = Decelerate)) { w -> (if (forward) -w else w) / SHIFT } +
+            fadeOut(tween(EXIT_MS - 20, easing = Accelerate))
 
     /** Pagina di dettaglio: arriva da destra e si ingrandisce appena; sotto, la sezione arretra. */
     val pushEnter: EnterTransition =
@@ -128,7 +131,8 @@ fun Modifier.entrance(): Modifier = composed {
         delay(turn * Entrance.STAGGER_MS)
         progress.animateTo(1f, tween(Entrance.DURATION_MS, easing = Motion.Decelerate))
     }
-    val rise = with(LocalDensity.current) { 18.dp.toPx() }
+    // Un accenno: la pagina scivola già di lato, le card salgono appena (prima 18 dp, due movimenti forti insieme).
+    val rise = with(LocalDensity.current) { 10.dp.toPx() }
     graphicsLayer {
         val p = progress.value
         alpha = p
@@ -138,8 +142,8 @@ fun Modifier.entrance(): Modifier = composed {
 
 internal object Entrance {
     const val WINDOW_MS = 450L
-    const val STAGGER_MS = 45L
-    const val DURATION_MS = 420
+    const val STAGGER_MS = 35L
+    const val DURATION_MS = 300
     private const val MAX_TURNS = 7
 
     private class Page(val start: Long) { var count = 0 }
