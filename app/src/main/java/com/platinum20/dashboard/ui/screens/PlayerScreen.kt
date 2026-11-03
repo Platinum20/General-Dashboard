@@ -116,12 +116,11 @@ internal fun sourceAccent(source: PlaySource): TileAccent = when (source) {
  * Il player unico, per qualunque cosa suoni. Se la voce della coda ha un video di YouTube la pagina
  * è quella del video (con titolo, descrizione, commenti); se no copertina, barra del tempo e comandi.
  * Passando da un video a una canzone nella coda la pagina cambia da sola, senza cambiare schermata.
- * [startUrl]: un video di YouTube da far partire aprendo la pagina.
+ * [startUrl]: un video di YouTube da far partire aprendo la pagina. La coda è un pop-up sopra ([QueuePopup]).
  */
 @Composable
 fun PlayerScreen(
     onBack: () -> Unit,
-    onOpenQueue: () -> Unit = {},
     startUrl: String? = null,
     onOpenChannel: (com.platinum20.dashboard.media.youtube.YtChannel) -> Unit = {},
 ) {
@@ -132,10 +131,16 @@ fun PlayerScreen(
         startUrl?.let { YtPlayer.play(context, it) }
         starting = false
     }
-    if (starting || now?.source == PlaySource.VIDEO) {
-        YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue, onOpenChannel = onOpenChannel)
-    } else {
-        AudioPlayer(onBack, onOpenQueue)
+    // La coda si apre sopra il player, non in un'altra pagina: il video resta a schermo intero e in orizzontale.
+    var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val onOpenQueue = { queueOpen = true }
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        if (starting || now?.source == PlaySource.VIDEO) {
+            YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue, onOpenChannel = onOpenChannel)
+        } else {
+            AudioPlayer(onBack, onOpenQueue)
+        }
+        QueuePopup(open = queueOpen, onClose = { queueOpen = false })
     }
 }
 

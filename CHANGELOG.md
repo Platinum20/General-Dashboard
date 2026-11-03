@@ -1,11 +1,25 @@
 # Changelog
 
-## 1.295.0
+## 1.299.0
 **Barra del video: niente più salti per sbaglio**
 - Toccare la barra del tempo non sposta più il video: si va avanti o indietro solo trascinando il dito di lato
 - Un trascinamento verso l'alto o il basso sulla barra non la muove (resta allo schermo intero)
 - Doppio tocco ripetuto che si somma: +10, +20, +30… (anche toccando ancora una volta sullo stesso lato subito dopo)
 - Vale anche per la barra del player di musica, radio e podcast
+
+## 1.297.0
+**Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
+- La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
+- Aprendo Commenti o Correlati la descrizione sparisce, resta solo quello che hai scelto
+- Il tasto Non mi piace ora funziona come Mi piace: si accende e si spegne, e va anche sul tuo YouTube. Accanto c'è il numero stimato, senza più il pop-up
+- Nuovo tastino per iscriversi o disiscriversi dal canale, accanto a Mi piace e Non mi piace, sincronizzato con YouTube
+
+## 1.296.0
+**La coda si apre sopra il player**
+- Toccando la coda mentre guardi un video non si apre più un'altra pagina: la coda compare sopra il player, e il video resta com'era, anche a schermo intero in orizzontale
+- In orizzontale la coda entra di lato a destra, con il video ancora visibile a sinistra; in verticale sale dal basso
+- Vale anche per Spotify, la musica, la radio e i podcast
+- Si chiude toccando fuori, col gesto indietro o trascinando la parte in alto verso il bordo; dentro puoi ancora spostare, togliere e far partire le voci
 
 ## 1.294.0
 **Card SIM più compatta, con gli anelli**

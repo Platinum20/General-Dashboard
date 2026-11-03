@@ -1,6 +1,28 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -102,52 +124,177 @@ fun QueueScreen(onBack: () -> Unit) {
             }
         },
     ) { inner ->
-        if (now == null && upcoming.isEmpty()) {
-            Column(
-                Modifier.fillMaxSize().padding(inner).padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                IconTile(Icons.Outlined.QueueMusic, TileAccent.BLUE, size = 64.dp, iconSize = 32.dp)
-                Spacer(Modifier.size(12.dp))
-                Text("La coda è vuota", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Tieni premuto un video, una canzone, una radio o un episodio e scegli \"Aggiungi alla coda\".",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
+        QueueList(Modifier.fillMaxSize().padding(inner), PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp))
+    }
+}
+
+/** Il contenuto della coda (vuota o con le voci), uguale nella pagina e nel pop-up sopra il player. */
+@Composable
+private fun QueueList(modifier: Modifier, contentPadding: PaddingValues) {
+    val queue by CanvasPlayer.queue.collectAsState()
+    val now = queue.now
+    val upcoming = queue.upcoming
+    if (now == null && upcoming.isEmpty()) {
+        Column(
+            modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            IconTile(Icons.Outlined.QueueMusic, TileAccent.BLUE, size = 64.dp, iconSize = 32.dp)
+            Spacer(Modifier.size(12.dp))
+            Text("La coda è vuota", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Tieni premuto un video, una canzone, una radio o un episodio e scegli \"Aggiungi alla coda\".",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        return
+    }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val view = androidx.compose.ui.platform.LocalView.current
+    val upcomingIds = upcoming.map { it.id }.toSet()
+    val reorder = rememberReorderState(listState, canMove = { it in upcomingIds }) { from, to ->
+        view.haptic(Haptic.TICK)
+        CanvasPlayer.moveTo(from as Long, to as Long)
+    }
+    LazyColumn(
+        modifier,
+        state = listState,
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (now != null) {
+            item(key = "h-now") { SectionHeader("In riproduzione") }
+            item(key = now.id) {
+                QueueRow(now, current = true, modifier = Modifier.animateItem(), onTap = {})
+            }
+        }
+        if (upcoming.isNotEmpty()) {
+            item(key = "h-next") { SectionHeader("Dopo", Modifier.padding(top = 8.dp)) }
+            items(upcoming, key = { it.id }) { entry ->
+                SwipeQueueRow(
+                    entry,
+                    modifier = (if (reorder.isDragging(entry.id)) Modifier else Modifier.animateItem()).reorderItem(reorder, entry.id),
+                    handle = Modifier.reorderHandle(reorder, entry.id) { view.haptic(Haptic.GRAB) },
                 )
             }
-            return@Scaffold
         }
-        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-        val view = androidx.compose.ui.platform.LocalView.current
-        val upcomingIds = upcoming.map { it.id }.toSet()
-        val reorder = rememberReorderState(listState, canMove = { it in upcomingIds }) { from, to ->
-            view.haptic(Haptic.TICK)
-            CanvasPlayer.moveTo(from as Long, to as Long)
-        }
-        LazyColumn(
-            Modifier.fillMaxSize().padding(inner),
-            state = listState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+    }
+}
+
+/**
+ * Dove sta e quando si chiude il pop-up della coda sopra il player. Pura per i test.
+ */
+internal object QueueSheet {
+    /** Schermo più largo che alto (video a schermo intero): pannello di lato, così il video resta in orizzontale. */
+    fun sideways(width: Float, height: Float): Boolean = width > height
+
+    /** Trascinato verso il bordo da cui è entrato: oltre un terzo, o lanciato, si chiude. */
+    fun closes(dragged: Float, velocity: Float, extent: Float): Boolean =
+        dragged > extent / 3f || (velocity > 1_200f && dragged > 0f)
+}
+
+/**
+ * La coda come pop-up sopra il player (video o audio), invece di un'altra pagina: il video resta
+ * com'è, anche a schermo intero in orizzontale. In verticale sale dal basso, in orizzontale entra
+ * da destra. Si chiude toccando fuori, col gesto indietro o trascinando l'intestazione verso il bordo.
+ */
+@Composable
+internal fun QueuePopup(open: Boolean, onClose: () -> Unit) {
+    androidx.activity.compose.BackHandler(enabled = open, onBack = onClose)
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val sideways = QueueSheet.sideways(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
+        val extent = if (sideways) constraints.maxWidth * 0.45f else constraints.maxHeight * 0.7f
+        androidx.compose.animation.AnimatedVisibility(
+            visible = open,
+            enter = androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.fadeOut(),
         ) {
-            if (now != null) {
-                item(key = "h-now") { SectionHeader("In riproduzione") }
-                item(key = now.id) {
-                    QueueRow(now, current = true, modifier = Modifier.animateItem(), onTap = {})
-                }
-            }
-            if (upcoming.isNotEmpty()) {
-                item(key = "h-next") { SectionHeader("Dopo", Modifier.padding(top = 8.dp)) }
-                items(upcoming, key = { it.id }) { entry ->
-                    SwipeQueueRow(
-                        entry,
-                        modifier = (if (reorder.isDragging(entry.id)) Modifier else Modifier.animateItem()).reorderItem(reorder, entry.id),
-                        handle = Modifier.reorderHandle(reorder, entry.id) { view.haptic(Haptic.GRAB) },
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f))
+                    .pointerInput(Unit) { detectTapGestures { onClose() } },
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(
+            visible = open,
+            enter = if (sideways) androidx.compose.animation.slideInHorizontally { it } else androidx.compose.animation.slideInVertically { it },
+            exit = if (sideways) androidx.compose.animation.slideOutHorizontally { it } else androidx.compose.animation.slideOutVertically { it },
+            modifier = Modifier.align(if (sideways) Alignment.CenterEnd else Alignment.BottomCenter),
+        ) {
+            val scope = rememberCoroutineScope()
+            val drag = remember { Animatable(0f) }
+            val view = androidx.compose.ui.platform.LocalView.current
+            val density = LocalDensity.current
+            val shape = if (sideways) RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
+            else RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            val panel = with(density) { extent.toDp() }
+            Column(
+                (if (sideways) Modifier.width(panel).fillMaxHeight() else Modifier.fillMaxWidth().height(panel))
+                    .offset { if (sideways) IntOffset(drag.value.roundToInt(), 0) else IntOffset(0, drag.value.roundToInt()) }
+                    .clip(shape)
+                    .background(MaterialTheme.colorScheme.background)
+                    // I tocchi sul pannello restano al pannello, non chiudono.
+                    .pointerInput(Unit) { detectTapGestures { } }
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(if (sideways) WindowInsetsSides.End + WindowInsetsSides.Vertical else WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
+            ) {
+                val queue by CanvasPlayer.queue.collectAsState()
+                // L'intestazione è la maniglia: portata verso il bordo chiude (le righe sotto si spostano di lato da sole).
+                val tracker = remember { VelocityTracker() }
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .pointerInput(sideways) {
+                            val onDrag: (androidx.compose.ui.input.pointer.PointerInputChange, Float) -> Unit = { change, amount ->
+                                // Il pannello si sposta col dito: si misura la posizione sullo schermo, non sul pannello.
+                                val p = change.position
+                                tracker.addPosition(change.uptimeMillis, if (sideways) Offset(p.x + drag.value, p.y) else Offset(p.x, p.y + drag.value))
+                                scope.launch { drag.snapTo((drag.value + amount).coerceAtLeast(0f)) }
+                            }
+                            val onEnd: () -> Unit = {
+                                val v = tracker.calculateVelocity()
+                                val velocity = if (sideways) v.x else v.y
+                                if (QueueSheet.closes(drag.value, velocity, extent)) {
+                                    view.haptic(Haptic.SNAP)
+                                    onClose()
+                                } else {
+                                    scope.launch { drag.animateTo(0f, Springs.bouncy()) }
+                                }
+                            }
+                            val onStart: (Offset) -> Unit = { tracker.resetTracking() }
+                            if (sideways) {
+                                detectHorizontalDragGestures(onDragStart = onStart, onDragEnd = onEnd) { change, amount -> onDrag(change, amount) }
+                            } else {
+                                detectVerticalDragGestures(onDragStart = onStart, onDragEnd = onEnd) { change, amount -> onDrag(change, amount) }
+                            }
+                        }
+                        .padding(start = 20.dp, end = 12.dp, top = 10.dp, bottom = 4.dp),
+                ) {
+                    Box(
+                        Modifier
+                            .align(if (sideways) Alignment.Start else Alignment.CenterHorizontally)
+                            .size(width = 36.dp, height = 4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
                     )
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Coda", style = MaterialTheme.typography.titleLarge)
+                            if (queue.upcoming.isNotEmpty()) {
+                                Text(
+                                    "${queue.upcoming.size} dopo questo",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        if (queue.upcoming.isNotEmpty()) TextButton(onClick = { CanvasPlayer.clearUpcoming() }) { Text("Svuota") }
+                    }
                 }
+                QueueList(Modifier.fillMaxWidth().weight(1f), PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp))
             }
         }
     }

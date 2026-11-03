@@ -1260,7 +1260,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
                     onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
@@ -1300,7 +1299,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 PlayerScreen(
                     startUrl = entry.arguments?.getString("url"),
                     onBack = { navController.popBackStack() },
-                    onOpenQueue = { navController.navigate(Routes.QUEUE) { launchSingleTop = true } },
                     onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
