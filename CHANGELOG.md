@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.332.0
+## 1.335.0
 **SIM: il nome giusto dell'offerta**
 - La card SIM mostra il nome della tua offerta (GO 200 XXS) invece di "WindTre"
 - Controllati sui tuoi dati veri: giga (141 su 200), minuti illimitati, 50 SMS, roaming UE, credito e rinnovo erano già letti giusti
