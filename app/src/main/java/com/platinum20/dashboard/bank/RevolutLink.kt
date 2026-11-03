@@ -120,6 +120,8 @@ object RevolutLink {
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
         CookieManager.getInstance().setAcceptCookie(true)
+        // Dopo un aggiornamento la WebView ha perso i cookie di sessione: si rimettono quelli salvati.
+        if (RevolutStore.linked.value) RevolutSession.restore(context)
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasBank")
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)

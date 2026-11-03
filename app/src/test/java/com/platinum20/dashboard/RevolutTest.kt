@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.bank.BankTx
 import com.platinum20.dashboard.bank.RevolutParse
+import com.platinum20.dashboard.bank.RevolutSession
 import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.notes.BankSync
 import com.platinum20.dashboard.notes.Expense
@@ -167,6 +168,14 @@ class RevolutTest {
         val atm = read.txs.single()
         assertEquals("Prelievo · Banca Centro", atm.text)
         assertEquals(28160L, atm.cents)
+    }
+
+    @Test
+    fun sessionCookiesPutBackOnlyWhenMissing() {
+        val saved = "rev_session=abc; device=d1; theme=dark"
+        assertEquals(listOf("rev_session=abc"), RevolutSession.missing(saved, "device=d2; theme=dark"))
+        assertEquals(3, RevolutSession.missing(saved, null).size)
+        assertTrue(RevolutSession.missing(saved, saved).isEmpty())
     }
 
     @Test
