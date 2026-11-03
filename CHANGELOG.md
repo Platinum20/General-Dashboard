@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.304.0
+**Commenti YouTube: Mi piace e risposte**
+- Tocca il pollice di un commento per mettere o togliere Mi piace col tuo account YouTube
+- "Rispondi" sotto ogni commento apre il campo per scrivere; la risposta compare subito sotto
+- In cima ai commenti puoi scriverne uno nuovo sul video
+- Serve l'accesso a YouTube in Impostazioni › Account; se YouTube rifiuta, il pollice torna com'era e lo dice
+
 ## 1.303.0
 **Video: solo le schede in alto**
 - Tolti i quattro riquadri sopra le schede: la pagina parte subito con Home, Iscrizioni, Cronologia, Canali e la nuova Playlist
