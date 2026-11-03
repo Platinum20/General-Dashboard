@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.303.0
+**Video: solo le schede in alto**
+- Tolti i quattro riquadri sopra le schede: la pagina parte subito con Home, Iscrizioni, Cronologia, Canali e la nuova Playlist
+- In Playlist trovi in cima Mi piace e i video sul telefono, poi le tue playlist di YouTube
+- Più tardi non c'è più qui: i video salvati li ritrovi già in Note
+
 ## 1.302.0
 **Card SIM rifatta, tutto in un blocco**
 - Niente più cerchi: i giga in grande con una barra, sotto minuti, SMS e roaming UE in colonne con una barra sottile, in fondo credito e rinnovo

@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.settings.AppSettings
-import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -34,10 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.ThumbUp
-import androidx.compose.material.icons.outlined.WatchLater
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Search
@@ -92,18 +88,20 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-private val youTubeTabs = listOf("Home", "Iscrizioni", "Cronologia", "Canali")
+private val youTubeTabs = listOf("Home", "Iscrizioni", "Cronologia", "Canali", "Playlist")
 private const val TAB_HOME = 0
 private const val TAB_SUBS = 1
 private const val TAB_HISTORY = 2
 private const val TAB_CHANNELS = 3
+private const val TAB_PLAYLISTS = 4
 
-/** Le tue liste di YouTube, nella fila di riquadri in cima a Video: si aprono come pagine. */
-private enum class YtList(val title: String) { PLAYLISTS("Playlist"), LIKED("Mi piace"), LATER("Più tardi") }
+/** Le liste che si aprono come pagina dalla scheda Playlist. */
+private enum class YtList(val title: String) { LIKED("Mi piace") }
 
 /**
- * Il tuo YouTube nell'app: in cima i riquadri delle tue liste e dei video del telefono, sotto tre schede
- * (Home, Iscrizioni, Cronologia, Canali) larghe in parti uguali fino al bordo. Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
+ * Il tuo YouTube nell'app: solo le cinque schede (Home, Iscrizioni, Cronologia, Canali, Playlist) larghe in parti
+ * uguali fino al bordo, niente riquadri sopra (Antonio, 1.3xx): Mi piace e i video del telefono stanno in cima a
+ * Playlist, Più tardi c'era già in Note. Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -148,7 +146,6 @@ fun YouTubeFeedScreen(
                 subtitle = when {
                     openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
                     openChannel != null -> "Tutti i video, dal più recente"
-                    list == YtList.LATER -> "I video salvati nelle note"
                     list != null -> "YouTube"
                     fresh > 0 -> "$fresh video nuovi oggi"
                     else -> "YouTube e i video del telefono"
@@ -184,10 +181,6 @@ fun YouTubeFeedScreen(
                 return@Column
             }
             when (list) {
-                YtList.PLAYLISTS -> {
-                    PlaylistsTab(onOpen = { openPlaylist = it })
-                    return@Column
-                }
                 YtList.LIKED -> {
                     val liked by YouTubeStore.liked.collectAsState()
                     com.platinum20.dashboard.media.youtube.YtFavorites.init(context)
@@ -197,19 +190,9 @@ fun YouTubeFeedScreen(
                     SimpleVideos(all, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
                     return@Column
                 }
-                YtList.LATER -> {
-                    // Più tardi = i video di YouTube che hai salvato nelle note, non la playlist di YouTube.
-                    NotesStore.init(context)
-                    val notes by NotesStore.data.collectAsState()
-                    val saved = remember(notes.notes) { SavedLinks.youtubeVideos(notes.notes) }
-                    SimpleVideos(Loadable(saved), "Salva un video nelle note e lo ritrovi qui", onPlay) { }
-                    return@Column
-                }
                 null -> Unit
             }
-            // Prima le tue liste (si aprono come pagine), poi le schede proprio sopra i video che cambiano.
-            ListTiles(onOpen = { list = it }, onOpenPhone = onOpenPhone)
-            // Le quattro schede in parti uguali fino al bordo destro: niente da scorrere di lato.
+            // Le cinque schede in parti uguali fino al bordo destro: niente da scorrere di lato.
             Row(
                 Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -222,37 +205,13 @@ fun YouTubeFeedScreen(
                 TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
                 TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, onPlay)
                 TAB_CHANNELS -> ChannelsTab(onOpen = { openChannel = it })
+                TAB_PLAYLISTS -> PlaylistsTab(
+                    onOpen = { openPlaylist = it },
+                    onOpenLiked = { list = YtList.LIKED },
+                    onOpenPhone = onOpenPhone,
+                )
                 else -> HistoryTab(onPlay)
             }
-        }
-    }
-}
-
-/** La fila di riquadri in cima: Playlist, Mi piace, Più tardi e i video del telefono. */
-@Composable
-private fun ListTiles(onOpen: (YtList) -> Unit, onOpenPhone: () -> Unit) {
-    Row(
-        Modifier.padding(horizontal = 16.dp, vertical = 4.dp).height(IntrinsicSize.Min),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        ListTile(Icons.AutoMirrored.Outlined.PlaylistPlay, TileAccent.ORANGE, "Playlist") { onOpen(YtList.PLAYLISTS) }
-        ListTile(Icons.Outlined.ThumbUp, TileAccent.BLUE, "Mi piace") { onOpen(YtList.LIKED) }
-        ListTile(Icons.Outlined.WatchLater, TileAccent.PURPLE, "Più tardi") { onOpen(YtList.LATER) }
-        ListTile(Icons.Outlined.PhoneAndroid, TileAccent.GREEN, "Telefono", onOpenPhone)
-    }
-}
-
-@Composable
-private fun RowScope.ListTile(icon: ImageVector, accent: TileAccent, label: String, onClick: () -> Unit) {
-    CanvasCard(
-        onClick = onClick,
-        modifier = Modifier.weight(1f).fillMaxHeight().bouncyPress(),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Column(Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            IconTile(icon, accent, size = 32.dp, iconSize = 18.dp)
-            Spacer(Modifier.height(6.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -415,11 +374,14 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
 }
 
 @Composable
-private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit) {
+private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit, onOpenLiked: () -> Unit, onOpenPhone: () -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.playlists.collectAsState()
     LaunchedEffect(Unit) { YouTubeStore.refreshPlaylists(context) }
-    FeedList(state, empty = "Non hai ancora playlist") {
+    // Mi piace e il telefono sono sempre in cima: la lista non resta mai vuota anche senza playlist.
+    FeedList(state.copy(data = state.data.orEmpty()), empty = "Nessuna playlist sul tuo YouTube") {
+        item(key = "liked") { ListRow(Icons.Outlined.ThumbUp, TileAccent.BLUE, "Mi piace", "I video che ti sono piaciuti", onOpenLiked) }
+        item(key = "phone") { ListRow(Icons.Outlined.PhoneAndroid, TileAccent.GREEN, "Sul telefono", "Video, file e link", onOpenPhone) }
         items(state.data.orEmpty(), key = { it.id }) { playlist ->
             CanvasCard(Modifier.fillMaxWidth().bouncyPress(0.97f), onClick = { onOpen(playlist) }) {
                 Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -448,6 +410,21 @@ private fun PlaylistsTab(onOpen: (YtPlaylist) -> Unit) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Una riga fissa in cima a Playlist, con lo stesso stampo delle playlist. */
+@Composable
+private fun ListRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
+    CanvasCard(Modifier.fillMaxWidth().bouncyPress(0.97f), onClick = onClick) {
+        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconTile(icon, accent, size = 40.dp, iconSize = 22.dp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
         }
     }
