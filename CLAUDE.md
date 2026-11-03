@@ -28,7 +28,14 @@ create something it lists, so the next thread doesn't have to explore.
   `TabReselect`/`rememberReselectListState`, `PlusAction`/`ProvidePlusAction`, `relativeTime`,
   `weatherIcon`.
 - `ui/screens/Motion.kt`: motion tokens (`Motion.*`, tab/push transitions, `Modifier.entrance()`
-  cascade already built into CanvasCard + SectionHeader). Use these, not ad-hoc tweens.
+  cascade already built into CanvasCard + SectionHeader). Use these, not ad-hoc tweens. Since 1.347 only three springs:
+  `Motion.settle()` (no bounce), `Motion.lively()` (press/appear), `Motion.gesture()` (finger release) + `Motion.fling(dist, v)`
+  for swipe-outs at the finger's speed. `bouncyPress` (Common.kt, pure `PressRule`) presses after 80 ms still, innermost only.
+- `ui/screens/SharedItems.kt`: shared elements (`Modifier.sharedItem(key)`, `LocalSharedScope` = SharedTransitionLayout around
+  the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page.
+  `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page). `Timeline.kt` `RowFlash`
+  (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
+  `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
