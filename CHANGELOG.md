@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.315.0
+**Ogni scheda come l'editor delle note**
+- Eventi, promemoria, date, pacchi, abitudini e spese si aprono come una nota lunga: in alto solo Indietro e che cosa è
+- In basso a sinistra l'azione di tutti i giorni (Fatto, È arrivato, Modifica), a destra "Altro" con il resto ed Elimina
+
 ## 1.314.0
 **Un calendario unico, con note e spese dentro**
 - Note e Spese non sono più pagine a parte: tutto sta nel calendario, che si apre dalla sua card in Home
