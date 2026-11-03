@@ -156,6 +156,20 @@ class RevolutTest {
     }
 
     @Test
+    fun oldestMovementAndCashWithdrawal() {
+        val body = "[" + listOf(
+            tx("a", -28000, type = "ATM", extra = ""","amountWithCharges":-28160,"description":"Cash at Banca","merchant":{"name":"Banca Centro","mcc":"6011"}"""),
+            """{"id":"t","type":"TOPUP","state":"COMPLETED","startedDate":1000,"currency":"EUR","amount":5000}""",
+        ).joinToString(",") + "]"
+        val read = RevolutParse.read(body, zone)!!
+        // La ricarica non è spesa, ma dice fin dove è arrivata la storia.
+        assertEquals(1000L, read.oldestMs)
+        val atm = read.txs.single()
+        assertEquals("Prelievo · Banca Centro", atm.text)
+        assertEquals(28160L, atm.cents)
+    }
+
+    @Test
     fun deletedBankExpenseStaysDeleted() {
         val data = NotesData(bankIgnored = setOf("9"))
         val after = BankSync.apply(data, listOf(BankTx("9", 100, "X", ExpenseCategory.OTHER, nov3)), nov3, 1)

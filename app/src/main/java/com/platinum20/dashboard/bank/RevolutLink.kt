@@ -23,7 +23,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 object RevolutLink {
     const val HOME = "https://app.revolut.com/home"
-    private const val READ_MS = 90_000L
+    private const val READ_MS = 150_000L
     private const val PAGE = 300
     private const val MAX_PAGES = 100
 
@@ -77,11 +77,12 @@ object RevolutLink {
     /**
      * Rilegge saldo e movimenti con la sessione della pagina (la home dell'app web ne carica pochi).
      * La prima volta va indietro pagina per pagina fino al primo movimento ([full]); dopo basta
-     * l'ultima pagina. Le risposte passano dal gancio sopra, la fine la dice [Bridge.pulled].
+     * l'ultima pagina. Se una lettura precedente si è fermata a metà (pagina chiusa), riparte da
+     * [resume], il movimento più vecchio già letto. La fine la dice [Bridge.pulled].
      */
-    private fun pullScript(full: Boolean) = """
+    private fun pullScript(full: Boolean, resume: Long) = """
         (function () {
-          var h = window.__cvHeaders || {}, full = $full, pages = 0;
+          var h = window.__cvHeaders || {}, full = $full, resume = $resume, pages = 0;
           var opt = { method: 'GET', credentials: 'include', headers: h };
           try { fetch('/api/retail/user/current/wallet', opt).catch(function () {}); } catch (e) {}
           function end(ok) { try { CanvasBank.pulled(ok); } catch (e) {} }
@@ -96,7 +97,8 @@ object RevolutLink {
                 if (!full) return end(false);
                 // Fermo se Revolut non va più indietro (stessa pagina) o dopo troppe pagine.
                 if (!(m < (to || Infinity)) || ++pages >= $MAX_PAGES) return end(!(m < (to || Infinity)));
-                page(m - 1);
+                // Dopo la prima pagina (i nuovi) si salta a dove era arrivata la lettura precedente.
+                page(pages == 1 && resume > 0 && resume < m ? resume - 1 : m - 1);
               })
               .catch(function () { end(false); });
           }
@@ -145,7 +147,7 @@ object RevolutLink {
     }
 
     /** Chiede alla pagina (già entrata nel conto) saldo e movimenti. */
-    fun pull(view: WebView) = view.evaluateJavascript(pullScript(full = !RevolutStore.historyDone), null)
+    fun pull(view: WebView) = view.evaluateJavascript(pullScript(full = !RevolutStore.historyDone, resume = RevolutStore.historyFrom), null)
 
     /** La pagina è tornata all'accesso: la sessione web non c'è più. */
     fun isLoginPage(url: String?) = url != null && Regex("""(?i)app\.revolut\.com/(start|login|signin|sign-in|auth)""").containsMatchIn(url)
