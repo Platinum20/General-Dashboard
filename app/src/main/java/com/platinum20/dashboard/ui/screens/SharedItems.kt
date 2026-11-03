@@ -45,11 +45,12 @@ fun Modifier.sharedItem(key: String?, rounded: Boolean = false): Modifier {
     val route = LocalRouteScope.current
     if (key == null || shared == null || route == null) return this
     return with(shared) {
-        this@sharedItem.sharedBounds(
-            rememberSharedContentState("shared:$key"),
-            route,
-            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-            clipInOverlayDuringTransition = if (rounded) OverlayClip(RoundedCornerShape(18.dp)) else ParentClip,
-        )
+        val state = rememberSharedContentState("shared:$key")
+        val resize = SharedTransitionScope.ResizeMode.ScaleToBounds()
+        if (rounded) {
+            this@sharedItem.sharedBounds(state, route, resizeMode = resize, clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(18.dp)))
+        } else {
+            this@sharedItem.sharedBounds(state, route, resizeMode = resize)
+        }
     }
 }

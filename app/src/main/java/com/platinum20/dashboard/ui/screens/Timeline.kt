@@ -42,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.animation.core.calculateTargetValue
 import com.platinum20.dashboard.capture.captureTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier

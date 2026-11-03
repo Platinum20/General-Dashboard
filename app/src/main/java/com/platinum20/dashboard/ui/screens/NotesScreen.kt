@@ -186,7 +186,7 @@ enum class NotesSection(val title: String) { DATED("Calendario") }
  * che arrivano. Ogni mese ha il suo segno con quanto hai speso; toccandolo si apre il riepilogo del mese.
  * Si apre dalla card Calendario della Home. Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NotesScreen(
     bottomPadding: PaddingValues,
