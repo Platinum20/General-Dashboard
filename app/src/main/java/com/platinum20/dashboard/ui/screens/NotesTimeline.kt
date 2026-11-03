@@ -355,6 +355,7 @@ internal fun timelineEntries(
     var monthPrevious: LocalDate? = null
     var shown: java.time.YearMonth? = null
     var reachedNow = false
+    var laterShown = false
     return groups.flatMap { g ->
         val day = g.day
         val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
@@ -368,6 +369,10 @@ internal fun timelineEntries(
             months && monthPrevious == null -> com.platinum20.dashboard.today.Upcoming.monthLabel(day!!, today)
             else -> com.platinum20.dashboard.today.Upcoming.monthBreak(monthPrevious, day!!, today)
         }
+        // Dopo oggi, il resto del mese in corso sta sotto "PIÙ AVANTI"; il mese dopo ha già il suo segno.
+        val later = months && !laterShown && !g.past && !g.late && day != null && day.isAfter(today) &&
+            java.time.YearMonth.from(day) == java.time.YearMonth.from(today)
+        if (months && !g.past && day != null && day.isAfter(today)) laterShown = true
         val monthSpend = if (months && month != null) java.time.YearMonth.from(day!!).let { m ->
             Expenses.total(expenses, m).takeIf { it > 0 || m == java.time.YearMonth.from(today) }?.let { Expenses.format(it) }
         } else null
@@ -426,6 +431,7 @@ internal fun timelineEntries(
                 monthSpend = if (i == 0) monthSpend else null,
                 monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
                 todayHeader = r.spend != null,
+                later = i == 0 && later,
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }

@@ -87,6 +87,8 @@ data class TimelineEntry(
     val image: String? = null,
     /** La riga di Oggi: si disegna come il segno "OGGI" con accanto [trailing] (la spesa di oggi), non come una voce (Antonio). */
     val todayHeader: Boolean = false,
+    /** La prima cosa dopo oggi nel mese in corso: sopra c'è il segno "PIÙ AVANTI" (Antonio). */
+    val later: Boolean = false,
 )
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -156,6 +158,7 @@ fun TimelineRow(
         TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
             onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } })
     }
+    if (entry.later && (!showMonth || entry.month == null)) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick)
     if (entry.todayHeader) {
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
