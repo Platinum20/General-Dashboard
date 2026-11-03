@@ -158,6 +158,7 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
+    val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
     // Le cose già spuntate solo nel calendario intero, non nella card (Antonio).
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }.filter { it.rows.isNotEmpty() }
     val all = timelineEntries(pending, today, months = true, expenses = expenses)
@@ -177,6 +178,8 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         ticks = shown.map { (_, row) -> row.task?.let { tickTask(it.id) } },
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
         rows = shown.map { (_, row) -> { open(row) } },
+        // Tenendo premuta una riga: le sue azioni, come nella pagina intera.
+        rowLongs = shown.map { (_, row) -> { actions(row) } },
         onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
         onLongOpen = onOpenAll,
     )
@@ -229,8 +232,10 @@ fun TimelineCard(
     rows: List<(() -> Unit)?> = emptyList(),
     /** Toccando il segno di un mese: il riepilogo delle spese di quel mese. */
     onMonth: ((YearMonth) -> Unit)? = null,
-    /** Tenendo premuta la card, ovunque (anche su una riga): la pagina intera (Antonio). */
+    /** Tenendo premuta la card fuori dalle righe: la pagina intera. */
     onLongOpen: (() -> Unit)? = null,
+    /** Per ogni riga, tenendola premuta: il fumetto delle sue azioni (uguale alla pagina intera). */
+    rowLongs: List<(() -> Unit)?> = emptyList(),
 ) {
     val haptic = rememberHaptic()
     Section(
@@ -252,7 +257,7 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = onLongOpen)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen)
             }
         }
     }
