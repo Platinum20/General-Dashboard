@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.media.spotify
 
+import com.platinum20.dashboard.security.Vault
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -135,14 +136,14 @@ object SpotifyAuth {
     }
 
     private suspend fun officialToken(forceRefresh: Boolean): String? = refreshLock.withLock {
-        val access = prefs.getString(KEY_ACCESS, null)
+        val access = Vault.read(prefs, KEY_ACCESS)
         if (!forceRefresh && access != null && System.currentTimeMillis() < prefs.getLong(KEY_EXPIRES, 0)) {
             return access
         }
-        val refresh = prefs.getString(KEY_REFRESH, null) ?: return null
+        val refresh = Vault.read(prefs, KEY_REFRESH) ?: return null
         return try {
             tokenRequest(mapOf("grant_type" to "refresh_token", "refresh_token" to refresh, "client_id" to _clientId.value))
-            prefs.getString(KEY_ACCESS, null)
+            Vault.read(prefs, KEY_ACCESS)
         } catch (e: SpotifyRevokedException) {
             disconnect()
             _error.value = "Il collegamento con Spotify è scaduto, ricollegati"
@@ -194,11 +195,10 @@ object SpotifyAuth {
                 if (json.optString("error") == "invalid_grant") throw SpotifyRevokedException()
                 throw IOException(json.optString("error_description").ifBlank { "HTTP $code" })
             }
-            val editor = prefs.edit()
-                .putString(KEY_ACCESS, json.getString("access_token"))
+            val editor = Vault.put(prefs.edit(), KEY_ACCESS, json.getString("access_token"))
                 .putLong(KEY_EXPIRES, System.currentTimeMillis() + (json.optLong("expires_in", 3600) - 120) * 1000)
             // Al rinnovo Spotify a volte non manda un nuovo refresh token: si tiene quello vecchio.
-            json.optString("refresh_token").takeIf { it.isNotBlank() }?.let { editor.putString(KEY_REFRESH, it) }
+            json.optString("refresh_token").takeIf { it.isNotBlank() }?.let { Vault.put(editor, KEY_REFRESH, it) }
             editor.apply()
             _connected.value = true
         } finally {

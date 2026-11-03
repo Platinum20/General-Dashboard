@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
+import java.io.IOException
 
 object ApkInstaller {
     const val EXTRA_FROM_UI = "from_ui"
@@ -47,6 +48,11 @@ object ApkInstaller {
 
     /** Installa l'APK scaricato: in silenzio quando Android lo permette, altrimenti con la sua finestra. */
     fun install(context: Context, apk: File, version: String, fromUi: Boolean) {
+        UpdateTrust.check(context, apk)?.let { reason ->
+            apk.delete()
+            if (fromUi) fail(reason)
+            throw IOException(reason)
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             openSystemInstaller(context, apk)
             return

@@ -1,10 +1,31 @@
 # Changelog
 
-## 1.334.0
+## 1.339.0
 **Revolut in Home**
 - Nuova card Revolut, come quella della SIM: in alto il saldo totale, sotto il saldo di ogni tasca (conto e salvadanai come "Risparmi")
 - Tocca la card per le spese del mese; si sposta o si nasconde da Personalizza
 - Canvas legge soltanto: non può muovere soldi
+
+## 1.338.0
+**Più sicurezza per i tuoi accessi**
+- I token di Spotify e del riconoscimento canzoni sono ora cifrati sul telefono con una chiave che non esce mai dal telefono (come già la password di Gmail): non serve ricollegare nulla
+- Gli aggiornamenti si scaricano solo dalle release di Canvas su GitHub e vengono installati solo se firmati con la stessa chiave dell'app
+
+## 1.337.0
+**Spese: solo il mese che stai guardando**
+- Nel riepilogo del mese non c'è più il totale del mese prima: totale, categorie e lista sono solo di quel mese
+- Si apre sempre sul mese in corso; per vedere i mesi passati trascini il riepilogo verso destra
+
+## 1.336.0
+**Revolut: la storia arriva fino in fondo**
+- Se una lettura si ferma a metà (per esempio chiudi l'app), la volta dopo riparte da dove era arrivata invece di ricominciare da capo, finché non arriva al primo movimento
+- La lettura in sottofondo aspetta più a lungo, così prende più mesi alla volta
+- I prelievi si chiamano "Prelievo · banca" e contano la commissione dello sportello
+
+## 1.335.0
+**SIM: il nome giusto dell'offerta**
+- La card SIM mostra il nome della tua offerta (GO 200 XXS) invece di "WindTre"
+- Controllati sui tuoi dati veri: giga (141 su 200), minuti illimitati, 50 SMS, roaming UE, credito e rinnovo erano già letti giusti
 
 ## 1.331.0
 **Revolut: tutta la storia, con le sue categorie**

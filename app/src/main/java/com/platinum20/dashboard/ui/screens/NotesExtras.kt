@@ -86,7 +86,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
 
 private val monthFormat = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
-private val monthName = DateTimeFormatter.ofPattern("MMMM", Locale.ITALIAN)
 private val fixedNext = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
 
 /**
@@ -104,7 +103,6 @@ fun ExpensesTab(
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
-    val previous = Expenses.total(data.expenses, month.minusMonths(1))
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
     val listState = rememberReselectListState(Routes.EXPENSES)
     // La pagina si apre in cima al mese (Antonio), non su "OGGI": il mese si legge dall'inizio.
@@ -239,33 +237,16 @@ fun ExpensesTab(
                                 Spacer(Modifier.weight(1f))
                                 Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                             }
-                            val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
-                            // Sotto il totale, piccolo e a destra, il mese prima col suo nome (Antonio): si confronta
-                            // a colpo d'occhio, senza una frase in più. A sinistra fisse e variabili.
-                            // Nel mese in corso niente mese prima (Antonio): conta solo quello che sta succedendo.
-                            val split = if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null
-                            val before = previous.takeIf { it > 0 && month != YearMonth.now() }?.let {
-                                "${month.minusMonths(1).format(monthName)} ${Expenses.format(it)}"
-                            }
-                            if (split != null || before != null) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        split.orEmpty(),
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    before?.let {
-                                        Text(
-                                            it,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                        )
-                                    }
-                                }
+                            // Sotto il totale solo fisse e variabili di questo mese: niente mese prima, né confronti
+                            // (Antonio, più volte). Il mese prima si vede trascinando il riepilogo.
+                            monthSubline(data.expenses, month)?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                             val categories = Expenses.byCategory(data.expenses, month)
                             if (categories.isNotEmpty()) CategoryBar(categories, Modifier.padding(top = 10.dp))
@@ -348,6 +329,12 @@ fun ExpensesTab(
             }
         }
     }
+}
+
+/** La riga sotto il totale del riepilogo: fisse e variabili del solo [month], null senza fisse. Logica pura. */
+internal fun monthSubline(expenses: List<Expense>, month: YearMonth): String? {
+    val (fixedCents, variableCents) = Expenses.split(expenses, month)
+    return if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null
 }
 
 internal fun centsOf(text: String): Long? {

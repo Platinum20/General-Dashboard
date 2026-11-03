@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.media.songid
 
+import com.platinum20.dashboard.security.Vault
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -61,12 +62,12 @@ object SongId {
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        _token.value = prefs.getString(KEY_TOKEN, null).orEmpty()
+        _token.value = Vault.read(prefs, KEY_TOKEN).orEmpty()
     }
 
     fun setToken(value: String) {
         _token.value = value.trim()
-        prefs.edit().putString(KEY_TOKEN, _token.value).apply()
+        Vault.put(prefs.edit(), KEY_TOKEN, _token.value).apply()
     }
 
     val ready: Boolean get() = _token.value.isNotBlank()
