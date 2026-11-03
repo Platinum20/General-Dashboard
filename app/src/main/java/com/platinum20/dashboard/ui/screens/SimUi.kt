@@ -156,8 +156,8 @@ internal fun SimCard(onOpen: () -> Unit) {
 }
 
 /**
- * Il blocco della SIM: in alto l'offerta e quando è stato letto, i giga in grande con la barra, sotto
- * minuti, SMS e roaming UE in colonne con una barra sottile, in fondo credito e rinnovo.
+ * Il blocco della SIM: in alto l'offerta e quando è stato letto, poi un dato per riga.
+ * Il roaming UE solo nella pagina (big).
  * Il colore del testo viene da fuori: nella card normale e nel blocco colorato della pagina.
  */
 @Composable
@@ -176,66 +176,38 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
         )
         Text(relativeTime(Instant.ofEpochMilli(s.at)), style = MaterialTheme.typography.labelSmall, color = soft)
     }
-    Spacer(Modifier.height(if (big) 8.dp else 4.dp))
+    // Un dato per riga (Antonio): nome a sinistra, valore a destra, barra sottile sotto le soglie.
+    // Il roaming UE solo nella pagina, non nella card della Home.
     val data = s.data
-    Row(verticalAlignment = Alignment.Bottom) {
-        Text(
-            when {
-                data == null -> "– GB"
-                data.unlimited -> "Giga illimitati"
-                else -> gbLabel(data.left)
-            },
-            style = if (big) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        data?.total?.takeIf { !data.unlimited }?.let {
+    val rows = buildList {
+        add(SimRow("Giga", data?.let { if (it.unlimited) "illimitati" else gbLabel(it.left) + (it.total?.let { t -> " di " + gbLabel(t) } ?: "") } ?: "–", data))
+        s.minutes?.let { add(SimRow("Minuti", meterText(it, ""), it)) }
+        s.sms?.let { add(SimRow("SMS", meterText(it, ""), it)) }
+        if (big) s.roaming?.let { add(SimRow("Roaming UE", meterText(it, "GB"), it)) }
+        s.credit?.let { add(SimRow("Credito", euroLabel(it), null)) }
+        s.renewal?.let { add(SimRow("Rinnovo", it.format(WindTreParse.shortDate) + " · " + renewalLabel(it), null)) }
+    }
+    rows.forEach { r ->
+        Spacer(Modifier.height(if (big) 14.dp else 10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(r.name, style = MaterialTheme.typography.bodyMedium, color = soft, modifier = Modifier.weight(1f))
             Text(
-                " di " + gbLabel(it),
-                style = MaterialTheme.typography.bodyMedium,
-                color = soft,
-                modifier = Modifier.padding(bottom = if (big) 6.dp else 4.dp),
+                r.value,
+                style = if (big) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
             )
         }
-    }
-    Spacer(Modifier.height(8.dp))
-    SimBar(if (data?.unlimited == true) 1f else data?.fraction ?: 0f, barColor, track, height = if (big) 8.dp else 6.dp)
-    val small = listOfNotNull(
-        s.minutes?.let { Triple("Minuti", it, "") },
-        s.sms?.let { Triple("SMS", it, "") },
-        s.roaming?.let { Triple("Roaming UE", it, "GB") },
-    )
-    if (small.isNotEmpty()) {
-        Spacer(Modifier.height(if (big) 20.dp else 14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            small.forEach { (name, a, unit) ->
-                Column(Modifier.weight(1f)) {
-                    Text(name, style = MaterialTheme.typography.labelSmall, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        meterText(a, unit),
-                        style = MaterialTheme.typography.titleSmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    SimBar(if (a.unlimited) 1f else a.fraction ?: 0f, barColor, track, height = 3.dp)
-                }
-            }
-        }
-    }
-    if (s.credit != null || s.renewal != null) {
-        Spacer(Modifier.height(if (big) 20.dp else 14.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            s.credit?.let {
-                Text("Credito ", style = MaterialTheme.typography.bodySmall, color = soft)
-                Text(euroLabel(it), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(Modifier.weight(1f))
-            s.renewal?.let {
-                Text(renewalLine(it), style = MaterialTheme.typography.bodySmall, color = soft, maxLines = 1)
-            }
+        r.meter?.let { a ->
+            Spacer(Modifier.height(6.dp))
+            SimBar(if (a.unlimited) 1f else a.fraction ?: 0f, barColor, track, height = if (big) 5.dp else 4.dp)
         }
     }
 }
+
+/** Una riga del blocco SIM: nome, valore e, per giga/minuti/SMS, quanto resta. */
+private data class SimRow(val name: String, val value: String, val meter: Allowance?)
+
 
 /** Una barra orizzontale arrotondata: quanto resta. Sotto il 10% diventa rossa. */
 @Composable
