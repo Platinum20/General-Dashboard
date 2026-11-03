@@ -136,21 +136,13 @@ class ScreenshotTour {
         } else missing += p + "06_aggiungi"
 
         if (tap("News")) { settle(3_000); shot(p + "10_news") } else missing += p + "10_news"
-        if (tap("Note")) {
-            settle(1_500); shot(p + "20_note")
-            // Le due parti: ognuna si apre nella sua pagina ("indietro" torna alle due).
-            // Il titolo sta fuori dalla card: si apre toccando una riga (tutta la card apre la pagina).
-            if (tap("commercialista", substring = true)) {
-                settle(800); shot(p + "21_note_con_scadenza")
-                scroll(down = true)
-                shot(p + "22_note_fondo")
-                back()
-            } else missing += p + "21_note_con_scadenza"
-            if (tap("Libri da leggere", substring = true)) {
-                settle(800); shot(p + "23_note_senza_scadenza")
-                back()
-            } else missing += p + "23_note_senza_scadenza"
-        } else missing += p + "20_note"
+        // Il calendario unico (1.314) si apre dalla sua card in Home: niente più scheda Note nella barra.
+        if (tap("Home") && tap("Calendario")) {
+            settle(1_500); shot(p + "20_calendario")
+            scroll(down = true)
+            shot(p + "22_calendario_fondo")
+            back()
+        } else missing += p + "20_calendario"
 
         if (tap("Media")) {
             settle(2_000); shot(p + "30_media")
@@ -211,7 +203,7 @@ class ScreenshotTour {
             data.habits.firstOrNull()?.let { "64_dettaglio_abitudine" to Routes.noteItem(ItemKind.HABIT, it.id) },
             "65_evento_nuovo" to Routes.calendarEdit(null),
             data.notes.firstOrNull()?.let { "66_editor_nota" to Routes.noteEdit(it.id) },
-            "67_spese" to Routes.EXPENSES,
+            "67_spese" to Routes.expenses(),
             "68_recap" to Routes.RECAP,
             "69_player" to Routes.PLAYER,
             "70_coda" to Routes.QUEUE,

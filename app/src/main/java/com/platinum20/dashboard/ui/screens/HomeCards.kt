@@ -149,52 +149,57 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 }
 
 /**
- * "Prossimi giorni": i prossimi giorni in una card sola, divisi per giorno. Le stesse cose stanno,
- * senza limite di giorni, in Note > Prossimi giorni; oggi sta in "Adesso". Il giorno si scrive solo alla
- * sua prima riga, così la settimana si legge a colpo d'occhio.
+ * Il calendario in Home (Antonio): un'unica card con il mese e quanto hai speso, poi Oggi sempre in cima
+ * (la spesa di oggi, anche 0, gli impegni, le cose in ritardo, i promemoria e le note senza data), poi le
+ * prossime [Upcoming.MAX] cose. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
  */
 @Composable
-fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () -> Unit) {
+internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
     val inApp = LocalInAppNav.current
-    val openItem = rememberOpenItem()
-    val shown = items.take(Upcoming.MAX)
-    // Il mese che si legge in quel punto: quello di oggi, poi quello dell'ultimo segno (giorni corti, "Dom 1").
-    var shownMonth = YearMonth.from(today)
-    val entries = shown.mapIndexed { index, item ->
-        val first = index == 0 || shown[index - 1].day != item.day
-        // Il segno del mese quando si passa al mese dopo (anche in cima, se si comincia già dal prossimo).
-        val month = if (first) Upcoming.monthBreak(if (index == 0) today else shown[index - 1].day, item.day, today) else null
-        if (month != null) shownMonth = YearMonth.from(item.day)
-        TimelineEntry(
-            key = "$index",
-            kind = item.kind,
-            text = (item.time?.let { "$it  " } ?: "") + item.text,
-            dayLabel = if (first) Upcoming.dayLabel(item.day, today, shownMonth) else null,
-            gapDp = if (first && index > 0) Upcoming.gapDp(shown[index - 1].day, item.day) else 0f,
-            month = month,
-            color = item.event?.color ?: 0,
-        )
-    }
+    val open = rememberDueOpen()
+    val all = timelineEntries(groups, today, months = true, expenses = expenses)
+    val todayCount = all.count { it.second.day == today && !it.first.past }
+    val shown = all.take(todayCount + Upcoming.MAX)
     TimelineCard(
-        "Prossimi giorni",
-        entries,
+        "Calendario",
+        shown.map { it.first },
         onOpenAll,
-        empty = "Niente in programma nei prossimi giorni.",
-        count = items.size.takeIf { it > 0 }?.toString(),
-        ticks = shown.map { item -> item.task?.let { tickTask(it.id) } },
-        // Toccando una riga si apre proprio quella cosa; il resto della card apre la pagina intera (Antonio).
-        rows = shown.map { item -> upcomingOpen(item, inApp, openItem) },
+        empty = "Niente in programma.",
+        modifier = Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
+            .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
+        ticks = shown.map { (_, row) -> row.task?.takeIf { !it.done }?.let { tickTask(it.id) } },
+        // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
+        rows = shown.map { (_, row) -> { open(row) } },
+        onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
     )
 }
 
-/** Che cosa apre il tocco su una riga di "Prossimi giorni": la scheda della cosa, null = la pagina intera. */
-private fun upcomingOpen(item: UpcomingItem, inApp: InAppNav?, openItem: (ItemKind, Long) -> Unit): (() -> Unit)? {
-    item.event?.let { event -> return { inApp?.openEvent?.invoke(event) } }
-    item.task?.let { task -> return { openItem(ItemKind.TASK, task.id) } }
-    item.countdownId?.let { id -> return { openItem(ItemKind.DATE, id) } }
-    item.parcelId?.let { id -> return { openItem(ItemKind.PARCEL, id) } }
-    item.chargeId?.let { id -> return { openItem(ItemKind.FIXED, id) } }
-    return if (item.simRenewal) { { inApp?.openRoute?.invoke(Routes.SIM) } } else null
+/**
+ * Che cosa apre il tocco su una riga del calendario, uguale in Home e nella pagina intera: la scheda della cosa,
+ * la nota (o il video salvato, che parte), il riepilogo del mese per la spesa di oggi.
+ */
+@Composable
+internal fun rememberDueOpen(): (DueRow) -> Unit {
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    val openItem = rememberOpenItem()
+    return { row ->
+        when {
+            row.event != null -> inApp?.openEvent?.invoke(row.event)
+            row.task != null -> openItem(ItemKind.TASK, row.task.id)
+            row.countdown != null -> openItem(ItemKind.DATE, row.countdown.id)
+            row.parcel != null -> openItem(ItemKind.PARCEL, row.parcel.id)
+            row.charge != null -> openItem(ItemKind.FIXED, row.charge.id)
+            row.expense != null -> openItem(ItemKind.EXPENSE, row.expense.id)
+            row.spend != null -> inApp?.openRoute?.invoke(Routes.expenses(YearMonth.from(row.day ?: LocalDate.now())))
+            row.note != null -> {
+                val saved = com.platinum20.dashboard.capture.SavedLinks.find(row.note.text)
+                if (saved != null) com.platinum20.dashboard.capture.SavedLinks.open(context, saved) { inApp?.openRoute?.invoke(it) }
+                else inApp?.openRoute?.invoke(Routes.noteEdit(row.note.id))
+            }
+            row.simRenewal -> inApp?.openRoute?.invoke(Routes.SIM)
+        }
+    }
 }
 
 /**
@@ -213,6 +218,8 @@ fun TimelineCard(
     ticks: List<(() -> Unit)?> = emptyList(),
     /** Per ogni riga, che cosa apre toccarla (la sua scheda); null = come il resto della card, la pagina intera. */
     rows: List<(() -> Unit)?> = emptyList(),
+    /** Toccando il segno di un mese: il riepilogo delle spese di quel mese. */
+    onMonth: ((YearMonth) -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
     Section(
@@ -233,63 +240,10 @@ fun TimelineCard(
             }
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth)
             }
         }
     }
-}
-
-/**
- * Spese in Oggi: le ultime [Upcoming.MAX] spese del mese corrente sulla stessa linea del tempo di "Prossimi giorni" (Antonio),
- * con icona e colore della categoria. Toccando la card si apre la pagina intera.
- */
-@Composable
-fun MoneyCard(
-    data: NotesData,
-    today: LocalDate,
-    onOpen: () -> Unit,
-    modifier: Modifier = Modifier,
-    // Il totale del mese, come nella pagina Note (Antonio: lo stesso numero ovunque).
-    count: String? = com.platinum20.dashboard.notes.Expenses.total(data.expenses, YearMonth.from(today)).takeIf { it > 0 }
-        ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
-) {
-    val openItem = rememberOpenItem()
-    val rows = monthExpenseEntries(data.expenses, today, limit = Upcoming.MAX)
-    TimelineCard(
-        "Spese",
-        rows.map { it.first },
-        onOpen,
-        empty = "Nessuna spesa questo mese.",
-        modifier = modifier.captureTarget(CaptureMode.EXPENSE),
-        count = count,
-        // La singola spesa apre la sua scheda (Antonio).
-        rows = rows.map { (_, expense) -> { openItem(ItemKind.EXPENSE, expense.id) } },
-    )
-}
-
-/**
- * Note in Oggi (Antonio): le ultime [Upcoming.MAX] note e cose da fare senza data, sulla stessa linea del tempo
- * delle altre card. Toccando la card si apre Note › Note.
- */
-@Composable
-fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, onOpenNote: (Long) -> Unit = {}) {
-    val openItem = rememberOpenItem()
-    val tasks = data.tasks.filter { !it.done && it.dueAt == null }
-    val rows = undatedEntries(tasks, data.notes, today, limit = Upcoming.MAX)
-    TimelineCard(
-        "Note",
-        rows.map { it.first },
-        onOpen,
-        empty = "Tutto quello senza data: cose da fare e appunti.",
-        modifier = modifier.captureTarget(CaptureMode.NOTE),
-        // Quante note e cose da fare restano, come nella pagina Note.
-        count = (tasks.size + data.notes.size).takeIf { it > 0 }?.toString(),
-        ticks = rows.map { (_, row) -> row.task?.let { tickTask(it.id) } },
-        // La nota o il promemoria toccato si apre da solo (Antonio).
-        rows = rows.map { (_, row) ->
-            row.task?.let { task -> { openItem(ItemKind.TASK, task.id) } } ?: row.note?.let { note -> { onOpenNote(note.id) } }
-        },
-    )
 }
 
 /** La spunta di una cosa da fare dentro una card: vibra e la segna fatta. */
@@ -301,9 +255,3 @@ internal fun tickTask(id: Long): () -> Unit {
         com.platinum20.dashboard.notes.NotesStore.toggleTask(id)
     }
 }
-
-/** Si mostra la card Note solo se c'è qualcosa: una nota o una cosa da fare senza data. */
-val NotesData.hasNotes: Boolean get() = notes.isNotEmpty() || tasks.any { !it.done && it.dueAt == null }
-
-/** Si mostra la card Spese solo con qualcosa dentro: una spesa o una fissa. */
-val NotesData.hasMoney: Boolean get() = expenses.isNotEmpty() || fixedExpenses.isNotEmpty()

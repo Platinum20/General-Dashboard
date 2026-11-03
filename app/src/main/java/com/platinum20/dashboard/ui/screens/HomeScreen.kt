@@ -197,18 +197,19 @@ fun HomeScreen(
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
     val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
     val simRenewal = sim?.renewal?.takeIf { simLinked }
-    val upcoming = remember(minute.toLocalDate(), weekAhead, notes, simRenewal) {
-        Upcoming.build(
-            minute.toLocalDate(), weekAhead, notes.openTasks, notes.countdowns,
-            parcels = notes.parcels, fixedExpenses = notes.fixedExpenses, simRenewal = simRenewal,
+    // Il calendario unico (1.314): oggi in cima con la spesa e le note senza data, poi i prossimi giorni.
+    val calendar = remember(minute, agenda.today, weekAhead, notes, simRenewal) {
+        dueDays(
+            notes.tasks, notes.upcoming, notes.parcels, agenda.today.orEmpty() + weekAhead.values.flatten(), notes.fixedExpenses,
+            simRenewal = simRenewal, withToday = true, notes = notes.notes, expenses = notes.expenses,
         )
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
-            fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Briefing.CARD_MAX,
-        )
+            fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Int.MAX_VALUE,
+        ).filter { it.kind in ADESSO_KINDS }.take(Briefing.CARD_MAX)
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
     val haptic = rememberHaptic()
@@ -250,8 +251,6 @@ fun HomeScreen(
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
-            HomeCard.MONEY -> notes.hasMoney
-            HomeCard.NOTES -> notes.hasNotes
             else -> true
         }
     }
@@ -292,7 +291,7 @@ fun HomeScreen(
                         id != null && line.kind == BriefKind.PARCEL -> openItem(ItemKind.PARCEL, id)
                         else -> when (line.kind) {
                             BriefKind.EVENT -> inApp?.openCalendar?.invoke()
-                            BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.EXPENSES)
+                            BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.expenses())
                             BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL -> onOpenNotes()
                             BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
                             BriefKind.FREE -> Unit
@@ -300,24 +299,15 @@ fun HomeScreen(
                     }
                 },
             )
-            HomeCard.DAY -> NextThingsCard(
-                items = upcoming,
+            HomeCard.DAY -> CalendarCard(
+                groups = calendar,
+                expenses = notes.expenses,
                 today = minute.toLocalDate(),
                 onOpenAll = {
                     haptic(Haptic.TICK)
-                    NotesNav.open(NotesSection.DATED, fromHome = true)
                     onOpenNotes()
                 },
             )
-            HomeCard.MONEY -> MoneyCard(notes, minute.toLocalDate(), onOpen = {
-                haptic(Haptic.TICK)
-                inApp?.openRoute?.invoke(Routes.EXPENSES)
-            })
-            HomeCard.NOTES -> NotesCard(notes, minute.toLocalDate(), onOpen = {
-                haptic(Haptic.TICK)
-                NotesNav.open(NotesSection.UNDATED, fromHome = true)
-                onOpenNotes()
-            }, onOpenNote = onOpenNote)
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
                 MediaNowCard(playing, onOpen = {
@@ -670,3 +660,9 @@ private fun CardMessage(
         FilledTonalButton(onClick = onAction) { Text(action) }
     }
 }
+
+/**
+ * Che cosa resta in "Adesso" dalla 1.314: il meteo, la pioggia, le abitudini. Impegni, promemoria, date, pacchi
+ * e spese di oggi stanno in cima al calendario, un posto solo per ogni cosa (Antonio).
+ */
+private val ADESSO_KINDS = setOf(BriefKind.RAIN, BriefKind.WEATHER, BriefKind.HABIT)

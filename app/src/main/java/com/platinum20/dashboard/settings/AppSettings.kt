@@ -24,10 +24,8 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta WEATHER per le preferenze salvate.
     WEATHER("Adesso", "Meteo e cose da sapere ora"),
     RESUME("Media", "Quello che suona o da riprendere"),
-    // Il nome resta DAY per le preferenze salvate: dalla 1.186 è "Prossimi giorni" (oggi sta in Adesso).
-    DAY("Prossimi giorni", "I prossimi 7 giorni, tutto insieme"),
-    MONEY("Spese", "Le ultime cinque spese"),
-    NOTES("Note", "Le ultime note e cose da fare"),
+    // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con note e spese dentro.
+    DAY("Calendario", "Oggi, spese, note e prossimi giorni"),
     SIM("SIM", "Giga, minuti e credito WindTre"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),
@@ -43,8 +41,9 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
         /**
          * 2 = 1.182: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo.
          * 3 = 1.186: "La giornata" diventa "Prossimi giorni" e torna visibile anche se era nascosta.
+         * 4 = 1.314: diventa il Calendario unico (con note e spese) e torna visibile; via le card Spese e Note.
          */
-        const val VERSION = 3
+        const val VERSION = 4
 
         /**
          * Legge ordine e card nascoste salvate. Da una versione vecchia l'ordine torna quello
@@ -53,7 +52,7 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
         fun read(orderRaw: String?, hiddenRaw: String?, version: Int): HomeLayout {
             fun names(raw: String?) = raw.orEmpty().split(',').filter { it.isNotBlank() }
             fun parse(list: List<String>) = list.mapNotNull { name -> HomeCard.entries.firstOrNull { it.name == name } }
-            val oldHidden = names(hiddenRaw).let { if (version < 3) it - "DAY" else it }
+            val oldHidden = names(hiddenRaw).let { if (version < 4) it - "DAY" else it }
             if (version < 2) {
                 val hidden = parse(oldHidden).toMutableSet()
                 if (hiddenRaw != null && "MAIL" in oldHidden && "FOUND" !in oldHidden) hidden -= HomeCard.MAIL

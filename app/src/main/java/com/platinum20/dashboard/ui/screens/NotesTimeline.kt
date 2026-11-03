@@ -51,6 +51,14 @@ internal data class DueRow(
     val charge: FixedExpense? = null,
     /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
     val simRenewal: Boolean = false,
+    /** Una nota senza data: sta sempre in Oggi finché c'è (Antonio, calendario unico). */
+    val note: com.platinum20.dashboard.notes.Note? = null,
+    /** Una spesa, nel suo giorno. */
+    val expense: com.platinum20.dashboard.notes.Expense? = null,
+    /** La riga "Spesa di oggi" in cima a Oggi: il totale in centesimi, anche 0. */
+    val spend: Long? = null,
+    /** Un promemoria o un pacco in ritardo, portato a oggi: qui il giorno in cui scadeva. */
+    val overdueFrom: LocalDate? = null,
 )
 
 /** Un giorno della lista. [late] = "Scaduti" in cima; [day] null e non late = pacchi senza data, in fondo. */
@@ -82,12 +90,16 @@ internal fun pastDays(
     events: List<CalendarEvent>,
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
+    /** Le spese, nel giorno in cui le hai fatte: quelle di oggi stanno sotto OGGI, non qui. */
+    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
 ): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val rows = mutableListOf<DueRow>()
+    // Prima del resto del giorno: la spesa non ha un'ora.
+    expenses.filter { it.date.isBefore(today) }.forEach { e -> rows += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
     // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
     tasks.filter { it.done && it.dueAt != null }.forEach { t ->
         val at = t.doneAt ?: t.dueAt!!
@@ -114,6 +126,13 @@ internal fun dueDays(
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
     simRenewal: LocalDate? = null,
+    /**
+     * Il calendario unico (Antonio): Oggi c'è sempre, in cima, con la spesa di oggi (anche 0), le cose in ritardo,
+     * i promemoria e le note senza data (sono "sempre a oggi" e a mezzanotte passano a domani da sole).
+     */
+    withToday: Boolean = false,
+    notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
+    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
 ): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
@@ -150,6 +169,26 @@ internal fun dueDays(
         dated += DueRow("charge-${f.id}", day, startOf(day), charge = f)
     }
     simRenewal?.takeIf { !it.isBefore(today) }?.let { dated += DueRow("sim-renewal", it, startOf(it), simRenewal = true) }
+    if (withToday) {
+        expenses.filter { it.date.isAfter(today) }.forEach { e -> dated += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
+        val spentToday = expenses.filter { it.date == today }
+        val todayRows = buildList {
+            add(DueRow("spend-today", today, Long.MIN_VALUE, spend = spentToday.sumOf { it.cents }))
+            spentToday.forEach { e -> add(DueRow("expense-${e.id}", today, Long.MIN_VALUE, expense = e)) }
+            late.sortedBy { it.at }.forEach { add(it.copy(day = today, overdueFrom = it.day)) }
+            addAll(dated.filter { it.day == today }.sortedBy { it.at })
+            tasks.filter { !it.done && it.dueAt == null }.sortedBy { it.createdAt }
+                .forEach { t -> add(DueRow("task-${t.id}", today, Long.MAX_VALUE, task = t)) }
+            undated.forEach { add(it.copy(day = today)) }
+            // Le note fissate per prime, poi dalla più nuova.
+            notes.sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
+                .forEach { n -> add(DueRow("note-${n.id}", today, Long.MAX_VALUE, note = n)) }
+        }
+        return buildList {
+            add(DueDay(today, false, todayRows))
+            dated.filter { it.day != today }.groupBy { it.day!! }.toSortedMap().forEach { (day, rows) -> add(DueDay(day, false, rows.sortedBy { it.at })) }
+        }
+    }
     return buildList {
         if (late.isNotEmpty()) add(DueDay(null, true, late.sortedBy { it.at }))
         dated.groupBy { it.day!! }.toSortedMap().forEach { (day, rows) -> add(DueDay(day, false, rows.sortedBy { it.at })) }
@@ -292,7 +331,17 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
  * Prossimi giorni come linea del tempo, uguale alla card di Oggi ma con tutto: una riga per cosa, il giorno
  * sulla prima riga di ogni giorno, e fra due giorni lontani la linea si allunga ([com.platinum20.dashboard.today.Upcoming.gapDp]).
  */
-internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<Pair<TimelineEntry, DueRow>> {
+internal fun timelineEntries(
+    groups: List<DueDay>,
+    today: LocalDate,
+    zone: ZoneId = ZoneId.systemDefault(),
+    /**
+     * Il calendario unico: ogni mese ha il suo segno, anche il primo e quello di oggi, con accanto quanto hai
+     * speso in quel mese (Antonio). [expenses] servono per quel totale.
+     */
+    months: Boolean = false,
+    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
+): List<Pair<TimelineEntry, DueRow>> {
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
     var previous: LocalDate? = null
@@ -305,9 +354,17 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
         val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
         if (!reachedNow && !g.past && !g.late && day != null) {
             reachedNow = true
-            monthPrevious = today
+            // Nel calendario unico il mese di oggi ha il suo segno (col totale): non si salta.
+            if (!months) monthPrevious = today
         }
-        val month = if (!g.late && day != null) com.platinum20.dashboard.today.Upcoming.monthBreak(monthPrevious, day, today) else null
+        val month = when {
+            g.late || day == null -> null
+            months && monthPrevious == null -> com.platinum20.dashboard.today.Upcoming.monthLabel(day!!, today)
+            else -> com.platinum20.dashboard.today.Upcoming.monthBreak(monthPrevious, day!!, today)
+        }
+        val monthSpend = if (months && month != null) java.time.YearMonth.from(day!!).let { m ->
+            Expenses.total(expenses, m).takeIf { it > 0 || m == java.time.YearMonth.from(today) }?.let { Expenses.format(it) }
+        } else null
         if (day != null && !g.late) {
             previous = day
             monthPrevious = day
@@ -322,6 +379,13 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
         }
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
+                r.spend != null -> com.platinum20.dashboard.today.BriefKind.MONEY to "Spesa di oggi"
+                r.expense != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
+                    "${Expenses.format(r.expense.cents)}  ${Expenses.displayName(r.expense)}"
+                r.note != null -> com.platinum20.dashboard.today.BriefKind.FREE to r.note.title.ifEmpty { "Nota" }
+                // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
+                r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
+                    (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
                 r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to
                     ((r.task.dueAt?.takeIf { !g.late && !g.past }?.time()?.let { "$it  " } ?: "") + r.task.text)
                 r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
@@ -341,11 +405,20 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
                 text = text,
                 dayLabel = if (i == 0) label else null,
                 gapDp = if (i == 0) gap else 0f,
-                month = if (i == 0) month else null,
-                color = r.event?.color ?: 0,
-                late = g.late,
+                color = r.event?.color ?: r.expense?.category?.color() ?: 0,
+                late = g.late || r.overdueFrom != null,
                 past = g.past,
-                icon = if (r.simRenewal) Icons.Outlined.SimCard else null,
+                icon = when {
+                    r.simRenewal -> Icons.Outlined.SimCard
+                    r.expense != null -> r.expense.category.icon()
+                    r.note != null -> r.note.icon()
+                    else -> null
+                },
+                trailing = r.spend?.let { Expenses.format(it) } ?: r.note?.let { NoteText.badge(it.text) },
+                month = if (i == 0) month else null,
+                monthSpend = if (i == 0) monthSpend else null,
+                monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
+                image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }
     }

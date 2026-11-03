@@ -146,8 +146,6 @@ fun CustomizeScreen(onBack: () -> Unit) {
 private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.WEATHER -> Icons.Outlined.WbSunny
     HomeCard.DAY -> Icons.Outlined.Event
-    HomeCard.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
-    HomeCard.NOTES -> Icons.AutoMirrored.Outlined.Notes
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.SIM -> Icons.Outlined.SimCard
     HomeCard.MAIL -> Icons.Outlined.Mail
@@ -157,8 +155,6 @@ private fun HomeCard.icon(): ImageVector = when (this) {
 private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.WEATHER -> TileAccent.BLUE
     HomeCard.DAY -> TileAccent.BLUE
-    HomeCard.MONEY -> TileAccent.GREEN
-    HomeCard.NOTES -> TileAccent.ORANGE
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.SIM -> TileAccent.BLUE
     HomeCard.MAIL -> TileAccent.ORANGE

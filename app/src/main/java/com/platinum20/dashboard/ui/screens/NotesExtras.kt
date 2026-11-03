@@ -98,14 +98,15 @@ fun ExpensesTab(
     data: NotesData,
     padding: PaddingValues,
     onDeleted: (Expense) -> Unit = {},
+    initialMonth: YearMonth = YearMonth.now(),
 ) {
-    var month by remember { mutableStateOf(YearMonth.now()) }
+    var month by remember { mutableStateOf(initialMonth) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
     val previous = Expenses.total(data.expenses, month.minusMonths(1))
     val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
-    val listState = rememberReselectListState(Routes.NOTES)
+    val listState = rememberReselectListState(Routes.EXPENSES)
     // La pagina si apre in cima al mese (Antonio), non su "OGGI": il mese si legge dall'inizio.
     androidx.compose.runtime.LaunchedEffect(month) { runCatching { listState.scrollToItem(0) } }
 

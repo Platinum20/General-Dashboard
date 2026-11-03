@@ -74,6 +74,11 @@ object Upcoming {
      */
     fun monthBreak(previous: LocalDate?, day: LocalDate, today: LocalDate): String? {
         if (previous == null || java.time.YearMonth.from(previous) == java.time.YearMonth.from(day)) return null
+        return monthLabel(day, today)
+    }
+
+    /** Il nome del mese di [day] per il segno: "NOVEMBRE", con l'anno se non è quello di [today]. */
+    fun monthLabel(day: LocalDate, today: LocalDate): String {
         val name = day.format(monthName).uppercase(java.util.Locale.ITALIAN)
         return if (day.year == today.year) name else "$name ${day.year}"
     }

@@ -12,7 +12,8 @@ class BetaNoteSpeseLiveTest {
     @Test
     fun speseAccendeLaSezioneDaCuiSiApre() {
         assertEquals(Routes.HOME, Routes.barTab(Routes.EXPENSES))
-        assertEquals(Routes.NOTES, Routes.barTab(Routes.NOTES_EXPENSES))
+        // Dalla 1.314 il calendario si apre sopra la Home: accende Home.
+        assertEquals(Routes.HOME, Routes.barTab(Routes.NOTES))
         assertEquals(Routes.MEDIA, Routes.barTab(Routes.MEDIA))
         assertEquals(null, Routes.barTab(null))
     }

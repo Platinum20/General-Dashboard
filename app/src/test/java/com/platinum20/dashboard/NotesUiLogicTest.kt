@@ -9,7 +9,6 @@ import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.label
 import com.platinum20.dashboard.ui.screens.shortLabel
-import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.screens.dueBadge
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.DayMark
@@ -23,7 +22,6 @@ import com.platinum20.dashboard.ui.screens.undatedEntries
 import com.platinum20.dashboard.ui.screens.expenseEntries
 import com.platinum20.dashboard.ui.screens.monthExpenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
-import com.platinum20.dashboard.ui.screens.notesChips
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import com.platinum20.dashboard.ui.screens.nowRoom
 import java.time.LocalDate
@@ -87,19 +85,6 @@ class NotesUiLogicTest {
         assertEquals("5" to "giorni", dueBadge(oggi.plusDays(5), oggi))
         assertEquals("Scaduto" to null, dueBadge(oggi.minusDays(1), oggi, late = true))
     }
-
-    @Test fun pilloleDeiTreTipi() {
-        val data = NotesData(
-            tasks = listOf(TaskItem(1, "Latte"), TaskItem(2, "Pane", done = true), TaskItem(3, "Dentista", dueAt = 1L)),
-            notes = listOf(Note(4, "Idee")),
-            habits = listOf(Habit(5, "Leggere", done = setOf(oggi))),
-        )
-        val chips = notesChips(data, oggi)
-        assertEquals(listOf(NotesSection.DATED, NotesSection.UNDATED), chips.map { it.first })
-        assertEquals(listOf("Prossimi giorni · 1", "Note · 2"), chips.map { it.second })
-    }
-
-    @Test fun senzaNienteNessunaPillola() = assertEquals(emptyList<Any>(), notesChips(NotesData(), oggi))
 
     @Test fun addebitiNelGiornoDelProssimoAddebito() {
         val affitto = com.platinum20.dashboard.notes.FixedExpense(

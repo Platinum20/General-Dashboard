@@ -175,133 +175,30 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
-/** Apre le Note già su un tipo: la card Prossimi giorni di Oggi porta a tutto quello che arriva. */
-object NotesNav {
-    val request = kotlinx.coroutines.flow.MutableStateFlow<NotesSection?>(null)
-
-    /** Aperta dalla card di Oggi: "indietro" torna a Oggi, non alla pagina Note. */
-    var fromHome = false
-
-    fun open(section: NotesSection, fromHome: Boolean = false) {
-        this.fromHome = fromHome
-        request.value = section
-    }
-}
+/** Le parti di una volta della pagina Note: dalla 1.314 c'è solo il calendario, ma il nome resta per le pagine aperte. */
+enum class NotesSection(val title: String) { DATED("Calendario") }
 
 /**
- * Le due parti delle Note (1.187): "Prossimi giorni", tutto quello che arriva un giorno (con il Calendario
- * dentro, lo stesso nome della card di Oggi), e "Note", tutto quello senza data. Spese ha la sua card qui e in Oggi.
- */
-enum class NotesSection(val title: String) { DATED("Prossimi giorni"), UNDATED("Note") }
-
-/**
- * Quanto c'è in ciascuna parte ("Prossimi giorni · 4", "Note · 7"):
- * solo i tipi che hanno qualcosa, così ogni pillola dice qualcosa e porta da qualche parte.
- * Le abitudini stanno con le scadenze: si fanno oggi. [events] sono gli eventi del calendario in lista.
- */
-internal fun notesChips(data: com.platinum20.dashboard.notes.NotesData, today: LocalDate = LocalDate.now(), events: Int = 0): List<Pair<NotesSection, String>> {
-    val dated = data.tasks.count { !it.done && it.dueAt != null } + data.upcoming.size + data.parcels.count { !it.delivered } + events
-    val undated = data.tasks.count { !it.done && it.dueAt == null } + data.notes.size
-    return listOfNotNull(
-        (dated > 0 || data.habits.isNotEmpty()).takeIf { it }?.let { NotesSection.DATED to if (dated > 0) "Prossimi giorni · $dated" else "Prossimi giorni" },
-        (undated > 0).takeIf { it }?.let { NotesSection.UNDATED to "Note · $undated" },
-    )
-}
-
-/**
- * La pagina delle Note: i tre tipi, uno per card, con le prime cose di ognuno.
- * Toccando una card si apre il tipo intero (le scadenze divise per giorno, le spese per mese).
- */
-@Composable
-private fun NotesOverview(
-    data: com.platinum20.dashboard.notes.NotesData,
-    timeline: List<DueDay>,
-    padding: PaddingValues,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    onOpen: (NotesSection) -> Unit,
-) {
-    val dated = timeline.flatMap { d -> d.rows.map { d to it } }
-    val habitsLeft = data.habits.count { !it.isDone(LocalDate.now()) }
-    val datedRows = timelineEntries(timeline, LocalDate.now()).take(com.platinum20.dashboard.today.Upcoming.MAX)
-    LazyColumn(state = listState, contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Le stesse card con la linea del tempo di Oggi (Antonio), mai nascoste: sono la porta delle tre parti.
-        item(key = "dated") {
-            TimelineCard(
-                NotesSection.DATED.title,
-                datedRows.map { it.first },
-                onOpen = { onOpen(NotesSection.DATED) },
-                empty = "Impegni, promemoria, date, pacchi e addebiti, per giorno.",
-                modifier = Modifier.animateItem()
-                    .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
-                    .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.HABIT),
-                count = (dated.size + habitsLeft).takeIf { it > 0 }?.toString(),
-                ticks = datedRows.map { (_, row) -> row.task?.takeIf { !it.done }?.let { tickTask(it.id) } },
-            )
-        }
-        item(key = "undated") {
-            NotesCard(
-                data,
-                LocalDate.now(),
-                onOpen = { onOpen(NotesSection.UNDATED) },
-                modifier = Modifier.animateItem(),
-            )
-        }
-        item(key = "money") {
-            val inApp = LocalInAppNav.current
-            MoneyCard(
-                data,
-                LocalDate.now(),
-                onOpen = { inApp?.openRoute?.invoke(Routes.NOTES_EXPENSES) },
-                modifier = Modifier.animateItem(),
-            )
-        }
-    }
-}
-
-
-/** Quante note si vedono prima di "Tutte le note": le fissate e le ultime toccate. */
-internal const val NOTES_PREVIEW = 4
-
-/**
- * Sezione "Note": tre card, una per tipo (con scadenza, senza scadenza, spese), con le prime cose di ognuno.
- * Toccandone una si apre il tipo intero: le scadenze divise per giorno, le note, le spese del mese.
- * Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
+ * Il calendario unico (1.314, Antonio): tutto in una pagina sola. Sopra il passato (cose fatte, spese, eventi
+ * finiti), poi OGGI con la spesa di oggi, le cose in ritardo, i promemoria e le note senza data, sotto i giorni
+ * che arrivano. Ogni mese ha il suo segno con quanto hai speso; toccandolo si apre il riepilogo del mese.
+ * Si apre dalla card Calendario della Home. Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotesScreen(
     bottomPadding: PaddingValues,
+    onBack: () -> Unit,
     onOpenNote: (Long?) -> Unit,
     onOpenEvent: (CalendarEvent) -> Unit = {},
 ) {
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
-    var searching by rememberSaveable { mutableStateOf(false) }
-    var section by rememberSaveable { mutableStateOf<NotesSection?>(null) }
-    var allNotes by rememberSaveable { mutableStateOf(false) }
     val inApp = LocalInAppNav.current
     val scope = rememberCoroutineScope()
-    var backToHome by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        NotesNav.request.collect { wanted ->
-            if (wanted != null) {
-                section = wanted
-                searching = false
-                backToHome = NotesNav.fromHome
-                NotesNav.fromHome = false
-                NotesNav.request.value = null
-            }
-        }
-    }
-    // Indietro da una parte: alla pagina Note, o a Oggi se ci si è arrivati dalla sua card.
-    fun closeSection() {
-        section = null
-        if (backToHome) {
-            backToHome = false
-            inApp?.openTab?.invoke(Routes.HOME)
-        }
-    }
+    // Una pagina sola: niente più parti (Prossimi giorni / Note) da scegliere.
+    val section: NotesSection = NotesSection.DATED
 
     // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
     // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.
@@ -386,6 +283,15 @@ fun NotesScreen(
         }
         if (actions.isNotEmpty()) ActionBubble.show(*actions.toTypedArray())
     }
+    fun expenseActions(e: com.platinum20.dashboard.notes.Expense) {
+        ActionBubble.show(
+            BubbleAction(Icons.Outlined.Event, "Apri", detail = com.platinum20.dashboard.notes.Expenses.displayName(e)) { openItem(ItemKind.EXPENSE, e.id) },
+            BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+                NotesStore.deleteExpense(e.id)
+                offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) }
+            },
+        )
+    }
     fun noteActions(n: Note) {
         ActionBubble.show(
             BubbleAction(
@@ -411,18 +317,16 @@ fun NotesScreen(
     }
     // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
     val listState = rememberReselectListState(Routes.NOTES)
-
-
-    // Con una pillola accesa, "indietro" torna a tutta la pagina.
-    androidx.activity.compose.BackHandler(enabled = section != null && !searching) { closeSection() }
-    // Ogni pagina (i tre tipi, o uno solo) parte dalla cima.
-    LaunchedEffect(section) { runCatching { listState.scrollToItem(0) } }
+    val openRow = rememberDueOpen()
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
     val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
-    val timeline = dueDays(data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked })
-    // Sopra, scorrendo in su, il passato: cose fatte, pacchi arrivati, eventi finiti.
-    val past = pastDays(data.tasks, data.parcels, events)
+    val timeline = dueDays(
+        data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
+        withToday = true, notes = data.notes, expenses = data.expenses,
+    )
+    // Sopra, scorrendo in su, il passato: cose fatte, spese, pacchi arrivati, eventi finiti.
+    val past = pastDays(data.tasks, data.parcels, events, expenses = data.expenses)
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     var nowOffset by remember(section) { mutableStateOf<Int?>(null) }
     // Quanto è alta la linea del tempo: sotto "OGGI" serve spazio perché oggi stia in cima allo schermo.
@@ -443,12 +347,12 @@ fun NotesScreen(
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
             TopLevelBar(
-                title = section?.title ?: "Note",
-                subtitle = if (section != null) null else listOfNotNull(
+                title = "Calendario",
+                subtitle = listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
-                ).joinToString(" · ").ifEmpty { "Cattura e scadenze" },
-                onBack = if (section != null) ({ closeSection() }) else null,
+                ).joinToString(" · ").ifEmpty { null },
+                onBack = onBack,
             )
         },
     ) { inner ->
@@ -458,42 +362,17 @@ fun NotesScreen(
             top = inner.calculateTopPadding() + 12.dp,
             bottom = bottomPadding.calculateBottomPadding() + 24.dp,
         )
-        if (searching) {
-            NotesSearchPanel(
-                data = data,
-                padding = padding,
-                onClose = { searching = false },
-                onOpenNote = { onOpenNote(it) },
-                onOpenExpenses = { searching = false; inApp?.openRoute?.invoke(Routes.NOTES_EXPENSES) },
-            )
-            return@Scaffold
-        }
-        if (section == null) {
-            // I tre tipi e basta: si tocca uno per vederlo tutto, diviso per giorno o per mese.
-            NotesOverview(
-                data = data,
-                timeline = timeline,
-                padding = padding,
-                listState = listState,
-                onOpen = { section = it },
-            )
-            return@Scaffold
-        }
-        fun show(part: NotesSection) = section == null || section == part
+        fun show(part: NotesSection) = section == part
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
-        val undatedTasks = data.tasks.filter { !it.done && it.dueAt == null }
         val done = data.tasks.filter { it.done }
         // Completati tiene solo quello che non sta già nel passato della linea del tempo.
         val inPast = past.flatMap { it.rows }.map { it.key }.toSet()
         val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
-        // I promemoria senza data spuntati restano in Note, in fondo; qui solo quelli con una data.
+        // I promemoria senza data spuntati spariscono da Oggi (si ritrovano cercando); qui solo quelli con una data.
         val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
-        val doneUndated = done.filter { it.dueAt == null }
-        // In ordine di inserimento, le più nuove in cima: la linea del tempo a destra segue questo ordine.
-        val notes = data.notes.sortedWith(compareByDescending<Note> { it.pinned }.thenByDescending { it.createdAt })
         val today = LocalDate.now()
-        val empty = if (section == NotesSection.DATED) timeline.isEmpty() && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
-        else undatedTasks.isEmpty() && notes.isEmpty() && doneUndated.isEmpty()
+        // Oggi c'è sempre (almeno la spesa di oggi): vuoto = solo quella riga e niente altro.
+        val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
         val groups = past + timeline
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
@@ -569,8 +448,8 @@ fun NotesScreen(
                 item(key = "empty") {
                     EmptyHint(
                         "Tocca + e scrivi come parli: Canvas capisce da solo se c'è una data. \"venerdì alle 18 palestra\", " +
-                            "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono in Prossimi giorni, con i giorni che mancano; " +
-                            "un'idea senza data in Note."
+                            "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono nel loro giorno; " +
+                            "un'idea senza data resta in Oggi finché non la togli."
                     )
                 }
             }
@@ -585,8 +464,9 @@ fun NotesScreen(
             // Prossimi giorni: la stessa linea del tempo della card di Oggi, ma con tutto.
             if (show(NotesSection.DATED) && groups.isNotEmpty()) {
                 item(key = "timeline") {
-                    val entries = timelineEntries(groups, today)
+                    val entries = timelineEntries(groups, today, months = true, expenses = data.expenses)
                     val nowIndex = entries.indexOfFirst { !it.first.past }
+                    val openMonth: (java.time.YearMonth) -> Unit = { inApp?.openRoute?.invoke(Routes.expenses(it)) }
                     // Sullo sfondo, senza card: la linea è la pagina.
                     Column(
                         Modifier.fillMaxWidth()
@@ -596,22 +476,31 @@ fun NotesScreen(
                     ) {
                         entries.forEachIndexed { index, (entry, row) ->
                             // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
+                            // Il segno del mese di oggi sta sopra "OGGI", non sotto.
+                            // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
+                            val monthAbove = index == nowIndex && index > 0 && entry.month != null
                             if (index == nowIndex && index > 0) {
-                                TimelineNowMarker(Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() })
+                                Column(Modifier.fillMaxWidth().onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }) {
+                                    if (monthAbove) {
+                                        TimelineMonthMarker(entry.month!!, total = entry.monthSpend, onClick = entry.monthOf?.let { m -> { haptic(Haptic.TICK); openMonth(m) } })
+                                    }
+                                    TimelineNowMarker(Modifier.padding(start = 16.dp))
+                                }
                             }
                             TimelineRow(
                                 entry,
                                 top = index > 0,
                                 bottom = index < entries.lastIndex,
-                                onClick = {
-                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
-                                    row.countdown?.let { openItem(ItemKind.DATE, it.id) }
-                                    row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
-                                    row.event?.let { onOpenEvent(it) }
-                                    row.charge?.let { openItem(ItemKind.FIXED, it.id) }
-                                    if (row.simRenewal) inApp?.openRoute?.invoke(Routes.SIM)
+                                onClick = { openRow(row) },
+                                onLongClick = {
+                                    when {
+                                        row.note != null -> noteActions(row.note)
+                                        row.expense != null -> expenseActions(row.expense)
+                                        else -> dueActions(row)
+                                    }
                                 },
-                                onLongClick = { dueActions(row) },
+                                onMonth = openMonth,
+                                showMonth = !monthAbove,
                                 onIcon = row.task?.takeIf { !it.done }?.let { task ->
                                     {
                                         haptic(Haptic.CONFIRM)
@@ -629,40 +518,6 @@ fun NotesScreen(
                     SectionHeader("Abitudini", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.HABIT))
                 }
                 habitRows()
-            }
-            // Note: promemoria da spuntare e appunti sulla stessa linea del tempo di Prossimi giorni, nello
-            // stesso verso (Antonio): il passato sopra, i più nuovi in fondo sotto "OGGI", e la pagina si apre lì.
-            if (show(NotesSection.UNDATED) && (undatedTasks.isNotEmpty() || notes.isNotEmpty() || doneUndated.isNotEmpty())) {
-                item(key = "undated-timeline") {
-                    val entries = undatedEntries(undatedTasks, notes, today, done = doneUndated)
-                    val nowAt = nowIndex(entries.map { it.first })
-                    val nowMarker = Modifier.padding(start = 16.dp).onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }
-                    Column(Modifier.fillMaxWidth().onGloballyPositioned { timelineHeight = it.size.height }.captureTarget(CaptureMode.NOTE)) {
-                        entries.forEachIndexed { index, (entry, row) ->
-                            if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
-                            TimelineRow(
-                                entry,
-                                top = index > 0,
-                                bottom = index < entries.lastIndex,
-                                onClick = {
-                                    row.task?.let { openItem(ItemKind.TASK, it.id) }
-                                    row.note?.let { onOpenNote(it.id) }
-                                },
-                                onLongClick = {
-                                    row.task?.let { ActionBubble.show(*taskActions(it).toTypedArray()) }
-                                    row.note?.let { noteActions(it) }
-                                },
-                                onIcon = row.task?.let { task ->
-                                    {
-                                        haptic(Haptic.CONFIRM)
-                                        NotesStore.toggleTask(task.id)
-                                    }
-                                },
-                            )
-                        }
-                        if (nowAt == entries.size && entries.isNotEmpty()) TimelineNowMarker(nowMarker)
-                    }
-                }
             }
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {

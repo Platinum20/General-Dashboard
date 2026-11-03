@@ -11,7 +11,7 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "Prossimi giorni", "Spese", "Note", "SIM", "Dalla posta", "Il punto del giorno"),
+            listOf("Adesso", "Media", "Calendario", "SIM", "Dalla posta", "Il punto del giorno"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
     }
@@ -55,6 +55,13 @@ class HomeLayoutTest {
         // "La giornata" nascosta prima della 1.186 diventa "Prossimi giorni": si rivede, le altre restano come erano.
         val layout = HomeLayout.read("WEATHER,DAY,RECAP", "DAY,RECAP", version = 2)
         assertEquals(setOf(HomeCard.RECAP), layout.hidden)
-        assertEquals(HomeCard.MONEY, layout.order[layout.order.indexOf(HomeCard.DAY) + 1])
+        assertEquals(HomeCard.RECAP, layout.order.last())
+    }
+
+    @Test fun calendarioSempreVisibileDalla1314() {
+        // Il calendario unico tiene note e spese: chi l'aveva nascosto lo rivede; le card Spese e Note salvate spariscono.
+        val layout = HomeLayout.read("WEATHER,DAY,MONEY,NOTES,RECAP", "DAY,MONEY", version = 3)
+        assertEquals(emptySet<HomeCard>(), layout.hidden)
+        assertEquals(HomeCard.entries.size, layout.order.size)
     }
 }
