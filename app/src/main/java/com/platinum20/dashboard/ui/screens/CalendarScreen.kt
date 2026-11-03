@@ -202,6 +202,7 @@ fun EventDetailScreen(
     val writable = current?.writable == true
     DetailPage(
         onBack = onBack,
+        meta = "Evento",
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({

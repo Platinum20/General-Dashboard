@@ -156,13 +156,23 @@ private fun ItemKind.dot(): Color = when (this) {
     ItemKind.EXPENSE, ItemKind.FIXED -> MaterialTheme.colorScheme.outline
 }
 
+/** La riga piccola in alto nella scheda: che cosa è. */
+private fun ItemKind.metaLabel(): String = when (this) {
+    ItemKind.TASK -> "Promemoria"
+    ItemKind.DATE -> "Data da ricordare"
+    ItemKind.PARCEL -> "Pacco"
+    ItemKind.HABIT -> "Abitudine"
+    ItemKind.EXPENSE -> "Spesa"
+    ItemKind.FIXED -> "Spesa fissa"
+}
+
 private fun undo(message: String, restore: () -> Unit) {
     CaptureFeedback.show(CaptureNotice(CaptureMode.NOTE, message, undo = restore, icon = Icons.Outlined.Delete, fly = false))
 }
 
 /**
  * La pagina a schermo intero di promemoria, date, pacchi, abitudini e spese: la stessa dell'evento
- * (titolo col pallino, una scheda di righe, Elimina in alto). Si modifica qui dentro: il titolo si scrive, le righe si toccano.
+ * (titolo col pallino, una scheda di righe; in basso l'azione principale e "Altro" con Elimina). Si modifica qui dentro: il titolo si scrive, le righe si toccano.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,10 +196,40 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e -> { NotesStore.deleteExpense(id); gone("Spesa eliminata") { NotesStore.restoreExpense(e) } } }
         ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f -> { NotesStore.deleteFixedExpense(id); gone("Spesa fissa tolta") { NotesStore.restoreFixedExpense(f) } } }
     }
+    // L'azione di tutti i giorni in basso a sinistra, come la lista nell'editor delle note (Antonio).
+    val action: Triple<ImageVector, String, () -> Unit>? = when (kind) {
+        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
+            Triple(if (t.done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (t.done) "Da rifare" else "Segna come fatto") {
+                haptic(if (t.done) Haptic.TICK else Haptic.CONFIRM)
+                NotesStore.toggleTask(id)
+            }
+        }
+        ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h ->
+            val done = h.isDone(LocalDate.now())
+            Triple(if (done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (done) "Non fatta oggi" else "Fatta oggi") {
+                haptic(if (done) Haptic.TICK else Haptic.CONFIRM)
+                NotesStore.toggleHabit(id)
+            }
+        }
+        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
+            Triple(if (p.delivered) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (p.delivered) "Non ancora arrivato" else "È arrivato") {
+                haptic(if (p.delivered) Haptic.TICK else Haptic.CONFIRM)
+                NotesStore.toggleDelivered(id)
+            }
+        }
+        else -> null
+    }
+    val tracking = if (kind == ItemKind.PARCEL) data.parcels.firstOrNull { it.id == id }?.takeIf { !it.delivered }?.let { p ->
+        p.trackingUrl()?.let { url -> { inApp?.openWeb?.invoke(url, p.carrier.label); Unit } }
+    } else null
     DetailPage(
         onBack = onBack,
         onEdit = null,
         onDelete = delete,
+        meta = if (detail == null) null else kind.metaLabel(),
+        primary = action?.let { (icon, text, onClick) -> DetailAction(icon, text, onClick) },
+        // La pagina del corriere si apre dentro Canvas, non nel browser.
+        more = listOfNotNull(tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", onClick = open) }),
     ) {
         if (detail == null) {
             DetailMissing(Icons.Outlined.EventBusy, "Questa cosa non c'è più.")
@@ -204,44 +244,6 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                     null -> DetailRow(line.kind.icon(), line.text)
                     is LineEdit.Tap -> DetailTapRow(line.kind.icon(), line.text, onClick = { picker = edit.picker ?: run { edit.onClick(); null } }, onClear = edit.onClear)
                     is LineEdit.Field -> DetailFieldRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.number, edit.onCommit)
-                }
-            }
-        }
-        // L'azione di tutti i giorni a portata di pollice, sotto la scheda.
-        val action: Triple<ImageVector, String, () -> Unit>? = when (kind) {
-            ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
-                Triple(if (t.done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (t.done) "Da rifare" else "Segna come fatto") {
-                    haptic(if (t.done) Haptic.TICK else Haptic.CONFIRM)
-                    NotesStore.toggleTask(id)
-                }
-            }
-            ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h ->
-                val done = h.isDone(LocalDate.now())
-                Triple(if (done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (done) "Non fatta oggi" else "Fatta oggi") {
-                    haptic(if (done) Haptic.TICK else Haptic.CONFIRM)
-                    NotesStore.toggleHabit(id)
-                }
-            }
-            ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
-                Triple(if (p.delivered) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (p.delivered) "Non ancora arrivato" else "È arrivato") {
-                    haptic(if (p.delivered) Haptic.TICK else Haptic.CONFIRM)
-                    NotesStore.toggleDelivered(id)
-                }
-            }
-            else -> null
-        }
-        val tracking = if (kind == ItemKind.PARCEL) data.parcels.firstOrNull { it.id == id }?.takeIf { !it.delivered }?.let { p ->
-            p.trackingUrl()?.let { url -> { inApp?.openWeb?.invoke(url, p.carrier.label); Unit } }
-        } else null
-        if (action != null || tracking != null) {
-            CanvasCard(Modifier.fillMaxWidth()) {
-                action?.let { (icon, text, onClick) ->
-                    Column(Modifier.fillMaxWidth().bouncyPress(0.98f).clickable(onClick = onClick)) { DetailRow(icon, text) }
-                }
-                tracking?.let { open ->
-                    if (action != null) RowDivider()
-                    // La pagina del corriere si apre dentro Canvas, non nel browser.
-                    Column(Modifier.fillMaxWidth().bouncyPress(0.98f).clickable(onClick = open)) { DetailRow(Icons.Outlined.LocalShipping, "Traccia la spedizione") }
                 }
             }
         }

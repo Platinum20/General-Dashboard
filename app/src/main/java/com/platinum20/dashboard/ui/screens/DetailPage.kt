@@ -29,7 +29,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.outlined.MoreHoriz
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,34 +45,90 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+/** Il tasto in basso a sinistra di una scheda: l'azione di tutti i giorni (Fatto, È arrivato, Modifica). */
+internal data class DetailAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+
 /**
- * La pagina a schermo intero di una cosa sola, nata con gli eventi del calendario: Indietro a sinistra,
- * Modifica ed Elimina a destra, sotto titolo e schede. Ogni tipo (eventi, promemoria, date, pacchi,
- * abitudini, spese) usa questa, così si aprono tutti allo stesso modo.
+ * La pagina a schermo intero di una cosa sola, uguale per eventi, promemoria, date, pacchi, abitudini e spese.
+ * Dalla 1.315 ha la forma dell'editor delle note (Antonio): in alto solo Indietro e una riga piccola, in fondo
+ * a sinistra l'azione principale ([primary], o Modifica) e a destra "Altro", che apre il fumetto di vetro
+ * con il resto ([more], Modifica se non sta già a sinistra, Elimina).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DetailPage(
+internal fun DetailPage(
     onBack: () -> Unit,
     onEdit: (() -> Unit)?,
     onDelete: (() -> Unit)?,
+    /** La riga piccola sopra il titolo ("PROMEMORIA", "EVENTO"), come la data di modifica delle note. */
+    meta: String? = null,
+    primary: DetailAction? = null,
+    more: List<BubbleAction> = emptyList(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val haptic = rememberHaptic()
+    val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", it) }
+    val extra = more +
+        listOfNotNull(
+            onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", onClick = it) },
+            onDelete?.let { BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true, onClick = it) },
+        )
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 4.dp, end = 24.dp, top = 4.dp),
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                }
+                meta?.let {
+                    Text(
+                        it.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 20.dp, top = 4.dp),
+                    )
+                }
+            }
+        },
+        bottomBar = {
+            if (left != null || extra.isNotEmpty()) {
+                // Come nell'editor delle note: i tasti salgono sopra il mini player invece di finirci sotto.
+                val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
+                val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(bottom = miniRoom.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    left?.let { action ->
+                        RoundIconButton(action.icon, action.label, onClick = action.onClick)
                     }
-                },
-                actions = {
-                    onEdit?.let { RoundIconButton(Icons.Outlined.Edit, "Modifica", onClick = it) }
-                    onDelete?.let { RoundIconButton(Icons.Outlined.Delete, "Elimina", onClick = it) }
-                    if (onEdit != null || onDelete != null) Spacer(Modifier.width(8.dp))
-                },
-            )
+                    Text(
+                        left?.label.orEmpty(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (extra.isNotEmpty()) {
+                        RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") {
+                            haptic(Haptic.LONG_PRESS)
+                            ActionBubble.show(*extra.toTypedArray())
+                        }
+                    }
+                }
+            }
         },
     ) { inner ->
         Column(
