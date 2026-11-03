@@ -220,13 +220,6 @@ fun HomeScreen(
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
     val haptic = rememberHaptic()
-    var briefUndo by remember { mutableStateOf<BriefUndo?>(null) }
-    LaunchedEffect(briefUndo) {
-        if (briefUndo != null) {
-            delay(5_000)
-            briefUndo = null
-        }
-    }
     var habitIds by remember { mutableStateOf<List<Long>?>(null) }
     habitIds?.let { ids ->
         HabitsTodayDialog(
@@ -284,13 +277,15 @@ fun HomeScreen(
                 onBriefAction = { line ->
                     haptic(Haptic.CONFIRM)
                     if (line.action == BriefAction.HABITS) habitIds = line.targetIds
-                    else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
-                },
-                undo = briefUndo,
-                onUndo = {
-                    haptic(Haptic.TICK)
-                    briefUndo?.undo?.invoke()
-                    briefUndo = null
+                    else BriefActions.perform(line, notes, minute.toLocalDate())?.let { u ->
+                        // L'Annulla è il fumetto di vetro in fondo, come ovunque: la card Adesso resta ferma.
+                        com.platinum20.dashboard.capture.CaptureFeedback.show(
+                            com.platinum20.dashboard.capture.CaptureNotice(
+                                com.platinum20.dashboard.capture.CaptureMode.TASK, u.message, undo = { u.undo() },
+                                icon = Icons.Outlined.TaskAlt, fly = false,
+                            ),
+                        )
+                    }
                 },
                 onOpenBrief = { line ->
                     // La riga di una cosa sola apre la sua scheda (Antonio); le righe che ne riassumono tante, la pagina.
@@ -460,8 +455,6 @@ private fun WeatherCard(
     onClick: () -> Unit,
     briefing: List<BriefLine>,
     onBriefAction: (BriefLine) -> Unit,
-    undo: BriefUndo?,
-    onUndo: () -> Unit,
     onOpenBrief: (BriefLine) -> Unit,
 ) {
     val forecast = state.forecast
@@ -476,27 +469,9 @@ private fun WeatherCard(
         ),
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
-        if (briefing.isNotEmpty() || undo != null) {
+        if (briefing.isNotEmpty()) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
-                undo?.let { u ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            u.message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = LocalContentColor.current.copy(alpha = 0.8f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = onUndo, modifier = Modifier.bouncyPress()) {
-                            Text("Annulla", color = LocalContentColor.current)
-                        }
-                    }
-                }
             }
         }
     }
