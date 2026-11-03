@@ -4,6 +4,10 @@
 **Gmail sta in Account**
 - Il collegamento a Gmail ora è in Impostazioni › Account, sotto "Posta", insieme a SIM e Conto
 - Da lì colleghi la password per app, fai "Leggi adesso" o scolleghi; tutto il resto funziona come prima
+## 1.327.0
+**Condividi i dati letti: ora è un file**
+- "Condividi i dati letti di Revolut" (e quello di WindTre) manda un file .txt invece di un testo enorme: le app che lo ricevono non si chiudono più
+- Scegli Claude, Gmail o Drive e allega il file
 
 ## 1.326.0
 **Cambiare mese nelle spese è fluido**
