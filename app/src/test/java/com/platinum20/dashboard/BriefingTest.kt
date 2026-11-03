@@ -181,6 +181,9 @@ class BriefingTest {
         val parcel = lines.first { it.kind == BriefKind.PARCEL }
         assertEquals(BriefAction.PARCEL_ARRIVED, parcel.action)
         assertEquals(listOf(3L), parcel.targetIds)
+        // Toccando la riga si apre la scheda di quella cosa (Antonio).
+        assertEquals(7L, task.openId)
+        assertEquals(3L, parcel.openId)
         val habits = lines.first { it.kind == BriefKind.HABIT }
         assertEquals(BriefAction.HABITS, habits.action)
         assertEquals(listOf(1L, 2L), habits.targetIds)
@@ -267,5 +270,17 @@ class BriefingTest {
         val widget = build(card = false).map { it.text }
         assertTrue(widget.contains("2 promemoria entro stasera"))
         assertFalse(widget.contains("Alle 18:00: Palestra"))
+    }
+
+    @Test
+    fun rigaEventoApreLEvento() {
+        // Toccando un impegno in Adesso si apre il suo evento, non il calendario intero (Antonio).
+        val lines = Briefing.build(
+            now = morning, forecast = null,
+            today = listOf(event("Riunione", morning.plusHours(2), morning.plusHours(3))),
+            tomorrow = null, tasks = emptyList(), countdowns = emptyList(), zone = zone,
+            wholeDay = true, withTomorrow = false,
+        )
+        assertEquals("Riunione", lines.first { it.kind == BriefKind.EVENT }.event?.title)
     }
 }

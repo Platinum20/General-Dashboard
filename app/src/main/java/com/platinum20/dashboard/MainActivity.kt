@@ -1234,6 +1234,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onSearch = { navController.navigate(Routes.SEARCH) },
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                    onOpenNote = { openNote(it) },
                 )
             }
             composable(Routes.MEDIA) {
