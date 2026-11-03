@@ -358,6 +358,8 @@ function(data) {
     for (var key in node) {
       var v = node[key];
       if (!v || typeof v !== 'object') continue;
+      // Le pubblicità (adSlotRenderer, inFeedAdLayoutRenderer, promoted...) contengono video finti: si saltano intere.
+      if (/^ad[A-Z]|Ad[A-Z]|^promoted|Promoted|^statementBanner|^brandVideo/.test(key)) continue;
       if (key === 'channelRenderer' && v.channelId) {
         channels.push({id: v.channelId, title: text(v.title), thumb: thumb(v.thumbnail)});
       } else if ((key === 'videoRenderer' || key === 'playlistVideoRenderer' || key === 'gridVideoRenderer' ||

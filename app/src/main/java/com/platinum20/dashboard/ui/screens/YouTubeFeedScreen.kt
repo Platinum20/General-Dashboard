@@ -308,7 +308,8 @@ internal data class FeedPick(val shorts: List<YtVideo>, val videos: List<YtVideo
  * Escludi video per membri toglie quelli che senza abbonamento al canale non si possono guardare.
  */
 internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean, hideMembers: Boolean = false): FeedPick {
-    val kept = all
+    // Senza titolo né canale è una pubblicità sfuggita al filtro della pagina: un video vero li ha sempre.
+    val kept = all.filter { it.title.isNotBlank() || it.channel.isNotBlank() }
         .let { list -> if (hideLive) list.filter { !it.live && !it.upcoming } else list }
         .let { list -> if (hideMembers) list.filter { !it.membersOnly } else list }
     return FeedPick(

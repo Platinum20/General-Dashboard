@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.305.0
+**Niente più pubblicità tra i video di YouTube**
+- Nella Home e nelle Iscrizioni di Video non compaiono più le pubblicità travestite da video (quelle senza titolo né canale)
+
 ## 1.304.0
 **Commenti YouTube: Mi piace e risposte**
 - Tocca il pollice di un commento per mettere o togliere Mi piace col tuo account YouTube
