@@ -52,6 +52,23 @@ object RevolutParse {
         Regex("housing|home|rent|furnit") to ExpenseCategory.HOME,
     )
 
+    /**
+     * Il codice MCC dell'esercente, quando il tag di Revolut è generico ("services", "general"):
+     * è lo standard dei circuiti, più preciso del nome.
+     */
+    fun mccCategory(mcc: Int): ExpenseCategory? = when (mcc) {
+        5411, 5412, 5422, 5441, 5451, 5462, 5499 -> ExpenseCategory.FOOD
+        in 5811..5814 -> ExpenseCategory.EATING_OUT
+        in 3000..3299, in 3351..3441, 4011, 4111, 4112, 4121, 4131, 4411, 4511, 4582, 4784, 4789,
+        5541, 5542, 5983, 7511, 7512, 7513, 7523, 7531, 7534, 7538, 7542, 7549 -> ExpenseCategory.TRANSPORT
+        4812, 4814, 4815, 4816, 4899, 4900 -> ExpenseCategory.BILLS
+        5122, 5912, 5975, 5976, 7997, 8011, 8021, 8031, 8041, 8042, 8043, 8049, 8050, 8062, 8071, 8099 -> ExpenseCategory.HEALTH
+        in 3501..3999, 4722, 7011, 7832, 7841, 7911, 7922, 7929, 7932, 7933, 7941, in 7991..7999, in 5815..5818 -> ExpenseCategory.FUN
+        1520, 1711, 1731, 5200, 5211, 5231, 5251, 5261, 5712, 5713, 5714, 5718, 5719, 5722, 7210, 7211, 7216, 7217 -> ExpenseCategory.HOME
+        in 5300..5399, in 5600..5699, 5732, 5734, 5735, 5945, 5947, 5970, 5992, 5993, 5994, 5999 -> ExpenseCategory.SHOPPING
+        else -> null
+    }
+
     fun read(body: String, zone: ZoneId = ZoneId.systemDefault()): RevolutRead? {
         val root = runCatching { if (body.trimStart().startsWith("[")) JSONArray(body) else JSONObject(body) }.getOrNull() ?: return null
         val txs = LinkedHashMap<String, BankTx>()
@@ -83,7 +100,8 @@ object RevolutParse {
     private fun tx(o: JSONObject, zone: ZoneId): BankTx? {
         val currency = o.optString("currency").uppercase()
         if (currency.isNotEmpty() && currency != CURRENCY) return null
-        val amount = o.optLong("amount")
+        // Con le commissioni: è quello che è uscito davvero dal conto (cambi, prelievi oltre soglia).
+        val amount = (o.opt("amountWithCharges") as? Number ?: o.opt("amount") as Number).toLong()
         val id = o.optString("legId").ifEmpty { o.optString("id") }.ifEmpty { return null }
         val at = listOf("startedDate", "createdDate", "completedDate").firstNotNullOfOrNull { k -> o.optLong(k).takeIf { it > 0 } } ?: return null
         val date = Instant.ofEpochMilli(at).atZone(zone).toLocalDate()
@@ -99,8 +117,11 @@ object RevolutParse {
         val counts = spending && state in valid
         val tags = listOf(o.optString("tag"), o.optString("category"), merchant?.optString("category").orEmpty()).joinToString(" ").lowercase()
         val category = categories.firstOrNull { it.first.containsMatchIn(tags) }?.second
+            ?: merchant?.optString("mcc")?.toIntOrNull()?.let(::mccCategory)
             ?: ExpenseCategory.guess(text)
         val name = when {
+            // "To Mario Rossi" dei bonifici, in italiano come il resto dell'app.
+            type == "TRANSFER" && text.startsWith("To ", ignoreCase = true) -> "A " + text.drop(3).trim()
             text.isNotEmpty() -> text
             type == "ATM" -> "Prelievo"
             else -> "Revolut"
@@ -108,12 +129,15 @@ object RevolutParse {
         return BankTx(id, -amount, name, category, date, counts)
     }
 
-    /** Il saldo di una tasca in euro del conto principale (non salvadanai, non chiuse). */
+    /**
+     * Il saldo della tasca in euro del conto principale, quello che l'app Revolut mostra in alto
+     * (già senza i pagamenti in attesa). Serve il tipo CURRENT scritto: le tasche dei salvadanai
+     * (risposta money-boxes) non hanno tipo e facevano credere che i risparmi fossero il saldo.
+     */
     private fun balance(o: JSONObject): Long? {
         if (o.opt("balance") !is Number || !o.has("currency")) return null
         if (o.optString("currency").uppercase() != CURRENCY) return null
-        val type = o.optString("type").uppercase()
-        if (type.isNotEmpty() && type != "CURRENT") return null
+        if (o.optString("type").uppercase() != "CURRENT") return null
         if (o.optBoolean("closed") || o.optString("state").uppercase().let { it.isNotEmpty() && it != "ACTIVE" }) return null
         return o.optLong("balance")
     }

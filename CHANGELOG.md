@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.330.0
+**Revolut letto giusto**
+- Il saldo è sempre quello del conto principale, come in alto nell'app Revolut: prima a volte mostrava i soldi del salvadanaio "Risparmi"
+- Le spese contano anche le commissioni, cioè quello che è uscito davvero
+- Categorie più precise dal codice dell'esercente quando Revolut dice solo "servizi" (es. benzina, farmacia)
+- I bonifici si leggono in italiano: "A Mario Rossi" invece di "To Mario Rossi"
 ## 1.328.0
 **Gmail sta in Account**
 - Il collegamento a Gmail ora è in Impostazioni › Account, sotto "Posta", insieme a SIM e Conto

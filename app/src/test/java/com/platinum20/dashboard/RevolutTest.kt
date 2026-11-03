@@ -27,9 +27,9 @@ class RevolutTest {
     private val nov3 = LocalDate.of(2026, 11, 3)
     private val nov3ms = nov3.atStartOfDay(zone).toInstant().toEpochMilli() + 10 * 3_600_000L
 
-    private fun tx(id: String, amount: Long, type: String = "CARD_PAYMENT", state: String = "COMPLETED", extra: String = "") =
+    private fun tx(id: String, amount: Long, type: String = "CARD_PAYMENT", state: String = "COMPLETED", extra: String = "", account: String = "CURRENT") =
         """{"id":"$id","type":"$type","state":"$state","startedDate":$nov3ms,"currency":"EUR","amount":$amount,"balance":99999,
-           "account":{"id":"a","type":"CURRENT"}$extra}"""
+           "account":{"id":"a","type":"$account"}$extra}"""
 
     @Test
     fun cardPaymentsBecomeExpenses() {
@@ -64,6 +64,40 @@ class RevolutTest {
         assertEquals(123456L, RevolutParse.read(body, zone)!!.balanceCents)
         assertNull(RevolutParse.read("""{"user":{"name":"x"}}""", zone))
         assertNull(RevolutParse.read("<html>", zone))
+    }
+
+    /** Le forme vere viste sul telefono (dati inventati): salvadanai, giri fra tasche, bonifici, MCC. */
+    @Test
+    fun realShapesFromThePhone() {
+        // money-boxes: la tasca del salvadanaio non ha tipo, non è il saldo del conto.
+        val boxes = """[{"id":"b1","name":"Risparmi","state":"ACTIVE","balance":{"amount":1560000,"currency":"EUR"},"type":"BASIC",
+            "pocket":{"id":"p2","name":"Risparmi","currency":"EUR","balance":1560000,"closed":false}}]"""
+        assertNull(RevolutParse.read(boxes, zone))
+        val wallet = """{"PERSONAL":[{"baseCurrency":"EUR","pockets":[
+            {"id":"p1","type":"CURRENT","state":"ACTIVE","currency":"EUR","balance":16076,"blockedAmount":1220,"closed":false},
+            {"id":"p2","type":"SAVINGS","name":"MB:b1","state":"ACTIVE","currency":"EUR","balance":1560000,"closed":false}]}]}"""
+        assertEquals(16076L, RevolutParse.read(wallet, zone)!!.balanceCents)
+
+        val body = "[" + listOf(
+            // Dai risparmi al conto: la gamba SAVINGS in uscita e quella CURRENT in entrata, nessuna è spesa.
+            tx("s1", -20000, type = "TRANSFER", extra = ""","description":"To EUR"""", account = "SAVINGS"),
+            tx("s2", 20000, type = "TRANSFER", extra = ""","description":"From EUR MB:b1""""),
+            tx("s3", -5000, type = "TRANSFER", extra = ""","description":"To EUR Risparmi""""),
+            tx("t1", -1400, type = "TRANSFER", extra = ""","description":"To Mario Rossi","tag":"transfers""""),
+            tx("c1", -1020, extra = ""","amountWithCharges":-1070,"description":"Droppos","tag":"services",
+                "merchant":{"name":"DropPOS","mcc":"5542","category":"services"}"""),
+            tx("c2", -1220, state = "PENDING", extra = ""","description":"Kebab","merchant":{"name":"Kebabberia","mcc":"5814","category":"restaurants"}"""),
+        ).joinToString(",") + "]"
+        val byId = RevolutParse.read(body, zone)!!.txs.associateBy { it.id }
+        assertNull(byId["s1"]); assertNull(byId["s2"]); assertNull(byId["s3"])
+        assertEquals("A Mario Rossi", byId["t1"]!!.text)
+        assertEquals(1400L, byId["t1"]!!.cents)
+        assertEquals(1070L, byId["c1"]!!.cents)
+        assertEquals(ExpenseCategory.TRANSPORT, byId["c1"]!!.category)
+        assertTrue(byId["c2"]!!.counts)
+        assertEquals(ExpenseCategory.EATING_OUT, byId["c2"]!!.category)
+        assertEquals(ExpenseCategory.FOOD, RevolutParse.mccCategory(5411))
+        assertNull(RevolutParse.mccCategory(9311))
     }
 
     @Test
