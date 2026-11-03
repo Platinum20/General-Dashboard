@@ -162,7 +162,10 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }.filter { it.rows.isNotEmpty() }
     val all = timelineEntries(pending, today, months = true, expenses = expenses)
     val todayCount = all.count { it.second.day == today && !it.first.past }
-    val shown = all.take(todayCount + Upcoming.MAX)
+    // Sotto "PIÙ AVANTI" tutto il resto del mese (Antonio); se è poco, si arriva almeno a [Upcoming.MAX] cose.
+    val month = YearMonth.from(today)
+    val restOfMonth = all.count { (entry, row) -> !entry.past && row.day != null && row.day.isAfter(today) && YearMonth.from(row.day) == month }
+    val shown = all.take(todayCount + maxOf(restOfMonth, Upcoming.MAX))
     TimelineCard(
         "Calendario",
         shown.map { it.first },

@@ -2,7 +2,7 @@
 
 ## 1.319.0
 **Calendario: la riga PIÙ AVANTI**
-- Dopo le cose di oggi c'è la riga PIÙ AVANTI, con sotto il resto del mese; i mesi dopo hanno il loro nome come prima
+- Dopo le cose di oggi c'è la riga PIÙ AVANTI, con sotto tutto quello che arriva fino alla fine del mese; i mesi dopo hanno il loro nome come prima
 - Vale sia nella card della Home sia nel calendario intero
 - Le cose spuntate non stanno più nella card della Home: le vedi solo nel calendario intero (tieni premuta la card)
 
