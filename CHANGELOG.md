@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.327.0
+**Condividi i dati letti: ora è un file**
+- "Condividi i dati letti di Revolut" (e quello di WindTre) manda un file .txt invece di un testo enorme: le app che lo ricevono non si chiudono più
+- Scegli Claude, Gmail o Drive e allega il file
+
 ## 1.326.0
 **Cambiare mese nelle spese è fluido**
 - Quando lasci il dito il mese prosegue alla velocità del tuo gesto, senza fermarsi né tornare indietro, e il nuovo mese entra con lo stesso slancio

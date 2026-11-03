@@ -1,6 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.content.Intent
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
@@ -83,8 +82,7 @@ internal fun RevolutAccountRows() {
             title = "Condividi i dati letti di Revolut",
             subtitle = "Per correggere la lettura se qualcosa non torna",
             onClick = {
-                val share = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, RevolutStore.capturesText())
-                context.startActivity(Intent.createChooser(share, null))
+                shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText())
             },
         )
     }
