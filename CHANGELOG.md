@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.340.0
+## 1.342.0
 **Revolut resta collegato dopo gli aggiornamenti**
 - Non devi più rifare l'accesso a Revolut ogni volta che Canvas si aggiorna: la sessione resta sul telefono, cifrata
 - Se è Revolut a chiudere la sessione (dopo un po' di tempo), Canvas ti chiede di nuovo l'accesso come prima
