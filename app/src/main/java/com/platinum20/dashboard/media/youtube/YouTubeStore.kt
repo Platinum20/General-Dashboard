@@ -41,8 +41,12 @@ object YouTubeStore {
     val watchLater: StateFlow<Loadable<List<YtVideo>>> = _watchLater.asStateFlow()
 
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
-        load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = { YouTubeApi.uploads(YouTubeWeb.subscriptions(it)).take(300) }) { token ->
-            YouTubeApi.withDetails(token, YouTubeApi.uploads(YouTubeApi.subscriptions(token)).take(300))
+        load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = {
+            val channels = YouTubeWeb.subscriptions(it)
+            keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300)
+        }) { token ->
+            val channels = YouTubeApi.subscriptions(token)
+            YouTubeApi.withDetails(token, keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300))
         }
 
     private val _channels = MutableStateFlow(Loadable<List<YtChannel>>())
@@ -250,3 +254,15 @@ object YouTubeStore {
 
 /** Aggiunge in fondo una pagina di video del canale senza doppioni (YouTube a volte ne ripete uno a cavallo). */
 internal fun mergeChannelPage(old: List<YtVideo>, page: List<YtVideo>): List<YtVideo> = (old + page).distinctBy { it.id }
+
+/**
+ * I canali seguiti il cui feed RSS stavolta non è arrivato tengono i video di prima: altrimenti, quando
+ * YouTube rifiuta molti feed di fila, Iscrizioni restava con i video di un canale solo.
+ * I canali non più seguiti spariscono; il risultato è sempre dal più recente.
+ */
+internal fun keepMissingChannels(fresh: List<YtVideo>, previous: List<YtVideo>, channels: List<YtChannel>): List<YtVideo> {
+    val followed = channels.map { it.id }.toSet()
+    val arrived = fresh.map { it.channelId }.toSet()
+    val kept = previous.filter { it.channelId in followed && it.channelId !in arrived }
+    return (fresh + kept).distinctBy { it.id }.sortedByDescending { it.published }
+}

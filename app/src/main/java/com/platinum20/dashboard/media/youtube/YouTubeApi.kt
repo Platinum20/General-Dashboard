@@ -186,7 +186,7 @@ object YouTubeApi {
 
     /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
     suspend fun uploads(channels: List<YtChannel>): List<YtVideo> = coroutineScope {
-        val gate = Semaphore(8)
+        val gate = Semaphore(5)
         channels.map { channel ->
             async(Dispatchers.IO) {
                 gate.withPermit {
@@ -215,16 +215,35 @@ object YouTubeApi {
         return markMembers(videos, members)
     }
 
-    private fun channelFeed(channelId: String): List<YtVideo> = feed("channel_id=$channelId")
+    private fun channelFeed(channelId: String): List<YtVideo> = feed("channel_id=$channelId", attempts = 3)
 
-    private fun feed(query: String): List<YtVideo> {
+    /**
+     * YouTube a volte risponde 404/500 ai feed RSS anche per canali che esistono, soprattutto con tante
+     * richieste di fila: per i canali si riprova un paio di volte prima di arrendersi (sennò spariscono dal feed).
+     * La playlist dei membri invece manca davvero per quasi tutti i canali: lì un tentativo basta.
+     */
+    private fun feed(query: String, attempts: Int = 1): List<YtVideo> {
+        var last: Exception? = null
+        repeat(attempts) { attempt ->
+            if (attempt > 0) Thread.sleep(600L * attempt)
+            try {
+                feedOnce(query)?.let { return it }
+            } catch (e: IOException) {
+                last = e
+            }
+        }
+        last?.let { throw it }
+        return emptyList()
+    }
+
+    private fun feedOnce(query: String): List<YtVideo>? {
         val conn = (URL("https://www.youtube.com/feeds/videos.xml?$query").openConnection() as HttpURLConnection).apply {
             connectTimeout = 5_000
             readTimeout = 8_000
             setRequestProperty("User-Agent", "GeneralDashboard/${BuildConfig.VERSION_NAME} (Android)")
         }
         try {
-            if (conn.responseCode !in 200..299) return emptyList()
+            if (conn.responseCode !in 200..299) return null
             return conn.inputStream.use { parseFeed(it) }
         } finally {
             conn.disconnect()
