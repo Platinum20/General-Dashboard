@@ -318,8 +318,8 @@ class MainActivity : ComponentActivity() {
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
-                com.platinum20.dashboard.mail.GmailAuth.init(app)
-                if (com.platinum20.dashboard.mail.GmailAuth.connected.value) com.platinum20.dashboard.work.MailWorker.schedule(app)
+                com.platinum20.dashboard.mail.MailStore.init(app)
+                if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
             }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.

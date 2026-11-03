@@ -52,6 +52,7 @@ object MailStore {
         if (::file.isInitialized) return
         val app = context.applicationContext
         GmailAuth.init(app)
+        GmailImap.init(app)
         prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _lastSync.value = prefs.getLong(KEY_LAST, 0L)
         file = File(app.filesDir, FILE)
@@ -60,24 +61,69 @@ object MailStore {
 
     fun find(id: String): MailMessage? = _important.value.firstOrNull { it.id == id }
 
+    /** Gmail collegato in uno dei due modi: password per app (IMAP) o accesso Google. */
+    fun connected(): Boolean = GmailImap.linked.value || GmailAuth.connected.value
+
     /**
      * Legge le mail nuove. Restituisce quante cose ha trovato per Note, o lancia l'errore da mostrare.
-     * Se Google vuole di nuovo il consenso non lancia: [GmailAuth.needsConsent] lo dice alla UI.
+     * Con la password per app si passa da IMAP; altrimenti dall'API con l'accesso Google, e se Google
+     * vuole di nuovo il consenso non lancia: [GmailAuth.needsConsent] lo dice alla UI.
      */
     suspend fun sync(context: Context): Int {
         init(context)
+        // Password rifiutata: niente nuovi tentativi finché non la si inserisce di nuovo (Google bloccherebbe l'accesso).
+        if (GmailImap.linked.value && GmailImap.rejected.value) return 0
+        if (GmailImap.linked.value) return lock.withLock {
+            val session = GmailImap.session(context) ?: return@withLock 0
+            try {
+                sync(context, ImapSource(session))
+            } finally {
+                withContext(Dispatchers.IO) { session.close() }
+            }
+        }
         if (!GmailAuth.connected.value) return 0
         return lock.withLock {
             val token = GmailAuth.token(context) ?: return@withLock 0
             try {
-                sync(context, token)
+                sync(context, ApiSource(token))
             } catch (_: GmailAuthException) {
-                GmailAuth.token(context, forceRefresh = true)?.let { sync(context, it) } ?: 0
+                GmailAuth.token(context, forceRefresh = true)?.let { sync(context, ApiSource(it)) } ?: 0
             }
         }
     }
 
-    private suspend fun sync(context: Context, token: String): Int {
+    /** Da dove arrivano le mail: stessa ricerca di Gmail, stessi id, due strade. */
+    private interface Source {
+        /** Id delle mail trovate, le più recenti prima. */
+        suspend fun search(query: String, max: Int): List<String>
+        suspend fun message(id: String): MailMessage?
+    }
+
+    private class ApiSource(private val token: String) : Source {
+        override suspend fun search(query: String, max: Int) =
+            MailParse.ids(MailStore.get(token, "messages", mapOf("q" to query, "maxResults" to "$max")))
+
+        override suspend fun message(id: String) = MailParse.message(MailStore.get(token, "messages/$id", mapOf("format" to "full")))
+    }
+
+    private class ImapSource(private val session: GmailImap.Session) : Source {
+        private val uids = mutableMapOf<String, Long>()
+
+        override suspend fun search(query: String, max: Int): List<String> = withContext(Dispatchers.IO) {
+            val found = session.search(query).sortedDescending().take(max)
+            session.ids(found).entries.sortedByDescending { it.key }.map { (uid, id) ->
+                uids[id] = uid
+                id
+            }
+        }
+
+        override suspend fun message(id: String): MailMessage? {
+            val uid = uids[id] ?: return null
+            return withContext(Dispatchers.IO) { session.message(uid) }
+        }
+    }
+
+    private suspend fun sync(context: Context, source: Source): Int {
         AutoFill.init(context)
         val now = System.currentTimeMillis()
         val first = _lastSync.value == 0L
@@ -85,11 +131,11 @@ object MailStore {
         val since = if (first) now - FIRST_DAYS * 24 * 3600_000L else _lastSync.value - 3600_000L
         val seen = prefs.getString(KEY_SEEN, "").orEmpty().split(',').filter { it.isNotEmpty() }.toMutableList()
         var found = 0
-        val ids = MailParse.ids(get(token, "messages", mapOf("q" to MailParse.scanQuery(since), "maxResults" to "$MAX_SCAN")))
+        val ids = source.search(MailParse.scanQuery(since), MAX_SCAN)
         // Dalla più vecchia alla più nuova: "consegnato" arriva dopo "spedito".
         for (id in ids.reversed()) {
             if (id in seen) continue
-            val m = MailParse.message(get(token, "messages/$id", mapOf("format" to "full")))
+            val m = source.message(id) ?: continue
             seen += id
             if (!MailParse.worthScanning(m)) continue
             // La prima volta niente notifiche a raffica: si salva tutto in silenzio.
@@ -100,11 +146,8 @@ object MailStore {
 
         val known = _important.value.associateBy { it.id }
         val opened = prefs.getStringSet(KEY_OPENED, emptySet()).orEmpty()
-        val importantIds = MailParse.ids(get(token, "messages", mapOf("q" to MailParse.IMPORTANT_QUERY, "maxResults" to "8")))
-            .filter { it !in opened }.take(5)
-        val important = importantIds.map { id ->
-            known[id] ?: MailParse.message(get(token, "messages/$id", mapOf("format" to "full")))
-        }.sortedByDescending { it.at }
+        val importantIds = source.search(MailParse.IMPORTANT_QUERY, 8).filter { it !in opened }.take(5)
+        val important = importantIds.mapNotNull { id -> known[id] ?: source.message(id) }.sortedByDescending { it.at }
         setImportant(important)
         return found
     }

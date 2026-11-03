@@ -40,6 +40,16 @@ class AutoFillRulesTest {
         assertTrue(AutoFillRules.isNew(lidl.copy(cents = 1300), emptyList(), notes))
     }
 
+    @Test fun ricevutaMailDopoIlConto() {
+        // Revolut l'ha già letta ieri: la ricevuta via mail di oggi non la raddoppia.
+        val ieri = now.toLocalDate().minusDays(1)
+        val conto = NotesData(expenses = listOf(Expense(1, 1250, "Lidl", ExpenseCategory.FOOD, ieri, bankId = "tx1")))
+        assertFalse(AutoFillRules.isNew(lidl, emptyList(), conto))
+        // Scritta a mano il giorno prima: può essere un'altra spesa uguale.
+        val mano = NotesData(expenses = listOf(Expense(1, 1250, "Lidl", ExpenseCategory.FOOD, ieri)))
+        assertTrue(AutoFillRules.isNew(lidl, emptyList(), mano))
+    }
+
     @Test fun promemoriaGiaPresente() {
         val d = Found.Deadline("Scadenza: bolletta luce", now.plusDays(5))
         val notes = NotesData(tasks = listOf(TaskItem(1, "scadenza: Bolletta luce")))

@@ -98,11 +98,11 @@ Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
   (YouTubeWatchScreen) for YouTube, artwork layout otherwise. Its queue opens as `QueuePopup` (QueueScreen.kt, 1.290: overlay, side panel in landscape so fullscreen video stays; `Routes.QUEUE` page only from Media's QueuePeek). `ui/screens/Reorder.kt` = shared
   drag-to-reorder for LazyColumns (queue, Personalizza).
 
-**Mail** (`mail/`): `GmailAuth` (gmail.readonly via AuthorizationClient, `needsConsent` = 7-day re-consent while
-the Google app is in Testing), `MailParse` (pure: Gmail JSON, MIME/HTML to text, mail to `Incoming`), `MailStore`
+**Mail** (`mail/`): no inbox UI, only extraction. Two read-only paths, same ids (hex X-GM-MSGID = API id): `GmailImap` (1.323, preferred: Google app password, IMAP over SSL, EXAMINE + `X-GM-RAW` with the same queries, password encrypted with a Keystore key, `rejected` stops retries; pure `ImapParse` + `MimeParse` = raw RFC 822 to text) and `GmailAuth` (gmail.readonly via AuthorizationClient, `needsConsent` = 7-day re-consent while
+the Google app is in Testing); `MailStore.sync` picks IMAP first (`Source` interface), `MailStore.connected()`; `MailParse` (pure: Gmail JSON, MIME/HTML to text, mail to `Incoming`), `MailStore`
 (sync: new mails into `AutoFill.offer`, important unread for the Home card), `work/MailWorker` (hourly + on
 Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (`FromMailCard` = Home card "Dalla posta": only important unread mail (since 1.191 AutoFill always saves found items straight into Note, no "Aggiungi"; "La tua settimana" card removed),
-GmailSettingsGroup inside AutoFillScreen, MailScreen route `home/mail/{id}`).
+GmailSettingsGroup inside AutoFillScreen (password dialog `GmailPasswordDialog`), MailScreen route `home/mail/{id}`).
 
 **SIM** (`sim/`, 1.288): `WindTreParse` (pure: any JSON/page text from WindTre area clienti → `SimStatus` giga/minuti/SMS/credito/rinnovo by key names, format not public), `SimStore` (status, linked, last 40 captured responses in filesDir, login responses never saved), `WindTreLink` (JS hook on fetch/XHR via document-start script on `*.windtre.it`, one-time official login WebView, hidden-WebView refresh hourly from the Home card). UI `ui/screens/SimUi.kt` (`SimCard` = HomeCard.SIM, `SimScreen` route `home/sim`, "Condividi i dati letti" to fix the parser from real samples).
 
