@@ -425,6 +425,7 @@ internal fun timelineEntries(
                 month = if (i == 0) month else null,
                 monthSpend = if (i == 0) monthSpend else null,
                 monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
+                todayHeader = r.spend != null,
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }
