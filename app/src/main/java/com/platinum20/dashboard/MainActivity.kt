@@ -318,8 +318,8 @@ class MainActivity : ComponentActivity() {
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
-                com.platinum20.dashboard.mail.GmailAuth.init(app)
-                if (com.platinum20.dashboard.mail.GmailAuth.connected.value) com.platinum20.dashboard.work.MailWorker.schedule(app)
+                com.platinum20.dashboard.mail.MailStore.init(app)
+                if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
             }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
@@ -375,6 +375,9 @@ object Routes {
     const val EXPENSES = "home/expenses?month={month}"
     fun expenses(month: java.time.YearMonth? = null) = "home/expenses" + (month?.let { "?month=$it" } ?: "")
     const val SIM = "home/sim"
+    /** Un documento fotografato con la graffetta (dalla card Documenti della Home). */
+    const val DOCUMENT = "home/document/{id}"
+    fun document(id: Long) = "home/document/$id"
     /** L'accesso a Revolut (una volta, poi la lettura è nascosta): da Impostazioni › Account. */
     const val REVOLUT = "settings/revolut"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
@@ -1393,6 +1396,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.SIM) {
                 SimScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+            }
+            composable(Routes.DOCUMENT, arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
+                com.platinum20.dashboard.ui.screens.DocumentScreen(id = entry.arguments?.getLong("id") ?: -1L, onBack = { navController.popBackStack() })
             }
             composable(Routes.REVOLUT) {
                 com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })

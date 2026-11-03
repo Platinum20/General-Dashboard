@@ -5,6 +5,9 @@ import android.net.Uri
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.platinum20.dashboard.docs.DocReader
+import com.platinum20.dashboard.docs.DocScan
+import com.platinum20.dashboard.docs.DocSide
 import com.platinum20.dashboard.notes.Carrier
 import com.platinum20.dashboard.notes.OcrLine
 import com.platinum20.dashboard.notes.QuickParse
@@ -18,7 +21,8 @@ import java.time.LocalDateTime
 /**
  * La graffetta della barra: una foto qualsiasi viene letta sul telefono (senza rete) e Canvas
  * capisce cosa farne. Uno scontrino diventa una spesa, un biglietto con la data o un codice di
- * spedizione finiscono nella barra come testo; tutto il resto si salva come nota con la foto.
+ * spedizione finiscono nella barra come testo, un documento (fronte e poi retro) va in Documenti;
+ * tutto il resto si salva come nota con la foto.
  */
 object PhotoAttach {
     sealed interface Found {
@@ -26,6 +30,10 @@ object PhotoAttach {
         data class Text(val text: String) : Found
         /** Niente da fare: la foto diventa una nota, con il testo letto (se c'è) per ritrovarla cercando. */
         data class Photo(val text: String) : Found
+        /** Il fronte di un documento (carta d'identità, patente…): va in Documenti. */
+        data class Document(val scan: DocScan) : Found
+        /** Il retro del documento appena fotografato; [scan] se si riconosce anche da solo. */
+        data class Back(val scan: DocScan?) : Found
     }
 
     /** Il testo nella barra resta su una riga, se no diventerebbe una nota. */
@@ -47,8 +55,16 @@ object PhotoAttach {
         }
     }.getOrDefault(emptyList())
 
-    /** Pura: dalle righe lette a cosa farne. */
-    fun decide(rows: List<String>, now: LocalDateTime = LocalDateTime.now()): Found {
+    /**
+     * Pura: dalle righe lette a cosa farne. Con [waitingBack] (un documento appena fotografato senza
+     * retro) la foto che non è il fronte di un altro documento è il suo retro: quello della patente
+     * ha date e sigle che altrimenti finirebbero nella barra.
+     */
+    fun decide(rows: List<String>, now: LocalDateTime = LocalDateTime.now(), waitingBack: Boolean = false): Found {
+        val doc = DocReader.read(rows, now.toLocalDate())
+        if (doc?.side == DocSide.FRONT) return Found.Document(doc)
+        if (waitingBack) return Found.Back(doc)
+        if (doc != null) return Found.Document(doc)
         Receipt.parse(rows)?.let { return Found.Text(it.captureText) }
         val clean = rows.map { it.replace(Regex("""\s+"""), " ").trim() }.filter { it.isNotEmpty() }
         val line = clean.joinToString(" ")

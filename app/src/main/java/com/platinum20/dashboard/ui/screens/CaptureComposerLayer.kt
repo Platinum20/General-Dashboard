@@ -37,6 +37,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.rounded.AttachFile
@@ -76,6 +77,7 @@ import com.platinum20.dashboard.capture.CaptureKindTag
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.capture.CapturePreview
 import com.platinum20.dashboard.capture.PhotoAttach
+import com.platinum20.dashboard.docs.DocumentsStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.ReceiptReader
 import com.platinum20.dashboard.capture.CaptureMode
@@ -152,14 +154,32 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
         if (uri == null) { CaptureComposer.attaching = false; return }
         reading(true)
         scope.launch {
-            val found = PhotoAttach.decide(PhotoAttach.rows(context, uri))
+            DocumentsStore.init(context)
+            val waiting = DocumentsStore.waitingBack()
+            val found = PhotoAttach.decide(PhotoAttach.rows(context, uri), waitingBack = waiting != null)
+            val isDoc = found is PhotoAttach.Found.Document || found is PhotoAttach.Found.Back
             // Se diventa una nota la foto si tiene, copiata nell'app; quella della fotocamera in cache no.
-            val kept = if (found is PhotoAttach.Found.Photo) PhotoAttach.keep(context, uri) else null
+            val kept = when {
+                isDoc -> DocumentsStore.keep(context, uri)
+                found is PhotoAttach.Found.Photo -> PhotoAttach.keep(context, uri)
+                else -> null
+            }
             if (cameraFile) runCatching { java.io.File(context.cacheDir, "receipts/scontrino.jpg").delete() }
             reading(false)
             CaptureComposer.attaching = false
             when {
                 found is PhotoAttach.Found.Text -> CaptureComposer.append(found.text)
+                isDoc && kept != null -> {
+                    CaptureComposer.close()
+                    val notice = if (found is PhotoAttach.Found.Back && waiting != null) {
+                        DocumentsStore.addBack(waiting.id, kept, found.scan)
+                        CaptureNotice(CaptureMode.NOTE, "Retro aggiunto a ${waiting.title}", undo = { DocumentsStore.removeBack(waiting.id) }, icon = Icons.Outlined.Badge)
+                    } else {
+                        val doc = DocumentsStore.addFront(kept, (found as PhotoAttach.Found.Document).scan)
+                        CaptureNotice(CaptureMode.NOTE, "${doc.title} in Documenti · ora il retro", undo = { DocumentsStore.delete(doc.id) }, icon = Icons.Outlined.Badge)
+                    }
+                    CaptureFeedback.show(notice)
+                }
                 kept != null -> {
                     // Quello già scritto nella barra fa da titolo della nota.
                     val title = CaptureComposer.text.text.trim().ifEmpty { "Foto" }
@@ -197,7 +217,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
         choosing = true
         keyboard?.hide()
         ActionBubble.show(
-            BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "Uno scontrino diventa una spesa") {
+            BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "Scontrino, documento, biglietto: capisce da sé") {
                 go { camera.launch(ReceiptReader.photoUri(context)) }
             },
             BubbleAction(Icons.Outlined.PhotoLibrary, "Scegli una foto", "Canvas la legge e capisce cosa farne") {

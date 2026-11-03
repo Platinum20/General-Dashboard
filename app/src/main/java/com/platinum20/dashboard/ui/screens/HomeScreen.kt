@@ -93,6 +93,7 @@ import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.news.RecapTheme
 import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.GmailImap
 import com.platinum20.dashboard.mail.MailStore
 import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
@@ -249,7 +250,11 @@ fun HomeScreen(
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     MailStore.init(context)
-    val gmailConnected by GmailAuth.connected.collectAsStateWithLifecycle()
+    com.platinum20.dashboard.docs.DocumentsStore.init(context)
+    val docs by com.platinum20.dashboard.docs.DocumentsStore.docs.collectAsStateWithLifecycle()
+    val gmailOAuth by GmailAuth.connected.collectAsStateWithLifecycle()
+    val gmailImap by GmailImap.linked.collectAsStateWithLifecycle()
+    val gmailConnected = gmailOAuth || gmailImap
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
@@ -257,6 +262,7 @@ fun HomeScreen(
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
+            HomeCard.DOCS -> docs.isNotEmpty()
             else -> true
         }
     }
@@ -330,6 +336,10 @@ fun HomeScreen(
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.SIM)
             })
+            HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.document(id))
+            })
             HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.RECAP -> RecapCard(
                 state = recap,
@@ -359,7 +369,7 @@ fun HomeScreen(
         AutoRefresh {
             if (hasLocation || WeatherStore.manualPlace(context) != null) WeatherStore.refresh(context)
             runCatching { NewsStore.load() }
-            if (GmailAuth.connected.value) runCatching { MailStore.sync(context) }
+            if (MailStore.connected()) runCatching { MailStore.sync(context) }
             calendarRefresh++
         }
         Box(
