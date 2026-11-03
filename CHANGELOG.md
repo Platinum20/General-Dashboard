@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.308.0
+**Dalla Home si apre la singola cosa**
+- Toccando un evento nelle card della Home si apre il suo dettaglio, non più il calendario intero
+- Lo stesso per promemoria, date, pacchi, addebiti, spese e note: ognuno apre la sua scheda
+- Toccando il resto della card si apre la pagina intera, come prima; le spunte si mettono sempre dalla card
+
 ## 1.307.0
 **Card SIM: un dato per riga**
 - Giga, minuti, SMS, credito e rinnovo ognuno sulla sua riga, con la barra sotto quelli che si consumano

@@ -52,6 +52,27 @@ class UpcomingTest {
     }
 
     @Test
+    fun ogniRigaSaCosaApre() {
+        // Toccando una riga di "Prossimi giorni" in Oggi si apre la sua scheda, non la pagina intera (Antonio).
+        val d1 = today.plusDays(1)
+        val items = Upcoming.build(
+            today,
+            events = mapOf(d1 to listOf(event(2, "Treno", d1, 9))),
+            tasks = listOf(TaskItem(4, "Bolletta", dueAt = ms(d1.atTime(8, 0)))),
+            countdowns = listOf(Countdown(6, "Compleanno Marta", d1)),
+            parcels = listOf(Parcel(8, "Cuffie", expected = d1)),
+            zone = zone,
+            days = 3,
+            simRenewal = d1,
+        )
+        assertEquals(2L, items.first { it.text == "Treno" }.event?.eventId)
+        assertEquals(4L, items.first { it.text == "Bolletta" }.task?.id)
+        assertEquals(6L, items.first { it.text == "Compleanno Marta" }.countdownId)
+        assertEquals(8L, items.first { it.text == "Arriva: Cuffie" }.parcelId)
+        assertTrue(items.any { it.simRenewal })
+    }
+
+    @Test
     fun etichetteDeiGiorni() {
         assertEquals("Domani", Upcoming.dayLabel(today.plusDays(1), today))
         assertEquals("Mer 28", Upcoming.dayLabel(today.plusDays(2), today))

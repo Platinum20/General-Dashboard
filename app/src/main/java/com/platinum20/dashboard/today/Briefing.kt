@@ -46,6 +46,10 @@ data class BriefLine(
     val action: BriefAction? = null,
     /** Le cose su cui agisce [action]: id del promemoria, del pacco o delle abitudini. */
     val targetIds: List<Long> = emptyList(),
+    /** L'evento della riga: toccandola si apre la sua scheda, non il calendario (Antonio). */
+    val event: CalendarEvent? = null,
+    /** Il promemoria, la data o il pacco della riga ([kind]): toccandola si apre la sua scheda. */
+    val openId: Long? = null,
 )
 
 /**
@@ -102,9 +106,9 @@ object Briefing {
         // Agenda: quello che è in corso, poi il prossimo impegno di oggi.
         val timed = today.orEmpty().filter { !it.allDay }
         timed.firstOrNull { it.begin <= nowMs && it.end > nowMs }?.let {
-            lines += BriefLine(BriefKind.EVENT, "In corso: ${it.title}, fino alle ${it.end.at(zone)}")
+            lines += BriefLine(BriefKind.EVENT, "In corso: ${it.title}, fino alle ${it.end.at(zone)}", event = it)
         }
-        if (wholeDay) today.orEmpty().filter { it.allDay }.forEach { lines += BriefLine(BriefKind.EVENT, "Oggi: ${it.title}") }
+        if (wholeDay) today.orEmpty().filter { it.allDay }.forEach { lines += BriefLine(BriefKind.EVENT, "Oggi: ${it.title}", event = it) }
         // Nella card tutti gli impegni che restano; nel widget solo il prossimo.
         val coming = timed.filter { it.begin > nowMs }.let { if (wholeDay) it else it.take(1) }
         for (next in coming) {
@@ -113,7 +117,7 @@ object Briefing {
                 relative && minutes < 60 -> "Tra ${minutes.coerceAtLeast(1)} min: ${next.title}"
                 else -> "Alle ${next.begin.at(zone)}: ${next.title}"
             } + (if (next.location.isNotBlank()) " · ${next.location}" else "") + rainNote(forecast, next.begin, zone)
-            lines += BriefLine(BriefKind.EVENT, text, urgent = minutes < 60)
+            lines += BriefLine(BriefKind.EVENT, text, urgent = minutes < 60, event = next)
         }
 
         // Pioggia nelle prossime ore: è l'unica cosa del meteo che cambia i piani.
@@ -129,7 +133,7 @@ object Briefing {
             overdue.isEmpty() -> Unit
             overdue.size <= each -> overdue.forEach { lines += BriefLine(
                 BriefKind.TASK, "Scaduto: ${it.text}", urgent = true,
-                action = BriefAction.TASK_DONE, targetIds = listOf(it.id),
+                action = BriefAction.TASK_DONE, targetIds = listOf(it.id), openId = it.id,
             ) }
             else -> lines += BriefLine(BriefKind.TASK, "${overdue.size} promemoria scaduti", urgent = true)
         }
@@ -137,7 +141,7 @@ object Briefing {
             dueToday.isEmpty() -> Unit
             dueToday.size <= each -> dueToday.forEach { lines += BriefLine(
                 BriefKind.TASK, "Entro le ${it.dueAt!!.at(zone)}: ${it.text}",
-                action = BriefAction.TASK_DONE, targetIds = listOf(it.id),
+                action = BriefAction.TASK_DONE, targetIds = listOf(it.id), openId = it.id,
             ) }
             else -> lines += BriefLine(BriefKind.TASK, "${dueToday.size} promemoria entro stasera")
         }
@@ -146,8 +150,8 @@ object Briefing {
         val date = now.toLocalDate()
         // Per compleanni e anniversari con l'anno vero, anche quanti anni compie.
         fun Countdown.label() = title + (yearsAtNext(date)?.let { " ($it anni)" } ?: "")
-        countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}") }
-        if (aboutTomorrow) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}") }
+        countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}", openId = it.id) }
+        if (aboutTomorrow) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}", openId = it.id) }
 
         // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
         val waiting = parcels.filter { !it.delivered && it.expected != null }
@@ -156,10 +160,11 @@ object Briefing {
                 BriefKind.PARCEL, "Pacco in arrivo: " + list.joinToString(", ") { it.title },
                 // "Arrivato" solo con un pacco: con più pacchi non si sa quale.
                 action = BriefAction.PARCEL_ARRIVED.takeIf { list.size == 1 }, targetIds = list.map { it.id },
+                openId = list.singleOrNull()?.id,
             )
         }
         if (aboutTomorrow) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
-            lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title })
+            lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title }, openId = list.singleOrNull()?.id)
         }
 
         // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossimi giorni").

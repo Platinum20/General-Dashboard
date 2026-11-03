@@ -483,12 +483,12 @@ internal fun monthExpenseEntries(
     expenses: List<com.platinum20.dashboard.notes.Expense>,
     today: LocalDate,
     limit: Int,
-): List<TimelineEntry> {
+): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
     val month = java.time.YearMonth.from(today)
-    val rows = expenseEntries(expenses.filter { java.time.YearMonth.from(it.date) == month }, today, limit = limit).map { it.first }
+    val rows = expenseEntries(expenses.filter { java.time.YearMonth.from(it.date) == month }, today, limit = limit)
     if (rows.isEmpty()) return rows
     val name = com.platinum20.dashboard.today.Upcoming.monthBreak(month.atDay(1).minusDays(1), today, today)
-    return listOf(rows.first().copy(month = name)) + rows.drop(1)
+    return listOf(rows.first().let { (entry, expense) -> entry.copy(month = name) to expense }) + rows.drop(1)
 }
 
 private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes

@@ -296,7 +296,8 @@ class NotesUiLogicTest {
         )
         // Ottobre resta fuori, in cima il nome del mese corrente.
         assertEquals(1, rows.size)
-        assertEquals("NOVEMBRE", rows.first().month)
+        assertEquals("NOVEMBRE", rows.first().first.month)
+        assertEquals(2L, rows.first().second.id)
         assertTrue(monthExpenseEntries(listOf(com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30))), today, 5).isEmpty())
     }
 

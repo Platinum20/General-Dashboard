@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.platinum20.dashboard.Routes
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.calendar.CalendarAsk
 import com.platinum20.dashboard.settings.AppSettings
@@ -154,6 +155,8 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
  */
 @Composable
 fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () -> Unit) {
+    val inApp = LocalInAppNav.current
+    val openItem = rememberOpenItem()
     val shown = items.take(Upcoming.MAX)
     // Il mese che si legge in quel punto: quello di oggi, poi quello dell'ultimo segno (giorni corti, "Dom 1").
     var shownMonth = YearMonth.from(today)
@@ -179,7 +182,19 @@ fun NextThingsCard(items: List<UpcomingItem>, today: LocalDate, onOpenAll: () ->
         empty = "Niente in programma nei prossimi giorni.",
         count = items.size.takeIf { it > 0 }?.toString(),
         ticks = shown.map { item -> item.task?.let { tickTask(it.id) } },
+        // Toccando una riga si apre proprio quella cosa; il resto della card apre la pagina intera (Antonio).
+        rows = shown.map { item -> upcomingOpen(item, inApp, openItem) },
     )
+}
+
+/** Che cosa apre il tocco su una riga di "Prossimi giorni": la scheda della cosa, null = la pagina intera. */
+private fun upcomingOpen(item: UpcomingItem, inApp: InAppNav?, openItem: (ItemKind, Long) -> Unit): (() -> Unit)? {
+    item.event?.let { event -> return { inApp?.openEvent?.invoke(event) } }
+    item.task?.let { task -> return { openItem(ItemKind.TASK, task.id) } }
+    item.countdownId?.let { id -> return { openItem(ItemKind.DATE, id) } }
+    item.parcelId?.let { id -> return { openItem(ItemKind.PARCEL, id) } }
+    item.chargeId?.let { id -> return { openItem(ItemKind.FIXED, id) } }
+    return if (item.simRenewal) { { inApp?.openRoute?.invoke(Routes.SIM) } } else null
 }
 
 /**
@@ -196,7 +211,10 @@ fun TimelineCard(
     count: String? = null,
     /** Per ogni riga, la spunta: le cose da fare si fanno dalla card, senza entrare (Antonio). */
     ticks: List<(() -> Unit)?> = emptyList(),
+    /** Per ogni riga, che cosa apre toccarla (la sua scheda); null = come il resto della card, la pagina intera. */
+    rows: List<(() -> Unit)?> = emptyList(),
 ) {
+    val haptic = rememberHaptic()
     Section(
         title = title,
         modifier = modifier,
@@ -214,7 +232,8 @@ fun TimelineCard(
                 )
             }
             entries.forEachIndexed { index, entry ->
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = onOpen, onIcon = ticks.getOrNull(index), monthTick = false)
+                val row = rows.getOrNull(index)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false)
             }
         }
     }
@@ -234,13 +253,17 @@ fun MoneyCard(
     count: String? = com.platinum20.dashboard.notes.Expenses.total(data.expenses, YearMonth.from(today)).takeIf { it > 0 }
         ?.let { com.platinum20.dashboard.notes.Expenses.format(it) },
 ) {
+    val openItem = rememberOpenItem()
+    val rows = monthExpenseEntries(data.expenses, today, limit = Upcoming.MAX)
     TimelineCard(
         "Spese",
-        monthExpenseEntries(data.expenses, today, limit = Upcoming.MAX),
+        rows.map { it.first },
         onOpen,
         empty = "Nessuna spesa questo mese.",
         modifier = modifier.captureTarget(CaptureMode.EXPENSE),
         count = count,
+        // La singola spesa apre la sua scheda (Antonio).
+        rows = rows.map { (_, expense) -> { openItem(ItemKind.EXPENSE, expense.id) } },
     )
 }
 
@@ -249,7 +272,8 @@ fun MoneyCard(
  * delle altre card. Toccando la card si apre Note › Note.
  */
 @Composable
-fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: Modifier = Modifier, onOpenNote: (Long) -> Unit = {}) {
+    val openItem = rememberOpenItem()
     val tasks = data.tasks.filter { !it.done && it.dueAt == null }
     val rows = undatedEntries(tasks, data.notes, today, limit = Upcoming.MAX)
     TimelineCard(
@@ -261,6 +285,10 @@ fun NotesCard(data: NotesData, today: LocalDate, onOpen: () -> Unit, modifier: M
         // Quante note e cose da fare restano, come nella pagina Note.
         count = (tasks.size + data.notes.size).takeIf { it > 0 }?.toString(),
         ticks = rows.map { (_, row) -> row.task?.let { tickTask(it.id) } },
+        // La nota o il promemoria toccato si apre da solo (Antonio).
+        rows = rows.map { (_, row) ->
+            row.task?.let { task -> { openItem(ItemKind.TASK, task.id) } } ?: row.note?.let { note -> { onOpenNote(note.id) } }
+        },
     )
 }
 

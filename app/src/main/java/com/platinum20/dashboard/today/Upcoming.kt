@@ -24,6 +24,12 @@ data class UpcomingItem(
     val event: CalendarEvent? = null,
     /** Il promemoria, per spuntarlo dalla card senza entrare. */
     val task: TaskItem? = null,
+    /** La data, il pacco o l'addebito della riga: toccandola si apre la sua scheda (Antonio). */
+    val countdownId: Long? = null,
+    val parcelId: Long? = null,
+    val chargeId: Long? = null,
+    /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
+    val simRenewal: Boolean = false,
 )
 
 /**
@@ -94,7 +100,7 @@ object Upcoming {
             val allDay = mutableListOf<UpcomingItem>()
             val timed = mutableListOf<Pair<Long, UpcomingItem>>()
             countdowns.filter { it.daysLeft(today) == d.toLong() }.forEach {
-                allDay += UpcomingItem(day, BriefKind.DATE, it.title + (it.yearsAtNext(today)?.let { y -> " ($y anni)" } ?: ""))
+                allDay += UpcomingItem(day, BriefKind.DATE, it.title + (it.yearsAtNext(today)?.let { y -> " ($y anni)" } ?: ""), countdownId = it.id)
             }
             events[day].orEmpty().filter { seen.add(it.eventId) }.forEach {
                 if (it.allDay) allDay += UpcomingItem(day, BriefKind.EVENT, it.title, event = it)
@@ -104,12 +110,12 @@ object Upcoming {
                 timed += it.dueAt!! to UpcomingItem(day, BriefKind.TASK, it.text, it.dueAt.at(zone), task = it)
             }
             parcels.filter { !it.delivered && it.expected == day }.forEach {
-                allDay += UpcomingItem(day, BriefKind.PARCEL, "Arriva: ${it.title}")
+                allDay += UpcomingItem(day, BriefKind.PARCEL, "Arriva: ${it.title}", parcelId = it.id)
             }
             fixedExpenses.filter { it.nextDate(today) == day }.forEach {
-                allDay += UpcomingItem(day, BriefKind.MONEY, "Addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}")
+                allDay += UpcomingItem(day, BriefKind.MONEY, "Addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}", chargeId = it.id)
             }
-            if (simRenewal == day) allDay += UpcomingItem(day, BriefKind.MONEY, SIM_RENEWAL)
+            if (simRenewal == day) allDay += UpcomingItem(day, BriefKind.MONEY, SIM_RENEWAL, simRenewal = true)
             out += allDay + timed.sortedBy { it.first }.map { it.second }
         }
         return out
