@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.321.0
+## 1.323.0
 **Spese e scadenze dalle mail, senza ricollegare ogni settimana**
 - In Impostazioni › Compila da solo › Gmail ora colleghi la posta con una password per app di Google: si inserisce una volta e non scade
 - Canvas legge da solo le mail nuove ogni ora e a ogni notifica di Gmail: ricevute e bollette finiscono nelle spese del calendario, i tracking nei pacchi, prenotazioni e scadenze nel calendario
