@@ -38,6 +38,9 @@ object Upcoming {
     /** Quante righe al massimo (Antonio: 5): è un riassunto, il resto è in Note > Prossimi giorni. */
     const val MAX = 5
 
+    /** Il nome della riga del rinnovo SIM, uguale in Oggi e in Note. */
+    const val SIM_RENEWAL = "Rinnovo offerta SIM"
+
     /** Lo spazio più piccolo (un giorno vuoto in mezzo) e il più grande sulla linea. */
     const val MIN_GAP_DP = 4f
     const val MAX_GAP_DP = 28f
@@ -80,6 +83,8 @@ object Upcoming {
         fixedExpenses: List<FixedExpense> = emptyList(),
         zone: ZoneId = ZoneId.systemDefault(),
         days: Int = DAYS,
+        /** Il giorno in cui si rinnova l'offerta della SIM (WindTre), se collegata. */
+        simRenewal: LocalDate? = null,
     ): List<UpcomingItem> {
         val out = mutableListOf<UpcomingItem>()
         // Un evento di più giorni compare solo il primo giorno: non riempie la settimana.
@@ -104,6 +109,7 @@ object Upcoming {
             fixedExpenses.filter { it.nextDate(today) == day }.forEach {
                 allDay += UpcomingItem(day, BriefKind.MONEY, "Addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}")
             }
+            if (simRenewal == day) allDay += UpcomingItem(day, BriefKind.MONEY, SIM_RENEWAL)
             out += allDay + timed.sortedBy { it.first }.map { it.second }
         }
         return out
