@@ -49,6 +49,7 @@ object RevolutStore {
         _balance.value = if (prefs.contains("balance")) prefs.getLong("balance", 0) else null
         _readAt.value = prefs.getLong("readAt", 0)
         _expired.value = prefs.getBoolean("expired", false)
+        historyDone = prefs.getBoolean("historyDone", false)
         runCatching {
             val arr = JSONArray(File(app.filesDir, CAPTURES).readText())
             for (i in 0 until arr.length()) captures.addLast(arr.getJSONObject(i))
@@ -57,8 +58,26 @@ object RevolutStore {
 
     fun isStale(now: Long = System.currentTimeMillis()) = readAt.value < now - STALE_MS
 
-    /** Da quando si portano i movimenti nel calendario: il mese scorso e questo, per i riepiloghi. */
-    fun since(today: LocalDate = LocalDate.now()): LocalDate = today.withDayOfMonth(1).minusMonths(1)
+    /** Tutti i movimenti finiscono nel calendario, dal primo (Antonio vuole tutta la storia). */
+    val SINCE: LocalDate = LocalDate.of(2000, 1, 1)
+
+    /**
+     * La storia completa è già stata letta (pagina per pagina, una volta sola): le riletture
+     * successive prendono solo gli ultimi movimenti.
+     */
+    @Volatile var historyDone = false
+        private set
+    /** Quando la pagina ha finito l'ultima rilettura (anche a metà, per errore). */
+    @Volatile var pullEndedAt = 0L
+        private set
+
+    fun pullEnded(complete: Boolean) {
+        pullEndedAt = System.currentTimeMillis()
+        if (complete && !historyDone) {
+            historyDone = true
+            appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("historyDone", true)?.apply()
+        }
+    }
 
     /** Una risposta dell'app web (chiamato dalla pagina, su un thread qualsiasi). */
     fun capture(url: String, status: Int, body: String) {
@@ -92,7 +111,7 @@ object RevolutStore {
     }
 
     private fun commit(read: RevolutRead) {
-        if (read.txs.isNotEmpty()) NotesStore.syncBank(read.txs, since())
+        if (read.txs.isNotEmpty()) NotesStore.syncBank(read.txs, SINCE)
         val prefs = appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
         read.balanceCents?.let { _balance.value = it; prefs?.putLong("balance", it) }
         _readAt.value = System.currentTimeMillis()
@@ -127,6 +146,7 @@ object RevolutStore {
         _balance.value = null
         _readAt.value = 0
         _expired.value = false
+        historyDone = false
         synchronized(this) { captures.clear(); requests.clear() }
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()

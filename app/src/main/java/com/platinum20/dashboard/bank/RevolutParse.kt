@@ -40,7 +40,26 @@ object RevolutParse {
     private val cancelled = setOf("DECLINED", "REVERTED", "FAILED", "CANCELLED", "CANCELED", "DELETED")
     private val valid = setOf("COMPLETED", "PENDING", "CREATED", "")
 
-    /** Le categorie di Revolut (tag e categoria dell'esercente) sulle nostre; il resto lo indovina il nome. */
+    /**
+     * Le categorie di Revolut (quelle che si vedono nell'app, anche se cambiate a mano lì) sulle
+     * nostre. "services", "general", "transfers", "cash" non dicono niente: decidono MCC e nome.
+     */
+    private val revolutCategories = mapOf(
+        "groceries" to ExpenseCategory.FOOD,
+        "restaurants" to ExpenseCategory.EATING_OUT,
+        "transport" to ExpenseCategory.TRANSPORT,
+        "travel" to ExpenseCategory.FUN,
+        "entertainment" to ExpenseCategory.FUN,
+        "health" to ExpenseCategory.HEALTH,
+        "utilities" to ExpenseCategory.BILLS,
+        "bills" to ExpenseCategory.BILLS,
+        "shopping" to ExpenseCategory.SHOPPING,
+        "furniture" to ExpenseCategory.HOME,
+        "housing" to ExpenseCategory.HOME,
+        "home" to ExpenseCategory.HOME,
+    )
+
+    /** Per i nomi di categoria che non conosciamo ancora (anche quelle degli esercenti). */
     private val categories = listOf(
         Regex("grocer|supermarket|food_and_grocer") to ExpenseCategory.FOOD,
         Regex("""restaurant|cafe|coffee|fast.?food|\bbars?\b|eating|takeaway|delivery""") to ExpenseCategory.EATING_OUT,
@@ -51,6 +70,12 @@ object RevolutParse {
         Regex("shopping|retail|clothing|electronic|online") to ExpenseCategory.SHOPPING,
         Regex("housing|home|rent|furnit") to ExpenseCategory.HOME,
     )
+
+    /** La categoria di Revolut per un nome: prima quelle note, poi per somiglianza. */
+    fun revolutCategory(name: String): ExpenseCategory? {
+        val n = name.trim().lowercase().ifEmpty { return null }
+        return revolutCategories[n] ?: categories.firstOrNull { it.first.containsMatchIn(n) }?.second
+    }
 
     /**
      * Il codice MCC dell'esercente, quando il tag di Revolut è generico ("services", "general"):
@@ -115,8 +140,9 @@ object RevolutParse {
             !(type == "TRANSFER" && internalText.containsMatchIn(text))
         if (!spending && state !in cancelled) return null
         val counts = spending && state in valid
-        val tags = listOf(o.optString("tag"), o.optString("category"), merchant?.optString("category").orEmpty()).joinToString(" ").lowercase()
-        val category = categories.firstOrNull { it.first.containsMatchIn(tags) }?.second
+        // Prima la categoria del movimento (quella scelta nell'app Revolut), poi il tag, poi l'esercente.
+        val category = listOf(o.optString("category"), o.optString("tag"), merchant?.optString("category").orEmpty())
+            .firstNotNullOfOrNull { revolutCategory(it) }
             ?: merchant?.optString("mcc")?.toIntOrNull()?.let(::mccCategory)
             ?: ExpenseCategory.guess(text)
         val name = when {

@@ -23,7 +23,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 object RevolutLink {
     const val HOME = "https://app.revolut.com/home"
-    private const val READ_MS = 30_000L
+    private const val READ_MS = 90_000L
+    private const val PAGE = 300
+    private const val MAX_PAGES = 100
 
     /** Intercetta fetch e XMLHttpRequest dell'app web; tiene le intestazioni delle sue chiamate API per rileggerle. */
     private val script = """
@@ -73,21 +75,41 @@ object RevolutLink {
     """.trimIndent()
 
     /**
-     * Rilegge saldo e ultimi movimenti con la sessione della pagina: la home dell'app web ne carica
-     * pochi, così il calendario ha anche quelli di inizio mese. Le risposte passano dal gancio sopra.
+     * Rilegge saldo e movimenti con la sessione della pagina (la home dell'app web ne carica pochi).
+     * La prima volta va indietro pagina per pagina fino al primo movimento ([full]); dopo basta
+     * l'ultima pagina. Le risposte passano dal gancio sopra, la fine la dice [Bridge.pulled].
      */
-    private const val PULL = """
+    private fun pullScript(full: Boolean) = """
         (function () {
-          var h = window.__cvHeaders || {};
-          ['/api/retail/user/current/wallet', '/api/retail/user/current/transactions/last?count=300'].forEach(function (p) {
-            try { fetch(p, { method: 'GET', credentials: 'include', headers: h }); } catch (e) {}
-          });
+          var h = window.__cvHeaders || {}, full = $full, pages = 0;
+          var opt = { method: 'GET', credentials: 'include', headers: h };
+          try { fetch('/api/retail/user/current/wallet', opt).catch(function () {}); } catch (e) {}
+          function end(ok) { try { CanvasBank.pulled(ok); } catch (e) {} }
+          function page(to) {
+            fetch('/api/retail/user/current/transactions/last?count=$PAGE' + (to ? '&to=' + to : ''), opt)
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (a) {
+                if (!Array.isArray(a)) return end(false);
+                if (!a.length) return end(true);
+                var m = Infinity;
+                a.forEach(function (t) { var s = t.startedDate || t.createdDate; if (s && s < m) m = s; });
+                if (!full) return end(false);
+                // Fermo se Revolut non va più indietro (stessa pagina) o dopo troppe pagine.
+                if (!(m < (to || Infinity)) || ++pages >= $MAX_PAGES) return end(!(m < (to || Infinity)));
+                page(m - 1);
+              })
+              .catch(function () { end(false); });
+          }
+          page(0);
         })()
     """
 
     private object Bridge {
         @JavascriptInterface
         fun capture(url: String, status: Int, body: String) = RevolutStore.capture(url, status, body)
+
+        @JavascriptInterface
+        fun pulled(complete: Boolean) = RevolutStore.pullEnded(complete)
     }
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "RequiresFeature")
@@ -123,7 +145,7 @@ object RevolutLink {
     }
 
     /** Chiede alla pagina (già entrata nel conto) saldo e movimenti. */
-    fun pull(view: WebView) = view.evaluateJavascript(PULL, null)
+    fun pull(view: WebView) = view.evaluateJavascript(pullScript(full = !RevolutStore.historyDone), null)
 
     /** La pagina è tornata all'accesso: la sessione web non c'è più. */
     fun isLoginPage(url: String?) = url != null && Regex("""(?i)app\.revolut\.com/(start|login|signin|sign-in|auth)""").containsMatchIn(url)
@@ -148,8 +170,11 @@ object RevolutLink {
                     while (lastUrl == null && RevolutStore.readAt.value == before) delay(300)
                     delay(4_000)
                     if (!isLoginPage(lastUrl ?: view.url)) {
+                        val asked = System.currentTimeMillis()
                         pull(view)
-                        delay(5_000)
+                        // La storia completa sono più pagine: si aspetta che la pagina dica di aver finito.
+                        while (RevolutStore.pullEndedAt < asked) delay(500)
+                        delay(1_000)
                     }
                 }
                 if (RevolutStore.readAt.value == before && isLoginPage(lastUrl ?: view.url)) RevolutStore.setExpired(true)
