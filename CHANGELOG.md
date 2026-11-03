@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.308.0
+**Spese: il mese cambia tutto insieme**
+- Trascinando il riepilogo di lato, anche le spese del mese sotto scorrono via con la card ed entra il nuovo mese
+
 ## 1.307.0
 **Card SIM: un dato per riga**
 - Giga, minuti, SMS, credito e rinnovo ognuno sulla sua riga, con la barra sotto quelli che si consumano
