@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.332.0
+**Revolut: la storia arriva fino in fondo**
+- Se una lettura si ferma a metà (per esempio chiudi l'app), la volta dopo riparte da dove era arrivata invece di ricominciare da capo, finché non arriva al primo movimento
+- La lettura in sottofondo aspetta più a lungo, così prende più mesi alla volta
+- I prelievi si chiamano "Prelievo · banca" e contano la commissione dello sportello
+
 ## 1.331.0
 **Revolut: tutta la storia, con le sue categorie**
 - Le spese Revolut arrivano tutte, non solo dal mese scorso: alla prossima lettura Canvas va indietro fino al primo movimento (una volta sola, poi legge solo i nuovi)
