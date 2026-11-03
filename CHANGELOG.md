@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.334.0
+**Revolut in Home**
+- Nuova card Revolut, come quella della SIM: in alto il saldo totale, sotto il saldo di ogni tasca (conto e salvadanai come "Risparmi")
+- Tocca la card per le spese del mese; si sposta o si nasconde da Personalizza
+- Canvas legge soltanto: non può muovere soldi
+
 ## 1.331.0
 **Revolut: tutta la storia, con le sue categorie**
 - Le spese Revolut arrivano tutte, non solo dal mese scorso: alla prossima lettura Canvas va indietro fino al primo movimento (una volta sola, poi legge solo i nuovi)

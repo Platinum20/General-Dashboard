@@ -2,7 +2,20 @@ package com.platinum20.dashboard.ui.screens
 
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.platinum20.dashboard.bank.Pocket
+import com.platinum20.dashboard.bank.RevolutPockets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -43,6 +56,79 @@ internal fun revolutLine(linked: Boolean, expired: Boolean, balance: Long?): Str
     expired -> "Revolut: rifai l'accesso in Impostazioni › Account"
     balance != null -> "Saldo Revolut " + Expenses.format(balance)
     else -> "Revolut collegato"
+}
+
+/**
+ * La card Revolut della Home, come quella della SIM (Antonio): in alto il saldo totale, sotto una
+ * riga per tasca (conto e salvadanai). Solo lettura. Tocco = le spese del mese; prima del
+ * collegamento, o a sessione scaduta, porta all'accesso.
+ */
+@Composable
+internal fun RevolutCard(onOpen: () -> Unit) {
+    val context = LocalContext.current
+    RevolutStore.init(context)
+    val linked by RevolutStore.linked.collectAsStateWithLifecycle()
+    val expired by RevolutStore.expired.collectAsStateWithLifecycle()
+    val pockets by RevolutStore.pockets.collectAsStateWithLifecycle()
+    val balance by RevolutStore.balance.collectAsStateWithLifecycle()
+    val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
+    val inApp = LocalInAppNav.current
+    // La rilettura ogni mezz'ora la fa già la Home (spese nel calendario): qui solo si mostra.
+    Section(title = "Revolut") {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = { if (!linked || expired) inApp?.openRoute?.invoke(Routes.REVOLUT) else onOpen() })
+                .padding(16.dp),
+        ) {
+            // Prima che arrivi il wallet c'è almeno il saldo del conto (lettura delle versioni prima).
+            val shown = pockets.ifEmpty { balance?.let { listOf(Pocket("main", "Conto", it, main = true)) } ?: emptyList() }
+            if (!linked || shown.isEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconTile(Icons.Outlined.AccountBalanceWallet, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        when {
+                            !linked -> "Collega Revolut: saldo e tasche qui"
+                            expired -> "Accesso a Revolut scaduto: tocca per rientrare"
+                            else -> "Sto leggendo il conto Revolut…"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                }
+                return@Column
+            }
+            RevolutPanel(shown, readAt, expired)
+        }
+    }
+}
+
+/** Saldo totale grande in alto, poi una tasca per riga: nome a sinistra, importo a destra. */
+@Composable
+private fun RevolutPanel(pockets: List<Pocket>, readAt: Long, expired: Boolean) {
+    val soft = LocalContentColor.current.copy(alpha = 0.7f)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("SALDO TOTALE", style = MaterialTheme.typography.labelMedium, color = soft, modifier = Modifier.weight(1f))
+        Text(
+            if (expired) "accesso scaduto" else if (readAt > 0) relativeTime(Instant.ofEpochMilli(readAt)) else "",
+            style = MaterialTheme.typography.labelSmall,
+            color = if (expired) MaterialTheme.colorScheme.error else soft,
+        )
+    }
+    Spacer(Modifier.height(4.dp))
+    Text(Expenses.format(RevolutPockets.total(pockets)), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    // Con una tasca sola il totale è già lei: niente riga doppia.
+    if (pockets.size > 1) pockets.forEach { p ->
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(p.name, style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text(Expenses.format(p.cents), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        }
+    }
 }
 
 /** Il collegamento in Impostazioni › Account, come WindTre: qui si entra, si esce e si condividono i dati letti. */
