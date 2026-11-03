@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.306.0
+**Player YouTube più pulito**
+- Via i tasti avanti e indietro di 10 secondi: si usa solo il doppio tocco sui lati
+- Il tasto play non ha più il cerchio intorno
+- Tolto il tasto "prossimo video" in alto a destra
+- La barra del volume a schermo intero mostra in cima il numero della tacca, ed è centrata
+
 ## 1.305.0
 **Niente più pubblicità tra i video di YouTube**
 - Nella Home e nelle Iscrizioni di Video non compaiono più le pubblicità travestite da video (quelle senza titolo né canale)

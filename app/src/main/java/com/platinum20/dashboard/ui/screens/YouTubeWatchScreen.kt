@@ -67,12 +67,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
@@ -662,6 +660,18 @@ private fun VideoArea(
                     .padding(horizontal = 8.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                // In cima la tacca attuale, sotto l'icona: barra al centro, con lo stesso spazio sopra e sotto.
+                val maxLevel = remember { audio.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) }
+                Box(Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        VideoSwipe.volumeStep(volume, maxLevel).toString(),
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelLarge,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
                 Box(Modifier.width(4.dp).height(140.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.25f))) {
                     Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(volume.coerceIn(0f, 1f)).background(Color.White))
                 }
@@ -692,7 +702,7 @@ private fun VideoArea(
                         )
                     }
                 }
-                // In alto a destra: la rotella (qualità, velocità, sottotitoli, ripeti) e il prossimo video.
+                // In alto a destra: la rotella (qualità, velocità, sottotitoli, ripeti) e la coda.
                 Row(Modifier.align(Alignment.TopEnd).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val stream = now?.stream
                     if (stream != null) {
@@ -706,37 +716,18 @@ private fun VideoArea(
                     IconButton(onClick = onOpenQueue) {
                         Icon(Icons.Outlined.QueueMusic, contentDescription = "Coda", tint = Color.White)
                     }
-                    // Prima la coda unica, se no il prossimo video consigliato.
-                    IconButton(onClick = { YtPlayer.next(context) }) {
-                        Icon(Icons.Filled.SkipNext, contentDescription = "Prossimo video", tint = Color.White)
-                    }
                 }
-                Row(
-                    Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(28.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                // Solo play/pausa, senza cerchio: avanti e indietro sono i gesti (doppio tocco sui lati).
+                IconButton(
+                    onClick = { YtPlayer.toggle(context); flashKey++ },
+                    modifier = Modifier.align(Alignment.Center).size(72.dp),
                 ) {
-                    IconButton(onClick = { YtPlayer.seekBy(context, -10_000); flashKey++ }) {
-                        Icon(Icons.Filled.Replay10, contentDescription = "Indietro di 10 secondi", tint = Color.White, modifier = Modifier.size(32.dp))
-                    }
-                    Box(
-                        Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.18f))
-                            .clickable { YtPlayer.toggle(context); flashKey++ },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (playing) "Pausa" else "Riproduci",
-                            tint = Color.White,
-                            modifier = Modifier.size(40.dp),
-                        )
-                    }
-                    IconButton(onClick = { YtPlayer.seekBy(context, 10_000); flashKey++ }) {
-                        Icon(Icons.Filled.Forward10, contentDescription = "Avanti di 10 secondi", tint = Color.White, modifier = Modifier.size(32.dp))
-                    }
+                    Icon(
+                        if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (playing) "Pausa" else "Riproduci",
+                        tint = Color.White,
+                        modifier = Modifier.size(52.dp),
+                    )
                 }
                 Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 12.dp)) {
                     TimeBar(

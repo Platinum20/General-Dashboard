@@ -17,6 +17,15 @@ class VideoSwipeTest {
     }
 
     @Test
+    fun volumeStepIsTheNotchShown() {
+        assertEquals(0, VideoSwipe.volumeStep(0f, 15))
+        assertEquals(7, VideoSwipe.volumeStep(7 / 15f, 15))
+        assertEquals(15, VideoSwipe.volumeStep(1f, 15))
+        assertEquals(15, VideoSwipe.volumeStep(1.4f, 15))
+        assertEquals(0, VideoSwipe.volumeStep(0.5f, 0))
+    }
+
+    @Test
     fun volumeIgnoresSystemEdgesAndSmallMoves() {
         // Schermo alto 1000, bordi di sistema 100 sopra e sotto.
         assertFalse(VideoSwipe.volumeCanStart(50f, 1000f, 100f, 100f))

@@ -15,6 +15,10 @@ object VideoSwipe {
         return (startLevel + delta).coerceIn(0, maxLevel)
     }
 
+    /** La tacca da scrivere in cima alla barra del volume: 0 = muto, [maxLevel] = al massimo. */
+    fun volumeStep(volume: Float, maxLevel: Int): Int =
+        if (maxLevel <= 0) 0 else (volume.coerceIn(0f, 1f) * maxLevel).roundToInt()
+
     /**
      * Il volume parte solo se il dito si posa lontano dai bordi alto e basso: lì il sistema ha i
      * suoi gesti (tendina delle notifiche, chiudere l'app) e non devono cambiare il volume.
