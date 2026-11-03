@@ -158,7 +158,9 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
-    val all = timelineEntries(groups, today, months = true, expenses = expenses)
+    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio).
+    val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }.filter { it.rows.isNotEmpty() }
+    val all = timelineEntries(pending, today, months = true, expenses = expenses)
     val todayCount = all.count { it.second.day == today && !it.first.past }
     val shown = all.take(todayCount + Upcoming.MAX)
     TimelineCard(
