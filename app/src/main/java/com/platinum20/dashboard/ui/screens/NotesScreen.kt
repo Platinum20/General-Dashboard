@@ -417,7 +417,10 @@ fun NotesScreen(
     androidx.activity.compose.BackHandler(enabled = section != null && !searching) { closeSection() }
     // Ogni pagina (i tre tipi, o uno solo) parte dalla cima.
     LaunchedEffect(section) { runCatching { listState.scrollToItem(0) } }
-    val timeline = dueDays(data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses)
+    remember { com.platinum20.dashboard.sim.SimStore.init(context) }
+    val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
+    val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
+    val timeline = dueDays(data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked })
     // Sopra, scorrendo in su, il passato: cose fatte, pacchi arrivati, eventi finiti.
     val past = pastDays(data.tasks, data.parcels, events)
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
@@ -606,6 +609,7 @@ fun NotesScreen(
                                     row.parcel?.let { openItem(ItemKind.PARCEL, it.id) }
                                     row.event?.let { onOpenEvent(it) }
                                     row.charge?.let { openItem(ItemKind.FIXED, it.id) }
+                                    if (row.simRenewal) inApp?.openRoute?.invoke(Routes.SIM)
                                 },
                                 onLongClick = { dueActions(row) },
                                 onIcon = row.task?.takeIf { !it.done }?.let { task ->

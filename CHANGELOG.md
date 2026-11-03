@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.302.0
+**Card SIM rifatta, tutto in un blocco**
+- Niente più cerchi: i giga in grande con una barra, sotto minuti, SMS e roaming UE in colonne con una barra sottile, in fondo credito e rinnovo
+- Nella pagina SIM tutto sta nel blocco colorato; accesso, "Condividi i dati letti" ed "Esci" sono in Impostazioni › Account
+- Il rinnovo dell'offerta compare nei Prossimi giorni, in Home e in Note
+
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
 - La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta

@@ -5,10 +5,9 @@ import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.sim.WindTreParse
 import com.platinum20.dashboard.ui.screens.gbLabel
 import com.platinum20.dashboard.sim.Allowance
-import com.platinum20.dashboard.ui.screens.footer
+import com.platinum20.dashboard.ui.screens.meterText
+import com.platinum20.dashboard.ui.screens.renewalLine
 import com.platinum20.dashboard.ui.screens.renewalLabel
-import com.platinum20.dashboard.ui.screens.ringCaption
-import com.platinum20.dashboard.ui.screens.ringValue
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -117,14 +116,10 @@ class WindTreParseTest {
     }
 
     @Test
-    fun anelliDellaCard() {
-        assertEquals("141", ringValue(Allowance(141.4, 200.0)))
-        assertEquals("7,5", ringValue(Allowance(7.5, 7.5)))
-        assertEquals("∞", ringValue(Allowance(0.0, null, true)))
-        assertEquals("su 200 GB", ringCaption(Allowance(141.4, 200.0), "GB"))
-        assertEquals("su 50", ringCaption(Allowance(50.0, 50.0), ""))
-        assertEquals("illimitati", ringCaption(Allowance(0.0, null, true), "min"))
-        val st = SimStatus(credit = 4.2, renewal = LocalDate.of(2026, 11, 7))
-        assertEquals("Rinnovo 7/11 (tra 5 giorni) · Credito 4,20 €", st.footer(today))
+    fun righeDellaCard() {
+        assertEquals("illimitati", meterText(Allowance(0.0, null, true), ""))
+        assertEquals("50 di 50", meterText(Allowance(50.0, 50.0), ""))
+        assertEquals("7,5 di 7,5 GB", meterText(Allowance(7.5, 7.5), "GB"))
+        assertEquals("Rinnovo 7/11 · tra 5 giorni", renewalLine(LocalDate.of(2026, 11, 7), today))
     }
 }
