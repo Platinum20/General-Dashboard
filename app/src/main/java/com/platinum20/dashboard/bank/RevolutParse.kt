@@ -21,8 +21,8 @@ data class BankTx(
 )
 
 /** Quello che la lettura di una risposta ha trovato: movimenti e, se c'era, il saldo in euro. */
-data class RevolutRead(val txs: List<BankTx> = emptyList(), val balanceCents: Long? = null) {
-    val hasAny get() = txs.isNotEmpty() || balanceCents != null
+data class RevolutRead(val txs: List<BankTx> = emptyList(), val balanceCents: Long? = null, val oldestMs: Long? = null) {
+    val hasAny get() = txs.isNotEmpty() || balanceCents != null || oldestMs != null
 }
 
 /**
@@ -98,11 +98,15 @@ object RevolutParse {
         val root = runCatching { if (body.trimStart().startsWith("[")) JSONArray(body) else JSONObject(body) }.getOrNull() ?: return null
         val txs = LinkedHashMap<String, BankTx>()
         val balances = mutableListOf<Long>()
+        var oldest: Long? = null
         walk(root, 0) { o ->
-            if (looksLikeTx(o)) tx(o, zone)?.let { txs[it.id] = it }
-            else balance(o)?.let { balances += it }
+            if (looksLikeTx(o)) {
+                // Anche i movimenti che non sono spese contano per sapere fin dove è arrivata la storia.
+                o.optLong("startedDate").takeIf { it > 0 }?.let { at -> if (oldest == null || at < oldest!!) oldest = at }
+                tx(o, zone)?.let { txs[it.id] = it }
+            } else balance(o)?.let { balances += it }
         }
-        val read = RevolutRead(txs.values.toList(), balances.takeIf { it.isNotEmpty() }?.sum())
+        val read = RevolutRead(txs.values.toList(), balances.takeIf { it.isNotEmpty() }?.sum(), oldest)
         return read.takeIf { it.hasAny }
     }
 
@@ -146,10 +150,11 @@ object RevolutParse {
             ?: merchant?.optString("mcc")?.toIntOrNull()?.let(::mccCategory)
             ?: ExpenseCategory.guess(text)
         val name = when {
+            // Un prelievo col nome della banca dello sportello, che da solo non dice niente.
+            type == "ATM" -> listOf("Prelievo", merchant?.optString("name").orEmpty().trim()).filter { it.isNotEmpty() }.joinToString(" · ")
             // "To Mario Rossi" dei bonifici, in italiano come il resto dell'app.
             type == "TRANSFER" && text.startsWith("To ", ignoreCase = true) -> "A " + text.drop(3).trim()
             text.isNotEmpty() -> text
-            type == "ATM" -> "Prelievo"
             else -> "Revolut"
         }
         return BankTx(id, -amount, name, category, date, counts)

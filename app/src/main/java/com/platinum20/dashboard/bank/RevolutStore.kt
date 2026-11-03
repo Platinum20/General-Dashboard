@@ -50,6 +50,7 @@ object RevolutStore {
         _readAt.value = prefs.getLong("readAt", 0)
         _expired.value = prefs.getBoolean("expired", false)
         historyDone = prefs.getBoolean("historyDone", false)
+        historyFrom = prefs.getLong("historyFrom", 0)
         runCatching {
             val arr = JSONArray(File(app.filesDir, CAPTURES).readText())
             for (i in 0 until arr.length()) captures.addLast(arr.getJSONObject(i))
@@ -66,6 +67,9 @@ object RevolutStore {
      * successive prendono solo gli ultimi movimenti.
      */
     @Volatile var historyDone = false
+        private set
+    /** Il movimento più vecchio letto finora (millisecondi): da qui riparte una storia interrotta. */
+    @Volatile var historyFrom = 0L
         private set
     /** Quando la pagina ha finito l'ultima rilettura (anche a metà, per errore). */
     @Volatile var pullEndedAt = 0L
@@ -90,6 +94,12 @@ object RevolutStore {
         }
         if (status !in 200..299) return
         val read = RevolutParse.read(body)
+        read?.oldestMs?.let { at ->
+            if (historyFrom == 0L || at < historyFrom) {
+                historyFrom = at
+                appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putLong("historyFrom", at)?.apply()
+            }
+        }
         synchronized(this) {
             captures.removeAll { it.optString("url") == clean }
             captures.addLast(JSONObject().put("url", clean).put("at", System.currentTimeMillis()).put("body", body.take(100_000)))
@@ -147,6 +157,7 @@ object RevolutStore {
         _readAt.value = 0
         _expired.value = false
         historyDone = false
+        historyFrom = 0
         synchronized(this) { captures.clear(); requests.clear() }
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
