@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.346.0
+**Revolut ti chiede meno spesso l'accesso**
+- Revolut chiude la sessione dopo un po' che nessuno la usa: ora Canvas la tiene viva rileggendo saldo e movimenti ogni 15 minuti, anche con l'app chiusa
+- Se il telefono resta fermo a lungo (di notte) Android può rimandare la lettura, e ogni tanto Revolut chiede comunque di confermare l'accesso per sicurezza: in quel caso basta rifarlo
+
 ## 1.344.0
 **Filtri del Calendario senza scatti**
 - Togliendo un filtro (Spese, Note, Eventi) la linea del tempo non si blocca più per un attimo: ora si disegnano solo le righe che vedi, non tutti i mesi insieme
