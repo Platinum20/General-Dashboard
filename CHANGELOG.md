@@ -1,11 +1,28 @@
 # Changelog
 
-## 1.303.0
+## 1.306.0
 **Player YouTube più pulito**
 - Via i tasti avanti e indietro di 10 secondi: si usa solo il doppio tocco sui lati
 - Il tasto play non ha più il cerchio intorno
 - Tolto il tasto "prossimo video" in alto a destra
 - La barra del volume a schermo intero mostra in cima il numero della tacca, ed è centrata
+
+## 1.305.0
+**Niente più pubblicità tra i video di YouTube**
+- Nella Home e nelle Iscrizioni di Video non compaiono più le pubblicità travestite da video (quelle senza titolo né canale)
+
+## 1.304.0
+**Commenti YouTube: Mi piace e risposte**
+- Tocca il pollice di un commento per mettere o togliere Mi piace col tuo account YouTube
+- "Rispondi" sotto ogni commento apre il campo per scrivere; la risposta compare subito sotto
+- In cima ai commenti puoi scriverne uno nuovo sul video
+- Serve l'accesso a YouTube in Impostazioni › Account; se YouTube rifiuta, il pollice torna com'era e lo dice
+
+## 1.303.0
+**Video: solo le schede in alto**
+- Tolti i quattro riquadri sopra le schede: la pagina parte subito con Home, Iscrizioni, Cronologia, Canali e la nuova Playlist
+- In Playlist trovi in cima Mi piace e i video sul telefono, poi le tue playlist di YouTube
+- Più tardi non c'è più qui: i video salvati li ritrovi già in Note
 
 ## 1.302.0
 **Card SIM rifatta, tutto in un blocco**

@@ -6,6 +6,14 @@ import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import com.platinum20.dashboard.media.youtube.YtCommentActions
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.media.youtube.YtFavorites
@@ -307,6 +315,14 @@ fun YouTubeWatchScreen(
                     if (panel == null && stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (panel == WatchPanel.COMMENTS) {
+                        if (thread != null && thread.loaded && !thread.disabled && !(thread.failed && thread.comments.isEmpty())) {
+                            item(key = "comments-new") {
+                                CommentField("Aggiungi un commento…", "") { text ->
+                                    YtCommentActions.post(context, stream.id, text)
+                                    thread.comments.add(0, myComment(text))
+                                }
+                            }
+                        }
                         when {
                             thread == null || !thread.loaded -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
                             thread.failed && thread.comments.isEmpty() -> item(key = "comments-f") {
@@ -1235,10 +1251,68 @@ private class CommentThread {
 
 private val commentThreads = mutableMapOf<String, CommentThread>()
 
+/** Se il commento aveva già il tuo Mi piace quando è stato letto (il numero di YouTube lo conta già). */
+private val likedAtRead = mutableMapOf<String, Boolean>()
+
+/** Risposte scritte da Canvas, per commento: restano finché l'app è aperta. */
+private val sentReplies = mutableMapOf<String, androidx.compose.runtime.snapshots.SnapshotStateList<YtComment>>()
+
+/** Un tuo commento appena pubblicato, da mostrare subito nella lista. */
+private fun myComment(text: String) = YtComment(author = "Tu", text = text.trim(), likes = 0, date = "adesso", avatar = "", replies = 0)
+
+/**
+ * Campo per scrivere un commento o una risposta: invia col tasto a destra, si svuota se YouTube
+ * lo accetta, altrimenti il testo resta e arriva l'errore.
+ */
+@Composable
+private fun CommentField(placeholder: String, initial: String, focus: Boolean = false, onSend: suspend (String) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    var text by rememberSaveable { mutableStateOf(initial) }
+    var sending by remember { mutableStateOf(false) }
+    fun send() {
+        if (text.isBlank() || sending) return
+        sending = true
+        scope.launch {
+            runCatching { onSend(text) }
+                .onSuccess { haptic(Haptic.CONFIRM); text = "" }
+                .onFailure { CaptureFeedback.tell(context, it.message ?: "Non pubblicato, riprova") }
+            sending = false
+        }
+    }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { text = it },
+        placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        textStyle = MaterialTheme.typography.bodyMedium,
+        colors = canvasFieldColors(),
+        shape = RoundedCornerShape(20.dp),
+        maxLines = 5,
+        enabled = !sending,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Send),
+        keyboardActions = KeyboardActions(onSend = { send() }),
+        trailingIcon = {
+            if (sending) {
+                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = ::send, enabled = text.isNotBlank()) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Pubblica")
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp).autoFocus(focus),
+    )
+}
+
 /** Commenti del video, caricati la prima volta che si aprono. */
 @Composable
 private fun commentsFor(id: String): CommentThread {
-    val thread = remember(id) { commentThreads.getOrPut(id) { CommentThread() } }
+    val context = LocalContext.current
+    val thread = remember(id) {
+        YtCommentActions.load(context)
+        commentThreads.getOrPut(id) { CommentThread() }
+    }
     LaunchedEffect(id) { if (!thread.loaded) thread.load(id, null) }
     return thread
 }
@@ -1249,9 +1323,20 @@ private fun MoreButton(loading: Boolean, label: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun CommentRow(videoId: String, comment: YtComment, reply: Boolean = false) {
+private fun CommentRow(
+    videoId: String,
+    comment: YtComment,
+    reply: Boolean = false,
+    /** Dove finiscono le risposte scritte da qui a una risposta: sotto il commento principale. */
+    parentSent: MutableList<YtComment>? = null,
+) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
     var open by rememberSaveable(comment.id) { mutableStateOf(false) }
+    var writing by rememberSaveable(comment.id) { mutableStateOf(false) }
+    // Le tue risposte appena scritte, mostrate subito (YouTube le fa vedere con un po' di ritardo).
+    val sent = if (reply || comment.id.isBlank()) null else remember(comment.id) { sentReplies.getOrPut(comment.id) { mutableStateListOf() } }
     Row {
         ChannelAvatar(comment.avatar, comment.author.removePrefix("@"), if (reply) 24 else 32)
         Spacer(Modifier.width(10.dp))
@@ -1269,17 +1354,69 @@ private fun CommentRow(videoId: String, comment: YtComment, reply: Boolean = fal
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(comment.text, style = MaterialTheme.typography.bodyMedium)
-            Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.ThumbUp, contentDescription = "Mi piace", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (comment.likes > 0) {
-                    Spacer(Modifier.width(4.dp))
-                    Text(compactCount(comment.likes.toLong()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val likedIds by YtCommentActions.liked.collectAsState()
+            val liked = comment.id in likedIds
+            // Il numero letto da YouTube include già il tuo Mi piace se c'era quando i commenti sono arrivati.
+            val likedWhenRead = likedAtRead.getOrPut(comment.id) { comment.id in YtCommentActions.liked.value }
+            val canAct = comment.id.isNotBlank()
+            val likes = YtCommentActions.shownLikes(comment.likes, liked, likedWhenRead)
+            Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier
+                        .clip(CircleShape)
+                        .clickable(enabled = canAct) {
+                            haptic(if (liked) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON)
+                            scope.launch {
+                                runCatching { YtCommentActions.like(context, videoId, comment, !liked) }
+                                    .onFailure { CaptureFeedback.tell(context, it.message ?: "Mi piace non riuscito") }
+                            }
+                        }
+                        .padding(horizontal = 6.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                        contentDescription = if (liked) "Togli Mi piace" else "Mi piace",
+                        modifier = Modifier.size(16.dp),
+                        tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (likes > 0) {
+                        Spacer(Modifier.width(4.dp))
+                        Text(compactCount(likes.toLong()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-                Spacer(Modifier.width(14.dp))
-                Icon(Icons.Outlined.ThumbDown, contentDescription = "Non mi piace", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (comment.hearted) {
-                    Spacer(Modifier.width(14.dp))
+                    Spacer(Modifier.width(8.dp))
                     Icon(Icons.Filled.Favorite, contentDescription = "Piace all'autore", modifier = Modifier.size(14.dp), tint = Color(0xFFFF0033))
+                }
+                if (canAct) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Rispondi",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { writing = !writing }
+                            .padding(horizontal = 6.dp, vertical = 6.dp),
+                    )
+                }
+            }
+            if (writing) {
+                CommentField(
+                    "Rispondi a ${comment.author.removePrefix("@").ifBlank { "questo commento" }}…",
+                    YtCommentActions.replyPrefill(comment.author, reply),
+                    focus = true,
+                ) { text ->
+                    YtCommentActions.reply(context, videoId, comment, text)
+                    writing = false
+                    // Le risposte stanno sotto al commento principale, come su YouTube.
+                    (if (reply) parentSent else sent)?.add(myComment(text))
+                }
+            }
+            if (!reply && sent != null && sent.isNotEmpty()) {
+                Column(Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    sent.forEach { CommentRow(videoId, it, reply = true, parentSent = sent) }
                 }
             }
             if (!reply && comment.replies > 0 && comment.repliesPage != null) {
@@ -1293,7 +1430,7 @@ private fun CommentRow(videoId: String, comment: YtComment, reply: Boolean = fal
                     val replies = remember(comment.id) { commentThreads.getOrPut("r:" + comment.id) { CommentThread() } }
                     LaunchedEffect(comment.id) { if (!replies.loaded) replies.load(videoId, comment.repliesPage) }
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        replies.comments.forEach { CommentRow(videoId, it, reply = true) }
+                        replies.comments.forEach { CommentRow(videoId, it, reply = true, parentSent = sent) }
                         if (!replies.loaded || replies.next != null) {
                             MoreButton(replies.loading, "Altre risposte") { scope.launch { replies.loadMore(videoId) } }
                         }
