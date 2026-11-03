@@ -385,6 +385,8 @@ fun NotesScreen(
             if (show(NotesSection.DATED)) timelineEntries(groups, today, months = true, expenses = data.expenses) else emptyList()
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
+        // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
+        FlashNewRows(entries.map { it.first.key }, filter)
         val nowAt = entries.indexOfFirst { !it.first.past }
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding

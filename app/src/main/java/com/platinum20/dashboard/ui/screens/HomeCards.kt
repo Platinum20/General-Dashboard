@@ -249,6 +249,7 @@ fun TimelineCard(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
+            FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
                 TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = onLongOpen)

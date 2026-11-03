@@ -82,6 +82,10 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
 
     fun target(n: CaptureNotice): Pair<String, Rect>? {
         n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
+        // Se la cosa appena salvata è a schermo (la sua riga nel calendario), il pallino atterra proprio lì.
+        RowFlash.freshest()?.let { RowFlash.target(it) }?.let { key ->
+            CaptureTargets.rects[key]?.takeIf { it.top > 0f && it.height > 0f }?.let { return key to it }
+        }
         // Sempre sulla scheda in basso (come vuole Antonio): dalla 1.314 tutto sta nel calendario della Home.
         val key = CaptureTargets.HOME_TAB
         return CaptureTargets.rects[key]?.let { key to it }
@@ -163,6 +167,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         FlyingDot(f) {
             haptic(Haptic.TICK)
             CaptureTargets.arrived(f.key)
+            // Arrivato su una riga: la riga si riaccende, così si vede dove è finita la cosa.
+            if (f.key.startsWith("row:")) RowFlash.mark(f.key.removePrefix("row:"))
             flight = null
         }
     }

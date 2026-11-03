@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import com.platinum20.dashboard.capture.captureTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -196,6 +197,8 @@ fun TimelineRow(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            // Una riga appena comparsa è il posto dove atterra il pallino del +, se è a schermo.
+            .then(if (flashAt != null) Modifier.captureTarget(RowFlash.target(entry.key)) else Modifier)
             .drawBehind {
                 val f = flash.value
                 if (f > 0f) drawRoundRect(
@@ -500,6 +503,26 @@ object RowFlash {
     /** Logica pura: una riga segnata da poco. */
     fun isFresh(markedAt: Long?, now: Long): Boolean = markedAt != null && now - markedAt in 0..FRESH_MS
 
+    /** La riga segnata più di recente, se è ancora fresca: dove deve atterrare il pallino del +. */
+    fun freshest(now: Long = android.os.SystemClock.uptimeMillis()): String? =
+        marks.entries.filter { isFresh(it.value, now) }.maxByOrNull { it.value }?.key
+
+    /** La chiave con cui una riga si offre come arrivo del pallino ([com.platinum20.dashboard.capture.CaptureTargets]). */
+    fun target(key: String) = "row:$key"
+
+    /**
+     * Le righe nuove fra un elenco e il successivo. Al primo elenco niente (la pagina si sta aprendo), e
+     * nemmeno quando ne arrivano tante insieme (si è caricato un altro pezzo di calendario): solo le poche
+     * cose appena aggiunte.
+     */
+    fun newKeys(previous: Set<String>?, now: List<String>): List<String> {
+        if (previous == null) return emptyList()
+        val added = now.filter { it !in previous }
+        return if (added.size > MAX_NEW) emptyList() else added
+    }
+
+    private const val MAX_NEW = 3
+
     /** Esegue [action] dopo [TICK_MS] e poi accende la riga nel suo nuovo posto. */
     fun later(key: String, action: () -> Unit) {
         scope.launch {
@@ -507,6 +530,16 @@ object RowFlash {
             action()
             mark(key)
         }
+    }
+}
+
+/** Accende le righe che compaiono in [keys] dopo la prima volta (vedi [RowFlash.newKeys]). */
+@Composable
+fun FlashNewRows(keys: List<String>, vararg resetOn: Any?) {
+    val previous = androidx.compose.runtime.remember(*resetOn) { arrayOfNulls<Set<String>>(1) }
+    androidx.compose.runtime.LaunchedEffect(keys) {
+        RowFlash.newKeys(previous[0], keys).forEach { RowFlash.mark(it) }
+        previous[0] = keys.toSet()
     }
 }
 

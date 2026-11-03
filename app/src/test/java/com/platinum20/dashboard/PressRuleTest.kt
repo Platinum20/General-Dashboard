@@ -51,3 +51,19 @@ class FlingMotionTest {
         assertEquals(200, m.flingMs(-600f, -3000f))
     }
 }
+
+class NewRowsFlashTest {
+    private val flash = com.platinum20.dashboard.ui.screens.RowFlash
+
+    @Test
+    fun onlyRowsAddedAfterTheFirstListLightUp() {
+        assertEquals(emptyList<String>(), flash.newKeys(null, listOf("task-1", "task-2")))
+        assertEquals(listOf("task-3"), flash.newKeys(setOf("task-1", "task-2"), listOf("task-1", "task-3", "task-2")))
+    }
+
+    @Test
+    fun aWholeNewChunkOfCalendarDoesNotFlash() {
+        val many = (1..10).map { "event-$it" }
+        assertEquals(emptyList<String>(), flash.newKeys(setOf("task-1"), listOf("task-1") + many))
+    }
+}
