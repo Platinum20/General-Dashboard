@@ -79,11 +79,21 @@ internal fun RevolutAccountRows() {
         RowDivider()
         SettingsItem(
             icon = Icons.Outlined.Share,
-            title = "Condividi i dati letti di Revolut",
-            subtitle = "Per correggere la lettura se qualcosa non torna",
+            title = "Salva i dati letti di Revolut",
+            subtitle = "Un file in Download, da allegare se qualcosa non torna",
             onClick = {
-                shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText())
+                val where = saveTextToDownloads(context, stampedName("revolut-dati-letti"), RevolutStore.capturesText())
+                com.platinum20.dashboard.capture.CaptureFeedback.show(
+                    com.platinum20.dashboard.capture.CaptureNotice(
+                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
+                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
+                        undo = null,
+                        icon = Icons.Outlined.Share,
+                        fly = false,
+                    ),
+                )
             },
+            trailing = { TextButton(onClick = { shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText()) }) { Text("Condividi") } },
         )
     }
 }

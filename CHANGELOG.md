@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.329.0
+**Dati letti: salvali sul telefono**
+- In Impostazioni › Account, "Salva i dati letti di Revolut" (e di WindTre) mette un file .txt nella cartella Download del telefono
+- Poi lo alleghi da lì in Claude con la graffetta; "Condividi" resta accanto
+
 ## 1.328.0
 **Gmail sta in Account**
 - Il collegamento a Gmail ora è in Impostazioni › Account, sotto "Posta", insieme a SIM e Conto
