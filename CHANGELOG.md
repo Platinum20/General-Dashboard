@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.330.0
+**Revolut letto giusto**
+- Il saldo è sempre quello del conto principale, come in alto nell'app Revolut: prima a volte mostrava i soldi del salvadanaio "Risparmi"
+- Le spese contano anche le commissioni, cioè quello che è uscito davvero
+- Categorie più precise dal codice dell'esercente quando Revolut dice solo "servizi" (es. benzina, farmacia)
+- I bonifici si leggono in italiano: "A Mario Rossi" invece di "To Mario Rossi"
+
 ## 1.329.0
 **Dati letti: salvali sul telefono**
 - In Impostazioni › Account, "Salva i dati letti di Revolut" (e di WindTre) mette un file .txt nella cartella Download del telefono
