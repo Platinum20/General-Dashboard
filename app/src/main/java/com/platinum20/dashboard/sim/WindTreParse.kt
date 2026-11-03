@@ -95,12 +95,18 @@ object WindTreParse {
         val credits = mutableListOf<Double>()
         val dates = mutableListOf<LocalDate>()
         var offer: String? = null
+        var masterOffer: String? = null
         fun walk(node: Any?, path: String) {
             when (node) {
                 is JSONObject -> {
                     // Un dizionario di messaggi (centinaia di chiavi, quasi tutte testo) non contiene contatori.
                     if (node.length() > 80 && node.keys().asSequence().count { node.opt(it) is String } > node.length() * 0.9) return
                     counter(node, path)?.let { counters += it }
+                    // L'area clienti vera (lineunfolded) segna l'offerta coi contatori come classification MASTER:
+                    // il suo nome ("GO 200 XXS") vale più di quello del piano base ("New Basic").
+                    if (node.optString("classification").equals("MASTER", ignoreCase = true)) {
+                        node.optString("name").takeIf { it.isNotBlank() }?.let { masterOffer = it }
+                    }
                     for (key in node.keys()) {
                         val value = node.opt(key)
                         val k = key.lowercase()
@@ -126,7 +132,7 @@ object WindTreParse {
             roaming = best(counters, Kind.ROAMING),
             credit = credits.firstOrNull(),
             renewal = dates.minOrNull(),
-            offer = offer,
+            offer = masterOffer ?: offer,
         )
         return status.takeIf { it.hasAny }
     }

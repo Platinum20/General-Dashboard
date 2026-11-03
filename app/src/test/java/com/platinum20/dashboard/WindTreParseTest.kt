@@ -122,4 +122,41 @@ class WindTreParseTest {
         assertEquals("7,5 di 7,5 GB", meterText(Allowance(7.5, 7.5), "GB"))
         assertEquals("Rinnovo 7/11 · tra 5 giorni", renewalLine(LocalDate.of(2026, 11, 7), today))
     }
+
+    /** La forma vera di /api/ob/v2/contract/lineunfolded (3 novembre 2026), senza i dati personali. */
+    @Test
+    fun rispostaVeraLineUnfolded() {
+        val json = """
+            {"data":{"status":"ACTIVE","paymentType":"PRE","lines":[{"activationDate":"2024-08-08",
+             "simCard":{"expirationDate":"2027-11-07","lastRechargeDate":"2026-10-08","simType":"LTE"},
+             "tariffPlan":{"code":"LIS457","name":"New Basic","status":"ACTIVE"},
+             "options":[
+              {"code":"LIS457","name":"New Basic","status":"ACTIVE"},
+              {"code":"ROPZ4781","name":"GO 200 XXS","status":"ACTIVE","deactivationDate":"2026-11-08","renewalDate":"2026-11-08",
+               "costo":"4.99","zeroCredit":false,"classification":"MASTER","insights":[
+                {"type":"VOICE","unitOfMeasure":"SECONDS","available":0.0,"total":0.0,"unlimited":true,"group":"NATIONAL","shaping":false},
+                {"type":"SMS","unitOfMeasure":"INTEGER","available":50.0,"total":50.0,"unlimited":false,"group":"NATIONAL","shaping":false},
+                {"type":"DATA","unitOfMeasure":"BYTE","available":151765926000.0,"total":214748365000.0,"unlimited":false,"group":"NATIONAL","shaping":false}]},
+              {"code":"ROPZ4781-RDA","status":"ACTIVE","renewalDate":"2026-11-08","classification":"","insights":[
+                {"type":"DATA","unitOfMeasure":"BYTE","available":8053063700.0,"total":8053063700.0,"unlimited":false,"group":"ROAMING","shaping":false}]},
+              {"code":"ROPZ4796","name":"Servizio VoLTE","status":"ACTIVE","insights":[],"classification":"NESSUNA"}],
+             "credit":11.53,
+             "insightsSummary":{"national":{"voice":{"total":0.0,"available":0.0,"unlimited":true,"shaping":false},
+               "sms":{"total":50.0,"available":50.0,"unlimited":false,"shaping":false},
+               "data":{"total":214748365000.0,"available":151765926000.0,"unlimited":false,"shaping":false}},
+              "roaming":{"data":{"total":8053063700.0,"available":8053063700.0,"unlimited":false,"shaping":false}}},
+             "nextEventDate":{"date":"2026-11-08","dataEventType":"RENEWAL","ropzCode":"ROPZ4781","tied":false}}]},
+             "status":"OK","errorCodes":[],"messages":[]}
+        """.trimIndent()
+        val s = WindTreParse.fromJson(json, today)!!
+        // WindTre conta in GiB: i "200 Giga" dell'offerta sono 200 × 2^30 byte.
+        assertEquals(141.3, s.data!!.left, 0.1)
+        assertEquals(200.0, s.data!!.total!!, 0.1)
+        assertEquals(7.5, s.roaming!!.left, 0.1)
+        assertTrue(s.minutes!!.unlimited)
+        assertEquals(50.0, s.sms!!.left, 0.01)
+        assertEquals(11.53, s.credit!!, 0.001)
+        assertEquals(LocalDate.of(2026, 11, 8), s.renewal)
+        assertEquals("GO 200 XXS", s.offer)
+    }
 }
