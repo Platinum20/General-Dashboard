@@ -46,8 +46,12 @@ object AutoFillRules {
                 (found.code.isNotEmpty() && p.code.equals(found.code, true)) ||
                     (found.code.isEmpty() && p.title.equals(found.title, true))
             }
-            // Una spesa uguale scritta a mano lo stesso giorno: è la stessa.
-            is Found.Spent -> notes.expenses.none { it.cents == found.cents && it.date == found.date }
+            // Una spesa uguale scritta a mano lo stesso giorno è la stessa; quella letta dal conto
+            // (Revolut) anche il giorno prima o dopo: la ricevuta via mail spesso arriva il giorno dopo.
+            is Found.Spent -> notes.expenses.none {
+                it.cents == found.cents && (it.date == found.date ||
+                    (it.bankId != null && kotlin.math.abs(it.date.toEpochDay() - found.date.toEpochDay()) <= 1))
+            }
             is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) } &&
                 notes.countdowns.none { it.title.equals(found.title, true) && it.date == found.due.toLocalDate() }
             is Found.Delivered -> true

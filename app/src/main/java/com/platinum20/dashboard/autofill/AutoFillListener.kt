@@ -6,7 +6,7 @@ import android.content.pm.ApplicationInfo
 import android.provider.Telephony
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.MailStore
 import com.platinum20.dashboard.work.MailWorker
 import java.time.Instant
 import java.time.LocalDateTime
@@ -37,8 +37,8 @@ class AutoFillListener : NotificationListenerService() {
     private fun handle(sbn: StatusBarNotification, notify: Boolean) {
         // Con Gmail collegato la mail intera è meglio dell'anteprima: la notifica fa solo da campanello.
         if (sbn.packageName.startsWith(GMAIL_APP)) {
-            GmailAuth.init(this)
-            if (GmailAuth.connected.value) {
+            MailStore.init(this)
+            if (MailStore.connected()) {
                 if (notify) MailWorker.runNow(this)
                 return
             }
