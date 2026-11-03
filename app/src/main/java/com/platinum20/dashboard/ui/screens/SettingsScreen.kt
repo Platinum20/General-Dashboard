@@ -354,7 +354,11 @@ fun SettingsPageScreen(
                         UpdateNotifySetting()
                     }
                 }
-                SettingsPage.ACCOUNTS -> item { AccountsPage(onLogin) }
+                SettingsPage.ACCOUNTS -> {
+                    item { AccountsPage(onLogin) }
+                    // Il collegamento WindTre sta qui, non nella pagina SIM (Antonio): là restano solo i dati.
+                    item { SettingsBlock("SIM") { WindTreAccountRows() } }
+                }
                 SettingsPage.DATA -> item {
                     SettingsBlock("I tuoi dati") {
                         WifiOnlySetting()

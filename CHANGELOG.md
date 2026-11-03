@@ -1,10 +1,23 @@
 # Changelog
 
-## 1.298.0
+## 1.303.0
 **Video: solo le schede in alto**
 - Tolti i quattro riquadri sopra le schede: la pagina parte subito con Home, Iscrizioni, Cronologia, Canali e la nuova Playlist
 - In Playlist trovi in cima Mi piace e i video sul telefono, poi le tue playlist di YouTube
 - Più tardi non c'è più qui: i video salvati li ritrovi già in Note
+
+## 1.302.0
+**Card SIM rifatta, tutto in un blocco**
+- Niente più cerchi: i giga in grande con una barra, sotto minuti, SMS e roaming UE in colonne con una barra sottile, in fondo credito e rinnovo
+- Nella pagina SIM tutto sta nel blocco colorato; accesso, "Condividi i dati letti" ed "Esci" sono in Impostazioni › Account
+- Il rinnovo dell'offerta compare nei Prossimi giorni, in Home e in Note
+
+## 1.299.0
+**Barra del video: niente più salti per sbaglio**
+- Toccare la barra del tempo non sposta più il video: si va avanti o indietro solo trascinando il dito di lato
+- Un trascinamento verso l'alto o il basso sulla barra non la muove (resta allo schermo intero)
+- Doppio tocco ripetuto che si somma: +10, +20, +30… (anche toccando ancora una volta sullo stesso lato subito dopo)
+- Vale anche per la barra del player di musica, radio e podcast
 
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**

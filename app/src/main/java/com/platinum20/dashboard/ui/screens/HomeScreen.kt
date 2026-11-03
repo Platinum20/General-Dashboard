@@ -190,10 +190,15 @@ fun HomeScreen(
     val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
         value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
     }
-    val upcoming = remember(minute.toLocalDate(), weekAhead, notes) {
+    // Il rinnovo dell'offerta SIM va fra i prossimi giorni, come un addebito (Antonio).
+    remember { com.platinum20.dashboard.sim.SimStore.init(context) }
+    val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
+    val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
+    val simRenewal = sim?.renewal?.takeIf { simLinked }
+    val upcoming = remember(minute.toLocalDate(), weekAhead, notes, simRenewal) {
         Upcoming.build(
             minute.toLocalDate(), weekAhead, notes.openTasks, notes.countdowns,
-            parcels = notes.parcels, fixedExpenses = notes.fixedExpenses,
+            parcels = notes.parcels, fixedExpenses = notes.fixedExpenses, simRenewal = simRenewal,
         )
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
