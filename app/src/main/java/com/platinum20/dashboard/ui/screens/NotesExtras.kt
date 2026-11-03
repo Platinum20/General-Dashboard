@@ -127,6 +127,16 @@ fun ExpensesTab(
         val threshold = with(density) { 56.dp.toPx() }
         var cardWidth by remember { mutableStateOf(0f) }
         var shownMonth by remember { mutableStateOf(month) }
+        // Velocità con cui il mese vecchio è uscito, passata a quello che entra.
+        var carry by remember { mutableStateOf(0f) }
+        val monthSpring = remember {
+            androidx.compose.animation.core.spring<Float>(dampingRatio = 1f, stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow)
+        }
+        val exitSpring = remember {
+            androidx.compose.animation.core.spring<Float>(dampingRatio = 1f, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium)
+        }
+        val fling = with(density) { 400.dp.toPx() }
+        val tracker = remember { androidx.compose.ui.input.pointer.util.VelocityTracker() }
         androidx.compose.runtime.LaunchedEffect(month) {
             if (month == shownMonth) {
                 kotlinx.coroutines.delay(Motion.ENTER_MS.toLong())
@@ -134,10 +144,12 @@ fun ExpensesTab(
                 nudge.animateTo(nudgePx, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Standard))
                 nudge.animateTo(0f, Motion.settle())
             } else {
+                // Il nuovo mese entra con la stessa velocità con cui è uscito il vecchio: un solo movimento continuo.
                 val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
                 nudge.snapTo(if (month > shownMonth) width else -width)
                 shownMonth = month
-                nudge.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS, easing = Motion.Decelerate))
+                nudge.animateTo(0f, monthSpring, initialVelocity = carry)
+                carry = 0f
             }
         }
         val haptic = rememberHaptic()
@@ -154,20 +166,34 @@ fun ExpensesTab(
                 // fuori dai graphicsLayer: la card e la lista che si spostano non falsano il trascinamento.
                 .pointerInput(threshold) {
                     detectHorizontalDragGestures(
-                        onDragStart = { drag = 0f; armed = false },
+                        onDragStart = { drag = 0f; armed = false; tracker.resetTracking() },
                         onDragEnd = {
-                            val target = MonthSwipe.target(month, drag, threshold, YearMonth.now())
+                            val velocity = tracker.calculateVelocity().x
+                            val target = MonthSwipe.target(month, drag, threshold, YearMonth.now(), velocity, fling)
                             val out = drag
+                            // Un colpo veloce che cambia mese senza aver passato la soglia vibra lo stesso.
+                            if (target != null && !armed) haptic(Haptic.THRESHOLD)
                             drag = 0f
                             armed = false
                             scope.launch {
                                 if (target != null) {
-                                    // Esce dal lato verso cui l'hai spinto, poi entra il nuovo mese dall'altro.
+                                    // Esce dal lato verso cui l'hai spinto continuando alla velocità del dito (prima
+                                    // ripartiva da fermo e sembrava tornare indietro), poi il nuovo mese entra dall'altro.
                                     val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
-                                    nudge.animateTo(if (out < 0) -width else width, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Accelerate))
+                                    val sign = if (out < 0) -1f else 1f
+                                    val start = sign * maxOf(kotlin.math.abs(velocity), fling)
+                                    // Mira oltre il bordo con il limite sul bordo: appena è fuori si passa al mese nuovo,
+                                    // senza aspettare la coda della molla, e la velocità di quel momento passa a chi entra.
+                                    nudge.updateBounds(-width, width)
+                                    val result = try {
+                                        nudge.animateTo(sign * width * 1.5f, exitSpring, initialVelocity = start)
+                                    } finally {
+                                        nudge.updateBounds(null, null)
+                                    }
+                                    carry = result.endState.velocity.takeIf { it * sign > 0f } ?: (sign * fling)
                                     month = target
                                 } else {
-                                    nudge.animateTo(0f, Motion.settle())
+                                    nudge.animateTo(0f, Motion.settle(), initialVelocity = velocity)
                                 }
                             }
                         },
@@ -178,6 +204,7 @@ fun ExpensesTab(
                         },
                     ) { change, amount ->
                         change.consume()
+                        tracker.addPosition(change.uptimeMillis, change.position)
                         drag += amount
                         val can = MonthSwipe.target(month, drag, threshold, YearMonth.now()) != null
                         if (can != armed) {
@@ -613,10 +640,22 @@ private fun CategoryBar(split: List<Pair<com.platinum20.dashboard.notes.ExpenseC
 
 /** Trascinando il riepilogo di Spese: oltre [threshold] px si cambia mese, mai oltre quello di [now]. Logica pura. */
 internal object MonthSwipe {
-    fun target(month: YearMonth, drag: Float, threshold: Float, now: YearMonth): YearMonth? = when {
-        drag >= threshold -> month.minusMonths(1)
-        drag <= -threshold && month < now -> month.plusMonths(1)
-        else -> null
+    fun target(month: YearMonth, drag: Float, threshold: Float, now: YearMonth, velocity: Float = 0f, fling: Float = Float.MAX_VALUE): YearMonth? {
+        // Un colpo veloce cambia mese anche se corto, come le pagine (Antonio: lasciando il dito non deve tornare indietro);
+        // un colpo nel verso opposto al trascinamento invece lo annulla.
+        val push = when {
+            velocity >= fling && drag > 0f -> 1
+            velocity <= -fling && drag < 0f -> -1
+            kotlin.math.abs(velocity) >= fling -> 0
+            drag >= threshold -> 1
+            drag <= -threshold -> -1
+            else -> 0
+        }
+        return when {
+            push > 0 -> month.minusMonths(1)
+            push < 0 && month < now -> month.plusMonths(1)
+            else -> null
+        }
     }
 
     /**
