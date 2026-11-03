@@ -137,6 +137,8 @@ object RevolutStore {
         prefs?.putLong("readAt", _readAt.value)?.apply()
         if (!_linked.value) setLinked(true)
         if (_expired.value) setExpired(false)
+        // Lettura riuscita = sessione buona: se ne tiene la copia per dopo un aggiornamento.
+        appContext?.let { RevolutSession.save(it) }
     }
 
     private fun commitPockets(read: PocketRead) {

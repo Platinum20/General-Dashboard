@@ -34,6 +34,19 @@ class RevolutPocketsTest {
         assertEquals("Salvadanaio", RevolutPockets.named(w.pockets!!, emptyMap())[1].name)
     }
 
+    /** Forma vera (dati inventati): tasche e salvadanai hanno createdDate, come i movimenti. */
+    @Test
+    fun realShapesWithDates() {
+        val wallet = """{"id":"w","state":"ACTIVE","baseCurrency":"EUR","pockets":[
+            {"id":"a","type":"CURRENT","state":"ACTIVE","currency":"EUR","balance":16076,"closed":false,"createdDate":1600000000000,"blockedAmount":0},
+            {"id":"r","type":"SAVINGS","name":"MB:x","state":"ACTIVE","currency":"EUR","balance":1560000,"closed":false,"createdDate":1600000000000},
+            {"id":"o","type":"SAVINGS","name":"T2024","state":"INACTIVE","currency":"EUR","balance":0,"closed":true,"createdDate":1600000000000}]}"""
+        val boxes = """[{"id":"x","name":"Risparmi","state":"ACTIVE","balance":{"amount":1560000,"currency":"EUR"},"createdDate":1600000000000,"type":"BASIC",
+            "pocket":{"id":"r","name":"Risparmi","currency":"EUR","balance":1560000,"closed":false}}]"""
+        val pockets = RevolutPockets.named(RevolutPockets.read(wallet)!!.pockets!!, RevolutPockets.read(boxes)!!.names)
+        assertEquals(listOf("Conto" to 16076L, "Risparmi" to 1560000L), pockets.map { it.name to it.cents })
+    }
+
     @Test
     fun transactionsAreNotPockets() {
         val txs = """[{"id":"t1","legId":"l1","amount":-500,"currency":"EUR","startedDate":1762160000000,
