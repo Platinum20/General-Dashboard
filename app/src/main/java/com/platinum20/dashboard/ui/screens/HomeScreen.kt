@@ -137,8 +137,10 @@ fun HomeScreen(
     onCustomize: () -> Unit,
     onSearch: () -> Unit = {},
     onOpenAutoFill: () -> Unit = {},
+    onOpenNote: (Long) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val openItem = rememberOpenItem()
     val inApp = LocalInAppNav.current
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
@@ -279,13 +281,22 @@ fun HomeScreen(
                     briefUndo?.undo?.invoke()
                     briefUndo = null
                 },
-                onOpenBrief = { kind ->
-                    when (kind) {
-                        BriefKind.EVENT -> inApp?.openCalendar?.invoke()
-                        BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.EXPENSES)
-                        BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL -> onOpenNotes()
-                        BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
-                        BriefKind.FREE -> Unit
+                onOpenBrief = { line ->
+                    // La riga di una cosa sola apre la sua scheda (Antonio); le righe che ne riassumono tante, la pagina.
+                    val id = line.openId
+                    val event = line.event
+                    when {
+                        event != null -> inApp?.openEvent?.invoke(event)
+                        id != null && line.kind == BriefKind.TASK -> openItem(ItemKind.TASK, id)
+                        id != null && line.kind == BriefKind.DATE -> openItem(ItemKind.DATE, id)
+                        id != null && line.kind == BriefKind.PARCEL -> openItem(ItemKind.PARCEL, id)
+                        else -> when (line.kind) {
+                            BriefKind.EVENT -> inApp?.openCalendar?.invoke()
+                            BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.EXPENSES)
+                            BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL -> onOpenNotes()
+                            BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
+                            BriefKind.FREE -> Unit
+                        }
                     }
                 },
             )
@@ -306,7 +317,7 @@ fun HomeScreen(
                 haptic(Haptic.TICK)
                 NotesNav.open(NotesSection.UNDATED, fromHome = true)
                 onOpenNotes()
-            })
+            }, onOpenNote = onOpenNote)
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
                 MediaNowCard(playing, onOpen = {
@@ -441,7 +452,7 @@ private fun WeatherCard(
     onBriefAction: (BriefLine) -> Unit,
     undo: BriefUndo?,
     onUndo: () -> Unit,
-    onOpenBrief: (BriefKind) -> Unit,
+    onOpenBrief: (BriefLine) -> Unit,
 ) {
     val forecast = state.forecast
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
@@ -457,7 +468,7 @@ private fun WeatherCard(
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
         if (briefing.isNotEmpty() || undo != null) {
             Column(Modifier.padding(bottom = 10.dp)) {
-                briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line.kind) } }
+                briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
                 undo?.let { u ->
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 8.dp),

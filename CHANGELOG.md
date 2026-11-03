@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.312.0
+## 1.313.0
 **Spese: il mese si cambia da tutta la pagina**
 - Trascini di lato ovunque nella pagina Spese, non solo sul riepilogo, per passare da un mese all'altro
 - Nel mese in corso il riepilogo non mostra più il totale del mese prima
+
+## 1.312.0
+**Dalla Home si apre la singola cosa**
+- Toccando un evento nelle card della Home si apre il suo dettaglio, non più il calendario intero
+- Lo stesso per promemoria, date, pacchi, addebiti, spese e note: ognuno apre la sua scheda
+- Toccando il resto della card si apre la pagina intera, come prima; le spunte si mettono sempre dalla card
 
 ## 1.310.0
 **Card SIM: credito e rinnovo in fondo sulla stessa riga**
