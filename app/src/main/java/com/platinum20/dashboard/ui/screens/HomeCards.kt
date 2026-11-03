@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -167,10 +168,12 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         empty = "Niente in programma.",
         modifier = Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
-        ticks = shown.map { (_, row) -> row.task?.takeIf { !it.done }?.let { tickTask(it.id) } },
+        // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
+        ticks = shown.map { (_, row) -> row.task?.let { tickTask(it.id) } },
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
         rows = shown.map { (_, row) -> { open(row) } },
         onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
+        onLongOpen = onOpenAll,
     )
 }
 
@@ -206,6 +209,7 @@ internal fun rememberDueOpen(): (DueRow) -> Unit {
  * La card con la linea del tempo, uguale in Oggi e nella pagina Note (Antonio): il titolo sopra, a destra
  * quanto c'è, dentro le prime righe. Si tocca ovunque per aprire la sezione, senza link in fondo.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TimelineCard(
     title: String,
@@ -220,6 +224,8 @@ fun TimelineCard(
     rows: List<(() -> Unit)?> = emptyList(),
     /** Toccando il segno di un mese: il riepilogo delle spese di quel mese. */
     onMonth: ((YearMonth) -> Unit)? = null,
+    /** Tenendo premuta la card, ovunque (anche su una riga): la pagina intera (Antonio). */
+    onLongOpen: (() -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
     Section(
@@ -229,7 +235,7 @@ fun TimelineCard(
             count?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp)) }
         },
     ) {
-        Column(Modifier.clickable(onClick = onOpen).padding(vertical = 6.dp)) {
+        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(vertical = 6.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,
@@ -240,7 +246,7 @@ fun TimelineCard(
             }
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = onLongOpen)
             }
         }
     }
