@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -113,8 +112,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp, start = 16.dp, end = 16.dp)) {
         AnimatedVisibility(
             visible = notice != null,
-            enter = fadeIn() + scaleIn(initialScale = 0.9f) + slideInVertically { it / 3 },
-            exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.4f, animationSpec = tween(160)),
+            enter = fadeIn(Motion.settle()) + scaleIn(Motion.lively(), initialScale = 0.9f) + slideInVertically(Motion.lively()) { it / 3 },
+            exit = fadeOut(tween(Motion.EXIT_MS)) + scaleOut(targetScale = 0.4f, animationSpec = tween(Motion.EXIT_MS)),
         ) {
             val n = last ?: return@AnimatedVisibility
             Box(contentAlignment = Alignment.Center) {
@@ -175,7 +174,7 @@ private fun FlyingDot(f: Flight, onArrived: () -> Unit) {
     val progress = remember(f) { Animatable(0f) }
     val arrived by rememberUpdatedState(onArrived)
     LaunchedEffect(f) {
-        progress.animateTo(1f, tween(620, easing = FastOutSlowInEasing))
+        progress.animateTo(1f, tween(620, easing = Motion.Standard))
         arrived()
     }
     val density = LocalDensity.current

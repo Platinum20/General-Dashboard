@@ -238,14 +238,14 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                             travelled = Offset.Zero
                             armed = false
                         },
-                        onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy()) } },
+                        onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) } },
                         onDragEnd = {
                             val v = tracker.calculateVelocity()
                             when (playerRelease(total, Offset(v.x, v.y), w, h)) {
                                 PlayerRelease.CLOSE -> {
                                     view.haptic(Haptic.CONFIRM)
                                     scope.launch {
-                                        drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), androidx.compose.animation.core.tween(200))
+                                        drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), Motion.fling(w * 1.2f - kotlin.math.abs(total.x), v.x))
                                         Playback.stop()
                                         onBack()
                                     }
@@ -256,10 +256,10 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                                 }
                                 PlayerRelease.QUEUE -> {
                                     view.haptic(Haptic.SNAP)
-                                    scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy()) }
+                                    scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) }
                                     onOpenQueue()
                                 }
-                                PlayerRelease.STAY -> scope.launch { drag.animateTo(Offset.Zero, Springs.bouncy(), initialVelocity = v.let { Offset(it.x, it.y) }) }
+                                PlayerRelease.STAY -> scope.launch { drag.animateTo(Offset.Zero, Motion.gesture(), initialVelocity = v.let { Offset(it.x, it.y) }) }
                             }
                         },
                     ) { change, amount ->

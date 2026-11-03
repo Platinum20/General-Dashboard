@@ -491,7 +491,12 @@ fun NotesScreen(
                     // Il pallino del + atterra su OGGI.
                     val target = if (index == nowAt) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                         .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
-                    Column(Modifier.fillMaxWidth().then(target).padding(bottom = if (index == entries.lastIndex) 4.dp else 0.dp)) {
+                    // Le righe che cambiano posto (spuntate, aggiunte, filtrate) scivolano invece di saltare.
+                    Column(
+                        Modifier
+                            .animateItem(fadeInSpec = Motion.settle(), placementSpec = Motion.settle(), fadeOutSpec = Motion.settle())
+                            .fillMaxWidth().then(target).padding(bottom = if (index == entries.lastIndex) 4.dp else 0.dp),
+                    ) {
                         // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
                         // Il segno del mese di oggi sta sopra "OGGI", non sotto.
                         // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
@@ -520,12 +525,7 @@ fun NotesScreen(
                             },
                             onMonth = openMonth,
                             showMonth = !monthAbove,
-                            onIcon = row.task?.let { task ->
-                                {
-                                    haptic(Haptic.CONFIRM)
-                                    NotesStore.toggleTask(task.id)
-                                }
-                            },
+                            onIcon = row.task?.let { task -> { NotesStore.toggleTask(task.id) } },
                         )
                         }
                     }

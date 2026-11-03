@@ -261,7 +261,7 @@ internal fun QueuePopup(open: Boolean, onClose: () -> Unit) {
                                     view.haptic(Haptic.SNAP)
                                     onClose()
                                 } else {
-                                    scope.launch { drag.animateTo(0f, Springs.bouncy()) }
+                                    scope.launch { drag.animateTo(0f, Motion.gesture()) }
                                 }
                             }
                             val onStart: (Offset) -> Unit = { tracker.resetTracking() }

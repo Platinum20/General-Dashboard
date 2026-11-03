@@ -39,6 +39,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -163,10 +165,44 @@ fun TimelineRow(
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
     }
+    // La riga appena cambiata (spuntata, salvata, spostata) si accende un attimo nel suo nuovo posto.
+    val flash = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(0f) }
+    val flashAt = RowFlash.marks[entry.key]
+    androidx.compose.runtime.LaunchedEffect(flashAt) {
+        if (flashAt == null || !RowFlash.fresh(entry.key)) return@LaunchedEffect
+        flash.snapTo(1f)
+        flash.animateTo(0f, androidx.compose.animation.core.tween(RowFlash.FADE_MS, delayMillis = RowFlash.HOLD_MS, easing = Motion.Standard))
+    }
+    // Spuntando, la riga resta dov'è un attimo già barrata: si vede cosa hai fatto prima che vada al suo posto.
+    var ticking by androidx.compose.runtime.remember(entry.key, entry.done) { androidx.compose.runtime.mutableStateOf(false) }
+    val pop = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(1f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val shownDone = entry.done != ticking
+    val tick: (() -> Unit)? = onIcon?.let { act ->
+        {
+            if (!ticking) {
+                ticking = true
+                haptic(Haptic.CONFIRM)
+                scope.launch {
+                    pop.animateTo(1.3f, androidx.compose.animation.core.tween(Motion.EXIT_MS / 2, easing = Motion.Decelerate))
+                    pop.animateTo(1f, Motion.lively())
+                }
+                RowFlash.later(entry.key, act)
+            }
+        }
+    }
+    val flashColor = MaterialTheme.colorScheme.primary
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            .drawBehind {
+                val f = flash.value
+                if (f > 0f) drawRoundRect(
+                    flashColor.copy(alpha = 0.14f * f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
+                )
+            }
             .bouncyPress(0.98f)
             .combinedClickable(
                 onClick = onClick,
@@ -178,10 +214,12 @@ fun TimelineRow(
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
         if (onIcon != null || entry.done) {
             Icon(
-                if (entry.done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (entry.done) "Da fare" else "Fatto",
-                tint = if (entry.done) MaterialTheme.colorScheme.primary else tint,
-                modifier = Modifier.size(20.dp).clip(CircleShape).then(if (onIcon != null) Modifier.clickable(onClick = onIcon) else Modifier),
+                if (shownDone) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = if (shownDone) "Da fare" else "Fatto",
+                tint = if (shownDone) MaterialTheme.colorScheme.primary else tint,
+                modifier = Modifier.size(20.dp)
+                    .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+                    .clip(CircleShape).then(if (tick != null) Modifier.clickable(onClick = tick) else Modifier),
             )
             Spacer(Modifier.width(8.dp))
         } else if (entry.image != null) {
@@ -200,8 +238,8 @@ fun TimelineRow(
         Text(
             entry.text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (entry.past || entry.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            textDecoration = if (entry.done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+            color = if (entry.past || shownDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (shownDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(vertical = 7.dp),
@@ -430,6 +468,45 @@ object PastBarrier {
         val total = pull + excess
         if (total >= threshold) return Step(0f, 0f, true, through = true)
         return Step(excess, total, false, bump = pull == 0f)
+    }
+}
+
+/**
+ * Le righe da accendere un attimo: quella appena spuntata, salvata o spostata. Chi cambia una cosa
+ * chiama [mark] con la chiave della sua riga; la riga, dove si trova adesso, si illumina e si spegne.
+ */
+object RowFlash {
+    /** Quanto resta accesa prima di spegnersi, e quanto dura lo spegnimento. */
+    const val HOLD_MS = 500
+    const val FADE_MS = 900
+
+    /** Quanto la riga spuntata resta al suo posto, barrata, prima di andare tra le cose fatte. */
+    const val TICK_MS = 650L
+
+    /** Una riga che compare entro questo tempo si accende ancora (per esempio scorrendo fino a lei). */
+    private const val FRESH_MS = 3_000L
+
+    val marks = androidx.compose.runtime.mutableStateMapOf<String, Long>()
+
+    // Fuori dalla composizione: se la riga sparisce dallo schermo intanto, la spunta arriva comunque.
+    private val scope by lazy { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate) }
+
+    fun mark(key: String, now: Long = android.os.SystemClock.uptimeMillis()) {
+        marks[key] = now
+    }
+
+    fun fresh(key: String, now: Long = android.os.SystemClock.uptimeMillis()): Boolean = isFresh(marks[key], now)
+
+    /** Logica pura: una riga segnata da poco. */
+    fun isFresh(markedAt: Long?, now: Long): Boolean = markedAt != null && now - markedAt in 0..FRESH_MS
+
+    /** Esegue [action] dopo [TICK_MS] e poi accende la riga nel suo nuovo posto. */
+    fun later(key: String, action: () -> Unit) {
+        scope.launch {
+            kotlinx.coroutines.delay(TICK_MS)
+            action()
+            mark(key)
+        }
     }
 }
 

@@ -257,12 +257,6 @@ fun TimelineCard(
     }
 }
 
-/** La spunta di una cosa da fare dentro una card: vibra e la segna fatta. */
+/** La spunta di una cosa da fare dentro una card: la segna fatta (la vibrazione la dà la riga, subito). */
 @Composable
-internal fun tickTask(id: Long): () -> Unit {
-    val haptic = rememberHaptic()
-    return {
-        haptic(Haptic.CONFIRM)
-        com.platinum20.dashboard.notes.NotesStore.toggleTask(id)
-    }
-}
+internal fun tickTask(id: Long): () -> Unit = { com.platinum20.dashboard.notes.NotesStore.toggleTask(id) }

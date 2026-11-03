@@ -1182,7 +1182,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 // La tastiera aperta per altro (cerca, modifica) nasconde la barra; se si scrive nella barra sale con lei.
                 visible = showBottomBar && (composing || !imeOpen),
                 enter = slideInVertically(pageSpring) { it } + fadeIn(),
-                exit = slideOutVertically(tween(160)) { it } + fadeOut(tween(160)),
+                exit = slideOutVertically(tween(Motion.EXIT_MS, easing = Motion.Accelerate)) { it } + fadeOut(tween(Motion.EXIT_MS)),
             ) {
                 CanvasNavBar(
                     currentRoute = Routes.barTab(currentRoute),

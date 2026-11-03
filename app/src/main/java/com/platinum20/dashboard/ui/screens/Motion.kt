@@ -79,8 +79,39 @@ object Motion {
             fadeOut(tween(EXIT_MS + 60, easing = Accelerate)) +
             scaleOut(tween(ENTER_MS, easing = Decelerate), targetScale = 0.98f)
 
-    /** Molla degli elementi che entrano in una pagina: si posano senza rimbalzare. */
+    /*
+     * Le tre molle di Canvas. Tutto quello che si muove usa una di queste (la pillola della barra
+     * resta com'era nella 1.140, a parte).
+     */
+
+    /** Posa: pagine, contenuti, righe che cambiano posto. Arriva e si ferma, senza rimbalzo. */
     fun <T> settle() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+
+    /** Viva: pressioni, comparse di fumetti e pallini. Un accenno di vita, mai un'oscillazione. */
+    fun <T> lively() = spring<T>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMedium)
+
+    /**
+     * Gesto: quello che il dito lascia andare (mini player, fumetti, player). Si usa con la velocità
+     * del lancio, così un lancio veloce esce veloce e uno lento esce piano.
+     */
+    fun <T> gesture() = spring<T>(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
+
+    /**
+     * Quanto dura l'uscita di una cosa lanciata col dito: lo spazio che manca diviso la velocità del
+     * lancio, così continua alla stessa andatura del dito. Fra 120 e 280 ms: mai di colpo, mai lenta.
+     */
+    fun flingMs(distancePx: Float, velocityPxPerSec: Float): Int {
+        val v = kotlin.math.abs(velocityPxPerSec)
+        if (v < 1f) return FLING_MAX_MS
+        return (kotlin.math.abs(distancePx) / v * 1000f).toInt().coerceIn(FLING_MIN_MS, FLING_MAX_MS)
+    }
+
+    /** L'uscita di un lancio: [flingMs] con una curva che parte alla velocità del dito e non frena. */
+    fun <T> fling(distancePx: Float, velocityPxPerSec: Float) =
+        tween<T>(flingMs(distancePx, velocityPxPerSec), easing = androidx.compose.animation.core.LinearOutSlowInEasing)
+
+    const val FLING_MIN_MS = 120
+    const val FLING_MAX_MS = 280
 }
 
 /**
