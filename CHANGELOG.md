@@ -4,6 +4,7 @@
 **Cambiare mese nelle spese è fluido**
 - Quando lasci il dito il mese prosegue alla velocità del tuo gesto, senza fermarsi né tornare indietro, e il nuovo mese entra con lo stesso slancio
 - Basta un colpo veloce anche corto per passare al mese prima o dopo, come quando sfogli le pagine
+
 ## 1.324.0
 **Documenti: fotografali dalla graffetta**
 - Fotografa carta d'identità, patente, tessera sanitaria, passaporto, libretto o assicurazione dalla graffetta: Canvas capisce da solo che è un documento e lo mette in Documenti
