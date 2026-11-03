@@ -579,3 +579,18 @@ private fun com.platinum20.dashboard.notes.Note.icon() = when {
     com.platinum20.dashboard.notes.Checklist.hasItems(text) -> Icons.Outlined.Checklist
     else -> NOTE_ICON
 }
+
+/** I filtri del calendario intero (Antonio): uno per le spese, uno per le note, uno per gli eventi. */
+internal enum class CalendarFilter(val label: String) { EXPENSES("Spese"), NOTES("Note"), EVENTS("Eventi") }
+
+/** A quale filtro appartiene una riga: le date da ricordare con gli eventi, pacchi e promemoria con le note. */
+internal fun DueRow.filter(): CalendarFilter = when {
+    spend != null || expense != null || charge != null || simRenewal -> CalendarFilter.EXPENSES
+    event != null || countdown != null -> CalendarFilter.EVENTS
+    else -> CalendarFilter.NOTES
+}
+
+/** Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. */
+internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
+    if (filter == null) this else mapNotNull { d -> d.rows.filter { it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
+

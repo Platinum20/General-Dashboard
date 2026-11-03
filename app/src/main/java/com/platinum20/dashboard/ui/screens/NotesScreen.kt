@@ -328,10 +328,12 @@ fun NotesScreen(
     // Sopra, scorrendo in su, il passato: cose fatte, spese, pacchi arrivati, eventi finiti.
     val past = pastDays(data.tasks, data.parcels, events, expenses = data.expenses, withToday = true)
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
-    var nowOffset by remember(section) { mutableStateOf<Int?>(null) }
+    // Il filtro acceso (Spese, Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
+    var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
+    var nowOffset by remember(section, filter) { mutableStateOf<Int?>(null) }
     // Quanto è alta la linea del tempo: sotto "OGGI" serve spazio perché oggi stia in cima allo schermo.
-    var timelineHeight by remember(section) { mutableStateOf(0) }
-    var startedAtNow by remember(section) { mutableStateOf(false) }
+    var timelineHeight by remember(section, filter) { mutableStateOf(0) }
+    var startedAtNow by remember(section, filter) { mutableStateOf(false) }
     // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
     var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
     val calendarAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -373,7 +375,7 @@ fun NotesScreen(
         val today = LocalDate.now()
         // Oggi c'è sempre (almeno la spesa di oggi): vuoto = solo quella riga e niente altro.
         val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
-        val groups = past + timeline
+        val groups = (past + timeline).only(filter)
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
 
@@ -442,7 +444,7 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding()).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -545,9 +547,26 @@ fun NotesScreen(
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
+        // I filtri stanno fermi sotto il titolo, fuori dalla lista: la pagina si apre su OGGI e restano a portata.
+        Row(
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CalendarFilter.entries.forEach { f ->
+                CanvasTabChip(
+                    selected = filter == f,
+                    onClick = { haptic(Haptic.TICK); filter = if (filter == f) null else f },
+                    label = f.label,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
         }
     }
 }
+
+/** Lo spazio sopra la lista per la riga dei filtri. */
+private val CHIPS_ROOM = 48.dp
 
 /** Un conto alla rovescia: compleanno, viaggio o scadenza, con i giorni che mancano. */
 @Composable
