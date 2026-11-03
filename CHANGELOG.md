@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.319.0
+**Calendario: la riga PIÙ AVANTI**
+- Dopo le cose di oggi c'è la riga PIÙ AVANTI, con sotto tutto quello che arriva fino alla fine del mese; i mesi dopo hanno il loro nome come prima
+- Vale sia nella card della Home sia nel calendario intero
+- Le cose spuntate non stanno più nella card della Home: le vedi solo nel calendario intero (tieni premuta la card)
+
 ## 1.318.0
 **Calendario: la spesa di oggi accanto a OGGI**
 - La spesa di oggi non è più una voce della lista: sta sulla riga OGGI, a destra, come il totale accanto al mese

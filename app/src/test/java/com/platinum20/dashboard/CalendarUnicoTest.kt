@@ -119,6 +119,18 @@ class CalendarUnicoTest {
         assertEquals(groups, groups.only(null))
     }
 
+    @Test fun piuAvantiSoloSullaPrimaCosaDopoOggiNelMese() {
+        val groups = calendario(tasks = listOf(
+            TaskItem(1, "Sabato", createdAt = 1, dueAt = ms(oggi.plusDays(4).atTime(9, 0))),
+            TaskItem(2, "Domenica", createdAt = 1, dueAt = ms(oggi.plusDays(5).atTime(9, 0))),
+            TaskItem(3, "Dicembre", createdAt = 1, dueAt = ms(LocalDate.of(2026, 12, 2).atTime(9, 0))),
+        ))
+        val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
+        assertEquals(listOf(false, true, false, false), entries.map { it.later })
+        assertTrue(entries[0].todayHeader)
+        assertEquals("DICEMBRE", entries[3].month)
+    }
+
     @Test fun senzaIlCalendarioUnicoTuttoComePrima() {
         val groups = dueDays(listOf(TaskItem(1, "Latte")), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone)
         assertTrue(groups.isEmpty())
