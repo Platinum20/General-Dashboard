@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.322.0
+**Condividi i dati letti: ora è un file**
+- "Condividi i dati letti di Revolut" (e quello di WindTre) manda un file .txt invece di un testo enorme: le app che lo ricevono non si chiudono più
+- Scegli Claude, Gmail o Drive e allega il file
+
 ## 1.320.0
 **Revolut dentro Canvas**
 - In Impostazioni › Account c'è Revolut: accedi una volta sola dalla pagina ufficiale e conferma nell'app Revolut
