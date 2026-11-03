@@ -89,6 +89,8 @@ object YtSync {
     private const val KEY_LIKES = "likes"
     private const val KEY_LIKE_PENDING = "like_pending"
     private const val KEY_UNLIKE_PENDING = "unlike_pending"
+    private const val KEY_DISLIKE_PENDING = "dislike_pending"
+    private const val KEY_UNDISLIKE_PENDING = "undislike_pending"
     private const val KEY_WATCHED = "watched"
     private const val KEY_AT = "at"
     private const val KEY_STATUS = "status"
@@ -211,10 +213,15 @@ object YtSync {
         val p = prefs(app)
         val likes = p.getStringSet(KEY_LIKE_PENDING, emptySet()).orEmpty()
         val unlikes = p.getStringSet(KEY_UNLIKE_PENDING, emptySet()).orEmpty()
-        p.edit()
+        val edit = p.edit()
             .putStringSet(KEY_LIKE_PENDING, if (liked) likes + video.id else likes - video.id)
             .putStringSet(KEY_UNLIKE_PENDING, if (liked) unlikes - video.id else unlikes + video.id)
-            .apply()
+        // Il Mi piace su YouTube sostituisce il Non mi piace: quello in attesa non va più mandato.
+        if (liked) {
+            edit.putStringSet(KEY_DISLIKE_PENDING, p.ids(KEY_DISLIKE_PENDING) - video.id)
+                .putStringSet(KEY_UNDISLIKE_PENDING, p.ids(KEY_UNDISLIKE_PENDING) - video.id)
+        }
+        edit.apply()
         if (!active()) return
         scope.launch {
             mutex.withLock {
@@ -223,6 +230,54 @@ object YtSync {
             YouTubeStore.refreshLiked(app, force = true)
         }
     }
+
+    /** Il Non mi piace del player: su YouTube toglie il Mi piace, quindi si scordano anche quelli in attesa. */
+    fun dislike(context: Context, id: String, disliked: Boolean) {
+        val app = context.applicationContext
+        val p = prefs(app)
+        val edit = p.edit()
+            .putStringSet(KEY_DISLIKE_PENDING, if (disliked) p.ids(KEY_DISLIKE_PENDING) + id else p.ids(KEY_DISLIKE_PENDING) - id)
+            .putStringSet(KEY_UNDISLIKE_PENDING, if (disliked) p.ids(KEY_UNDISLIKE_PENDING) - id else p.ids(KEY_UNDISLIKE_PENDING) + id)
+        if (disliked) {
+            edit.putStringSet(KEY_LIKE_PENDING, p.ids(KEY_LIKE_PENDING) - id)
+                .putStringSet(KEY_UNLIKE_PENDING, p.ids(KEY_UNLIKE_PENDING) - id)
+                .putStringSet(KEY_LIKES, p.ids(KEY_LIKES) - id)
+        }
+        edit.apply()
+        if (!active()) return
+        scope.launch {
+            mutex.withLock {
+                runCatching { YouTubeWeb.withAccount(app) { page -> pushLikes(p, page) } }
+            }
+            if (disliked) YouTubeStore.refreshLiked(app, force = true)
+        }
+    }
+
+    /**
+     * Iscrizione al canale dal player, subito su YouTube. False (e niente fatto) se non hai l'accesso;
+     * [done] dice se YouTube l'ha presa, poi si ricaricano canali e iscrizioni.
+     */
+    fun subscribe(context: Context, channelId: String, subscribe: Boolean, done: (Boolean) -> Unit): Boolean {
+        if (!active()) return false
+        val app = context.applicationContext
+        scope.launch {
+            val body = JSONObject().put("channelIds", JSONArray().put(channelId))
+            val endpoint = if (subscribe) "subscription/subscribe" else "subscription/unsubscribe"
+            val ok = mutex.withLock {
+                runCatching {
+                    YouTubeWeb.withAccount(app) { page -> page.run("__cvApi('$endpoint', $body).then(function() { return true; })") }
+                }.isSuccess
+            }
+            done(ok)
+            if (ok) {
+                YouTubeStore.refreshChannels(app, force = true)
+                YouTubeStore.refreshSubscriptions(app, force = true)
+            }
+        }
+        return true
+    }
+
+    private fun SharedPreferences.ids(key: String): Set<String> = getStringSet(key, emptySet()).orEmpty()
 
     /** Manda a YouTube i Mi piace messi o tolti in Canvas e non ancora arrivati. */
     private suspend fun pushLikes(p: SharedPreferences, page: YouTubeWeb.AccountPage) {
@@ -240,11 +295,25 @@ object YtSync {
             }
         }
         p.edit().putStringSet(KEY_LIKES, synced).apply()
+        // Per ultimi i Non mi piace: tolgono un eventuale Mi piace rimasto.
+        p.ids(KEY_DISLIKE_PENDING).forEach { id ->
+            runCatching { rate(page, id, "like/dislike") }.onSuccess {
+                p.edit().putStringSet(KEY_DISLIKE_PENDING, p.ids(KEY_DISLIKE_PENDING) - id).apply()
+            }
+        }
+        p.ids(KEY_UNDISLIKE_PENDING).forEach { id ->
+            runCatching { rate(page, id, "like/removelike") }.onSuccess {
+                p.edit().putStringSet(KEY_UNDISLIKE_PENDING, p.ids(KEY_UNDISLIKE_PENDING) - id).apply()
+            }
+        }
     }
 
-    private suspend fun rate(page: YouTubeWeb.AccountPage, id: String, like: Boolean) {
+    private suspend fun rate(page: YouTubeWeb.AccountPage, id: String, like: Boolean) =
+        rate(page, id, if (like) "like/like" else "like/removelike")
+
+    private suspend fun rate(page: YouTubeWeb.AccountPage, id: String, endpoint: String) {
         val body = JSONObject().put("target", JSONObject().put("videoId", id))
-        page.run("__cvApi('${if (like) "like/like" else "like/removelike"}', $body).then(function() { return true; })")
+        page.run("__cvApi('$endpoint', $body).then(function() { return true; })")
     }
 
     private suspend fun syncLikes(context: Context, p: SharedPreferences, page: YouTubeWeb.AccountPage) {

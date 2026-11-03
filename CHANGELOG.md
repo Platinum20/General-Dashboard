@@ -1,11 +1,18 @@
 # Changelog
 
-## 1.298.0
+## 1.300.0
 **Commenti YouTube: Mi piace e risposte**
 - Tocca il pollice di un commento per mettere o togliere Mi piace col tuo account YouTube
 - "Rispondi" sotto ogni commento apre il campo per scrivere; la risposta compare subito sotto
 - In cima ai commenti puoi scriverne uno nuovo sul video
 - Serve l'accesso a YouTube in Impostazioni › Account; se YouTube rifiuta, il pollice torna com'era e lo dice
+
+## 1.297.0
+**Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
+- La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
+- Aprendo Commenti o Correlati la descrizione sparisce, resta solo quello che hai scelto
+- Il tasto Non mi piace ora funziona come Mi piace: si accende e si spegne, e va anche sul tuo YouTube. Accanto c'è il numero stimato, senza più il pop-up
+- Nuovo tastino per iscriversi o disiscriversi dal canale, accanto a Mi piace e Non mi piace, sincronizzato con YouTube
 
 ## 1.296.0
 **La coda si apre sopra il player**

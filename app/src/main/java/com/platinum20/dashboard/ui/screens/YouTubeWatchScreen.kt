@@ -149,6 +149,10 @@ import com.platinum20.dashboard.media.youtube.SbSegment
 import com.platinum20.dashboard.media.youtube.SbType
 import com.platinum20.dashboard.media.youtube.SponsorBlock
 import com.platinum20.dashboard.media.youtube.YtVotes
+import com.platinum20.dashboard.media.youtube.YtRatings
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.HowToReg
+import androidx.compose.material.icons.outlined.PersonAdd
 import com.platinum20.dashboard.settings.AppSettings
 
 private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
@@ -298,7 +302,7 @@ fun YouTubeWatchScreen(
             // Toccato "Commenti" o "Correlati": la lista scorre fino a loro.
             LaunchedEffect(panel) {
                 if (panel != null && stream0 != null) {
-                    val index = 1 + (if (stream0.description.isNotBlank()) 1 else 0) + (if (stream0.chapters.size > 1) 1 else 0)
+                    val index = 1 + (if (stream0.chapters.size > 1) 1 else 0)
                     listState.animateScrollToItem(index)
                 }
             }
@@ -311,7 +315,8 @@ fun YouTubeWatchScreen(
                 val stream = now?.stream
                 item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }, onOpenChannel = onOpenChannel) }
                 if (stream != null) {
-                    if (stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
+                    // La descrizione solo quando sotto non c'è altro: con commenti o correlati aperti sparisce.
+                    if (panel == null && stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
                     if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (panel == WatchPanel.COMMENTS) {
                         if (thread != null && thread.loaded && !thread.disabled && !(thread.failed && thread.comments.isEmpty())) {
@@ -901,6 +906,14 @@ private fun TitleBlock(
         val haptic = rememberHaptic()
         // Canale a sinistra (un tocco apre tutti i suoi video), Mi piace e Non mi piace a destra sulla stessa riga.
         val channelId = YtResolver.channelId(stream.channelUrl)
+        YtRatings.init(context)
+        val dislikes by YtRatings.dislikes.collectAsState()
+        val disliked = stream.id in dislikes
+        val changedSubs by YtRatings.subscribed.collectAsState()
+        val channels by YouTubeStore.channels.collectAsState()
+        // Per sapere se sei già iscritto serve la lista dei canali (presa dalla cache se recente).
+        LaunchedEffect(Unit) { YouTubeStore.refreshChannels(context) }
+        val subscribed = channelId != null && YtRatings.isSubscribed(channelId, changedSubs, channels.data)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(
                 Modifier
@@ -943,16 +956,30 @@ private fun TitleBlock(
                     YtVideo(stream.id, stream.title, stream.channel, "", null, durationSec = stream.durationSec.toInt(), channelAvatar = stream.channelAvatar),
                 )
             }
-            votes?.takeIf { it.dislikes >= 0 }?.let { v ->
+            Spacer(Modifier.width(6.dp))
+            // Tasto vero come il Mi piace; accanto il numero stimato da Return YouTube Dislike, se acceso.
+            PillButton(
+                icon = if (disliked) Icons.Filled.ThumbDown else Icons.Outlined.ThumbDown,
+                label = votes?.dislikes?.takeIf { it >= 0 }?.let { compactCount(it) },
+                selected = disliked,
+                description = if (disliked) "Togli Non mi piace" else "Non mi piace",
+            ) {
+                haptic(if (disliked) Haptic.TICK else Haptic.CONFIRM)
+                YtRatings.toggleDislike(context, stream.id)
+            }
+            if (channelId != null) {
                 Spacer(Modifier.width(6.dp))
                 PillButton(
-                    icon = Icons.Outlined.ThumbDown,
-                    label = compactCount(v.dislikes),
-                    selected = false,
-                    description = "Non mi piace stimati",
+                    icon = if (subscribed) Icons.Filled.HowToReg else Icons.Outlined.PersonAdd,
+                    label = null,
+                    selected = subscribed,
+                    description = if (subscribed) "Disiscriviti da ${stream.channel}" else "Iscriviti a ${stream.channel}",
                 ) {
-                    val rating = v.ratio()?.let { " · piace al $it%" }.orEmpty()
-                    CaptureFeedback.tell(context, "Stima di Return YouTube Dislike$rating", Icons.Outlined.ThumbDown)
+                    haptic(if (subscribed) Haptic.TICK else Haptic.CONFIRM)
+                    val ok = YtRatings.toggleSubscribe(context, channelId, subscribed) {
+                        CaptureFeedback.tell(context, "YouTube non ha preso l'iscrizione, riprova")
+                    }
+                    if (!ok) CaptureFeedback.tell(context, "Accedi a YouTube in Impostazioni › Account")
                 }
             }
         }
@@ -1102,7 +1129,7 @@ private fun speedLabel(speed: Float): String =
     if (speed == 1f) "normale" else (if (speed % 1f == 0f) "${speed.toInt()}" else speed.toString().replace('.', ',')) + "×"
 
 /**
- * Descrizione senza riquadro: due righe, tocca per leggerla tutta. I link sono veri: un video di
+ * Descrizione in una card grande (sotto non c'è altro): molte righe, tocca per leggerla tutta. I link sono veri: un video di
  * YouTube parte qui, gli altri si copiano (niente browser esterno).
  */
 @Composable
@@ -1138,26 +1165,39 @@ private fun Description(stream: YtStream) {
             append(raw.substring(at))
         }
     }
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                indication = null,
-                onClickLabel = if (expanded) "Riduci la descrizione" else "Leggi tutta la descrizione",
-            ) { expanded = !expanded },
-    ) {
-        Text(
-            text,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = if (expanded) Int.MAX_VALUE else 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (!expanded) {
-            Text("altro", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+    var overflows by remember(stream.id) { mutableStateOf(false) }
+    CanvasCard(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClickLabel = if (expanded) "Riduci la descrizione" else "Leggi tutta la descrizione",
+                ) { expanded = !expanded }
+                .padding(16.dp),
+        ) {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = if (expanded) Int.MAX_VALUE else DESCRIPTION_LINES,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { if (!expanded) overflows = it.hasVisualOverflow },
+            )
+            if (!expanded && overflows) {
+                Text(
+                    "altro",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
         }
     }
 }
+
+/** Righe della descrizione chiusa: tante, lo spazio sotto il video è libero. */
+private const val DESCRIPTION_LINES = 14
 
 @Composable
 private fun Chapters(chapters: List<YtChapter>) {

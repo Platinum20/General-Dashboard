@@ -45,6 +45,7 @@ object YtFavorites {
         val liked = !isLiked(video.id)
         _items.value = toggled(_items.value, video).take(MAX)
         persist()
+        if (liked) YtRatings.clearDislike(context, video.id)
         YtSync.like(context, video, liked)
         return liked
     }
