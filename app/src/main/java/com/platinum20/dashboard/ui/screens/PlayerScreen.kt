@@ -66,7 +66,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -450,23 +449,25 @@ private fun TimeBar(now: Playing) {
     val position = livePosition(now)
     val accent = MaterialTheme.colorScheme.primary
     val rest = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)
-    Slider(
-        value = dragging ?: if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f,
+    // Un tocco non sposta il brano: si va avanti o indietro solo trascinando di lato.
+    val value = dragging ?: if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
+    SeekBar(
+        value = value,
         enabled = now.canSeek,
-        onValueChange = { dragging = it },
-        onValueChangeFinished = {
-            dragging?.let { Playback.seekTo((it * duration).toLong()) }
+        onSeeking = { dragging = it },
+        onSeekEnd = { commit ->
+            if (commit) dragging?.let { Playback.seekTo((it * duration).toLong()) }
             dragging = null
         },
         thumb = {
             SeekDot(if (now.canSeek) accent else rest, if (dragging != null) 16.dp else 12.dp)
         },
-        track = { state ->
+        track = {
             SeekTrack {
                 drawRoundRect(rest, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2))
                 drawRoundRect(
                     accent,
-                    size = androidx.compose.ui.geometry.Size(state.value.coerceIn(0f, 1f) * size.width, size.height),
+                    size = androidx.compose.ui.geometry.Size(value.coerceIn(0f, 1f) * size.width, size.height),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2),
                 )
             }

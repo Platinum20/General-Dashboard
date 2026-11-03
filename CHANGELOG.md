@@ -7,6 +7,13 @@
 - In cima ai commenti puoi scriverne uno nuovo sul video
 - Serve l'accesso a YouTube in Impostazioni › Account; se YouTube rifiuta, il pollice torna com'era e lo dice
 
+## 1.299.0
+**Barra del video: niente più salti per sbaglio**
+- Toccare la barra del tempo non sposta più il video: si va avanti o indietro solo trascinando il dito di lato
+- Un trascinamento verso l'alto o il basso sulla barra non la muove (resta allo schermo intero)
+- Doppio tocco ripetuto che si somma: +10, +20, +30… (anche toccando ancora una volta sullo stesso lato subito dopo)
+- Vale anche per la barra del player di musica, radio e podcast
+
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
 - La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
