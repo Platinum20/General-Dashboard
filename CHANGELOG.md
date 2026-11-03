@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.337.0
+**Spese: solo il mese che stai guardando**
+- Nel riepilogo del mese non c'è più il totale del mese prima: totale, categorie e lista sono solo di quel mese
+- Si apre sempre sul mese in corso; per vedere i mesi passati trascini il riepilogo verso destra
+
 ## 1.336.0
 **Revolut: la storia arriva fino in fondo**
 - Se una lettura si ferma a metà (per esempio chiudi l'app), la volta dopo riparte da dove era arrivata invece di ricominciare da capo, finché non arriva al primo movimento
