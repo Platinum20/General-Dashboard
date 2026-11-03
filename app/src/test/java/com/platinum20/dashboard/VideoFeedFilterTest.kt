@@ -31,6 +31,12 @@ class VideoFeedFilterTest {
         assertEquals(listOf("a", "l", "u"), pick.videos.map { it.id })
     }
 
+    @Test fun adsWithoutTitleAndChannelAreDropped() {
+        val ad = YtVideo("ad", "", "", "", null)
+        val pick = pickFeed(listOf(v("a"), ad), hideShorts = false, hideLive = false)
+        assertEquals(listOf("a"), pick.videos.map { it.id })
+    }
+
     @Test fun membersPlaylistFromChannel() {
         assertEquals("UUMOabc123", membersPlaylist("UCabc123"))
         assertEquals(null, membersPlaylist("xyz"))

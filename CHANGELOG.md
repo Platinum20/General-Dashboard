@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.301.0
+**Niente più pubblicità tra i video di YouTube**
+- Nella Home e nelle Iscrizioni di Video non compaiono più le pubblicità travestite da video (quelle senza titolo né canale)
+
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
 - La descrizione torna in una card, molto più grande: si vedono tante righe, tocca per leggerla tutta
