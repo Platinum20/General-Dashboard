@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.309.0
+**Card SIM: credito e rinnovo in fondo sulla stessa riga**
+- Il credito sta a sinistra e il rinnovo a destra, sotto giga, minuti e SMS
+
 ## 1.307.0
 **Card SIM: un dato per riga**
 - Giga, minuti, SMS, credito e rinnovo ognuno sulla sua riga, con la barra sotto quelli che si consumano

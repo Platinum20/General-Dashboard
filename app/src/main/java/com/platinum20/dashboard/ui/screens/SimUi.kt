@@ -184,8 +184,6 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
         s.minutes?.let { add(SimRow("Minuti", meterText(it, ""), it)) }
         s.sms?.let { add(SimRow("SMS", meterText(it, ""), it)) }
         if (big) s.roaming?.let { add(SimRow("Roaming UE", meterText(it, "GB"), it)) }
-        s.credit?.let { add(SimRow("Credito", euroLabel(it), null)) }
-        s.renewal?.let { add(SimRow("Rinnovo", it.format(WindTreParse.shortDate) + " · " + renewalLabel(it), null)) }
     }
     rows.forEach { r ->
         Spacer(Modifier.height(if (big) 14.dp else 10.dp))
@@ -201,6 +199,20 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
         r.meter?.let { a ->
             Spacer(Modifier.height(6.dp))
             SimBar(if (a.unlimited) 1f else a.fraction ?: 0f, barColor, track, height = if (big) 5.dp else 4.dp)
+        }
+    }
+    // In fondo, sulla stessa riga: credito a sinistra, rinnovo a destra (Antonio).
+    if (s.credit != null || s.renewal != null) {
+        Spacer(Modifier.height(if (big) 18.dp else 14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            s.credit?.let {
+                Text("Credito ", style = MaterialTheme.typography.bodyMedium, color = soft)
+                Text(euroLabel(it), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.weight(1f))
+            s.renewal?.let {
+                Text(renewalLine(it), style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1)
+            }
         }
     }
 }
