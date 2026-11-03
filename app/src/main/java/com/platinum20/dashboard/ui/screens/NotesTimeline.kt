@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.SimCard
 import androidx.compose.material.icons.outlined.Image
 import com.platinum20.dashboard.notes.NoteText
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,8 @@ internal data class DueRow(
     val parcel: Parcel? = null,
     val event: CalendarEvent? = null,
     val charge: FixedExpense? = null,
+    /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
+    val simRenewal: Boolean = false,
 )
 
 /** Un giorno della lista. [late] = "Scaduti" in cima; [day] null e non late = pacchi senza data, in fondo. */
@@ -110,6 +113,7 @@ internal fun dueDays(
     fixedExpenses: List<FixedExpense> = emptyList(),
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
+    simRenewal: LocalDate? = null,
 ): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
@@ -145,6 +149,7 @@ internal fun dueDays(
         val day = f.nextDate(today)
         dated += DueRow("charge-${f.id}", day, startOf(day), charge = f)
     }
+    simRenewal?.takeIf { !it.isBefore(today) }?.let { dated += DueRow("sim-renewal", it, startOf(it), simRenewal = true) }
     return buildList {
         if (late.isNotEmpty()) add(DueDay(null, true, late.sortedBy { it.at }))
         dated.groupBy { it.day!! }.toSortedMap().forEach { (day, rows) -> add(DueDay(day, false, rows.sortedBy { it.at })) }
@@ -327,6 +332,7 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
                 r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
                     "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }} ${Expenses.format(r.charge.cents)}"
+                r.simRenewal -> com.platinum20.dashboard.today.BriefKind.MONEY to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
             TimelineEntry(
@@ -339,6 +345,7 @@ internal fun timelineEntries(groups: List<DueDay>, today: LocalDate, zone: ZoneI
                 color = r.event?.color ?: 0,
                 late = g.late,
                 past = g.past,
+                icon = if (r.simRenewal) Icons.Outlined.SimCard else null,
             ) to r
         }
     }
