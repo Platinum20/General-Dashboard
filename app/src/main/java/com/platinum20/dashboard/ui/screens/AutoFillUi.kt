@@ -199,7 +199,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
             item {
                 Text(
                     "Canvas legge le notifiche che arrivano sul telefono e ci trova pacchi in arrivo (Amazon, Poste, BRT, GLS, DHL), " +
-                        "spese (Revolut, banche, Satispay, PayPal), scadenze, prenotazioni e rinnovi. Con Gmail collegato legge le mail intere. " +
+                        "spese (Revolut, banche, Satispay, PayPal), scadenze, prenotazioni e rinnovi. Con Gmail collegato (Impostazioni › Account) legge le mail intere. " +
                         "Le chat non vengono lette. Niente lascia il telefono.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -246,8 +246,6 @@ fun AutoFillScreen(onBack: () -> Unit) {
                     }
                 }
             }
-            item { SettingsHeader("Gmail") }
-            item { GmailSettingsGroup() }
             item { SettingsHeader("SMS") }
             item {
                 SettingsGroup {

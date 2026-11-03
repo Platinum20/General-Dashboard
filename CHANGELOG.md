@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.328.0
+**Gmail sta in Account**
+- Il collegamento a Gmail ora è in Impostazioni › Account, sotto "Posta", insieme a SIM e Conto
+- Da lì colleghi la password per app, fai "Leggi adesso" o scolleghi; tutto il resto funziona come prima
+
 ## 1.326.0
 **Cambiare mese nelle spese è fluido**
 - Quando lasci il dito il mese prosegue alla velocità del tuo gesto, senza fermarsi né tornare indietro, e il nuovo mese entra con lo stesso slancio
