@@ -1,10 +1,15 @@
 # Changelog
 
-## 1.332.0
+## 1.336.0
 **Revolut: la storia arriva fino in fondo**
 - Se una lettura si ferma a metà (per esempio chiudi l'app), la volta dopo riparte da dove era arrivata invece di ricominciare da capo, finché non arriva al primo movimento
 - La lettura in sottofondo aspetta più a lungo, così prende più mesi alla volta
 - I prelievi si chiamano "Prelievo · banca" e contano la commissione dello sportello
+
+## 1.335.0
+**SIM: il nome giusto dell'offerta**
+- La card SIM mostra il nome della tua offerta (GO 200 XXS) invece di "WindTre"
+- Controllati sui tuoi dati veri: giga (141 su 200), minuti illimitati, 50 SMS, roaming UE, credito e rinnovo erano già letti giusti
 
 ## 1.331.0
 **Revolut: tutta la storia, con le sue categorie**
