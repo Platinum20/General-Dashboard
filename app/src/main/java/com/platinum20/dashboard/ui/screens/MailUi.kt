@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.LinkOff
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Refresh
@@ -23,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +44,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,6 +54,8 @@ import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.autofill.AutoFillRules
 import com.platinum20.dashboard.autofill.SuggestionState
 import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.GmailImap
+import com.platinum20.dashboard.mail.GmailPasswordException
 import com.platinum20.dashboard.mail.MailMessage
 import com.platinum20.dashboard.mail.MailStore
 import com.platinum20.dashboard.net.userMessage
@@ -98,14 +107,27 @@ private fun rememberGmailConnect(onConnected: () -> Unit): GmailConnect {
 fun FromMailCard(onOpenMail: (String) -> Unit) {
     val context = LocalContext.current
     MailStore.init(context)
-    val gmail by GmailAuth.connected.collectAsStateWithLifecycle()
+    val oauth by GmailAuth.connected.collectAsStateWithLifecycle()
+    val imap by GmailImap.linked.collectAsStateWithLifecycle()
+    val rejected by GmailImap.rejected.collectAsStateWithLifecycle()
+    val gmail = oauth || imap
     val mails by MailStore.important.collectAsStateWithLifecycle()
     val needsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
+    var askPassword by remember { mutableStateOf(false) }
     val haptic = rememberHaptic()
     val scope = rememberCoroutineScope()
     val connect = rememberGmailConnect(onConnected = { scope.launch { runCatching { MailStore.sync(context) } } })
     val mail = if (gmail) mails else emptyList()
-    val consent = gmail && needsConsent
+    val consent = if (imap) rejected else oauth && needsConsent
+    if (askPassword) {
+        GmailPasswordDialog(
+            onDismiss = { askPassword = false },
+            onLinked = {
+                askPassword = false
+                scope.launch { runCatching { MailStore.sync(context) } }
+            },
+        )
+    }
     if (mail.isEmpty() && !consent) return
 
     Section(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
@@ -118,13 +140,16 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                     Icon(Icons.Outlined.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        connect.problem ?: "Google chiede di ricollegare Gmail",
+                        if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail",
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(enabled = !connect.busy, onClick = { haptic(Haptic.TICK); connect.start() }) { Text("Ricollega") }
+                    TextButton(enabled = !connect.busy, onClick = {
+                        haptic(Haptic.TICK)
+                        if (imap) askPassword = true else connect.start()
+                    }) { Text("Ricollega") }
                 }
             }
             mail.forEachIndexed { index, m ->
@@ -160,17 +185,107 @@ private fun MailRow(m: MailMessage, onClick: () -> Unit) {
     }
 }
 
-/** Impostazioni > Compila da solo > Gmail: collega, leggi adesso, scollega. */
+/**
+ * Collegamento con la password per app di Google: indirizzo e password, si prova subito l'accesso.
+ * Non scade come l'accesso Google con l'app "in prova".
+ */
+@Composable
+internal fun GmailPasswordDialog(onDismiss: () -> Unit, onLinked: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val haptic = rememberHaptic()
+    var address by remember { mutableStateOf(GmailImap.address.value) }
+    var password by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var problem by remember { mutableStateOf<String?>(null) }
+    val ready = '@' in address && password.replace(" ", "").length >= 16 && !busy
+
+    fun link() {
+        busy = true
+        problem = null
+        scope.launch {
+            runCatching { GmailImap.link(context, address, password) }.fold(
+                onSuccess = {
+                    haptic(Haptic.CONFIRM)
+                    // Una strada sola: l'accesso Google, se c'era, non serve più.
+                    if (GmailAuth.connected.value) GmailAuth.disconnect(context)
+                    onLinked()
+                },
+                onFailure = {
+                    problem = if (it is GmailPasswordException) "Gmail non accetta indirizzo e password: controllali"
+                    else it.userMessage("Gmail non risponde, riprova")
+                },
+            )
+            busy = false
+        }
+    }
+
+    CanvasDialog(
+        onDismissRequest = { if (!busy) onDismiss() },
+        title = { Text("Password per app di Google") },
+        text = {
+            Column {
+                Text(
+                    "Account Google › Sicurezza › Password per le app (serve la verifica in due passaggi). " +
+                        "Sola lettura: Canvas non segna, non sposta e non invia niente.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("Indirizzo Gmail") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    colors = canvasFieldColors(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(address.isEmpty()),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Password per app (16 lettere)") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { if (ready) link() }),
+                    colors = canvasFieldColors(),
+                    modifier = Modifier.fillMaxWidth().autoFocus(address.isNotEmpty()),
+                )
+                problem?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = ready, onClick = { link() }) { Text(if (busy) "Provo…" else "Collega") }
+        },
+        dismissButton = {
+            TextButton(enabled = !busy, onClick = onDismiss) { Text("Annulla") }
+        },
+    )
+}
+
+/** Impostazioni > Compila da solo > Gmail: collega con la password per app, leggi adesso, scollega. */
 @Composable
 internal fun GmailSettingsGroup() {
     val context = LocalContext.current
     MailStore.init(context)
-    val connected by GmailAuth.connected.collectAsStateWithLifecycle()
+    val oauth by GmailAuth.connected.collectAsStateWithLifecycle()
     val needsConsent by GmailAuth.needsConsent.collectAsStateWithLifecycle()
+    val imap by GmailImap.linked.collectAsStateWithLifecycle()
+    val rejected by GmailImap.rejected.collectAsStateWithLifecycle()
+    val address by GmailImap.address.collectAsStateWithLifecycle()
     val lastSync by MailStore.lastSync.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     var syncing by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
+    var askPassword by remember { mutableStateOf(false) }
+    val connected = imap || oauth
+    // Con la password per app l'accesso Google non conta più.
+    val broken = if (imap) rejected else needsConsent
 
     fun syncNow() {
         syncing = true
@@ -179,10 +294,11 @@ internal fun GmailSettingsGroup() {
             result = runCatching { MailStore.sync(context) }.fold(
                 onSuccess = { n ->
                     when {
-                        GmailAuth.needsConsent.value -> "Google chiede di ricollegare Gmail"
+                        imap && GmailImap.rejected.value -> "Gmail non accetta più la password"
+                        !imap && GmailAuth.needsConsent.value -> "Google chiede di ricollegare Gmail"
                         n == 0 -> "Niente di nuovo nelle mail"
-                        n == 1 -> "Trovata 1 cosa: la vedi in Oggi"
-                        else -> "Trovate $n cose: le vedi in Oggi"
+                        n == 1 -> "Trovata 1 cosa: la vedi nel calendario"
+                        else -> "Trovate $n cose: le vedi nel calendario"
                     }
                 },
                 onFailure = { it.userMessage("Gmail non risponde, riprova") },
@@ -194,34 +310,58 @@ internal fun GmailSettingsGroup() {
         MailWorker.schedule(context)
         syncNow()
     })
+    if (askPassword) {
+        GmailPasswordDialog(
+            onDismiss = { askPassword = false },
+            onLinked = {
+                askPassword = false
+                MailWorker.schedule(context)
+                syncNow()
+            },
+        )
+    }
+    fun fix() {
+        if (imap || !oauth) askPassword = true else connect.start()
+    }
 
     SettingsGroup {
         SettingsItem(
             icon = Icons.Outlined.Mail,
             title = if (connected) "Gmail collegato" else "Collega Gmail",
             subtitle = connect.problem ?: when {
-                !connected -> "Legge le mail intere, non solo l'anteprima della notifica"
-                needsConsent -> "Google chiede di ricollegarlo"
+                !connected -> "Con la password per app: legge le mail intere"
+                imap && rejected -> "Gmail non accetta più la password: inseriscila di nuovo"
+                !imap && needsConsent -> "Google chiede di ricollegarlo"
                 syncing -> "Leggo le mail…"
                 result != null -> result
                 lastSync > 0 -> "Letta " + relativeTime(Instant.ofEpochMilli(lastSync)) + " · ogni ora e a ogni mail"
+                imap -> address
                 else -> "Sola lettura · niente lascia il telefono"
             },
-            onClick = { if (!connected || needsConsent) connect.start() else if (!syncing) syncNow() },
+            onClick = { if (!connected || broken) fix() else if (!syncing) syncNow() },
             trailing = {
-                if (!connected || needsConsent) {
-                    FilledTonalButton(enabled = !connect.busy, onClick = { connect.start() }) {
+                if (!connected || broken) {
+                    FilledTonalButton(enabled = !connect.busy, onClick = { fix() }) {
                         Text(if (connected) "Ricollega" else "Collega")
                     }
                 }
             },
         )
-        if (connected && !needsConsent) {
+        if (oauth && !imap) {
+            RowDivider()
+            SettingsItem(
+                icon = Icons.Outlined.Key,
+                title = "Usa la password per app",
+                subtitle = "Così Google non chiede più di ricollegare ogni settimana",
+                onClick = { askPassword = true },
+            )
+        }
+        if (connected && !broken) {
             RowDivider()
             SettingsItem(
                 icon = Icons.Outlined.Refresh,
                 title = "Leggi adesso",
-                subtitle = "Pacchi, spese, scadenze, prenotazioni e rinnovi dalle mail nuove",
+                subtitle = "Spese, pacchi, scadenze, prenotazioni e rinnovi dalle mail nuove",
                 onClick = { if (!syncing) syncNow() },
             )
         }
@@ -234,7 +374,8 @@ internal fun GmailSettingsGroup() {
                 onClick = {
                     scope.launch {
                         MailWorker.cancel(context)
-                        GmailAuth.disconnect(context)
+                        GmailImap.unlink(context)
+                        if (GmailAuth.connected.value) GmailAuth.disconnect(context)
                         MailStore.forget()
                         result = null
                     }

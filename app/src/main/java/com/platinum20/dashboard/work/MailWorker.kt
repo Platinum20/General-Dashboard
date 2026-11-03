@@ -10,16 +10,15 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.platinum20.dashboard.mail.GmailAuth
 import com.platinum20.dashboard.mail.MailStore
 import java.util.concurrent.TimeUnit
 
-/** Legge le mail nuove di Gmail ogni ora, e subito quando arriva una notifica di Gmail. */
+/** Legge le mail nuove di Gmail (password per app o accesso Google) ogni ora, e subito quando arriva una notifica di Gmail. */
 class MailWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        GmailAuth.init(applicationContext)
-        if (!GmailAuth.connected.value) return Result.success()
+        MailStore.init(applicationContext)
+        if (!MailStore.connected()) return Result.success()
         val result = runCatching { MailStore.sync(applicationContext) }
         return if (result.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }

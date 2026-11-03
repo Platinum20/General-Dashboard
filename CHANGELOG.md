@@ -1,9 +1,24 @@
 # Changelog
 
-## 1.323.0
+## 1.326.0
 **Cambiare mese nelle spese è fluido**
 - Quando lasci il dito il mese prosegue alla velocità del tuo gesto, senza fermarsi né tornare indietro, e il nuovo mese entra con lo stesso slancio
 - Basta un colpo veloce anche corto per passare al mese prima o dopo, come quando sfogli le pagine
+## 1.324.0
+**Documenti: fotografali dalla graffetta**
+- Fotografa carta d'identità, patente, tessera sanitaria, passaporto, libretto o assicurazione dalla graffetta: Canvas capisce da solo che è un documento e lo mette in Documenti
+- Subito dopo fotografa il retro: si aggiunge da solo allo stesso documento
+- Legge numero e scadenza, e la scadenza va nel calendario come "Scade: Patente"
+- In Home c'è la card Documenti: tocca un documento per vedere fronte e retro (tocca la foto per vederla a tutto schermo), correggere numero o scadenza, rifare il retro
+- "Condividi PDF" crea un PDF con fronte e retro su un foglio, come una fotocopia
+- Tutto resta solo sul telefono
+
+## 1.323.0
+**Spese e scadenze dalle mail, senza ricollegare ogni settimana**
+- In Impostazioni › Compila da solo › Gmail ora colleghi la posta con una password per app di Google: si inserisce una volta e non scade
+- Canvas legge da solo le mail nuove ogni ora e a ogni notifica di Gmail: ricevute e bollette finiscono nelle spese del calendario, i tracking nei pacchi, prenotazioni e scadenze nel calendario
+- Una ricevuta via mail di una spesa già letta da Revolut non si raddoppia, anche se arriva il giorno dopo
+- Solo lettura: Canvas non segna le mail come lette, non le sposta e non invia niente. La password resta cifrata sul telefono
 
 ## 1.320.0
 **Revolut dentro Canvas**
