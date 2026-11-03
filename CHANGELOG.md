@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.331.0
+**Revolut: tutta la storia, con le sue categorie**
+- Le spese Revolut arrivano tutte, non solo dal mese scorso: alla prossima lettura Canvas va indietro fino al primo movimento (una volta sola, poi legge solo i nuovi)
+- Ogni spesa prende la categoria che ha in Revolut (anche se l'hai cambiata lì): Ristoranti = Fuori, Spesa alimentare = Spesa, Bollette, Trasporti, Salute, Acquisti, Viaggi e Svago = Svago
+- Le spese già prese dalle notifiche o rimaste "Altro" ricevono la categoria di Revolut; quelle che hai cambiato a mano restano come le hai messe
+
 ## 1.330.0
 **Revolut letto giusto**
 - Il saldo è sempre quello del conto principale, come in alto nell'app Revolut: prima a volte mostrava i soldi del salvadanaio "Risparmi"

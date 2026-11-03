@@ -7,7 +7,8 @@ import kotlin.math.abs
 /**
  * Le spese lette dal conto (Revolut) dentro il calendario. Il conto ha l'ultima parola sull'importo
  * e sul giorno; nome e categoria cambiati a mano restano. Una spesa già presa da una notifica
- * (stesso importo, stesso giorno o quello accanto) diventa quella del conto invece di raddoppiare.
+ * (stesso importo, stesso giorno o quello accanto) diventa quella del conto invece di raddoppiare,
+ * e prende la categoria di Revolut; anche una spesa del conto rimasta "Altro" la prende appena c'è.
  */
 object BankSync {
     fun apply(data: NotesData, txs: List<BankTx>, since: LocalDate, firstId: Long): NotesData {
@@ -17,8 +18,11 @@ object BankSync {
             val existing = expenses.firstOrNull { it.bankId == tx.id }
             when {
                 !tx.counts -> if (existing != null) expenses = expenses.filter { it !== existing }
-                existing != null -> if (existing.cents != tx.cents || existing.date != tx.date) {
-                    expenses = expenses.map { if (it === existing) it.copy(cents = tx.cents, date = tx.date) else it }
+                existing != null -> {
+                    val category = if (existing.category == ExpenseCategory.OTHER) tx.category else existing.category
+                    if (existing.cents != tx.cents || existing.date != tx.date || existing.category != category) {
+                        expenses = expenses.map { if (it === existing) it.copy(cents = tx.cents, date = tx.date, category = category) else it }
+                    }
                 }
                 tx.id in data.bankIgnored -> Unit
                 else -> {
@@ -26,7 +30,7 @@ object BankSync {
                         it.bankId == null && it.fixedId == null && it.cents == tx.cents && abs(it.date.toEpochDay() - tx.date.toEpochDay()) <= 1
                     }
                     expenses = if (twin != null) {
-                        expenses.map { if (it === twin) it.copy(bankId = tx.id, date = tx.date) else it }
+                        expenses.map { if (it === twin) it.copy(bankId = tx.id, date = tx.date, category = if (tx.category != ExpenseCategory.OTHER) tx.category else it.category) else it }
                     } else {
                         listOf(Expense(nextId++, tx.cents, tx.text, tx.category, tx.date, bankId = tx.id)) + expenses
                     }

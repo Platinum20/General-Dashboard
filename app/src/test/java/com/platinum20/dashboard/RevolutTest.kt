@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.bank.BankTx
 import com.platinum20.dashboard.bank.RevolutParse
+import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.notes.BankSync
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
@@ -123,6 +124,35 @@ class RevolutTest {
         assertTrue(third.expenses.none { it.bankId == "2" })
         // Rilette uguali: nessun cambiamento.
         assertTrue(BankSync.apply(third, listOf(BankTx("1", 1250, "Lidl", ExpenseCategory.FOOD, nov3)), since, 400) === third)
+    }
+
+    @Test
+    fun revolutCategoriesMapOnOurs() {
+        assertEquals(ExpenseCategory.FOOD, RevolutParse.revolutCategory("groceries"))
+        assertEquals(ExpenseCategory.BILLS, RevolutParse.revolutCategory("Utilities"))
+        assertEquals(ExpenseCategory.FUN, RevolutParse.revolutCategory("travel"))
+        assertNull(RevolutParse.revolutCategory("services"))
+        assertNull(RevolutParse.revolutCategory("transfers"))
+        // La categoria scelta nell'app Revolut vince sul tag e sull'esercente.
+        val body = "[" + tx("1", -900, extra = ""","category":"health","tag":"shopping","merchant":{"name":"Negozio","category":"shopping"}""") + "]"
+        assertEquals(ExpenseCategory.HEALTH, RevolutParse.read(body, zone)!!.txs.single().category)
+    }
+
+    @Test
+    fun bankCategoryFillsOtherButKeepsManualChoice() {
+        val data = NotesData(expenses = listOf(
+            Expense(1, 500, "Bar", ExpenseCategory.OTHER, nov3, bankId = "a"),
+            Expense(2, 700, "Regalo", ExpenseCategory.FUN, nov3, bankId = "b"),
+        ))
+        val after = BankSync.apply(data, listOf(
+            BankTx("a", 500, "Bar", ExpenseCategory.EATING_OUT, nov3),
+            BankTx("b", 700, "Regalo", ExpenseCategory.SHOPPING, nov3),
+            // Vecchia di anni: ora entra anche lei, la storia è completa.
+            BankTx("c", 1200, "Libri", ExpenseCategory.SHOPPING, LocalDate.of(2023, 5, 2)),
+        ), RevolutStore.SINCE, 10)
+        assertEquals(ExpenseCategory.EATING_OUT, after.expenses.first { it.bankId == "a" }.category)
+        assertEquals(ExpenseCategory.FUN, after.expenses.first { it.bankId == "b" }.category)
+        assertTrue(after.expenses.any { it.bankId == "c" })
     }
 
     @Test
