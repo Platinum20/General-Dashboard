@@ -2,6 +2,7 @@ package com.platinum20.dashboard.bank
 
 import android.content.Context
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.work.RevolutWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,8 +20,11 @@ object RevolutStore {
     private const val PREFS = "revolut"
     private const val CAPTURES = "revolut-captures.json"
     private const val MAX_CAPTURES = 30
-    /** Revolut stesso aggiorna i movimenti in pochi secondi, ma ogni lettura apre una pagina nascosta. */
-    const val STALE_MS = 30 * 60 * 1000L
+    /**
+     * Ogni lettura apre una pagina nascosta; sotto i 15 minuti del lavoro in sottofondo, così
+     * ogni giro tocca davvero la sessione e Revolut non la chiude per inattività.
+     */
+    const val STALE_MS = 14 * 60 * 1000L
 
     private var appContext: Context? = null
     private val _linked = MutableStateFlow(false)
@@ -154,7 +158,10 @@ object RevolutStore {
 
     fun setLinked(value: Boolean) {
         _linked.value = value
-        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean("linked", value)?.apply()
+        appContext?.let { app ->
+            app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("linked", value).apply()
+            if (value) RevolutWorker.schedule(app) else RevolutWorker.cancel(app)
+        }
     }
 
     fun setExpired(value: Boolean) {
@@ -175,6 +182,7 @@ object RevolutStore {
     /** Scollega: via saldo e risposte salvate. Le spese già nel calendario restano (sono sue). */
     fun unlink() {
         _linked.value = false
+        appContext?.let { RevolutWorker.cancel(it) }
         _balance.value = null
         rawPockets = emptyList(); pocketNames = emptyMap(); _pockets.value = emptyList()
         _readAt.value = 0

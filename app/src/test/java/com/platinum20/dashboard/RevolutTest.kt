@@ -178,6 +178,12 @@ class RevolutTest {
         assertTrue(RevolutSession.missing(saved, saved).isEmpty())
     }
 
+    /** Il lavoro in sottofondo gira ogni 15 minuti: con una soglia più lunga salterebbe dei giri e la sessione scadrebbe. */
+    @Test
+    fun keepAliveTouchesTheSessionEveryRound() {
+        assertTrue(RevolutStore.STALE_MS < 15 * 60 * 1000L)
+    }
+
     @Test
     fun deletedBankExpenseStaysDeleted() {
         val data = NotesData(bankIgnored = setOf("9"))
