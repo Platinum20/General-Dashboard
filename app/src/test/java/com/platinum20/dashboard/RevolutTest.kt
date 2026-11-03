@@ -8,6 +8,7 @@ import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.ui.screens.revolutLine
+import com.platinum20.dashboard.ui.screens.stampedName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -102,5 +103,10 @@ class RevolutTest {
         assertNull(revolutLine(linked = false, expired = false, balance = 100))
         assertTrue(revolutLine(true, false, 123456)!!.startsWith("Saldo Revolut"))
         assertTrue(revolutLine(true, true, 123456)!!.contains("rifai l'accesso"))
+    }
+
+    @Test
+    fun savedFileNameCarriesTime() {
+        assertEquals("revolut-dati-letti-20261103-1025.txt", stampedName("revolut-dati-letti", java.time.LocalDateTime.of(2026, 11, 3, 10, 25)))
     }
 }
