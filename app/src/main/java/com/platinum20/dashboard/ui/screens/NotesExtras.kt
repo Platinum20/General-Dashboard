@@ -278,7 +278,8 @@ fun ExpensesTab(
                     // "OGGI" solo nel mese di oggi: prima delle spese di oggi, o in fondo.
                     val nowAt = if (month == YearMonth.now()) nowIndex(entries.map { it.first }) else -1
                     val nowMarker = Modifier.padding(start = 16.dp)
-                    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    // Le spese del mese si spostano insieme al riepilogo (Antonio): cambiando mese cambia tutta la pagina.
+                    Column(Modifier.fillMaxWidth().graphicsLayer { translationX = nudge.value }.padding(top = 8.dp)) {
                         entries.forEachIndexed { index, (entry, expense) ->
                             if (index == nowAt && index > 0) TimelineNowMarker(nowMarker)
                             TimelineRow(
@@ -304,7 +305,7 @@ fun ExpensesTab(
             if (inMonth.isEmpty()) {
                 item(key = "empty") {
                     // Mese senza spese: "Nessuna spesa" al centro dello spazio che resta (Antonio).
-                    Box(Modifier.fillParentMaxHeight(0.6f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillParentMaxHeight(0.6f).fillMaxWidth().graphicsLayer { translationX = nudge.value }, contentAlignment = Alignment.Center) {
                         Text(
                             "Nessuna spesa",
                             style = MaterialTheme.typography.bodyMedium,
