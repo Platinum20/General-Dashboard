@@ -161,7 +161,7 @@ fun SearchScreen(
             ),
             onClose = onBack,
             onOpenNote = onOpenNote,
-            onOpenExpenses = { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.EXPENSES) },
+            onOpenExpenses = { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.expenses()) },
             onOpenParcels = { onOpenNotes() },
             placeholder = "Cerca…",
             showNotes = shows(SearchFilter.NOTES),

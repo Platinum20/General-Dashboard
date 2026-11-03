@@ -14,7 +14,8 @@ create something it lists, so the next thread doesn't have to explore.
 **App shell**
 - `MainActivity.kt`: NavHost with all routes (`object Routes`), `CanvasNavBar` (floating
   `NavPill` + round "+"), predictive back, `OpenRequest` deep links (widget, notifications),
-  PullToSearch wrapper, mini player overlay. Bar order: Home, Note, News, Media.
+  PullToSearch wrapper, mini player overlay. Bar order: Home, News, Media (Note tab removed in 1.314:
+  the calendar route `Routes.NOTES` is pushed over Home via `NavController.openCalendar()`, `barTab` → HOME).
 - `settings/AppSettings.kt`: every preference (StateFlow singleton), `HomeCard` order/hidden, theme.
 - `ui/theme/Theme.kt`: themes CANVAS (default) and PURO (follows system: white mono / AMOLED),
   compact typography, Inter fonts in `res/font`.
@@ -38,9 +39,16 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`NextThingsCard` "Prossimi giorni", `MoneyCard` "Spese" = timeline of the last 5 expenses, `NotesCard` (HomeCard.NOTES), all via the shared `TimelineCard` (whole card clickable, also used by the Note overview)),
+**Calendario unico (1.314, Antonio)**: Note and Spese are no longer pages/cards; ONE calendar holds everything.
+Home card `CalendarCard` (HomeCard.DAY "Calendario", HomeCards.kt, via shared `TimelineCard`) = current month marker with
+month spend, then ALL of today, then `Upcoming.MAX` next rows; full page = `NotesScreen` (route `notes`, title "Calendario").
+Both use `dueDays(withToday = true, notes, expenses)` (today group always first: "Spesa di oggi" row (`DueRow.spend`, 0 too),
+today's expenses, overdue items (`overdueFrom`), today's items, undated tasks, notes pinned-first) + `pastDays(expenses=)` +
+`timelineEntries(months = true, expenses)` (every month marker gets `monthSpend`/`monthOf`; tap → `Routes.expenses(month)` =
+ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Adesso keeps only RAIN/WEATHER/HABIT lines.
+**Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`CalendarCard`, `TimelineCard`),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
-`home/expenses`, Spese moved here from Note in 1.186; same screen on `Routes.NOTES_EXPENSES` = `notes/expenses` from the Note card, nav bar on Note). Logic in `today/`: `Briefing.kt`
+`home/expenses?month=`, `Routes.expenses(YearMonth?)`: month overview opened from a calendar month marker). Logic in `today/`: `Briefing.kt`
 (pure: the "Adesso" lines, also used by widget + morning notification; the Home card uses `withTomorrow=false, wholeDay=true`
 = every event/task of today, no budget line), `Upcoming.kt` (HomeCard.DAY "Prossimi giorni" card: next 8 items within 400 days (`Upcoming.DAYS`, also Notes' `EVENT_DAYS`) of
 events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp` = log-scaled gap, `Upcoming.monthBreak` → `TimelineEntry.month` = `TimelineMonthMarker` 'NOVEMBRE' with haptic via `MonthCross`; Timeline.kt also has `ExpenseCategory.icon()/color()`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
@@ -50,9 +58,7 @@ events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared
 
 **Note**: data in `notes/NotesStore.kt` (one JSON file: tasks, notes, countdowns, habits,
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
-`NotesScreen.kt` (overview of 2 cards: DATED "Prossimi giorni" = everything with a day incl. calendar
-events 60d (the Calendario page was folded in here in 1.187), UNDATED "Note"; `NotesNav.open(section)` opens one from
-elsewhere), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt (all timelines: past on top, open on OGGI at the top of the screen with room below, `nowIndex` for Note/Spese); pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
+`NotesScreen.kt` (= the Calendario page since 1.314, see above; no overview/sections any more), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt (all timelines: past on top, open on OGGI at the top of the screen with room below, `nowIndex` for Note/Spese); pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic; `expenseEntries` = Spese month list, drawn in `ExpensesTab` (NotesExtras.kt)),
 `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
 Detail pages: `DetailPage.kt` = THE full-screen detail scaffold (back, Modifica, Elimina, `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.

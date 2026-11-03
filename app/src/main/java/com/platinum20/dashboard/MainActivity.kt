@@ -225,8 +225,6 @@ import com.platinum20.dashboard.ui.screens.MailScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
 import com.platinum20.dashboard.ui.screens.ExpensesScreen
 import com.platinum20.dashboard.ui.screens.SimScreen
-import com.platinum20.dashboard.ui.screens.NotesNav
-import com.platinum20.dashboard.ui.screens.NotesSection
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
 import com.platinum20.dashboard.widget.DashboardWidget
@@ -373,15 +371,16 @@ object Routes {
     const val WEATHER_PLACE = "home/weather/place"
     const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
-    const val EXPENSES = "home/expenses"
+    /** Il riepilogo delle spese di un mese (dal segno del mese nel calendario); senza mese, quello di adesso. */
+    const val EXPENSES = "home/expenses?month={month}"
+    fun expenses(month: java.time.YearMonth? = null) = "home/expenses" + (month?.let { "?month=$it" } ?: "")
     const val SIM = "home/sim"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
-    const val NOTES_EXPENSES = "notes/expenses"
 
     /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
     fun barTab(route: String?): String? = when (route) {
-        EXPENSES -> HOME
-        NOTES_EXPENSES -> NOTES
+        // Il calendario (rotta "notes") e le spese si aprono dalla Home: lì resta accesa la sua scheda.
+        EXPENSES, NOTES -> HOME
         else -> route
     }
     const val SEARCH = "home/search"
@@ -451,7 +450,6 @@ private data class TopDestination(
 
 private val topDestinations = listOf(
     TopDestination(Routes.HOME, "Home", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
-    TopDestination(Routes.NOTES, "Note", Icons.Filled.EditNote, Icons.Outlined.EditNote),
     TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
     TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
 )
@@ -545,7 +543,7 @@ private fun CanvasNavBar(
                             NavPill(
                                 dest = dest,
                                 selected = currentRoute == dest.route,
-                                badge = if (dest.route == Routes.NOTES) dueToday else 0,
+                                badge = if (dest.route == Routes.HOME) dueToday else 0,
                                 onClick = { haptic(Haptic.TICK); onSelect(dest) },
                             )
                         }
@@ -883,7 +881,6 @@ private const val PRESS_DOWN = 4
 private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick: () -> Unit) {
     // Il pallino di una cosa appena salvata atterra qui: la scheda fa un piccolo sobbalzo.
     val targetKey = when (dest.route) {
-        Routes.NOTES -> CaptureTargets.NOTES_TAB
         Routes.HOME -> CaptureTargets.HOME_TAB
         Routes.MEDIA -> CaptureTargets.MEDIA_TAB
         else -> null
@@ -942,6 +939,12 @@ private fun AnimatedContentTransitionScope<NavBackStackEntry>.tabForward(): Bool
         topDestinations.indexOfFirst { it.route == initialState.destination.route }
 
 /** Passa a una sezione della barra in basso mantenendo lo stato delle altre. */
+/** Il calendario non è più una scheda della barra: si apre sopra la Home. */
+private fun NavController.openCalendar() {
+    switchTab(Routes.HOME)
+    navigate(Routes.NOTES) { launchSingleTop = true }
+}
+
 private fun NavController.switchTab(route: String) {
     navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
@@ -976,11 +979,8 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     LinkTarget.None -> Unit
                 }
             },
-            // Il Calendario sta in Note › Prossimi giorni dalla 1.187, insieme a tutto quello che arriva.
-            openCalendar = {
-                NotesNav.open(NotesSection.DATED)
-                navController.switchTab(Routes.NOTES)
-            },
+            // Il calendario unico (con note e spese) si apre dalla Home: sopra la Home, "indietro" ci torna.
+            openCalendar = { navController.openCalendar() },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
             openRoute = { navController.navigate(it) },
@@ -1009,12 +1009,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         runCatching {
             navController.switchTab(
                 when (request.target) {
-                    OpenRequest.NOTES -> Routes.NOTES
                     OpenRequest.MEDIA, OpenRequest.PLAY -> Routes.MEDIA
                     else -> Routes.HOME
                 }
             )
             when (request.target) {
+                OpenRequest.NOTES -> navController.navigate(Routes.NOTES) { launchSingleTop = true }
                 OpenRequest.UPDATES -> {
                     // Le Impostazioni non sono più una scheda: Oggi → Impostazioni → Aggiornamenti.
                     navController.navigate(Routes.SETTINGS)
@@ -1049,7 +1049,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
-    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES || currentRoute == Routes.NOTES_EXPENSES
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES || currentRoute == Routes.NOTES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1230,7 +1230,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenWeather = { navController.navigate(Routes.WEATHER) },
                     onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
-                    onOpenNotes = { navController.switchTab(Routes.NOTES) },
+                    onOpenNotes = { navController.openCalendar() },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
                     onSearch = { navController.navigate(Routes.SEARCH) },
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
@@ -1344,7 +1344,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         ?.let { f -> SearchFilter.entries.firstOrNull { it.name == f } } ?: SearchFilter.ALL,
                     onBack = { navController.popBackStack() },
                     onOpenNote = { openNote(it) },
-                    onOpenNotes = { navController.switchTab(Routes.NOTES) },
+                    onOpenNotes = { navController.openCalendar() },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenPlayer = { navController.navigate(Routes.PLAYER) { launchSingleTop = true } },
                     onWatch = { navController.navigate(Routes.youtubeWatch(it)) },
@@ -1356,6 +1356,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.NOTES) {
                 NotesScreen(
                     bottomPadding = padding,
+                    onBack = { navController.popBackStack() },
                     onOpenNote = { openNote(it) },
                     onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
                 )
@@ -1391,11 +1392,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.SIM) {
                 SimScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
             }
-            composable(Routes.EXPENSES) {
-                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
-            }
-            composable(Routes.NOTES_EXPENSES) {
-                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+            composable(
+                Routes.EXPENSES,
+                arguments = listOf(navArgument("month") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
+                val month = entry.arguments?.getString("month")?.let { runCatching { java.time.YearMonth.parse(it) }.getOrNull() }
+                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding, month = month ?: java.time.YearMonth.now())
             }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })

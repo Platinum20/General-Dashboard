@@ -1,0 +1,99 @@
+package com.platinum20.dashboard
+
+import com.platinum20.dashboard.notes.Expense
+import com.platinum20.dashboard.notes.ExpenseCategory
+import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.notes.Note
+import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.dueDays
+import com.platinum20.dashboard.ui.screens.pastDays
+import com.platinum20.dashboard.ui.screens.timelineEntries
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.YearMonth
+import java.time.ZoneId
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/** 1.314: il calendario unico, con note senza data e spese dentro (Antonio). */
+class CalendarUnicoTest {
+    private val oggi = LocalDate.of(2026, 11, 3)
+    private val adesso = oggi.atTime(12, 0)
+    private val zone = ZoneId.of("Europe/Rome")
+    private fun ms(t: LocalDateTime) = t.atZone(zone).toInstant().toEpochMilli()
+
+    private fun calendario(
+        tasks: List<TaskItem> = emptyList(),
+        notes: List<Note> = emptyList(),
+        expenses: List<Expense> = emptyList(),
+    ) = dueDays(tasks, emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, notes = notes, expenses = expenses)
+
+    @Test fun oggiCeSempreConLaSpesaAZero() {
+        val groups = calendario()
+        assertEquals(1, groups.size)
+        assertEquals(oggi, groups.single().day)
+        assertEquals(0L, groups.single().rows.single().spend)
+        val entry = timelineEntries(groups, oggi, zone, months = true).single().first
+        assertEquals("Spesa di oggi", entry.text)
+        assertEquals(Expenses.format(0), entry.trailing)
+        assertEquals("Oggi", entry.dayLabel)
+    }
+
+    @Test fun senzaDataEInRitardoStannoAOggi() {
+        val groups = calendario(
+            tasks = listOf(
+                TaskItem(1, "Latte"),
+                TaskItem(2, "Bollette", dueAt = ms(oggi.minusDays(1).atTime(9, 0))),
+                TaskItem(3, "Palestra", dueAt = ms(oggi.plusDays(1).atTime(18, 0))),
+                TaskItem(4, "Fatto", done = true),
+            ),
+            notes = listOf(Note(5, "Vecchia", createdAt = 1), Note(6, "Nuova", createdAt = 2), Note(7, "Fissata", createdAt = 0, pinned = true)),
+        )
+        val today = groups.first().rows.map { it.key }
+        assertEquals(listOf("spend-today", "task-2", "task-1", "note-7", "note-6", "note-5"), today)
+        // Il ritardo dice da quando, al posto dell'ora.
+        val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
+        assertEquals("Ieri  Bollette", entries[1].text)
+        assertTrue(entries[1].late)
+        // Domani resta nel suo giorno, niente "Scaduti" né "Senza data".
+        assertEquals(listOf(oggi, oggi.plusDays(1)), groups.map { it.day })
+    }
+
+    @Test fun speseNelLoroGiornoETotaleDelMeseSulSegno() {
+        val pizza = Expense(1, 1250, "pizza", ExpenseCategory.EATING_OUT, oggi)
+        val bar = Expense(2, 300, "bar", ExpenseCategory.EATING_OUT, oggi.minusDays(1))
+        val ottobre = Expense(3, 2000, "benzina", ExpenseCategory.TRANSPORT, LocalDate.of(2026, 10, 20))
+        val all = listOf(pizza, bar, ottobre)
+        val groups = calendario(expenses = all)
+        assertEquals(1250L, groups.first().rows.first().spend)
+        assertEquals("expense-1", groups.first().rows[1].key)
+        // Le spese passate stanno nel passato, nel loro giorno; quelle di oggi no.
+        val past = pastDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, expenses = all)
+        assertEquals(listOf(LocalDate.of(2026, 10, 20), oggi.minusDays(1)), past.map { it.day })
+        val entries = timelineEntries(past + groups, oggi, zone, months = true, expenses = all).map { it.first }
+        // Ogni mese ha il suo segno, anche il primo, con quanto hai speso; oggi il mese di oggi.
+        assertEquals("OTTOBRE", entries[0].month)
+        assertEquals(Expenses.format(2000), entries[0].monthSpend)
+        assertEquals(YearMonth.of(2026, 10), entries[0].monthOf)
+        assertEquals("NOVEMBRE", entries[1].month)
+        assertEquals(Expenses.format(1550), entries[1].monthSpend)
+        assertNull(entries[2].month)
+    }
+
+    @Test fun ilMeseDiOggiHaIlSegnoAncheSenzaPassato() {
+        val groups = calendario(tasks = listOf(TaskItem(1, "Dicembre", dueAt = ms(LocalDate.of(2026, 12, 2).atTime(9, 0)))))
+        val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
+        assertEquals("NOVEMBRE", entries[0].month)
+        // Il mese di oggi mostra la spesa anche a zero; un mese futuro senza spese no.
+        assertEquals(Expenses.format(0), entries[0].monthSpend)
+        assertEquals("DICEMBRE", entries[1].month)
+        assertNull(entries[1].monthSpend)
+    }
+
+    @Test fun senzaIlCalendarioUnicoTuttoComePrima() {
+        val groups = dueDays(listOf(TaskItem(1, "Latte")), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone)
+        assertTrue(groups.isEmpty())
+    }
+}

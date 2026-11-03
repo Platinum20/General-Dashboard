@@ -16,12 +16,12 @@ import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.notes.NotesStore
 
 /**
- * Spese, una pagina sua dalla 1.186: ci si arriva dalla card Spese di Oggi (prima stava in Note).
- * Il mese e le fisse. Lo scontrino ora si allega dalla graffetta della barra.
+ * Il riepilogo delle spese di un mese a schermo intero: ci si arriva toccando il segno del mese (o la spesa
+ * di oggi) nel calendario (1.314). Il mese, le categorie, le fisse e la lista; di lato si cambia mese.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()) {
+fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues(), month: java.time.YearMonth = java.time.YearMonth.now()) {
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
@@ -35,6 +35,7 @@ fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingVal
                 top = inner.calculateTopPadding() + 12.dp,
                 bottom = maxOf(inner.calculateBottomPadding(), bottomPadding.calculateBottomPadding()) + 24.dp,
             ),
+            initialMonth = month,
             onDeleted = { e ->
                 // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
                 CaptureFeedback.show(

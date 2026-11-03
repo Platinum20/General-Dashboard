@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.314.0
+**Un calendario unico, con note e spese dentro**
+- Note e Spese non sono più pagine a parte: tutto sta nel calendario, che si apre dalla sua card in Home
+- Oggi è sempre in cima, con quanto hai speso oggi (anche 0 €), gli impegni, le cose in ritardo, i promemoria e le note senza data
+- Le note senza data restano in Oggi finché non le spunti o le togli; i video da guardare più tardi hanno la loro miniatura e toccandoli partono
+- Accanto al nome di ogni mese c'è quanto hai speso; toccandolo si apre il riepilogo del mese con le categorie e la lista
+- Le spese stanno nel loro giorno, come le spese fisse e gli addebiti
+- In Adesso restano meteo, pioggia e abitudini: il resto di oggi sta in cima al calendario
+- La barra in basso ha una voce in meno: Home, News e Media
+
 ## 1.313.0
 **Spese: il mese si cambia da tutta la pagina**
 - Trascini di lato ovunque nella pagina Spese, non solo sul riepilogo, per passare da un mese all'altro

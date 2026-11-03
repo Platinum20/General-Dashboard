@@ -79,6 +79,12 @@ data class TimelineEntry(
     val month: String? = null,
     /** Un promemoria fatto: spunta piena e nome barrato. */
     val done: Boolean = false,
+    /** Quanto hai speso nel mese del segno ([month]), scritto a destra del nome (Antonio). */
+    val monthSpend: String? = null,
+    /** Il mese del segno: toccandolo si apre il riepilogo delle spese di quel mese. */
+    val monthOf: java.time.YearMonth? = null,
+    /** La miniatura al posto dell'icona: il video da guardare più tardi, la foto della nota. */
+    val image: String? = null,
 )
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -136,11 +142,18 @@ fun TimelineRow(
     onLongClick: (() -> Unit)? = null,
     /** Vibrare al cambio di mese: solo nelle pagine aperte, non nelle card di anteprima (Antonio). */
     monthTick: Boolean = true,
+    /** Toccando il segno del mese: il riepilogo delle spese di quel mese. */
+    onMonth: ((java.time.YearMonth) -> Unit)? = null,
+    /** Il segno del mese è già stato disegnato sopra (sopra "OGGI"): qui non si ripete. */
+    showMonth: Boolean = true,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
-    entry.month?.let { TimelineMonthMarker(it, start = start, top = top, tick = monthTick) }
+    if (showMonth) entry.month?.let {
+        TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
+            onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } })
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -162,6 +175,15 @@ fun TimelineRow(
                 modifier = Modifier.size(20.dp).clip(CircleShape).then(if (onIcon != null) Modifier.clickable(onClick = onIcon) else Modifier),
             )
             Spacer(Modifier.width(8.dp))
+        } else if (entry.image != null) {
+            // La miniatura (video, foto) al posto dell'icona: si riconosce subito.
+            coil3.compose.AsyncImage(
+                model = entry.image.let { if (it.startsWith("/")) java.io.File(it) else it },
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.padding(vertical = 3.dp).width(40.dp).height(24.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp)),
+            )
+            Spacer(Modifier.width(10.dp))
         } else {
             Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(10.dp))
@@ -297,11 +319,21 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
  * Scorrendoci sopra vibra appena (Antonio), così si sente quando si passa da un mese all'altro.
  */
 @Composable
-fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true, tick: Boolean = true) {
+fun TimelineMonthMarker(
+    label: String,
+    start: Dp = 16.dp,
+    top: Boolean = true,
+    tick: Boolean = true,
+    /** La spesa del mese, a destra prima della linea (Antonio). */
+    total: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
     Row(
-        Modifier.fillMaxWidth().height(30.dp).padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
+        Modifier.fillMaxWidth().height(30.dp)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = color)
@@ -311,6 +343,11 @@ fun TimelineMonthMarker(label: String, start: Dp = 16.dp, top: Boolean = true, t
                 drawLine(line, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.5.dp.toPx())
             },
         )
+        total?.let {
+            Spacer(Modifier.width(10.dp))
+            Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+            Spacer(Modifier.width(4.dp))
+        }
         Box(
             Modifier.width(GUTTER).fillMaxHeight().drawBehind {
                 val x = size.width / 2

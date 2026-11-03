@@ -122,7 +122,7 @@ class MediaClickTour {
         report.append('\n')
     }
 
-    private val navLabels = setOf("Home", "News", "Note", "Media", "Aggiungi", "Impostazioni")
+    private val navLabels = setOf("Home", "News", "Media", "Aggiungi", "Impostazioni")
 
     /** Torna alla barra in basso e segue il percorso fino alla pagina. */
     private fun open(path: List<String>): Boolean {
