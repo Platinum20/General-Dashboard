@@ -205,11 +205,11 @@ private val AppTypography = Typography().let { base ->
         titleMedium = text(base.titleMedium).copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
         titleSmall = text(base.titleSmall).copy(fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
         bodyLarge = text(base.bodyLarge).copy(fontSize = 15.sp, lineHeight = 21.sp, letterSpacing = 0.sp),
-        bodyMedium = text(base.bodyMedium).copy(fontSize = 13.5.sp, lineHeight = 19.sp, letterSpacing = 0.sp),
-        bodySmall = text(base.bodySmall).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
+        bodyMedium = text(base.bodyMedium).copy(fontSize = 14.5.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+        bodySmall = text(base.bodySmall).copy(fontSize = 12.5.sp, lineHeight = 17.sp, letterSpacing = 0.sp),
         labelLarge = text(base.labelLarge).copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
         labelMedium = text(base.labelMedium).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.sp),
-        labelSmall = text(base.labelSmall).copy(fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.2.sp),
+        labelSmall = text(base.labelSmall).copy(fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.2.sp),
     )
 }
 

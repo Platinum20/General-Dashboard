@@ -411,7 +411,7 @@ fun TopLevelBar(
                     ) { line ->
                         Text(
                             line,
-                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -579,7 +579,7 @@ fun SectionHeader(
     ) {
         Text(
             title.uppercase(),
-            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
