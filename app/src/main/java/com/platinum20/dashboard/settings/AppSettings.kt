@@ -27,6 +27,7 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con note e spese dentro.
     DAY("Calendario", "Oggi, spese, note e prossimi giorni"),
     SIM("SIM", "Giga, minuti e credito WindTre"),
+    BANK("Revolut", "Saldo totale e tasche"),
     DOCS("Documenti", "Carta d'identità, patente e scadenze"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),

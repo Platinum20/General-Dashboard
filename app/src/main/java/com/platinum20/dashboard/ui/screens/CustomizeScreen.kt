@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.DragHandle
 import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.SimCard
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -149,6 +150,7 @@ private fun HomeCard.icon(): ImageVector = when (this) {
     HomeCard.DAY -> Icons.Outlined.Event
     HomeCard.RESUME -> Icons.Outlined.PlayCircle
     HomeCard.SIM -> Icons.Outlined.SimCard
+    HomeCard.BANK -> Icons.Outlined.AccountBalanceWallet
     HomeCard.DOCS -> Icons.Outlined.Badge
     HomeCard.MAIL -> Icons.Outlined.Mail
     HomeCard.RECAP -> Icons.Outlined.Newspaper
@@ -159,6 +161,7 @@ private fun HomeCard.accent(): TileAccent = when (this) {
     HomeCard.DAY -> TileAccent.BLUE
     HomeCard.RESUME -> TileAccent.PURPLE
     HomeCard.SIM -> TileAccent.BLUE
+    HomeCard.BANK -> TileAccent.BLUE
     HomeCard.DOCS -> TileAccent.BLUE
     HomeCard.MAIL -> TileAccent.ORANGE
     HomeCard.RECAP -> TileAccent.GREEN

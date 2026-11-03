@@ -336,6 +336,10 @@ fun HomeScreen(
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.SIM)
             })
+            HomeCard.BANK -> RevolutCard(onOpen = {
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.expenses())
+            })
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.document(id))

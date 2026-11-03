@@ -27,6 +27,11 @@ object RevolutStore {
     val linked: StateFlow<Boolean> = _linked.asStateFlow()
     private val _balance = MutableStateFlow<Long?>(null)
     val balance: StateFlow<Long?> = _balance.asStateFlow()
+    /** Le tasche in euro (conto + salvadanai), coi nomi veri: la card Revolut della Home. */
+    private val _pockets = MutableStateFlow<List<Pocket>>(emptyList())
+    val pockets: StateFlow<List<Pocket>> = _pockets.asStateFlow()
+    private var rawPockets: List<Pocket> = emptyList()
+    private var pocketNames: Map<String, String> = emptyMap()
     private val _readAt = MutableStateFlow(0L)
     val readAt: StateFlow<Long> = _readAt.asStateFlow()
     /** La sessione web è finita: serve rifare l'accesso (con la conferma nell'app Revolut). */
@@ -55,6 +60,9 @@ object RevolutStore {
             val arr = JSONArray(File(app.filesDir, CAPTURES).readText())
             for (i in 0 until arr.length()) captures.addLast(arr.getJSONObject(i))
         }
+        rawPockets = RevolutPockets.fromJson(prefs.getString("pockets", null))
+        pocketNames = RevolutPockets.namesFromJson(prefs.getString("pocketNames", null))
+        _pockets.value = RevolutPockets.named(rawPockets, pocketNames)
     }
 
     fun isStale(now: Long = System.currentTimeMillis()) = readAt.value < now - STALE_MS
@@ -107,6 +115,7 @@ object RevolutStore {
         }
         // Il calendario si tocca dal thread principale, come fa il resto dell'app.
         if (read != null) main.post { commit(read) }
+        RevolutPockets.read(body)?.let { p -> main.post { commitPockets(p) } }
         saveCaptures()
     }
 
@@ -128,6 +137,17 @@ object RevolutStore {
         prefs?.putLong("readAt", _readAt.value)?.apply()
         if (!_linked.value) setLinked(true)
         if (_expired.value) setExpired(false)
+    }
+
+    private fun commitPockets(read: PocketRead) {
+        // Il wallet le elenca tutte: sostituisce. I nomi dei salvadanai si sommano a quelli già visti.
+        read.pockets?.let { rawPockets = it }
+        pocketNames = pocketNames + read.names
+        _pockets.value = RevolutPockets.named(rawPockets, pocketNames)
+        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+            ?.putString("pockets", RevolutPockets.toJson(rawPockets))
+            ?.putString("pocketNames", RevolutPockets.namesToJson(pocketNames))
+            ?.apply()
     }
 
     fun setLinked(value: Boolean) {
@@ -154,6 +174,7 @@ object RevolutStore {
     fun unlink() {
         _linked.value = false
         _balance.value = null
+        rawPockets = emptyList(); pocketNames = emptyMap(); _pockets.value = emptyList()
         _readAt.value = 0
         _expired.value = false
         historyDone = false

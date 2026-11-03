@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.339.0
+**Revolut in Home**
+- Nuova card Revolut, come quella della SIM: in alto il saldo totale, sotto il saldo di ogni tasca (conto e salvadanai come "Risparmi")
+- Tocca la card per le spese del mese; si sposta o si nasconde da Personalizza
+- Canvas legge soltanto: non può muovere soldi
+
 ## 1.338.0
 **Più sicurezza per i tuoi accessi**
 - I token di Spotify e del riconoscimento canzoni sono ora cifrati sul telefono con una chiave che non esce mai dal telefono (come già la password di Gmail): non serve ricollegare nulla
