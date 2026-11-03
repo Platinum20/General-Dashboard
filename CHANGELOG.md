@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.313.0
+**Spese: il mese si cambia da tutta la pagina**
+- Trascini di lato ovunque nella pagina Spese, non solo sul riepilogo, per passare da un mese all'altro
+- Nel mese in corso il riepilogo non mostra più il totale del mese prima
+
 ## 1.312.0
 **Dalla Home si apre la singola cosa**
 - Toccando un evento nelle card della Home si apre il suo dettaglio, non più il calendario intero
