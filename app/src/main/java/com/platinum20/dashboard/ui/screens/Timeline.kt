@@ -194,6 +194,7 @@ fun TimelineRow(
         }
     }
     val flashColor = MaterialTheme.colorScheme.primary
+    val held = ActionBubble.heldBy(entry.key)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -201,7 +202,7 @@ fun TimelineRow(
             // Una riga appena comparsa è il posto dove atterra il pallino del +, se è a schermo.
             .then(if (flashAt != null) Modifier.captureTarget(RowFlash.target(entry.key)) else Modifier)
             .drawBehind {
-                val f = flash.value
+                val f = maxOf(flash.value, if (held) 1f else 0f)
                 if (f > 0f) drawRoundRect(
                     flashColor.copy(alpha = 0.14f * f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
@@ -210,7 +211,14 @@ fun TimelineRow(
             .bouncyPress(0.98f)
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick?.let { long -> { haptic(Haptic.LONG_PRESS); long() } },
+                onLongClick = onLongClick?.let { long ->
+                    {
+                        haptic(Haptic.LONG_PRESS)
+                        long()
+                        // Finché il fumetto è aperto, questa riga resta accesa: si vede di chi sono le azioni.
+                        ActionBubble.source = entry.key
+                    }
+                },
             )
             .padding(start = start, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,

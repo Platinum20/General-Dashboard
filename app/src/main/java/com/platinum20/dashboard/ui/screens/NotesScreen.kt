@@ -31,6 +31,8 @@ import java.time.LocalDateTime
 import java.util.Locale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -276,7 +278,8 @@ fun NotesScreen(
         topBar = {
             TopLevelBar(
                 title = "Calendario",
-                subtitle = listOfNotNull(
+                // Con un filtro acceso il sottotitolo lo dice ("SOLO SPESE"): toccandolo di nuovo si torna a tutto.
+                subtitle = filter?.let { "Solo " + it.label.lowercase() } ?: listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { null },
@@ -328,9 +331,19 @@ fun NotesScreen(
                 if (last == null) info.viewportSize.height else last.offset + last.size - now.offset
             }.collect { if (it != null) below = it }
         }
+        // Finché la lista non è su OGGI resta invisibile: niente lampo del passato prima del salto (al massimo 700 ms).
+        var positioned by remember(section, filter) { mutableStateOf(false) }
+        LaunchedEffect(section, filter) {
+            kotlinx.coroutines.delay(700)
+            positioned = true
+        }
         LaunchedEffect(section, filter, nowItem) {
-            val target = nowItem ?: return@LaunchedEffect
-            if (startedAtNow) return@LaunchedEffect
+            val target = nowItem
+            if (target == null || startedAtNow) {
+                if (target == null) kotlinx.coroutines.delay(150)
+                if (startedAtNow || target == null) positioned = true
+                return@LaunchedEffect
+            }
             startedAtNow = true
             runCatching {
                 listState.scrollToItem(target)
@@ -339,7 +352,9 @@ fun NotesScreen(
                 androidx.compose.runtime.withFrameNanos { }
                 listState.scrollToItem(target)
             }
+            positioned = true
         }
+        val listAlpha by androidx.compose.animation.core.animateFloatAsState(if (positioned) 1f else 0f, tween(Motion.EXIT_MS), label = "listIn")
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
         // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.
         val nearEnd by remember(lastItem, entries.isEmpty()) {
@@ -386,7 +401,8 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier)
+                .graphicsLayer { alpha = listAlpha },
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -460,14 +476,27 @@ fun NotesScreen(
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
                 item(key = "done-header") {
+                    // L'intestazione è solo un'etichetta: tenendola premuta, il fumetto per eliminare i completati.
+                    val clear = {
+                        NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
+                        offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
+                    }
                     SectionHeader(
                         "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp),
-                        action = if (doneShown.isNotEmpty()) "Elimina" else null,
-                        onAction = {
-                            NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
-                            offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
-                        },
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp).then(
+                            if (doneShown.isEmpty()) Modifier
+                            else Modifier.combinedClickable(onClick = {}, onLongClick = {
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(
+                                    BubbleAction(
+                                        Icons.Outlined.Delete,
+                                        "Elimina i completati",
+                                        detail = if (doneShown.size == 1) "1 promemoria" else "${doneShown.size} promemoria",
+                                        danger = true,
+                                    ) { clear() },
+                                )
+                            }),
+                        ),
                     )
                 }
                 if (doneShown.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem().padding(bottom = 4.dp)) { TaskGroup(null, doneShown, onTaskDeleted) } }
@@ -494,6 +523,7 @@ fun NotesScreen(
                     onClick = { haptic(Haptic.TICK); filter = if (filter == f) null else f },
                     label = f.label,
                     modifier = Modifier.weight(1f),
+                    tonal = true,
                 )
             }
         }

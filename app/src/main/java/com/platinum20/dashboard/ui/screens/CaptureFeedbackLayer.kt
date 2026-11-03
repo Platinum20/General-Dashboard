@@ -91,6 +91,10 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         return CaptureTargets.rects[key]?.let { key to it }
     }
 
+    // Un fumetto delle azioni che si apre chiude l'avviso: i due stanno nello stesso punto e si coprirebbero.
+    LaunchedEffect(ActionBubble.actions) {
+        if (ActionBubble.actions != null) notice = null
+    }
     LaunchedEffect(Unit) {
         CaptureFeedback.events.collect { n ->
             notice = n

@@ -43,6 +43,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -661,17 +662,36 @@ fun CanvasChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: 
  * testo centrato che si rimpicciolisce quanto basta per stare su una riga, così non si scorre di lato.
  */
 @Composable
-fun CanvasTabChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier) {
+fun CanvasTabChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    /**
+     * Scelta tenue (accento chiaro invece dell'inchiostro pieno): per i filtri che non devono rubare
+     * l'occhio a quello che filtrano (il segno OGGI del Calendario).
+     */
+    tonal: Boolean = false,
+) {
     val colors = MaterialTheme.colorScheme
     val base = MaterialTheme.typography.labelLarge
     var style by remember(label, base) { mutableStateOf(base) }
+    val on = if (tonal) colors.primary.copy(alpha = 0.14f).compositeOver(colors.card) else colors.onSurface
+    val container by androidx.compose.animation.animateColorAsState(if (selected) on else colors.card, Motion.settle(), label = "chip")
+    val content by androidx.compose.animation.animateColorAsState(
+        if (!selected) colors.onSurfaceVariant else if (tonal) colors.primary else colors.surface, Motion.settle(), label = "chipText",
+    )
     Surface(
         selected = selected,
         onClick = onClick,
         shape = CircleShape,
-        color = if (selected) colors.onSurface else colors.card,
-        contentColor = if (selected) colors.surface else colors.onSurfaceVariant,
-        border = if (selected) null else BorderStroke(1.dp, colors.outlineVariant),
+        color = container,
+        contentColor = content,
+        border = when {
+            selected && tonal -> BorderStroke(1.dp, colors.primary.copy(alpha = 0.4f))
+            selected -> null
+            else -> BorderStroke(1.dp, colors.outlineVariant)
+        },
         modifier = modifier.height(32.dp).bouncyPress(0.94f),
     ) {
         Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {

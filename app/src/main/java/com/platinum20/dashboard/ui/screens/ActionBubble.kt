@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 
 /** Una scelta del fumetto delle azioni. */
 internal data class BubbleAction(
@@ -27,13 +29,20 @@ internal object ActionBubble {
     var actions by mutableStateOf<List<BubbleAction>?>(null)
         private set
 
+    /** La riga tenuta premuta che ha aperto il fumetto: resta accesa finché il fumetto è aperto. */
+    var source by mutableStateOf<String?>(null)
+
     fun show(vararg choices: BubbleAction) {
         actions = choices.toList()
     }
 
     fun dismiss() {
         actions = null
+        source = null
     }
+
+    /** Questa riga ha aperto il fumetto che si vede adesso. */
+    fun heldBy(key: String): Boolean = actions != null && source == key
 }
 
 @Composable
@@ -49,11 +58,24 @@ internal fun BoxScope.ActionBubbleLayer() {
         swipe.reset()
     }
     BottomBubble(visible = actions != null, swipe = swipe, onDismiss = ActionBubble::dismiss) {
-        last.forEach { a ->
-            BubbleRow(a.icon, a.title, a.detail, a.danger) {
-                haptic(Haptic.CONFIRM)
-                ActionBubble.dismiss()
-                a.onClick()
+        last.forEachIndexed { index, a ->
+            // Le voci salgono una dopo l'altra, dal basso, invece di comparire tutte insieme.
+            val appear = remember(last) { androidx.compose.animation.core.Animatable(0f) }
+            LaunchedEffect(last) {
+                kotlinx.coroutines.delay((last.size - 1 - index) * 30L)
+                appear.animateTo(1f, Motion.lively())
+            }
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.graphicsLayer {
+                    alpha = appear.value
+                    translationY = (1f - appear.value) * 12.dp.toPx()
+                },
+            ) {
+                BubbleRow(a.icon, a.title, a.detail, a.danger) {
+                    haptic(Haptic.CONFIRM)
+                    ActionBubble.dismiss()
+                    a.onClick()
+                }
             }
         }
     }
