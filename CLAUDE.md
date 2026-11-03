@@ -45,7 +45,7 @@ month spend, then ALL of today, then `Upcoming.MAX` next rows; full page = `Note
 Both use `dueDays(withToday = true, notes, expenses)` (today group always first: "Spesa di oggi" row (`DueRow.spend`, 0 too),
 today's expenses, overdue items (`overdueFrom`), today's items, undated tasks, notes pinned-first) + `pastDays(expenses=)` +
 `timelineEntries(months = true, expenses)` (every month marker gets `monthSpend`/`monthOf`; tap → `Routes.expenses(month)` =
-ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Adesso keeps only RAIN/WEATHER/HABIT lines.
+ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Full page has fixed `CalendarFilter` chips (Spese/Note/Eventi, pure `DueRow.filter()` + `List<DueDay>.only()`); long press on the Home card opens the full page; done tasks sit on the day they were checked (today's under OGGI). Adesso keeps only RAIN/WEATHER/HABIT lines.
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`CalendarCard`, `TimelineCard`),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses?month=`, `Routes.expenses(YearMonth?)`: month overview opened from a calendar month marker). Logic in `today/`: `Briefing.kt`

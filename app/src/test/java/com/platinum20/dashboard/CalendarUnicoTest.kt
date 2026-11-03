@@ -6,6 +6,8 @@ import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.dueDays
+import com.platinum20.dashboard.ui.screens.CalendarFilter
+import com.platinum20.dashboard.ui.screens.only
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import java.time.LocalDate
@@ -102,6 +104,19 @@ class CalendarUnicoTest {
         val past = pastDays(listOf(oggiFatto, ieriFatto), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true)
         assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
         assertEquals("task-2", past.single().rows.single().key)
+    }
+
+    @Test fun filtriSpeseNoteEventi() {
+        val groups = calendario(
+            tasks = listOf(TaskItem(1, "Latte", createdAt = 1), TaskItem(2, "Palestra", createdAt = 1, dueAt = ms(oggi.plusDays(2).atTime(18, 0)))),
+            notes = listOf(Note(3, "Idea", createdAt = 1)),
+            expenses = listOf(Expense(4, 500, "bar", ExpenseCategory.EATING_OUT, oggi)),
+        )
+        assertEquals(listOf("spend-today", "expense-4"), groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.map { it.key })
+        assertEquals(listOf("task-1", "note-3", "task-2"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
+        // Nessun evento: nessun giorno.
+        assertTrue(groups.only(CalendarFilter.EVENTS).isEmpty())
+        assertEquals(groups, groups.only(null))
     }
 
     @Test fun senzaIlCalendarioUnicoTuttoComePrima() {

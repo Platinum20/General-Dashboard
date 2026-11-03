@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.317.0
+**Calendario: filtri Spese, Note, Eventi**
+- In cima al calendario intero tre filtri: Spese, Note ed Eventi
+- Toccandone uno vedi solo quelle cose; toccandolo di nuovo torni a vedere tutto
+- Le date da ricordare stanno con gli Eventi, pacchi e promemoria con le Note
+
 ## 1.316.0
 **Calendario: pressione lunga e cose fatte al loro giorno**
 - Tenendo premuta la card Calendario in Home, ovunque anche su una riga, si apre il calendario intero
