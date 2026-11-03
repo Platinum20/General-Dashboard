@@ -50,6 +50,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -243,7 +244,7 @@ private fun SimBar(fraction: Float, color: Color, track: Color, height: Dp) {
 }
 
 /**
- * La pagina della SIM (dalla card): tutto nel blocco colorato e "Aggiorna ora". Accesso, condivisione
+ * La pagina della SIM (dalla card): tutto nel blocco colorato, si aggiorna tirando giù. Accesso, condivisione
  * dei dati letti e scollegamento stanno in Impostazioni › Account (Antonio). Senza collegamento si apre
  * direttamente l'accesso sulla pagina ufficiale di WindTre.
  */
@@ -262,10 +263,23 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
         return
     }
     Scaffold(topBar = { TopLevelBar(title = "SIM", subtitle = "WindTre", onBack = onBack) }) { inner ->
+        // Si aggiorna tirando giù la pagina, niente tasto (Antonio).
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            state = rememberHapticPullState(refreshing),
+            onRefresh = {
+                if (!refreshing) scope.launch {
+                    val ok = WindTreLink.refresh(context)
+                    if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
+                }
+            },
+            modifier = Modifier.fillMaxSize().padding(top = inner.calculateTopPadding()),
+        ) {
         Column(
             Modifier
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 8.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp)
                 .padding(bottom = maxOf(inner.calculateBottomPadding(), bottomPadding.calculateBottomPadding()) + 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -285,19 +299,13 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                     }
                 }
             }
-            Section(title = "Dati") {
-                SettingsItem(
-                    icon = Icons.Outlined.Refresh,
-                    title = if (refreshing) "Aggiorno…" else "Aggiorna ora",
-                    subtitle = "Collegamento e accesso in Impostazioni › Account",
-                    onClick = {
-                        if (!refreshing) scope.launch {
-                            val ok = WindTreLink.refresh(context)
-                            if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
-                        }
-                    },
-                )
-            }
+            Text(
+                "Tira giù per aggiornare",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
         }
     }
 }
