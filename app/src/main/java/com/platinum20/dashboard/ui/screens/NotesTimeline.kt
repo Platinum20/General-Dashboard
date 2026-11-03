@@ -92,6 +92,8 @@ internal fun pastDays(
     zone: ZoneId = ZoneId.systemDefault(),
     /** Le spese, nel giorno in cui le hai fatte: quelle di oggi stanno sotto OGGI, non qui. */
     expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
+    /** Il calendario unico: le cose fatte oggi stanno sotto OGGI (in [dueDays]), qui solo i giorni prima. */
+    withToday: Boolean = false,
 ): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
@@ -101,15 +103,16 @@ internal fun pastDays(
     // Prima del resto del giorno: la spesa non ha un'ora.
     expenses.filter { it.date.isBefore(today) }.forEach { e -> rows += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
     // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
-    tasks.filter { it.done && it.dueAt != null }.forEach { t ->
-        val at = t.doneAt ?: t.dueAt!!
+    // Nel calendario unico anche quelli senza data: fatti nel giorno in cui li hai spuntati (Antonio).
+    tasks.filter { it.done && (it.dueAt != null || withToday) }.forEach { t ->
+        val at = t.doneAt ?: t.dueAt ?: t.createdAt
         if (at <= nowMs) rows += DueRow("task-${t.id}", dayOf(at), at, task = t)
     }
     parcels.forEach { p -> p.deliveredOn?.let { rows += DueRow("parcel-${p.id}", it, startOf(it), parcel = p) } }
     events.filter { it.end <= nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
         rows += DueRow("event-${e.eventId}-${e.begin}", dayOf(e.begin), if (e.allDay) startOf(dayOf(e.begin)) else e.begin, event = e)
     }
-    return rows.filter { !it.day!!.isAfter(today) }
+    return rows.filter { if (withToday) it.day!!.isBefore(today) else !it.day!!.isAfter(today) }
         .groupBy { it.day!! }.toSortedMap()
         .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
 }
@@ -180,6 +183,9 @@ internal fun dueDays(
             tasks.filter { !it.done && it.dueAt == null }.sortedBy { it.createdAt }
                 .forEach { t -> add(DueRow("task-${t.id}", today, Long.MAX_VALUE, task = t)) }
             undated.forEach { add(it.copy(day = today)) }
+            // Le cose spuntate oggi restano in Oggi, segnate fatte (Antonio).
+            tasks.filter { t -> t.done && dayOf(t.doneAt ?: t.dueAt ?: t.createdAt) == today }.sortedBy { it.doneAt ?: 0L }
+                .forEach { t -> add(DueRow("task-${t.id}", today, t.doneAt ?: nowMs, task = t)) }
             // Le note fissate per prime, poi dalla più nuova.
             notes.sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
                 .forEach { n -> add(DueRow("note-${n.id}", today, Long.MAX_VALUE, note = n)) }
@@ -407,6 +413,7 @@ internal fun timelineEntries(
                 gapDp = if (i == 0) gap else 0f,
                 color = r.event?.color ?: r.expense?.category?.color() ?: 0,
                 late = g.late || r.overdueFrom != null,
+                done = r.task?.done == true,
                 past = g.past,
                 icon = when {
                     r.simRenewal -> Icons.Outlined.SimCard

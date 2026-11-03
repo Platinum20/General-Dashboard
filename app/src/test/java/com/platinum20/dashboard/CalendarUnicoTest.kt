@@ -47,7 +47,7 @@ class CalendarUnicoTest {
                 TaskItem(1, "Latte"),
                 TaskItem(2, "Bollette", dueAt = ms(oggi.minusDays(1).atTime(9, 0))),
                 TaskItem(3, "Palestra", dueAt = ms(oggi.plusDays(1).atTime(18, 0))),
-                TaskItem(4, "Fatto", done = true),
+                TaskItem(4, "Fatto", done = true, createdAt = 1),
             ),
             notes = listOf(Note(5, "Vecchia", createdAt = 1), Note(6, "Nuova", createdAt = 2), Note(7, "Fissata", createdAt = 0, pinned = true)),
         )
@@ -90,6 +90,18 @@ class CalendarUnicoTest {
         assertEquals(Expenses.format(0), entries[0].monthSpend)
         assertEquals("DICEMBRE", entries[1].month)
         assertNull(entries[1].monthSpend)
+    }
+
+    @Test fun leCoseFatteStannoNelGiornoInCuiLeHaiSpuntate() {
+        val oggiFatto = TaskItem(1, "Latte", done = true, createdAt = 1, doneAt = ms(oggi.atTime(9, 0)))
+        val ieriFatto = TaskItem(2, "Bollette", done = true, createdAt = 1, doneAt = ms(oggi.minusDays(1).atTime(20, 0)))
+        val groups = calendario(tasks = listOf(oggiFatto, ieriFatto))
+        assertEquals(listOf("spend-today", "task-1"), groups.first().rows.map { it.key })
+        val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
+        assertTrue(entries[1].done)
+        val past = pastDays(listOf(oggiFatto, ieriFatto), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true)
+        assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
+        assertEquals("task-2", past.single().rows.single().key)
     }
 
     @Test fun senzaIlCalendarioUnicoTuttoComePrima() {

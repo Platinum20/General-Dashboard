@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.316.0
+**Calendario: pressione lunga e cose fatte al loro giorno**
+- Tenendo premuta la card Calendario in Home, ovunque anche su una riga, si apre il calendario intero
+- Promemoria e note spuntati non spariscono: restano nel giorno in cui li hai spuntati, con la spunta e barrati
+- Toccando di nuovo la spunta tornano da fare
+
 ## 1.315.0
 **Ogni scheda come l'editor delle note**
 - Eventi, promemoria, date, pacchi, abitudini e spese si aprono come una nota lunga: in alto solo Indietro e che cosa è

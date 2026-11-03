@@ -326,7 +326,7 @@ fun NotesScreen(
         withToday = true, notes = data.notes, expenses = data.expenses,
     )
     // Sopra, scorrendo in su, il passato: cose fatte, spese, pacchi arrivati, eventi finiti.
-    val past = pastDays(data.tasks, data.parcels, events, expenses = data.expenses)
+    val past = pastDays(data.tasks, data.parcels, events, expenses = data.expenses, withToday = true)
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     var nowOffset by remember(section) { mutableStateOf<Int?>(null) }
     // Quanto è alta la linea del tempo: sotto "OGGI" serve spazio perché oggi stia in cima allo schermo.
@@ -366,7 +366,7 @@ fun NotesScreen(
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         val done = data.tasks.filter { it.done }
         // Completati tiene solo quello che non sta già nel passato della linea del tempo.
-        val inPast = past.flatMap { it.rows }.map { it.key }.toSet()
+        val inPast = (past + timeline).flatMap { it.rows }.map { it.key }.toSet()
         val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
         // I promemoria senza data spuntati spariscono da Oggi (si ritrovano cercando); qui solo quelli con una data.
         val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
@@ -501,7 +501,7 @@ fun NotesScreen(
                                 },
                                 onMonth = openMonth,
                                 showMonth = !monthAbove,
-                                onIcon = row.task?.takeIf { !it.done }?.let { task ->
+                                onIcon = row.task?.let { task ->
                                     {
                                         haptic(Haptic.CONFIRM)
                                         NotesStore.toggleTask(task.id)
