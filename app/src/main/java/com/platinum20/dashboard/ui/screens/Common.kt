@@ -86,11 +86,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +98,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.positionChanged
+import kotlinx.coroutines.launch
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -142,24 +145,89 @@ object Springs {
 /**
  * La card si stringe appena alla pressione e torna con una molla.
  * Osserva i tocchi senza consumarli, quindi click e scorrimento funzionano come prima.
+ * Si stringe solo dopo [PressRule.DELAY_MS] fermi: chi inizia a scorrere non vede le card tremare.
+ * Un tocco rapido fa comunque un piccolo cenno. Dentro una card che si stringe, reagisce solo
+ * l'elemento più interno sotto il dito (la riga, non anche la card intorno).
  */
 fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = this.then(BouncyMark).composed {
-    var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(if (pressed) pressedScale else 1f, Springs.snappy(), label = "press")
+    val scale = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
+    fun to(target: Float) = scope.launch { scale.animateTo(target, if (target < 1f) PressRule.press() else PressRule.release()) }
     this
         .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
+            scaleX = scale.value
+            scaleY = scale.value
         }
-        .pointerInput(Unit) {
+        .pointerInput(pressedScale) {
             awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                pressed = true
-                // Se parte uno scorrimento l'evento viene consumato e la card torna subito com'era.
-                waitForUpOrCancellation(pass = PointerEventPass.Initial)
-                pressed = false
+                // Main va dal più interno al più esterno: il primo che vede il tocco lo prende.
+                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Main)
+                if (!PressRule.claim(down.id.value)) return@awaitEachGesture
+                val slop = viewConfiguration.touchSlop
+                // Final arriva dopo la lista: se lei ha preso lo scorrimento qui si vede già consumato.
+                fun outcome(change: PointerInputChange?): PressRule.Outcome =
+                    PressRule.outcome(
+                        lifted = change == null || !change.pressed,
+                        moved = change != null && (change.position - down.position).getDistance() > slop,
+                        taken = change != null && change.isConsumed && change.positionChanged(),
+                    )
+                val early = withTimeoutOrNull(PressRule.DELAY_MS) {
+                    var result = PressRule.Outcome.HOLD
+                    while (result == PressRule.Outcome.HOLD) {
+                        val event = awaitPointerEvent(PointerEventPass.Final)
+                        result = outcome(event.changes.firstOrNull { it.id == down.id })
+                    }
+                    result
+                }
+                when (early) {
+                    // Tocco rapido: un cenno breve, giù e su.
+                    PressRule.Outcome.UP -> scope.launch {
+                        scale.animateTo(pressedScale, PressRule.press())
+                        scale.animateTo(1f, PressRule.release())
+                    }
+                    PressRule.Outcome.CANCEL -> Unit
+                    else -> {
+                        to(pressedScale)
+                        var result = PressRule.Outcome.HOLD
+                        while (result == PressRule.Outcome.HOLD) {
+                            val event = awaitPointerEvent(PointerEventPass.Final)
+                            result = outcome(event.changes.firstOrNull { it.id == down.id })
+                        }
+                        to(1f)
+                    }
+                }
             }
         }
+}
+
+/** Le regole della pressione, senza Compose: per i test. */
+internal object PressRule {
+    /** Quanto aspettare fermi prima di stringere: sotto, è l'inizio di uno scorrimento o un tocco. */
+    const val DELAY_MS = 80L
+
+    enum class Outcome { HOLD, UP, CANCEL }
+
+    private var claimed = -1L
+
+    /** Il primo elemento che vede questo dito lo prende; gli altri (le card intorno) restano fermi. */
+    fun claim(pointer: Long): Boolean = synchronized(this) {
+        if (claimed == pointer) return false
+        claimed = pointer
+        true
+    }
+
+    /** Il dito si è alzato ([UP]), è partito uno scorrimento ([CANCEL]) o è ancora giù fermo ([HOLD]). */
+    fun outcome(lifted: Boolean, moved: Boolean, taken: Boolean): Outcome = when {
+        taken || moved -> Outcome.CANCEL
+        lifted -> Outcome.UP
+        else -> Outcome.HOLD
+    }
+
+    /** Scende svelto, senza rimbalzo. */
+    fun <T> press() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow * 2.5f)
+
+    /** Torna con una molla appena viva: niente oscillazioni oltre la misura. */
+    fun <T> release() = spring<T>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMedium)
 }
 
 /** Segno lasciato da [bouncyPress]: CanvasCard non aggiunge la sua pressione se c'è già. */
