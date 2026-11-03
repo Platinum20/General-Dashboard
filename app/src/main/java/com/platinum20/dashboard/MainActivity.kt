@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.animation.ExperimentalSharedTransitionApi::class)
+
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.capture.CaptureFeedback
@@ -1219,6 +1221,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
         Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
+        // Gli elementi condivisi fra le pagine (riga → scheda, card Calendario → pagina): vedi SharedItems.kt.
+        androidx.compose.animation.SharedTransitionLayout(Modifier.fillMaxSize()) {
+        CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalSharedScope provides this) {
         NavHost(
             modifier = Modifier.glassSource(hazeState, backdrop),
             navController = navController,
@@ -1231,6 +1236,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             popExitTransition = { if (isTabSwitch()) Motion.tabExit(tabForward()) else Motion.popExit },
         ) {
             composable(Routes.HOME) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 HomeScreen(
                     bottomPadding = padding,
                     onOpenNews = { navController.switchTab(Routes.NEWS) },
@@ -1243,6 +1249,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
                     onOpenNote = { openNote(it) },
                 )
+                }
             }
             composable(Routes.MEDIA) {
                 MediaScreen(
@@ -1263,8 +1270,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(
                 Routes.PLAYER,
-                // Chiuso verso il mini player: la pagina resta ferma finché il video non è arrivato.
-                popExitTransition = { if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit else null },
+                // Come il video: il player sale dal basso (dal mini player) e chiudendolo ci ridiscende.
+                enterTransition = { slideInVertically(Motion.settle()) { it / 3 } + fadeIn(tween(Motion.ENTER_MS - 140)) },
+                popExitTransition = {
+                    if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit
+                    else slideOutVertically(tween(Motion.ENTER_MS - 120, easing = Motion.Accelerate)) { it / 2 } + fadeOut(tween(Motion.ENTER_MS - 140))
+                },
             ) {
                 PlayerScreen(
                     onBack = { navController.popBackStack() },
@@ -1297,10 +1308,10 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 Routes.YOUTUBE_WATCH,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
                 // Il video sale dal basso; chiuso (trascinandolo giù o col tasto) vola nel mini player, col gesto indietro scende.
-                enterTransition = { slideInVertically(pageSpring) { it / 3 } + fadeIn(tween(200)) },
+                enterTransition = { slideInVertically(Motion.settle()) { it / 3 } + fadeIn(tween(Motion.ENTER_MS - 140)) },
                 popExitTransition = {
                     if (com.platinum20.dashboard.ui.screens.MiniDock.docking) com.platinum20.dashboard.ui.screens.MiniDock.holdExit
-                    else slideOutVertically(tween(220)) { it / 2 } + fadeOut(tween(200))
+                    else slideOutVertically(tween(Motion.ENTER_MS - 120, easing = Motion.Accelerate)) { it / 2 } + fadeOut(tween(Motion.ENTER_MS - 140))
                 },
             ) { entry ->
                 // Lo stesso player unico: con un video mostra la pagina del video.
@@ -1361,12 +1372,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 CustomizeScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.NOTES) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 NotesScreen(
                     bottomPadding = padding,
                     onBack = { navController.popBackStack() },
                     onOpenNote = { openNote(it) },
                     onOpenEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
                 )
+                }
             }
             composable(
                 Routes.NOTE_EDIT,
@@ -1384,11 +1397,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navArgument("id") { type = NavType.LongType; defaultValue = -1L },
                 ),
             ) { entry ->
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 ItemDetailScreen(
                     kind = ItemKind.entries.firstOrNull { it.name == entry.arguments?.getString("kind") } ?: ItemKind.TASK,
                     id = entry.arguments?.getLong("id") ?: -1L,
                     onBack = { navController.popBackStack() },
                 )
+                }
             }
             composable(Routes.WEATHER) {
                 WeatherScreen(
@@ -1514,6 +1529,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.UPDATES) {
                 UpdatesScreen(onBack = { navController.popBackStack() })
             }
+        }
+        }
         }
         // Mini player a bolla, sopra tutte le schermate.
         FloatingPlayer(

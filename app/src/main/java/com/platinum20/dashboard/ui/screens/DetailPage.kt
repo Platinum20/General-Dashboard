@@ -191,7 +191,7 @@ fun DetailMissing(icon: ImageVector, text: String) {
  * da solo mezzo secondo dopo l'ultima lettera; vuoto non si salva.
  */
 @Composable
-fun EditableDetailTitle(key: Any, value: String, dot: Color, onCommit: (String) -> Unit) {
+fun EditableDetailTitle(key: Any, value: String, dot: Color, sharedKey: String? = null, onCommit: (String) -> Unit) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
     val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
     androidx.compose.runtime.LaunchedEffect(text) {
@@ -207,7 +207,8 @@ fun EditableDetailTitle(key: Any, value: String, dot: Color, onCommit: (String) 
             textStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences),
-            modifier = Modifier.weight(1f),
+            // Aprendo dalla riga del calendario, il titolo arriva volando da lì.
+            modifier = Modifier.weight(1f).sharedItem(sharedKey),
             decorationBox = { inner ->
                 if (text.isEmpty()) Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.outline)
                 inner()

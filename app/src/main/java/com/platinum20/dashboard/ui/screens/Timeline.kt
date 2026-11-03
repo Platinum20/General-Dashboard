@@ -246,7 +246,8 @@ fun TimelineRow(
             textDecoration = if (shownDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(vertical = 7.dp),
+            // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
+            modifier = Modifier.weight(1f).padding(vertical = 7.dp).sharedItem(entry.key.takeIf { it.isSharedRow() }),
         )
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
@@ -533,6 +534,10 @@ object RowFlash {
         }
     }
 }
+
+/** Le righe che hanno una scheda con il titolo condiviso (vedi [SharedKeys.item]). */
+internal fun String.isSharedRow(): Boolean =
+    startsWith("task-") || startsWith("date-") || startsWith("parcel-") || startsWith("expense-")
 
 /** Accende le righe che compaiono in [keys] dopo la prima volta (vedi [RowFlash.newKeys]). */
 @Composable

@@ -236,7 +236,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
             return@DetailPage
         }
         // Si modifica tutto qui, senza dialogo (Antonio): il titolo si scrive, le righe si toccano.
-        EditableDetailTitle("$kind-$id", detail.title, kind.dot()) { title -> rename(kind, id, data, title) }
+        EditableDetailTitle("$kind-$id", detail.title, kind.dot(), sharedKey = SharedKeys.item(kind, id)) { title -> rename(kind, id, data, title) }
         CanvasCard(Modifier.fillMaxWidth()) {
             detail.lines.forEachIndexed { i, line ->
                 if (i > 0) RowDivider()

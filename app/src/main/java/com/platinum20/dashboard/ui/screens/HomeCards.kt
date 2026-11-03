@@ -172,7 +172,8 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         shown.map { it.first },
         onOpenAll,
         empty = "Niente in programma.",
-        modifier = Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
+        // La card si allarga fino a diventare la pagina Calendario (e ci torna chiudendola).
+        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
         ticks = shown.map { (_, row) -> row.task?.let { tickTask(it.id) } },
