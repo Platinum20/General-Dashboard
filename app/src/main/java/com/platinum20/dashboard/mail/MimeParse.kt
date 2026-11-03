@@ -104,7 +104,7 @@ object MimeParse {
 
     fun transferDecode(body: String, encoding: String?): ByteArray = when (encoding?.trim()?.lowercase()) {
         "base64" -> {
-            val clean = body.filter { it.isLetterOrDigit() || it == '+' || it == '/' }
+            val clean = body.filter { (it in 'A'..'Z') || (it in 'a'..'z') || (it in '0'..'9') || it == '+' || it == '/' || it == '=' }
             // Mail tagliata: si buttano gli ultimi caratteri spaiati invece di perdere tutto.
             runCatching { Base64.getDecoder().decode(clean.substring(0, clean.length - clean.length % 4)) }.getOrDefault(ByteArray(0))
         }
