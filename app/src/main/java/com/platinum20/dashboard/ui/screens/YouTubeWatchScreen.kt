@@ -263,7 +263,7 @@ fun YouTubeWatchScreen(
                     if (dismiss.value > screenHeight * 0.15f || velocity > 1_200f) {
                         dockAway()
                     } else {
-                        scope.launch { dismiss.animateTo(0f, Springs.bouncy()) }
+                        scope.launch { dismiss.animateTo(0f, Motion.gesture()) }
                     }
                 },
                 modifier = if (immersive) Modifier.fillMaxSize() else Modifier

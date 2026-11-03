@@ -365,7 +365,7 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "ADESSO · " + forecast.place.uppercase(),
-                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
                     color = content.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -393,7 +393,7 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
                     Freshness.label(forecast.fetchedAt, minute)?.let { age ->
                         Text(
                             " · " + age.uppercase(),
-                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
                             color = content.copy(alpha = 0.6f),
                             maxLines = 1,
                         )

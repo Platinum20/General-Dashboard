@@ -106,7 +106,7 @@ internal fun BoxScope.CaptureComposerVeil() {
         else if (imeShown && !dictating) CaptureComposer.close()
     }
     // Un velo leggero: toccando fuori dalla barra si chiude.
-    AnimatedVisibility(open, enter = fadeIn(), exit = fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
+    AnimatedVisibility(open, enter = fadeIn(), exit = fadeOut(tween(Motion.EXIT_MS)), modifier = Modifier.matchParentSize()) {
         Box(
             Modifier
                 .fillMaxSize()

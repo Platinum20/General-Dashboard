@@ -549,9 +549,7 @@ private fun PlaylistVideos(playlist: YtPlaylist, onPlay: (String) -> Unit) {
 fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() -> Unit) {
     val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
     when {
-        state.data == null && state.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        state.data == null && state.loading -> PlaceholderList(Modifier.padding(top = 12.dp), label = "Carico i video")
         state.data == null && state.error != null -> Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(state.error, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.error)
         }

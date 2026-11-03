@@ -31,6 +31,8 @@ import java.time.LocalDateTime
 import java.util.Locale
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -184,7 +186,7 @@ enum class NotesSection(val title: String) { DATED("Calendario") }
  * che arrivano. Ogni mese ha il suo segno con quanto hai speso; toccandolo si apre il riepilogo del mese.
  * Si apre dalla card Calendario della Home. Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NotesScreen(
     bottomPadding: PaddingValues,
@@ -226,86 +228,7 @@ fun NotesScreen(
     val openItem = rememberOpenItem()
     val haptic = rememberHaptic()
     // Tenendo premuta una riga della linea del tempo: il fumetto di vetro in basso con le azioni (Antonio).
-    fun share(text: String) {
-        val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
-            .putExtra(android.content.Intent.EXTRA_TEXT, text)
-        context.startActivity(android.content.Intent.createChooser(send, null))
-    }
-    fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
-        BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
-            haptic(Haptic.CONFIRM)
-            NotesStore.toggleTask(t.id)
-        },
-        t.dueAt?.takeIf { !t.done }?.let { due ->
-            BubbleAction(Icons.Outlined.Update, "Rimanda a domani") {
-                val zone = ZoneId.systemDefault()
-                val time = java.time.Instant.ofEpochMilli(due).atZone(zone).toLocalTime()
-                NotesStore.snoozeTask(t.id, LocalDate.now().plusDays(1).atTime(time).atZone(zone).toInstant().toEpochMilli())
-            }
-        },
-        BubbleAction(Icons.Outlined.Share, "Condividi") { share(t.text) },
-        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-            NotesStore.deleteTask(t.id)
-            offerUndo(listOf(t), "Promemoria eliminato")
-        },
-    )
-    fun dueActions(row: DueRow) {
-        val actions = when {
-            row.task != null -> taskActions(row.task)
-            row.event != null -> listOf(
-                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.event.title) { onOpenEvent(row.event) },
-                BubbleAction(Icons.Outlined.Share, "Condividi") {
-                    share(row.event.title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(java.time.Instant.ofEpochMilli(row.event.begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now()))
-                },
-            )
-            row.countdown != null -> listOf(
-                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.countdown.title) { openItem(ItemKind.DATE, row.countdown.id) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                    NotesStore.deleteCountdown(row.countdown.id)
-                    offerUndo("Data eliminata") { NotesStore.restoreCountdown(row.countdown) }
-                },
-            )
-            row.parcel != null -> listOf(
-                BubbleAction(Icons.Outlined.LocalShipping, "Apri", detail = row.parcel.title) { openItem(ItemKind.PARCEL, row.parcel.id) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                    NotesStore.deleteParcel(row.parcel.id)
-                    offerUndo("Pacco eliminato") { NotesStore.restoreParcel(row.parcel) }
-                },
-            )
-            row.charge != null -> listOf(
-                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.charge.text.ifEmpty { row.charge.category.label }) { openItem(ItemKind.FIXED, row.charge.id) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                    NotesStore.deleteFixedExpense(row.charge.id)
-                    offerUndo("Spesa fissa eliminata") { NotesStore.restoreFixedExpense(row.charge) }
-                },
-            )
-            else -> emptyList()
-        }
-        if (actions.isNotEmpty()) ActionBubble.show(*actions.toTypedArray())
-    }
-    fun expenseActions(e: com.platinum20.dashboard.notes.Expense) {
-        ActionBubble.show(
-            BubbleAction(Icons.Outlined.Event, "Apri", detail = com.platinum20.dashboard.notes.Expenses.displayName(e)) { openItem(ItemKind.EXPENSE, e.id) },
-            BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                NotesStore.deleteExpense(e.id)
-                offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) }
-            },
-        )
-    }
-    fun noteActions(n: Note) {
-        ActionBubble.show(
-            BubbleAction(
-                if (n.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
-                if (n.pinned) "Togli da in alto" else "Fissa in alto",
-                detail = n.title,
-            ) { NotesStore.togglePin(n.id) },
-            BubbleAction(Icons.Outlined.Share, "Condividi") { share(n.text) },
-            BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                NotesStore.deleteNote(n.id)
-                offerUndo("Nota eliminata") { NotesStore.restoreNote(n) }
-            },
-        )
-    }
+    val rowActions = rememberRowActions(onOpenEvent)
     // Gli eventi del calendario sono cose con scadenza come le altre: si rileggono ogni volta che si torna qui,
     // ma la pagina parte da quelli già letti, così le card sono subito alla loro grandezza e non si allargano.
     var events by remember { mutableStateOf(NotesEvents.cached(context)) }
@@ -347,13 +270,16 @@ fun NotesScreen(
     val calendarOff by CalendarAsk.off.collectAsStateWithLifecycle()
 
     Scaffold(
+        // La stessa card Calendario della Home, allargata: si apre da lì e lì si richiude.
+        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true),
         contentWindowInsets = topLevelInsets,
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
             TopLevelBar(
                 title = "Calendario",
-                subtitle = listOfNotNull(
+                // Con un filtro acceso il sottotitolo lo dice ("SOLO SPESE"): toccandolo di nuovo si torna a tutto.
+                subtitle = filter?.let { "Solo " + it.label.lowercase() } ?: listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
                 ).joinToString(" · ").ifEmpty { null },
@@ -385,6 +311,8 @@ fun NotesScreen(
             if (show(NotesSection.DATED)) timelineEntries(groups, today, months = true, expenses = data.expenses) else emptyList()
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
+        // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
+        FlashNewRows(entries.map { it.first.key }, filter)
         val nowAt = entries.indexOfFirst { !it.first.past }
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
@@ -403,9 +331,19 @@ fun NotesScreen(
                 if (last == null) info.viewportSize.height else last.offset + last.size - now.offset
             }.collect { if (it != null) below = it }
         }
+        // Finché la lista non è su OGGI resta invisibile: niente lampo del passato prima del salto (al massimo 700 ms).
+        var positioned by remember(section, filter) { mutableStateOf(false) }
+        LaunchedEffect(section, filter) {
+            kotlinx.coroutines.delay(700)
+            positioned = true
+        }
         LaunchedEffect(section, filter, nowItem) {
-            val target = nowItem ?: return@LaunchedEffect
-            if (startedAtNow) return@LaunchedEffect
+            val target = nowItem
+            if (target == null || startedAtNow) {
+                if (target == null) kotlinx.coroutines.delay(150)
+                if (startedAtNow || target == null) positioned = true
+                return@LaunchedEffect
+            }
             startedAtNow = true
             runCatching {
                 listState.scrollToItem(target)
@@ -414,7 +352,9 @@ fun NotesScreen(
                 androidx.compose.runtime.withFrameNanos { }
                 listState.scrollToItem(target)
             }
+            positioned = true
         }
+        val listAlpha by androidx.compose.animation.core.animateFloatAsState(if (positioned) 1f else 0f, tween(Motion.EXIT_MS), label = "listIn")
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
         // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.
         val nearEnd by remember(lastItem, entries.isEmpty()) {
@@ -461,7 +401,8 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier)
+                .graphicsLayer { alpha = listAlpha },
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -491,7 +432,12 @@ fun NotesScreen(
                     // Il pallino del + atterra su OGGI.
                     val target = if (index == nowAt) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
                         .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
-                    Column(Modifier.fillMaxWidth().then(target).padding(bottom = if (index == entries.lastIndex) 4.dp else 0.dp)) {
+                    // Le righe che cambiano posto (spuntate, aggiunte, filtrate) scivolano invece di saltare.
+                    Column(
+                        Modifier
+                            .animateItem(fadeInSpec = Motion.settle(), placementSpec = Motion.settle(), fadeOutSpec = Motion.settle())
+                            .fillMaxWidth().then(target).padding(bottom = if (index == entries.lastIndex) 4.dp else 0.dp),
+                    ) {
                         // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
                         // Il segno del mese di oggi sta sopra "OGGI", non sotto.
                         // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
@@ -511,21 +457,10 @@ fun NotesScreen(
                             top = index > 0,
                             bottom = index < entries.lastIndex,
                             onClick = { openRow(row) },
-                            onLongClick = {
-                                when {
-                                    row.note != null -> noteActions(row.note)
-                                    row.expense != null -> expenseActions(row.expense)
-                                    else -> dueActions(row)
-                                }
-                            },
+                            onLongClick = { rowActions(row) },
                             onMonth = openMonth,
                             showMonth = !monthAbove,
-                            onIcon = row.task?.let { task ->
-                                {
-                                    haptic(Haptic.CONFIRM)
-                                    NotesStore.toggleTask(task.id)
-                                }
-                            },
+                            onIcon = row.task?.let { task -> { NotesStore.toggleTask(task.id) } },
                         )
                         }
                     }
@@ -541,14 +476,27 @@ fun NotesScreen(
             // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
             if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
                 item(key = "done-header") {
+                    // L'intestazione è solo un'etichetta: tenendola premuta, il fumetto per eliminare i completati.
+                    val clear = {
+                        NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
+                        offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
+                    }
                     SectionHeader(
                         "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp),
-                        action = if (doneShown.isNotEmpty()) "Elimina" else null,
-                        onAction = {
-                            NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
-                            offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
-                        },
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp).then(
+                            if (doneShown.isEmpty()) Modifier
+                            else Modifier.combinedClickable(onClick = {}, onLongClick = {
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(
+                                    BubbleAction(
+                                        Icons.Outlined.Delete,
+                                        "Elimina i completati",
+                                        detail = if (doneShown.size == 1) "1 promemoria" else "${doneShown.size} promemoria",
+                                        danger = true,
+                                    ) { clear() },
+                                )
+                            }),
+                        ),
                     )
                 }
                 if (doneShown.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem().padding(bottom = 4.dp)) { TaskGroup(null, doneShown, onTaskDeleted) } }
@@ -575,6 +523,7 @@ fun NotesScreen(
                     onClick = { haptic(Haptic.TICK); filter = if (filter == f) null else f },
                     label = f.label,
                     modifier = Modifier.weight(1f),
+                    tonal = true,
                 )
             }
         }

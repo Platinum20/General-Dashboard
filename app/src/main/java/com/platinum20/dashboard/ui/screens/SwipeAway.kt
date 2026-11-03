@@ -97,7 +97,7 @@ internal fun Modifier.swipeAway(state: SwipeAwayState, onDismiss: () -> Unit): M
                 },
                 onDragCancel = {
                     state.armed = false
-                    scope.launch { state.x.animateTo(0f, Springs.bouncy()) }
+                    scope.launch { state.x.animateTo(0f, Motion.gesture()) }
                 },
                 onDragEnd = {
                     val v = tracker.calculateVelocity()
@@ -106,12 +106,12 @@ internal fun Modifier.swipeAway(state: SwipeAwayState, onDismiss: () -> Unit): M
                         view.haptic(Haptic.CONFIRM)
                         val dir = if (dx >= 0) 1f else -1f
                         scope.launch {
-                            state.x.animateTo(dir * state.width * 1.2f, tween(200), initialVelocity = v.x)
+                            state.x.animateTo(dir * state.width * 1.2f, Motion.fling(state.width * 1.2f - kotlin.math.abs(dx), v.x))
                             onDismiss()
                         }
                     } else {
                         state.armed = false
-                        scope.launch { state.x.animateTo(0f, Springs.bouncy(), initialVelocity = v.x) }
+                        scope.launch { state.x.animateTo(0f, Motion.gesture(), initialVelocity = v.x) }
                     }
                 },
             ) { change, amount ->

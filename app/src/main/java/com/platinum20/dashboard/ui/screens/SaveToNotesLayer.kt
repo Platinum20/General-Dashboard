@@ -122,7 +122,11 @@ internal fun BoxScope.BottomBubble(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(visible) { onDismiss() }
-    AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut(tween(160)), modifier = Modifier.matchParentSize()) {
+    // La prima volta che si vede un fumetto, una riga piccola dice come si chiude (poi mai più).
+    val context = LocalContext.current
+    val hint = remember(visible) { visible && !GestureHints.seen(context, GestureHints.SWIPE_BUBBLE) }
+    LaunchedEffect(visible) { if (visible) GestureHints.mark(context, GestureHints.SWIPE_BUBBLE) }
+    AnimatedVisibility(visible, enter = fadeIn(Motion.settle()), exit = fadeOut(tween(Motion.EXIT_MS)), modifier = Modifier.matchParentSize()) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -132,8 +136,8 @@ internal fun BoxScope.BottomBubble(
     }
     AnimatedVisibility(
         visible,
-        enter = fadeIn() + scaleIn(initialScale = 0.92f) + slideInVertically { it / 3 },
-        exit = fadeOut(tween(140)) + slideOutVertically { it / 3 },
+        enter = fadeIn(Motion.settle()) + scaleIn(Motion.lively(), initialScale = 0.92f) + slideInVertically(Motion.lively()) { it / 3 },
+        exit = fadeOut(tween(Motion.EXIT_MS - 20)) + slideOutVertically(tween(Motion.EXIT_MS, easing = Motion.Accelerate)) { it / 3 },
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .navigationBarsPadding()
@@ -144,8 +148,25 @@ internal fun BoxScope.BottomBubble(
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.swipeAway(swipe) { if (visible) onDismiss() },
-                content = content,
-            )
+            ) {
+                content()
+                if (hint) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        border = cardBorder(),
+                        modifier = Modifier.align(Alignment.CenterHorizontally).glass(CircleShape),
+                    ) {
+                        Text(
+                            "Portalo di lato per chiuderlo",
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

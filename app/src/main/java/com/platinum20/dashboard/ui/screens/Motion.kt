@@ -42,6 +42,9 @@ object Motion {
     const val ENTER_MS = 340
     const val EXIT_MS = 160
 
+    /** Fra le sezioni della barra: più svelto di un dettaglio, così non si somma alla cascata delle card. */
+    const val TAB_MS = 280
+
     /** Di quanto scivola una pagina: un accenno, non tutta la larghezza. */
     private const val SHIFT = 10
 
@@ -50,12 +53,12 @@ object Motion {
      * (Note sta a destra di Home: entra da destra), quella vecchia scivola dall'altra parte.
      */
     fun tabEnter(forward: Boolean): EnterTransition =
-        slideInHorizontally(tween(ENTER_MS, easing = Decelerate)) { w -> (if (forward) w else -w) / SHIFT } +
-            fadeIn(tween(ENTER_MS - 80, delayMillis = 60, easing = Decelerate))
+        slideInHorizontally(tween(TAB_MS, easing = Decelerate)) { w -> (if (forward) w else -w) / SHIFT } +
+            fadeIn(tween(TAB_MS - 60, delayMillis = 40, easing = Decelerate))
 
     fun tabExit(forward: Boolean): ExitTransition =
-        slideOutHorizontally(tween(ENTER_MS, easing = Decelerate)) { w -> (if (forward) -w else w) / SHIFT } +
-            fadeOut(tween(EXIT_MS, easing = Accelerate))
+        slideOutHorizontally(tween(TAB_MS, easing = Decelerate)) { w -> (if (forward) -w else w) / SHIFT } +
+            fadeOut(tween(EXIT_MS - 20, easing = Accelerate))
 
     /** Pagina di dettaglio: arriva da destra e si ingrandisce appena; sotto, la sezione arretra. */
     val pushEnter: EnterTransition =
@@ -79,8 +82,39 @@ object Motion {
             fadeOut(tween(EXIT_MS + 60, easing = Accelerate)) +
             scaleOut(tween(ENTER_MS, easing = Decelerate), targetScale = 0.98f)
 
-    /** Molla degli elementi che entrano in una pagina: si posano senza rimbalzare. */
+    /*
+     * Le tre molle di Canvas. Tutto quello che si muove usa una di queste (la pillola della barra
+     * resta com'era nella 1.140, a parte).
+     */
+
+    /** Posa: pagine, contenuti, righe che cambiano posto. Arriva e si ferma, senza rimbalzo. */
     fun <T> settle() = spring<T>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow)
+
+    /** Viva: pressioni, comparse di fumetti e pallini. Un accenno di vita, mai un'oscillazione. */
+    fun <T> lively() = spring<T>(dampingRatio = 0.8f, stiffness = Spring.StiffnessMedium)
+
+    /**
+     * Gesto: quello che il dito lascia andare (mini player, fumetti, player). Si usa con la velocità
+     * del lancio, così un lancio veloce esce veloce e uno lento esce piano.
+     */
+    fun <T> gesture() = spring<T>(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow)
+
+    /**
+     * Quanto dura l'uscita di una cosa lanciata col dito: lo spazio che manca diviso la velocità del
+     * lancio, così continua alla stessa andatura del dito. Fra 120 e 280 ms: mai di colpo, mai lenta.
+     */
+    fun flingMs(distancePx: Float, velocityPxPerSec: Float): Int {
+        val v = kotlin.math.abs(velocityPxPerSec)
+        if (v < 1f) return FLING_MAX_MS
+        return (kotlin.math.abs(distancePx) / v * 1000f).toInt().coerceIn(FLING_MIN_MS, FLING_MAX_MS)
+    }
+
+    /** L'uscita di un lancio: [flingMs] con una curva che parte alla velocità del dito e non frena. */
+    fun <T> fling(distancePx: Float, velocityPxPerSec: Float) =
+        tween<T>(flingMs(distancePx, velocityPxPerSec), easing = androidx.compose.animation.core.LinearOutSlowInEasing)
+
+    const val FLING_MIN_MS = 120
+    const val FLING_MAX_MS = 280
 }
 
 /**
@@ -97,7 +131,8 @@ fun Modifier.entrance(): Modifier = composed {
         delay(turn * Entrance.STAGGER_MS)
         progress.animateTo(1f, tween(Entrance.DURATION_MS, easing = Motion.Decelerate))
     }
-    val rise = with(LocalDensity.current) { 18.dp.toPx() }
+    // Un accenno: la pagina scivola già di lato, le card salgono appena (prima 18 dp, due movimenti forti insieme).
+    val rise = with(LocalDensity.current) { 10.dp.toPx() }
     graphicsLayer {
         val p = progress.value
         alpha = p
@@ -107,8 +142,8 @@ fun Modifier.entrance(): Modifier = composed {
 
 internal object Entrance {
     const val WINDOW_MS = 450L
-    const val STAGGER_MS = 45L
-    const val DURATION_MS = 420
+    const val STAGGER_MS = 35L
+    const val DURATION_MS = 300
     private const val MAX_TURNS = 7
 
     private class Page(val start: Long) { var count = 0 }

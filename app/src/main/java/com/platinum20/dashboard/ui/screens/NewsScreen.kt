@@ -129,9 +129,8 @@ fun NewsScreen(
                 !(state.error != null && state.items.isEmpty())
             if (!listShown) Box(Modifier.align(Alignment.TopStart)) { sources(16.dp) }
             when {
-                state.loading && state.items.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+                // Le righe grigie dove arriveranno le notizie, sotto le fonti, invece della rotella in mezzo.
+                state.loading && state.items.isEmpty() -> PlaceholderList(Modifier.padding(top = 64.dp), label = "Carico le notizie")
                 state.visibleItems.isEmpty() && state.verification.pending > 0 -> Column(
                     Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,

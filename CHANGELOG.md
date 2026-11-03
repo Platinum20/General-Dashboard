@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.347.0
+**Animazioni e uso più fluidi, in tutta l'app**
+- Le card non tremano più quando scorri: si stringono solo se le tocchi davvero, e dentro una card reagisce solo la riga sotto il dito
+- Nel Calendario le righe scivolano al loro posto invece di saltare (spuntare, aggiungere, filtrare) e quella appena cambiata si accende un attimo
+- Spuntando un promemoria resta un momento barrato dov'era, poi va tra le cose fatte: se era uno sbaglio lo vedi subito
+- Il pallino del + atterra sulla riga che hai appena salvato, se è a schermo, e la fa accendere
+- Aprendo una cosa dal calendario il titolo vola dalla riga alla sua scheda; la card Calendario si allarga fino a diventare la pagina
+- Il player della musica sale dal basso come quello dei video e ci ridiscende chiudendolo
+- Tenere premuta una riga del calendario apre sempre le sue azioni, anche nella card della Home (toccando la card fuori dalle righe si apre il calendario intero)
+- L'Annulla di Adesso è il fumetto di vetro in basso, come ovunque: la card non cambia più altezza
+- Mentre caricano, meteo, punto del giorno, notizie e video mostrano la forma del contenuto in grigio invece della rotellina
+- Testo un po' più grande e più leggibile
+- Cambiare sezione è più svelto e le card salgono appena; un lancio verso il passato frena dolcemente su OGGI invece di fermarsi di colpo
+- Chiudendo col dito mini player, fumetti e player escono alla velocità del tuo gesto
+- Il fumetto delle azioni sale voce per voce e la riga che hai premuto resta accesa finché è aperto; non si sovrappone più all'avviso di salvataggio
+- Filtri del Calendario più tenui, e col filtro acceso il titolo dice "SOLO SPESE"; "Elimina" dei Completati ora si trova tenendo premuta l'intestazione
+- La prima volta che si apre un fumetto, una riga ti dice che si chiude portandolo di lato
+- Il Calendario si apre già su OGGI, senza il lampo del passato
+
 ## 1.346.0
 **Revolut ti chiede meno spesso l'accesso**
 - Revolut chiude la sessione dopo un po' che nessuno la usa: ora Canvas la tiene viva rileggendo saldo e movimenti ogni 15 minuti, anche con l'app chiusa

@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -83,11 +82,19 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
 
     fun target(n: CaptureNotice): Pair<String, Rect>? {
         n.target?.let { key -> return CaptureTargets.rects[key]?.let { key to it } }
+        // Se la cosa appena salvata è a schermo (la sua riga nel calendario), il pallino atterra proprio lì.
+        RowFlash.freshest()?.let { RowFlash.target(it) }?.let { key ->
+            CaptureTargets.rects[key]?.takeIf { it.top > 0f && it.height > 0f }?.let { return key to it }
+        }
         // Sempre sulla scheda in basso (come vuole Antonio): dalla 1.314 tutto sta nel calendario della Home.
         val key = CaptureTargets.HOME_TAB
         return CaptureTargets.rects[key]?.let { key to it }
     }
 
+    // Un fumetto delle azioni che si apre chiude l'avviso: i due stanno nello stesso punto e si coprirebbero.
+    LaunchedEffect(ActionBubble.actions) {
+        if (ActionBubble.actions != null) notice = null
+    }
     LaunchedEffect(Unit) {
         CaptureFeedback.events.collect { n ->
             notice = n
@@ -113,8 +120,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
     Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp, start = 16.dp, end = 16.dp)) {
         AnimatedVisibility(
             visible = notice != null,
-            enter = fadeIn() + scaleIn(initialScale = 0.9f) + slideInVertically { it / 3 },
-            exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.4f, animationSpec = tween(160)),
+            enter = fadeIn(Motion.settle()) + scaleIn(Motion.lively(), initialScale = 0.9f) + slideInVertically(Motion.lively()) { it / 3 },
+            exit = fadeOut(tween(Motion.EXIT_MS)) + scaleOut(targetScale = 0.4f, animationSpec = tween(Motion.EXIT_MS)),
         ) {
             val n = last ?: return@AnimatedVisibility
             Box(contentAlignment = Alignment.Center) {
@@ -164,6 +171,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
         FlyingDot(f) {
             haptic(Haptic.TICK)
             CaptureTargets.arrived(f.key)
+            // Arrivato su una riga: la riga si riaccende, così si vede dove è finita la cosa.
+            if (f.key.startsWith("row:")) RowFlash.mark(f.key.removePrefix("row:"))
             flight = null
         }
     }
@@ -175,7 +184,7 @@ private fun FlyingDot(f: Flight, onArrived: () -> Unit) {
     val progress = remember(f) { Animatable(0f) }
     val arrived by rememberUpdatedState(onArrived)
     LaunchedEffect(f) {
-        progress.animateTo(1f, tween(620, easing = FastOutSlowInEasing))
+        progress.animateTo(1f, tween(620, easing = Motion.Standard))
         arrived()
     }
     val density = LocalDensity.current

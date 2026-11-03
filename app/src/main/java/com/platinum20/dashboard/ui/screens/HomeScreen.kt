@@ -23,6 +23,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
@@ -220,13 +223,6 @@ fun HomeScreen(
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
     val haptic = rememberHaptic()
-    var briefUndo by remember { mutableStateOf<BriefUndo?>(null) }
-    LaunchedEffect(briefUndo) {
-        if (briefUndo != null) {
-            delay(5_000)
-            briefUndo = null
-        }
-    }
     var habitIds by remember { mutableStateOf<List<Long>?>(null) }
     habitIds?.let { ids ->
         HabitsTodayDialog(
@@ -284,13 +280,15 @@ fun HomeScreen(
                 onBriefAction = { line ->
                     haptic(Haptic.CONFIRM)
                     if (line.action == BriefAction.HABITS) habitIds = line.targetIds
-                    else BriefActions.perform(line, notes, minute.toLocalDate())?.let { briefUndo = it }
-                },
-                undo = briefUndo,
-                onUndo = {
-                    haptic(Haptic.TICK)
-                    briefUndo?.undo?.invoke()
-                    briefUndo = null
+                    else BriefActions.perform(line, notes, minute.toLocalDate())?.let { u ->
+                        // L'Annulla è il fumetto di vetro in fondo, come ovunque: la card Adesso resta ferma.
+                        com.platinum20.dashboard.capture.CaptureFeedback.show(
+                            com.platinum20.dashboard.capture.CaptureNotice(
+                                com.platinum20.dashboard.capture.CaptureMode.TASK, u.message, undo = { u.undo() },
+                                icon = Icons.Outlined.TaskAlt, fly = false,
+                            ),
+                        )
+                    }
                 },
                 onOpenBrief = { line ->
                     // La riga di una cosa sola apre la sua scheda (Antonio); le righe che ne riassumono tante, la pagina.
@@ -460,8 +458,6 @@ private fun WeatherCard(
     onClick: () -> Unit,
     briefing: List<BriefLine>,
     onBriefAction: (BriefLine) -> Unit,
-    undo: BriefUndo?,
-    onUndo: () -> Unit,
     onOpenBrief: (BriefLine) -> Unit,
 ) {
     val forecast = state.forecast
@@ -476,27 +472,9 @@ private fun WeatherCard(
         ),
     ) {
         WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
-        if (briefing.isNotEmpty() || undo != null) {
+        if (briefing.isNotEmpty()) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
-                undo?.let { u ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            u.message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = LocalContentColor.current.copy(alpha = 0.8f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = onUndo, modifier = Modifier.bouncyPress()) {
-                            Text("Annulla", color = LocalContentColor.current)
-                        }
-                    }
-                }
             }
         }
     }
@@ -580,13 +558,19 @@ private fun WeatherSummary(
             action = "Consenti",
             onAction = onRequestPermission,
         )
+        // Mentre cerca: la forma del meteo in grigio, già alla sua altezza, invece della rotella.
         state.loading || state.error == null -> Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp)
+                .semantics(mergeDescendants = true) { contentDescription = "Cerco il meteo della tua zona" },
+            verticalAlignment = Alignment.Top,
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
-            Spacer(Modifier.size(16.dp))
-            Text("Cerco il meteo della tua zona…", style = MaterialTheme.typography.bodyLarge)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Placeholder(110.dp, 10.dp)
+                Placeholder(84.dp, 34.dp)
+                Placeholder(150.dp, 12.dp)
+            }
+            Placeholder(44.dp, 44.dp, shape = CircleShape)
         }
         else -> CardMessage(
             icon = Icons.Outlined.WbSunny,
@@ -621,10 +605,17 @@ private fun RecapCard(
                     Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
                 }
-                else -> Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Spacer(Modifier.size(12.dp))
-                    Text("Raccolgo le notizie di oggi…", style = MaterialTheme.typography.bodyMedium)
+                // Mentre raccoglie: quattro righe grigie al posto dei temi, così la card non si allunga dopo.
+                else -> Column(
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Raccolgo le notizie di oggi" },
+                ) {
+                    listOf(0.82f, 0.64f, 0.74f, 0.56f).forEachIndexed { index, w ->
+                        if (index > 0) RowDivider()
+                        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PlaceholderLine(w, 14.dp)
+                            PlaceholderLine(w * 0.6f, 10.dp)
+                        }
+                    }
                 }
             }
         }

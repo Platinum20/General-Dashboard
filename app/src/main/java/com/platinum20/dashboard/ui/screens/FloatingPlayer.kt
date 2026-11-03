@@ -113,7 +113,7 @@ fun FloatingPlayer(
         val y = remember { Animatable(if (atTop) 0f else 1f) }
         LaunchedEffect(atTop) {
             MiniDock.atTop = atTop
-            y.animateTo(if (atTop) 0f else 1f, Springs.bouncy())
+            y.animateTo(if (atTop) 0f else 1f, Motion.gesture())
         }
         val scope = rememberCoroutineScope()
         val view = LocalView.current
@@ -121,8 +121,8 @@ fun FloatingPlayer(
         // Comparsa: la barra "salta fuori" invece di apparire di colpo.
         // Arrivando dal player grande invece è già lì: il video ci è appena volato dentro.
         val appear = remember { Animatable(if (MiniDock.docking) 1f else 0f) }
-        LaunchedEffect(Unit) { appear.animateTo(1f, Springs.bouncy()) }
-        val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Springs.snappy(), label = "drag")
+        LaunchedEffect(Unit) { appear.animateTo(1f, Motion.lively()) }
+        val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Motion.lively(), label = "drag")
         // Per chiudere: si porta di lato, come una notifica. Il dito la muove liberamente (di lato e
         // su e giù insieme), sotto compare la X dal lato che si scopre; oltre metà larghezza lasciandola si chiude.
         val maxW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
@@ -138,7 +138,7 @@ fun FloatingPlayer(
                 closing = false
                 x.snapTo(0f)
                 appear.snapTo(0f)
-                appear.animateTo(1f, Springs.bouncy())
+                appear.animateTo(1f, Motion.lively())
             }
         }
 
@@ -215,8 +215,8 @@ fun FloatingPlayer(
                         onDragCancel = {
                             dragging = false
                             closeArmed = false
-                            scope.launch { x.animateTo(0f, Springs.bouncy()) }
-                            scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
+                            scope.launch { x.animateTo(0f, Motion.gesture()) }
+                            scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
                         },
                         onDragEnd = {
                             dragging = false
@@ -230,12 +230,12 @@ fun FloatingPlayer(
                                 view.haptic(Haptic.CONFIRM)
                                 val dir = if (dx >= 0) 1f else -1f
                                 scope.launch {
-                                    x.animateTo(dir * maxW * 1.2f, androidx.compose.animation.core.tween(200), initialVelocity = vx)
+                                    x.animateTo(dir * maxW * 1.2f, Motion.fling(maxW * 1.2f - kotlin.math.abs(x.value), vx))
                                     onClose?.invoke() ?: Playback.stop()
                                 }
-                                scope.launch { y.animateTo(if (atTop) 0f else 1f, Springs.bouncy()) }
+                                scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
                             } else {
-                                scope.launch { x.animateTo(0f, Springs.bouncy(), initialVelocity = vx) }
+                                scope.launch { x.animateTo(0f, Motion.gesture(), initialVelocity = vx) }
                                 // In alto o in basso: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
                                 val v = velocity.y / range
                                 val moved = curY - start
@@ -247,7 +247,7 @@ fun FloatingPlayer(
                                     else -> curY < 0.5f
                                 }
                                 view.haptic(Haptic.SNAP)
-                                if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Springs.bouncy(), initialVelocity = v) }
+                                if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Motion.gesture(), initialVelocity = v) }
                                 atTop = top
                             }
                         },

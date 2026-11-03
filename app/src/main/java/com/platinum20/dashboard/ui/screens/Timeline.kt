@@ -39,6 +39,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.animation.core.calculateTargetValue
+import com.platinum20.dashboard.capture.captureTarget
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -163,14 +168,58 @@ fun TimelineRow(
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
     }
+    // La riga appena cambiata (spuntata, salvata, spostata) si accende un attimo nel suo nuovo posto.
+    val flash = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(0f) }
+    val flashAt = RowFlash.marks[entry.key]
+    androidx.compose.runtime.LaunchedEffect(flashAt) {
+        if (flashAt == null || !RowFlash.fresh(entry.key)) return@LaunchedEffect
+        flash.snapTo(1f)
+        flash.animateTo(0f, androidx.compose.animation.core.tween(RowFlash.FADE_MS, delayMillis = RowFlash.HOLD_MS, easing = Motion.Standard))
+    }
+    // Spuntando, la riga resta dov'è un attimo già barrata: si vede cosa hai fatto prima che vada al suo posto.
+    var ticking by androidx.compose.runtime.remember(entry.key, entry.done) { androidx.compose.runtime.mutableStateOf(false) }
+    val pop = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(1f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val shownDone = entry.done != ticking
+    val tick: (() -> Unit)? = onIcon?.let { act ->
+        {
+            if (!ticking) {
+                ticking = true
+                haptic(Haptic.CONFIRM)
+                scope.launch {
+                    pop.animateTo(1.3f, androidx.compose.animation.core.tween(Motion.EXIT_MS / 2, easing = Motion.Decelerate))
+                    pop.animateTo(1f, Motion.lively())
+                }
+                RowFlash.later(entry.key, act)
+            }
+        }
+    }
+    val flashColor = MaterialTheme.colorScheme.primary
+    val held = ActionBubble.heldBy(entry.key)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
+            // Una riga appena comparsa è il posto dove atterra il pallino del +, se è a schermo.
+            .then(if (flashAt != null) Modifier.captureTarget(RowFlash.target(entry.key)) else Modifier)
+            .drawBehind {
+                val f = maxOf(flash.value, if (held) 1f else 0f)
+                if (f > 0f) drawRoundRect(
+                    flashColor.copy(alpha = 0.14f * f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
+                )
+            }
             .bouncyPress(0.98f)
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick?.let { long -> { haptic(Haptic.LONG_PRESS); long() } },
+                onLongClick = onLongClick?.let { long ->
+                    {
+                        haptic(Haptic.LONG_PRESS)
+                        long()
+                        // Finché il fumetto è aperto, questa riga resta accesa: si vede di chi sono le azioni.
+                        ActionBubble.source = entry.key
+                    }
+                },
             )
             .padding(start = start, end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
@@ -178,10 +227,12 @@ fun TimelineRow(
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
         if (onIcon != null || entry.done) {
             Icon(
-                if (entry.done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (entry.done) "Da fare" else "Fatto",
-                tint = if (entry.done) MaterialTheme.colorScheme.primary else tint,
-                modifier = Modifier.size(20.dp).clip(CircleShape).then(if (onIcon != null) Modifier.clickable(onClick = onIcon) else Modifier),
+                if (shownDone) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = if (shownDone) "Da fare" else "Fatto",
+                tint = if (shownDone) MaterialTheme.colorScheme.primary else tint,
+                modifier = Modifier.size(20.dp)
+                    .graphicsLayer { scaleX = pop.value; scaleY = pop.value }
+                    .clip(CircleShape).then(if (tick != null) Modifier.clickable(onClick = tick) else Modifier),
             )
             Spacer(Modifier.width(8.dp))
         } else if (entry.image != null) {
@@ -200,11 +251,12 @@ fun TimelineRow(
         Text(
             entry.text,
             style = MaterialTheme.typography.bodyMedium,
-            color = if (entry.past || entry.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            textDecoration = if (entry.done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+            color = if (entry.past || shownDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (shownDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(vertical = 7.dp),
+            // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
+            modifier = Modifier.weight(1f).padding(vertical = 7.dp).sharedItem(entry.key.takeIf { it.isSharedRow() }),
         )
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
@@ -433,6 +485,95 @@ object PastBarrier {
     }
 }
 
+/**
+ * Le righe da accendere un attimo: quella appena spuntata, salvata o spostata. Chi cambia una cosa
+ * chiama [mark] con la chiave della sua riga; la riga, dove si trova adesso, si illumina e si spegne.
+ */
+object RowFlash {
+    /** Quanto resta accesa prima di spegnersi, e quanto dura lo spegnimento. */
+    const val HOLD_MS = 500
+    const val FADE_MS = 900
+
+    /** Quanto la riga spuntata resta al suo posto, barrata, prima di andare tra le cose fatte. */
+    const val TICK_MS = 650L
+
+    /** Una riga che compare entro questo tempo si accende ancora (per esempio scorrendo fino a lei). */
+    private const val FRESH_MS = 3_000L
+
+    val marks = androidx.compose.runtime.mutableStateMapOf<String, Long>()
+
+    // Fuori dalla composizione: se la riga sparisce dallo schermo intanto, la spunta arriva comunque.
+    private val scope by lazy { kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main.immediate) }
+
+    fun mark(key: String, now: Long = android.os.SystemClock.uptimeMillis()) {
+        marks[key] = now
+    }
+
+    fun fresh(key: String, now: Long = android.os.SystemClock.uptimeMillis()): Boolean = isFresh(marks[key], now)
+
+    /** Logica pura: una riga segnata da poco. */
+    fun isFresh(markedAt: Long?, now: Long): Boolean = markedAt != null && now - markedAt in 0..FRESH_MS
+
+    /** La riga segnata più di recente, se è ancora fresca: dove deve atterrare il pallino del +. */
+    fun freshest(now: Long = android.os.SystemClock.uptimeMillis()): String? =
+        marks.entries.filter { isFresh(it.value, now) }.maxByOrNull { it.value }?.key
+
+    /** La chiave con cui una riga si offre come arrivo del pallino ([com.platinum20.dashboard.capture.CaptureTargets]). */
+    fun target(key: String) = "row:$key"
+
+    /**
+     * Le righe nuove fra un elenco e il successivo. Al primo elenco niente (la pagina si sta aprendo), e
+     * nemmeno quando ne arrivano tante insieme (si è caricato un altro pezzo di calendario): solo le poche
+     * cose appena aggiunte.
+     */
+    fun newKeys(previous: Set<String>?, now: List<String>): List<String> {
+        if (previous == null) return emptyList()
+        val added = now.filter { it !in previous }
+        return if (added.size > MAX_NEW) emptyList() else added
+    }
+
+    private const val MAX_NEW = 3
+
+    /** Esegue [action] dopo [TICK_MS] e poi accende la riga nel suo nuovo posto. */
+    fun later(key: String, action: () -> Unit) {
+        scope.launch {
+            kotlinx.coroutines.delay(TICK_MS)
+            action()
+            mark(key)
+        }
+    }
+}
+
+/** Le righe che hanno una scheda con il titolo condiviso (vedi [SharedKeys.item]). */
+internal fun String.isSharedRow(): Boolean =
+    startsWith("task-") || startsWith("date-") || startsWith("parcel-") || startsWith("expense-")
+
+/** Accende le righe che compaiono in [keys] dopo la prima volta (vedi [RowFlash.newKeys]). */
+@Composable
+fun FlashNewRows(keys: List<String>, vararg resetOn: Any?) {
+    val previous = androidx.compose.runtime.remember(*resetOn) { arrayOfNulls<Set<String>>(1) }
+    androidx.compose.runtime.LaunchedEffect(keys) {
+        RowFlash.newKeys(previous[0], keys).forEach { RowFlash.mark(it) }
+        previous[0] = keys.toSet()
+    }
+}
+
+/**
+ * Il lancio verso il passato che arriverebbe oltre OGGI: invece di fermarsi di colpo contro il confine,
+ * la lista frena fino a posarsi su OGGI. Restituisce quanti px scorrere (verso il passato) o null se il
+ * lancio non arriva al confine, è già sbloccato o va verso il futuro. Logica pura, per i test.
+ */
+internal fun softStopAtNow(boundary: Float?, velocity: Float, naturalDistance: Float, unlocked: Boolean): Float? {
+    if (boundary == null || unlocked || velocity <= 0f) return null
+    val room = -boundary
+    if (room <= 1f || naturalDistance <= room) return null
+    return room
+}
+
+/** Quanto dura la frenata su OGGI: come una decelerazione costante dalla velocità del lancio. */
+internal fun softStopMs(distance: Float, velocity: Float): Int =
+    if (velocity <= 0f) 400 else (2f * distance / velocity * 1000f).toInt().coerceIn(180, 600)
+
 /** Ogni volta che una lista arriva su OGGI: i [TimelineNowMarker] a schermo pulsano. */
 object NowPulse {
     val ticks = androidx.compose.runtime.mutableIntStateOf(0)
@@ -443,10 +584,12 @@ object NowPulse {
 @Composable
 fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListState, itemIndex: Int, offset: Int?): androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
     val haptic = rememberHaptic()
-    val threshold = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val threshold = with(density) { 120.dp.toPx() }
+    val decay = androidx.compose.animation.rememberSplineBasedDecay<Float>()
     val index by androidx.compose.runtime.rememberUpdatedState(itemIndex)
     val at by androidx.compose.runtime.rememberUpdatedState(offset)
-    return androidx.compose.runtime.remember(listState, haptic, threshold) {
+    return androidx.compose.runtime.remember(listState, haptic, threshold, decay) {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
             var pull = 0f
             var unlocked = false
@@ -479,7 +622,13 @@ fun rememberPastBarrier(listState: androidx.compose.foundation.lazy.LazyListStat
             override suspend fun onPreFling(available: androidx.compose.ui.unit.Velocity): androidx.compose.ui.unit.Velocity {
                 pull = 0f
                 flingStopped = false
-                return androidx.compose.ui.unit.Velocity.Zero
+                val v = available.y
+                val stop = softStopAtNow(boundary(), v, decay.calculateTargetValue(0f, v), unlocked)
+                    ?: return androidx.compose.ui.unit.Velocity.Zero
+                // Frena fino a OGGI invece di sbatterci contro: il lancio lo prendiamo tutto noi.
+                listState.animateScrollBy(-stop, androidx.compose.animation.core.tween(softStopMs(stop, v), easing = Motion.Decelerate))
+                NowPulse.fire()
+                return available
             }
         }
     }
