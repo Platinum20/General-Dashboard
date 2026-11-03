@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.333.0
+**Spese: solo il mese che stai guardando**
+- Nel riepilogo del mese non c'è più il totale del mese prima: totale, categorie e lista sono solo di quel mese
+- Si apre sempre sul mese in corso; per vedere i mesi passati trascini il riepilogo verso destra
+
 ## 1.331.0
 **Revolut: tutta la storia, con le sue categorie**
 - Le spese Revolut arrivano tutte, non solo dal mese scorso: alla prossima lettura Canvas va indietro fino al primo movimento (una volta sola, poi legge solo i nuovi)
