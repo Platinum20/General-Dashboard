@@ -85,6 +85,8 @@ data class TimelineEntry(
     val monthOf: java.time.YearMonth? = null,
     /** La miniatura al posto dell'icona: il video da guardare più tardi, la foto della nota. */
     val image: String? = null,
+    /** La riga di Oggi: si disegna come il segno "OGGI" con accanto [trailing] (la spesa di oggi), non come una voce (Antonio). */
+    val todayHeader: Boolean = false,
 )
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -153,6 +155,10 @@ fun TimelineRow(
     if (showMonth) entry.month?.let {
         TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
             onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } })
+    }
+    if (entry.todayHeader) {
+        TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
+        return
     }
     Row(
         modifier = modifier
@@ -265,7 +271,12 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
  * arriva fino alla linea, con il pallino grande. Lì la lista fa un po' di resistenza (vedi [PastBarrier]).
  */
 @Composable
-fun TimelineNowMarker(modifier: Modifier = Modifier) {
+fun TimelineNowMarker(
+    modifier: Modifier = Modifier,
+    /** La spesa di oggi, a destra prima della linea, come il totale accanto al mese (Antonio). */
+    total: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
     val primary = MaterialTheme.colorScheme.primary
     // Arrivando su OGGI, oltre alla vibrazione, "OGGI" pulsa e una freccetta in su dice che il passato sta sopra.
     val pulse = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
@@ -276,7 +287,7 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
         pulse.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS * 2, easing = Motion.Standard))
     }
     Row(
-        modifier.fillMaxWidth().height(32.dp).padding(end = LINE_END),
+        (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).then(modifier).fillMaxWidth().height(32.dp).padding(end = LINE_END),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -305,6 +316,11 @@ fun TimelineNowMarker(modifier: Modifier = Modifier) {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
             },
         )
+        total?.let {
+            Spacer(Modifier.width(10.dp))
+            Text(it, style = MaterialTheme.typography.labelLarge, color = primary, maxLines = 1)
+            Spacer(Modifier.width(4.dp))
+        }
         Box(
             Modifier.width(GUTTER).fillMaxHeight().drawBehind {
                 drawLine(primary, Offset(0f, size.height / 2), Offset(size.width / 2, size.height / 2), 2.dp.toPx())

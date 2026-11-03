@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.318.0
+**Calendario: la spesa di oggi accanto a OGGI**
+- La spesa di oggi non è più una voce della lista: sta sulla riga OGGI, a destra, come il totale accanto al mese
+- Vale sia nella card della Home, che ora ha anche la riga OGGI, sia nel calendario intero
+- Toccando la riga OGGI si apre il riepilogo delle spese del mese
+
 ## 1.317.0
 **Calendario: filtri Spese, Note, Eventi**
 - In cima al calendario intero tre filtri: Spese, Note ed Eventi

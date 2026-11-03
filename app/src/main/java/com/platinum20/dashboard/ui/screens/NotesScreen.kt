@@ -480,7 +480,14 @@ fun NotesScreen(
                             // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
                             // Il segno del mese di oggi sta sopra "OGGI", non sotto.
                             // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
-                            val monthAbove = index == nowIndex && index > 0 && entry.month != null
+                            val monthAbove = index == nowIndex && index > 0 && entry.month != null && !entry.todayHeader
+                            // La riga di Oggi è già il segno "OGGI" con la spesa: si misura lei per aprire la pagina lì.
+                            if (entry.todayHeader) {
+                                Column(Modifier.fillMaxWidth().onGloballyPositioned { if (index > 0) nowOffset = it.positionInParent().y.roundToInt() }) {
+                                    TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth)
+                                }
+                                return@forEachIndexed
+                            }
                             if (index == nowIndex && index > 0) {
                                 Column(Modifier.fillMaxWidth().onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }) {
                                     if (monthAbove) {
