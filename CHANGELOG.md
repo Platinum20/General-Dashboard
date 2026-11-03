@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.307.0
+**Card SIM: un dato per riga**
+- Giga, minuti, SMS, credito e rinnovo ognuno sulla sua riga, con la barra sotto quelli che si consumano
+- Il roaming UE si vede solo nella pagina SIM, non nella card della Home
+
 ## 1.306.0
 **Player YouTube più pulito**
 - Via i tasti avanti e indietro di 10 secondi: si usa solo il doppio tocco sui lati
