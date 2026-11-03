@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.344.0
+**Filtri del Calendario senza scatti**
+- Togliendo un filtro (Spese, Note, Eventi) la linea del tempo non si blocca più per un attimo: ora si disegnano solo le righe che vedi, non tutti i mesi insieme
+
 ## 1.343.0
 **Revolut: le tasche nella card**
 - La card Revolut in Home ora mostra davvero i salvadanai (come "Risparmi") sotto il saldo totale: prima vedeva solo il conto

@@ -321,18 +321,21 @@ fun NotesScreen(
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
     val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
-    val timeline = dueDays(
-        data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
-        withToday = true, notes = data.notes, expenses = data.expenses,
-    )
+    // Calcolati una volta per dati e giorno, non a ogni ricomposizione (toccare un filtro rifaceva tutto).
+    val day = LocalDate.now()
+    val timeline = remember(data, events, sim, simLinked, day) {
+        dueDays(
+            data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
+            withToday = true, notes = data.notes, expenses = data.expenses,
+        )
+    }
     // Sopra, scorrendo in su, il passato: cose fatte, spese, pacchi arrivati, eventi finiti.
-    val past = pastDays(data.tasks, data.parcels, events, expenses = data.expenses, withToday = true)
+    val past = remember(data, events, day) { pastDays(data.tasks, data.parcels, events, expenses = data.expenses, withToday = true) }
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     // Il filtro acceso (Spese, Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
     var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
-    var nowOffset by remember(section, filter) { mutableStateOf<Int?>(null) }
-    // Quanto è alta la linea del tempo: sotto "OGGI" serve spazio perché oggi stia in cima allo schermo.
-    var timelineHeight by remember(section, filter) { mutableStateOf(0) }
+    // Quanto c'è sotto "OGGI" nella linea del tempo: sotto serve spazio perché oggi stia in cima allo schermo.
+    var below by remember(section, filter) { mutableStateOf<Int?>(null) }
     var startedAtNow by remember(section, filter) { mutableStateOf(false) }
     // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
     var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
@@ -368,33 +371,56 @@ fun NotesScreen(
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         val done = data.tasks.filter { it.done }
         // Completati tiene solo quello che non sta già nel passato della linea del tempo.
-        val inPast = (past + timeline).flatMap { it.rows }.map { it.key }.toSet()
+        val inPast = remember(past, timeline) { (past + timeline).flatMap { it.rows }.map { it.key }.toSet() }
         val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
         // I promemoria senza data spuntati spariscono da Oggi (si ritrovano cercando); qui solo quelli con una data.
         val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
         val today = LocalDate.now()
         // Oggi c'è sempre (almeno la spesa di oggi): vuoto = solo quella riga e niente altro.
         val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
-        val groups = (past + timeline).only(filter)
+        val groups = remember(past, timeline, filter) { (past + timeline).only(filter) }
+        // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
+        // (mesi di spese ed eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
+        val entries = remember(groups, data.expenses, today) {
+            if (show(NotesSection.DATED)) timelineEntries(groups, today, months = true, expenses = data.expenses) else emptyList()
+        }
+        val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
+        val nowAt = entries.indexOfFirst { !it.first.past }
         val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
 
         // Si apre sempre da adesso: il passato sta sopra, scorrendo in su.
         val timelineIndex = (if (empty) 1 else 0) + (if (invite) 1 else 0)
-        LaunchedEffect(section, nowOffset) {
-            val offset = nowOffset
-            if (offset != null && !startedAtNow) {
-                startedAtNow = true
-                runCatching { listState.scrollToItem(timelineIndex, offset) }
+        // L'item con "OGGI" (null se la linea non ha un adesso dopo il passato) e l'ultima riga della linea.
+        val nowItem = if (nowAt > 0) timelineIndex + nowAt else null
+        val lastItem = timelineIndex + entries.lastIndex
+        LaunchedEffect(nowItem, lastItem) {
+            if (nowItem == null) return@LaunchedEffect
+            androidx.compose.runtime.snapshotFlow {
+                val info = listState.layoutInfo
+                val now = info.visibleItemsInfo.firstOrNull { it.index == nowItem } ?: return@snapshotFlow null
+                val last = info.visibleItemsInfo.firstOrNull { it.index == lastItem }
+                if (last == null) info.viewportSize.height else last.offset + last.size - now.offset
+            }.collect { if (it != null) below = it }
+        }
+        LaunchedEffect(section, filter, nowItem) {
+            val target = nowItem ?: return@LaunchedEffect
+            if (startedAtNow) return@LaunchedEffect
+            startedAtNow = true
+            runCatching {
+                listState.scrollToItem(target)
+                // Lo spazio in fondo si misura solo con OGGI a schermo: poi si torna su OGGI, ora che c'è posto.
+                kotlinx.coroutines.withTimeoutOrNull(500) { androidx.compose.runtime.snapshotFlow { below }.first { it != null } }
+                androidx.compose.runtime.withFrameNanos { }
+                listState.scrollToItem(target)
             }
         }
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
         // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.
-        val nearEnd by remember {
+        val nearEnd by remember(lastItem, entries.isEmpty()) {
             derivedStateOf {
-                val info = listState.layoutInfo
-                val item = info.visibleItemsInfo.firstOrNull { it.key == "timeline" }
-                item != null && item.offset + item.size < info.viewportEndOffset + 1500
+                val last = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                entries.isNotEmpty() && last >= lastItem - NEAR_ROWS
             }
         }
         var grown by remember { mutableStateOf(0) }
@@ -410,30 +436,21 @@ fun NotesScreen(
         }
         // Lo stesso in cima, verso il passato (Antonio): un altro pezzo di calendario alla volta. Le righe nuove
         // entrano sopra, quindi la lista scorre di quanto è cresciuta e quello che stai guardando resta fermo.
-        val nearStart by remember(section) {
-            derivedStateOf {
-                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == "timeline" }
-                startedAtNow && item != null && item.offset > -1500
-            }
+        val nearStart by remember(section, timelineIndex, entries.isEmpty()) {
+            derivedStateOf { startedAtNow && entries.isNotEmpty() && listState.firstVisibleItemIndex <= timelineIndex + NEAR_ROWS }
         }
         var grownPast by remember { mutableStateOf(0) }
         LaunchedEffect(nearStart, grownPast, section, calendarGranted) {
             if (nearStart && section == NotesSection.DATED && calendarGranted && NotesEvents.growPast()) {
                 val before = events.size
-                val oldOffset = nowOffset
+                // Le righe hanno chiavi stabili: la lista tiene ferma quella che stai guardando da sola.
                 events = NotesEvents.load(context)
                 if (events.size == before) NotesEvents.stopPast()
-                else {
-                    val newOffset = kotlinx.coroutines.withTimeoutOrNull(1000) {
-                        androidx.compose.runtime.snapshotFlow { nowOffset }.first { it != oldOffset }
-                    }
-                    if (oldOffset != null && newOffset != null) runCatching { listState.scrollBy((newOffset - oldOffset).toFloat()) }
-                }
                 kotlinx.coroutines.delay(300)
                 grownPast++
             }
         }
-        val barrier = rememberPastBarrier(listState, timelineIndex, nowOffset)
+        val barrier = rememberPastBarrier(listState, nowItem ?: -1, nowItem?.let { 0 })
         Box(Modifier.fillMaxSize()) {
         // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
@@ -443,80 +460,73 @@ fun NotesScreen(
                 end = listPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                 bottom = listPadding.calculateBottomPadding(),
             ),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
             modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
-                    EmptyHint(
+                    Box(Modifier.padding(bottom = 4.dp)) { EmptyHint(
                         "Tocca + e scrivi come parli: Canvas capisce da solo se c'è una data. \"venerdì alle 18 palestra\", " +
                             "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono nel loro giorno; " +
                             "un'idea senza data resta in Oggi finché non la togli."
-                    )
+                    ) }
                 }
             }
             if (invite) {
                 item(key = "calendar-invite") {
-                    CalendarInvite(
-                        onAllow = { calendarAsk.launch(android.Manifest.permission.READ_CALENDAR) },
-                        onLater = { hideAgenda(context) },
-                    )
+                    Box(Modifier.padding(bottom = 4.dp)) {
+                        CalendarInvite(
+                            onAllow = { calendarAsk.launch(android.Manifest.permission.READ_CALENDAR) },
+                            onLater = { hideAgenda(context) },
+                        )
+                    }
                 }
             }
             // Prossimi giorni: la stessa linea del tempo della card di Oggi, ma con tutto.
-            if (show(NotesSection.DATED) && groups.isNotEmpty()) {
-                item(key = "timeline") {
-                    val entries = timelineEntries(groups, today, months = true, expenses = data.expenses)
-                    val nowIndex = entries.indexOfFirst { !it.first.past }
-                    val openMonth: (java.time.YearMonth) -> Unit = { inApp?.openRoute?.invoke(Routes.expenses(it)) }
-                    // Sullo sfondo, senza card: la linea è la pagina.
-                    Column(
-                        Modifier.fillMaxWidth()
-                            .onGloballyPositioned { timelineHeight = it.size.height }
-                            .captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
-                            .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT),
-                    ) {
-                        entries.forEachIndexed { index, (entry, row) ->
-                            // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
-                            // Il segno del mese di oggi sta sopra "OGGI", non sotto.
-                            // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
-                            val monthAbove = index == nowIndex && index > 0 && entry.month != null && !entry.todayHeader
-                            // La riga di Oggi è già il segno "OGGI" con la spesa: si misura lei per aprire la pagina lì.
-                            if (entry.todayHeader) {
-                                Column(Modifier.fillMaxWidth().onGloballyPositioned { if (index > 0) nowOffset = it.positionInParent().y.roundToInt() }) {
-                                    TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth)
-                                }
-                                return@forEachIndexed
+            if (entries.isNotEmpty()) {
+                val openMonth: (java.time.YearMonth) -> Unit = { inApp?.openRoute?.invoke(Routes.expenses(it)) }
+                // Sullo sfondo, senza card: la linea è la pagina.
+                items(entries.size, key = { entryKeys[it] }, contentType = { "timeline" }) { index ->
+                    val (entry, row) = entries[index]
+                    // Il pallino del + atterra su OGGI.
+                    val target = if (index == nowAt) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
+                        .captureTarget(CaptureMode.PARCEL).captureTarget(CaptureMode.EVENT) else Modifier
+                    Column(Modifier.fillMaxWidth().then(target).padding(bottom = if (index == entries.lastIndex) 4.dp else 0.dp)) {
+                        // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
+                        // Il segno del mese di oggi sta sopra "OGGI", non sotto.
+                        // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
+                        val monthAbove = index == nowAt && index > 0 && entry.month != null && !entry.todayHeader
+                        // La riga di Oggi è già il segno "OGGI" con la spesa.
+                        if (entry.todayHeader) {
+                            TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth)
+                        } else {
+                        if (index == nowAt && index > 0) {
+                            if (monthAbove) {
+                                TimelineMonthMarker(entry.month!!, total = entry.monthSpend, onClick = entry.monthOf?.let { m -> { haptic(Haptic.TICK); openMonth(m) } })
                             }
-                            if (index == nowIndex && index > 0) {
-                                Column(Modifier.fillMaxWidth().onGloballyPositioned { nowOffset = it.positionInParent().y.roundToInt() }) {
-                                    if (monthAbove) {
-                                        TimelineMonthMarker(entry.month!!, total = entry.monthSpend, onClick = entry.monthOf?.let { m -> { haptic(Haptic.TICK); openMonth(m) } })
-                                    }
-                                    TimelineNowMarker(Modifier.padding(start = 16.dp))
+                            TimelineNowMarker(Modifier.padding(start = 16.dp))
+                        }
+                        TimelineRow(
+                            entry,
+                            top = index > 0,
+                            bottom = index < entries.lastIndex,
+                            onClick = { openRow(row) },
+                            onLongClick = {
+                                when {
+                                    row.note != null -> noteActions(row.note)
+                                    row.expense != null -> expenseActions(row.expense)
+                                    else -> dueActions(row)
                                 }
-                            }
-                            TimelineRow(
-                                entry,
-                                top = index > 0,
-                                bottom = index < entries.lastIndex,
-                                onClick = { openRow(row) },
-                                onLongClick = {
-                                    when {
-                                        row.note != null -> noteActions(row.note)
-                                        row.expense != null -> expenseActions(row.expense)
-                                        else -> dueActions(row)
-                                    }
-                                },
-                                onMonth = openMonth,
-                                showMonth = !monthAbove,
-                                onIcon = row.task?.let { task ->
-                                    {
-                                        haptic(Haptic.CONFIRM)
-                                        NotesStore.toggleTask(task.id)
-                                    }
-                                },
-                            )
+                            },
+                            onMonth = openMonth,
+                            showMonth = !monthAbove,
+                            onIcon = row.task?.let { task ->
+                                {
+                                    haptic(Haptic.CONFIRM)
+                                    NotesStore.toggleTask(task.id)
+                                }
+                            },
+                        )
                         }
                     }
                 }
@@ -524,7 +534,7 @@ fun NotesScreen(
             // Le abitudini si fanno oggi: sotto la linea del tempo.
             if (show(NotesSection.DATED) && data.habits.isNotEmpty()) {
                 item(key = "habits-header") {
-                    SectionHeader("Abitudini", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp).captureTarget(CaptureMode.HABIT))
+                    SectionHeader("Abitudini", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp).captureTarget(CaptureMode.HABIT))
                 }
                 habitRows()
             }
@@ -533,7 +543,7 @@ fun NotesScreen(
                 item(key = "done-header") {
                     SectionHeader(
                         "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 4.dp),
+                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp),
                         action = if (doneShown.isNotEmpty()) "Elimina" else null,
                         onAction = {
                             NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
@@ -541,7 +551,7 @@ fun NotesScreen(
                         },
                     )
                 }
-                if (doneShown.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem()) { TaskGroup(null, doneShown, onTaskDeleted) } }
+                if (doneShown.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem().padding(bottom = 4.dp)) { TaskGroup(null, doneShown, onTaskDeleted) } }
                 items(delivered, key = { "parcel-${it.id}" }) { p ->
                     Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
                 }
@@ -550,7 +560,7 @@ fun NotesScreen(
             item(key = "bottom-space") {
                 // Si apre su "OGGI" in cima allo schermo anche con poco sotto (Antonio): il resto resta vuoto.
                 val density = androidx.compose.ui.platform.LocalDensity.current
-                val room = with(density) { nowRoom(listState.layoutInfo.viewportSize.height, 0, nowOffset?.let { timelineHeight - it }).toDp() }
+                val room = with(density) { nowRoom(listState.layoutInfo.viewportSize.height, 0, below).toDp() }
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
@@ -571,6 +581,9 @@ fun NotesScreen(
         }
     }
 }
+
+/** Quante righe prima dell'inizio o della fine della linea si legge un altro pezzo di calendario. */
+private const val NEAR_ROWS = 20
 
 /** Lo spazio sopra la lista per la riga dei filtri. */
 private val CHIPS_ROOM = 48.dp
@@ -617,7 +630,7 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
             CanvasCard(
                 onClick = { openItem(ItemKind.HABIT, habit.id) },
                 shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+                modifier = Modifier.padding(bottom = 4.dp).fillMaxWidth().bouncyPress(0.98f),
             ) {
                 Row(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

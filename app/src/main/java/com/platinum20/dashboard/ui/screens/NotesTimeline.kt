@@ -511,6 +511,19 @@ internal fun undatedEntries(
 }
 
 /**
+ * Le chiavi delle righe della linea nella lista: la stessa cosa può comparire due volte (passato e futuro),
+ * e due chiavi uguali in una LazyColumn la fanno chiudere. Le ripetute prendono un numero.
+ */
+internal fun timelineKeys(keys: List<String>): List<String> {
+    val seen = HashMap<String, Int>()
+    return keys.map { k ->
+        val n = (seen[k] ?: 0) + 1
+        seen[k] = n
+        if (n == 1) "tl-$k" else "tl-$k#$n"
+    }
+}
+
+/**
  * Lo spazio vuoto in fondo perché "OGGI" possa stare in cima allo schermo. [below] = quanto c'è sotto OGGI,
  * null finché non è misurato: allora niente spazio. Prima era Int.MAX_VALUE e sottraendo il margine
  * il conto andava in overflow, un'altezza enorme che faceva chiudere Spese all'apertura.
