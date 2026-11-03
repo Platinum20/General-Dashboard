@@ -51,6 +51,7 @@ class UpdateRepository(private val context: Context) {
         onProgress: (Float) -> Unit,
     ): File = withContext(Dispatchers.IO) {
         val url = release.apkUrl ?: throw IOException("Questa release non contiene un APK.")
+        if (!UpdateTrust.trustedUrl(url, repo)) throw IOException("Indirizzo dell'aggiornamento non riconosciuto.")
         // L'APK pesa decine di MB: con "solo Wi-Fi" acceso non parte sui dati.
         if (HeavyDownloads.blocked(context)) throw IOException(HeavyDownloads.BLOCKED)
         val dir = File(context.cacheDir, "updates").apply { mkdirs() }

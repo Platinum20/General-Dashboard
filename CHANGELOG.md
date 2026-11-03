@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.338.0
+**Più sicurezza per i tuoi accessi**
+- I token di Spotify e del riconoscimento canzoni sono ora cifrati sul telefono con una chiave che non esce mai dal telefono (come già la password di Gmail): non serve ricollegare nulla
+- Gli aggiornamenti si scaricano solo dalle release di Canvas su GitHub e vengono installati solo se firmati con la stessa chiave dell'app
+
 ## 1.337.0
 **Spese: solo il mese che stai guardando**
 - Nel riepilogo del mese non c'è più il totale del mese prima: totale, categorie e lista sono solo di quel mese
