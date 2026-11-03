@@ -147,7 +147,46 @@ fun ExpensesTab(
             state = listState,
             contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                // Il mese si cambia trascinando di lato tutta la pagina (Antonio), non solo il riepilogo. Il gesto sta
+                // fuori dai graphicsLayer: la card e la lista che si spostano non falsano il trascinamento.
+                .pointerInput(threshold) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { drag = 0f; armed = false },
+                        onDragEnd = {
+                            val target = MonthSwipe.target(month, drag, threshold, YearMonth.now())
+                            val out = drag
+                            drag = 0f
+                            armed = false
+                            scope.launch {
+                                if (target != null) {
+                                    // Esce dal lato verso cui l'hai spinto, poi entra il nuovo mese dall'altro.
+                                    val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
+                                    nudge.animateTo(if (out < 0) -width else width, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Accelerate))
+                                    month = target
+                                } else {
+                                    nudge.animateTo(0f, Motion.settle())
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            drag = 0f
+                            armed = false
+                            scope.launch { nudge.animateTo(0f, Motion.settle()) }
+                        },
+                    ) { change, amount ->
+                        change.consume()
+                        drag += amount
+                        val can = MonthSwipe.target(month, drag, threshold, YearMonth.now()) != null
+                        if (can != armed) {
+                            armed = can
+                            if (can) haptic(Haptic.THRESHOLD)
+                        }
+                        val blocked = drag < 0 && month >= YearMonth.now()
+                        scope.launch { nudge.snapTo(MonthSwipe.follow(drag, threshold, blocked)) }
+                    }
+                }
         ) {
             // Il riepilogo scorre con la lista (Antonio): tutta la pagina si muove insieme.
             item(key = "summary") {
@@ -157,43 +196,6 @@ fun ExpensesTab(
                         modifier = Modifier
                             .fillMaxWidth()
                             .onSizeChanged { cardWidth = it.width.toFloat() }
-                            // Il gesto sta fuori dal graphicsLayer: la card che si sposta non falsa il trascinamento.
-                            .pointerInput(threshold) {
-                                detectHorizontalDragGestures(
-                                    onDragStart = { drag = 0f; armed = false },
-                                    onDragEnd = {
-                                        val target = MonthSwipe.target(month, drag, threshold, YearMonth.now())
-                                        val out = drag
-                                        drag = 0f
-                                        armed = false
-                                        scope.launch {
-                                            if (target != null) {
-                                                // Esce dal lato verso cui l'hai spinto, poi entra il nuovo mese dall'altro.
-                                                val width = cardWidth.takeIf { it > 0f } ?: (4 * threshold)
-                                                nudge.animateTo(if (out < 0) -width else width, androidx.compose.animation.core.tween(Motion.EXIT_MS, easing = Motion.Accelerate))
-                                                month = target
-                                            } else {
-                                                nudge.animateTo(0f, Motion.settle())
-                                            }
-                                        }
-                                    },
-                                    onDragCancel = {
-                                        drag = 0f
-                                        armed = false
-                                        scope.launch { nudge.animateTo(0f, Motion.settle()) }
-                                    },
-                                ) { change, amount ->
-                                    change.consume()
-                                    drag += amount
-                                    val can = MonthSwipe.target(month, drag, threshold, YearMonth.now()) != null
-                                    if (can != armed) {
-                                        armed = can
-                                        if (can) haptic(Haptic.THRESHOLD)
-                                    }
-                                    val blocked = drag < 0 && month >= YearMonth.now()
-                                    scope.launch { nudge.snapTo(MonthSwipe.follow(drag, threshold, blocked)) }
-                                }
-                            }
                             .graphicsLayer { translationX = nudge.value },
                     ) {
                         // Il mese si cambia trascinando il riepilogo di lato (Antonio): a destra il mese prima, a sinistra il dopo.
@@ -212,8 +214,9 @@ fun ExpensesTab(
                             val (fixedCents, variableCents) = Expenses.split(data.expenses, month)
                             // Sotto il totale, piccolo e a destra, il mese prima col suo nome (Antonio): si confronta
                             // a colpo d'occhio, senza una frase in più. A sinistra fisse e variabili.
+                            // Nel mese in corso niente mese prima (Antonio): conta solo quello che sta succedendo.
                             val split = if (fixedCents > 0) "fisse ${Expenses.format(fixedCents)} · variabili ${Expenses.format(variableCents)}" else null
-                            val before = previous.takeIf { it > 0 }?.let {
+                            val before = previous.takeIf { it > 0 && month != YearMonth.now() }?.let {
                                 "${month.minusMonths(1).format(monthName)} ${Expenses.format(it)}"
                             }
                             if (split != null || before != null) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.312.0
+**Spese: il mese si cambia da tutta la pagina**
+- Trascini di lato ovunque nella pagina Spese, non solo sul riepilogo, per passare da un mese all'altro
+- Nel mese in corso il riepilogo non mostra più il totale del mese prima
+
 ## 1.310.0
 **Card SIM: credito e rinnovo in fondo sulla stessa riga**
 - Il credito sta a sinistra e il rinnovo a destra, sotto giga, minuti e SMS
