@@ -110,6 +110,16 @@ class NotesUiLogicTest {
         assertEquals("charge-1", groups.single().rows.single().key)
     }
 
+    @Test fun rinnovoSimFraIProssimiGiorni() {
+        val day = adesso.toLocalDate().plusDays(5)
+        val groups = dueDays(emptyList(), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = day)
+        assertEquals(listOf(day), groups.map { it.day })
+        val entry = timelineEntries(groups, adesso.toLocalDate(), zone).single().first
+        assertEquals(Upcoming.SIM_RENEWAL, entry.text)
+        // Già passato: non si mostra.
+        assertEquals(emptyList<Any>(), dueDays(emptyList(), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = adesso.toLocalDate().minusDays(1)))
+    }
+
     @Test fun lineaDeiGiorni() {
         val marks = listOf(DayMark(0, "Oggi", 0.0), DayMark(5, "Domani", 1.0), DayMark(10, "Lun 26", 4.0))
         // Distanziate secondo il tempo: 1 giorno poi 3 giorni.

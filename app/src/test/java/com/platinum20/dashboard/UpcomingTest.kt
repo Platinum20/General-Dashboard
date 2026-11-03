@@ -111,4 +111,12 @@ class UpcomingTest {
         val items = Upcoming.build(today, emptyMap(), listOf(TaskItem(7, "Bolletta", dueAt = ms(d1.atTime(8, 0)))), emptyList(), zone = zone)
         assertEquals(7L, items.single().task?.id)
     }
+
+    @Test
+    fun rinnovoDellaSim() {
+        val day = today.plusDays(5)
+        val items = Upcoming.build(today, emptyMap(), emptyList(), emptyList(), zone = zone, simRenewal = day)
+        assertEquals(listOf(Upcoming.SIM_RENEWAL), items.map { it.text })
+        assertEquals(day, items.single().day)
+    }
 }

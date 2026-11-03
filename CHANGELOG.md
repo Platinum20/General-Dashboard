@@ -1,11 +1,24 @@
 # Changelog
 
-## 1.301.0
+## 1.303.0
 **Player YouTube più pulito**
 - Via i tasti avanti e indietro di 10 secondi: si usa solo il doppio tocco sui lati
 - Il tasto play non ha più il cerchio intorno
 - Tolto il tasto "prossimo video" in alto a destra
 - La barra del volume a schermo intero mostra in cima il numero della tacca, ed è centrata
+
+## 1.302.0
+**Card SIM rifatta, tutto in un blocco**
+- Niente più cerchi: i giga in grande con una barra, sotto minuti, SMS e roaming UE in colonne con una barra sottile, in fondo credito e rinnovo
+- Nella pagina SIM tutto sta nel blocco colorato; accesso, "Condividi i dati letti" ed "Esci" sono in Impostazioni › Account
+- Il rinnovo dell'offerta compare nei Prossimi giorni, in Home e in Note
+
+## 1.299.0
+**Barra del video: niente più salti per sbaglio**
+- Toccare la barra del tempo non sposta più il video: si va avanti o indietro solo trascinando il dito di lato
+- Un trascinamento verso l'alto o il basso sulla barra non la muove (resta allo schermo intero)
+- Doppio tocco ripetuto che si somma: +10, +20, +30… (anche toccando ancora una volta sullo stesso lato subito dopo)
+- Vale anche per la barra del player di musica, radio e podcast
 
 ## 1.297.0
 **Video YouTube: descrizione grande, Non mi piace e Iscriviti veri**
