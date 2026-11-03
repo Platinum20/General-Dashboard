@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.notes
 
+import com.platinum20.dashboard.bank.BankTx
 import com.platinum20.dashboard.capture.SavedLinks
 import android.content.Context
 import com.platinum20.dashboard.today.Briefing
@@ -193,6 +194,8 @@ data class NotesData(
     val budgetCents: Long? = null,
     val parcels: List<Parcel> = emptyList(),
     val fixedExpenses: List<FixedExpense> = emptyList(),
+    /** I movimenti del conto che Antonio ha eliminato: la lettura successiva non li rimette. */
+    val bankIgnored: Set<String> = emptySet(),
 ) {
     /** Pacchi ancora in viaggio, prima quelli attesi prima; quelli senza data in fondo. */
     val incoming: List<Parcel>
@@ -465,10 +468,17 @@ object NotesStore {
         d.copy(expenses = d.expenses.map { if (it.id == item.id) item else it })
     }
 
-    fun deleteExpense(id: Long) = update { d -> d.copy(expenses = d.expenses.filter { it.id != id }) }
+    fun deleteExpense(id: Long) = update { d ->
+        val bankId = d.expenses.firstOrNull { it.id == id }?.bankId
+        d.copy(expenses = d.expenses.filter { it.id != id }, bankIgnored = bankId?.let { d.bankIgnored + it } ?: d.bankIgnored)
+    }
+
+    /** I movimenti letti dal conto Revolut: aggiunge, aggiorna o toglie le spese collegate. */
+    fun syncBank(txs: List<BankTx>, since: LocalDate) = update { d -> BankSync.apply(d, txs, since, newId()) }
 
     fun restoreExpense(item: Expense) = update { d ->
-        if (d.expenses.any { it.id == item.id }) d else d.copy(expenses = listOf(item) + d.expenses)
+        if (d.expenses.any { it.id == item.id }) d
+        else d.copy(expenses = listOf(item) + d.expenses, bankIgnored = item.bankId?.let { d.bankIgnored - it } ?: d.bankIgnored)
     }
 
     fun setBudget(cents: Long?) = update { it.copy(budgetCents = cents?.takeIf { c -> c > 0 }) }
@@ -652,6 +662,7 @@ object NotesStore {
                     JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
                         .put("category", it.category.name).put("date", it.date.toString())
                         .apply { it.fixedId?.let { f -> put("fixedId", f) } }
+                        .apply { it.bankId?.let { b -> put("bankId", b) } }
                 )
             }
         })
@@ -665,6 +676,7 @@ object NotesStore {
             }
         })
         .apply { d.budgetCents?.let { put("budgetCents", it) } }
+        .apply { if (d.bankIgnored.isNotEmpty()) put("bankIgnored", JSONArray(d.bankIgnored.toList())) }
         .put("parcels", JSONArray().apply {
             // I pacchi consegnati da più di un mese non servono più.
             val since = LocalDate.now().minusDays(30)
@@ -739,6 +751,7 @@ object NotesStore {
                     runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
                     o.date("date") ?: return@mapNotNull null,
                     fixedId = if (o.has("fixedId")) o.optLong("fixedId") else null,
+                    bankId = o.optString("bankId").takeIf { it.isNotEmpty() },
                 )
             },
             fixedExpenses = (0 until fixedExpenses.length()).mapNotNull { i ->
@@ -754,6 +767,7 @@ object NotesStore {
                 )
             },
             budgetCents = if (json.has("budgetCents")) json.optLong("budgetCents") else null,
+            bankIgnored = json.optJSONArray("bankIgnored")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
             parcels = (0 until parcels.length()).map { i ->
                 val o = parcels.getJSONObject(i)
                 Parcel(o.getLong("id"), o.optString("title"), o.optString("code"), o.date("expected"), o.date("deliveredOn"))

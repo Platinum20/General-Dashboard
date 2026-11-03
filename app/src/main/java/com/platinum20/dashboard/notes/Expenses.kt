@@ -14,6 +14,8 @@ data class Expense(
     val date: LocalDate = LocalDate.now(),
     /** La spesa fissa che l'ha aggiunta da sola, null per quelle scritte a mano. */
     val fixedId: Long? = null,
+    /** Il movimento Revolut da cui viene (letto dal conto), null per quelle scritte a mano o dalle notifiche. */
+    val bankId: String? = null,
 )
 
 /**
