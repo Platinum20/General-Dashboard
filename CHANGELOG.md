@@ -8,6 +8,7 @@
 - In Home c'è la card Documenti: tocca un documento per vedere fronte e retro (tocca la foto per vederla a tutto schermo), correggere numero o scadenza, rifare il retro
 - "Condividi PDF" crea un PDF con fronte e retro su un foglio, come una fotocopia
 - Tutto resta solo sul telefono
+
 ## 1.323.0
 **Spese e scadenze dalle mail, senza ricollegare ogni settimana**
 - In Impostazioni › Compila da solo › Gmail ora colleghi la posta con una password per app di Google: si inserisce una volta e non scade
