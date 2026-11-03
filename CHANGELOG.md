@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.323.0
+**Cambiare mese nelle spese è fluido**
+- Quando lasci il dito il mese prosegue alla velocità del tuo gesto, senza fermarsi né tornare indietro, e il nuovo mese entra con lo stesso slancio
+- Basta un colpo veloce anche corto per passare al mese prima o dopo, come quando sfogli le pagine
+
 ## 1.320.0
 **Revolut dentro Canvas**
 - In Impostazioni › Account c'è Revolut: accedi una volta sola dalla pagina ufficiale e conferma nell'app Revolut

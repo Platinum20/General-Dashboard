@@ -258,6 +258,21 @@ class NotesUiLogicTest {
         assertEquals(null, swipe.target(now, 20f, 56f, now))
     }
 
+    @Test fun meseColpoVeloce() {
+        val now = java.time.YearMonth.of(2026, 10)
+        val sept = java.time.YearMonth.of(2026, 9)
+        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
+        // Corto ma veloce: cambia mese, come le pagine.
+        assertEquals(java.time.YearMonth.of(2026, 8), swipe.target(sept, 20f, 56f, now, velocity = 900f, fling = 400f))
+        assertEquals(now, swipe.target(sept, -20f, 56f, now, velocity = -900f, fling = 400f))
+        // Lungo ma lanciato all'indietro: si annulla.
+        assertEquals(null, swipe.target(sept, 80f, 56f, now, velocity = -900f, fling = 400f))
+        // Lento: conta solo la distanza.
+        assertEquals(null, swipe.target(sept, 20f, 56f, now, velocity = 100f, fling = 400f))
+        // Mai oltre il mese in corso.
+        assertEquals(null, swipe.target(now, -20f, 56f, now, velocity = -900f, fling = 400f))
+    }
+
     @Test fun meseSegueIlDito() {
         val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
         // Segue il dito quasi 1:1 all'inizio, poi l'elastico frena.
