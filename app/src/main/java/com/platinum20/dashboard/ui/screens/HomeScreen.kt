@@ -192,6 +192,12 @@ fun HomeScreen(
     val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
         value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
     }
+    // Le spese Revolut entrano nel calendario da sole: con la Home aperta si rileggono ogni mezz'ora.
+    remember { com.platinum20.dashboard.bank.RevolutStore.init(context) }
+    AutoRefresh(everyMs = com.platinum20.dashboard.bank.RevolutStore.STALE_MS) {
+        val bank = com.platinum20.dashboard.bank.RevolutStore
+        if (bank.linked.value && !bank.expired.value && bank.isStale()) com.platinum20.dashboard.bank.RevolutLink.refresh(context)
+    }
     // Il rinnovo dell'offerta SIM va fra i prossimi giorni, come un addebito (Antonio).
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()

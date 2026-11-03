@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.320.0
+**Revolut dentro Canvas**
+- In Impostazioni › Account c'è Revolut: accedi una volta sola dalla pagina ufficiale e conferma nell'app Revolut
+- Da lì Canvas legge da solo i movimenti del conto: i pagamenti finiscono nelle spese del calendario con importo e giorno esatti, quelli rifiutati o annullati spariscono
+- Le spese già prese dalle notifiche di Revolut non si raddoppiano: diventano quelle del conto
+- Il saldo Revolut sta in cima alla pagina Spese del mese
+- Solo lettura: Canvas non può muovere soldi. Se una spesa ti sembra sbagliata, "Condividi i dati letti di Revolut" mi aiuta a correggerla
+
 ## 1.319.0
 **Calendario: la riga PIÙ AVANTI**
 - Dopo le cose di oggi c'è la riga PIÙ AVANTI, con sotto tutto quello che arriva fino alla fine del mese; i mesi dopo hanno il loro nome come prima

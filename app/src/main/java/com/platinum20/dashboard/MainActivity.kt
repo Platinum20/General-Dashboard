@@ -375,6 +375,8 @@ object Routes {
     const val EXPENSES = "home/expenses?month={month}"
     fun expenses(month: java.time.YearMonth? = null) = "home/expenses" + (month?.let { "?month=$it" } ?: "")
     const val SIM = "home/sim"
+    /** L'accesso a Revolut (una volta, poi la lettura è nascosta): da Impostazioni › Account. */
+    const val REVOLUT = "settings/revolut"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
 
     /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
@@ -1391,6 +1393,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.SIM) {
                 SimScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+            }
+            composable(Routes.REVOLUT) {
+                com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })
             }
             composable(
                 Routes.EXPENSES,

@@ -14,6 +14,8 @@ import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureNotice
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.bank.RevolutLink
+import com.platinum20.dashboard.bank.RevolutStore
 
 /**
  * Il riepilogo delle spese di un mese a schermo intero: ci si arriva toccando il segno del mese (o la spesa
@@ -25,8 +27,14 @@ fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingVal
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsStateWithLifecycle()
+    RevolutStore.init(context)
+    val linked by RevolutStore.linked.collectAsStateWithLifecycle()
+    val expired by RevolutStore.expired.collectAsStateWithLifecycle()
+    val balance by RevolutStore.balance.collectAsStateWithLifecycle()
+    // Aperta la pagina, i movimenti si rileggono se l'ultima lettura è vecchia.
+    AutoRefresh(everyMs = RevolutStore.STALE_MS) { if (linked && !expired && RevolutStore.isStale()) RevolutLink.refresh(context) }
 
-    Scaffold(topBar = { TopLevelBar(title = "Spese", onBack = onBack) }) { inner ->
+    Scaffold(topBar = { TopLevelBar(title = "Spese", subtitle = revolutLine(linked, expired, balance), onBack = onBack) }) { inner ->
         ExpensesTab(
             data,
             PaddingValues(
