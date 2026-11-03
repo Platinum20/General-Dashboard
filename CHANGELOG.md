@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.343.0
+**Revolut: le tasche nella card**
+- La card Revolut in Home ora mostra davvero i salvadanai (come "Risparmi") sotto il saldo totale: prima vedeva solo il conto
+- Il totale comprende i soldi di tutte le tasche
+
 ## 1.342.0
 **Revolut resta collegato dopo gli aggiornamenti**
 - Non devi più rifare l'accesso a Revolut ogni volta che Canvas si aggiorna: la sessione resta sul telefono, cifrata
