@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.340.0
+**Revolut: le tasche nella card**
+- La card Revolut in Home ora mostra davvero i salvadanai (come "Risparmi") sotto il saldo totale: prima vedeva solo il conto
+- Il totale comprende i soldi di tutte le tasche
+
 ## 1.339.0
 **Revolut in Home**
 - Nuova card Revolut, come quella della SIM: in alto il saldo totale, sotto il saldo di ogni tasca (conto e salvadanai come "Risparmi")

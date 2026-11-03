@@ -38,13 +38,17 @@ object RevolutPockets {
         when (v) {
             is JSONObject -> {
                 // Un movimento ha dentro il suo conto con il saldo di allora: non è una tasca di adesso.
-                if (v.has("startedDate") || v.has("createdDate") || v.has("completedDate")) return
+                // Si riconosce dall'importo: anche tasche e salvadanai hanno createdDate (1.339 li saltava).
+                if (looksLikeTx(v)) return
                 visit(v)
                 v.keys().forEach { walk(v.opt(it), depth + 1, visit) }
             }
             is JSONArray -> for (i in 0 until v.length()) walk(v.opt(i), depth + 1, visit)
         }
     }
+
+    private fun looksLikeTx(o: JSONObject) =
+        o.opt("amount") is Number && (o.has("startedDate") || o.has("createdDate") || o.has("completedDate"))
 
     private fun pocket(o: JSONObject): Pocket? {
         val id = o.optString("id").ifEmpty { return null }
