@@ -249,6 +249,8 @@ fun HomeScreen(
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     MailStore.init(context)
+    com.platinum20.dashboard.docs.DocumentsStore.init(context)
+    val docs by com.platinum20.dashboard.docs.DocumentsStore.docs.collectAsStateWithLifecycle()
     val gmailConnected by GmailAuth.connected.collectAsStateWithLifecycle()
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
@@ -257,6 +259,7 @@ fun HomeScreen(
             // La card media resta anche quando c'è il mini player: allora mostra quello che suona.
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
+            HomeCard.DOCS -> docs.isNotEmpty()
             else -> true
         }
     }
@@ -329,6 +332,10 @@ fun HomeScreen(
             HomeCard.SIM -> SimCard(onOpen = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.SIM)
+            })
+            HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.document(id))
             })
             HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
             HomeCard.RECAP -> RecapCard(

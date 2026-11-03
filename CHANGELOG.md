@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.321.0
+**Documenti: fotografali dalla graffetta**
+- Fotografa carta d'identità, patente, tessera sanitaria, passaporto, libretto o assicurazione dalla graffetta: Canvas capisce da solo che è un documento e lo mette in Documenti
+- Subito dopo fotografa il retro: si aggiunge da solo allo stesso documento
+- Legge numero e scadenza, e la scadenza va nel calendario come "Scade: Patente"
+- In Home c'è la card Documenti: tocca un documento per vedere fronte e retro (tocca la foto per vederla a tutto schermo), correggere numero o scadenza, rifare il retro
+- "Condividi PDF" crea un PDF con fronte e retro su un foglio, come una fotocopia
+- Tutto resta solo sul telefono
+
 ## 1.320.0
 **Revolut dentro Canvas**
 - In Impostazioni › Account c'è Revolut: accedi una volta sola dalla pagina ufficiale e conferma nell'app Revolut
