@@ -230,7 +230,7 @@ private fun MusicHome(onOpen: (SpItem) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         if (loading) item(key = "loading") {
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
+            PlaceholderList(rows = 4, label = "Carico la tua musica")
         }
         listOfNotNull(homeState.error, playlistsState.error, libraryState.error).distinct().forEach { error ->
             item(key = "error-$error") { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp)) }
@@ -412,7 +412,7 @@ private fun MixRow(mixes: List<SpMix>) {
 }
 
 /** Brani di una fila (o di un mix) nella coda unica, da [startAt] in poi. */
-private fun playTracks(context: android.content.Context, row: List<SpItem>, startAt: SpItem?) {
+internal fun playTracks(context: android.content.Context, row: List<SpItem>, startAt: SpItem?) {
     val tracks = row.filter { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
     if (tracks.isEmpty()) return
     val items = tracks.map {

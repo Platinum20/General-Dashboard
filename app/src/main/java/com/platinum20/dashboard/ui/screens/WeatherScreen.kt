@@ -89,6 +89,8 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     LaunchedEffect(Unit) { WeatherStore.refresh(context) }
 
     Scaffold(
+        // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
+        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true),
         topBar = {
             TopLevelBar(
                 title = "Meteo",
@@ -97,14 +99,33 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
         },
     ) { inner ->
         val forecast = state.forecast
-        if (forecast == null) {
+        // Mentre cerca (1.357): la forma del blocco colorato e delle righe, come in Adesso, invece della rotella.
+        if (forecast == null && state.loading) {
+            Column(Modifier.fillMaxSize().padding(inner).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                CanvasCard(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Placeholder(110.dp, 10.dp)
+                        Placeholder(84.dp, 34.dp)
+                        Placeholder(150.dp, 12.dp)
+                    }
+                }
+                PlaceholderList(rows = 4, thumb = false, label = "Cerco il meteo")
+            }
+        } else if (forecast == null) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(inner).padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
                 if (state.loading) {
-                    CircularProgressIndicator()
+                    LoadingPulse()
                 } else {
                     Icon(
                         Icons.Outlined.CloudOff,
@@ -121,8 +142,8 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     Spacer(Modifier.height(16.dp))
                     // Senza posizione l'uscita più rapida è scegliere una città: il pulsante è subito qui.
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = onPickPlace, modifier = Modifier.bouncyPress()) { Text("Scegli località") }
-                        Button(onClick = { WeatherStore.refresh(context, force = true) }, modifier = Modifier.bouncyPress()) { Text("Riprova") }
+                        CanvasButton("Scegli località", onClick = onPickPlace)
+                        CanvasButton("Riprova", onClick = { WeatherStore.refresh(context, force = true) })
                     }
                 }
             }
@@ -382,7 +403,7 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
                 }
                 if (loading && !slow) {
                     Spacer(Modifier.size(8.dp))
-                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp, color = content.copy(alpha = 0.6f))
+                    LoadingPulse(color = content.copy(alpha = 0.6f), size = 8.dp)
                 } else {
                     val minute by produceState(LocalDateTime.now(), forecast.fetchedAt) {
                         while (true) {

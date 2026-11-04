@@ -98,6 +98,8 @@ fun ExpensesTab(
     padding: PaddingValues,
     onDeleted: (Expense) -> Unit = {},
     initialMonth: YearMonth = YearMonth.now(),
+    /** "Saldo Revolut adesso · 1.240 €": solo nel riepilogo del mese in corso, sotto il totale (1.357). */
+    bankLine: String? = null,
 ) {
     var month by remember { mutableStateOf(initialMonth) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
@@ -235,13 +237,22 @@ fun ExpensesTab(
                                     style = MaterialTheme.typography.titleSmall,
                                 )
                                 Spacer(Modifier.weight(1f))
-                                Text(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
+                                RollingText(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                             }
                             // Sotto il totale solo fisse e variabili di questo mese: niente mese prima, né confronti
                             // (Antonio, più volte). Il mese prima si vede trascinando il riepilogo.
                             monthSubline(data.expenses, month)?.let {
                                 Text(
                                     it,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            if (bankLine != null && month == YearMonth.now()) {
+                                Text(
+                                    bankLine,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,

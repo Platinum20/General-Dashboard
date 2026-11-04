@@ -95,8 +95,10 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
                     model = File(doc.front),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
+                    // La miniatura vola fino alla foto del fronte nella pagina del documento (1.357).
                     modifier = Modifier
                         .size(width = 52.dp, height = 34.dp)
+                        .sharedItem(SharedKeys.document(doc.id))
                         .clip(MaterialTheme.shapes.small)
                         .background(MaterialTheme.colorScheme.surfaceVariant),
                 )
@@ -182,7 +184,7 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         more = more,
     ) {
         EditableDetailTitle(doc.id, doc.title, MaterialTheme.colorScheme.primary) { DocumentsStore.rename(id, it) }
-        DocPhoto(doc.front, "Fronte") { zoom = doc.front }
+        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id))) { zoom = doc.front }
         doc.back?.let { back -> DocPhoto(back, "Retro") { zoom = back } }
         DetailFieldRow(doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento") { DocumentsStore.setNumber(id, it) }
         DetailTapRow(
@@ -209,14 +211,14 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
 }
 
 @Composable
-private fun DocPhoto(path: String, label: String, onClick: () -> Unit) {
+private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         coil3.compose.AsyncImage(
             model = File(path),
             contentDescription = label,
             contentScale = ContentScale.Fit,
-            modifier = Modifier
+            modifier = photo
                 .fillMaxWidth()
                 .heightIn(min = 120.dp, max = 320.dp)
                 .clip(MaterialTheme.shapes.medium)

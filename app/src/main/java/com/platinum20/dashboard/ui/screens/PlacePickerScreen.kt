@@ -96,7 +96,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
                     trailingIcon = {
                         when {
-                            searching -> CircularProgressIndicator(modifier = Modifier.padding(12.dp), strokeWidth = 2.dp)
+                            searching -> LoadingPulse(Modifier.padding(16.dp))
                             query.isNotEmpty() -> IconButton(onClick = { query = "" }) {
                                 Icon(Icons.Outlined.Close, contentDescription = "Cancella ricerca")
                             }

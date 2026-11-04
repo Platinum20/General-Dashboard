@@ -308,17 +308,18 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 // La coda unica (cosa viene dopo, di qualunque fonte): anche trascinando la pagina in su.
                 val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-                TextButton(onClick = onOpenQueue, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Icon(Icons.Outlined.QueueMusic, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo")
-                }
+                CanvasButton(
+                    if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo",
+                    onClick = onOpenQueue,
+                    icon = Icons.Outlined.QueueMusic,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
                 Spacer(Modifier.height(8.dp))
                 if (current.source == PlaySource.SPEECH) SpeechChapters()
                 // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
                 if (current.source == PlaySource.MUSIC) {
                     YtPlayer.now.value?.link?.let { link ->
-                        OutlinedButton(onClick = { YtPlayer.play(context, link) }, modifier = Modifier.bouncyPress()) { Text("Guarda il video") }
+                        CanvasButton("Guarda il video", onClick = { YtPlayer.play(context, link) }, icon = Icons.Outlined.OndemandVideo)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -424,7 +425,7 @@ private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
         else if (now.artwork.isNotBlank()) {
             AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
-        if (now.loading) CircularProgressIndicator(Modifier.size(40.dp))
+        if (now.loading) LoadingPulse(size = 14.dp)
     }
 }
 

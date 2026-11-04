@@ -249,7 +249,8 @@ fun SettingsScreen(
                     MenuRow(Icons.Outlined.Dashboard, TileAccent.BLUE, "Home",
                         SettingsSummary.home(layout.visible.size, HomeCard.entries.size, place?.name)) { onOpenPage(SettingsPage.HOME) }
                     RowDivider()
-                    MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Note",
+                    // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
+                    MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
                         if (autoFillOn) "Pacchi, spese e scadenze si compilano da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()

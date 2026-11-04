@@ -412,6 +412,11 @@ object Routes {
     const val YOUTUBE_CHANNEL = "media/channel/{id}?title={title}&avatar={avatar}"
     fun youtubeChannel(c: com.platinum20.dashboard.media.youtube.YtChannel) =
         "media/channel/${c.id}?title=${Uri.encode(c.title)}&avatar=${Uri.encode(c.thumbnail)}"
+    // Playlist e Mi piace di YouTube come pagine vere (1.357).
+    const val YOUTUBE_PLAYLIST = "media/playlist/{id}?title={title}&count={count}"
+    fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
+        "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
+    const val YOUTUBE_LIKED = "media/liked"
     const val LOGIN = "settings/login/{service}"
 
     /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
@@ -1258,6 +1263,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
                     onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
+                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
@@ -1300,9 +1306,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            composable(Routes.QUEUE) {
-                com.platinum20.dashboard.ui.screens.QueueScreen(onBack = { navController.popBackStack() })
-            }
             composable(
                 Routes.YOUTUBE_WATCH,
                 arguments = listOf(navArgument("url") { type = NavType.StringType; nullable = true; defaultValue = null }),
@@ -1326,6 +1329,35 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                     onOpenPhone = { navController.navigate(Routes.VIDEO) },
+                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
+                    onOpenPlaylist = { navController.navigate(Routes.youtubePlaylist(it)) },
+                    onOpenLiked = { navController.navigate(Routes.YOUTUBE_LIKED) },
+                )
+            }
+            composable(
+                Routes.YOUTUBE_PLAYLIST,
+                arguments = listOf(
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("count") { type = NavType.IntType; defaultValue = 0 },
+                ),
+            ) { entry ->
+                val args = entry.arguments
+                com.platinum20.dashboard.ui.screens.YouTubePlaylistScreen(
+                    playlist = com.platinum20.dashboard.media.youtube.YtPlaylist(
+                        args?.getString("id").orEmpty(),
+                        args?.getString("title").orEmpty(),
+                        "",
+                        args?.getInt("count") ?: 0,
+                    ),
+                    onBack = { navController.popBackStack() },
+                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.YOUTUBE_LIKED) {
+                com.platinum20.dashboard.ui.screens.YouTubeLikedScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             composable(Routes.SPOTIFY_FEED) {
@@ -1404,17 +1436,24 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 )
                 }
             }
+            // Le pagine delle card della Home (1.357): la card si allarga fino a diventare la pagina, come Calendario.
             composable(Routes.WEATHER) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 WeatherScreen(
                     onBack = { navController.popBackStack() },
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
+                }
             }
             composable(Routes.SIM) {
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 SimScreen(onBack = { navController.popBackStack() }, bottomPadding = padding)
+                }
             }
             composable(Routes.DOCUMENT, arguments = listOf(navArgument("id") { type = NavType.LongType; defaultValue = -1L })) { entry ->
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 com.platinum20.dashboard.ui.screens.DocumentScreen(id = entry.arguments?.getLong("id") ?: -1L, onBack = { navController.popBackStack() })
+                }
             }
             composable(Routes.REVOLUT) {
                 com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })
@@ -1424,7 +1463,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 arguments = listOf(navArgument("month") { type = NavType.StringType; nullable = true; defaultValue = null }),
             ) { entry ->
                 val month = entry.arguments?.getString("month")?.let { runCatching { java.time.YearMonth.parse(it) }.getOrNull() }
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
                 ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding, month = month ?: java.time.YearMonth.now())
+                }
             }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })

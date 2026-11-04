@@ -159,14 +159,16 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
-    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio).
-    val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }.filter { it.rows.isNotEmpty() }
+    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio). Le spese di oggi una per una
+    // solo nella pagina: nella card le riassume la riga di OGGI col totale (1.357).
+    val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true && !(it.expense != null && it.day == today) }) }
+        .filter { it.rows.isNotEmpty() }
     val all = timelineEntries(pending, today, months = true, expenses = expenses)
     val todayCount = all.count { it.second.day == today && !it.first.past }
-    // Sotto "PIÙ AVANTI" tutto il resto del mese (Antonio); se è poco, si arriva almeno a [Upcoming.MAX] cose.
-    val month = YearMonth.from(today)
-    val restOfMonth = all.count { (entry, row) -> !entry.past && row.day != null && row.day.isAfter(today) && YearMonth.from(row.day) == month }
-    val shown = all.take(todayCount + maxOf(restOfMonth, Upcoming.MAX))
+    // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
+    val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today, Upcoming.MAX)
+    val shown = all.take(todayCount + later)
+    val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
         "Calendario",
         shown.map { it.first },
@@ -183,6 +185,7 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         rowLongs = shown.map { (_, row) -> { actions(row) } },
         onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
         onLongOpen = onOpenAll,
+        footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
     )
 }
 
@@ -237,6 +240,8 @@ fun TimelineCard(
     onLongOpen: (() -> Unit)? = null,
     /** Per ogni riga, tenendola premuta: il fumetto delle sue azioni (uguale alla pagina intera). */
     rowLongs: List<(() -> Unit)?> = emptyList(),
+    /** L'ultima riga, "Altre 8 a novembre": quello che non sta nella card; toccandola si apre la pagina. */
+    footer: String? = null,
 ) {
     val haptic = rememberHaptic()
     Section(
@@ -259,6 +264,18 @@ fun TimelineCard(
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
                 TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen)
+            }
+            footer?.let { text ->
+                Text(
+                    "$text ›",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { haptic(Haptic.TICK); onOpen() }
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
             }
         }
     }

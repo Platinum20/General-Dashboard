@@ -4,6 +4,12 @@ import androidx.compose.material.icons.outlined.QueueMusic
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.HighQuality
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.ClosedCaption
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -324,7 +330,7 @@ fun YouTubeWatchScreen(
                             }
                         }
                         when {
-                            thread == null || !thread.loaded -> item(key = "comments-l") { CircularProgressIndicator(Modifier.size(24.dp)) }
+                            thread == null || !thread.loaded -> item(key = "comments-l") { PlaceholderList(rows = 3, thumb = false, label = "Carico i commenti") }
                             thread.failed && thread.comments.isEmpty() -> item(key = "comments-f") {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
@@ -389,8 +395,6 @@ private fun VideoArea(
     var seekFlash by remember { mutableIntStateOf(0) }
     var flashKey by remember { mutableIntStateOf(0) }
     val playing = now?.playing == true
-    // Menu delle impostazioni aperto sul video (null = chiuso).
-    var menu by remember { mutableStateOf<VideoMenu?>(null) }
     // Volume regolato col dito a schermo intero: il valore (0..1) e se l'indicatore è visibile.
     val audio = remember { context.getSystemService(android.content.Context.AUDIO_SERVICE) as android.media.AudioManager }
     var volume by remember { mutableStateOf(0f) }
@@ -427,8 +431,10 @@ private fun VideoArea(
     }
 
     // I comandi spariscono da soli dopo 3 secondi mentre il video va (non con un menu aperto).
-    LaunchedEffect(controls, playing, flashKey, menu) {
-        if (controls && playing && menu == null) {
+    // Con il fumetto del menu aperto i comandi restano.
+    val menuOpen = ActionBubble.actions != null
+    LaunchedEffect(controls, playing, flashKey, menuOpen) {
+        if (controls && playing && !menuOpen) {
             delay(3_000)
             controls = false
         }
@@ -606,9 +612,29 @@ private fun VideoArea(
             ) {
                 Text(error, color = Color.White, style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onRetry) { Text("Riprova") }
+                CanvasButton("Riprova", onClick = onRetry)
             }
-            now?.loading != false -> CircularProgressIndicator(Modifier.align(Alignment.Center).size(44.dp), color = Color.White)
+        }
+        // Mentre il video arriva (1.357): la sua miniatura al posto del nero con la rotella, con un punto che
+        // pulsa piano; al primo fotogramma si dissolve nel video.
+        val poster = YtResolver.videoId(now?.link.orEmpty())
+        androidx.compose.animation.AnimatedVisibility(
+            visible = now?.loading != false && error == null && upcoming == null,
+            enter = androidx.compose.animation.fadeIn(tween(0)),
+            exit = androidx.compose.animation.fadeOut(tween(Motion.ENTER_MS)),
+            modifier = Modifier.matchParentSize(),
+        ) {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                if (poster != null) {
+                    coil3.compose.AsyncImage(
+                        model = "https://i.ytimg.com/vi/$poster/hqdefault.jpg",
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
+            }
         }
 
         // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …).
@@ -706,11 +732,8 @@ private fun VideoArea(
                 Row(Modifier.align(Alignment.TopEnd).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val stream = now?.stream
                     if (stream != null) {
-                        Box {
-                            IconButton(onClick = { menu = VideoMenu.MAIN; flashKey++ }) {
-                                Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni del video", tint = Color.White)
-                            }
-                            if (menu != null) VideoMenus(stream, now, menu!!, onPage = { menu = it })
+                        IconButton(onClick = { flashKey++; showVideoMenu(context, stream, now, VideoMenu.MAIN) }) {
+                            Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni del video", tint = Color.White)
                         }
                     }
                     IconButton(onClick = onOpenQueue) {
@@ -1042,80 +1065,44 @@ private enum class VideoMenu { MAIN, QUALITY, SPEED, SUBTITLES }
  * Menu sul video (come nell'app di YouTube): dalla rotella si sceglie qualità, velocità, sottotitoli
  * e ripeti. Ogni scelta vale subito, dal punto in cui si è.
  */
-@Composable
-private fun VideoMenus(stream: YtStream, now: YtNow?, page: VideoMenu, onPage: (VideoMenu?) -> Unit) {
-    val context = LocalContext.current
+/**
+ * Il menu del video nel fumetto di vetro in basso (1.357), come tutti gli altri menu: prima un menu a tendina
+ * di Material. Una voce porta alla sua scelta (Qualità › Auto, 1080p…); ogni scelta vale subito.
+ */
+private fun showVideoMenu(context: android.content.Context, stream: YtStream, now: YtNow?, page: VideoMenu) {
     val auto = YtPlayer.isAuto() && stream.dashManifest != null
     val showing = now?.playingHeight?.takeIf { it > 0 } ?: stream.height
     val speed = YtPlayer.speed()
-    val check = { on: Boolean -> if (on) "  ✓" else "" }
-    DropdownMenu(expanded = true, onDismissRequest = { onPage(null) }) {
-        when (page) {
-            VideoMenu.MAIN -> {
-                if (stream.qualities.isNotEmpty()) DropdownMenuItem(
-                    text = { Text("Qualità · " + if (auto) "Auto (${showing}p)" else "${stream.height}p") },
-                    onClick = { onPage(VideoMenu.QUALITY) },
-                )
-                DropdownMenuItem(text = { Text("Velocità · ${speedLabel(speed)}") }, onClick = { onPage(VideoMenu.SPEED) })
-                if (stream.subtitles.isNotEmpty()) DropdownMenuItem(
-                    text = { Text("Sottotitoli · " + (now?.subtitle?.substringBefore('-')?.uppercase() ?: "no")) },
-                    onClick = { onPage(VideoMenu.SUBTITLES) },
-                )
-                DropdownMenuItem(
-                    text = { Text("Ripeti il video" + check(YtPlayer.loop())) },
-                    onClick = {
-                        YtPlayer.setLoop(context, !YtPlayer.loop())
-                        onPage(null)
-                    },
-                )
-            }
-            VideoMenu.QUALITY -> {
-                if (stream.dashManifest != null) DropdownMenuItem(
-                    text = { Text("Automatica" + check(auto)) },
-                    onClick = {
-                        YtPlayer.setQuality(context, 0)
-                        onPage(null)
-                    },
-                )
-                stream.qualities.forEach { q ->
-                    DropdownMenuItem(
-                        text = { Text("${q.height}p" + check(!auto && q.height == stream.height)) },
-                        onClick = {
-                            YtPlayer.setQuality(context, q.height)
-                            onPage(null)
-                        },
-                    )
+    fun pick(on: Boolean) = if (on) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked
+    val actions = when (page) {
+        VideoMenu.MAIN -> listOfNotNull(
+            stream.qualities.takeIf { it.isNotEmpty() }?.let {
+                BubbleAction(Icons.Outlined.HighQuality, "Qualità", if (auto) "Automatica (${showing}p)" else "${stream.height}p") {
+                    showVideoMenu(context, stream, now, VideoMenu.QUALITY)
                 }
-            }
-            VideoMenu.SPEED -> speeds.forEach { s ->
-                DropdownMenuItem(
-                    text = { Text(speedLabel(s) + check(s == speed)) },
-                    onClick = {
-                        YtPlayer.setSpeed(context, s)
-                        onPage(null)
-                    },
-                )
-            }
-            VideoMenu.SUBTITLES -> {
-                DropdownMenuItem(
-                    text = { Text("Disattivati" + check(now?.subtitle == null)) },
-                    onClick = {
-                        YtPlayer.setSubtitle(context, null)
-                        onPage(null)
-                    },
-                )
-                stream.subtitles.forEach { sub: YtSubtitle ->
-                    DropdownMenuItem(
-                        text = { Text(sub.label + check(sub.language == now?.subtitle)) },
-                        onClick = {
-                            YtPlayer.setSubtitle(context, sub)
-                            onPage(null)
-                        },
-                    )
+            },
+            BubbleAction(Icons.Outlined.Speed, "Velocità", speedLabel(speed)) { showVideoMenu(context, stream, now, VideoMenu.SPEED) },
+            stream.subtitles.takeIf { it.isNotEmpty() }?.let {
+                BubbleAction(Icons.Outlined.ClosedCaption, "Sottotitoli", now?.subtitle?.substringBefore('-')?.uppercase() ?: "Disattivati") {
+                    showVideoMenu(context, stream, now, VideoMenu.SUBTITLES)
                 }
-            }
+            },
+            BubbleAction(Icons.Outlined.Repeat, "Ripeti il video", if (YtPlayer.loop()) "Acceso" else "Spento") {
+                YtPlayer.setLoop(context, !YtPlayer.loop())
+            },
+        )
+        VideoMenu.QUALITY -> listOfNotNull(
+            stream.dashManifest?.let { BubbleAction(pick(auto), "Automatica") { YtPlayer.setQuality(context, 0) } },
+        ) + stream.qualities.map { q ->
+            BubbleAction(pick(!auto && q.height == stream.height), "${q.height}p") { YtPlayer.setQuality(context, q.height) }
         }
+        VideoMenu.SPEED -> speeds.map { s -> BubbleAction(pick(s == speed), speedLabel(s)) { YtPlayer.setSpeed(context, s) } }
+        VideoMenu.SUBTITLES -> listOf(BubbleAction(pick(now?.subtitle == null), "Disattivati") { YtPlayer.setSubtitle(context, null) }) +
+            stream.subtitles.map { sub: YtSubtitle ->
+                BubbleAction(pick(sub.language == now?.subtitle), sub.label) { YtPlayer.setSubtitle(context, sub) }
+            }
     }
+    ActionBubble.show(*actions.toTypedArray())
 }
 
 private fun speedLabel(speed: Float): String =
@@ -1294,7 +1281,7 @@ private fun CommentField(placeholder: String, initial: String, focus: Boolean = 
         keyboardActions = KeyboardActions(onSend = { send() }),
         trailingIcon = {
             if (sending) {
-                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                LoadingPulse()
             } else {
                 IconButton(onClick = ::send, enabled = text.isNotBlank()) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Pubblica")
@@ -1319,7 +1306,7 @@ private fun commentsFor(id: String): CommentThread {
 
 @Composable
 private fun MoreButton(loading: Boolean, label: String, onClick: () -> Unit) {
-    if (loading) CircularProgressIndicator(Modifier.size(20.dp)) else TextButton(onClick = onClick) { Text(label) }
+    if (loading) LoadingPulse(Modifier.padding(12.dp)) else TextButton(onClick = onClick) { Text(label) }
 }
 
 @Composable
