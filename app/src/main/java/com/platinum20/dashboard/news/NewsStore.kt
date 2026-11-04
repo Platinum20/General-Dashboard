@@ -4,6 +4,7 @@ import com.platinum20.dashboard.net.DiskCache
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
@@ -56,6 +57,32 @@ object NewsStore {
             DiskCache.write(CACHE_FILE, encode(fresh.items, fetchedAt))
             return fresh
         }
+    }
+
+    private val verifyScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO)
+
+    /**
+     * Controlla in anticipo gli articoli più recenti (anche dalla Home, senza aprire le News): in Home e nella
+     * scheda finiscono solo quelli che il lettore sa aprire. Fuori dalla composizione, così uscire dalla
+     * pagina non lascia controlli a metà.
+     */
+    fun verifyLatest(items: List<NewsItem>) {
+        verifyScope.launch {
+            com.platinum20.dashboard.news.reader.ArticleVerifier.verify(
+                items.take(60).map { it.link },
+                com.platinum20.dashboard.news.reader.WebPageRenderer::cookiesFor,
+            )
+        }
+    }
+
+    /** Le storie per il widget e la notifica del mattino, con le stesse regole della card in Home. */
+    suspend fun widgetStories(context: android.content.Context, items: List<NewsItem>): List<NewsStory> {
+        NewsHistory.init(context)
+        com.platinum20.dashboard.news.reader.ArticleVerifier.restore()
+        val readable = com.platinum20.dashboard.news.reader.ArticleVerifier.state.value.readable.takeIf { it.isNotEmpty() }
+        val hidden = com.platinum20.dashboard.settings.AppSettings.hiddenNewsSources.value
+        val feed = NewsStories.split(NewsStories.group(items, readable, hidden), NewsHistory.lastVisit(), NewsHistory.read.value.toSet())
+        return NewsStories.forWidget(feed)
     }
 
     internal fun encode(items: List<NewsItem>, savedAt: Long): String {

@@ -31,7 +31,8 @@ enum class HomeCard(val label: String, val description: String) {
     DOCS("Documenti", "Carta d'identità, patente e scadenze"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),
-    RECAP("Il punto del giorno", "Le notizie principali"),
+    // Il nome resta RECAP per le preferenze salvate: dalla 1.356 è la card News (le storie nuove dall'ultima visita).
+    RECAP("News", "Le notizie nuove dall'ultima visita"),
 }
 
 data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
@@ -98,6 +99,7 @@ object AppSettings {
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
     private const val KEY_HIDE_LIVE = "video_hide_live"
     private const val KEY_HIDE_MEMBERS = "video_hide_members"
+    private const val KEY_HIDDEN_NEWS = "news_hidden_sources"
     private const val KEY_AUTOPLAY_NEXT = "video_autoplay_next"
     private const val KEY_SPONSORBLOCK = "video_sponsorblock"
     private const val KEY_SPONSOR_ACTION = "video_sponsorblock_"
@@ -125,6 +127,9 @@ object AppSettings {
     private val _wifiOnlyDownloads = MutableStateFlow(false)
     /** Voci e aggiornamenti si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
     val wifiOnlyDownloads: StateFlow<Boolean> = _wifiOnlyDownloads.asStateFlow()
+    private val _hiddenNewsSources = MutableStateFlow<Set<String>>(emptySet())
+    /** Le fonti delle News che non vuoi vedere (id di NewsSources): si nascondono tenendo premuta una notizia. */
+    val hiddenNewsSources: StateFlow<Set<String>> = _hiddenNewsSources.asStateFlow()
     private val _hideShorts = MutableStateFlow(true)
     /** In Video niente Shorts nella Home e nelle Iscrizioni (acceso di default). */
     val hideShorts: StateFlow<Boolean> = _hideShorts.asStateFlow()
@@ -198,6 +203,7 @@ object AppSettings {
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
         _hideLive.value = prefs.getBoolean(KEY_HIDE_LIVE, false)
         _hideMembers.value = prefs.getBoolean(KEY_HIDE_MEMBERS, true)
+        _hiddenNewsSources.value = prefs.getStringSet(KEY_HIDDEN_NEWS, emptySet()).orEmpty().toSet()
         _autoplayNext.value = prefs.getBoolean(KEY_AUTOPLAY_NEXT, true)
         _sponsorBlock.value = prefs.getBoolean(KEY_SPONSORBLOCK, true)
         _sponsorActions.value = SbCategory.entries.associateWith { category ->
@@ -245,6 +251,12 @@ object AppSettings {
     fun setWifiOnlyDownloads(enabled: Boolean) {
         _wifiOnlyDownloads.value = enabled
         prefs.edit().putBoolean(KEY_WIFI_ONLY, enabled).apply()
+    }
+
+    fun setNewsSourceHidden(id: String, hidden: Boolean) {
+        val next = if (hidden) _hiddenNewsSources.value + id else _hiddenNewsSources.value - id
+        _hiddenNewsSources.value = next
+        prefs.edit().putStringSet(KEY_HIDDEN_NEWS, next).apply()
     }
 
     fun setHideShorts(enabled: Boolean) {

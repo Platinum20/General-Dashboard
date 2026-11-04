@@ -72,6 +72,7 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.OndemandVideo
+import androidx.compose.material.icons.outlined.Newspaper
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Shield
@@ -252,7 +253,11 @@ fun SettingsScreen(
                         if (autoFillOn) "Pacchi, spese e scadenze si compilano da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()
-                    MenuRow(Icons.Outlined.RecordVoiceOver, TileAccent.PURPLE, "News", "Voce di lettura: ${voice.label}") {
+                    val hiddenNews = AppSettings.hiddenNewsSources.collectAsState().value.size
+                    MenuRow(
+                        Icons.Outlined.RecordVoiceOver, TileAccent.PURPLE, "News",
+                        "Voce: ${voice.label}" + when (hiddenNews) { 0 -> ", tutte le fonti"; 1 -> ", 1 fonte nascosta"; else -> ", $hiddenNews fonti nascoste" },
+                    ) {
                         onOpenPage(SettingsPage.NEWS)
                     }
                     RowDivider()
@@ -323,7 +328,10 @@ fun SettingsPageScreen(
         ) {
             when (page) {
                 SettingsPage.HOME -> item { HomePage(onCustomize, onPickPlace) }
-                SettingsPage.NEWS -> item { SettingsBlock("Voce di lettura") { VoicePicker() } }
+                SettingsPage.NEWS -> {
+                    item { SettingsBlock("Voce di lettura") { VoicePicker() } }
+                    item { SettingsBlock("Fonti") { NewsSourcesSettings() } }
+                }
                 SettingsPage.MEDIA -> {
                     item {
                         SettingsBlock("Riproduzione") {
@@ -1197,6 +1205,24 @@ private fun UpdateNotifySetting() {
 }
 
 /** I filtri di Video (prima chip nella pagina): si scelgono una volta e restano. */
+/** Le fonti delle News: spente quelle nascoste tenendo premuta una notizia ("Nascondi ANSA"). */
+@Composable
+private fun NewsSourcesSettings() {
+    val hidden by AppSettings.hiddenNewsSources.collectAsState()
+    com.platinum20.dashboard.news.NewsSources.all.forEachIndexed { index, source ->
+        if (index > 0) RowDivider()
+        val on = source.id !in hidden
+        SettingsItem(
+            icon = Icons.Outlined.Newspaper,
+            accent = TileAccent.GREEN,
+            title = source.name,
+            subtitle = if (on) "Nelle News e nella Home" else "Nascosta",
+            onClick = { AppSettings.setNewsSourceHidden(source.id, on) },
+            trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> AppSettings.setNewsSourceHidden(source.id, !v) }) },
+        )
+    }
+}
+
 @Composable
 private fun VideoFilterSettings() {
     val shorts by AppSettings.hideShorts.collectAsState()

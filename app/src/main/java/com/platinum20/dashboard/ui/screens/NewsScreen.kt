@@ -1,72 +1,93 @@
 package com.platinum20.dashboard.ui.screens
 
-import com.platinum20.dashboard.capture.SavedLink
-import com.platinum20.dashboard.capture.SavedLinks
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
-import com.platinum20.dashboard.Routes
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.CloudOff
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.remember
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil3.compose.AsyncImage
+import com.platinum20.dashboard.Routes
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.news.NewsFeed
 import com.platinum20.dashboard.news.NewsHistory
 import com.platinum20.dashboard.news.NewsItem
 import com.platinum20.dashboard.news.NewsLayout
-import com.platinum20.dashboard.news.NewsSources
+import com.platinum20.dashboard.news.NewsStories
+import com.platinum20.dashboard.news.NewsStory
 import com.platinum20.dashboard.news.NewsViewModel
+import com.platinum20.dashboard.news.RecapReader
+import com.platinum20.dashboard.news.RecapSpeaker
+import com.platinum20.dashboard.news.key
+import com.platinum20.dashboard.news.newest
+import com.platinum20.dashboard.settings.AppSettings
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+const val READ_ALPHA = 0.55f
+
+private val clockFormat = DateTimeFormatter.ofPattern("HH:mm")
+
+/** L'ora di una visita come la legge Antonio ("09:12"), nel fuso del telefono. */
+internal fun newsClock(at: Instant): String = clockFormat.format(at.atZone(ZoneId.systemDefault()))
+
+/** L'articolo come cosa da salvare nelle note: si riapre nel lettore. */
+internal fun NewsItem.savedLink() = SavedLink.Article(link, source.name, title, imageUrl.orEmpty())
+
+/**
+ * Le News rispondono a "cosa è successo da quando ho guardato?": una riga per fatto, le nuove sopra il
+ * segno "ULTIMA VISITA", le già viste sotto. In cima l'unico blocco colorato: ascoltare le nuove.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewsScreen(
@@ -77,273 +98,274 @@ fun NewsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     NewsHistory.init(context)
-    val read by NewsHistory.read.collectAsStateWithLifecycle()
-    // L'ultima visita si legge all'ingresso e si aggiorna all'uscita: le "nuove" restano tali finché sei qui.
-    val since = remember { NewsHistory.lastVisit() }
+    val readList by NewsHistory.read.collectAsStateWithLifecycle()
+    val read = remember(readList) { readList.toSet() }
+    val hidden by AppSettings.hiddenNewsSources.collectAsStateWithLifecycle()
+    // Da quando contano le nuove: tornando dal lettore la visita è la stessa, le nuove restano nuove.
+    val since = remember { NewsHistory.enter() }
+    val settled by NewsHistory.settled.collectAsStateWithLifecycle()
     DisposableEffect(Unit) { onDispose { NewsHistory.markVisit() } }
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { NewsHistory.markVisit() }
     val open = { item: NewsItem ->
         NewsHistory.markRead(item.link)
+        NewsHistory.holdSession()
         onOpenArticle(item)
     }
-    val listState = rememberLazyListState()
-    LaunchedEffect(Unit) {
-        TabReselect.events.collect { if (it == Routes.NEWS) listState.animateScrollToItem(0) }
-    }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
-    // Le notizie uscite dopo l'ultima visita stanno in cima; dalla prima già vista in poi, un separatore.
-    val items = state.visibleItems
-    val firstSeen = if (since == null) -1 else items.indexOfFirst { it.publishedAt != null && !it.publishedAt.isAfter(since) }
-    val newCount = if (since == null) null else if (firstSeen < 0) items.size else firstSeen
+    val stories = rememberStories(state.items, state.verification.readable, hidden)
+    val feed = remember(stories, since, settled) { NewsStories.split(stories, since, settled) }
 
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // Gli indici fissi della lista: 0 = Ascolta, poi le nuove, poi (se non ce ne sono) la riga "niente di nuovo", poi il segno.
+    val markerIndex = if (since != null && !feed.isEmpty) 1 + feed.fresh.size + (if (feed.fresh.isEmpty()) 1 else 0) else null
+    val markerNow by rememberUpdatedState(markerIndex)
+    LaunchedEffect(Unit) {
+        // Ritoccare News: dal fondo si torna al segno, dal segno (o sopra) in cima.
+        TabReselect.events.collect {
+            if (it != Routes.NEWS) return@collect
+            val m = markerNow
+            if (m != null && listState.firstVisibleItemIndex > m) listState.animateScrollToItem(m) else listState.animateScrollToItem(0)
+        }
+    }
+    NewArrivals(feed, listState)
+
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val barrier = rememberVisitBarrier(listState, markerIndex.takeIf { feed.fresh.isNotEmpty() })
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            // Come le altre sezioni: in alto solo il titolo; le fonti scorrono con le notizie.
             TopLevelBar(
                 title = "News",
-                subtitle = NewsHistory.headline(items.size, newCount, items.mapNotNull { it.publishedAt }.maxOrNull()),
+                subtitle = NewsHistory.headline(
+                    feed.all.size,
+                    if (since == null) null else feed.fresh.size,
+                    feed.all.mapNotNull { it.newest }.maxOrNull(),
+                ),
                 scrollBehavior = scrollBehavior,
             )
         },
     ) { inner ->
         // Le notizie si aggiornano da sole; trascinare dall'alto apre la ricerca.
         AutoRefresh { viewModel.refreshIfStale() }
-        val sources = @Composable { side: androidx.compose.ui.unit.Dp ->
-            SourceChips(
-                side = side,
-                selected = state.selectedSource,
-                onSelect = viewModel::selectSource,
-                failed = state.failures.map { it.source.name },
-            )
-        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = inner.calculateTopPadding()),
         ) {
-            // Finché non c'è la lista le fonti stanno in cima; con la lista ne sono la prima riga.
-            val listShown = !(state.loading && state.items.isEmpty()) &&
-                !(state.visibleItems.isEmpty() && state.verification.pending > 0) &&
-                !(state.error != null && state.items.isEmpty())
-            if (!listShown) Box(Modifier.align(Alignment.TopStart)) { sources(16.dp) }
+            val waiting = feed.isEmpty && (state.loading || state.verification.pending > 0 || state.visibleItems.isNotEmpty())
             when {
-                // Le righe grigie dove arriveranno le notizie, sotto le fonti, invece della rotella in mezzo.
-                state.loading && state.items.isEmpty() -> PlaceholderList(Modifier.padding(top = 64.dp), label = "Carico le notizie")
-                state.visibleItems.isEmpty() && state.verification.pending > 0 -> Column(
-                    Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Preparo gli articoli…",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                // Le righe grigie dove arriveranno le storie, invece della rotella in mezzo.
+                waiting -> PlaceholderList(Modifier.padding(top = 8.dp), label = "Carico le notizie")
                 state.error != null && state.items.isEmpty() -> ErrorState(state.error!!, onRetry = viewModel::refresh)
                 else -> LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().nestedScroll(barrier),
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
-                        top = 8.dp,
+                        top = 4.dp,
                         bottom = bottomPadding.calculateBottomPadding() + 16.dp,
                     ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    item(key = "sources") { sources(0.dp) }
-                    if (state.verification.pending > 0) {
-                        item {
-                            Text(
-                                "Preparo altri ${state.verification.pending} articoli…",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 4.dp),
-                            )
-                        }
+                    item(key = "listen") {
+                        ListenBlock(feed, since, Modifier.padding(bottom = 12.dp))
                     }
-                    // La prima notizia in grande, le altre come righe compatte con la miniatura.
-                    itemsIndexed(items, key = { _, it -> it.link }) { index, item ->
+                    itemsIndexed(feed.fresh, key = { _, s -> "n:" + s.key }) { index, story ->
                         Column(Modifier.animateItem()) {
-                            if (index == firstSeen && firstSeen > 0) SectionHeader("Già viste", Modifier.padding(top = 8.dp, bottom = 4.dp))
-                            val seen = item.link in read
-                            if (index == 0) NewsCard(item, read = seen, onClick = { open(item) })
-                            else NewsRow(item, read = seen, onClick = { open(item) })
+                            val actions = { ActionBubble.show(*storyActions(context, story) { NewsHistory.settle(story.items.map { it.link }) }) }
+                            if (index == 0) {
+                                StoryLead(story, read = story.items.any { it.link in read }, onOpen = open, onLongClick = actions, modifier = Modifier.padding(bottom = 6.dp))
+                            } else {
+                                StoryDivider()
+                                SwipeToRead(story) {
+                                    StoryRow(story, read = { it in read }, onOpen = open, onLongClick = actions)
+                                }
+                            }
                         }
                     }
-                    if (state.visibleItems.isEmpty()) {
-                        item {
-                            Text(
-                                if (state.verification.pending > 0) "Preparo gli articoli di questa fonte…"
-                                else "Nessun articolo leggibile da questa fonte in questo momento.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
+                    if (markerIndex != null) {
+                        if (feed.fresh.isEmpty()) item(key = "quiet") {
+                            NewsQuietLine("Niente di nuovo dall'ultima visita", Modifier.animateItem())
+                        }
+                        item(key = "marker") {
+                            NewsVisitMarker(
+                                NewsStories.markerLabel(since!!, Instant.now(), ::newsClock),
+                                Modifier.animateItem().padding(vertical = 6.dp),
                             )
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-const val READ_ALPHA = 0.55f
-
-@Composable
-private fun SourceChips(selected: String?, onSelect: (String?) -> Unit, failed: List<String>, side: androidx.compose.ui.unit.Dp = 16.dp) {
-    var showFailed by remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = side, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        CanvasChip(selected = selected == null, onClick = { onSelect(null) }, label = "Tutte")
-        NewsSources.all.forEach { source ->
-            CanvasChip(selected = selected == source.id, onClick = { onSelect(source.id) }, label = source.name)
-        }
-        // Una fonte ferma non merita una riga in cima a tutto: un chip in coda ai filtri, i nomi al tocco.
-        NewsLayout.failureChip(failed.size)?.let { label ->
-            AssistChip(
-                onClick = { showFailed = !showFailed },
-                label = { Text(label, style = MaterialTheme.typography.labelLarge) },
-                leadingIcon = { Icon(Icons.Outlined.CloudOff, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                shape = CircleShape,
-                colors = AssistChipDefaults.assistChipColors(
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                border = AssistChipDefaults.assistChipBorder(enabled = true, borderColor = MaterialTheme.colorScheme.outlineVariant),
-            )
-        }
-    }
-    if (showFailed && failed.isNotEmpty()) {
-        Text(
-            NewsLayout.failureDetail(failed),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-        )
-    }
-}
-
-/** L'articolo come cosa da salvare nelle note: si riapre nel lettore. */
-internal fun NewsItem.savedLink() = SavedLink.Article(link, source.name, title, imageUrl.orEmpty())
-
-@Composable
-private fun NewsCard(item: NewsItem, read: Boolean, onClick: () -> Unit) {
-    CanvasCard(
-        onClick = onClick,
-        onLongClick = { SavedLinks.offer(item.savedLink()) },
-        // Gli articoli già aperti restano, ma attenuati: l'occhio va subito a quelli da leggere.
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f).alpha(if (read) READ_ALPHA else 1f),
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        // Senza foto, o se non si carica, la card resta solo testo: niente riquadro grigio vuoto.
-        val image = NewsLayout.usableImage(item.imageUrl)
-        var imageFailed by remember(image) { mutableStateOf(false) }
-        if (image != null && !imageFailed) {
-            AsyncImage(
-                model = image,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                onError = { imageFailed = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .clip(MaterialTheme.shapes.extraLarge)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-            )
-        }
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    item.source.name,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                item.publishedAt?.let {
-                    Text(
-                        "  ·  " + relativeTime(it),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                item.title,
-                style = MaterialTheme.typography.headlineSmall,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (item.summary.isNotBlank() && item.summary != item.title) {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    item.summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NewsRow(item: NewsItem, read: Boolean, onClick: () -> Unit) {
-    CanvasCard(
-        onClick = onClick,
-        onLongClick = { SavedLinks.offer(item.savedLink()) },
-        modifier = Modifier.fillMaxWidth().bouncyPress().alpha(if (read) READ_ALPHA else 1f),
-        shape = MaterialTheme.shapes.large,
-    ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        item.source.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    item.publishedAt?.let {
+                    itemsIndexed(feed.seen, key = { _, s -> "v:" + s.key }) { index, story ->
+                        Column(Modifier.animateItem()) {
+                            if (index > 0) StoryDivider()
+                            StoryRow(
+                                story,
+                                read = { it in read },
+                                onOpen = open,
+                                onLongClick = { ActionBubble.show(*storyActions(context, story) {}) },
+                                dim = 0.85f,
+                                thumb = 52.dp,
+                            )
+                        }
+                    }
+                    if (feed.isEmpty) item(key = "empty") {
                         Text(
-                            "  ·  " + relativeTime(it),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (hidden.isNotEmpty()) "Nessuna notizia leggibile dalle fonti che segui. Le fonti nascoste si riattivano in Impostazioni › News."
+                            else "Nessuna notizia leggibile in questo momento.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(8.dp),
                         )
                     }
+                    // Una fonte ferma non merita un posto in cima: una riga grigia in fondo.
+                    val failed = state.failures.map { it.source.name }
+                    if (failed.isNotEmpty()) item(key = "failed") {
+                        NewsQuietLine(NewsLayout.failureDetail(failed), Modifier.padding(top = 12.dp))
+                    }
                 }
-                Spacer(Modifier.height(4.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoryDivider() {
+    HorizontalDivider(Modifier.padding(horizontal = 4.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+}
+
+/** Portare una storia di lato la segna come letta: esce alla velocità del dito e riappare tra le già viste. */
+@Composable
+private fun SwipeToRead(story: NewsStory, content: @Composable () -> Unit) {
+    val swipe = rememberSwipeAwayState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    Box(
+        Modifier.swipeAway(swipe) {
+            NewsHistory.init(context)
+            val links = story.items.map { it.link }
+            links.forEach(NewsHistory::markRead)
+            NewsHistory.settle(links)
+            scope.launch { swipe.reset() }
+        },
+    ) { content() }
+}
+
+/**
+ * L'unico blocco colorato della pagina: ascoltare le storie nuove (le più importanti per prime),
+ * o il punto del giorno se non c'è niente di nuovo.
+ */
+@Composable
+private fun ListenBlock(feed: NewsFeed, since: Instant?, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val listening by RecapSpeaker.state.collectAsStateWithLifecycle()
+    val fresh = feed.fresh.isNotEmpty() && since != null
+    val pool = if (fresh) feed.fresh else feed.all.filter { s -> s.newest?.let { java.time.Duration.between(it, Instant.now()).toHours() < 24 } ?: true }
+    val chosen = remember(pool) {
+        pool.sortedWith(compareByDescending<NewsStory> { it.sourceCount }.thenByDescending { it.newest ?: Instant.EPOCH })
+            .take(RecapReader.MAX_THEMES)
+    }
+    if (chosen.isEmpty()) return
+    val intro = if (fresh) {
+        val n = feed.fresh.size
+        (if (n == 1) "Una notizia nuova " else "$n notizie nuove ") + NewsStories.sinceLabel(since!!, Instant.now(), ::newsClock) + "."
+    } else null
+    val script = remember(chosen, intro) { storiesScript(chosen, intro) }
+    val minutes = NewsStories.minutes(script.sumOf { it.length })
+    val playing = listening != null
+    CanvasCard(
+        onClick = { if (playing) RecapSpeaker.stop() else listenStories(context, chosen, intro) },
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        modifier = modifier.fillMaxWidth().bouncyPress(0.98f),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (playing) Icons.Filled.Stop else Icons.Outlined.Headphones, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
                 Text(
-                    item.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 3,
+                    when {
+                        playing -> "Smetti di ascoltare"
+                        !fresh -> "Ascolta il punto del giorno"
+                        feed.fresh.size == 1 -> "Ascolta la notizia nuova"
+                        feed.fresh.size <= RecapReader.MAX_THEMES -> "Ascolta le ${feed.fresh.size} nuove"
+                        else -> "Ascolta le ${chosen.size} nuove principali"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    "$minutes min · le più riprese prima",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f),
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            // La miniatura che non si carica sparisce invece di lasciare un quadrato grigio.
-            val image = NewsLayout.usableImage(item.imageUrl)
-            var imageFailed by remember(image) { mutableStateOf(false) }
-            if (image != null && !imageFailed) {
-                Spacer(Modifier.size(12.dp))
-                AsyncImage(
-                    model = image,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    onError = { imageFailed = true },
-                    modifier = Modifier
-                        .size(84.dp)
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        }
+    }
+}
+
+/**
+ * Le notizie nuove che arrivano mentre leggi non fanno saltare la lista: se sei in cima entrano scivolando,
+ * altrimenti compare il fumetto in basso "2 nuove notizie · Mostra".
+ */
+@Composable
+private fun NewArrivals(feed: NewsFeed, listState: LazyListState) {
+    val context = LocalContext.current
+    var baseline by remember { mutableStateOf<Instant?>(null) }
+    val newest = feed.all.mapNotNull { it.newest }.maxOrNull()
+    LaunchedEffect(newest) {
+        val base = baseline
+        baseline = newest
+        if (base == null || newest == null || !newest.isAfter(base)) return@LaunchedEffect
+        val added = feed.fresh.count { s -> s.newest?.isAfter(base) == true }
+        if (added == 0 || listState.firstVisibleItemIndex <= 1) return@LaunchedEffect
+        CaptureFeedback.tell(
+            context,
+            if (added == 1) "1 nuova notizia" else "$added nuove notizie",
+            Icons.Outlined.Newspaper,
+            actionLabel = "Mostra",
+        ) { listState.animateScrollToItem(0) }
+    }
+}
+
+/**
+ * La piccola resistenza sul segno "ULTIMA VISITA", come su "OGGI" nel Calendario ma al contrario: qui le
+ * nuove stanno sopra, e scorrendo verso le già viste la lista si ferma sul segno con una vibrazione leggera.
+ * Riusa la regola pura di [PastBarrier] guardando la lista capovolta.
+ */
+@Composable
+private fun rememberVisitBarrier(listState: LazyListState, markerIndex: Int?): NestedScrollConnection {
+    val haptic = rememberHaptic()
+    val threshold = with(LocalDensity.current) { 120.dp.toPx() }
+    val index by rememberUpdatedState(markerIndex)
+    return remember(listState, haptic, threshold) {
+        object : NestedScrollConnection {
+            var pull = 0f
+            var unlocked = false
+            /** Dove sta il segno, visto dalla lista capovolta: positivo = già tra le viste. */
+            fun boundary(): Float? {
+                val m = index ?: return null
+                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == m }
+                return when {
+                    item != null -> -item.offset.toFloat()
+                    listState.firstVisibleItemIndex > m -> 1e9f
+                    else -> -1e9f
+                }
+            }
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val s = PastBarrier.step(
+                    boundary(), -available.y, pull, unlocked, threshold,
+                    fling = source != NestedScrollSource.UserInput,
                 )
+                pull = s.pull
+                unlocked = s.unlocked
+                if (s.bump) haptic(Haptic.TICK)
+                if (s.through) haptic(Haptic.THRESHOLD)
+                return Offset(0f, -s.consumed)
             }
         }
     }
@@ -367,8 +389,6 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
         Spacer(Modifier.height(12.dp))
         Text(message, style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) {
-            Text("Riprova")
-        }
+        FilledTonalButton(onClick = onRetry) { Text("Riprova") }
     }
 }

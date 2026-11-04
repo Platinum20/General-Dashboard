@@ -22,18 +22,64 @@ object NewsHistory {
     private lateinit var prefs: SharedPreferences
     private val _read = MutableStateFlow<List<String>>(emptyList())
     val read: StateFlow<List<String>> = _read.asStateFlow()
+    private val _lastVisit = MutableStateFlow<Instant?>(null)
+    /** L'ultima volta che hai lasciato le News, osservabile: la card in Home si aggiorna appena esci. */
+    val lastVisitFlow: StateFlow<Instant?> = _lastVisit.asStateFlow()
+
+    /** La visita in corso: l'ora da cui le storie contano come nuove, e se tornando dal lettore la si riprende. */
+    private var session: Instant? = null
+    private var hasSession = false
+    @Volatile
+    private var held = false
+    private val _settled = MutableStateFlow<Set<String>>(emptySet())
+    /**
+     * Gli articoli che in questa visita contano come visti: quelli aperti prima di entrare e quelli segnati
+     * come letti qui. Gli articoli aperti durante la visita no: la loro riga resta al suo posto, attenuata.
+     */
+    val settled: StateFlow<Set<String>> = _settled.asStateFlow()
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
         prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _read.value = prefs.getString(KEY_READ, null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty()
+        _lastVisit.value = lastVisit()
     }
+
+    /**
+     * Si entra nelle News: da quando contano le storie nuove. Aprire un articolo lascia la pagina (e segna
+     * la visita), ma tornando dal lettore la visita è la stessa: le nuove restano nuove ([holdSession]).
+     */
+    fun enter(): Instant? {
+        val since = sessionStart(held, hasSession, session, lastVisit())
+        if (!(held && hasSession)) _settled.value = _read.value.toSet()
+        held = false
+        session = since
+        hasSession = true
+        return since
+    }
+
+    /** Segnati come letti qui: la loro storia scende tra le già viste. */
+    fun settle(links: Collection<String>) {
+        _settled.value = _settled.value + links
+    }
+
+    /** Si apre un articolo dalla lista: al ritorno la visita continua. */
+    fun holdSession() {
+        held = true
+    }
+
+    /** Da quando contano le nuove adesso: la visita in corso se c'è, altrimenti l'ultima. */
+    fun since(): Instant? = if (hasSession) session else lastVisit()
+
+    internal fun sessionStart(held: Boolean, hasSession: Boolean, current: Instant?, last: Instant?): Instant? =
+        if (held && hasSession) current else last
 
     /** L'ultima volta che hai lasciato le News; null alla prima apertura. */
     fun lastVisit(): Instant? = prefs.getLong(KEY_LAST_VISIT, 0L).takeIf { it > 0 }?.let(Instant::ofEpochMilli)
 
     fun markVisit(at: Instant = Instant.now()) {
         prefs.edit().putLong(KEY_LAST_VISIT, at.toEpochMilli()).apply()
+        _lastVisit.value = at
     }
 
     fun markRead(link: String) {

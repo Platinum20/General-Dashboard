@@ -116,8 +116,6 @@ class ScreenshotTour {
         // Le scorciatoie sono nascoste: si entra dalle card (il testo del luogo è dentro la card del meteo).
         // "Adesso · Roma": il luogo è dentro la riga in maiuscoletto della card scura.
         visit("Roma", p + "02_meteo", substring = true)
-        // Il punto del giorno si prepara dopo le notizie: al primo giro (al buio) può volerci di più.
-        visit("Tutti", p + "03_punto", appearMs = 40_000)
         // Niente pulsanti in alto: la ricerca si apre trascinando giù (qui l'azione del titolo, come TalkBack).
         if (action("Cerca ovunque")) {
             settle(1_500); shot(p + "04_cerca")
@@ -204,7 +202,7 @@ class ScreenshotTour {
             "65_evento_nuovo" to Routes.calendarEdit(null),
             data.notes.firstOrNull()?.let { "66_editor_nota" to Routes.noteEdit(it.id) },
             "67_spese" to Routes.expenses(),
-            "68_recap" to Routes.RECAP,
+            "68_news" to Routes.NEWS,
             "69_player" to Routes.PLAYER,
             "70_coda" to Routes.QUEUE,
             "71_video_youtube" to Routes.youtubeWatch(),

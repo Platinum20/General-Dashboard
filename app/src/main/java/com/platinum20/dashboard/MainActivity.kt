@@ -217,7 +217,6 @@ import com.platinum20.dashboard.ui.screens.NotesScreen
 import com.platinum20.dashboard.ui.screens.NewsScreen
 import com.platinum20.dashboard.ui.screens.PlacePickerScreen
 import com.platinum20.dashboard.ui.screens.ReaderScreen
-import com.platinum20.dashboard.ui.screens.RecapScreen
 import com.platinum20.dashboard.ui.screens.SettingsPage
 import com.platinum20.dashboard.ui.screens.SettingsPageScreen
 import com.platinum20.dashboard.ui.screens.SettingsScreen
@@ -373,7 +372,6 @@ object Routes {
     fun mail(id: String) = "home/mail/${Uri.encode(id)}"
     const val WEATHER = "home/weather"
     const val WEATHER_PLACE = "home/weather/place"
-    const val RECAP = "home/recap"
     const val CUSTOMIZE = "home/customize"
     /** Il riepilogo delle spese di un mese (dal segno del mese nel calendario); senza mese, quello di adesso. */
     const val EXPENSES = "home/expenses?month={month}"
@@ -1019,6 +1017,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             navController.switchTab(
                 when (request.target) {
                     OpenRequest.MEDIA, OpenRequest.PLAY -> Routes.MEDIA
+                    // Il titolo delle notizie nel widget apre la scheda News (la pagina del punto del giorno non c'è più).
+                    OpenRequest.RECAP -> Routes.NEWS
                     else -> Routes.HOME
                 }
             )
@@ -1030,7 +1030,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.UPDATES)
                 }
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
-                OpenRequest.RECAP -> navController.navigate(Routes.RECAP)
+                OpenRequest.RECAP -> Unit
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
                 }
@@ -1241,7 +1241,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     bottomPadding = padding,
                     onOpenNews = { navController.switchTab(Routes.NEWS) },
                     onOpenWeather = { navController.navigate(Routes.WEATHER) },
-                    onOpenRecap = { navController.navigate(Routes.RECAP) },
                     onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
                     onOpenNotes = { navController.openCalendar() },
                     onCustomize = { navController.navigate(Routes.CUSTOMIZE) },
@@ -1430,17 +1429,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })
             }
-            composable(Routes.RECAP) {
-                RecapScreen(
-                    onBack = { navController.popBackStack() },
-                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
-                )
-            }
             composable(Routes.NEWS) {
-                NewsScreen(
-                    bottomPadding = padding,
-                    onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
-                )
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
+                    NewsScreen(
+                        bottomPadding = padding,
+                        onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                    )
+                }
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
@@ -1476,13 +1471,21 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 ),
             ) { entry ->
                 val source = entry.arguments?.getString("source").orEmpty()
-                ReaderScreen(
-                    sourceName = source,
-                    fallbackTitle = entry.arguments?.getString("title").orEmpty(),
-                    onBack = { navController.popBackStack() },
-                    onOpenLink = { navController.navigate(Routes.reader(it, source)) },
-                    onOpenOriginal = { navController.navigate(Routes.webPage(it, source)) },
-                )
+                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
+                    ReaderScreen(
+                        sourceName = source,
+                        fallbackTitle = entry.arguments?.getString("title").orEmpty(),
+                        onBack = { navController.popBackStack() },
+                        onOpenLink = { navController.navigate(Routes.reader(it, source)) },
+                        onOpenArticle = { navController.navigate(Routes.reader(it.link, it.source.name, it.title)) },
+                        // "Prossima nuova" prende il posto dell'articolo letto: indietro torna alla lista.
+                        onOpenNext = {
+                            navController.navigate(Routes.reader(it.link, it.source.name, it.title)) {
+                                popUpTo(Routes.READER) { inclusive = true }
+                            }
+                        },
+                    )
+                }
             }
             composable(
                 Routes.WEB_PAGE,

@@ -19,15 +19,11 @@ data class NewsUiState(
     val refreshing: Boolean = false,
     val error: String? = null,
     val failures: List<SourceFailure> = emptyList(),
-    /** null = tutte le fonti. */
-    val selectedSource: String? = null,
     val verification: VerificationState = VerificationState(),
 ) {
     /** Solo gli articoli che il lettore riesce a pulire, e gratuiti (vedi [ArticleVerifier]). */
     val visibleItems: List<NewsItem>
-        get() = items.filter {
-            it.link in verification.readable && (selectedSource == null || it.source.id == selectedSource)
-        }
+        get() = items.filter { it.link in verification.readable }
 }
 
 class NewsViewModel : ViewModel() {
@@ -59,8 +55,6 @@ class NewsViewModel : ViewModel() {
         if (_state.value.loading) return
         runCatching { NewsStore.load() }
     }
-
-    fun selectSource(id: String?) = _state.update { it.copy(selectedSource = id) }
 
     private fun load(initial: Boolean) {
         val s = _state.value

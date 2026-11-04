@@ -67,7 +67,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     private suspend fun post(context: Context) {
         val forecast = runCatching { WeatherStore.fetch(context, freshLocation = false) }.getOrNull()
             ?: WeatherStore.cached(context)
-        val themes = runCatching { NewsRecap.build(NewsStore.load(force = true).items) }.getOrDefault(emptyList())
+        val themes = runCatching { NewsStore.widgetStories(context, NewsStore.load(force = true).items) }.getOrDefault(emptyList())
         if (themes.isNotEmpty()) DashboardWidget.saveRecap(context, themes)
         NotesStore.init(context)
         val notes = NotesStore.data.value
