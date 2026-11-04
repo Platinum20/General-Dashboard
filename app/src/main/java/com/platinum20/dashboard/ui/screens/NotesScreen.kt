@@ -976,8 +976,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     val current = id?.let { now -> data.notes.firstOrNull { it.id == now } }
     val pinned = current?.pinned ?: false
     val haptic = rememberHaptic()
-    // Quando era stata toccata l'ultima volta, prima di aprirla adesso.
-    val lastEdited = remember { noteId?.let { NotesStore.note(it)?.updatedAt } }
+    // Quando è stata scritta e toccata l'ultima volta, prima di aprirla adesso.
+    val opened = remember { noteId?.let { NotesStore.note(it) } }
 
     DisposableEffect(Unit) {
         onDispose { if (!deleted) NotesStore.saveNote(id, text) }
@@ -1028,7 +1028,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 // La riga sopra il titolo, come nelle altre pagine: quando, e se è fissata.
                 Text(
                     buildString {
-                        append(if (lastEdited == null) "Nuova nota" else "Modificata " + relativeTime(Instant.ofEpochMilli(lastEdited)))
+                        append(if (opened == null) "Nuova nota" else NoteText.moment(opened.createdAt, opened.updatedAt))
                         if (pinned) append(" · fissata")
                     }.uppercase(),
                     style = MaterialTheme.typography.labelMedium,

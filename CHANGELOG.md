@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.350.0
+**L'orario nelle note**
+- Aprendo una nota, in alto vedi quando l'hai scritta, con giorno e ora, e a che ora l'hai modificata l'ultima volta
+
 ## 1.349.0
 **Spese in ordine di orario**
 - Nel calendario le spese di ogni giorno sono in ordine di orario, dalla prima all'ultima, anche nel riepilogo del mese
