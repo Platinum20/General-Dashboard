@@ -103,7 +103,7 @@ fun ExpensesTab(
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
     val openItem = rememberOpenItem()
     val total = Expenses.total(data.expenses, month)
-    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedBy { it.date }
+    val inMonth = data.expenses.filter { YearMonth.from(it.date) == month }.sortedWith(Expenses.byTime)
     val listState = rememberReselectListState(Routes.EXPENSES)
     // La pagina si apre in cima al mese (Antonio), non su "OGGI": il mese si legge dall'inizio.
     androidx.compose.runtime.LaunchedEffect(month) { runCatching { listState.scrollToItem(0) } }

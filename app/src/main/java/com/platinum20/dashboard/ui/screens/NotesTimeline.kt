@@ -100,8 +100,8 @@ internal fun pastDays(
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val rows = mutableListOf<DueRow>()
-    // Prima del resto del giorno: la spesa non ha un'ora.
-    expenses.filter { it.date.isBefore(today) }.forEach { e -> rows += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
+    // Prima del resto del giorno, fra loro per orario (l'ordine resta: stesso [DueRow.at]).
+    expenses.filter { it.date.isBefore(today) }.sortedWith(Expenses.byTime).forEach { e -> rows += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
     // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
     // Nel calendario unico anche quelli senza data: fatti nel giorno in cui li hai spuntati (Antonio).
     tasks.filter { it.done && (it.dueAt != null || withToday) }.forEach { t ->
@@ -173,8 +173,8 @@ internal fun dueDays(
     }
     simRenewal?.takeIf { !it.isBefore(today) }?.let { dated += DueRow("sim-renewal", it, startOf(it), simRenewal = true) }
     if (withToday) {
-        expenses.filter { it.date.isAfter(today) }.forEach { e -> dated += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
-        val spentToday = expenses.filter { it.date == today }
+        expenses.filter { it.date.isAfter(today) }.sortedWith(Expenses.byTime).forEach { e -> dated += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
+        val spentToday = expenses.filter { it.date == today }.sortedWith(Expenses.byTime)
         val todayRows = buildList {
             add(DueRow("spend-today", today, Long.MIN_VALUE, spend = spentToday.sumOf { it.cents }))
             spentToday.forEach { e -> add(DueRow("expense-${e.id}", today, Long.MIN_VALUE, expense = e)) }
@@ -552,7 +552,7 @@ internal fun expenseEntries(
 ): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
     var previous: LocalDate? = null
     var shown = header
-    val sorted = expenses.sortedBy { it.date }.let { e -> limit?.let { e.takeLast(it) } ?: e }
+    val sorted = expenses.sortedWith(Expenses.byTime).let { e -> limit?.let { e.takeLast(it) } ?: e }
     return sorted.map { e ->
         val first = e.date != previous
         val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, e.date) else 0f

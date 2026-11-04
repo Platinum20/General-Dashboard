@@ -2,6 +2,7 @@ package com.platinum20.dashboard.notes
 
 import java.text.NumberFormat
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import java.util.Locale
 
@@ -16,6 +17,8 @@ data class Expense(
     val fixedId: Long? = null,
     /** Il movimento Revolut da cui viene (letto dal conto), null per quelle scritte a mano o dalle notifiche. */
     val bankId: String? = null,
+    /** L'ora della spesa (a mano, notifica, posta, conto): dentro il giorno vanno in ordine di orario (Antonio). Null = non si sa. */
+    val at: LocalTime? = null,
 )
 
 /**
@@ -139,6 +142,9 @@ enum class ExpenseCategory(val label: String, val words: List<String>) {
 }
 
 object Expenses {
+    /** Dentro il giorno per orario, la più vecchia prima; quelle senza ora (fisse, vecchie) all'inizio del giorno. */
+    val byTime: Comparator<Expense> = compareBy<Expense> { it.date }.thenBy { it.at ?: LocalTime.MIN }
+
     private val amount = Regex("""(?<![\p{L}\d])(?:€\s?)?(\d{1,6}(?:[.,]\d{1,2})?)\s?(?:€|euro|eur)?(?![\p{L}\d])""", RegexOption.IGNORE_CASE)
     private val currency = NumberFormat.getCurrencyInstance(Locale.ITALY)
 

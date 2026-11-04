@@ -44,7 +44,7 @@ object NotesSearch {
                 .forEach { add(SearchHit(SearchKind.TASK, it.id, it.text)) }
             data.notes.sortedByDescending { it.updatedAt }.filter { hit(it.text) }
                 .forEach { add(SearchHit(SearchKind.NOTE, it.id, it.title.ifEmpty { "Nota" })) }
-            data.expenses.sortedByDescending { it.date }
+            data.expenses.sortedWith(Expenses.byTime.reversed())
                 .filter { hit(it.text, it.category.label) || amountMatches(query, it.cents) }
                 .forEach { add(SearchHit(SearchKind.EXPENSE, it.id, it.text)) }
             data.parcels.filter { hit(it.title, it.code) }

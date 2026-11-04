@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 
 /**
@@ -18,6 +19,8 @@ data class BankTx(
     val category: ExpenseCategory,
     val date: LocalDate,
     val counts: Boolean = true,
+    /** L'ora del pagamento, per l'ordine dentro il giorno. */
+    val at: LocalTime? = null,
 )
 
 /** Quello che la lettura di una risposta ha trovato: movimenti e, se c'era, il saldo in euro. */
@@ -133,7 +136,8 @@ object RevolutParse {
         val amount = (o.opt("amountWithCharges") as? Number ?: o.opt("amount") as Number).toLong()
         val id = o.optString("legId").ifEmpty { o.optString("id") }.ifEmpty { return null }
         val at = listOf("startedDate", "createdDate", "completedDate").firstNotNullOfOrNull { k -> o.optLong(k).takeIf { it > 0 } } ?: return null
-        val date = Instant.ofEpochMilli(at).atZone(zone).toLocalDate()
+        val whenAt = Instant.ofEpochMilli(at).atZone(zone)
+        val date = whenAt.toLocalDate()
         val type = o.optString("type").uppercase()
         val state = o.optString("state").uppercase()
         val account = o.optJSONObject("account")?.optString("type").orEmpty()
@@ -157,7 +161,7 @@ object RevolutParse {
             text.isNotEmpty() -> text
             else -> "Revolut"
         }
-        return BankTx(id, -amount, name, category, date, counts)
+        return BankTx(id, -amount, name, category, date, counts, whenAt.toLocalTime().withSecond(0).withNano(0))
     }
 
     /**
