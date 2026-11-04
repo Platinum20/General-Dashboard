@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.350.0
+## 1.352.0
 **L'orario nelle note**
 - Aprendo una nota, in alto vedi quando l'hai scritta, con giorno e ora, e a che ora l'hai modificata l'ultima volta
 
