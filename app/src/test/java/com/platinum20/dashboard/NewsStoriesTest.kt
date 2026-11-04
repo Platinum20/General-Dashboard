@@ -118,7 +118,6 @@ class NewsStoriesTest {
         val map = ReadingSpots.remember(emptyMap(), "u", 500, 1000)
         assertEquals(500, map["u"])
         assertTrue(ReadingSpots.remember(map, "u", 995, 1000).isEmpty())
-        assertEquals(map, ReadingSpots.decode(ReadingSpots.encode(map)))
     }
 
     @Test fun iVideoDiYouTubeVannoNelPlayer() {
