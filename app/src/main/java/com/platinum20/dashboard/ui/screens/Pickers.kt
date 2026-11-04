@@ -156,3 +156,25 @@ fun TimePickDialog(initial: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalT
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
     )
 }
+
+/**
+ * Sotto il campo di un nuovo promemoria: mostra quando suonerà l'avviso
+ * mentre si scrive "domani alle 9…", così si vede subito se è stato capito.
+ */
+@Composable
+fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
+    val entry = remember(draft) { if (draft.isBlank()) null else QuickParse.parse(draft) }
+    val due = entry?.due ?: return
+    val ms = due.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.size(6.dp))
+        Text(
+            dueLabel(ms) + (entry.repeat?.let { " · ${it.label}" } ?: "") + " · \"${entry.text}\"",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
