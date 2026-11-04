@@ -44,7 +44,11 @@ internal object CaptureFeedback {
     var active = false
 
     /** False se la conferma va data in un altro modo (es. dalla finestra della condivisione). */
-    fun show(notice: CaptureNotice): Boolean = active && _events.tryEmit(notice)
+    fun show(notice: CaptureNotice): Boolean {
+        // Un salvataggio vero: la riga nuova che compare adesso nel calendario si può accendere.
+        if (notice.fly) com.platinum20.dashboard.ui.screens.RowFlash.arm()
+        return active && _events.tryEmit(notice)
+    }
 
     /**
      * Un avviso qualsiasi (errori, "In coda", "Backup salvato") nello stesso fumetto, al posto di
