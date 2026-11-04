@@ -95,7 +95,7 @@ class ReaderViewModel(application: Application, savedStateHandle: SavedStateHand
         return when {
             e == null -> fallback
             // 401/403/429…: il sito blocca le app, ma nel browser di solito si apre.
-            text.startsWith("HTTP 4") -> "Il sito non lascia leggere l'articolo nell'app: aprilo nell'originale."
+            text.startsWith("HTTP 4") -> "Il sito non lascia leggere l'articolo nell'app."
             text.startsWith("HTTP ") -> "Il sito non risponde, riprova più tardi."
             // I problemi di rete hanno già un testo chiaro; gli altri messaggi grezzi non aiutano.
             else -> e.userMessage(fallback).takeIf { it != text } ?: fallback

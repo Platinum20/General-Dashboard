@@ -11,7 +11,7 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "Calendario", "SIM", "Revolut", "Documenti", "Dalla posta", "Il punto del giorno"),
+            listOf("Adesso", "Media", "Calendario", "SIM", "Revolut", "Documenti", "Dalla posta", "News"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
     }

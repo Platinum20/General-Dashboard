@@ -77,13 +77,13 @@ type from text: never ask the user the type), `CaptureSave.kt` (single save path
 `QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
 
-**News**: `news/` (`NewsRepository` free sources only, `NewsStore`, `NewsRecap` clustering,
-`NewsHistory` "N nuove"/"Già viste", `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
+**News** (1.356, by story): `news/` (`NewsRepository` free sources only, `NewsStore` (+ `verifyLatest`, `widgetStories`), `NewsRecap` clustering (`cluster` = all stories), `NewsStories` (pure: `group` readable/hidden sources → stories (`NewsStory` = `RecapTheme`), `split` → `NewsFeed` fresh/seen around last visit, `next`, `homeLine`/`markerLabel`), `ReadingSpots` (reader resume),
+`NewsHistory` (last visit flow, session `enter`/`holdSession` so returning from the reader keeps the same visit, `settled`), `RecapReader` + `RecapSpeaker` = reading voice), `news/voice/`
 (`VoiceStore` Piper voice choice/download (Giorgio = community voice repacked by `voicepack.yml` + `scripts/pack_piper_voice.py` into the prerelease `voci`), `NeuralVoice` sherpa-onnx + AudioTrack; system TTS fallback;
 the sherpa AAR is downloaded by `app/build.gradle.kts` into ignored `app/libs/`; `net/HeavyDownloads.kt`
 = "solo col Wi-Fi" gate for voices + update APKs; LiveChecks really downloads a voice), `news/reader/` (ArticleExtractor,
 PageLoader, ArticleVerifier). `net/WebFetcher.kt` = hidden-WebView fetch fallback for 403 sites.
-Screens: `NewsScreen`, `ReaderScreen`, `ArticleScreen`.
+Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' with mirrored `PastBarrier`, swipe = read, new-arrivals bubble; no source chips: Impostazioni › News › Fonti = `AppSettings.hiddenNewsSources`), shared rows in `NewsStoryUi.kt` (`StoryLead`, `StoryRow`, `storyActions`, `newsSharedKey`), Home card `NewsCard` in HomeScreen (HomeCard.RECAP, label "News"), `ReaderScreen` (on `DetailPage` with `scroll`/`topExtra`; article videos → `news/reader/ArticleVideos` → our player, no WebView; no "pagina originale"), `ArticleScreen` = generic in-app web page for `InAppNav.openWeb` only (parcels etc.). RecapScreen removed in 1.356.
 
 **Media** (Musica / Video / Radio e podcast)
 - `media/CanvasPlayer.kt`: THE player (since 1.157). One ExoPlayer whose queue is the app queue

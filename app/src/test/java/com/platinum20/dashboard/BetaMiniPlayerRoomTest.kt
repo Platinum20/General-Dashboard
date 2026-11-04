@@ -16,7 +16,7 @@ class BetaMiniPlayerRoomTest {
     @Test
     fun paginaSenzaBarraLasciaSpazioAlMiniPlayer() {
         val pages = mapOf(
-            "SettingsScreen.kt" to 2, "WeatherScreen.kt" to 1, "RecapScreen.kt" to 1, "SearchScreen.kt" to 1,
+            "SettingsScreen.kt" to 2, "WeatherScreen.kt" to 1, "SearchScreen.kt" to 1,
             "UpdatesScreen.kt" to 1, "CustomizeScreen.kt" to 1, "MailUi.kt" to 1, "AutoFillUi.kt" to 1,
             "PlacePickerScreen.kt" to 1,
         )

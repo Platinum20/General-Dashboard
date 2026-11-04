@@ -1,23 +1,15 @@
 package com.platinum20.dashboard.ui.screens
 
-import com.platinum20.dashboard.capture.SavedLink
-import com.platinum20.dashboard.capture.SavedLinks
-import com.platinum20.dashboard.notes.NotesStore
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import android.annotation.SuppressLint
-import android.content.Context
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -28,37 +20,32 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.BookmarkAdd
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.Headphones
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -68,26 +55,36 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.AsyncImage
-import com.platinum20.dashboard.adblock.AdBlocker
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.MediaLauncher
+import com.platinum20.dashboard.news.NewsHistory
+import com.platinum20.dashboard.news.NewsItem
+import com.platinum20.dashboard.news.NewsStore
+import com.platinum20.dashboard.news.NewsStories
+import com.platinum20.dashboard.news.ReadingSpots
 import com.platinum20.dashboard.news.RecapReader
 import com.platinum20.dashboard.news.RecapSpeaker
+import com.platinum20.dashboard.news.reader.ArticleVerifier
+import com.platinum20.dashboard.news.reader.ArticleVideos
 import com.platinum20.dashboard.news.reader.ReaderArticle
 import com.platinum20.dashboard.news.reader.ReaderBlock
 import com.platinum20.dashboard.news.reader.ReaderUiState
 import com.platinum20.dashboard.news.reader.ReaderViewModel
 import com.platinum20.dashboard.news.reader.TextRun
+import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.settings.AppSettings
+import kotlinx.coroutines.flow.first
 
 /** Il testo del lettore: la dimensione più piccola, fissa (Antonio non vuole il tasto "Aa"). */
 private const val TEXT_SCALE = 0.9f
@@ -108,211 +105,276 @@ internal fun ReaderArticle.spokenParagraphs(): List<String> = blocks.mapNotNull 
 }
 
 /**
- * Lettore vero e proprio: dalla pagina del giornale prende solo titolo, testo, immagini e video
- * e li mostra con lo stile dell'app, senza menu, pubblicità o banner del sito.
+ * Lettore vero e proprio: dalla pagina del giornale prende solo titolo, testo, immagini e video e li mostra
+ * con lo stile dell'app. Dalla 1.356 ha la forma delle altre schede (DetailPage): in alto Indietro e
+ * "ANSA · 20 min fa · 4 min di lettura", in basso Ascolta e "Altro". Il titolo arriva volando dalla lista.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReaderScreen(
     sourceName: String,
     fallbackTitle: String,
     onBack: () -> Unit,
     onOpenLink: (String) -> Unit,
-    onOpenOriginal: (String) -> Unit,
+    onOpenArticle: (NewsItem) -> Unit,
+    onOpenNext: (NewsItem) -> Unit,
     viewModel: ReaderViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val url = viewModel.url
+    val loaded = (state as? ReaderUiState.Loaded)?.article
+    val title = loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                title = { Text(sourceName.ifBlank { "Articolo" }, maxLines = 1) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                actions = {
-                    // Solo due tasti: ascoltarla con la voce del player e salvarla nelle note.
-                    val loaded = (state as? ReaderUiState.Loaded)?.article
-                    if (loaded != null) {
-                        IconButton(onClick = {
-                            val script = RecapReader.articleScript(loaded.title.ifBlank { fallbackTitle }, loaded.spokenParagraphs())
-                            RecapSpeaker.play(context, script, title = loaded.title.ifBlank { fallbackTitle }, labels = script.map(RecapReader::chapterLabel))
-                        }) {
-                            Icon(Icons.Outlined.Headphones, contentDescription = "Ascolta")
-                        }
-                    }
-                    // Integrazione News → Note: l'articolo resta in Note con il link e l'immagine, da leggere dopo.
-                    // Se è già nelle note il tasto la toglie: niente copie dello stesso articolo.
-                    NotesStore.init(context)
-                    val notes by NotesStore.data.collectAsStateWithLifecycle()
-                    val link = SavedLink.Article(
-                        viewModel.url, sourceName,
-                        loaded?.title?.takeIf { it.isNotBlank() } ?: fallbackTitle, loaded?.coverImage().orEmpty(),
-                    )
-                    val saved = remember(notes.notes, viewModel.url) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
-                    IconButton(onClick = {
-                        if (saved) SavedLinks.remove(context, link) else SavedLinks.save(context, link)
-                    }) {
-                        if (saved) {
-                            Icon(Icons.Filled.Bookmark, contentDescription = "Rimuovi dalle note", tint = MaterialTheme.colorScheme.primary)
-                        } else {
-                            Icon(Icons.Outlined.BookmarkAdd, contentDescription = "Salva nelle note")
-                        }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-            )
+    // Integrazione News → Note: l'articolo resta in Note con il link e l'immagine; se c'è già, si toglie.
+    NotesStore.init(context)
+    val notes by NotesStore.data.collectAsStateWithLifecycle()
+    val link = SavedLink.Article(url, sourceName, title, loaded?.coverImage().orEmpty())
+    val saved = remember(notes.notes, url) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
+
+    val news by NewsStore.result.collectAsStateWithLifecycle()
+    val item = remember(news, url) { news?.items?.firstOrNull { it.link == url } }
+    val words = remember(loaded) { loaded?.spokenParagraphs()?.sumOf { p -> p.split(' ').count { it.isNotBlank() } } }
+    val meta = listOfNotNull(
+        sourceName.ifBlank { null },
+        item?.publishedAt?.let(::relativeTime),
+        words?.let { "${NewsStories.readingMinutes(it)} min di lettura" },
+    ).joinToString(" · ").ifBlank { "Articolo" }
+
+    // Dove eri arrivato: uscendo a metà, la volta dopo si riparte da lì.
+    val scroll = rememberScrollState()
+    ReadingSpots.init(context)
+    val isLoaded by rememberUpdatedState(loaded != null)
+    LaunchedEffect(loaded != null) {
+        if (loaded == null) return@LaunchedEffect
+        val spot = ReadingSpots.get(url) ?: return@LaunchedEffect
+        snapshotFlow { scroll.maxValue }.first { it in 1 until Int.MAX_VALUE }
+        scroll.animateScrollTo(spot)
+    }
+    DisposableEffect(url) {
+        onDispose { if (isLoaded) ReadingSpots.put(url, scroll.value, scroll.maxValue) }
+    }
+
+    DetailPage(
+        onBack = onBack,
+        onEdit = null,
+        onDelete = null,
+        meta = meta,
+        primary = loaded?.let { article ->
+            DetailAction(Icons.Outlined.Headphones, "Ascolta") {
+                val script = RecapReader.articleScript(title, article.spokenParagraphs())
+                RecapSpeaker.play(context, script, title = title, labels = script.map(RecapReader::chapterLabel))
+            }
         },
-    ) { inner ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(top = inner.calculateTopPadding())
-        ) {
-            when (val s = state) {
-                is ReaderUiState.Loading -> Column(
-                    Modifier.fillMaxSize().padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    CircularProgressIndicator()
-                    if (fallbackTitle.isNotBlank()) {
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            fallbackTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
+        more = listOf(
+            if (saved) BubbleAction(Icons.Filled.Bookmark, "Togli dalle note") { SavedLinks.remove(context, link) }
+            else BubbleAction(Icons.Outlined.BookmarkAdd, "Salva nelle note") { SavedLinks.save(context, link) },
+            BubbleAction(Icons.Outlined.Share, "Condividi il link") {
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, url).putExtra(Intent.EXTRA_SUBJECT, title)
+                runCatching { context.startActivity(Intent.createChooser(send, null)) }
+            },
+        ),
+        scroll = scroll,
+        topExtra = { ReadingProgress { if (scroll.maxValue in 1 until Int.MAX_VALUE) scroll.value / scroll.maxValue.toFloat() else 0f } },
+    ) {
+        // Tenendo premuto il titolo: "Salva nelle note", come per le cose del resto dell'app.
+        Text(
+            title,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = (26 * TEXT_SCALE).sp, lineHeight = 1.25.em),
+            modifier = Modifier
+                .padding(horizontal = 4.dp)
+                .sharedItem(newsSharedKey(url))
+                .pointerInput(url) { detectTapGestures(onLongPress = { SavedLinks.offer(link) }) },
+        )
+        when (val s = state) {
+            // Il titolo è già al suo posto; sotto, le righe grigie dove arriverà il testo.
+            is ReaderUiState.Loading -> Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(s.step, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                PlaceholderLine(1f, 180.dp)
+                listOf(0.95f, 0.9f, 0.97f, 0.6f, 0.92f, 0.88f, 0.4f).forEach { PlaceholderLine(it, 14.dp) }
+            }
+            is ReaderUiState.Loaded -> {
+                ArticleBody(s.article, onOpenLink)
+                ArticleEnd(url, onOpenArticle, onOpenNext)
+            }
+            ReaderUiState.NoText -> ReaderMessage(
+                "Non riesco a ricavare il testo di questo articolo: forse è riservato agli abbonati o è solo un video.",
+                onRetry = viewModel::load,
+            )
+            is ReaderUiState.Failed -> ReaderMessage(s.message, onRetry = viewModel::load)
+        }
+    }
+}
+
+/** La barra sottile sotto la riga in alto: quanto hai letto dell'articolo. */
+@Composable
+private fun ReadingProgress(fraction: () -> Float) {
+    val primary = MaterialTheme.colorScheme.primary
+    val track = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    Box(
+        Modifier
+            .padding(start = 20.dp, top = 8.dp)
+            .fillMaxWidth()
+            .height(2.dp)
+            .clip(CircleShape)
+            .background(track)
+            .drawBehindProgress(primary, fraction),
+    )
+}
+
+private fun Modifier.drawBehindProgress(color: Color, fraction: () -> Float): Modifier =
+    drawBehind { drawRect(color, size = size.copy(width = size.width * fraction().coerceIn(0f, 1f))) }
+
+@Composable
+private fun ArticleBody(article: ReaderArticle, onOpenLink: (String) -> Unit) {
+    val linkColor = MaterialTheme.colorScheme.primary
+    val bodyStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = (18 * TEXT_SCALE).sp, lineHeight = 1.6.em)
+    Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        article.byline?.let {
+            Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        article.leadImage?.let { ArticleImage(it, caption = null) }
+        article.blocks.forEach { block ->
+            when (block) {
+                is ReaderBlock.Heading -> Text(
+                    block.text,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, fontSize = (21 * TEXT_SCALE).sp),
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                is ReaderBlock.Paragraph -> Text(block.runs.toAnnotated(linkColor, onOpenLink), style = bodyStyle)
+                is ReaderBlock.Quote -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                    Box(
+                        Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small),
+                    )
+                    Spacer(Modifier.width(12.dp))
                     Text(
-                        s.step,
-                        style = MaterialTheme.typography.labelMedium,
+                        block.runs.toAnnotated(linkColor, onOpenLink),
+                        style = bodyStyle.copy(fontStyle = FontStyle.Italic),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                is ReaderUiState.Loaded -> ArticleContent(
-                    article = s.article,
-                    sourceName = sourceName,
-                    scale = TEXT_SCALE,
-                    bottomInset = inner.calculateBottomPadding(),
-                    onOpenLink = onOpenLink,
-                )
-                ReaderUiState.NoText -> ReaderMessage(
-                    message = "Non riesco a ricavare il testo di questo articolo: forse è riservato agli abbonati o è solo un video. Se il sito chiede il consenso ai cookie, accettalo nella pagina originale e riprova.",
-                    onRetry = viewModel::load,
-                    onOpenOriginal = { onOpenOriginal(viewModel.url) },
-                )
-                is ReaderUiState.Failed -> ReaderMessage(
-                    message = s.message,
-                    onRetry = viewModel::load,
-                    onOpenOriginal = { onOpenOriginal(viewModel.url) },
-                )
+                is ReaderBlock.ListItem -> Row {
+                    Text(block.marker, style = bodyStyle, modifier = Modifier.width(28.dp))
+                    Text(block.runs.toAnnotated(linkColor, onOpenLink), style = bodyStyle)
+                }
+                is ReaderBlock.Image -> ArticleImage(block.url, block.caption)
+                is ReaderBlock.Video -> ArticleVideo(block)
+                ReaderBlock.Divider -> HorizontalDivider()
             }
         }
     }
 }
 
+/**
+ * In fondo all'articolo: le altre testate che raccontano lo stesso fatto e la prossima storia nuova,
+ * così si legge di seguito senza tornare alla lista.
+ */
 @Composable
-private fun ArticleContent(
-    article: ReaderArticle,
-    sourceName: String,
-    scale: Float,
-    bottomInset: Dp,
-    onOpenLink: (String) -> Unit,
-) {
-    val linkColor = MaterialTheme.colorScheme.primary
-    val bodyStyle = MaterialTheme.typography.bodyLarge.copy(
-        fontSize = (18 * scale).sp,
-        lineHeight = 1.6.em,
-    )
-
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        LazyColumn(
-            modifier = Modifier
-                .widthIn(max = 720.dp)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = bottomInset + 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item(key = "header") {
-                // Tenendo premuto il titolo: "Salva nelle note", come per le cose del resto dell'app.
-                Column(
-                    Modifier.pointerInput(article.url) {
-                        detectTapGestures(onLongPress = { SavedLinks.offer(SavedLink.Article(article.url, sourceName, article.title, article.coverImage().orEmpty())) })
-                    },
-                ) {
-                    Text(
-                        sourceName.uppercase(),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        article.title,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = (26 * scale).sp,
-                            lineHeight = 1.25.em,
-                        ),
-                    )
-                    article.byline?.let {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-            article.leadImage?.let { lead ->
-                item(key = "lead") { ArticleImage(lead, caption = null) }
-            }
-            items(article.blocks) { block ->
-                when (block) {
-                    is ReaderBlock.Heading -> Text(
-                        block.text,
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = (21 * scale).sp,
-                        ),
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                    is ReaderBlock.Paragraph -> Text(
-                        block.runs.toAnnotated(linkColor, onOpenLink),
-                        style = bodyStyle,
-                    )
-                    is ReaderBlock.Quote -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                        Box(
-                            Modifier
-                                .width(4.dp)
-                                .fillMaxHeight()
-                                .background(MaterialTheme.colorScheme.primary, MaterialTheme.shapes.small)
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Text(
-                            block.runs.toAnnotated(linkColor, onOpenLink),
-                            style = bodyStyle.copy(fontStyle = FontStyle.Italic),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    is ReaderBlock.ListItem -> Row {
-                        Text(block.marker, style = bodyStyle, modifier = Modifier.width(28.dp))
-                        Text(block.runs.toAnnotated(linkColor, onOpenLink), style = bodyStyle)
-                    }
-                    is ReaderBlock.Image -> ArticleImage(block.url, block.caption)
-                    is ReaderBlock.Video -> ArticleVideo(block, baseUrl = article.url)
-                    ReaderBlock.Divider -> HorizontalDivider()
-                }
+private fun ArticleEnd(url: String, onOpenArticle: (NewsItem) -> Unit, onOpenNext: (NewsItem) -> Unit) {
+    val context = LocalContext.current
+    NewsHistory.init(context)
+    val news by NewsStore.result.collectAsStateWithLifecycle()
+    val verification by ArticleVerifier.state.collectAsStateWithLifecycle()
+    val hidden by AppSettings.hiddenNewsSources.collectAsStateWithLifecycle()
+    val readList by NewsHistory.read.collectAsStateWithLifecycle()
+    val stories = rememberStories(news?.items.orEmpty(), verification.readable.takeIf { it.isNotEmpty() }, hidden)
+    val story = remember(stories, url) { NewsStories.storyOf(stories, url) }
+    val others = story?.items?.filter { it.link != url }.orEmpty()
+    val next = remember(stories, url, readList) {
+        NewsStories.next(NewsStories.split(stories, NewsHistory.since(), NewsHistory.settled.value), url, readList.toSet() + url)
+    }
+    val open = { item: NewsItem, replace: Boolean ->
+        NewsHistory.markRead(item.link)
+        NewsHistory.holdSession()
+        if (replace) onOpenNext(item) else onOpenArticle(item)
+    }
+    if (others.isEmpty() && next == null) return
+    Spacer(Modifier.height(12.dp))
+    if (others.isNotEmpty()) {
+        SectionHeader("Le altre fonti su questa storia")
+        others.forEach { other ->
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .bouncyPress()
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable { open(other, false) }
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    other.source.name + (other.publishedAt?.let { "  ·  " + relativeTime(it) } ?: ""),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                )
+                Text(other.title, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
+    }
+    next?.let { story ->
+        Spacer(Modifier.height(4.dp))
+        CanvasCard(
+            onClick = { open(story.headline, true) },
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("PROSSIMA NUOVA", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(2.dp))
+                    Text(story.headline.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+                Spacer(Modifier.width(12.dp))
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+/**
+ * Video dentro l'articolo: un riquadro nostro con l'anteprima. Toccandolo il video parte nel player di
+ * Canvas (YouTube nel suo player, un file video nel player unico), mai nel riquadro del sito. I video
+ * che non sappiamo riprodurre da noi non si mostrano.
+ */
+@Composable
+private fun ArticleVideo(video: ReaderBlock.Video) {
+    val target = remember(video) { ArticleVideos.playable(video) } ?: return
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    val youtube = ArticleVideos.youtubeId(video.url)
+    val poster = video.poster ?: youtube?.let { "https://i.ytimg.com/vi/$it/hqdefault.jpg" }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .bouncyPress(0.98f)
+            .clip(MaterialTheme.shapes.large)
+            .background(Color.Black)
+            .clickable {
+                if (youtube != null) inApp?.openWeb(target, "Video")
+                else inApp?.openRoute(MediaLauncher.playVideo(context, Uri.parse(target)))
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        poster?.let {
+            AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+        Box(
+            Modifier.size(56.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.PlayArrow, contentDescription = "Guarda il video", tint = Color.White, modifier = Modifier.size(34.dp))
+        }
+    }
+}
+
+@Composable
+private fun ReaderMessage(message: String, onRetry: () -> Unit) {
+    Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FilledTonalButton(onClick = onRetry) { Text("Riprova") }
     }
 }
 
@@ -336,93 +398,6 @@ private fun ArticleImage(url: String, caption: String?) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-/**
- * Video dentro l'articolo: un riquadro che contiene solo il player (YouTube, Vimeo, file video...),
- * non il resto della pagina.
- */
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-private fun ArticleVideo(video: ReaderBlock.Video, baseUrl: String) {
-    val context = LocalContext.current
-    val inApp = LocalInAppNav.current
-    val webView = remember(video.url) {
-        WebView(context).apply {
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.mediaPlaybackRequiresUserGesture = true
-            webChromeClient = WebChromeClient()
-            // Anche i player incorporati (YouTube, ...) hanno annunci: stesse regole delle altre pagine.
-            val adBlock = AdBlocker.attach(this, pageUrl = baseUrl)
-            webViewClient = object : WebViewClient() {
-                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
-                    adBlock.intercept(request)
-
-                // Un link che cambia pagina (il titolo del video, "Guarda su YouTube") si apre
-                // dentro l'app: nel player di YouTube o nella pagina web interna, mai fuori.
-                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                    if (!request.isForMainFrame) return false
-                    val link = request.url.toString()
-                    (InAppLinks.intentFallback(link) ?: link).let { inApp?.openWeb(it, "Video") }
-                    return true
-                }
-            }
-            setBackgroundColor(android.graphics.Color.BLACK)
-            loadDataWithBaseURL(baseUrl, playerHtml(video), "text/html", "utf-8", null)
-        }
-    }
-    DisposableEffect(webView) {
-        onDispose { webView.destroy() }
-    }
-    AndroidView(
-        factory = { webView },
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(MaterialTheme.shapes.large),
-    )
-}
-
-private fun playerHtml(video: ReaderBlock.Video): String {
-    val src = video.url.htmlAttr()
-    val player = if (video.embed) {
-        """<iframe src="$src" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>"""
-    } else {
-        val poster = video.poster?.let { """ poster="${it.htmlAttr()}"""" }.orEmpty()
-        """<video src="$src"$poster controls playsinline preload="metadata"></video>"""
-    }
-    return """<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">""" +
-        """<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}""" +
-        """iframe,video{position:absolute;top:0;left:0;width:100%;height:100%;border:0}</style></head>""" +
-        """<body>$player</body></html>"""
-}
-
-private fun String.htmlAttr(): String =
-    replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
-
-@Composable
-private fun ReaderMessage(message: String, onRetry: () -> Unit, onOpenOriginal: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            Icons.Outlined.CloudOff,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(48.dp),
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onOpenOriginal) { Text("Apri la pagina originale") }
-        Spacer(Modifier.height(8.dp))
-        OutlinedButton(onClick = onRetry) { Text("Riprova") }
     }
 }
 

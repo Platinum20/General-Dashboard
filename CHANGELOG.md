@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.356.0
+**News rifatte: una riga per fatto**
+- Nelle News ogni fatto è una riga sola anche se ne parlano più giornali ("ANSA, AGI e altre 2"): toccala per vedere gli articoli di ognuno
+- Le nuove stanno sopra il segno "Ultima visita", le già viste sotto; la lista fa un po' di resistenza sul segno, come "Oggi" nel calendario
+- In cima "Ascolta le 7 nuove": la voce legge solo quello che è uscito da quando hai guardato
+- Le notizie nuove che arrivano mentre leggi non fanno saltare la lista: compare il fumetto "2 nuove notizie · Mostra"
+- Tieni premuta una notizia per salvarla, ascoltarla, segnarla come letta o nascondere quel giornale; portala di lato per segnarla come letta
+- Via i filtri per giornale in cima: le fonti si accendono e spengono in Impostazioni › News
+- In Home la card si chiama News e mostra solo le storie nuove dall'ultima visita; se non c'è niente di nuovo resta una riga sola. Anche il widget mostra le stesse
+- L'articolo ha la forma delle altre schede: in alto giornale, quando e minuti di lettura con la barra di avanzamento, in basso Ascolta e Altro; il titolo vola dalla lista all'articolo
+- Uscendo a metà di un articolo, la volta dopo riparte da lì; in fondo trovi le altre fonti sulla stessa storia e la prossima notizia nuova
+- I video negli articoli si guardano nel player di Canvas; via la pagina originale del sito
+- La pagina "Il punto del giorno" non c'è più: l'ascolto sta in cima alle News
+
 ## 1.355.0
 **Pacchi e rinnovo SIM sono eventi**
 - Nel calendario l'arrivo dei pacchi e il rinnovo dell'offerta SIM ora sono eventi del giorno, non più note o spese

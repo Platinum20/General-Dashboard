@@ -93,7 +93,9 @@ import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.Greeting
 import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.news.NewsStore
-import com.platinum20.dashboard.news.RecapTheme
+import com.platinum20.dashboard.news.NewsFeed
+import com.platinum20.dashboard.news.NewsStories
+import com.platinum20.dashboard.news.reader.ArticleVerifier
 import com.platinum20.dashboard.autofill.AutoFill
 import com.platinum20.dashboard.mail.GmailAuth
 import com.platinum20.dashboard.mail.GmailImap
@@ -113,6 +115,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -135,7 +138,6 @@ fun HomeScreen(
     bottomPadding: PaddingValues,
     onOpenNews: () -> Unit,
     onOpenWeather: () -> Unit,
-    onOpenRecap: () -> Unit,
     onOpenArticle: (NewsItem) -> Unit,
     onOpenNotes: () -> Unit,
     onCustomize: () -> Unit,
@@ -160,7 +162,7 @@ fun HomeScreen(
         if (hasLocation) WeatherStore.refresh(context)
     }
 
-    val recap = rememberRecapState()
+    val news = rememberNewsCardState()
     val listState = rememberLazyListState()
     LaunchedEffect(Unit) {
         TabReselect.events.collect { if (it == Routes.HOME) listState.animateScrollToItem(0) }
@@ -343,14 +345,14 @@ fun HomeScreen(
                 inApp?.openRoute?.invoke(Routes.document(id))
             })
             HomeCard.MAIL -> FromMailCard(onOpenMail = { id -> inApp?.openRoute?.invoke(Routes.mail(id)) })
-            HomeCard.RECAP -> RecapCard(
-                state = recap,
-                onOpenTheme = {
+            HomeCard.RECAP -> NewsCard(
+                state = news,
+                onOpenArticle = {
                     NewsHistory.init(context)
-                    NewsHistory.markRead(it.headline.link)
-                    onOpenArticle(it.headline)
+                    NewsHistory.markRead(it.link)
+                    onOpenArticle(it)
                 },
-                onOpenAll = onOpenRecap,
+                onOpenNews = onOpenNews,
             )
         }
     }
@@ -410,41 +412,46 @@ fun HomeScreen(
     }
 }
 
-data class RecapUiState(
-    val themes: List<RecapTheme> = emptyList(),
+/** La card News in Home: le storie divise dal segno dell'ultima visita, come nella scheda. */
+data class NewsCardState(
+    val feed: NewsFeed = NewsFeed(emptyList(), emptyList(), null),
     val loading: Boolean = true,
     val error: String? = null,
-    val refreshing: Boolean = false,
     val retry: () -> Unit = {},
 )
 
-/** Scarica le notizie (se non già in memoria) e ne ricava i temi del giorno. */
+/**
+ * Scarica le notizie (se non già in memoria), controlla quali si possono leggere e ne ricava le storie
+ * nuove dall'ultima visita alle News. Solo articoli che il lettore sa aprire, come nella scheda.
+ */
 @Composable
-fun rememberRecapState(): RecapUiState {
+fun rememberNewsCardState(): NewsCardState {
     val result by NewsStore.result.collectAsStateWithLifecycle()
     var error by remember { mutableStateOf<String?>(null) }
     var attempt by remember { mutableStateOf(0) }
-
-    var refreshing by remember { mutableStateOf(false) }
-
     LaunchedEffect(attempt) {
         error = null
-        refreshing = attempt > 0
         runCatching { NewsStore.load(force = attempt > 0) }
             .onFailure { if (it !is CancellationException) error = it.userMessage("Notizie non disponibili.") }
-        refreshing = false
     }
+    LaunchedEffect(result) { result?.let { NewsStore.verifyLatest(it.items) } }
     val context = LocalContext.current
-    val themes by produceState(emptyList<RecapTheme>(), result) {
-        value = result?.let { r -> withContext(Dispatchers.Default) { NewsRecap.build(r.items) } } ?: emptyList()
-        // Il widget mostra gli stessi temi della Dashboard.
-        if (value.isNotEmpty()) DashboardWidget.saveRecap(context, value)
+    NewsHistory.init(context)
+    val verification by ArticleVerifier.state.collectAsStateWithLifecycle()
+    val hidden by AppSettings.hiddenNewsSources.collectAsStateWithLifecycle()
+    val since by NewsHistory.lastVisitFlow.collectAsStateWithLifecycle()
+    val readList by NewsHistory.read.collectAsStateWithLifecycle()
+    val stories = rememberStories(result?.items.orEmpty(), verification.readable, hidden)
+    val feed = remember(stories, since, readList) { NewsStories.split(stories, since, readList.toSet()) }
+    // Il widget mostra le stesse storie nuove della Home.
+    LaunchedEffect(feed) {
+        val forWidget = NewsStories.forWidget(feed)
+        if (forWidget.isNotEmpty()) DashboardWidget.saveRecap(context, forWidget)
     }
-    return RecapUiState(
-        themes = themes,
-        loading = result == null && error == null,
+    return NewsCardState(
+        feed = feed,
+        loading = feed.isEmpty && error == null && (result == null || verification.pending > 0 || stories.isEmpty() && result?.items?.isNotEmpty() == true),
         error = error,
-        refreshing = refreshing,
         retry = { attempt++ },
     )
 }
@@ -582,68 +589,66 @@ private fun WeatherSummary(
     }
 }
 
+/**
+ * La card News: quante storie nuove dall'ultima visita e le prime tre, una riga per fatto. Senza nuove resta
+ * una riga sola che dice che sei in pari. Un tocco fuori dalle righe apre la scheda News.
+ */
 @Composable
-private fun RecapCard(
-    state: RecapUiState,
-    onOpenTheme: (RecapTheme) -> Unit,
-    onOpenAll: () -> Unit,
+private fun NewsCard(
+    state: NewsCardState,
+    onOpenArticle: (NewsItem) -> Unit,
+    onOpenNews: () -> Unit,
 ) {
-    Section(
-        title = "Il punto del giorno",
-        action = if (state.themes.isNotEmpty()) "Tutti" else null,
-        onAction = onOpenAll,
-    ) {
-        Column(Modifier.padding(vertical = 4.dp)) {
-            when {
-                state.themes.isNotEmpty() -> {
-                    state.themes.take(4).forEachIndexed { index, theme ->
-                        if (index > 0) RowDivider()
-                        RecapRow(theme, onClick = { onOpenTheme(theme) })
+    val context = LocalContext.current
+    Column(Modifier.fillMaxWidth()) {
+        SectionHeader("News")
+        Spacer(Modifier.height(4.dp))
+        CanvasCard(Modifier.fillMaxWidth(), onClick = onOpenNews) {
+            val feed = state.feed
+            Column(Modifier.padding(vertical = 4.dp)) {
+                when {
+                    !feed.isEmpty -> {
+                        val shown = feed.fresh.take(3)
+                        Text(
+                            NewsStories.homeLine(if (feed.since == null) shown.size else feed.fresh.size, feed.since, Instant.now(), ::newsClock),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (shown.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = if (shown.isEmpty()) 12.dp else 8.dp),
+                        )
+                        shown.forEachIndexed { index, story ->
+                            if (index > 0) RowDivider()
+                            StoryRow(
+                                story,
+                                read = { false },
+                                onOpen = onOpenArticle,
+                                onLongClick = { ActionBubble.show(*storyActions(context, story) {}) },
+                                expandable = false,
+                                thumb = if (index == 0) 56.dp else 0.dp,
+                                horizontal = 16.dp,
+                            )
+                        }
                     }
-                }
-                state.error != null -> Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
-                }
-                // Mentre raccoglie: quattro righe grigie al posto dei temi, così la card non si allunga dopo.
-                else -> Column(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Raccolgo le notizie di oggi" },
-                ) {
-                    listOf(0.82f, 0.64f, 0.74f, 0.56f).forEachIndexed { index, w ->
-                        if (index > 0) RowDivider()
-                        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PlaceholderLine(w, 14.dp)
-                            PlaceholderLine(w * 0.6f, 10.dp)
+                    state.error != null -> Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
+                    }
+                    // Mentre raccoglie: tre righe grigie al posto delle storie, così la card non si allunga dopo.
+                    else -> Column(
+                        Modifier.semantics(mergeDescendants = true) { contentDescription = "Raccolgo le notizie" },
+                    ) {
+                        listOf(0.82f, 0.64f, 0.74f).forEachIndexed { index, w ->
+                            if (index > 0) RowDivider()
+                            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                PlaceholderLine(w, 14.dp)
+                                PlaceholderLine(w * 0.6f, 10.dp)
+                            }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun RecapRow(theme: RecapTheme, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    ) {
-        // Il titolo vero si legge come in un giornale: niente terna di parole chiave sopra.
-        Text(
-            theme.headline.title,
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            if (theme.items.size > 1) "${theme.items.size} articoli · ${theme.sourceCount} ${if (theme.sourceCount == 1) "fonte" else "fonti"}"
-            else theme.headline.source.name,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

@@ -22,7 +22,21 @@ object NewsRecap {
     fun build(items: List<NewsItem>, max: Int = 10, now: Instant = Instant.now()): List<RecapTheme> {
         val recent = items
             .filter { it.publishedAt == null || Duration.between(it.publishedAt, now).toHours() < 24 }
-            .take(400)
+        return cluster(recent)
+            .sortedWith(
+                compareByDescending<RecapTheme> { it.sourceCount }
+                    .thenByDescending { it.items.size }
+                    .thenByDescending { it.headline.publishedAt ?: Instant.EPOCH }
+            )
+            .take(max)
+    }
+
+    /**
+     * Le storie: gli articoli che parlano dello stesso fatto in un gruppo solo, nell'ordine in cui escono
+     * dal raggruppamento. Un articolo senza vicini resta una storia da solo.
+     */
+    fun cluster(items: List<NewsItem>): List<RecapTheme> {
+        val recent = items.take(400)
         if (recent.isEmpty()) return emptyList()
 
         val words = recent.map { words(it.title) }
@@ -52,14 +66,7 @@ object NewsRecap {
             groups += members
         }
 
-        val themes = groups
-            .map { members -> toTheme(members.map { recent[it] }, members.map { words[it] }, members.map { keys[it] }) }
-            .sortedWith(
-                compareByDescending<RecapTheme> { it.sourceCount }
-                    .thenByDescending { it.items.size }
-                    .thenByDescending { it.headline.publishedAt ?: Instant.EPOCH }
-            )
-        return themes.take(max)
+        return groups.map { members -> toTheme(members.map { recent[it] }, members.map { words[it] }, members.map { keys[it] }) }
     }
 
     private fun toTheme(items: List<NewsItem>, words: List<Map<String, String>>, keys: List<Set<String>>): RecapTheme {

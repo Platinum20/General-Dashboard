@@ -33,7 +33,7 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val weather = runCatching { WeatherStore.fetch(applicationContext, freshLocation = false) }
         val news = runCatching {
             val result = NewsStore.load(force = true)
-            DashboardWidget.saveRecap(applicationContext, NewsRecap.build(result.items))
+            DashboardWidget.saveRecap(applicationContext, NewsStore.widgetStories(applicationContext, result.items))
         }
         runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext, max = 6)) }
         DashboardWidget.updateAll(applicationContext)

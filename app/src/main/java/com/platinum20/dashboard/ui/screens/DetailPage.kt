@@ -64,6 +64,10 @@ internal fun DetailPage(
     meta: String? = null,
     primary: DetailAction? = null,
     more: List<BubbleAction> = emptyList(),
+    /** Lo scorrimento della pagina, per chi deve leggerlo (il lettore: avanzamento e punto da riprendere). */
+    scroll: androidx.compose.foundation.ScrollState? = null,
+    /** Sotto la riga piccola in alto, per esempio la barra di avanzamento del lettore. */
+    topExtra: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val haptic = rememberHaptic()
@@ -94,6 +98,7 @@ internal fun DetailPage(
                         modifier = Modifier.padding(start = 20.dp, top = 4.dp),
                     )
                 }
+                topExtra?.invoke()
             }
         },
         bottomBar = {
@@ -134,7 +139,7 @@ internal fun DetailPage(
         Column(
             Modifier
                 .padding(inner)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll ?: rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             content = content,
