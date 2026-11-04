@@ -526,13 +526,31 @@ object RowFlash {
      * nemmeno quando ne arrivano tante insieme (si è caricato un altro pezzo di calendario): solo le poche
      * cose appena aggiunte.
      */
-    fun newKeys(previous: Set<String>?, now: List<String>): List<String> {
-        if (previous == null) return emptyList()
+    fun newKeys(previous: Set<String>?, now: List<String>, armed: Boolean = true): List<String> {
+        // Solo subito dopo un salvataggio col +: eventi del telefono, movimenti della banca e righe che
+        // entrano nella card perché un'altra è stata spuntata arrivano da soli e non devono accendersi.
+        if (previous == null || !armed) return emptyList()
         val added = now.filter { it !in previous }
         return if (added.size > MAX_NEW) emptyList() else added
     }
 
     private const val MAX_NEW = 3
+
+    /** Quando è stato salvato qualcosa col + l'ultima volta (vedi [arm]). */
+    @Volatile private var armedAt = Long.MIN_VALUE / 2
+
+    /** Per quanto dopo un salvataggio una riga nuova si accende. */
+    private const val ARMED_MS = 4_000L
+
+    /** Un salvataggio appena fatto: la prossima riga nuova del calendario è la sua. */
+    fun arm(now: Long = android.os.SystemClock.uptimeMillis()) {
+        armedAt = now
+    }
+
+    fun armed(now: Long = android.os.SystemClock.uptimeMillis()): Boolean = isArmed(armedAt, now)
+
+    /** Logica pura: c'è stato un salvataggio da poco. */
+    fun isArmed(at: Long, now: Long): Boolean = now - at in 0..ARMED_MS
 
     /** Esegue [action] dopo [TICK_MS] e poi accende la riga nel suo nuovo posto. */
     fun later(key: String, action: () -> Unit) {
@@ -553,7 +571,7 @@ internal fun String.isSharedRow(): Boolean =
 fun FlashNewRows(keys: List<String>, vararg resetOn: Any?) {
     val previous = androidx.compose.runtime.remember(*resetOn) { arrayOfNulls<Set<String>>(1) }
     androidx.compose.runtime.LaunchedEffect(keys) {
-        RowFlash.newKeys(previous[0], keys).forEach { RowFlash.mark(it) }
+        RowFlash.newKeys(previous[0], keys, armed = RowFlash.armed()).forEach { RowFlash.mark(it) }
         previous[0] = keys.toSet()
     }
 }

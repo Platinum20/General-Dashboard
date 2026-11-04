@@ -67,3 +67,20 @@ class NewRowsFlashTest {
         assertEquals(emptyList<String>(), flash.newKeys(setOf("task-1"), listOf("task-1") + many))
     }
 }
+
+class RowFlashArmedTest {
+    private val flash = com.platinum20.dashboard.ui.screens.RowFlash
+
+    @Test
+    fun rowsThatArriveOnTheirOwnDoNotLightUp() {
+        // Eventi del telefono o movimenti della banca arrivati senza salvare niente: nessuna luce.
+        assertEquals(emptyList<String>(), flash.newKeys(setOf("task-1"), listOf("task-1", "event-9"), armed = false))
+        assertEquals(listOf("event-9"), flash.newKeys(setOf("task-1"), listOf("task-1", "event-9"), armed = true))
+    }
+
+    @Test
+    fun aSaveArmsTheFlashForAFewSeconds() {
+        assertTrue(flash.isArmed(1_000L, 2_000L))
+        assertFalse(flash.isArmed(1_000L, 6_000L))
+    }
+}

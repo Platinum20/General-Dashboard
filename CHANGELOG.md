@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.348.0
+**Il calendario si accende solo quando salvi**
+- Le righe del calendario non si illuminano più da sole quando arrivano eventi del telefono o movimenti della banca, o quando entrano nella card dopo una spunta
+- Si accende soltanto la riga che hai appena salvato col +, o quella che hai appena spuntato
+
 ## 1.347.0
 **Animazioni e uso più fluidi, in tutta l'app**
 - Le card non tremano più quando scorri: si stringono solo se le tocchi davvero, e dentro una card reagisce solo la riga sotto il dito
