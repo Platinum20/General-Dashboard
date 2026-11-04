@@ -1,8 +1,12 @@
 # Changelog
 
-## 1.351.0
+## 1.353.0
 **Indietro chiude prima i fumetti**
 - Con un fumetto di vetro aperto in fondo (menu, Annulla, Salva nelle note, scrittura col +), il tasto indietro di Android chiude prima il fumetto e solo dopo la pagina dietro
+
+## 1.352.0
+**L'orario nelle note**
+- Aprendo una nota, in alto vedi quando l'hai scritta, con giorno e ora, e a che ora l'hai modificata l'ultima volta
 
 ## 1.349.0
 **Spese in ordine di orario**
