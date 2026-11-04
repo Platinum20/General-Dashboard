@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.351.0
+**Indietro chiude prima i fumetti**
+- Con un fumetto di vetro aperto in fondo (menu, Annulla, Salva nelle note, scrittura col +), il tasto indietro di Android chiude prima il fumetto e solo dopo la pagina dietro
+
 ## 1.349.0
 **Spese in ordine di orario**
 - Nel calendario le spese di ogni giorno sono in ordine di orario, dalla prima all'ultima, anche nel riepilogo del mese
