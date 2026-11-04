@@ -4,6 +4,8 @@ import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.Note
+import com.platinum20.dashboard.notes.Parcel
+import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.CalendarFilter
@@ -117,6 +119,18 @@ class CalendarUnicoTest {
         // Nessun evento: nessun giorno.
         assertTrue(groups.only(CalendarFilter.EVENTS).isEmpty())
         assertEquals(groups, groups.only(null))
+    }
+
+    @Test fun pacchiERinnovoSimSonoEventi() {
+        val groups = dueDays(
+            emptyList(), emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
+            now = adesso, zone = zone, simRenewal = oggi.plusDays(3), withToday = true,
+        )
+        assertEquals(listOf("parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertTrue(groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.none { it.simRenewal })
+        val entries = timelineEntries(groups, oggi, zone).map { it.first }
+        assertEquals(BriefKind.EVENT, entries.first { it.key == "parcel-5" }.kind)
+        assertEquals(BriefKind.EVENT, entries.first { it.key == "sim-renewal" }.kind)
     }
 
     @Test fun piuAvantiSoloSullaPrimaCosaDopoOggiNelMese() {

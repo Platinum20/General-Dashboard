@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.SimCard
+import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Image
 import com.platinum20.dashboard.notes.NoteText
 import androidx.compose.material3.MaterialTheme
@@ -403,11 +404,12 @@ internal fun timelineEntries(
                     ((if (r.event.allDay) "" else r.event.begin.time() + "  ") + r.event.title)
                 r.countdown != null -> com.platinum20.dashboard.today.BriefKind.DATE to
                     (r.countdown.title + (r.countdown.yearsAtNext(today)?.let { " ($it anni)" } ?: ""))
-                r.parcel != null -> com.platinum20.dashboard.today.BriefKind.PARCEL to
+                // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
+                r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
                 r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
                     "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }} ${Expenses.format(r.charge.cents)}"
-                r.simRenewal -> com.platinum20.dashboard.today.BriefKind.MONEY to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
+                r.simRenewal -> com.platinum20.dashboard.today.BriefKind.EVENT to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
             TimelineEntry(
@@ -422,6 +424,7 @@ internal fun timelineEntries(
                 past = g.past,
                 icon = when {
                     r.simRenewal -> Icons.Outlined.SimCard
+                    r.parcel != null -> Icons.Outlined.LocalShipping
                     r.expense != null -> r.expense.category.icon()
                     r.note != null -> r.note.icon()
                     else -> null
@@ -603,10 +606,10 @@ private fun com.platinum20.dashboard.notes.Note.icon() = when {
 /** I filtri del calendario intero (Antonio): uno per le spese, uno per le note, uno per gli eventi. */
 internal enum class CalendarFilter(val label: String) { EXPENSES("Spese"), NOTES("Note"), EVENTS("Eventi") }
 
-/** A quale filtro appartiene una riga: le date da ricordare con gli eventi, pacchi e promemoria con le note. */
+/** A quale filtro appartiene una riga: date da ricordare, pacchi e rinnovo SIM con gli eventi, promemoria con le note. */
 internal fun DueRow.filter(): CalendarFilter = when {
-    spend != null || expense != null || charge != null || simRenewal -> CalendarFilter.EXPENSES
-    event != null || countdown != null -> CalendarFilter.EVENTS
+    spend != null || expense != null || charge != null -> CalendarFilter.EXPENSES
+    event != null || countdown != null || parcel != null || simRenewal -> CalendarFilter.EVENTS
     else -> CalendarFilter.NOTES
 }
 

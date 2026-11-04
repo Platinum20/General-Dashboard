@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.354.0
+**Pacchi e rinnovo SIM sono eventi**
+- Nel calendario l'arrivo dei pacchi e il rinnovo dell'offerta SIM ora sono eventi del giorno, non più note o spese
+- Col filtro Eventi li vedi insieme agli appuntamenti; il rinnovo SIM non sta più fra le spese
+
 ## 1.353.0
 **Indietro chiude prima i fumetti**
 - Con un fumetto di vetro aperto in fondo (menu, Annulla, Salva nelle note, scrittura col +), il tasto indietro di Android chiude prima il fumetto e solo dopo la pagina dietro
