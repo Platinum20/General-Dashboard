@@ -104,6 +104,8 @@ internal fun BoxScope.CaptureFeedbackLayer(onNotes: Boolean) {
             seq++
         }
     }
+    // Indietro chiude l'avviso senza volo (la cosa resta salvata), prima della pagina dietro.
+    BubbleBack(notice != null) { notice = null }
     // Il fumetto resta un attimo, poi si chiude in un pallino che parte da dove era.
     LaunchedEffect(seq) {
         val n = notice ?: return@LaunchedEffect

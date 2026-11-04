@@ -1,6 +1,5 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -93,7 +92,7 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun BoxScope.CaptureComposerVeil() {
     val open = CaptureComposer.isOpen
-    BackHandler(open) { CaptureComposer.close() }
+    BubbleBack(open) { CaptureComposer.close() }
     // Il primo "indietro" lo usa la tastiera per chiudersi: anche quello annulla la nota.
     val imeVisible = WindowInsets.isImeVisible
     var imeShown by remember { mutableStateOf(false) }

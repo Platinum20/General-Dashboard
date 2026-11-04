@@ -110,6 +110,16 @@ internal fun BoxScope.SaveToNotesLayer() {
 }
 
 /**
+ * Indietro chiude prima il fumetto, poi la pagina dietro. Il gestore entra in composizione solo
+ * quando il fumetto si apre: così è l'ultimo registrato e vince su quelli delle schermate
+ * (che col semplice `BackHandler(visible)` venivano dopo e chiudevano la pagina al suo posto).
+ */
+@Composable
+internal fun BubbleBack(open: Boolean, onBack: () -> Unit) {
+    if (open) BackHandler(onBack = onBack)
+}
+
+/**
  * Il fumetto di vetro in fondo al centro, comune a tutti i pop-up di Canvas: velo leggero dietro
  * (toccandolo si chiude), indietro lo chiude, e portandolo di lato si chiude come il mini player.
  * Va disegnato fuori dal NavHost, se no il vetro non ha niente dietro da sfocare.
@@ -121,7 +131,7 @@ internal fun BoxScope.BottomBubble(
     onDismiss: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    BackHandler(visible) { onDismiss() }
+    BubbleBack(visible, onDismiss)
     // La prima volta che si vede un fumetto, una riga piccola dice come si chiude (poi mai più).
     val context = LocalContext.current
     val hint = remember(visible) { visible && !GestureHints.seen(context, GestureHints.SWIPE_BUBBLE) }
