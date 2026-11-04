@@ -459,7 +459,8 @@ object NotesStore {
     /** "12,50 pizza": salva la spesa e la restituisce, null se manca l'importo. */
     fun addExpense(text: String, date: LocalDate = LocalDate.now()): Expense? {
         val parsed = Expenses.parse(text, date) ?: return null
-        val item = parsed.copy(id = newId())
+        // Scritta adesso: l'ora è questa, per l'ordine nel giorno.
+        val item = parsed.copy(id = newId(), at = parsed.at ?: if (parsed.date == LocalDate.now()) LocalTime.now().withSecond(0).withNano(0) else null)
         update { d -> d.copy(expenses = listOf(item) + d.expenses) }
         return item
     }
@@ -663,6 +664,7 @@ object NotesStore {
                         .put("category", it.category.name).put("date", it.date.toString())
                         .apply { it.fixedId?.let { f -> put("fixedId", f) } }
                         .apply { it.bankId?.let { b -> put("bankId", b) } }
+                        .apply { it.at?.let { t -> put("at", "%02d:%02d".format(t.hour, t.minute)) } }
                 )
             }
         })
@@ -752,6 +754,8 @@ object NotesStore {
                     o.date("date") ?: return@mapNotNull null,
                     fixedId = if (o.has("fixedId")) o.optLong("fixedId") else null,
                     bankId = o.optString("bankId").takeIf { it.isNotEmpty() },
+                    // Prima della 1.349 le spese non avevano l'ora.
+                    at = o.optString("at").takeIf { it.isNotEmpty() }?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
                 )
             },
             fixedExpenses = (0 until fixedExpenses.length()).mapNotNull { i ->

@@ -243,7 +243,7 @@ object AutoFill {
 
     private fun apply(found: Found): Long? = when (found) {
         is Found.NewParcel -> NotesStore.addParcel(found.title, found.code, found.expected)
-        is Found.Spent -> NotesStore.addExpense(Expense(0, found.cents, found.merchant, found.category, found.date)).id
+        is Found.Spent -> NotesStore.addExpense(Expense(0, found.cents, found.merchant, found.category, found.date, at = found.at.toLocalTime().withSecond(0).withNano(0))).id
         // Una data da aspettare, non un promemoria da spuntare: la scadenza di un abbonamento non si "fa".
         is Found.Deadline -> NotesStore.saveCountdown(null, found.title, found.due.toLocalDate(), false)
         is Found.Delivered -> null

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.349.0
+**Spese in ordine di orario**
+- Nel calendario le spese di ogni giorno sono in ordine di orario, dalla prima all'ultima, anche nel riepilogo del mese
+- L'ora arriva da sola: quando la scrivi, dalla notifica o dalla mail, e dal conto Revolut (anche le spese già lette prendono l'ora alla prossima lettura)
+
 ## 1.348.0
 **Il calendario si accende solo quando salvi**
 - Le righe del calendario non si illuminano più da sole quando arrivano eventi del telefono o movimenti della banca, o quando entrano nella card dopo una spunta

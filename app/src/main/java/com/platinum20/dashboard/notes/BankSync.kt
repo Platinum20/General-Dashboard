@@ -20,8 +20,10 @@ object BankSync {
                 !tx.counts -> if (existing != null) expenses = expenses.filter { it !== existing }
                 existing != null -> {
                     val category = if (existing.category == ExpenseCategory.OTHER) tx.category else existing.category
-                    if (existing.cents != tx.cents || existing.date != tx.date || existing.category != category) {
-                        expenses = expenses.map { if (it === existing) it.copy(cents = tx.cents, date = tx.date, category = category) else it }
+                    // Anche l'ora: le spese del conto salvate prima della 1.349 la prendono alla prossima lettura.
+                    val at = tx.at ?: existing.at
+                    if (existing.cents != tx.cents || existing.date != tx.date || existing.category != category || existing.at != at) {
+                        expenses = expenses.map { if (it === existing) it.copy(cents = tx.cents, date = tx.date, category = category, at = at) else it }
                     }
                 }
                 tx.id in data.bankIgnored -> Unit
@@ -30,9 +32,9 @@ object BankSync {
                         it.bankId == null && it.fixedId == null && it.cents == tx.cents && abs(it.date.toEpochDay() - tx.date.toEpochDay()) <= 1
                     }
                     expenses = if (twin != null) {
-                        expenses.map { if (it === twin) it.copy(bankId = tx.id, date = tx.date, category = if (tx.category != ExpenseCategory.OTHER) tx.category else it.category) else it }
+                        expenses.map { if (it === twin) it.copy(bankId = tx.id, date = tx.date, at = tx.at ?: it.at, category = if (tx.category != ExpenseCategory.OTHER) tx.category else it.category) else it }
                     } else {
-                        listOf(Expense(nextId++, tx.cents, tx.text, tx.category, tx.date, bankId = tx.id)) + expenses
+                        listOf(Expense(nextId++, tx.cents, tx.text, tx.category, tx.date, bankId = tx.id, at = tx.at)) + expenses
                     }
                 }
             }
