@@ -61,6 +61,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -127,7 +129,7 @@ internal fun SimCard(onOpen: () -> Unit) {
     val linked by SimStore.linked.collectAsStateWithLifecycle()
     // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
     AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
-    Section(title = "SIM") {
+    Section(title = "SIM", modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true)) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -135,6 +137,20 @@ internal fun SimCard(onOpen: () -> Unit) {
                 .padding(16.dp),
         ) {
             val s = status
+            // Mentre legge: le barre in grigio, già alla loro altezza (1.357), invece di una frase che poi si allunga.
+            if (s == null && linked) {
+                Column(
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Sto leggendo i dati di WindTre" },
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Placeholder(96.dp, 10.dp)
+                    repeat(3) {
+                        PlaceholderLine(1f, 14.dp)
+                        PlaceholderLine(1f, 4.dp)
+                    }
+                }
+                return@Column
+            }
             if (s == null || !linked) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconTile(Icons.Outlined.SimCard, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
@@ -189,11 +205,10 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
         Spacer(Modifier.height(if (big) 14.dp else 10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(r.name, style = MaterialTheme.typography.bodyMedium, color = soft, modifier = Modifier.weight(1f))
-            Text(
+            RollingText(
                 r.value,
                 style = if (big) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
             )
         }
         r.meter?.let { a ->
@@ -261,7 +276,12 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
         WindTreLogin(onClose = { login = false; if (!SimStore.linked.value) onBack() })
         return
     }
-    Scaffold(topBar = { TopLevelBar(title = "SIM", subtitle = "WindTre", onBack = onBack) }) { inner ->
+    Scaffold(modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true), topBar = { TopLevelBar(
+        title = "SIM",
+        // Quando è stato letto, sotto il titolo (1.357): si rilegge da solo, la frase "Tira giù" non serve più.
+        subtitle = status?.let { "WindTre · letto " + relativeTime(Instant.ofEpochMilli(it.at)) } ?: "WindTre",
+        onBack = onBack,
+    ) }) { inner ->
         // Si aggiorna tirando giù la pagina, niente tasto (Antonio).
         PullToRefreshBox(
             isRefreshing = refreshing,
@@ -298,12 +318,6 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                     }
                 }
             }
-            Text(
-                "Tira giù per aggiornare",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
         }
         }
     }

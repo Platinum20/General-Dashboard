@@ -24,6 +24,11 @@ val LocalRouteScope = compositionLocalOf<AnimatedVisibilityScope?> { null }
 /** Le chiavi che legano una riga alla sua scheda: le stesse delle righe del calendario ([DueRow.key]). */
 object SharedKeys {
     const val CALENDAR = "calendar"
+    /** Le card della Home che si allargano nella loro pagina (1.357). */
+    const val WEATHER = "weather"
+    const val SIM = "sim"
+    const val BANK = "bank"
+    fun document(id: Long) = "document-$id"
 
     fun item(kind: ItemKind, id: Long): String? = when (kind) {
         ItemKind.TASK -> "task-$id"

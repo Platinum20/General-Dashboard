@@ -617,3 +617,30 @@ internal fun DueRow.filter(): CalendarFilter = when {
 internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
     if (filter == null) this else mapNotNull { d -> d.rows.filter { it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
 
+
+/**
+ * Dove va la riga "Abitudini" nel calendario (1.357): dentro OGGI, subito prima del primo giorno dopo oggi;
+ * se dopo oggi non c'è niente, in fondo. [days] = per ogni riga della linea il suo giorno e se è passata.
+ */
+internal fun habitsIndex(days: List<Pair<LocalDate?, Boolean>>, nowAt: Int, today: LocalDate): Int {
+    if (nowAt < 0) return days.size
+    for (i in (nowAt + 1) until days.size) {
+        val (day, past) = days[i]
+        if (!past && day != null && day.isAfter(today)) return i
+    }
+    return days.size
+}
+
+/**
+ * Quante righe mostra la card Calendario in Home dopo quelle di oggi (1.357, Antonio): il resto della settimana,
+ * almeno [min]; e quante altre cose restano nel mese in corso, per la riga "Altre N a novembre".
+ * [days] = per ogni riga dopo oggi il suo giorno (null = senza data).
+ */
+internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate, min: Int): Pair<Int, Int> {
+    val weekEnd = today.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY))
+    val week = days.count { it != null && it.isAfter(today) && !it.isAfter(weekEnd) }
+    val shown = minOf(days.size, maxOf(week, min))
+    val month = java.time.YearMonth.from(today)
+    val more = days.drop(shown).count { it != null && java.time.YearMonth.from(it) == month }
+    return shown to more
+}

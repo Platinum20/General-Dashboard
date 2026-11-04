@@ -204,7 +204,6 @@ class ScreenshotTour {
             "67_spese" to Routes.expenses(),
             "68_news" to Routes.NEWS,
             "69_player" to Routes.PLAYER,
-            "70_coda" to Routes.QUEUE,
             "71_video_youtube" to Routes.youtubeWatch(),
         )
         for ((name, route) in pages) {

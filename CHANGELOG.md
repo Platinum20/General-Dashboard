@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.357.0
+**Tutta l'app rivista, sezione per sezione**
+- Calendario: le abitudini sono una riga dentro OGGI ("Abitudini · 2 su 4", toccala per spuntarle); prima stavano in fondo e non ci si arrivava mai
+- Calendario: si apre già su OGGI, senza attesa; per eliminare i promemoria fatti tieni premuto OGGI
+- Home: la card Calendario mostra oggi e il resto della settimana, poi "Altre 8 a novembre" apre il calendario; le spese di oggi stanno nel totale di OGGI
+- Home: la card di quello che suona non è più colorata, il blocco colorato resta solo Adesso
+- Home: toccando Adesso, SIM, Revolut o un documento la card si allarga fino a diventare la sua pagina
+- Saldo, giga e spesa del mese: quando cambiano, scorrono solo le cifre cambiate
+- SIM e Revolut, mentre leggono, mostrano la forma in grigio invece di una frase
+- Spese: il saldo Revolut di adesso sta nel riepilogo del mese, sotto il totale
+- Media: al posto delle tre tessere ci sono tre file con i tuoi mix, i video nuovi e le radio e i podcast; il titolo della fila apre la pagina intera
+- Video: playlist, canali e Mi piace si aprono come pagine vere, con il gesto indietro di tutte le altre
+- Video: mentre carica vedi la miniatura del video invece del nero con la rotella; il menu del video (qualità, velocità, sottotitoli) è il fumetto in basso
+- Coda: una sola, lo stesso riquadro dal player e da Media; per svuotarla tieni premuto "Dopo"
+- Niente più rotelle di caricamento: righe grigie o un punto che pulsa
+- Ricerca: i filtri si chiamano Calendario e News, con i chip di Canvas; in Impostazioni la riga Note si chiama Calendario
+
 ## 1.356.0
 **News rifatte: una riga per fatto**
 - Nelle News ogni fatto è una riga sola anche se ne parlano più giornali ("ANSA, AGI e altre 2"): toccala per vedere gli articoli di ognuno

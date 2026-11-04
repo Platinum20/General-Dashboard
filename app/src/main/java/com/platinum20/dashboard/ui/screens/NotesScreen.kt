@@ -72,6 +72,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
@@ -177,9 +179,6 @@ import kotlin.math.roundToInt
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
-/** Le parti di una volta della pagina Note: dalla 1.314 c'è solo il calendario, ma il nome resta per le pagine aperte. */
-enum class NotesSection(val title: String) { DATED("Calendario") }
-
 /**
  * Il calendario unico (1.314, Antonio): tutto in una pagina sola. Sopra il passato (cose fatte, spese, eventi
  * finiti), poi OGGI con la spesa di oggi, le cose in ritardo, i promemoria e le note senza data, sotto i giorni
@@ -199,8 +198,6 @@ fun NotesScreen(
     val data by NotesStore.data.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
     val scope = rememberCoroutineScope()
-    // Una pagina sola: niente più parti (Prossimi giorni / Note) da scegliere.
-    val section: NotesSection = NotesSection.DATED
 
     // Eliminare è immediato, ma per qualche secondo si può tornare indietro: lo stesso fumetto di vetro
     // in fondo delle conferme del +, chiudibile di lato, senza il pallino che vola.
@@ -238,8 +235,6 @@ fun NotesScreen(
             events = NotesEvents.load(context)
         }
     }
-    // Per scrivere c'è il + della barra, uguale in tutta l'app: qui niente campo fisso in cima.
-    val listState = rememberReselectListState(Routes.NOTES)
     val openRow = rememberDueOpen()
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
@@ -257,9 +252,11 @@ fun NotesScreen(
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     // Il filtro acceso (Spese, Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
     var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
+    // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
+    var habitsOpen by rememberSaveable { mutableStateOf(false) }
     // Quanto c'è sotto "OGGI" nella linea del tempo: sotto serve spazio perché oggi stia in cima allo schermo.
-    var below by remember(section, filter) { mutableStateOf<Int?>(null) }
-    var startedAtNow by remember(section, filter) { mutableStateOf(false) }
+    var below by remember(filter) { mutableStateOf<Int?>(null) }
+    var startedAtNow by remember { mutableStateOf(false) }
     // Senza il permesso del calendario qui c'è l'invito (prima stava nella pagina Calendario).
     var calendarGranted by remember { mutableStateOf(CalendarRepository.hasPermission(context)) }
     val calendarAsk = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -293,35 +290,41 @@ fun NotesScreen(
             top = inner.calculateTopPadding() + 12.dp,
             bottom = bottomPadding.calculateBottomPadding() + 24.dp,
         )
-        fun show(part: NotesSection) = section == part
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         val done = data.tasks.filter { it.done }
-        // Completati tiene solo quello che non sta già nel passato della linea del tempo.
-        val inPast = remember(past, timeline) { (past + timeline).flatMap { it.rows }.map { it.key }.toSet() }
-        val delivered = data.parcels.filter { it.delivered && "parcel-${it.id}" !in inPast }.sortedByDescending { it.deliveredOn }
-        // I promemoria senza data spuntati spariscono da Oggi (si ritrovano cercando); qui solo quelli con una data.
-        val doneShown = done.filter { it.dueAt != null && "task-${it.id}" !in inPast }
         val today = LocalDate.now()
         // Oggi c'è sempre (almeno la spesa di oggi): vuoto = solo quella riga e niente altro.
-        val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty() && delivered.isEmpty()
+        val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty()
         val groups = remember(past, timeline, filter) { (past + timeline).only(filter) }
         // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
         // (mesi di spese ed eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
         val entries = remember(groups, data.expenses, today) {
-            if (show(NotesSection.DATED)) timelineEntries(groups, today, months = true, expenses = data.expenses) else emptyList()
+            timelineEntries(groups, today, months = true, expenses = data.expenses)
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
         // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
         FlashNewRows(entries.map { it.first.key }, filter)
         val nowAt = entries.indexOfFirst { !it.first.past }
-        val invite = section == NotesSection.DATED && !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
+        val invite = !calendarGranted && !(calendarOff ?: CalendarAsk.isOff(context))
         val listPadding = padding
 
         // Si apre sempre da adesso: il passato sta sopra, scorrendo in su.
         val timelineIndex = (if (empty) 1 else 0) + (if (invite) 1 else 0)
         // L'item con "OGGI" (null se la linea non ha un adesso dopo il passato) e l'ultima riga della linea.
         val nowItem = if (nowAt > 0) timelineIndex + nowAt else null
-        val lastItem = timelineIndex + entries.lastIndex
+        // Le abitudini si fanno oggi (1.357): una riga dentro OGGI, prima dei giorni dopo. In fondo alla linea non ci si
+        // arrivava mai, perché scorrendo il calendario carica un anno dopo l'altro.
+        val showHabits = filter == null && data.habits.isNotEmpty() && nowAt >= 0
+        val habitsAt = if (showHabits) habitsIndex(entries.map { it.second.day to it.first.past }, nowAt, today) else entries.size
+        val habitCount = if (showHabits) 1 + (if (habitsOpen) data.habits.size else 0) else 0
+        val lastItem = timelineIndex + entries.lastIndex + habitCount
+        // La lista nasce già su OGGI (1.357): niente salto né dissolvenza dopo. Sotto c'è spazio quanto lo schermo
+        // finché non si misura quanto c'è davvero dopo OGGI, così il primo fotogramma è già quello giusto.
+        val listState = rememberReselectListState(Routes.NOTES, initialIndex = nowItem ?: 0)
+        LaunchedEffect(Unit) {
+            androidx.compose.runtime.withFrameNanos { }
+            startedAtNow = true
+        }
         LaunchedEffect(nowItem, lastItem) {
             if (nowItem == null) return@LaunchedEffect
             androidx.compose.runtime.snapshotFlow {
@@ -331,30 +334,13 @@ fun NotesScreen(
                 if (last == null) info.viewportSize.height else last.offset + last.size - now.offset
             }.collect { if (it != null) below = it }
         }
-        // Finché la lista non è su OGGI resta invisibile: niente lampo del passato prima del salto (al massimo 700 ms).
-        var positioned by remember(section, filter) { mutableStateOf(false) }
-        LaunchedEffect(section, filter) {
-            kotlinx.coroutines.delay(700)
-            positioned = true
+        // Cambiando filtro si torna su OGGI.
+        var lastFilter by remember { mutableStateOf(filter) }
+        LaunchedEffect(filter) {
+            if (lastFilter == filter) return@LaunchedEffect
+            lastFilter = filter
+            nowItem?.let { runCatching { listState.scrollToItem(it) } }
         }
-        LaunchedEffect(section, filter, nowItem) {
-            val target = nowItem
-            if (target == null || startedAtNow) {
-                if (target == null) kotlinx.coroutines.delay(150)
-                if (startedAtNow || target == null) positioned = true
-                return@LaunchedEffect
-            }
-            startedAtNow = true
-            runCatching {
-                listState.scrollToItem(target)
-                // Lo spazio in fondo si misura solo con OGGI a schermo: poi si torna su OGGI, ora che c'è posto.
-                kotlinx.coroutines.withTimeoutOrNull(500) { androidx.compose.runtime.snapshotFlow { below }.first { it != null } }
-                androidx.compose.runtime.withFrameNanos { }
-                listState.scrollToItem(target)
-            }
-            positioned = true
-        }
-        val listAlpha by androidx.compose.animation.core.animateFloatAsState(if (positioned) 1f else 0f, tween(Motion.EXIT_MS), label = "listIn")
         // Fra adesso e passato una piccola resistenza, con una vibrazione.
         // In fondo alla linea si legge un altro anno di calendario: Prossimi giorni non finisce mai.
         val nearEnd by remember(lastItem, entries.isEmpty()) {
@@ -364,8 +350,8 @@ fun NotesScreen(
             }
         }
         var grown by remember { mutableStateOf(0) }
-        LaunchedEffect(nearEnd, grown, section, calendarGranted) {
-            if (nearEnd && section == NotesSection.DATED && calendarGranted && NotesEvents.grow()) {
+        LaunchedEffect(nearEnd, grown, calendarGranted) {
+            if (nearEnd && calendarGranted && NotesEvents.grow()) {
                 val before = events.size
                 events = NotesEvents.load(context)
                 // Un anno intero senza niente di nuovo: il calendario è finito, ci si ferma qui.
@@ -376,12 +362,12 @@ fun NotesScreen(
         }
         // Lo stesso in cima, verso il passato (Antonio): un altro pezzo di calendario alla volta. Le righe nuove
         // entrano sopra, quindi la lista scorre di quanto è cresciuta e quello che stai guardando resta fermo.
-        val nearStart by remember(section, timelineIndex, entries.isEmpty()) {
+        val nearStart by remember(timelineIndex, entries.isEmpty()) {
             derivedStateOf { startedAtNow && entries.isNotEmpty() && listState.firstVisibleItemIndex <= timelineIndex + NEAR_ROWS }
         }
         var grownPast by remember { mutableStateOf(0) }
-        LaunchedEffect(nearStart, grownPast, section, calendarGranted) {
-            if (nearStart && section == NotesSection.DATED && calendarGranted && NotesEvents.growPast()) {
+        LaunchedEffect(nearStart, grownPast, calendarGranted) {
+            if (nearStart && calendarGranted && NotesEvents.growPast()) {
                 val before = events.size
                 // Le righe hanno chiavi stabili: la lista tiene ferma quella che stai guardando da sola.
                 events = NotesEvents.load(context)
@@ -401,8 +387,7 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier)
-                .graphicsLayer { alpha = listAlpha },
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -427,7 +412,7 @@ fun NotesScreen(
             if (entries.isNotEmpty()) {
                 val openMonth: (java.time.YearMonth) -> Unit = { inApp?.openRoute?.invoke(Routes.expenses(it)) }
                 // Sullo sfondo, senza card: la linea è la pagina.
-                items(entries.size, key = { entryKeys[it] }, contentType = { "timeline" }) { index ->
+                val drawEntry: @Composable androidx.compose.foundation.lazy.LazyItemScope.(Int) -> Unit = { index ->
                     val (entry, row) = entries[index]
                     // Il pallino del + atterra su OGGI.
                     val target = if (index == nowAt) Modifier.captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE)
@@ -444,7 +429,22 @@ fun NotesScreen(
                         val monthAbove = index == nowAt && index > 0 && entry.month != null && !entry.todayHeader
                         // La riga di Oggi è già il segno "OGGI" con la spesa.
                         if (entry.todayHeader) {
-                            TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth)
+                            // Tenendo premuto OGGI: il fumetto per eliminare i promemoria già fatti (prima stava in fondo, in Completati).
+                            TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth,
+                                onLongClick = done.takeIf { it.isNotEmpty() }?.let { finished -> {
+                                    haptic(Haptic.LONG_PRESS)
+                                    ActionBubble.show(
+                                        BubbleAction(
+                                            Icons.Outlined.Delete,
+                                            "Elimina i completati",
+                                            detail = if (finished.size == 1) "1 promemoria fatto" else "${finished.size} promemoria fatti",
+                                            danger = true,
+                                        ) {
+                                            NotesStore.clearDone { t -> finished.any { it.id == t.id } }
+                                            offerUndo(finished, if (finished.size == 1) "Eliminato 1 completato" else "Eliminati ${finished.size} completati")
+                                        },
+                                    )
+                                } })
                         } else {
                         if (index == nowAt && index > 0) {
                             if (monthAbove) {
@@ -465,50 +465,31 @@ fun NotesScreen(
                         }
                     }
                 }
-            }
-            // Le abitudini si fanno oggi: sotto la linea del tempo.
-            if (show(NotesSection.DATED) && data.habits.isNotEmpty()) {
-                item(key = "habits-header") {
-                    SectionHeader("Abitudini", modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp).captureTarget(CaptureMode.HABIT))
-                }
-                habitRows()
-            }
-            // In fondo quello che è già fatto: promemoria spuntati e pacchi arrivati.
-            if (show(NotesSection.DATED) && (doneShown.isNotEmpty() || delivered.isNotEmpty())) {
-                item(key = "done-header") {
-                    // L'intestazione è solo un'etichetta: tenendola premuta, il fumetto per eliminare i completati.
-                    val clear = {
-                        NotesStore.clearDone { t -> doneShown.any { it.id == t.id } }
-                        offerUndo(doneShown, if (doneShown.size == 1) "Eliminato 1 completato" else "Eliminati ${doneShown.size} completati")
+                items(habitsAt, key = { entryKeys[it] }, contentType = { "timeline" }) { drawEntry(it) }
+                if (showHabits) {
+                    item(key = "habits-row") {
+                        HabitsTodayRow(
+                            done = data.habits.count { it.isDone(today) },
+                            total = data.habits.size,
+                            open = habitsOpen,
+                            modifier = Modifier.animateItem().captureTarget(CaptureMode.HABIT),
+                        ) {
+                            haptic(Haptic.TICK)
+                            habitsOpen = !habitsOpen
+                        }
                     }
-                    SectionHeader(
-                        "Completati",
-                        modifier = Modifier.animateItem().padding(top = 12.dp, bottom = 8.dp).then(
-                            if (doneShown.isEmpty()) Modifier
-                            else Modifier.combinedClickable(onClick = {}, onLongClick = {
-                                haptic(Haptic.LONG_PRESS)
-                                ActionBubble.show(
-                                    BubbleAction(
-                                        Icons.Outlined.Delete,
-                                        "Elimina i completati",
-                                        detail = if (doneShown.size == 1) "1 promemoria" else "${doneShown.size} promemoria",
-                                        danger = true,
-                                    ) { clear() },
-                                )
-                            }),
-                        ),
-                    )
+                    if (habitsOpen) habitRows()
                 }
-                if (doneShown.isNotEmpty()) item(key = "group-done") { Box(Modifier.animateItem().padding(bottom = 4.dp)) { TaskGroup(null, doneShown, onTaskDeleted) } }
-                items(delivered, key = { "parcel-${it.id}" }) { p ->
-                    Box(Modifier.animateItem().padding(bottom = 4.dp)) { ParcelCard(p, onClick = { openItem(ItemKind.PARCEL, p.id) }) }
-                }
+                items(entries.size - habitsAt, key = { entryKeys[it + habitsAt] }, contentType = { "timeline" }) { drawEntry(it + habitsAt) }
             }
             // Spazio in fondo: l'ultima riga non finisce sotto la barra.
             item(key = "bottom-space") {
                 // Si apre su "OGGI" in cima allo schermo anche con poco sotto (Antonio): il resto resta vuoto.
                 val density = androidx.compose.ui.platform.LocalDensity.current
-                val room = with(density) { nowRoom(listState.layoutInfo.viewportSize.height, 0, below).toDp() }
+                val viewport = listState.layoutInfo.viewportSize.height
+                // Prima della misura: uno schermo intero, così OGGI può stare in cima già al primo fotogramma.
+                val screen = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+                val room = if (below == null && nowItem != null) screen else with(density) { nowRoom(viewport, 0, below).toDp() }
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
@@ -654,32 +635,42 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
     }
 }
 
-/** "Idee da aggiungere": esempi tappabili (titolo e riga piccola) sotto una lista corta. */
+/**
+ * La riga "Abitudini" dentro OGGI: quante ne hai fatte oggi su quante sono; toccandola si aprono sotto,
+ * una per una con la spunta, e si richiude.
+ */
 @Composable
-private fun IdeasSection(ideas: List<Pair<String, String>>, header: Boolean = true, onPick: (Int) -> Unit) {
-    Column(Modifier.padding(top = if (header) 8.dp else 0.dp)) {
-        if (header) {
-            SectionHeader("Idee da aggiungere")
-            Spacer(Modifier.height(4.dp))
-        }
-        CanvasCard(Modifier.fillMaxWidth()) {
-            ideas.forEachIndexed { i, (title, detail) ->
-                if (i > 0) RowDivider()
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { onPick(i) }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(title, style = MaterialTheme.typography.bodyLarge)
-                        Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Icon(Icons.Outlined.Add, contentDescription = "Aggiungi $title", tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-        }
+private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val turn by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, Motion.settle(), label = "habitsTurn")
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Outlined.Autorenew,
+            contentDescription = null,
+            tint = if (done == total) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            "Abitudini · $done su $total",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Icon(
+            Icons.Outlined.ExpandMore,
+            contentDescription = if (open) "Chiudi le abitudini" else "Apri le abitudini",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.graphicsLayer { rotationZ = turn },
+        )
     }
 }
 

@@ -96,7 +96,6 @@ private const val TAB_CHANNELS = 3
 private const val TAB_PLAYLISTS = 4
 
 /** Le liste che si aprono come pagina dalla scheda Playlist. */
-private enum class YtList(val title: String) { LIKED("Mi piace") }
 
 /**
  * Il tuo YouTube nell'app: solo le cinque schede (Home, Iscrizioni, Cronologia, Canali, Playlist) larghe in parti
@@ -111,6 +110,10 @@ fun YouTubeFeedScreen(
     onLogin: () -> Unit,
     /** I video del telefono, i file e i link: stanno anche loro in Video. */
     onOpenPhone: () -> Unit,
+    /** Canale, playlist e Mi piace sono pagine vere (1.357): transizione e gesto indietro come le altre. */
+    onOpenChannel: (YtChannel) -> Unit = {},
+    onOpenPlaylist: (YtPlaylist) -> Unit = {},
+    onOpenLiked: () -> Unit = {},
 ) {
     val context = LocalContext.current
     YouTubeAuth.init(context)
@@ -121,19 +124,9 @@ fun YouTubeFeedScreen(
     val connected = official || MediaService.YOUTUBE in loggedIn
     // Si apre sulle Iscrizioni; la Home è subito a sinistra.
     var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
-    var list by rememberSaveable { mutableStateOf<YtList?>(null) }
-    var openPlaylist by remember { mutableStateOf<YtPlaylist?>(null) }
-    var openChannel by remember { mutableStateOf<YtChannel?>(null) }
     // Escludi Shorts / live si scelgono una volta in Impostazioni › Fa da solo.
     val hideShorts by AppSettings.hideShorts.collectAsState()
     val hideLive by AppSettings.hideLive.collectAsState()
-    BackHandler(enabled = openPlaylist != null || openChannel != null || list != null) {
-        when {
-            openPlaylist != null -> openPlaylist = null
-            openChannel != null -> openChannel = null
-            else -> list = null
-        }
-    }
 
     val subs by YouTubeStore.subscriptions.collectAsState()
     val fresh = subs.data.orEmpty().count { v -> v.published?.let { Duration.between(it, Instant.now()).toHours() < 24 } == true }
@@ -142,22 +135,12 @@ fun YouTubeFeedScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopLevelBar(
-                title = openPlaylist?.title ?: openChannel?.title ?: list?.title ?: "Video",
+                title = "Video",
                 subtitle = when {
-                    openPlaylist != null -> "Playlist · ${openPlaylist?.count} video"
-                    openChannel != null -> "Tutti i video, dal più recente"
-                    list != null -> "YouTube"
                     fresh > 0 -> "$fresh video nuovi oggi"
                     else -> "YouTube e i video del telefono"
                 },
-                onBack = {
-                    when {
-                        openPlaylist != null -> openPlaylist = null
-                        openChannel != null -> openChannel = null
-                        list != null -> list = null
-                        else -> onBack()
-                    }
-                },
+                onBack = onBack,
             )
         },
     ) { inner ->
@@ -169,28 +152,6 @@ fun YouTubeFeedScreen(
             if (!connected) {
                 ConnectYouTube(onLogin = onLogin, onOpenPhone = onOpenPhone)
                 return@Column
-            }
-            val playlist = openPlaylist
-            if (playlist != null) {
-                PlaylistVideos(playlist, onPlay)
-                return@Column
-            }
-            val channel = openChannel
-            if (channel != null) {
-                ChannelVideos(channel, hideShorts, hideLive, onPlay)
-                return@Column
-            }
-            when (list) {
-                YtList.LIKED -> {
-                    val liked by YouTubeStore.liked.collectAsState()
-                    com.platinum20.dashboard.media.youtube.YtFavorites.init(context)
-                    val mine by com.platinum20.dashboard.media.youtube.YtFavorites.items.collectAsState()
-                    // In cima i Mi piace messi dal player dell'app, poi quelli del tuo account YouTube.
-                    val all = liked.copy(data = (mine + liked.data.orEmpty()).distinctBy { it.id }.takeIf { liked.data != null || mine.isNotEmpty() })
-                    SimpleVideos(all, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
-                    return@Column
-                }
-                null -> Unit
             }
             // Le cinque schede in parti uguali fino al bordo destro: niente da scorrere di lato.
             Row(
@@ -204,10 +165,10 @@ fun YouTubeFeedScreen(
             when (tab) {
                 TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
                 TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, onPlay)
-                TAB_CHANNELS -> ChannelsTab(onOpen = { openChannel = it })
+                TAB_CHANNELS -> ChannelsTab(onOpen = onOpenChannel)
                 TAB_PLAYLISTS -> PlaylistsTab(
-                    onOpen = { openPlaylist = it },
-                    onOpenLiked = { list = YtList.LIKED },
+                    onOpen = onOpenPlaylist,
+                    onOpenLiked = onOpenLiked,
                     onOpenPhone = onOpenPhone,
                 )
                 else -> HistoryTab(onPlay)
@@ -271,7 +232,7 @@ private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
             },
         ) {
             if (busy) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                LoadingPulse()
                 Spacer(Modifier.width(8.dp))
             }
             Text("Oppure collega l'API ufficiale di Google")
@@ -525,7 +486,7 @@ private fun ChannelVideos(channel: YtChannel, hideShorts: Boolean, hideLive: Boo
             item(key = "more") {
                 LaunchedEffect(count) { YouTubeStore.loadMoreChannel(channel) }
                 Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(Modifier.size(24.dp))
+                    LoadingPulse()
                 }
             }
         }
@@ -557,7 +518,7 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (state.loading) item { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) } }
+            if (state.loading) item { PlaceholderList(rows = 3, label = "Carico i video") }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             content()
             if (isEmpty && !state.loading) item {
@@ -798,4 +759,34 @@ private fun Thumbnail(url: String, modifier: Modifier, large: Boolean = false) {
             .clip(if (large) MaterialTheme.shapes.large else MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant),
     )
+}
+
+
+/** Una playlist di YouTube come pagina sua (1.357): prima si apriva dentro la pagina Video. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun YouTubePlaylistScreen(playlist: YtPlaylist, onBack: () -> Unit, onPlay: (String) -> Unit) {
+    Scaffold(
+        topBar = { TopLevelBar(title = playlist.title, subtitle = if (playlist.count > 0) "Playlist · ${playlist.count} video" else "Playlist", onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) { PlaylistVideos(playlist, onPlay) }
+    }
+}
+
+/** "Mi piace" come pagina sua (1.357): in cima quelli messi dal player dell'app, poi quelli del tuo account. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun YouTubeLikedScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
+    val context = LocalContext.current
+    val liked by YouTubeStore.liked.collectAsState()
+    com.platinum20.dashboard.media.youtube.YtFavorites.init(context)
+    val mine by com.platinum20.dashboard.media.youtube.YtFavorites.items.collectAsState()
+    val all = liked.copy(data = (mine + liked.data.orEmpty()).distinctBy { it.id }.takeIf { liked.data != null || mine.isNotEmpty() })
+    Scaffold(
+        topBar = { TopLevelBar(title = "Mi piace", subtitle = "YouTube", onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            SimpleVideos(all, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
+        }
+    }
 }

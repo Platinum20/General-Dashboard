@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.outlined.ClearAll
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -100,35 +103,8 @@ private fun ResumeItem.sourceLabel(): String = when (kind) {
     ResumeKind.PODCAST -> "Podcast"
 }
 
-/**
- * La coda unica: in cima quello che suona, sotto quello che viene dopo, di qualunque fonte.
- * Un tocco fa partire quella voce (le altre restano); la maniglia sceglie cosa viene dopo; portandola
- * di lato si toglie, con "Annulla". In fondo "Riempi in automatico" per non restare senza musica.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun QueueScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val queue by CanvasPlayer.queue.collectAsState()
-    val now = queue.now
-    val upcoming = queue.upcoming
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopLevelBar(
-                title = "Coda",
-                subtitle = if (upcoming.isEmpty()) null else "${upcoming.size} dopo questo",
-                onBack = onBack,
-            ) {
-                if (upcoming.isNotEmpty()) TextButton(onClick = { CanvasPlayer.clearUpcoming() }) { Text("Svuota") }
-            }
-        },
-    ) { inner ->
-        QueueList(Modifier.fillMaxSize().padding(inner), PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 120.dp))
-    }
-}
-
-/** Il contenuto della coda (vuota o con le voci), uguale nella pagina e nel pop-up sopra il player. */
+/** Il contenuto della coda (vuota o con le voci): il pop-up sopra il player e sopra Media. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun QueueList(modifier: Modifier, contentPadding: PaddingValues) {
     val queue by CanvasPlayer.queue.collectAsState()
@@ -172,7 +148,23 @@ private fun QueueList(modifier: Modifier, contentPadding: PaddingValues) {
             }
         }
         if (upcoming.isNotEmpty()) {
-            item(key = "h-next") { SectionHeader("Dopo", Modifier.padding(top = 8.dp)) }
+            // "Svuota" non è più un tasto in alto (1.357): si tiene premuto "Dopo", come "Elimina i completati".
+            item(key = "h-next") {
+                SectionHeader(
+                    "Dopo",
+                    Modifier.padding(top = 8.dp).combinedClickable(onClick = {}, onLongClick = {
+                        view.haptic(Haptic.LONG_PRESS)
+                        ActionBubble.show(
+                            BubbleAction(
+                                Icons.Outlined.ClearAll,
+                                "Svuota la coda",
+                                detail = if (upcoming.size == 1) "1 voce dopo questa" else "${upcoming.size} voci dopo questa",
+                                danger = true,
+                            ) { CanvasPlayer.clearUpcoming() },
+                        )
+                    }),
+                )
+            }
             items(upcoming, key = { it.id }) { entry ->
                 SwipeQueueRow(
                     entry,
@@ -202,7 +194,7 @@ internal object QueueSheet {
  * da destra. Si chiude toccando fuori, col gesto indietro o trascinando l'intestazione verso il bordo.
  */
 @Composable
-internal fun QueuePopup(open: Boolean, onClose: () -> Unit) {
+internal fun QueuePopup(open: Boolean, onClose: () -> Unit, bottomExtra: androidx.compose.ui.unit.Dp = 0.dp) {
     androidx.activity.compose.BackHandler(enabled = open, onBack = onClose)
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
         val sideways = QueueSheet.sideways(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
@@ -291,10 +283,9 @@ internal fun QueuePopup(open: Boolean, onClose: () -> Unit) {
                                 )
                             }
                         }
-                        if (queue.upcoming.isNotEmpty()) TextButton(onClick = { CanvasPlayer.clearUpcoming() }) { Text("Svuota") }
                     }
                 }
-                QueueList(Modifier.fillMaxWidth().weight(1f), PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp))
+                QueueList(Modifier.fillMaxWidth().weight(1f), PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp + bottomExtra))
             }
         }
     }
@@ -302,7 +293,7 @@ internal fun QueuePopup(open: Boolean, onClose: () -> Unit) {
 
 /**
  * Le prossime voci della coda in Media, al posto della card "Riprendi": si vede cosa viene dopo senza
- * aprire la coda. Un tocco salta lì; "Apri" porta alla coda intera.
+ * aprire la coda. Un tocco salta lì; il titolo apre la coda intera (lo stesso riquadro del player).
  */
 @Composable
 internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
@@ -310,9 +301,18 @@ internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
     val next = queue.upcoming
     if (next.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            SectionHeader("In coda · ${next.size}", Modifier.weight(1f))
-            TextButton(onClick = onOpenQueue) { Text("Apri") }
+        // Il titolo stesso apre la coda (1.357), come le file di Media: niente tasto "Apri" nell'intestazione.
+        Row(
+            Modifier.clip(MaterialTheme.shapes.small).clickable(onClick = onOpenQueue).padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionHeader("In coda · ${next.size}")
+            Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = "Apri la coda",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
         }
         next.take(3).forEach { entry -> androidx.compose.runtime.key(entry.id) { SwipeQueueRow(entry) } }
     }

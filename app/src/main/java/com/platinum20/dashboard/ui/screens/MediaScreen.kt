@@ -35,6 +35,8 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -105,9 +107,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
 
 /**
- * Media: tre sezioni (Musica, Video, Radio e podcast) e sopra quello che suona adesso, nel player
- * unico. Sotto, quello che si riprende al volo: dove eri rimasto, la coda e "Continua". Le radio e
- * i podcast stanno nella loro pagina: qui nessun doppione.
+ * Media: in cima quello che suona adesso (o da riprendere), la coda e "Continua"; sotto tre file di copertine
+ * (Musica, Video, Radio e podcast) con quello che c'è dentro, e il titolo della fila apre la pagina intera.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +119,8 @@ fun MediaScreen(
     onOpenListen: (ListenTab) -> Unit,
     onOpenPlayer: (Playing) -> Unit,
     onOpenSettings: () -> Unit,
+    /** Un video della fila Video: si apre nel player. */
+    onPlayVideo: (String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
@@ -149,6 +152,9 @@ fun MediaScreen(
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
     val podcasts = (followed.size + spotifyShows.size)
 
+    // La coda si apre nello stesso riquadro del player (1.357): una coda sola, un posto solo.
+    var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
@@ -173,36 +179,6 @@ fun MediaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Le tre sezioni, una accanto all'altra: il colore dell'icona le distingue a colpo d'occhio.
-            item(key = "sections") {
-                // Tutte alte uguali (Antonio): la riga prende l'altezza della più alta e ognuna la riempie.
-                Row(Modifier.padding(horizontal = 16.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SectionTile(
-                        icon = Icons.Outlined.GraphicEq,
-                        accent = TileAccent.GREEN,
-                        title = "Musica",
-                        subtitle = if (spotifyOn) "Spotify" else "Collega Spotify",
-                        active = now?.source == PlaySource.SPOTIFY || now?.source == PlaySource.MUSIC,
-                        onClick = onOpenMusic,
-                    )
-                    SectionTile(
-                        icon = Icons.Outlined.OndemandVideo,
-                        accent = TileAccent.ORANGE,
-                        title = "Video",
-                        subtitle = if (youTubeOn) "YouTube e file" else "Telefono e link",
-                        active = now?.source == PlaySource.VIDEO,
-                        onClick = onOpenVideo,
-                    )
-                    SectionTile(
-                        icon = Icons.Outlined.Mic,
-                        accent = TileAccent.PURPLE,
-                        title = "Radio",
-                        subtitle = if (podcasts > 0) "e $podcasts podcast" else "e podcast",
-                        active = now?.source == PlaySource.RADIO || now?.source == PlaySource.PODCAST,
-                        onClick = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) },
-                    )
-                }
-            }
             now?.let { playing ->
                 item(key = "now") {
                     MediaNowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
@@ -216,7 +192,7 @@ fun MediaScreen(
             // La coda: cosa viene dopo, di qualunque fonte.
             if (queue.upcoming.isNotEmpty()) item(key = "queue") {
                 QueuePeek(
-                    onOpenQueue = { inApp?.openRoute?.invoke(Routes.QUEUE) },
+                    onOpenQueue = { queueOpen = true },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
@@ -228,7 +204,17 @@ fun MediaScreen(
                     }
                 }
             }
+            // Le tre file (1.357): quello che c'è in Musica, Video e Radio e podcast, non tre tessere da aprire.
+            // Il titolo di ogni fila apre la pagina intera.
+            item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
+            item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
+            item(key = "shelf-listen") {
+                ListenShelf(onOpenAll = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) })
+            }
         }
+    }
+    // Sopra Media la barra resta in basso: l'ultima voce della coda le sta sopra.
+    QueuePopup(open = queueOpen, onClose = { queueOpen = false }, bottomExtra = bottomPadding.calculateBottomPadding())
     }
 }
 
@@ -273,8 +259,9 @@ private fun RowScope.SectionTile(
  * adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da far ripartire.
  */
 @Composable
-internal fun MediaNowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+internal fun MediaNowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modifier, hero: Boolean = true) {
     MediaRowCard(
+        hero = hero,
         label = (if (now.playing) "In riproduzione" else "In pausa") + " · " + now.source.label,
         title = now.title,
         detail = if (now.live) "● In diretta" else now.subtitle,
@@ -301,8 +288,9 @@ internal fun MediaNowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier =
 
 /** La stessa card quando nulla suona: si riprende dal punto esatto in cui eri rimasto. */
 @Composable
-internal fun MediaResumeCard(item: ResumeItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun MediaResumeCard(item: ResumeItem, onClick: () -> Unit, modifier: Modifier = Modifier, hero: Boolean = true) {
     MediaRowCard(
+        hero = hero,
         label = if (item.unfinished) "Riprendi" else if (item.listened) "Ascolta di nuovo" else "Guarda di nuovo",
         title = item.title,
         detail = listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
@@ -325,6 +313,8 @@ private const val THUMB = 64
 /** Il corpo della card media: copertina, tre righe di testo e un tasto; identico nei due stati. */
 @Composable
 private fun MediaRowCard(
+    /** Il blocco colorato della pagina (in Media); in Home il blocco colorato è già Adesso, qui la card è normale. */
+    hero: Boolean,
     label: String,
     title: String,
     detail: String,
@@ -340,11 +330,12 @@ private fun MediaRowCard(
         onLongClick = onLongClick,
         modifier = modifier.fillMaxWidth().bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
-        // Come "Adesso": il blocco colorato è quello che sta succedendo (o che riprende) ora.
-        colors = CardDefaults.cardColors(
+        // Come "Adesso": il blocco colorato è quello che sta succedendo (o che riprende) ora. In Home no:
+        // un solo blocco colorato per pagina, e lì è Adesso.
+        colors = if (hero) CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+        ) else null,
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             thumb()

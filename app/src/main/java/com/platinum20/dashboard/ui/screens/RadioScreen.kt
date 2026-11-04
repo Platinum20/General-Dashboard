@@ -69,7 +69,7 @@ internal fun LazyListScope.radioSections(
         item(key = "popular-header") { SectionTitle("Le radio più ascoltate in Italia") }
         items(top, key = { "list-${it.id}" }) { StationRow(it, now) }
     } else if (popular.loading) item(key = "popular-loading") {
-        Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(24.dp)) }
+        PlaceholderList(rows = 4, label = "Carico le radio")
     }
 }
 

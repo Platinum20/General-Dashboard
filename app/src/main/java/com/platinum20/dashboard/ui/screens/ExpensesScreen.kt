@@ -7,6 +7,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,7 +35,8 @@ fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingVal
     // Aperta la pagina, i movimenti si rileggono se l'ultima lettura è vecchia.
     AutoRefresh(everyMs = RevolutStore.STALE_MS) { if (linked && !expired && RevolutStore.isStale()) RevolutLink.refresh(context) }
 
-    Scaffold(topBar = { TopLevelBar(title = "Spese", subtitle = revolutLine(linked, expired, balance), onBack = onBack) }) { inner ->
+    // La card Revolut della Home si allarga fino a diventare questa pagina (1.357).
+    Scaffold(modifier = Modifier.sharedItem(SharedKeys.BANK, rounded = true), topBar = { TopLevelBar(title = "Spese", subtitle = if (linked && expired) revolutLine(linked, expired, balance) else null, onBack = onBack) }) { inner ->
         ExpensesTab(
             data,
             PaddingValues(
@@ -44,6 +46,8 @@ fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingVal
                 bottom = maxOf(inner.calculateBottomPadding(), bottomPadding.calculateBottomPadding()) + 24.dp,
             ),
             initialMonth = month,
+            // Il saldo di adesso sta nel riepilogo del mese, sotto il totale, non più piccolo nel sottotitolo (1.357).
+            bankLine = balance?.takeIf { linked && !expired }?.let { "Saldo Revolut adesso · " + com.platinum20.dashboard.notes.Expenses.format(it) },
             onDeleted = { e ->
                 // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
                 CaptureFeedback.show(

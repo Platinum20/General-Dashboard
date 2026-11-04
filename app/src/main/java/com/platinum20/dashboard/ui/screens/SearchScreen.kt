@@ -63,7 +63,9 @@ private val eventHour = DateTimeFormatter.ofPattern("HH:mm")
 
 /** I filtri di Cerca ovunque: Tutto, oppure una sola parte dell'app. */
 enum class SearchFilter(val label: String) {
-    ALL("Tutto"), NOTES("Note"), AGENDA("Agenda"), NEWS("Notizie"),
+    // Dalla 1.357 note ed eventi sono un filtro solo, "Calendario", come il calendario unico. AGENDA resta per le
+    // ricerche salvate nelle rotte, ma non ha più il suo chip.
+    ALL("Tutto"), NOTES("Calendario"), AGENDA("Calendario"), NEWS("News"),
     // Radio e podcast insieme, come la loro pagina in Media.
     MUSIC("Musica"), VIDEO("Video"), RADIO("Radio e podcast");
 
@@ -149,7 +151,8 @@ fun SearchScreen(
             expanded = emptySet()
         }
     }
-    fun shows(f: SearchFilter) = filter == SearchFilter.ALL || filter == f
+    fun shows(f: SearchFilter) = filter == SearchFilter.ALL || filter == f ||
+        (f == SearchFilter.AGENDA && filter == SearchFilter.NOTES) || (f == SearchFilter.NOTES && filter == SearchFilter.AGENDA)
 
     Scaffold(topBar = { TopLevelBar(title = "Cerca", onBack = onBack) }) { inner ->
         NotesSearchPanel(
@@ -172,11 +175,12 @@ fun SearchScreen(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SearchFilter.entries.forEach { f ->
-                        FilterChip(
-                            selected = filter == f,
+                    // I chip di Canvas, come nel Calendario e in YouTube (1.357).
+                    SearchFilter.entries.filter { it != SearchFilter.AGENDA }.forEach { f ->
+                        CanvasTabChip(
+                            selected = filter == f || (f == SearchFilter.NOTES && filter == SearchFilter.AGENDA),
                             onClick = { haptic(Haptic.TICK); filter = f },
-                            label = { Text(f.label) },
+                            label = f.label,
                         )
                     }
                 }
@@ -186,13 +190,13 @@ fun SearchScreen(
                 val foundEvents = if (shows(SearchFilter.AGENDA)) EverywhereSearch.events(events, q, today) else emptyList()
                 val foundNews = if (shows(SearchFilter.NEWS)) EverywhereSearch.news(news?.items.orEmpty(), q) else emptyList()
                 if (foundEvents.isNotEmpty()) item(key = "events") {
-                    SourceSection("Agenda", foundEvents, "events" in expanded, { expanded = expanded + "events" }) { (day, e) ->
+                    SourceSection("Calendario", foundEvents, "events" in expanded, { expanded = expanded + "events" }) { (day, e) ->
                         val time = if (e.allDay) "" else " · " + Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).format(eventHour)
                         ResultRow(e.title, longDate(day) + time) { inApp?.openEvent?.invoke(e) }
                     }
                 }
                 if (foundNews.isNotEmpty()) item(key = "news") {
-                    SourceSection("Notizie", foundNews, "news" in expanded, { expanded = expanded + "news" }) { n ->
+                    SourceSection("News", foundNews, "news" in expanded, { expanded = expanded + "news" }) { n ->
                         val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
                         ResultRow(n.title, n.source.name + whenText, onLongClick = { SavedLinks.offer(n.savedLink()) }) { onOpenArticle(n) }
                     }

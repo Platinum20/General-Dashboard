@@ -118,9 +118,7 @@ fun UpdatesScreen(
 
             when {
                 state.loadingReleases && state.releases.isEmpty() -> item {
-                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    PlaceholderList(rows = 3, thumb = false, label = "Leggo le versioni")
                 }
                 state.releasesError != null && state.releases.isEmpty() -> item {
                     MessageCard(Icons.Outlined.ErrorOutline, state.releasesError!!)
@@ -325,7 +323,7 @@ private fun UpdateBar(
                     Text("Concedi il permesso")
                 }
                 is UpdateStatus.Checking -> Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    LoadingPulse()
                     Spacer(Modifier.width(12.dp))
                     Text("Controllo in corso…")
                 }

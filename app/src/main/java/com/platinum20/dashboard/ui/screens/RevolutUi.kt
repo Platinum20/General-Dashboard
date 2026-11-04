@@ -39,6 +39,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -74,7 +77,7 @@ internal fun RevolutCard(onOpen: () -> Unit) {
     val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
     // La rilettura ogni mezz'ora la fa già la Home (spese nel calendario): qui solo si mostra.
-    Section(title = "Revolut") {
+    Section(title = "Revolut", modifier = Modifier.sharedItem(SharedKeys.BANK, rounded = true)) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -83,6 +86,19 @@ internal fun RevolutCard(onOpen: () -> Unit) {
         ) {
             // Prima che arrivi il wallet c'è almeno il saldo del conto (lettura delle versioni prima).
             val shown = pockets.ifEmpty { balance?.let { listOf(Pocket("main", "Conto", it, main = true)) } ?: emptyList() }
+            // Mentre legge: la forma del saldo in grigio, già alla sua altezza (1.357), invece di una frase che poi si allunga.
+            if (linked && !expired && shown.isEmpty()) {
+                Column(
+                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Sto leggendo il conto Revolut" },
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Placeholder(84.dp, 10.dp)
+                    Placeholder(150.dp, 30.dp)
+                    PlaceholderLine(1f, 14.dp)
+                    PlaceholderLine(1f, 14.dp)
+                }
+                return@Column
+            }
             if (!linked || shown.isEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconTile(Icons.Outlined.AccountBalanceWallet, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
@@ -120,13 +136,13 @@ private fun RevolutPanel(pockets: List<Pocket>, readAt: Long, expired: Boolean) 
         )
     }
     Spacer(Modifier.height(4.dp))
-    Text(Expenses.format(RevolutPockets.total(pockets)), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    RollingText(Expenses.format(RevolutPockets.total(pockets)), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     // Con una tasca sola il totale è già lei: niente riga doppia.
     if (pockets.size > 1) pockets.forEach { p ->
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(p.name, style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Text(Expenses.format(p.cents), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            RollingText(Expenses.format(p.cents), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
         }
     }
 }

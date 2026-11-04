@@ -322,12 +322,12 @@ fun HomeScreen(
             )
             // La stessa card di Media: quello che suona adesso oppure l'ultima cosa da riprendere.
             HomeCard.RESUME -> playingNow?.let { playing ->
-                MediaNowCard(playing, onOpen = {
+                MediaNowCard(playing, hero = false, onOpen = {
                     haptic(Haptic.TICK)
                     inApp?.openRoute?.invoke(Routes.PLAYER)
                 })
             } ?: resume?.let { item ->
-                MediaResumeCard(item, onClick = {
+                MediaResumeCard(item, hero = false, onClick = {
                     haptic(Haptic.TICK)
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
@@ -471,7 +471,7 @@ private fun WeatherCard(
     // "Adesso" è l'unico blocco colorato della pagina (colore del tema, Material You compreso): l'occhio parte da qui.
     CanvasCard(
         onClick = { if (forecast != null) onClick() else if (!hasPermission) onRequestPermission() else onRetry() },
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+        modifier = Modifier.fillMaxWidth().sharedItem(SharedKeys.WEATHER, rounded = true).bouncyPress(0.98f),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -632,7 +632,7 @@ private fun NewsCard(
                     }
                     state.error != null -> Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Text(state.error, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FilledTonalButton(onClick = state.retry, modifier = Modifier.padding(top = 8.dp)) { Text("Riprova") }
+                        CanvasButton("Riprova", onClick = state.retry, modifier = Modifier.padding(top = 8.dp))
                     }
                     // Mentre raccoglie: tre righe grigie al posto delle storie, così la card non si allunga dopo.
                     else -> Column(

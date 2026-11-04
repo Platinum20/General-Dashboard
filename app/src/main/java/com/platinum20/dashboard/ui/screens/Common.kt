@@ -83,6 +83,7 @@ import androidx.compose.material.icons.outlined.WbCloudy
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -330,8 +331,8 @@ object TabReselect {
 
 /** Lista di una sezione principale: toccando di nuovo la sua scheda torna in cima. */
 @Composable
-fun rememberReselectListState(route: String): LazyListState {
-    val state = rememberLazyListState()
+fun rememberReselectListState(route: String, initialIndex: Int = 0): LazyListState {
+    val state = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex)
     LaunchedEffect(state, route) {
         TabReselect.events.collect { if (it == route) state.animateScrollToItem(0) }
     }
@@ -803,5 +804,89 @@ fun PlaceholderList(modifier: Modifier = Modifier, rows: Int = 6, thumb: Boolean
                 }
             }
         }
+    }
+}
+
+/**
+ * Un numero che cambia (saldo, giga, spesa del mese): scorrono in verticale solo le cifre cambiate, le altre
+ * restano ferme (1.357). Le cifre si contano da destra, così "9,90 €" → "10,40 €" non fa scorrere tutto.
+ */
+@Composable
+fun RollingText(
+    text: String,
+    style: androidx.compose.ui.text.TextStyle,
+    modifier: Modifier = Modifier,
+    fontWeight: FontWeight? = null,
+    color: Color = Color.Unspecified,
+) {
+    Row(modifier.semantics(mergeDescendants = true) { contentDescription = text }) {
+        text.forEachIndexed { i, c ->
+            androidx.compose.runtime.key(text.length - i) {
+                AnimatedContent(
+                    targetState = c,
+                    transitionSpec = {
+                        val up = targetState > initialState
+                        (slideInVertically(Motion.settle()) { if (up) it else -it } + fadeIn(Motion.settle())) togetherWith
+                            (androidx.compose.animation.slideOutVertically(Motion.settle()) { if (up) -it else it } + fadeOut(Motion.settle()))
+                    },
+                    label = "roll",
+                ) { ch ->
+                    Text(ch.toString(), style = style, fontWeight = fontWeight, color = color, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Al posto della rotella per le attese piccole (dentro un tasto, sopra una copertina): un punto che pulsa
+ * piano (1.357). Le liste che arrivano usano invece le forme grigie ([PlaceholderList]).
+ */
+@Composable
+fun LoadingPulse(modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary, size: androidx.compose.ui.unit.Dp = 10.dp) {
+    val pulse = androidx.compose.animation.core.rememberInfiniteTransition(label = "pulse")
+    val scale by pulse.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            tween(700, easing = Motion.Standard),
+            androidx.compose.animation.core.RepeatMode.Reverse,
+        ),
+        label = "pulseScale",
+    )
+    Box(
+        modifier
+            .size(size)
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = 0.4f + 0.6f * scale }
+            .clip(CircleShape)
+            .background(color)
+            .semantics { contentDescription = "Caricamento" },
+    )
+}
+
+/**
+ * Il bottone di Canvas (1.357): una pillola tonale per le azioni dentro card e pagine ("Riprova", "Accedi",
+ * "Guarda il video"). [primary] = pieno, solo per l'unica azione di una pagina vuota ("Collega Spotify").
+ * Prima c'erano quattro tipi di bottone diversi per la stessa cosa.
+ */
+@Composable
+fun CanvasButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    primary: Boolean = false,
+) {
+    val content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
+        icon?.let {
+            androidx.compose.material3.Icon(it, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(text, maxLines = 1)
+    }
+    if (primary) {
+        androidx.compose.material3.Button(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+    } else {
+        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
     }
 }
