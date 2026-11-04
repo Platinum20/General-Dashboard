@@ -21,6 +21,30 @@ object NoteText {
         return "$count · $minutes min di lettura"
     }
 
+    /**
+     * La riga sopra una nota aperta, con l'orario vero: "Scritta oggi, 10:05 · modificata 11:20".
+     * La modifica si dice solo se è venuta dopo (almeno un minuto); il giorno si ripete solo se cambia.
+     */
+    fun moment(createdAt: Long, updatedAt: Long, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
+        val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val created = java.time.Instant.ofEpochMilli(createdAt).atZone(zone)
+        val first = "Scritta " + day(created.toLocalDate(), today) + ", " + hour(created)
+        if (updatedAt - createdAt < 60_000) return first
+        val updated = java.time.Instant.ofEpochMilli(updatedAt).atZone(zone)
+        val sameDay = updated.toLocalDate() == created.toLocalDate()
+        return first + " · modificata " + (if (sameDay) "" else day(updated.toLocalDate(), today) + ", ") + hour(updated)
+    }
+
+    private fun hour(t: java.time.ZonedDateTime): String = "%02d:%02d".format(t.hour, t.minute)
+
+    private fun day(d: java.time.LocalDate, today: java.time.LocalDate): String = when (d) {
+        today -> "oggi"
+        today.minusDays(1) -> "ieri"
+        else -> d.format(
+            java.time.format.DateTimeFormatter.ofPattern(if (d.year == today.year) "d MMM" else "d MMM yyyy", java.util.Locale.ITALIAN),
+        )
+    }
+
     /** Sulla linea del tempo, dopo il titolo: "2/5" per le liste, niente per il testo normale. */
     fun badge(text: String): String? = Checklist.progress(text)?.let { (done, total) -> "$done/$total" }
 }
