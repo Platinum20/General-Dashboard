@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.398.0
+**Le spese di oggi nella card in Home, in ordine d'orario**
+- Nella card Calendario in Home, sotto OGGI, ci sono anche le spese di oggi una per una, non solo il totale
+- Spese, eventi, turni e treni stanno tutti insieme in ordine d'orario, in Home e nel calendario; le spese senza ora restano in cima al giorno
+
 ## 1.396.0
 **Turni e treni da leggere al volo**
 - Accanto all'ora di inizio di un turno c'è "Turno su …" con le creator, sulla stessa riga
