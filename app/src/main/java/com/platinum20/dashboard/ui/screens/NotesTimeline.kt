@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.SimCard
+import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Image
 import com.platinum20.dashboard.notes.NoteText
@@ -338,6 +339,29 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
 }
 
 /**
+ * Un treno sulla linea del tempo: partenza e arrivo con ora e stazione, in mezzo durata e treno.
+ * Se arriva un altro giorno (notte), accanto alla stazione c'è il giorno d'arrivo.
+ */
+internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): TripStops? {
+    val trip = event.trip ?: return null
+    if (event.allDay) return null
+    val hour = DateTimeFormatter.ofPattern("HH:mm")
+    val from = Instant.ofEpochMilli(event.begin).atZone(zone)
+    val to = Instant.ofEpochMilli(event.end).atZone(zone)
+    val arriveDay = to.toLocalDate().takeIf { it != from.toLocalDate() }
+        ?.let { " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }.orEmpty()
+    return TripStops(
+        departAt = from.format(hour),
+        from = trip.from ?: "Partenza",
+        arriveAt = to.format(hour),
+        to = trip.to + arriveDay,
+        middle = listOfNotNull(com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end), trip.train).joinToString(" · "),
+        begin = event.begin,
+        end = event.end,
+    )
+}
+
+/**
  * Prossimi giorni come linea del tempo, uguale alla card di Oggi ma con tutto: una riga per cosa, il giorno
  * sulla prima riga di ogni giorno, e fra due giorni lontani la linea si allunga ([com.platinum20.dashboard.today.Upcoming.gapDp]).
  */
@@ -428,6 +452,8 @@ internal fun timelineEntries(
                 icon = when {
                     r.simRenewal -> Icons.Outlined.SimCard
                     r.parcel != null -> Icons.Outlined.LocalShipping
+                    r.expense != null && com.platinum20.dashboard.calendar.Trips.isTrainMerchant(Expenses.displayName(r.expense)) ->
+                        Icons.Outlined.Train
                     r.expense != null -> r.expense.category.icon()
                     r.note != null -> r.note.icon()
                     else -> null
@@ -438,6 +464,7 @@ internal fun timelineEntries(
                 monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
                 todayHeader = r.spend != null,
                 later = i == 0 && later,
+                trip = r.event?.let { tripStops(it, today, zone) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }

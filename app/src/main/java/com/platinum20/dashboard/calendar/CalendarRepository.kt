@@ -22,6 +22,8 @@ data class CalendarEvent(
     val allDay: Boolean,
     val location: String,
     val color: Int,
+    /** Un viaggio in treno ([Trips.shape]): partenza e arrivo sulla stessa riga. */
+    val trip: Trip? = null,
 )
 
 /** Il colore dei turni nel calendario. */

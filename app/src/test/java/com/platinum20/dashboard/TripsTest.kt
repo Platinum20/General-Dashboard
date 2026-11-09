@@ -1,7 +1,12 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
+import com.platinum20.dashboard.calendar.Trip
 import com.platinum20.dashboard.calendar.Trips
+import com.platinum20.dashboard.ui.screens.tripStops
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -21,13 +26,51 @@ class TripsTest {
         assertEquals("Treno per Taranto", Trips.title("Train to Taranto"))
     }
 
-    @Test fun dueEventiDiventanoPartenzaEArrivo() {
+    @Test fun dueEventiDiventanoUnViaggioSolo() {
         val out = Trips.shape(listOf(ev(1, "Train to Pescara Centrale"), ev(2, viaggio), ev(3, "Cena", begin + 1, begin + 2)))
-        assertEquals(listOf("Partenza treno per Pescara Centrale", "Cena", "Arrivo treno a Pescara Centrale"), out.map { it.title })
-        // Si tiene l'evento con i dettagli del biglietto.
-        assertEquals(listOf(2L, 3L, 2L), out.map { it.eventId })
-        assertEquals(end, out.last().begin)
-        assertEquals(begin, out.first().end)
+        assertEquals(listOf("Treno per Pescara Centrale", "Cena"), out.map { it.title })
+        // Si tiene l'evento con i dettagli del biglietto, con l'orario intero del viaggio.
+        val trip = out.first()
+        assertEquals(2L, trip.eventId)
+        assertEquals(begin, trip.begin)
+        assertEquals(end, trip.end)
+        assertEquals(Trip("Taranto", "Pescara Centrale", "Intercity 612"), trip.trip)
+        assertEquals(null, out[1].trip)
+    }
+
+    @Test fun partenzaDalLuogoSenzaDettagli() {
+        val trip = Trips.shape(listOf(ev(1, "Train to Pescara Centrale"))).single().trip
+        assertEquals(Trip("Taranto", "Pescara Centrale", null), trip)
+        assertEquals(Trip("Taranto", "Pescara Centrale", "Intercity 612"),
+            Trips.tripOf("Train to Pescara Centrale", "", "Treno: Intercity 612, partenza da Taranto Ore: 10:28; arrivo a Pescara Centrale Ore: 15:00"))
+        assertEquals(null, Trips.tripOf("Cena"))
+    }
+
+    @Test fun durataETrenoNellaRiga() {
+        assertEquals("4 h 32 min", Trips.duration(begin, end))
+        assertEquals("45 min", Trips.duration(0, 45 * 60_000L))
+        assertEquals("2 h", Trips.duration(0, 2 * 3_600_000L))
+        val zone = ZoneId.of("Europe/Rome")
+        val dep = LocalDateTime.of(2026, 11, 14, 10, 28).atZone(zone).toInstant().toEpochMilli()
+        val arr = LocalDateTime.of(2026, 11, 14, 15, 0).atZone(zone).toInstant().toEpochMilli()
+        val e = CalendarEvent(2, "Treno per Pescara Centrale", dep, arr, false, "", 0, Trip("Taranto", "Pescara Centrale", "Intercity 612"))
+        val stops = tripStops(e, LocalDate.of(2026, 11, 9), zone)!!
+        assertEquals("10:28", stops.departAt)
+        assertEquals("Taranto", stops.from)
+        assertEquals("15:00", stops.arriveAt)
+        assertEquals("Pescara Centrale", stops.to)
+        assertEquals("4 h 32 min · Intercity 612", stops.middle)
+        assertEquals(null, stops.progress(dep - 1))
+        assertEquals(0.5f, stops.progress(dep + (arr - dep) / 2)!!, 0.01f)
+        // Treno di notte: accanto all'arrivo il giorno.
+        val night = e.copy(end = LocalDateTime.of(2026, 11, 15, 7, 10).atZone(zone).toInstant().toEpochMilli())
+        assertEquals("Pescara Centrale · Dom 15", tripStops(night, LocalDate.of(2026, 11, 9), zone)!!.to)
+    }
+
+    @Test fun speseDelTreno() {
+        assertEquals(true, Trips.isTrainMerchant("Trenitalia"))
+        assertEquals(true, Trips.isTrainMerchant("Italo"))
+        assertEquals(false, Trips.isTrainMerchant("Esselunga"))
     }
 
     @Test fun datiDelBiglietto() {
