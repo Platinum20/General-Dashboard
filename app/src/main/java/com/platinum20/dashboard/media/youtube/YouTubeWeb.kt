@@ -33,7 +33,13 @@ object YouTubeWeb {
 
     class NotLoggedIn : IOException("Accedi a YouTube dalle Impostazioni per vedere il tuo feed")
 
-    private class Page(val loggedIn: Boolean, val channels: List<YtChannel>, val videos: List<YtVideo>, val playlists: List<YtPlaylist>)
+    private class Page(
+        val loggedIn: Boolean, val channels: List<YtChannel>, val videos: List<YtVideo>, val playlists: List<YtPlaylist>,
+        val next: String? = null,
+    )
+
+    /** Una pagina della Home: [next] è il segno di YouTube per chiedere i video dopo (null = finiti). */
+    class FeedPage(val videos: List<YtVideo>, val next: String?)
 
     /** Canali seguiti: elenco delle iscrizioni più i canali dei video nel feed Iscrizioni. */
     suspend fun subscriptions(context: Context): List<YtChannel> {
@@ -62,8 +68,31 @@ object YouTubeWeb {
     suspend fun history(context: Context): List<YtVideo> =
         page(context, "/feed/history", requireLogin = true).videos
 
-    suspend fun home(context: Context): List<YtVideo> =
-        page(context, "/", requireLogin = true).videos
+    suspend fun home(context: Context): FeedPage =
+        page(context, "/", requireLogin = true).let { FeedPage(it.videos, it.next) }
+
+    /**
+     * I consigliati dopo [token], come quando scorri la Home sul sito: due pagine per volta, così aprire
+     * la pagina nascosta (qualche secondo) vale una quarantina di video.
+     */
+    suspend fun homeMore(context: Context, token: String): FeedPage = withAccount(context) { page ->
+        val raw = page.run(
+            """
+            (async function() {
+              var all = [], token = ${JSONObject.quote(token)};
+              for (var i = 0; i < 2 && token; i++) {
+                var r = await __cvApi('browse', {continuation: token});
+                all = all.concat(__cvCollect(r).videos);
+                token = __cvNext(r);
+              }
+              return {videos: all, next: token};
+            })()
+            """.trimIndent(),
+            timeoutMs = 60_000,
+        )
+        val o = JSONObject(raw)
+        FeedPage(videos(o.optJSONArray("videos")), o.optString("next").takeIf { it.isNotBlank() && it != "null" })
+    }
 
     suspend fun search(context: Context, query: String): List<YtVideo> =
         page(context, "/results?search_query=" + URLEncoder.encode(query, "UTF-8"), requireLogin = false).videos
@@ -131,6 +160,7 @@ object YouTubeWeb {
                     YtPlaylist(it, p.optString("title"), p.optString("thumb"), p.optInt("count"))
                 }
             }.distinctBy { it.id },
+            next = o.optString("next").takeIf { it.isNotBlank() && it != "null" },
         )
     }
 
@@ -250,6 +280,7 @@ object YouTubeWeb {
     private val ACCOUNT_SCRIPT: String get() = """
 (async function() {
   window.__cvCollect = """ + COLLECT_FN + """;
+  window.__cvNext = """ + NEXT_FN + """;
   window.__cvCont = function(data) {
     var s = JSON.stringify(data || {});
     var m = s.match(/"continuationCommand":\{"token":"([^"]+)","request":"CONTINUATION_REQUEST_TYPE_BROWSE"/) ||
@@ -390,6 +421,36 @@ function(data) {
 }
 """
 
+    // Il segno per "carica altri" è nell'ultimo continuationItemRenderer (in fondo alla griglia): il primo
+    // continuationCommand della pagina può essere quello di un filtro in alto, che ricomincerebbe da capo.
+    private const val NEXT_FN = """
+function(data) {
+  var last = null;
+  function token(e) {
+    if (!e) return null;
+    if (e.continuationCommand && e.continuationCommand.token) return e.continuationCommand.token;
+    var cmds = e.commandExecutorCommand && e.commandExecutorCommand.commands;
+    if (cmds) for (var i = 0; i < cmds.length; i++) { var t = token(cmds[i]); if (t) return t; }
+    return null;
+  }
+  function walk(node, depth) {
+    if (!node || typeof node !== 'object' || depth > 60) return;
+    if (Array.isArray(node)) { for (var i = 0; i < node.length; i++) walk(node[i], depth + 1); return; }
+    for (var key in node) {
+      var v = node[key];
+      if (!v || typeof v !== 'object') continue;
+      if (key === 'continuationItemRenderer') {
+        var t = token(v.continuationEndpoint) || token(v.button && v.button.buttonRenderer && v.button.buttonRenderer.command);
+        if (t) last = t;
+      }
+      walk(v, depth + 1);
+    }
+  }
+  walk(data, 0);
+  return last;
+}
+"""
+
     private const val EXTRACT_SCRIPT = """
 (function() {
   var data = window.ytInitialData;
@@ -397,7 +458,8 @@ function(data) {
   var cfg = window.ytcfg && ytcfg.get ? ytcfg : null;
   var loggedIn = !!(cfg && cfg.get('LOGGED_IN'));
   var r = (""" + COLLECT_FN + """)(data);
-  return JSON.stringify({ready: true, loggedIn: loggedIn, channels: r.channels, videos: r.videos, playlists: r.playlists});
+  var next = (""" + NEXT_FN + """)(data);
+  return JSON.stringify({ready: true, loggedIn: loggedIn, channels: r.channels, videos: r.videos, playlists: r.playlists, next: next});
 })();
 """
 }

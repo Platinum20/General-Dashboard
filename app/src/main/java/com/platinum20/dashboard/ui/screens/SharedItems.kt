@@ -39,6 +39,23 @@ object SharedKeys {
 }
 
 /**
+ * Il titolo di una riga vola solo fra la riga e la sua scheda, mai fra due liste (card Calendario ↔ pagina,
+ * pagina ↔ spese del mese): lì la riga si staccava dalla card che si allarga e "saltava" per conto suo.
+ * Ogni lista ha il suo [scope]; la scheda usa quello della lista da cui è stata aperta ([origin]).
+ */
+object SharedRows {
+    const val PAGE = "page"
+    const val HOME = "home"
+    const val EXPENSES = "expenses"
+
+    /** L'ultima lista da cui si è aperta una riga: la scheda lo legge una volta, all'apertura. */
+    var origin: String = PAGE
+
+    /** La chiave condivisa di una riga nella lista [scope]; null per le righe senza scheda (eventi, note). */
+    fun key(scope: String, rowKey: String): String? = rowKey.takeIf { it.isSharedRow() }?.let { "$scope/$it" }
+}
+
+/**
  * Questo elemento è lo stesso in due pagine (stessa [key]): passando dall'una all'altra si sposta e
  * cambia misura invece di sparire e ricomparire. [rounded] = gli angoli durante il volo (le card).
  */

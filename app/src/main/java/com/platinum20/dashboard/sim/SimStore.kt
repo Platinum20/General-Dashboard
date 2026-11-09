@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 import org.json.JSONObject
+import com.platinum20.dashboard.work.KeepAliveWorker
 import java.io.File
 
 /**
@@ -23,6 +24,8 @@ object SimStore {
     private const val MAX_CAPTURES = 40
     /** Più spesso non serve: i contatori di WindTre stessi si aggiornano con qualche ora di ritardo. */
     const val STALE_MS = 60 * 60 * 1000L
+    /** In sottofondo si tocca più spesso: serve a non far chiudere la sessione per inattività. */
+    const val KEEP_MS = 25 * 60 * 1000L
 
     private var appContext: Context? = null
     private val _status = MutableStateFlow<SimStatus?>(null)
@@ -57,7 +60,7 @@ object SimStore {
         }
     }
 
-    fun isStale(now: Long = System.currentTimeMillis()): Boolean = (status.value?.at ?: 0) < now - STALE_MS
+    fun isStale(now: Long = System.currentTimeMillis(), within: Long = STALE_MS): Boolean = (status.value?.at ?: 0) < now - within
 
     /** Una risposta JSON dell'area clienti (chiamato dalla pagina, su un thread qualsiasi). */
     fun capture(url: String, body: String) {
@@ -105,6 +108,8 @@ object SimStore {
         if (!_linked.value) setLinked(true)
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_STATUS, merged.toJson().toString()).apply()
+        // Lettura riuscita = sessione buona: se ne tiene la copia per la prossima WebView.
+        WindTreSession.save(app)
         saveCaptures()
         runCatching { com.platinum20.dashboard.widget.Widgets.refresh(app, com.platinum20.dashboard.widget.SimWidget::class.java) }
     }
@@ -117,7 +122,10 @@ object SimStore {
 
     fun setLinked(value: Boolean) {
         _linked.value = value
-        appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()?.putBoolean(KEY_LINKED, value)?.apply()
+        appContext?.let { app ->
+            app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_LINKED, value).apply()
+            runCatching { KeepAliveWorker.update(app) }
+        }
     }
 
     fun setRefreshing(value: Boolean) {
