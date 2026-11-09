@@ -23,6 +23,8 @@ import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.ShoppingBag
@@ -94,7 +96,27 @@ data class TimelineEntry(
     val todayHeader: Boolean = false,
     /** La prima cosa dopo oggi nel mese in corso: sopra c'è il segno "PIÙ AVANTI" (Antonio). */
     val later: Boolean = false,
+    /** Un viaggio in treno: la riga mostra partenza e arrivo uniti da una linea, non il nome. */
+    val trip: TripStops? = null,
 )
+
+/**
+ * Un viaggio in treno su una riga sola (Antonio): in alto l'ora e la stazione di partenza, in basso quelle di
+ * arrivo, fra le due quanto dura e che treno è. [begin]/[end] servono per il pallino "sei qui" durante il viaggio.
+ */
+data class TripStops(
+    val departAt: String,
+    val from: String,
+    val arriveAt: String,
+    val to: String,
+    val middle: String,
+    val begin: Long,
+    val end: Long,
+) {
+    /** Quanto del viaggio è fatto (0..1) adesso; null prima di partire e dopo l'arrivo. */
+    fun progress(now: Long): Float? =
+        if (end > begin && now in begin until end) (now - begin).toFloat() / (end - begin) else null
+}
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
 fun ExpenseCategory.icon(): ImageVector = when (this) {
@@ -228,6 +250,9 @@ fun TimelineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
+        if (entry.trip != null) {
+            TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f))
+        } else {
         if (onIcon != null || entry.done) {
             Icon(
                 if (shownDone) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
@@ -264,19 +289,26 @@ fun TimelineRow(
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
         }
+        }
         Spacer(Modifier.width(8.dp))
         val first = entry.dayLabel != null
-        Text(
-            entry.dayLabel.orEmpty(),
-            style = MaterialTheme.typography.labelLarge,
-            color = when {
-                entry.late -> MaterialTheme.colorScheme.error
-                entry.past -> MaterialTheme.colorScheme.onSurfaceVariant
-                else -> MaterialTheme.colorScheme.primary
-            },
-            maxLines = 1,
-            textAlign = TextAlign.End,
-        )
+        // Nel viaggio il giorno e il pallino stanno all'altezza della partenza.
+        Box(
+            if (entry.trip != null) Modifier.align(Alignment.Top).padding(top = TRIP_PAD).height(TRIP_LINE) else Modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                entry.dayLabel.orEmpty(),
+                style = MaterialTheme.typography.labelLarge,
+                color = when {
+                    entry.late -> MaterialTheme.colorScheme.error
+                    entry.past -> MaterialTheme.colorScheme.onSurfaceVariant
+                    else -> MaterialTheme.colorScheme.primary
+                },
+                maxLines = 1,
+                textAlign = TextAlign.End,
+            )
+        }
         Spacer(Modifier.width(4.dp))
         TimelineGutter(
             Modifier.fillMaxHeight(),
@@ -288,7 +320,62 @@ fun TimelineRow(
             },
             top = top,
             bottom = bottom,
+            dotY = if (entry.trip != null) TRIP_PAD + TRIP_LINE / 2 else null,
         )
+    }
+}
+
+private val TRIP_LINE = 30.dp
+private val TRIP_MID = 18.dp
+private val TRIP_PAD = 4.dp
+
+/**
+ * Il viaggio: a sinistra la linea dalla partenza (cerchio vuoto) all'arrivo (pallino pieno), col pallino
+ * "sei qui" mentre sei in treno; a destra ore e stazioni, e in mezzo durata e treno.
+ */
+@Composable
+internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Modifier) {
+    val text = if (past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+    val sub = MaterialTheme.colorScheme.onSurfaceVariant
+    val here = MaterialTheme.colorScheme.primary
+    val progress = trip.progress(System.currentTimeMillis())
+    Row(modifier.padding(vertical = TRIP_PAD)) {
+        Box(
+            Modifier.width(16.dp).height(TRIP_LINE * 2 + TRIP_MID).drawBehind {
+                val x = size.width / 2
+                val top = TRIP_LINE.toPx() / 2
+                val bottom = size.height - TRIP_LINE.toPx() / 2
+                val r = 4.dp.toPx()
+                val stroke = 2.dp.toPx()
+                drawLine(tint.copy(alpha = 0.55f), Offset(x, top + r), Offset(x, bottom - r), stroke)
+                drawCircle(tint, r - stroke / 2, Offset(x, top), style = Stroke(stroke))
+                drawCircle(tint, r, Offset(x, bottom))
+                progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, top + (bottom - top) * it)) }
+            },
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            TripStop(trip.departAt, trip.from, text)
+            Box(Modifier.height(TRIP_MID), contentAlignment = Alignment.CenterStart) {
+                Text(
+                    trip.middle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = sub,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TripStop(trip.arriveAt, trip.to, text)
+        }
+    }
+}
+
+@Composable
+private fun TripStop(time: String, station: String, color: Color) {
+    Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
+        Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
+        Spacer(Modifier.width(10.dp))
+        Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -311,11 +398,11 @@ private fun TimelineGap(height: Dp, line: Color, top: Boolean) {
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean) {
+private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null) {
     Box(
         modifier.width(GUTTER).drawBehind {
             val x = size.width / 2
-            val mid = size.height / 2
+            val mid = dotY?.toPx() ?: (size.height / 2)
             val stroke = 2.dp.toPx()
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)

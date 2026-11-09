@@ -61,7 +61,7 @@ ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Ha
 events/tasks/dates/parcels/charges, `Upcoming.MAX`=5 rows, drawn with the shared `ui/screens/Timeline.kt` `TimelineRow` (names left, line + day right, `Upcoming.gapDp` = log-scaled gap, `Upcoming.monthBreak` → `TimelineEntry.month` = `TimelineMonthMarker` 'NOVEMBRE' with haptic via `MonthCross`; Timeline.kt also has `ExpenseCategory.icon()/color()`); tomorrow's weather only in WeatherScreen), `Greeting`, `Invites`,
 `HomeResume` ("Riprendi" card, kept out of Adesso).
 `weather/` (Open-Meteo, `WeatherStore`, `RainAlert`), `calendar/` (CalendarContract,
-`QuickEvent`, `CalendarAsk`, `Trips` = Gmail train events merged into one trip, shown as departure + arrival legs (applied in `CalendarRepository.eventsFrom`), ticket details + Google boilerplate stripped on the event page).
+`QuickEvent`, `CalendarAsk`, `Trips` = Gmail train events merged into one event with `CalendarEvent.trip` (from/to/train; applied in `CalendarRepository.eventsFrom`), drawn as ONE timeline row by `TripBlock`/`TripStops` (Timeline.kt, built by `tripStops` in NotesTimeline.kt: departure, line, arrival, duration · train, live progress dot), same block on the event page, ticket details + Google boilerplate stripped on the event page).
 
 **Note**: data in `notes/NotesStore.kt` (one JSON file: tasks, notes, habits,
 expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:

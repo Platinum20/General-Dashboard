@@ -236,23 +236,43 @@ fun EventDetailScreen(
             val train = com.platinum20.dashboard.calendar.Trips.destination(current.title) != null
             val from = if (begin > 0 && !train) begin else current.begin
             val to = if (begin > 0 && end > 0 && !train) end else current.end
-            val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description) else emptyList()
+            val trip = if (train) com.platinum20.dashboard.calendar.Trips.tripOf(current.title, current.location, current.description) else null
+            // Il treno è già nella riga di mezzo del viaggio: qui non si ripete.
+            val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description).filter { it.first != "Treno" || trip?.train == null } else emptyList()
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
-            DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
+            val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
+            DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
             // Il QR del biglietto, dalla mail: subito sotto il titolo, è quello che serve al controllo.
             TicketCodes(current)
             CanvasCard(Modifier.fillMaxWidth()) {
-                DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                if (trip != null && !current.allDay) {
+                    // Il viaggio come sulla linea del tempo: partenza, linea, arrivo (Antonio).
+                    val day = Instant.ofEpochMilli(from).atZone(zone).toLocalDate().format(agendaDayFormat).replaceFirstChar { it.uppercase() }
+                    DetailRow(Icons.Outlined.Schedule, day)
+                    tripStops(
+                        CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
+                        LocalDate.now(), zone,
+                    )?.let { stops ->
+                        TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, bottom = 8.dp))
+                    }
+                } else {
+                    DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                }
                 ticket.forEach { (label, value) ->
                     RowDivider()
                     DetailRow(Icons.Outlined.Train, "$label $value")
                 }
                 // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
-                RowDivider()
-                DetailRow(Icons.Outlined.Repeat, com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule) ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
+                // Per un treno "Non si ripete" non dice niente: si mostra solo se si ripete davvero.
+                val repeat = com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule)
+                if (!train || repeat != null) {
+                    RowDivider()
+                    DetailRow(Icons.Outlined.Repeat, repeat ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
+                }
                 RowDivider()
                 DetailRow(Icons.Outlined.Notifications, com.platinum20.dashboard.notes.WhenText.alert(current.reminders))
-                if (current.location.isNotBlank()) {
+                // La stazione di partenza è già nel viaggio.
+                if (current.location.isNotBlank() && !current.location.trim().equals(trip?.from, ignoreCase = true)) {
                     RowDivider()
                     DetailRow(Icons.Outlined.Place, current.location)
                 }
