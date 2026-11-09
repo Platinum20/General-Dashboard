@@ -10,9 +10,18 @@ import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.math.abs
 
 /** Un turno di lavoro di Antonio su Creators Pro: un evento con inizio e fine. */
-data class Shift(val id: String, val start: Long, val end: Long, val title: String = "Turno", val scope: String = "") {
+data class Shift(
+    val id: String,
+    val start: Long,
+    val end: Long,
+    val title: String = "Turno",
+    val scope: String = "",
+    /** Chi altro era in turno sulle stesse creator alla stessa ora (vuoto = da solo), dalla timeline. */
+    val mates: List<String> = emptyList(),
+) {
     /** Id negativo: nel calendario non si confonde con gli eventi del telefono (positivi, -1 = nessuno). */
     val eventId: Long get() = -((id.hashCode().toLong() and 0xFFFFFFFFL) + 10)
 }
@@ -39,6 +48,19 @@ object ShiftParse {
     fun creators(title: String): List<String> =
         title.removePrefix("Turno · ").takeIf { title.startsWith("Turno · ") }
             ?.split(", ")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+
+    /** "Da solo", "In doppio con Vincenzo C", "In tre con …": com'era il turno (Antonio). */
+    fun company(mates: List<String>): String = when (mates.size) {
+        0 -> "Da solo"
+        1 -> "In doppio con ${mates[0]}"
+        2 -> "In tre con ${mates.joinToString(" e ")}"
+        else -> "In ${mates.size + 1} con " + mates.dropLast(1).joinToString(", ") + " e " + mates.last()
+    }
+
+    /** Nome e cognome di chi è in turno, come li scrive Creators Pro. */
+    private fun memberName(m: JSONObject): String? =
+        listOf(m.optString("firstName"), m.optString("lastName")).map { it.trim() }.filter { it.isNotEmpty() && it != "null" }
+            .joinToString(" ").ifBlank { m.optString("name").trim().takeIf { it.isNotEmpty() && it != "null" } }
 
     const val ME = "Antonio Nesca"
     private const val MAX_MS = 24 * 3600_000L
@@ -256,12 +278,16 @@ object ShiftParse {
             val offset = tz.rules.getOffset(Instant.ofEpochMilli(ms ?: begin))
             val local = LocalDateTime.ofEpochSecond(begin / 1000, 0, offset)
             val start = local.atZone(tz).toInstant().toEpochMilli()
-            val aliases = ev.optJSONArray("creators")?.let { a ->
-                (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("creator")?.optString("alias")?.takeIf { s -> s.isNotBlank() } }
-            }.orEmpty()
+            val aliases = aliasesOf(ev)
             val title = if (aliases.isEmpty()) "Turno" else "Turno · " + aliases.joinToString(", ")
             val scope = "cp:" + (param(url, "creatorId") ?: "")
-            mine += Shift(shift.optString("id").ifBlank { ev.optString("id") }, start, start + length, title, scope)
+            // I colleghi: chi altro ha un turno alla stessa ora (stesso slot) nella stessa timeline.
+            val mates = (0 until data.length()).mapNotNull { data.optJSONObject(it) }.flatMap { other ->
+                val at = instant(other.opt("startedAt"), zone) ?: return@flatMap emptyList()
+                if (abs(at - begin) > 5 * 60_000L) return@flatMap emptyList()
+                membersOf(other).filter { m -> !namesMe(m, me) && idOf(m) !in ids }.mapNotNull(::memberName)
+            }.distinct()
+            mine += Shift(shift.optString("id").ifBlank { ev.optString("id") }, start, start + length, title, scope, mates)
         }
         val from = instant(param(url, "startedAt"), zone)
         val to = instant(param(url, "endedAt"), zone)
@@ -271,6 +297,16 @@ object ShiftParse {
             from ?: mine.minOfOrNull { it.start } ?: 0, to ?: mine.maxOfOrNull { it.end } ?: 0,
             emptySet(), data.length(), "cp:" + (param(url, "creatorId") ?: ""),
         )
+    }
+
+    private fun aliasesOf(ev: JSONObject): List<String> = ev.optJSONArray("creators")?.let { a ->
+        (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("creator")?.optString("alias")?.takeIf { s -> s.isNotBlank() } }
+    }.orEmpty()
+
+    /** Chi è in turno in uno slot: `shift.member`, o più persone se Creators Pro ne mette una lista (`shifts`). */
+    private fun membersOf(ev: JSONObject): List<JSONObject> = buildList {
+        ev.optJSONObject("shift")?.optJSONObject("member")?.let(::add)
+        ev.optJSONArray("shifts")?.let { a -> (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("member") }.forEach(::add) }
     }
 
     /** null se la risposta non è JSON o non contiene turni di nessuno (e l'indirizzo non dice il periodo). */
@@ -297,18 +333,24 @@ object ShiftParse {
     fun merge(old: List<Shift>, read: ShiftRead): List<Shift> {
         // Solo la stessa fonte (es. la stessa creator): la timeline di una creator non dice niente delle altre.
         val kept = old.filter { it.scope != read.scope || it.end <= read.from || it.start >= read.to }
-        return (read.mine + kept).distinctBy { it.id }.sortedBy { it.start }
+        // Lo stesso turno visto dalla timeline di un'altra creator: i colleghi visti là restano.
+        val fresh = read.mine.map { s ->
+            val elsewhere = old.filter { it.id == s.id && it.scope != read.scope }.flatMap { it.mates }
+            if (elsewhere.isEmpty()) s else s.copy(mates = (s.mates + elsewhere).distinct())
+        }
+        return (fresh + kept).distinctBy { it.id }.sortedBy { it.start }
     }
 
     fun toJson(list: List<Shift>): String = JSONArray().also { a ->
-        list.forEach { a.put(JSONObject().put("id", it.id).put("start", it.start).put("end", it.end).put("title", it.title).put("scope", it.scope)) }
+        list.forEach { a.put(JSONObject().put("id", it.id).put("start", it.start).put("end", it.end).put("title", it.title).put("scope", it.scope).put("mates", JSONArray(it.mates))) }
     }.toString()
 
     fun fromJson(text: String?): List<Shift> = runCatching {
         val a = JSONArray(text ?: return emptyList())
         (0 until a.length()).map { i ->
             val o = a.getJSONObject(i)
-            Shift(o.getString("id"), o.getLong("start"), o.getLong("end"), o.optString("title", "Turno"), o.optString("scope"))
+            val mates = o.optJSONArray("mates")?.let { m -> (0 until m.length()).map { m.getString(it) } }.orEmpty()
+            Shift(o.getString("id"), o.getLong("start"), o.getLong("end"), o.optString("title", "Turno"), o.optString("scope"), mates)
         }
     }.getOrDefault(emptyList())
 }

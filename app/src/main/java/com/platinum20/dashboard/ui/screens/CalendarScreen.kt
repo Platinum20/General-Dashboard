@@ -206,9 +206,11 @@ fun EventDetailScreen(
     val codes = rememberTicketCodes(current)
     var showTicket by remember { mutableStateOf(false) }
     if (showTicket && codes.isNotEmpty()) TicketSheet(codes) { showTicket = false }
+    // I turni di Creators Pro: scheda tutta loro (con chi, guadagno, mese), niente righe da calendario (Antonio).
+    val shift = if (eventId < -1) rememberShift(eventId) else null
     DetailPage(
         onBack = onBack,
-        meta = "Evento",
+        meta = if (shift != null) "Creators Pro" else "Evento",
         primary = if (codes.isNotEmpty()) DetailAction(Icons.Outlined.QrCode2, "Biglietto") {
             haptic(Haptic.CONFIRM)
             showTicket = true
@@ -250,7 +252,7 @@ fun EventDetailScreen(
             val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description).filter { it.first != "Treno" || trip?.train == null } else emptyList()
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
-            DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
+            DetailTitle(if (shift != null) "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
             CanvasCard(Modifier.fillMaxWidth()) {
                 // Ogni evento con inizio e fine come il viaggio sulla linea del tempo: inizio, linea, fine (Antonio).
                 val stops = if (current.allDay) null else tripStops(
@@ -264,35 +266,41 @@ fun EventDetailScreen(
                 } else {
                     DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
                 }
-                ticket.forEach { (label, value) ->
+                if (shift != null) {
+                    ShiftWhoRows(shift)
+                } else {
+                    ticket.forEach { (label, value) ->
+                        RowDivider()
+                        DetailRow(Icons.Outlined.Train, "$label $value")
+                    }
+                    // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
+                    // Per un treno "Non si ripete" non dice niente: si mostra solo se si ripete davvero.
+                    val repeat = com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule)
+                    if (!train || repeat != null) {
+                        RowDivider()
+                        DetailRow(Icons.Outlined.Repeat, repeat ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
+                    }
                     RowDivider()
-                    DetailRow(Icons.Outlined.Train, "$label $value")
-                }
-                // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
-                // Per un treno "Non si ripete" non dice niente: si mostra solo se si ripete davvero.
-                val repeat = com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule)
-                if (!train || repeat != null) {
-                    RowDivider()
-                    DetailRow(Icons.Outlined.Repeat, repeat ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
-                }
-                RowDivider()
-                DetailRow(Icons.Outlined.Notifications, com.platinum20.dashboard.notes.WhenText.alert(current.reminders))
-                // La stazione di partenza è già nel viaggio.
-                if (current.location.isNotBlank() && !current.location.trim().equals(trip?.from, ignoreCase = true)) {
-                    RowDivider()
-                    DetailRow(Icons.Outlined.Place, current.location)
-                }
-                // Con i dati del biglietto già sopra, le note del treno non dicono altro.
-                if (notes.isNotBlank() && ticket.isEmpty()) {
-                    RowDivider()
-                    DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
-                }
-                if (current.calendarName.isNotBlank()) {
-                    RowDivider()
-                    DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
+                    DetailRow(Icons.Outlined.Notifications, com.platinum20.dashboard.notes.WhenText.alert(current.reminders))
+                    // La stazione di partenza è già nel viaggio.
+                    if (current.location.isNotBlank() && !current.location.trim().equals(trip?.from, ignoreCase = true)) {
+                        RowDivider()
+                        DetailRow(Icons.Outlined.Place, current.location)
+                    }
+                    // Con i dati del biglietto già sopra, le note del treno non dicono altro.
+                    if (notes.isNotBlank() && ticket.isEmpty()) {
+                        RowDivider()
+                        DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
+                    }
+                    if (current.calendarName.isNotBlank()) {
+                        RowDivider()
+                        DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
+                    }
                 }
             }
-            if (!current.writable) {
+            if (shift != null) {
+                ShiftPayCards(shift)
+            } else if (!current.writable) {
                 DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
             }
         }

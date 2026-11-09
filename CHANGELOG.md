@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.387.0
+**Turni più ordinati, e con chi eri**
+- Nel calendario il nome di ogni evento sta su una riga sua, sopra l'ora di inizio e di fine; per i promemoria l'ora va sotto il nome
+- Fra inizio e fine del turno ci sono le creator e il guadagno, senza spazi vuoti; i turni ancora da fare non mostrano più "$0,00"
+- La scheda del turno dice se eri da solo o in doppio e con chi, le creator una per riga, il guadagno e il mese con la barra del minimo garantito
+- Il divisorio fra i giorni finisce dove finisce la scritta del giorno
+
 ## 1.386.0
 **Quanto hai preso in ogni turno**
 - Sotto ogni turno passato del calendario c'è quanto hai guadagnato e a che percentuale, presi dalla busta paga di Creators Pro (il turno in corso dice "finora")

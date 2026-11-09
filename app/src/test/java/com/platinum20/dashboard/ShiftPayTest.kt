@@ -40,6 +40,11 @@ class ShiftPayTest {
         assertEquals(0.12, pay[0].percent, 0.0001)
         assertEquals("$60,56 · 12%", ShiftPay.line(pay[0]))
         assertEquals("$222,99 · 15% finora", ShiftPay.line(pay[1]))
+        // Un turno ancora da fare ("$0,00 · 10%") non ha numeri da mostrare.
+        assertEquals(true, ShiftPay.worked(pay[1]))
+        assertEquals(false, ShiftPay.worked(pay[0].copy(sold = 0.0, earned = 0.0)))
+        assertEquals("5,3 h", ShiftPay.hours(5.3))
+        assertEquals("5 h", ShiftPay.hours(5.0))
         assertNull(ShiftPay.shifts(detail, listUrl))
     }
 

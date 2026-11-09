@@ -145,7 +145,11 @@ class ShiftParseTest {
            "shift":{"id":"sh3","eventId":"ev3","member":{"id":"m-other","firstName":"Vincenzo","lastName":"C"}}},
           {"id":"ev4","startedAt":"2026-11-11T10:00:00.000Z",
            "interval":{"id":"i3","name":"Afternoon","creators":[{"startedAt":"2026-09-12T10:00:00.000Z","endedAt":"2026-09-12T15:00:00.000Z","creatorId":1}]},
-           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],"shift":null}
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],"shift":null},
+          {"id":"ev5","startedAt":"2026-11-10T05:00:00.000Z",
+           "interval":{"id":"i1","name":"Morning","creators":[{"startedAt":"2026-09-12T05:00:00.000Z","endedAt":"2026-09-12T10:00:00.000Z","creatorId":1}]},
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],
+           "shift":{"id":"sh5","eventId":"ev5","member":{"id":"m-other","firstName":"Vincenzo","lastName":"C"}}}
         ]}
     """.trimIndent()
     private val creatorsUrl = "https://api.creatorspro.com/v1/timeline/events?startedAt=2026-10-31T23:00:00.000Z&endedAt=2026-11-30T22:59:59.999Z&creatorId=1"
@@ -171,6 +175,22 @@ class ShiftParseTest {
         val gone = Shift("y", at(14, 7), at(14, 12), scope = "cp:1")
         val merged = ShiftParse.merge(listOf(other, gone), ShiftParse.read(creatorsJson, zone = zone, url = creatorsUrl)!!)
         assertEquals(listOf("sh1", "x", "sh2"), merged.map { it.id })
+    }
+
+    @Test
+    fun colleghiDelloStessoSlot() {
+        val read = ShiftParse.read(creatorsJson, zone = zone, url = creatorsUrl)!!
+        // Stessa ora, un altro in turno: in doppio con lui. Di notte nessuno: da solo.
+        assertEquals(listOf("Vincenzo C"), read.mine[0].mates)
+        assertEquals(emptyList<String>(), read.mine[1].mates)
+        assertEquals("In doppio con Vincenzo C", ShiftParse.company(read.mine[0].mates))
+        assertEquals("Da solo", ShiftParse.company(emptyList()))
+        assertEquals("In tre con Anna e Bruno", ShiftParse.company(listOf("Anna", "Bruno")))
+        // Si salvano e si rileggono.
+        assertEquals(read.mine, ShiftParse.fromJson(ShiftParse.toJson(read.mine)))
+        // Lo stesso turno letto dalla timeline di un'altra creator tiene i colleghi visti là.
+        val fromOther = read.mine[1].copy(scope = "cp:2", mates = listOf("Marta"))
+        assertEquals(listOf("Marta"), ShiftParse.merge(listOf(fromOther), read).first { it.id == "sh2" }.mates)
     }
 
     @Test

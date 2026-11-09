@@ -101,6 +101,8 @@ data class TimelineEntry(
     val trip: TripStops? = null,
     /** La prima riga di un giorno dopo un altro giorno: sopra c'è un sottile divisore (Antonio). */
     val divider: Boolean = false,
+    /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". */
+    val time: String? = null,
 )
 
 /**
@@ -115,8 +117,10 @@ data class TripStops(
     val middle: String,
     val begin: Long,
     val end: Long,
-    /** Sotto il nome, su quante righe servono: le creator di un turno. */
+    /** Fra inizio e fine, su quante righe servono: le creator di un turno. */
     val names: String? = null,
+    /** Il nome su una riga sua sopra inizio e fine (Antonio); null per i treni, dove il nome è la stazione. */
+    val title: String? = null,
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -299,16 +303,22 @@ fun TimelineRow(
             Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(10.dp))
         }
-        Text(
-            entry.text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (entry.past || shownDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-            textDecoration = if (shownDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
-            modifier = Modifier.weight(1f).padding(vertical = 7.dp).sharedItem(SharedRows.key(sharedScope, entry.key)),
-        )
+        Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
+            Text(
+                entry.text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (entry.past || shownDone) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                textDecoration = if (shownDone) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
+                modifier = Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)),
+            )
+            // L'ora sotto il nome, piccola: il nome resta per primo (Antonio).
+            entry.time?.let {
+                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            }
+        }
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
         }
@@ -354,6 +364,7 @@ private val TRIP_PAD = 4.dp
 /**
  * Il viaggio: a sinistra la linea dalla partenza (cerchio vuoto) all'arrivo (pallino pieno), col pallino
  * "sei qui" mentre sei in treno; a destra ore e stazioni, e in mezzo durata e treno.
+ * Gli altri eventi hanno il nome su una riga sua sopra ([TripStops.title]), poi solo gli orari (Antonio).
  */
 @Composable
 internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Modifier, title: Modifier = Modifier) {
@@ -361,54 +372,60 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
     val progress = trip.progress(System.currentTimeMillis())
-    Row(modifier.height(IntrinsicSize.Min).padding(vertical = TRIP_PAD)) {
-        // La linea va dalla partenza alla fine anche quando sotto il nome ci sono altre righe (le creator).
-        Box(
-            Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
-                val x = size.width / 2
-                val top = TRIP_LINE.toPx() / 2
-                val bottom = size.height - TRIP_LINE.toPx() / 2
-                val r = 4.dp.toPx()
-                val stroke = 2.dp.toPx()
-                drawLine(tint.copy(alpha = 0.55f), Offset(x, top + r), Offset(x, bottom - r), stroke)
-                drawCircle(tint, r - stroke / 2, Offset(x, top), style = Stroke(stroke))
-                drawCircle(tint, r, Offset(x, bottom))
-                progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, top + (bottom - top) * it)) }
-            },
-        )
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f)) {
-            TripStop(trip.departAt, trip.from, text, title, trip.names)
-            Box(Modifier.height(trip.midDp().dp), contentAlignment = Alignment.CenterStart) {
-                Text(
-                    trip.middle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = sub,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    Column(modifier.padding(vertical = TRIP_PAD)) {
+        trip.title?.let {
+            Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
+                // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
             }
-            TripStop(trip.arriveAt, trip.to, text)
+        }
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            // La linea va dall'inizio alla fine anche quando in mezzo ci sono più righe (le creator).
+            Box(
+                Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
+                    val x = size.width / 2
+                    val top = TRIP_LINE.toPx() / 2
+                    val bottom = size.height - TRIP_LINE.toPx() / 2
+                    val r = 4.dp.toPx()
+                    val stroke = 2.dp.toPx()
+                    drawLine(tint.copy(alpha = 0.55f), Offset(x, top + r), Offset(x, bottom - r), stroke)
+                    drawCircle(tint, r - stroke / 2, Offset(x, top), style = Stroke(stroke))
+                    drawCircle(tint, r, Offset(x, bottom))
+                    progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, top + (bottom - top) * it)) }
+                },
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                TripStop(trip.departAt, trip.from, text, if (trip.title == null) title else Modifier)
+                // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
+                // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
+                Box(Modifier.fillMaxWidth().heightIn(min = trip.midDp().dp), contentAlignment = Alignment.CenterStart) {
+                    Column(Modifier.padding(vertical = if (trip.names != null) 2.dp else 0.dp)) {
+                        trip.names?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = sub)
+                        }
+                        if (trip.middle.isNotEmpty()) Text(
+                            trip.middle,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = sub,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                TripStop(trip.arriveAt, trip.to, text)
+            }
         }
     }
 }
 
 @Composable
-private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier, names: String? = null) {
-    Row {
-        Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
-            Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
-        }
-        Spacer(Modifier.width(10.dp))
-        Column(Modifier.weight(1f, fill = false)) {
-            Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
-                // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
-                Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
-            }
-            // Le creator del turno sotto "Turno", tutte e intere, allineate al nome (Antonio).
-            names?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
-            }
+private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier) {
+    Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
+        Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
+        if (station.isNotEmpty()) {
+            Spacer(Modifier.width(10.dp))
+            Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
         }
     }
 }
@@ -426,7 +443,8 @@ private val LINE_END = 19.dp
 private fun TimelineDayDivider(start: Dp, line: Color, top: Boolean) {
     Row(Modifier.fillMaxWidth().height(9.dp).padding(start = start, end = LINE_END), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f).height(1.dp).drawBehind { drawRect(line.copy(alpha = 0.5f)) })
-        Spacer(Modifier.width(12.dp))
+        // Finisce dove finisce la scritta del giorno (4 dp prima della linea, come lei), non prima (Antonio).
+        Spacer(Modifier.width(4.dp))
         TimelineGutter(Modifier.fillMaxHeight(), line, dot = null, top = top, bottom = top)
     }
 }

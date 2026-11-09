@@ -60,6 +60,7 @@ class TripsTest {
         assertEquals("15:00", stops.arriveAt)
         assertEquals("Pescara Centrale", stops.to)
         assertEquals("4 h 32 min · Intercity 612", stops.middle)
+        assertEquals(null, stops.title)
         assertEquals(null, stops.progress(dep - 1))
         assertEquals(0.5f, stops.progress(dep + (arr - dep) / 2)!!, 0.01f)
         // Treno di notte: accanto all'arrivo il giorno.
@@ -74,7 +75,9 @@ class TripsTest {
         val shift = CalendarEvent(-3, "Turno Morning", start, stop, false, "Ufficio", 0)
         val row = tripStops(shift, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("07:00", row.departAt)
-        assertEquals("Turno Morning", row.from)
+        // Il nome sta sulla riga sopra, gli orari da soli sotto.
+        assertEquals("Turno Morning", row.title)
+        assertEquals("", row.from)
         assertEquals("12:00", row.arriveAt)
         assertEquals("", row.to)
         assertEquals("5 h · Ufficio", row.middle)
@@ -86,6 +89,7 @@ class TripsTest {
         // Sulla pagina dell'evento il nome c'è già: Inizio e Fine, senza luogo.
         val page = tripStops(shift, LocalDate.of(2026, 11, 9), zone, labels = true)!!
         assertEquals("Inizio", page.from)
+        assertEquals(null, page.title)
         assertEquals("Fine", page.to)
         assertEquals("5 h", page.middle)
         // Turno di notte: accanto alla fine il giorno dopo.
