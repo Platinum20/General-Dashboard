@@ -57,7 +57,7 @@ data class TaskItem(
 
     /**
      * Il giorno in cui cade la prossima volta: se si ripete ed è già passato, la volta dopo oggi (come un evento:
-     * niente si spunta, passa da solo; Antonio, 1.374). Per il resto, il giorno salvato.
+     * niente si spunta, passa da solo; Antonio, 1.376). Per il resto, il giorno salvato.
      */
     fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
         nextAt(today, zone)?.toLocalDate()

@@ -1,10 +1,15 @@
 # Changelog
 
-## 1.374.0
+## 1.376.0
 **Niente più spunta su promemoria e date**
 - Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi
 - Non finiscono più fra gli "scaduti": quelli passati restano nel loro giorno, quelli che si ripetono vanno da soli alla volta dopo
 - La spunta resta solo sulle cose senza data, nella parte delle note
+
+## 1.375.0
+**Widget: niente più spunta sui promemoria**
+- Nel widget Calendario promemoria, date ed eventi sono righe uguali, con la barretta colorata e l'ora (arancio se è passata): niente cerchio da spuntare
+- Nel widget Oggi il tasto Fatto resta solo per pacchi e abitudini
 
 ## 1.373.0
 **Widget rifatti da capo, e cinque nuovi**

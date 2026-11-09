@@ -118,7 +118,7 @@ object AgendaRows {
                 timed += Long.MIN_VALUE to AgendaRow.Item(AgendaRow.Kind.DATE, t.id, t.titleWithYears(day, zone), null)
             } else {
                 val at = t.nextAt(day, zone)?.atZone(zone) ?: return@forEach
-                // Passa da solo come un evento: mai "in ritardo" (1.374).
+                // Passa da solo come un evento: mai "in ritardo" (1.376).
                 timed += at.toInstant().toEpochMilli() to AgendaRow.Item(AgendaRow.Kind.TASK, t.id, t.text, at.format(HOUR))
             }
         }

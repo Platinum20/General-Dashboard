@@ -44,7 +44,7 @@ class AgendaRowsTest {
             mapOf(today to listOf(event)),
             now, zone, heightDp = 600,
         )
-        // Le bollette di sabato sono passate da sole, come un evento: niente scaduti (1.374).
+        // Le bollette di sabato sono passate da sole, come un evento: niente scaduti (1.376).
         assertEquals(listOf("Compleanno di Marta", "Riunione", "Chiamare Marco", "Comprare il pane"), items(rows).map { it.title })
         assertTrue(items(rows).none { it.late })
         assertEquals(AgendaRow.Kind.DATE, items(rows)[0].kind)
