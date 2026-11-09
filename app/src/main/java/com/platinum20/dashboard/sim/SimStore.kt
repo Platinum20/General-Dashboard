@@ -111,6 +111,7 @@ object SimStore {
         // Lettura riuscita = sessione buona: se ne tiene la copia per la prossima WebView.
         WindTreSession.save(app)
         saveCaptures()
+        runCatching { com.platinum20.dashboard.widget.Widgets.refresh(app, com.platinum20.dashboard.widget.SimWidget::class.java) }
     }
 
     private fun saveCaptures() {

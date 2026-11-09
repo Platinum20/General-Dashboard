@@ -4,8 +4,7 @@ import com.platinum20.dashboard.bank.BankTx
 import com.platinum20.dashboard.capture.SavedLinks
 import android.content.Context
 import com.platinum20.dashboard.today.Briefing
-import com.platinum20.dashboard.widget.DashboardWidget
-import com.platinum20.dashboard.widget.TasksWidget
+import com.platinum20.dashboard.widget.Widgets
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,7 +57,7 @@ data class TaskItem(
 
     /**
      * Il giorno in cui cade la prossima volta: se si ripete ed è già passato, la volta dopo oggi (come un evento:
-     * niente si spunta, passa da solo; Antonio, 1.373). Per il resto, il giorno salvato.
+     * niente si spunta, passa da solo; Antonio, 1.374). Per il resto, il giorno salvato.
      */
     fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
         nextAt(today, zone)?.toLocalDate()
@@ -758,8 +757,7 @@ object NotesStore {
         }
         // Il widget mostra i promemoria di oggi: lo ridisegna a ogni modifica.
         if (::appContext.isInitialized) {
-            runCatching { DashboardWidget.updateAll(appContext) }
-            runCatching { TasksWidget.updateAll(appContext) }
+            runCatching { Widgets.refresh(appContext) }
         }
     }
 

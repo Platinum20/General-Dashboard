@@ -109,7 +109,8 @@ import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherState
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
-import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.NewsWidget
+import com.platinum20.dashboard.widget.Widgets
 import com.platinum20.dashboard.net.userMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -242,14 +243,9 @@ fun HomeScreen(
             onDismiss = { habitIds = null },
         )
     }
-    // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
-    LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
-        if (agenda.granted && agenda.today == null) return@LaunchedEffect
-        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openItems, max = 6, relative = false,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
-            fixedExpenses = notes.fixedExpenses,
-        )
-        DashboardWidget.saveBriefing(context, lines)
+    // I widget ricalcolano Adesso e il calendario da soli: qui solo il segnale che gli eventi sono cambiati.
+    LaunchedEffect(agenda.today, agenda.tomorrow) {
+        if (agenda.today != null) Widgets.refresh(context)
     }
     val agendaOff by CalendarAsk.off.collectAsStateWithLifecycle()
     AutoFill.init(context)
@@ -453,7 +449,7 @@ fun rememberNewsCardState(): NewsCardState {
     // Il widget mostra le stesse storie nuove della Home.
     LaunchedEffect(feed) {
         val forWidget = NewsStories.forWidget(feed)
-        if (forWidget.isNotEmpty()) DashboardWidget.saveRecap(context, forWidget)
+        if (forWidget.isNotEmpty()) NewsWidget.save(context, forWidget, feed.fresh.size)
     }
     return NewsCardState(
         feed = feed,

@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Colori del widget: su Android 12+ vengono sostituiti da quelli dinamici (values-v31). -->
-    <color name="widget_background">#F2F9F9FF</color>
-    <color name="widget_text">#FF1A1B20</color>
-    <color name="widget_text_secondary">#FF44474F</color>
-    <color name="widget_accent">#FF465D91</color>
-    <color name="widget_late">#FFB3261E</color>
+    <!-- Colori dei widget: la palette Canvas (carta, inchiostro, blu, arancio), chiara e scura col telefono. -->
+    <color name="widget_background">#FFFAF8F4</color>
+    <color name="widget_text">#FF1B1A17</color>
+    <color name="widget_text_secondary">#FF6F6B62</color>
+    <color name="widget_accent">#FF3550E8</color>
+    <color name="widget_on_accent">#FFFFFFFF</color>
+    <color name="widget_late">#FFD9572B</color>
+    <color name="widget_divider">#FFE5E1D8</color>
+    <color name="widget_chip">#FFECE8DF</color>
+    <color name="widget_hero">#FFE3E8FF</color>
+    <color name="widget_on_hero">#FF0E1A66</color>
+    <color name="widget_on_hero_secondary">#FF4A56A0</color>
 </resources>

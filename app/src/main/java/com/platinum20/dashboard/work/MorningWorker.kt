@@ -37,7 +37,7 @@ import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherCodes
 import com.platinum20.dashboard.weather.WeatherStore
 import com.platinum20.dashboard.weather.asTemp
-import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.NewsWidget
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -68,7 +68,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val forecast = runCatching { WeatherStore.fetch(context, freshLocation = false) }.getOrNull()
             ?: WeatherStore.cached(context)
         val themes = runCatching { NewsStore.widgetStories(context, NewsStore.load(force = true).items) }.getOrDefault(emptyList())
-        if (themes.isNotEmpty()) DashboardWidget.saveRecap(context, themes)
+        if (themes.isNotEmpty()) NewsWidget.save(context, themes)
         NotesStore.init(context)
         val notes = NotesStore.data.value
         val zone = ZoneId.systemDefault()

@@ -3,7 +3,7 @@ package com.platinum20.dashboard.weather
 import android.content.Context
 import com.platinum20.dashboard.net.Http
 import com.platinum20.dashboard.net.userMessage
-import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.Widgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -113,7 +113,7 @@ object WeatherStore {
             .putLong(KEY_TIME, now)
             .apply()
         _state.value = WeatherState(forecast = forecast)
-        DashboardWidget.updateAll(app)
+        Widgets.refresh(app)
         return forecast
     }
 

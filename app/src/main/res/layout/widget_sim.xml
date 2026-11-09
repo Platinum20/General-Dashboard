@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget "SIM": giga rimasti con la barra, rinnovo e credito. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/sim_label"
+        style="@style/WidgetLabel"
+        android:text="SIM" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="bottom"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/sim_big"
+            style="@style/WidgetBig"
+            android:text="–" />
+
+        <TextView
+            android:id="@+id/sim_of"
+            style="@style/WidgetSub"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:paddingBottom="3dp" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/sim_bar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="10dp"
+        android:max="1000"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:minHeight="8dp" />
+
+    <TextView
+        android:id="@+id/sim_line1"
+        style="@style/WidgetText"
+        android:layout_width="match_parent"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/sim_line2"
+        style="@style/WidgetSub"
+        android:layout_width="match_parent"
+        android:layout_marginTop="2dp" />
+</LinearLayout>

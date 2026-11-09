@@ -8,7 +8,9 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.widget.TasksWidget
-import com.platinum20.dashboard.widget.TasksWidgetRows
+import com.platinum20.dashboard.widget.AgendaRow
+import com.platinum20.dashboard.widget.AgendaRows
+import com.platinum20.dashboard.calendar.CalendarEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -17,69 +19,57 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/** Voce 19: il widget "Da fare", righe scelte e spunta dalla schermata Home. */
-class TasksWidgetRowsTest {
+/** Il widget Calendario: oggi per primo (scaduti, eventi, promemoria, date, senza data), poi i prossimi giorni. */
+class AgendaRowsTest {
     private val zone = ZoneId.of("Europe/Rome")
-    private fun ms(h: Int, m: Int = 0, day: Int = 23) = LocalDateTime.of(2026, 10, day, h, m).atZone(zone).toInstant().toEpochMilli()
+    private fun ms(h: Int, m: Int = 0, day: Int = 9) = LocalDateTime.of(2026, 11, day, h, m).atZone(zone).toInstant().toEpochMilli()
     private val now = ms(12)
+    private val today = LocalDate.of(2026, 11, 9)
     private fun task(id: Long, text: String, due: Long?) = TaskItem(id, text, createdAt = 0, dueAt = due)
+    private fun items(rows: List<AgendaRow>) = rows.filterIsInstance<AgendaRow.Item>()
 
-    @Test fun scadutiPrimaPoiOggiPoiSenzaScadenza() {
-        val c = TasksWidgetRows.build(
+    @Test fun oggiInOrdine() {
+        val event = CalendarEvent(9, "Riunione", ms(10), ms(11), false, "", 0xFF3550E8.toInt())
+        val rows = AgendaRows.build(
             listOf(
-                task(1, "Spesa", null),
-                task(2, "Palestra", ms(18, 30)),
-                task(3, "Bollette", ms(9)),
-                task(4, "Dentista", ms(9, day = 24)),
-                task(5, "Passaporto", ms(10, day = 19)),
+                task(1, "Chiamare Marco", ms(15)),
+                task(2, "Bollette", ms(9, day = 7)),
+                task(3, "Comprare il pane", null),
+                TaskItem(4, "Compleanno di Marta", createdAt = 0, dueAt = today.atStartOfDay(zone).toInstant().toEpochMilli(), allDay = true, repeat = Repeat.YEARLY),
             ),
-            now, zone, maxRows = 6,
+            mapOf(today to listOf(event)),
+            now, zone, heightDp = 600,
         )
-        assertEquals(listOf(5L, 3L, 2L, 1L), c.rows.map { it.id })
-        assertEquals(listOf("lun 19 ott", "09:00", "18:30", null), c.rows.map { it.time })
-        assertEquals(listOf(true, true, false, false), c.rows.map { it.late })
-        assertEquals(0, c.more)
-        assertNull(c.empty)
+        // Le bollette di sabato sono passate da sole, come un evento: niente scaduti (1.374).
+        assertEquals(listOf("Compleanno di Marta", "Riunione", "Chiamare Marco", "Comprare il pane"), items(rows).map { it.title })
+        assertTrue(items(rows).none { it.late })
+        assertEquals(AgendaRow.Kind.DATE, items(rows)[0].kind)
+        assertEquals("10:00", items(rows)[1].time)
     }
 
-    @Test fun ieriSiChiamaIeri() {
-        val c = TasksWidgetRows.build(listOf(task(1, "Bollette", ms(20, day = 22))), now, zone, 3)
-        assertEquals("ieri", c.rows.single().time)
+    @Test fun poiIProssimiGiorni() {
+        val rows = AgendaRows.build(
+            listOf(task(1, "Dentista", ms(9, day = 10)), task(2, "Meccanico", ms(8, day = 12))),
+            emptyMap(), now, zone, heightDp = 600,
+        )
+        assertEquals(AgendaRow.Note("Niente in programma oggi"), rows.first())
+        assertEquals(AgendaRow.Day("DOMANI"), rows[1])
+        assertTrue(rows.contains(AgendaRow.Day("GIO 12 NOV")))
+        assertEquals(AgendaRow.Note("Settimana libera"), AgendaRows.build(emptyList(), emptyMap(), now, zone, 300).single())
     }
 
-    @Test fun quelliCheNonStannoDiventanoAltri() {
-        val tasks = (1L..5L).map { task(it, "Cosa $it", ms(13 + it.toInt())) }
-        val c = TasksWidgetRows.build(tasks, now, zone, maxRows = 2)
-        assertEquals(listOf(1L, 2L), c.rows.map { it.id })
-        assertEquals(3, c.more)
-        assertEquals("+ altri 3 in Note", TasksWidgetRows.moreText(c.more))
-        assertEquals("+ un altro in Note", TasksWidgetRows.moreText(1))
-        assertNull(TasksWidgetRows.moreText(0))
-    }
-
-    @Test fun maiPiuDelleRigheDelLayout() {
-        val tasks = (1L..10L).map { task(it, "Cosa $it", null) }
-        assertEquals(TasksWidgetRows.MAX_ROWS, TasksWidgetRows.build(tasks, now, zone, maxRows = 20).rows.size)
-        assertEquals(1, TasksWidgetRows.build(tasks, now, zone, maxRows = 0).rows.size)
-    }
-
-    @Test fun vuotoConIlProssimoPromemoria() {
-        assertEquals("Niente da fare oggi", TasksWidgetRows.build(emptyList(), now, zone, 4).empty)
-        val tomorrow = TasksWidgetRows.build(listOf(task(1, "Dentista", ms(9, day = 24)), task(2, "Meccanico", ms(8, day = 27))), now, zone, 4)
-        assertTrue(tomorrow.rows.isEmpty())
-        assertEquals("Niente da fare oggi · prossimo: Dentista, domani alle 09:00", tomorrow.empty)
-        val later = TasksWidgetRows.build(listOf(task(2, "Meccanico", ms(8, day = 27))), now, zone, 4)
-        assertEquals("Niente da fare oggi · prossimo: Meccanico, mar 27 ott alle 08:00", later.empty)
-    }
-
-    @Test fun righeSecondoLAltezza() {
-        assertEquals(1, TasksWidgetRows.rowsForHeight(110))
-        assertEquals(3, TasksWidgetRows.rowsForHeight(180))
-        assertEquals(TasksWidgetRows.MAX_ROWS, TasksWidgetRows.rowsForHeight(600))
-        assertEquals(1, TasksWidgetRows.rowsForHeight(0))
+    @Test fun nelloSpazioCheCe() {
+        val tasks = (1..10L).map { task(it, "Cosa $it", ms(13 + (it % 8).toInt())) }
+        val small = AgendaRows.build(tasks, emptyMap(), now, zone, heightDp = 180)
+        // 180 - 76 = 104dp: due righe e "+ altre".
+        assertEquals(2, items(small).size)
+        assertEquals(AgendaRow.Note("+ altre 8 cose oggi"), small.last())
+        // Un compito ricorrente spuntato prima non entra: il widget usa openItems.
+        assertTrue(AgendaRows.build(tasks.take(1), emptyMap(), now, zone, heightDp = 110).isNotEmpty())
     }
 }
 

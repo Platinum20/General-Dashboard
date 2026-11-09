@@ -109,6 +109,8 @@ object ShiftStore {
             ?.apply()
         if (!_linked.value) setLinked(true)
         if (_expired.value) setExpired(false)
+        // Il widget Calendario mostra anche i turni.
+        appContext?.let { runCatching { com.platinum20.dashboard.widget.Widgets.refresh(it, com.platinum20.dashboard.widget.TasksWidget::class.java) } }
     }
 
     fun setLinked(value: Boolean) {
