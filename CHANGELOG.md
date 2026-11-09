@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.378.0
+**Video: lo scorrimento di lato muove la barra del tempo**
+- Scorrendo di lato sul video ora compare la barra del tempo e si muove il suo pallino, con l'anteprima del fotogramma sopra, esattamente come quando trascini la barra: niente più riquadro separato al centro
+
 ## 1.377.0
 **Turni: accesso con Google**
 - L'accesso a Creators Pro con Google non resta più su una pagina bianca: la finestra di Google si apre sopra il sito e, finito l'accesso, si chiude da sola

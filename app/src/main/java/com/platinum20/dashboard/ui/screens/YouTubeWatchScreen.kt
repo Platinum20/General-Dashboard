@@ -628,7 +628,8 @@ private fun VideoArea(
                                 swipeFrom = p.currentPosition.coerceAtLeast(0)
                                 swipeDuration = duration
                                 swipeAt = swipeFrom
-                                controls = false
+                                // Si vede la barra del tempo: il pallino e l'anteprima si muovono lì.
+                                controls = true
                             }
                             change.consume()
                             val before = swipeAt ?: swipeFrom
@@ -640,6 +641,8 @@ private fun VideoArea(
                         val target = swipeAt
                         if (commit && target != null && target != swipeFrom) YtPlayer.seekTo(context, target)
                         swipeAt = null
+                        // I comandi restano ancora 3 secondi dopo il salto, poi spariscono da soli.
+                        flashKey++
                     }
                 }
             },
@@ -718,17 +721,6 @@ private fun VideoArea(
         }
         if (slowSeek && loadingNow && !firstLoad && swipeAt == null) LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
 
-        // Scorrendo di lato: il fotogramma dove si lascerà il video, quanto ci si sposta e il punto.
-        swipeAt?.let { at ->
-            SeekPreview(
-                storyboard = now?.stream?.storyboard,
-                positionMs = at,
-                label = "${SeekSwipe.deltaLabel(at - swipeFrom)}  ·  ${formatDuration(at)} / ${formatDuration(swipeDuration)}",
-                width = if (fullscreen) 240.dp else 150.dp,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-
         // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …).
         if (seekFlash != 0) {
             Box(
@@ -803,7 +795,7 @@ private fun VideoArea(
             }
         }
 
-        AnimatedVisibility(visible = controls && !inPip && error == null, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
+        AnimatedVisibility(visible = (controls || swipeAt != null) && !inPip && error == null, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.38f))) {
                 Row(Modifier.align(Alignment.TopStart).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { if (fullscreen) onToggleFullscreen() else onBack() }) {
@@ -849,6 +841,7 @@ private fun VideoArea(
                         live = now?.stream?.hlsUrl != null,
                         knownSec = now?.stream?.durationSec ?: 0,
                         storyboard = now?.stream?.storyboard,
+                        swipeMs = swipeAt,
                         onFullscreen = onToggleFullscreen,
                         fullscreen = fullscreen,
                         onInteract = { flashKey++ },
@@ -883,12 +876,16 @@ private fun TimeBar(
     onFullscreen: () -> Unit,
     onInteract: () -> Unit,
     storyboard: com.platinum20.dashboard.media.youtube.player.YtStoryboard? = null,
+    /** Punto dello scorrimento di lato sul video: muove il pallino e l'anteprima come trascinare la barra. */
+    swipeMs: Long? = null,
 ) {
     val context = LocalContext.current
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var buffered by remember { mutableLongStateOf(0L) }
-    var dragging by remember { mutableStateOf<Float?>(null) }
+    var barDrag by remember { mutableStateOf<Float?>(null) }
+    // Il punto mostrato mentre ci si sposta: dal dito sulla barra o dallo scorrimento sul video.
+    val moving = barDrag ?: swipeMs?.let { if (duration > 0) (it.toFloat() / duration).coerceIn(0f, 1f) else null }
     LaunchedEffect(Unit) {
         while (true) {
             // Riletto ogni volta: se il player è stato chiuso e ricreato la barra segue quello nuovo.
@@ -907,7 +904,7 @@ private fun TimeBar(
         if (live) {
             Text("● IN DIRETTA", color = Color(0xFFFF4D4D), style = MaterialTheme.typography.labelLarge)
         } else {
-            val shown = dragging?.let { (it * duration).toLong() } ?: position
+            val shown = moving?.let { (it * duration).toLong() } ?: position
             Text(
                 timeLabel(shown, duration, knownSec),
                 color = Color.White,
@@ -933,27 +930,27 @@ private fun TimeBar(
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
         val barWidth = constraints.maxWidth
         SeekBar(
-            value = dragging ?: if (duration > 0) position.toFloat() / duration else 0f,
+            value = moving ?: if (duration > 0) position.toFloat() / duration else 0f,
             onSeeking = {
-                dragging = it
+                barDrag = it
                 onInteract()
             },
             onSeekEnd = { commit ->
-                if (commit) dragging?.let { YtPlayer.seekTo(context, (it * duration).toLong()) }
-                dragging = null
+                if (commit) barDrag?.let { YtPlayer.seekTo(context, (it * duration).toLong()) }
+                barDrag = null
             },
             enabled = duration > 0,
             // Pallino piccolo come su YouTube, più grande mentre si trascina.
-            thumb = { SeekDot(Color(0xFFFF2D2D), if (dragging != null) 16.dp else 12.dp) },
+            thumb = { SeekDot(Color(0xFFFF2D2D), if (moving != null) 16.dp else 12.dp) },
             track = {
                 // Barra sottile quanto i segmenti di SponsorBlock, che ci stanno sopra allineati.
                 val buffer = if (duration > 0) buffered.toFloat() / duration else 0f
-                val played = dragging ?: if (duration > 0) position.toFloat() / duration else 0f
+                val played = moving ?: if (duration > 0) position.toFloat() / duration else 0f
                 VideoTrack(played, buffer, if (duration > 0) marks else emptyList(), duration)
             },
             modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
         )
-        dragging?.let { at ->
+        moving?.let { at ->
             val previewW = if (fullscreen) 200.dp else 150.dp
             SeekPreview(
                 storyboard = storyboard,
