@@ -57,14 +57,21 @@ data class TaskItem(
     fun day(zone: ZoneId = ZoneId.systemDefault()): LocalDate? = dueAt?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
 
     /**
-     * Il giorno in cui cade la prossima volta: per una data di tutto il giorno che si ripete, già passata,
-     * la volta dopo oggi (un compleanno non si spunta, passa da solo). Per il resto, il giorno salvato.
+     * Il giorno in cui cade la prossima volta: se si ripete ed è già passato, la volta dopo oggi (come un evento:
+     * niente si spunta, passa da solo; Antonio, 1.365). Per il resto, il giorno salvato.
      */
-    fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? {
-        val day = day(zone) ?: return null
+    fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
+        nextAt(today, zone)?.toLocalDate()
+
+    /** Come [nextDay], con l'ora: per le cose di tutto il giorno la mezzanotte. */
+    fun nextAt(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDateTime? {
+        val at = Instant.ofEpochMilli(dueAt ?: return null).atZone(zone).toLocalDateTime()
         val r = repeat
-        if (!allDay || r == null || !day.isBefore(today)) return day
-        return r.nextAfter(day.atStartOfDay(), today.minusDays(1).atStartOfDay()).toLocalDate()
+        if (r == null || !at.toLocalDate().isBefore(today)) return at
+        // Contata dalla prima volta, così il 31 del mese torna al 31; mai prima di oggi, anche se l'ora è passata.
+        var next = r.nextAfter(at, today.minusDays(1).atTime(23, 59, 59))
+        if (next.toLocalDate().isBefore(today)) next = r.next(next)
+        return next
     }
 
     /** Quanti giorni mancano alla prossima volta; null senza data. */
@@ -85,8 +92,10 @@ data class TaskItem(
     fun titleWithYears(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): String =
         text + (yearsAtNext(today, zone)?.let { " ($it anni)" } ?: "")
 
-    /** Già passato e non fatto: solo i promemoria con l'ora; una data di tutto il giorno non scade. */
-    fun isLate(nowMs: Long): Boolean = !done && !allDay && dueAt != null && dueAt < nowMs
+    /**
+     * Si spunta solo una cosa senza data (Antonio, 1.365: promemoria e date sono come gli eventi, passano da soli).
+     */
+    val tickable: Boolean get() = dueAt == null
 
     /**
      * Quando suonare l'avviso (millisecondi), null se non serve. Per tutto il giorno alle [ALL_DAY_ALERT],
@@ -94,11 +103,8 @@ data class TaskItem(
      */
     fun alertAt(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Long? {
         if (done || alert == Alert.NONE) return null
-        val base = if (allDay) {
-            (nextDay(today, zone) ?: return null).atTime(ALL_DAY_ALERT).atZone(zone)
-        } else {
-            Instant.ofEpochMilli(dueAt ?: return null).atZone(zone)
-        }
+        val next = nextAt(today, zone) ?: return null
+        val base = (if (allDay) next.toLocalDate().atTime(ALL_DAY_ALERT) else next).atZone(zone)
         return (if (alert == Alert.DAY_BEFORE) base.minusDays(1) else base).toInstant().toEpochMilli()
     }
 
@@ -262,7 +268,12 @@ data class NotesData(
      * Le date di tutto il giorno (compleanni) no: non si "fanno" e non scadono.
      */
     val openTasks: List<TaskItem>
-        get() = tasks.filter { !it.done && !it.allDay }.sortedWith(compareBy<TaskItem> { it.dueAt ?: Long.MAX_VALUE })
+        get() {
+            // Un promemoria di un giorno già passato è passato, come un evento: non resta "da fare".
+            val today = LocalDate.now()
+            return tasks.filter { !it.done && !it.allDay && it.nextDay(today)?.isBefore(today) != true }
+                .sortedWith(compareBy<TaskItem> { it.dueAt ?: Long.MAX_VALUE })
+        }
 
     /** Promemoria e date di tutto il giorno ancora aperti, insieme: per "Adesso" e la notifica del mattino. */
     val openItems: List<TaskItem>
@@ -527,14 +538,14 @@ object NotesStore {
     }
 
     /**
-     * Le date di tutto il giorno che si ripetono e sono passate vanno alla volta dopo: così la data salvata è
+     * Le cose che si ripetono, di un giorno già passato, vanno alla volta dopo: così la data salvata è
      * sempre la prossima (avviso compreso). Pura, per i test; si fa all'avvio.
      */
     internal fun withDatesRolled(d: NotesData, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): NotesData {
         val rolled = d.tasks.map { t ->
-            val next = t.nextDay(today, zone)
-            if (!t.allDay || t.done || t.repeat == null || next == null || next == t.day(zone)) t
-            else t.copy(dueAt = next.atStartOfDay(zone).toInstant().toEpochMilli(), snoozedFrom = null)
+            val next = t.nextAt(today, zone)
+            if (t.done || t.repeat == null || next == null || next.toLocalDate() == t.day(zone)) t
+            else t.copy(dueAt = next.atZone(zone).toInstant().toEpochMilli(), snoozedFrom = null)
         }
         return if (rolled == d.tasks) d else d.copy(tasks = rolled)
     }

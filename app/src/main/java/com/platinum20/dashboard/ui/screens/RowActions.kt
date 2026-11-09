@@ -47,7 +47,7 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
         context.startActivity(android.content.Intent.createChooser(send, null))
     }
     fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
-        BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
+        if (!t.tickable) null else BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
             haptic(Haptic.CONFIRM)
             NotesStore.toggleTask(t.id)
         },

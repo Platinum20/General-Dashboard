@@ -107,8 +107,8 @@ internal fun pastDays(
         val at = t.doneAt ?: t.dueAt ?: t.createdAt
         if (at <= nowMs) rows += DueRow("task-${t.id}", dayOf(at), at, task = t)
     }
-    // Una data di tutto il giorno che non si ripete, passata: resta nel suo giorno, non diventa "scaduta".
-    tasks.filter { !it.done && it.allDay && it.repeat == null }.forEach { t ->
+    // Un promemoria o una data che non si ripete, passato: resta nel suo giorno come un evento, non diventa "scaduto".
+    tasks.filter { !it.done && it.repeat == null && it.dueAt != null }.forEach { t ->
         val day = t.day(zone) ?: return@forEach
         if (day.isBefore(today)) rows += DueRow("task-${t.id}", day, startOf(day), task = t)
     }
@@ -149,14 +149,11 @@ internal fun dueDays(
     val dated = mutableListOf<DueRow>()
     val undated = mutableListOf<DueRow>()
     tasks.filter { !it.done && it.dueAt != null }.forEach { t ->
-        if (t.allDay) {
-            // Tutto il giorno: la prossima volta, prima delle cose con l'ora. Passata e non ripetuta sta nel passato.
-            val day = t.nextDay(today, zone) ?: return@forEach
-            if (!day.isBefore(today)) dated += DueRow("task-${t.id}", day, startOf(day), task = t)
-        } else {
-            val row = DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
-            if (t.dueAt < nowMs) late += row else dated += row
-        }
+        // Come un evento: la prossima volta; di un giorno passato e non ripetuto sta nel passato, mai fra gli scaduti.
+        val next = t.nextAt(today, zone) ?: return@forEach
+        val day = next.toLocalDate()
+        if (day.isBefore(today)) return@forEach
+        dated += DueRow("task-${t.id}", day, if (t.allDay) startOf(day) else next.atZone(zone).toInstant().toEpochMilli(), task = t)
     }
     parcels.filter { !it.delivered }.forEach { p ->
         val day = p.expected

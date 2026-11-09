@@ -73,7 +73,7 @@ class NotesUiLogicTest {
         )
         assertEquals(listOf("Scaduti", "Oggi", "Domani", "Lun 26", "Lun 2", "Senza data"), groups.map { it.shortLabel(oggi) })
         assertEquals(
-            listOf(listOf("parcel-9", "task-1"), listOf("task-2"), listOf("task-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("task-5"), listOf("parcel-10")),
+            listOf(listOf("parcel-9"), listOf("task-2"), listOf("task-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("task-5"), listOf("parcel-10")),
             groups.map { g -> g.rows.map { it.key } },
         )
     }

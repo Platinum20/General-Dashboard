@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.365.0
+**Niente più spunta su promemoria e date**
+- Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi
+- Non finiscono più fra gli "scaduti": quelli passati restano nel loro giorno, quelli che si ripetono vanno da soli alla volta dopo
+- La spunta resta solo sulle cose senza data, nella parte delle note
+
 ## 1.364.0
 **Video: scorrere nel punto giusto**
 - Col doppio tocco per andare avanti o indietro non torna più la copertina del video: resta l'immagine dov'eri finché arriva il punto nuovo

@@ -459,7 +459,7 @@ fun NotesScreen(
                             onLongClick = { rowActions(row) },
                             onMonth = openMonth,
                             showMonth = !monthAbove,
-                            onIcon = row.task?.let { task -> { NotesStore.toggleTask(task.id) } },
+                            onIcon = row.task?.takeIf { it.tickable }?.let { task -> { NotesStore.toggleTask(task.id) } },
                         )
                         }
                     }
