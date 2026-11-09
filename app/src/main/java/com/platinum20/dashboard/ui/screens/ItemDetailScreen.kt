@@ -83,7 +83,6 @@ internal fun taskLines(t: TaskItem, now: LocalDateTime, zone: ZoneId = ZoneId.sy
     val status = when {
         t.done -> "Fatto"
         day == null -> "Da fare"
-        t.isLate(now.atZone(zone).toInstant().toEpochMilli()) -> "Scaduto · " + daysText(ChronoUnit.DAYS.between(today, day)).replaceFirstChar { it.lowercase() }
         else -> daysText(ChronoUnit.DAYS.between(today, day)) + (t.yearsAtNext(today, zone)?.let { " · compie $it anni" } ?: "")
     }
     return listOfNotNull(
@@ -218,7 +217,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     }
     // L'azione di tutti i giorni in basso a sinistra, come la lista nell'editor delle note (Antonio).
     val action: Triple<ImageVector, String, () -> Unit>? = when (kind) {
-        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
+        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.takeIf { it.tickable }?.let { t ->
             Triple(if (t.done) Icons.Outlined.RadioButtonUnchecked else Icons.Outlined.CheckCircle, if (t.done) "Da rifare" else "Segna come fatto") {
                 haptic(if (t.done) Haptic.TICK else Haptic.CONFIRM)
                 NotesStore.toggleTask(id)

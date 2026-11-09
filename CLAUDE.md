@@ -73,7 +73,8 @@ Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
 **Promemoria = date (1.361, Antonio)**: no `Countdown` type any more. A "data da ricordare" is a `TaskItem` with `allDay`
 (dueAt = midnight; `TaskItem.date(...)`, `NotesStore.saveDate`; old `countdowns` JSON migrated in `parse`). Every task has the
 event's fields: `alert` (`Alert` ON_TIME/DAY_BEFORE/NONE, `alertAt()`; all-day at 9:00), `notes`, `place`, `firstYear` (age).
-All-day items never go late (`isLate`), repeating ones roll by themselves (`nextDay`, `withDatesRolled` at start).
+Since 1.365 (Antonio) NOTHING dated has a tick or goes late: only undated tasks are `tickable`; dated ones pass like events
+(past = `pastDays`), repeating ones roll by themselves (`nextAt`/`nextDay`, `withDatesRolled` at start). No "Fatto" in the notification.
 `openTasks` = to-dos only (widgets, counters), `openItems` = with dates (Briefing). Shared wording for event + task pages in
 `notes/WhenText.kt`; task page rows `taskLines` (ItemDetailScreen) in the same order as the event page: Quando, Tutto il giorno,
 Si ripete, Avviso, Luogo, Note. Dated tasks sit under the Eventi calendar chip.

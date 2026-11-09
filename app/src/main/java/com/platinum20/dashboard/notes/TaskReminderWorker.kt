@@ -55,11 +55,6 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
             .setContentIntent(
                 PendingIntent.getActivity(context, notificationId(id), open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             )
-            .addAction(
-                0,
-                "Fatto",
-                PendingIntent.getBroadcast(context, notificationId(id), done, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
-            )
             .apply {
                 // Una data di tutto il giorno non si rimanda a un'ora: resterebbe con l'ora per sempre.
                 if (task.allDay) return@apply

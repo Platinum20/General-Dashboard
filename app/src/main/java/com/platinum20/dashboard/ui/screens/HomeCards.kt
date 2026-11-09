@@ -177,7 +177,8 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
-        ticks = shown.map { (_, row) -> row.task?.let { tickTask(it.id) } },
+        // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.376).
+        ticks = shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } },
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
         rows = shown.map { (_, row) -> { open(row) } },
         // Tenendo premuta una riga: le sue azioni, come nella pagina intera.

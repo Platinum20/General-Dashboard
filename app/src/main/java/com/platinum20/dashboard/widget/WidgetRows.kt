@@ -29,7 +29,7 @@ object WidgetRows {
     fun dayTitle(day: LocalDate): String =
         day.format(DateTimeFormatter.ofPattern("EEEE d", Locale.ITALIAN)).replaceFirstChar { it.titlecase(Locale.ITALIAN) }
 
-    /** Azioni che il widget sa fare da solo: pacco arrivato, abitudine fatta. I promemoria non si spuntano (Antonio, 1.374). */
+    /** Azioni che il widget sa fare da solo: pacco arrivato, abitudine fatta. I promemoria non si spuntano (Antonio, 1.376). */
     private val WIDGET_ACTIONS = setOf(BriefAction.PARCEL_ARRIVED, BriefAction.HABIT_DONE)
 
     /** Le righe di "Adesso" del widget Oggi, con il tasto Fatto quando agisce su una cosa sola. */

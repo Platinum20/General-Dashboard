@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.376.0
+**Niente più spunta su promemoria e date**
+- Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi
+- Non finiscono più fra gli "scaduti": quelli passati restano nel loro giorno, quelli che si ripetono vanno da soli alla volta dopo
+- La spunta resta solo sulle cose senza data, nella parte delle note
+
 ## 1.375.0
 **Widget: niente più spunta sui promemoria**
 - Nel widget Calendario promemoria, date ed eventi sono righe uguali, con la barretta colorata e l'ora (arancio se è passata): niente cerchio da spuntare
@@ -16,6 +22,7 @@
 - Nuovo Meteo: temperatura grande e, se lo allarghi, le prossime ore
 - Nuovo Scrivi: la barra di Canvas sulla schermata Home; tocchi il campo e scrivi, tocchi il microfono e detti a mani libere
 - I widget si ridisegnano subito quando cambia qualcosa, anche spuntando dall'app
+
 ## 1.372.0
 **Treni: il viaggio su una riga sola**
 - Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce

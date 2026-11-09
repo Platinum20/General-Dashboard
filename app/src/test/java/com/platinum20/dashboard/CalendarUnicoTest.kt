@@ -56,11 +56,8 @@ class CalendarUnicoTest {
             notes = listOf(Note(5, "Vecchia", createdAt = 1), Note(6, "Nuova", createdAt = 2), Note(7, "Fissata", createdAt = 0, pinned = true)),
         )
         val today = groups.first().rows.map { it.key }
-        assertEquals(listOf("spend-today", "task-2", "task-1", "note-7", "note-6", "note-5"), today)
-        // Il ritardo dice da quando, al posto dell'ora.
-        val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
-        assertEquals("Ieri  Bollette", entries[1].text)
-        assertTrue(entries[1].late)
+        // Il promemoria di ieri non è "in ritardo": è passato, come un evento (1.376).
+        assertEquals(listOf("spend-today", "task-1", "note-7", "note-6", "note-5"), today)
         // Domani resta nel suo giorno, niente "Scaduti" né "Senza data".
         assertEquals(listOf(oggi, oggi.plusDays(1)), groups.map { it.day })
     }

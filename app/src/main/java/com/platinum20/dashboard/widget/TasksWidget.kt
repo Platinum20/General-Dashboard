@@ -73,7 +73,7 @@ class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
                 setTextViewText(R.id.item_time, row.time.orEmpty())
                 setViewVisibility(R.id.item_time, if (row.time == null) View.GONE else View.VISIBLE)
                 setTextColor(R.id.item_time, context.getColor(if (row.late) R.color.widget_late else R.color.widget_text_secondary))
-                // Niente spunta (Antonio, 1.374): eventi, promemoria e date sono la stessa cosa, con la barretta colorata.
+                // Niente spunta (Antonio, 1.376): eventi, promemoria e date sono la stessa cosa, con la barretta colorata.
                 setViewVisibility(R.id.item_mark, View.VISIBLE)
                 val color = when {
                     row.late -> context.getColor(R.color.widget_late)

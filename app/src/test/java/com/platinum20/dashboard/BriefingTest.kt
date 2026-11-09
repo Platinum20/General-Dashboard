@@ -42,7 +42,7 @@ class BriefingTest {
     }
 
     @Test
-    fun scadutiInCima() {
+    fun promemoriaPassatoNonDiventaScaduto() {
         val lines = Briefing.build(
             now = morning,
             forecast = null,
@@ -51,8 +51,8 @@ class BriefingTest {
             tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.minusHours(2)))),
             zone = zone,
         )
-        assertEquals(BriefKind.TASK, lines.first().kind)
-        assertEquals("Scaduto: Bolletta", lines.first().text)
+        // Come un evento finito: passa da solo, niente "Scaduto" da spuntare (Antonio, 1.376).
+        assertTrue(lines.none { it.kind == BriefKind.TASK })
     }
 
     @Test
@@ -167,15 +167,11 @@ class BriefingTest {
             parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate())),
             max = 6,
         )
-        val task = lines.first { it.kind == BriefKind.TASK }
-        assertEquals("Scaduto: Bolletta", task.text)
-        assertEquals(BriefAction.TASK_DONE, task.action)
-        assertEquals(listOf(7L), task.targetIds)
+        assertTrue(lines.none { it.action == BriefAction.TASK_DONE })
         val parcel = lines.first { it.kind == BriefKind.PARCEL }
         assertEquals(BriefAction.PARCEL_ARRIVED, parcel.action)
         assertEquals(listOf(3L), parcel.targetIds)
         // Toccando la riga si apre la scheda di quella cosa (Antonio).
-        assertEquals(7L, task.openId)
         assertEquals(3L, parcel.openId)
         val habits = lines.first { it.kind == BriefKind.HABIT }
         assertEquals(BriefAction.HABITS, habits.action)
@@ -255,8 +251,8 @@ class BriefingTest {
         assertTrue(card.contains("Oggi: Tutti i Santi"))
         assertTrue(card.contains("Alle 11:00: Riunione"))
         assertTrue(card.contains("Alle 18:00: Palestra"))
-        assertTrue(card.contains("Entro le 13:00: Bolletta"))
-        assertTrue(card.contains("Entro le 15:00: Latte"))
+        assertTrue(card.contains("Alle 13:00: Bolletta"))
+        assertTrue(card.contains("Alle 15:00: Latte"))
         // Il budget sta nella card Spese, non qui.
         assertFalse(card.any { it.contains("Budget") || it.contains("Spese") })
         val widget = build(card = false).map { it.text }

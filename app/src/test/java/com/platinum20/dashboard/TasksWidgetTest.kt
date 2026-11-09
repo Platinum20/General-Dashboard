@@ -44,12 +44,11 @@ class AgendaRowsTest {
             mapOf(today to listOf(event)),
             now, zone, heightDp = 600,
         )
-        assertEquals(listOf("Bollette", "Compleanno di Marta", "Riunione", "Chiamare Marco", "Comprare il pane"), items(rows).map { it.title })
-        val late = items(rows).first()
-        assertTrue(late.late)
-        assertEquals("sab 7 nov", late.time)
-        assertEquals(AgendaRow.Kind.DATE, items(rows)[1].kind)
-        assertEquals("10:00", items(rows)[2].time)
+        // Le bollette di sabato sono passate da sole, come un evento: niente scaduti (1.376).
+        assertEquals(listOf("Compleanno di Marta", "Riunione", "Chiamare Marco", "Comprare il pane"), items(rows).map { it.title })
+        assertTrue(items(rows).none { it.late })
+        assertEquals(AgendaRow.Kind.DATE, items(rows)[0].kind)
+        assertEquals("10:00", items(rows)[1].time)
     }
 
     @Test fun poiIProssimiGiorni() {

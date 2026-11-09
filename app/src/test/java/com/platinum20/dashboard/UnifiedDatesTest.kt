@@ -36,12 +36,31 @@ class UnifiedDatesTest {
         assertEquals(today, oggi.nextDay(today, zone))
     }
 
-    @Test fun unaDataDiTuttoIlGiornoNonScadeMai() {
-        val now = ms(today.atTime(12, 0))
+    @Test fun siSpuntaSoloQuelloSenzaData() {
         val passata = TaskItem.date(1, "Viaggio", today.minusDays(3), zone = zone)
-        assertFalse(passata.isLate(now))
+        assertFalse(passata.tickable)
         assertEquals(today.minusDays(3), passata.nextDay(today, zone))
-        assertTrue(TaskItem(2, "Bolletta", dueAt = ms(today.atTime(9, 0))).isLate(now))
+        assertFalse(TaskItem(2, "Bolletta", dueAt = ms(today.atTime(9, 0))).tickable)
+        assertTrue(TaskItem(3, "Latte").tickable)
+    }
+
+    @Test fun unPromemoriaCheSiRipetePassaDaSoloAllaVoltaDopo() {
+        val affitto = TaskItem(1, "Affitto", dueAt = ms(LocalDate.of(2026, 10, 31).atTime(9, 0)), repeat = Repeat.MONTHLY)
+        assertEquals(LocalDate.of(2026, 11, 30).atTime(9, 0), affitto.nextAt(today, zone))
+        val palestra = TaskItem(2, "Palestra", dueAt = ms(today.minusDays(7).atTime(18, 0)), repeat = Repeat.WEEKLY)
+        assertEquals(today.atTime(18, 0), palestra.nextAt(today, zone))
+    }
+
+    @Test fun ilPassatoNonVaFraGliScaduti() {
+        val now = today.atTime(12, 0)
+        val groups = com.platinum20.dashboard.ui.screens.dueDays(
+            listOf(TaskItem(1, "Bolletta", dueAt = ms(today.minusDays(1).atTime(9, 0)))), emptyList(), emptyList(), now = now, zone = zone,
+        )
+        assertTrue(groups.none { it.late })
+        val past = com.platinum20.dashboard.ui.screens.pastDays(
+            listOf(TaskItem(1, "Bolletta", dueAt = ms(today.minusDays(1).atTime(9, 0)))), emptyList(), emptyList(), now = now, zone = zone, withToday = true,
+        )
+        assertEquals(listOf("task-1"), past.flatMap { it.rows }.map { it.key })
     }
 
     @Test fun avvisoUgualePerTutti() {
@@ -60,13 +79,13 @@ class UnifiedDatesTest {
     @Test fun leDatePassateSiSpostanoAllaVoltaDopo() {
         val marta = TaskItem.date(1, "Compleanno di Marta", LocalDate.of(2026, 3, 12), yearly = true, zone = zone)
         val viaggio = TaskItem.date(2, "Viaggio", today.minusDays(3), zone = zone)
-        val affitto = TaskItem(3, "Affitto", dueAt = ms(today.minusDays(5).atTime(9, 0)), repeat = Repeat.MONTHLY)
-        val d = NotesStore.withDatesRolled(NotesData(tasks = listOf(marta, viaggio, affitto)), today, zone)
+        val bolletta = TaskItem(3, "Bolletta", dueAt = ms(today.minusDays(5).atTime(9, 0)))
+        val d = NotesStore.withDatesRolled(NotesData(tasks = listOf(marta, viaggio, bolletta)), today, zone)
         assertEquals(LocalDate.of(2027, 3, 12), d.tasks[0].day(zone))
         assertEquals(2026, d.tasks[0].firstYear)
-        // Non si ripete: resta nel suo giorno. Con l'ora: resta scaduto finché non lo spunti.
+        // Non si ripete: resta nel suo giorno, come un evento passato.
         assertEquals(viaggio, d.tasks[1])
-        assertEquals(affitto, d.tasks[2])
+        assertEquals(bolletta, d.tasks[2])
         assertEquals(d, NotesStore.withDatesRolled(d, today, zone))
     }
 

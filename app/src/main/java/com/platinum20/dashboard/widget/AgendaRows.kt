@@ -117,19 +117,17 @@ object AgendaRows {
             if (t.allDay) {
                 timed += Long.MIN_VALUE to AgendaRow.Item(AgendaRow.Kind.DATE, t.id, t.titleWithYears(day, zone), null)
             } else {
-                val due = t.dueAt ?: return@forEach
-                timed += due to AgendaRow.Item(AgendaRow.Kind.TASK, t.id, t.text, Instant.ofEpochMilli(due).atZone(zone).format(HOUR), late = due < now)
+                val at = t.nextAt(day, zone)?.atZone(zone) ?: return@forEach
+                // Passa da solo come un evento: mai "in ritardo" (1.376).
+                timed += at.toInstant().toEpochMilli() to AgendaRow.Item(AgendaRow.Kind.TASK, t.id, t.text, at.format(HOUR))
             }
         }
         val sorted = timed.sortedBy { it.first }.map { it.second }
         if (!isToday) return sorted
-        // Oggi apre con gli scaduti dei giorni prima e chiude con le cose da fare senza data.
-        val overdue = open.filter { !it.allDay && it.dueAt != null && it.day(zone)!!.isBefore(day) }
-            .sortedBy { it.dueAt }
-            .map { AgendaRow.Item(AgendaRow.Kind.TASK, it.id, it.text, lateLabel(it.day(zone)!!, day), late = true) }
+        // Oggi chiude con le cose da fare senza data; niente scaduti (1.374: promemoria passati passano da soli).
         val undated = open.filter { !it.allDay && it.dueAt == null }
             .map { AgendaRow.Item(AgendaRow.Kind.TASK, it.id, it.text, null) }
-        return overdue + sorted + undated
+        return sorted + undated
     }
 
     /** "ieri" o "lun 2 nov" per uno scaduto. */
