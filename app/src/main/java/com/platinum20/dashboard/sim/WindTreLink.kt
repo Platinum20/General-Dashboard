@@ -10,6 +10,7 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.net.WebSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -56,7 +57,7 @@ object WindTreLink {
             return sendX.apply(this, arguments);
           };
         })();
-    """.trimIndent()
+    """.trimIndent() + "\n" + WebSession.snapshotScript("CanvasSim")
 
     private const val READ_TEXT = "(function(){try{CanvasSim.text(document.body?document.body.innerText:'')}catch(e){}})()"
 
@@ -66,6 +67,9 @@ object WindTreLink {
 
         @JavascriptInterface
         fun text(text: String) = SimStore.pageText(text)
+
+        @JavascriptInterface
+        fun storage(origin: String, json: String) = WindTreSession.offer(origin, json)
     }
 
     /** Prepara una WebView (quella dell'accesso o quella nascosta) a passare i dati a Canvas. */
@@ -75,10 +79,16 @@ object WindTreLink {
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
         CookieManager.getInstance().setAcceptCookie(true)
+        // Come per Revolut: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
+        if (SimStore.linked.value) WindTreSession.restore(context)
+        val keep = if (SimStore.linked.value) WindTreSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasSim")
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
-        if (early) WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.windtre.it"))
+        if (early) {
+            keep?.let { WebViewCompat.addDocumentStartJavaScript(view, it, setOf("https://*.windtre.it")) }
+            WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.windtre.it"))
+        }
         view.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
                 // Solo l'indirizzo, mai il contenuto: dice quali chiamate fa la pagina.
@@ -88,7 +98,7 @@ object WindTreLink {
 
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
                 // Senza lo script d'inizio pagina si aggancia appena può: perde solo le primissime richieste.
-                if (!early) view.evaluateJavascript(script, null)
+                if (!early) { keep?.let { view.evaluateJavascript(it, null) }; view.evaluateJavascript(script, null) }
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -132,7 +142,7 @@ object WindTreLink {
     }
 
     /** Toglie la sessione WindTre dal telefono. */
-    fun forget() {
+    fun forget(context: Context) {
         val cookies = CookieManager.getInstance()
         listOf("https://ac.windtre.it", "https://www.windtre.it", "https://apigw.windtre.it").forEach { url ->
             cookies.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.forEach { name ->
@@ -141,6 +151,7 @@ object WindTreLink {
             }
         }
         cookies.flush()
+        WindTreSession.clear(context)
         SimStore.unlink()
     }
 }
