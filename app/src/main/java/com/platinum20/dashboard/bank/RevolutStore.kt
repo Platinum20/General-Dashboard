@@ -2,7 +2,7 @@ package com.platinum20.dashboard.bank
 
 import android.content.Context
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.work.RevolutWorker
+import com.platinum20.dashboard.work.KeepAliveWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -160,7 +160,7 @@ object RevolutStore {
         _linked.value = value
         appContext?.let { app ->
             app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("linked", value).apply()
-            if (value) RevolutWorker.schedule(app) else RevolutWorker.cancel(app)
+            runCatching { KeepAliveWorker.update(app) }
         }
     }
 
@@ -182,7 +182,7 @@ object RevolutStore {
     /** Scollega: via saldo e risposte salvate. Le spese già nel calendario restano (sono sue). */
     fun unlink() {
         _linked.value = false
-        appContext?.let { RevolutWorker.cancel(it) }
+        appContext?.let { runCatching { KeepAliveWorker.update(it) } }
         _balance.value = null
         rawPockets = emptyList(); pocketNames = emptyMap(); _pockets.value = emptyList()
         _readAt.value = 0

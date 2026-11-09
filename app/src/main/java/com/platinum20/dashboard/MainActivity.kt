@@ -192,6 +192,7 @@ import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.news.NewsStore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.platinum20.dashboard.net.WebFetcher
 import com.platinum20.dashboard.settings.AppSettings
@@ -321,9 +322,12 @@ class MainActivity : ComponentActivity() {
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
-                com.platinum20.dashboard.bank.RevolutStore.init(app)
-                if (com.platinum20.dashboard.bank.RevolutStore.linked.value) com.platinum20.dashboard.work.RevolutWorker.schedule(app)
+                // Revolut e WindTre: il giro che tiene vivo l'accesso (si accende solo se collegati).
+                com.platinum20.dashboard.work.KeepAliveWorker.update(app)
+                com.platinum20.dashboard.shifts.ShiftStore.init(app)
+                if (com.platinum20.dashboard.shifts.ShiftStore.linked.value) com.platinum20.dashboard.work.ShiftWorker.schedule(app)
             }
+            withContext(Dispatchers.Main) { runCatching { com.platinum20.dashboard.work.KeepAliveWorker.askBattery(this@MainActivity) } }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
         lifecycleScope.launch { NewsStore.restore() }
@@ -382,6 +386,8 @@ object Routes {
     fun document(id: Long) = "home/document/$id"
     /** L'accesso a Revolut (una volta, poi la lettura è nascosta): da Impostazioni › Account. */
     const val REVOLUT = "settings/revolut"
+    /** L'accesso a Creators Pro per i turni di lavoro (una volta, poi la lettura è nascosta). */
+    const val SHIFTS = "settings/shifts"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
 
     /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
@@ -1463,6 +1469,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.REVOLUT) {
                 com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })
+            }
+            composable(Routes.SHIFTS) {
+                com.platinum20.dashboard.ui.screens.ShiftsLoginScreen(onClose = { navController.popBackStack() })
             }
             composable(
                 Routes.EXPENSES,
