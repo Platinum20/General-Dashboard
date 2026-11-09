@@ -202,10 +202,11 @@ class NotesUiLogicTest {
         assertEquals(true, past.all { it.past })
         val entries = timelineEntries(past, today, zone).map { it.first }
         // I promemoria fatti restano nel passato anche se vecchi: non c'è più un limite.
-        assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "09:00  Riunione"), entries.map { it.text })
+        assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "Ancora da fare", "09:00  Riunione"), entries.map { it.text })
+        // Un promemoria passato e non spuntato resta nel suo giorno, come un evento (1.365).
         // Sotto il segno OTTOBRE il giorno è corto.
-        assertEquals(listOf("Mar 28 lug", "Ven 23", null, "Ieri", "Oggi"), entries.map { it.dayLabel })
-        assertEquals(listOf(null, "OTTOBRE", null, null, null), entries.map { it.month })
+        assertEquals(listOf("Mar 28 lug", "Ven 23", null, "Ieri", null, "Oggi"), entries.map { it.dayLabel })
+        assertEquals(listOf(null, "OTTOBRE", null, null, null, null), entries.map { it.month })
     }
 
     @Test fun noteSullaLineaDelTempo() {

@@ -110,7 +110,7 @@ internal fun pastDays(
     // Un promemoria o una data che non si ripete, passato: resta nel suo giorno come un evento, non diventa "scaduto".
     tasks.filter { !it.done && it.repeat == null && it.dueAt != null }.forEach { t ->
         val day = t.day(zone) ?: return@forEach
-        if (day.isBefore(today)) rows += DueRow("task-${t.id}", day, startOf(day), task = t)
+        if (day.isBefore(today)) rows += DueRow("task-${t.id}", day, if (t.allDay) startOf(day) else t.dueAt!!, task = t)
     }
     parcels.forEach { p -> p.deliveredOn?.let { rows += DueRow("parcel-${p.id}", it, startOf(it), parcel = p) } }
     events.filter { it.end <= nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
