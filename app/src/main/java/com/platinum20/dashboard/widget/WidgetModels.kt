@@ -20,7 +20,7 @@ data class SavedStory(val title: String, val link: String, val source: String, v
 /** Il widget News, separato da RemoteViews per poterlo provare. */
 object NewsWidgetRows {
     const val HEADER_DP = 40
-    const val STORY_DP = 64
+    const val STORY_DP = 76
 
     fun storiesForHeight(heightDp: Int): Int = ((heightDp - HEADER_DP) / STORY_DP).coerceIn(1, 5)
 

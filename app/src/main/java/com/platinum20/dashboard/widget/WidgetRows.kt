@@ -56,5 +56,5 @@ object WidgetRows {
     fun hourLabel(time: LocalDateTime): String = time.format(HOUR)
 
     /** Quante ore stanno nel widget Meteo: servono spazio in altezza e almeno 56dp a colonna. */
-    fun hourColumns(size: WidgetSize): Int = if (size.heightDp < 170) 0 else (size.widthDp / 56).coerceIn(3, 6)
+    fun hourColumns(size: WidgetSize): Int = if (size.heightDp < 200) 0 else (size.widthDp / 56).coerceIn(3, 6)
 }

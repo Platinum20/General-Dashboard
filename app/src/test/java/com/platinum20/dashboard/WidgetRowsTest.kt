@@ -63,7 +63,7 @@ class WidgetRowsTest {
         assertEquals("1 NUOVA", NewsWidgetRows.countLabel(1))
         assertNull(NewsWidgetRows.countLabel(0))
         assertNull(NewsWidgetRows.countLabel(null))
-        assertEquals(2, NewsWidgetRows.storiesForHeight(180))
+        assertEquals(2, NewsWidgetRows.storiesForHeight(200))
     }
 
     @Test
