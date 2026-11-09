@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.360.0
+**Documenti ritagliati e PDF da esportare davvero**
+- Documenti: la foto viene raddrizzata leggendo il testo (anche se è di lato o sottosopra) e ritagliata sul bordo della tessera, senza il tavolo intorno
+- I documenti già salvati si raddrizzano da soli la prima volta che li apri
+- Tieni premuto il fronte o il retro per ruotarlo di un quarto di giro, o per tornare alla foto intera se il ritaglio non ti piace
+- PDF: fronte e retro ritagliati su un foglio A4 a grandezza vera, come una fotocopia
+- Il PDF ora sta in "Altro" insieme agli altri tasti: "Condividi PDF" oppure "Salva PDF in Download", che lo trovi subito nell'app File
+
 ## 1.358.0
 **Media più chiara**
 - I titoli che si toccano (Musica, Video, Radio e podcast, In coda) sono colorati e hanno la freccia: si capisce subito cosa apre una pagina; "Continua" resta grigio perché è solo un'etichetta

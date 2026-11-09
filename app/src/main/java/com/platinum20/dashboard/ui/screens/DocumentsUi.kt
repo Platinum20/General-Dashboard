@@ -7,6 +7,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Rotate90DegreesCw
+import androidx.compose.material.icons.outlined.CropFree
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Numbers
@@ -31,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.docs.DocReader
 import com.platinum20.dashboard.docs.Document
 import com.platinum20.dashboard.docs.DocumentsStore
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.PhotoAttach
 import com.platinum20.dashboard.notes.ReceiptReader
 import kotlinx.coroutines.launch
@@ -122,7 +129,7 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
 
 /**
  * La scheda di un documento: fronte e retro (tocca per vederli grandi), numero e scadenza da correggere,
- * in basso a sinistra "Condividi PDF" (fronte e retro su un foglio A4, come una fotocopia).
+ * e in "Altro" il PDF (fronte e retro ritagliati su un foglio A4, come una fotocopia) da condividere o salvare.
  */
 @Composable
 internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
@@ -137,7 +144,7 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     fun setBack(uri: Uri?) {
         if (uri == null) return
         scope.launch {
-            val kept = DocumentsStore.keep(context, uri) ?: return@launch
+            val kept = DocumentsStore.keep(context, uri, doc?.kind ?: com.platinum20.dashboard.docs.DocKind.OTHER) ?: return@launch
             DocumentsStore.addBack(id, kept, DocReader.read(PhotoAttach.rows(context, uri)))
         }
     }
@@ -146,13 +153,41 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { setBack(it) }
 
+    // I documenti fotografati prima della 1.358 si raddrizzano e ritagliano la prima volta che si aprono.
+    LaunchedEffect(id, doc?.straight) {
+        if (doc != null && !doc.straight) DocumentsStore.straighten(context, id)
+    }
     if (doc == null) {
         DetailPage(onBack = onBack, onEdit = null, onDelete = null, meta = "Documento") {
             DetailMissing(Icons.Outlined.Badge, "Documento eliminato")
         }
         return
     }
+    fun exportPdf(save: Boolean) {
+        scope.launch {
+            if (save) {
+                val ok = DocumentsStore.savePdf(context, doc)
+                CaptureFeedback.tell(context, if (ok) "${doc.pdfName} salvato in Download" else "Non riesco a salvare il PDF", Icons.Outlined.PictureAsPdf)
+                return@launch
+            }
+            runCatching {
+                val file = DocumentsStore.pdf(context, doc)
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
+                    .putExtra(Intent.EXTRA_STREAM, uri)
+                    .putExtra(Intent.EXTRA_SUBJECT, doc.title)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // Il ClipData fa arrivare il permesso di lettura anche a chi riceve dal menu di condivisione.
+                send.clipData = android.content.ClipData.newUri(context.contentResolver, doc.pdfName, uri)
+                context.startActivity(Intent.createChooser(send, doc.pdfName).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+            }.onFailure { CaptureFeedback.tell(context, "Non riesco a creare il PDF", Icons.Outlined.PictureAsPdf) }
+        }
+    }
     val more = buildList {
+        add(BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportPdf(save = false) })
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            add(BubbleAction(Icons.Outlined.Download, "Salva PDF in Download") { exportPdf(save = true) })
+        }
         add(BubbleAction(Icons.Outlined.PhotoCamera, if (doc.back == null) "Fotografa il retro" else "Rifai il retro") {
             runCatching { camera.launch(ReceiptReader.photoUri(context)) }
         })
@@ -169,23 +204,18 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
             DocumentsStore.delete(id)
         },
         meta = "Documento",
-        primary = DetailAction(Icons.Outlined.Share, "Condividi PDF") {
-            scope.launch {
-                runCatching {
-                    val file = DocumentsStore.pdf(context, doc)
-                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                    val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
-                        .putExtra(Intent.EXTRA_STREAM, uri)
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    context.startActivity(Intent.createChooser(send, doc.title))
-                }
-            }
-        },
         more = more,
     ) {
         EditableDetailTitle(doc.id, doc.title, MaterialTheme.colorScheme.primary) { DocumentsStore.rename(id, it) }
-        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id))) { zoom = doc.front }
-        doc.back?.let { back -> DocPhoto(back, "Retro") { zoom = back } }
+        fun sideActions(back: Boolean) {
+            val cut = if (back) doc.backFull else doc.frontFull
+            ActionBubble.show(*listOfNotNull(
+                BubbleAction(Icons.Outlined.Rotate90DegreesCw, "Ruota") { scope.launch { DocumentsStore.turn(context, id, back) } },
+                cut?.let { BubbleAction(Icons.Outlined.CropFree, "Foto intera", "Togli il ritaglio") { DocumentsStore.useFull(id, back) } },
+            ).toTypedArray())
+        }
+        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id)), onLongClick = { sideActions(back = false) }) { zoom = doc.front }
+        doc.back?.let { back -> DocPhoto(back, "Retro", onLongClick = { sideActions(back = true) }) { zoom = back } }
         DetailFieldRow(doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento") { DocumentsStore.setNumber(id, it) }
         DetailTapRow(
             Icons.Outlined.EventBusy,
@@ -210,8 +240,10 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     }
 }
 
+/** Tocca per vederla grande; tieni premuto per ruotarla o tornare alla foto intera. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onClick: () -> Unit) {
+private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onLongClick: () -> Unit, onClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         coil3.compose.AsyncImage(
@@ -223,7 +255,7 @@ private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, on
                 .heightIn(min = 120.dp, max = 320.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onClick),
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         )
     }
 }
