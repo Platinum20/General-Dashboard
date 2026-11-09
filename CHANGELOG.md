@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.392.0
+**Riprendi è l'ultima cosa vista davvero**
+- In Media, "Riprendi" e "Continua" mettono al loro posto anche i video visti su YouTube dal PC o da altre app: quello visto per ultimo sta in cima, anche se l'avevi già iniziato in Canvas
+- Se riprendi sul PC un video lasciato a metà, risale davanti al resto con il punto nuovo
+- Aprendo Media si rilegge subito la cronologia di YouTube
+
 ## 1.391.0
 **Riquadri di Media tutti uguali**
 - Titolo e autore stanno alla stessa altezza in ogni riquadro della fila: il titolo ha sempre le sue righe, l'autore sempre una
