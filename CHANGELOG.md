@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.392.0
+**L'ora nella scheda della spesa**
+- Aprendo una spesa, accanto al giorno c'è l'ora in cui l'hai fatta (es. "Lunedì 9 novembre, 14:32"), presa da Revolut, dalla notifica o da quando l'hai scritta
+
 ## 1.391.0
 **Riquadri di Media tutti uguali**
 - Titolo e autore stanno alla stessa altezza in ogni riquadro della fila: il titolo ha sempre le sue righe, l'autore sempre una
