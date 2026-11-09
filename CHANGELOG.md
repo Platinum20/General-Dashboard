@@ -1,11 +1,12 @@
 # Changelog
 
-## 1.372.0
+## 1.373.0
 **Niente più spunta su promemoria e date**
 - Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi
 - Non finiscono più fra gli "scaduti": quelli passati restano nel loro giorno, quelli che si ripetono vanno da soli alla volta dopo
 - La spunta resta solo sulle cose senza data, nella parte delle note
 
+## 1.372.0
 **Treni: il viaggio su una riga sola**
 - Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce
 - In mezzo quanto dura il viaggio e che treno è (per esempio "4 h 32 min · Intercity 612"); se arrivi il giorno dopo, accanto all'arrivo c'è il giorno
