@@ -2,6 +2,7 @@ package com.platinum20.dashboard
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.bank.BankTx
+import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.bank.RevolutParse
 import com.platinum20.dashboard.notes.BankSync
 import com.platinum20.dashboard.notes.Expense
@@ -38,6 +39,20 @@ class ExpenseTimeOrderTest {
     @Test fun oggiPerOrario() {
         val today = dueDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, expenses = sparse(oggi)).first()
         assertEquals(listOf(3L, 2L, 4L, 1L), today.rows.mapNotNull { it.expense?.id })
+    }
+
+    /** 1.400: le spese stanno fra eventi e turni secondo l'ora, non tutte in cima (Antonio). */
+    @Test fun speseInMezzoAgliEventi() {
+        fun ms(h: Int) = oggi.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val events = listOf(
+            CalendarEvent(7, "Turno", ms(9), ms(13), allDay = false, location = "", color = 0),
+            CalendarEvent(8, "Cena", ms(21), ms(23), allDay = false, location = "", color = 0),
+        )
+        val today = dueDays(emptyList(), emptyList(), events, now = adesso, zone = zone, withToday = true, expenses = sparse(oggi)).first()
+        assertEquals(
+            listOf("spend-today", "expense-3", "expense-2", "event-7-${ms(9)}", "expense-4", "expense-1", "event-8-${ms(21)}"),
+            today.rows.map { it.key },
+        )
     }
 
     @Test fun giorniPassatiPerOrario() {

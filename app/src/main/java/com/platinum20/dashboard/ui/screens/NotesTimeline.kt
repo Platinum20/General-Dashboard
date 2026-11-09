@@ -100,8 +100,8 @@ internal fun pastDays(
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val rows = mutableListOf<DueRow>()
-    // Prima del resto del giorno, fra loro per orario (l'ordine resta: stesso [DueRow.at]).
-    expenses.filter { it.date.isBefore(today) }.sortedWith(Expenses.byTime).forEach { e -> rows += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
+    // In ordine d'orario con eventi e turni (Antonio); quelle senza ora in cima al giorno.
+    expenses.filter { it.date.isBefore(today) }.sortedWith(Expenses.byTime).forEach { e -> rows += DueRow("expense-${e.id}", e.date, expenseAt(e, zone), expense = e) }
     // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
     // Nel calendario unico anche quelli senza data: fatti nel giorno in cui li hai spuntati (Antonio).
     tasks.filter { it.done && (it.dueAt != null || withToday) }.forEach { t ->
@@ -120,6 +120,12 @@ internal fun pastDays(
     return rows.filter { if (withToday) it.day!!.isBefore(today) else !it.day!!.isAfter(today) }
         .groupBy { it.day!! }.toSortedMap()
         .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
+}
+
+/** Il momento di una spesa per ordinarla fra eventi e turni: la sua ora, o l'inizio del giorno se non ce l'ha. */
+internal fun expenseAt(e: com.platinum20.dashboard.notes.Expense, zone: ZoneId): Long {
+    val start = e.date.atStartOfDay(zone).toInstant().toEpochMilli()
+    return e.at?.let { e.date.atTime(it).atZone(zone).toInstant().toEpochMilli() } ?: (start - 1)
 }
 
 /** Quanti giorni di calendario si guardano per gli eventi: più di un anno, così c'è anche l'anno dopo (Antonio). */
@@ -177,13 +183,14 @@ internal fun dueDays(
     }
     simRenewal?.takeIf { !it.isBefore(today) }?.let { dated += DueRow("sim-renewal", it, startOf(it), simRenewal = true) }
     if (withToday) {
-        expenses.filter { it.date.isAfter(today) }.sortedWith(Expenses.byTime).forEach { e -> dated += DueRow("expense-${e.id}", e.date, startOf(e.date) - 1, expense = e) }
+        expenses.filter { it.date.isAfter(today) }.sortedWith(Expenses.byTime).forEach { e -> dated += DueRow("expense-${e.id}", e.date, expenseAt(e, zone), expense = e) }
         val spentToday = expenses.filter { it.date == today }.sortedWith(Expenses.byTime)
         val todayRows = buildList {
             add(DueRow("spend-today", today, Long.MIN_VALUE, spend = spentToday.sumOf { it.cents }))
-            spentToday.forEach { e -> add(DueRow("expense-${e.id}", today, Long.MIN_VALUE, expense = e)) }
-            late.sortedBy { it.at }.forEach { add(it.copy(day = today, overdueFrom = it.day)) }
-            addAll(dated.filter { it.day == today }.sortedBy { it.at })
+            // Spese, cose in ritardo, eventi, turni e treni di oggi tutti insieme in ordine d'orario (Antonio, 1.400).
+            addAll((spentToday.map { e -> DueRow("expense-${e.id}", today, expenseAt(e, zone), expense = e) } +
+                late.sortedBy { it.at }.map { it.copy(day = today, overdueFrom = it.day) } +
+                dated.filter { it.day == today }).sortedBy { it.at })
             tasks.filter { !it.done && it.dueAt == null }.sortedBy { it.createdAt }
                 .forEach { t -> add(DueRow("task-${t.id}", today, Long.MAX_VALUE, task = t)) }
             undated.forEach { add(it.copy(day = today)) }
