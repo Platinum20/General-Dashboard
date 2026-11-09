@@ -404,6 +404,20 @@ private fun VideoArea(
     val haptic = rememberHaptic()
     val gestureTop by rememberUpdatedState(WindowInsets.systemGestures.getTop(LocalDensity.current))
     val gestureBottom by rememberUpdatedState(WindowInsets.systemGestures.getBottom(LocalDensity.current))
+    val gestureLeft by rememberUpdatedState(WindowInsets.systemGestures.getLeft(LocalDensity.current, androidx.compose.ui.unit.LayoutDirection.Ltr))
+    val gestureRight by rememberUpdatedState(WindowInsets.systemGestures.getRight(LocalDensity.current, androidx.compose.ui.unit.LayoutDirection.Ltr))
+    // Scorrimento di lato sul video: dove si era quando è partito e dove si lascerà (null = nessuno).
+    var swipeFrom by remember { mutableLongStateOf(0L) }
+    var swipeAt by remember { mutableStateOf<Long?>(null) }
+    var swipeDuration by remember { mutableLongStateOf(0L) }
+    val isLive by rememberUpdatedState(now?.stream?.hlsUrl != null)
+    // Il video di cui si è già visto un fotogramma: da lì in poi un salto non rimette la miniatura.
+    var seenLink by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(now?.link, now?.loading, now?.stream) {
+        if (now != null && now.stream != null && !now.loading) seenLink = now.link
+        // Video riaperto da capo (flussi ancora da trovare): torna la miniatura.
+        if (now?.stream == null) seenLink = null
+    }
     // Pinch a schermo intero: true = il video riempie lo schermo (niente bande), con un avviso breve.
     var fill by rememberSaveable { mutableStateOf(false) }
     var fillHint by remember { mutableIntStateOf(0) }
@@ -576,6 +590,57 @@ private fun VideoArea(
                         onDragBy(amount)
                     },
                 )
+            }
+            .pointerInput(fullscreen, inPip) {
+                if (inPip) return@pointerInput
+                // Di lato dal centro del video: avanti e indietro piano, come il volume ma orizzontale.
+                // Ultimo della catena, così vede il dito prima del trascinamento verticale della pagina.
+                val margin = 24.dp.toPx()
+                val slop = viewConfiguration.touchSlop
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val w = size.width.toFloat()
+                    val h = size.height.toFloat()
+                    if (isLive || !SeekSwipe.canStart(down.position.x, w, gestureLeft + margin, gestureRight + margin)) return@awaitEachGesture
+                    if (fullscreen && !VideoSwipe.volumeCanStart(down.position.y, h, gestureTop + margin, gestureBottom + margin)) return@awaitEachGesture
+                    var armed = false
+                    var anchorX = 0f
+                    var commit = false
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            if (event.changes.count { it.pressed } > 1) break
+                            if (!change.pressed) {
+                                commit = armed
+                                break
+                            }
+                            if (!armed) {
+                                if (change.isConsumed) break
+                                val d = change.position - down.position
+                                if (!SeekSwipe.armed(d.x, d.y, slop)) continue
+                                val p = YtPlayer.current() ?: break
+                                val duration = p.duration.takeIf { it > 0 } ?: break
+                                armed = true
+                                // Si conta dal punto in cui parte il gesto: niente salto iniziale.
+                                anchorX = change.position.x
+                                swipeFrom = p.currentPosition.coerceAtLeast(0)
+                                swipeDuration = duration
+                                swipeAt = swipeFrom
+                                controls = false
+                            }
+                            change.consume()
+                            val before = swipeAt ?: swipeFrom
+                            val target = SeekSwipe.target(swipeFrom, change.position.x - anchorX, w, swipeDuration)
+                            if (SeekSwipe.ticks(before, target, swipeDuration)) haptic(Haptic.TICK)
+                            swipeAt = target
+                        }
+                    } finally {
+                        val target = swipeAt
+                        if (commit && target != null && target != swipeFrom) YtPlayer.seekTo(context, target)
+                        swipeAt = null
+                    }
+                }
             },
     ) {
         AndroidView(
@@ -617,9 +682,12 @@ private fun VideoArea(
         }
         // Mentre il video arriva (1.357): la sua miniatura al posto del nero con la rotella, con un punto che
         // pulsa piano; al primo fotogramma si dissolve nel video.
+        // Dopo un salto (doppio tocco, barra) invece resta fermo l'ultimo fotogramma finché arriva il punto nuovo.
         val poster = YtResolver.videoId(now?.link.orEmpty())
+        val loadingNow = now?.loading != false && error == null && upcoming == null
+        val firstLoad = VideoSwipe.showsPoster(now?.link, seenLink)
         androidx.compose.animation.AnimatedVisibility(
-            visible = now?.loading != false && error == null && upcoming == null,
+            visible = loadingNow && firstLoad,
             enter = androidx.compose.animation.fadeIn(tween(0)),
             exit = androidx.compose.animation.fadeOut(tween(Motion.ENTER_MS)),
             modifier = Modifier.matchParentSize(),
@@ -635,6 +703,29 @@ private fun VideoArea(
                 }
                 LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
             }
+        }
+
+        // Salto lento a caricare: solo il punto che pulsa sopra il fotogramma fermo (dopo un attimo, così
+        // i salti veloci non fanno lampeggiare nulla).
+        var slowSeek by remember { mutableStateOf(false) }
+        LaunchedEffect(loadingNow && !firstLoad) {
+            slowSeek = false
+            if (loadingNow && !firstLoad) {
+                delay(400)
+                slowSeek = true
+            }
+        }
+        if (slowSeek && loadingNow && !firstLoad && swipeAt == null) LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
+
+        // Scorrendo di lato: il fotogramma dove si lascerà il video, quanto ci si sposta e il punto.
+        swipeAt?.let { at ->
+            SeekPreview(
+                storyboard = now?.stream?.storyboard,
+                positionMs = at,
+                label = "${SeekSwipe.deltaLabel(at - swipeFrom)}  ·  ${formatDuration(at)} / ${formatDuration(swipeDuration)}",
+                width = if (fullscreen) 240.dp else 150.dp,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
 
         // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …).
@@ -756,6 +847,7 @@ private fun VideoArea(
                     TimeBar(
                         live = now?.stream?.hlsUrl != null,
                         knownSec = now?.stream?.durationSec ?: 0,
+                        storyboard = now?.stream?.storyboard,
                         onFullscreen = onToggleFullscreen,
                         fullscreen = fullscreen,
                         onInteract = { flashKey++ },
@@ -789,6 +881,7 @@ private fun TimeBar(
     fullscreen: Boolean,
     onFullscreen: () -> Unit,
     onInteract: () -> Unit,
+    storyboard: com.platinum20.dashboard.media.youtube.player.YtStoryboard? = null,
 ) {
     val context = LocalContext.current
     var position by remember { mutableLongStateOf(0L) }
@@ -835,6 +928,9 @@ private fun TimeBar(
         val actions by AppSettings.sponsorActions.collectAsState()
         val marks = if (sponsorOn) SponsorBlock.marks(sponsor?.segments.orEmpty(), actions) else emptyList()
         // Tocco semplice = niente salto: si sposta solo trascinando di lato (SeekBar).
+        // Mentre si trascina, sopra al pallino il fotogramma dove si lascerà il video (storyboard di YouTube).
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val barWidth = constraints.maxWidth
         SeekBar(
             value = dragging ?: if (duration > 0) position.toFloat() / duration else 0f,
             onSeeking = {
@@ -856,6 +952,29 @@ private fun TimeBar(
             },
             modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
         )
+        dragging?.let { at ->
+            val previewW = if (fullscreen) 200.dp else 150.dp
+            SeekPreview(
+                storyboard = storyboard,
+                positionMs = (at * duration).toLong(),
+                label = formatDuration((at * duration).toLong()),
+                width = previewW,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    // Sopra la barra, centrato sul dito ma sempre dentro lo schermo; non occupa posto
+                    // (misura zero), così la barra non si sposta.
+                    .layout { measurable, c ->
+                        val p = measurable.measure(c.copy(minWidth = 0, minHeight = 0))
+                        layout(0, 0) {
+                            p.place(
+                                (at * barWidth - p.width / 2f).roundToInt().coerceIn(0, (barWidth - p.width).coerceAtLeast(0)),
+                                -p.height - SEEK_HEIGHT.roundToPx() - 8.dp.roundToPx(),
+                            )
+                        }
+                    },
+            )
+        }
+        }
     }
 }
 

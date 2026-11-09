@@ -4,12 +4,34 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import coil3.toBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -100,5 +122,95 @@ object SeekStack {
         !forward && shownS < 0 -> shownS - STEP_S
         forward -> STEP_S
         else -> -STEP_S
+    }
+}
+
+/**
+ * Scorrere di lato al centro del video, come il volume in verticale: avanti e indietro piano,
+ * con una vibrazione ogni [TICK_MS] e l'anteprima del fotogramma. Pure, così si prova.
+ */
+object SeekSwipe {
+    /** Tutta la larghezza del video = un minuto: abbastanza piano da trovare il punto giusto. */
+    const val SPAN_MS = 60_000L
+    const val TICK_MS = 5_000L
+
+    /** Parte solo lontano dai bordi a destra e sinistra: lì c'è il gesto Indietro del telefono. */
+    fun canStart(downX: Float, widthPx: Float, leftEdgePx: Float, rightEdgePx: Float): Boolean =
+        downX > leftEdgePx && downX < widthPx - rightEdgePx
+
+    /** Come il volume ma di lato: dopo [deadZonePx] di strada, e solo se più orizzontale che verticale. */
+    fun armed(dx: Float, dy: Float, deadZonePx: Float): Boolean =
+        abs(dx) > deadZonePx && abs(dx) > abs(dy) * 1.5f
+
+    /** Il punto dove si arriva: dal punto di partenza, [SPAN_MS] per tutta la larghezza. */
+    fun target(startMs: Long, draggedPx: Float, widthPx: Float, durationMs: Long): Long {
+        if (widthPx <= 0f || durationMs <= 0) return startMs.coerceAtLeast(0)
+        return (startMs + (draggedPx / widthPx * SPAN_MS).toLong()).coerceIn(0, durationMs)
+    }
+
+    /** Vibra quando si passa una tacca di [TICK_MS], o quando si tocca l'inizio o la fine. */
+    fun ticks(previousMs: Long, nowMs: Long, durationMs: Long): Boolean =
+        previousMs != nowMs && (previousMs / TICK_MS != nowMs / TICK_MS || nowMs == 0L || nowMs == durationMs)
+
+    /** "+0:15" / "−1:05": quanto ci si sposta rispetto a dove si era. */
+    fun deltaLabel(deltaMs: Long): String {
+        val s = abs(deltaMs) / 1000
+        return (if (deltaMs < 0) "−" else "+") + "${s / 60}:${(s % 60).toString().padStart(2, '0')}"
+    }
+}
+
+/**
+ * Il fotogramma dello storyboard di YouTube al punto [positionMs], col tempo sotto: lo stesso
+ * riquadro per la barra e per lo scorrimento sul video. Senza storyboard resta solo il tempo.
+ */
+@Composable
+internal fun SeekPreview(
+    storyboard: com.platinum20.dashboard.media.youtube.player.YtStoryboard?,
+    positionMs: Long,
+    label: String,
+    modifier: Modifier = Modifier,
+    width: androidx.compose.ui.unit.Dp = 160.dp,
+) {
+    val spot = storyboard?.frameAt(positionMs)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // Il foglio si scarica una volta (cache di Coil) e resta finché si passa a un altro foglio.
+    var sheet by remember { mutableStateOf<Pair<String, androidx.compose.ui.graphics.ImageBitmap>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(spot?.url) {
+        val url = spot?.url ?: return@LaunchedEffect
+        if (sheet?.first == url) return@LaunchedEffect
+        val request = coil3.request.ImageRequest.Builder(context).data(url).build()
+        val image = (coil3.SingletonImageLoader.get(context).execute(request) as? coil3.request.SuccessResult)?.image
+        if (image != null) sheet = url to image.toBitmap().asImageBitmap()
+    }
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        val bitmap = sheet?.takeIf { it.first == spot?.url }?.second
+        if (storyboard != null && spot != null) {
+            val ratio = storyboard.frameWidth.toFloat() / storyboard.frameHeight.coerceAtLeast(1)
+            androidx.compose.foundation.Canvas(
+                Modifier
+                    .width(width)
+                    .aspectRatio(ratio)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.Black)
+                    .border(1.5.dp, Color.White, RoundedCornerShape(10.dp)),
+            ) {
+                if (bitmap != null) drawImage(
+                    bitmap,
+                    srcOffset = IntOffset(spot.column * storyboard.frameWidth, spot.row * storyboard.frameHeight),
+                    srcSize = IntSize(storyboard.frameWidth, storyboard.frameHeight),
+                    dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+        Text(
+            label,
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.55f))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+        )
     }
 }
