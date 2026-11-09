@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.359.0
+**Eventi, promemoria e date: le stesse cose**
+- Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
+- Ogni scheda ha le stesse righe degli eventi, nello stesso ordine: quando, tutto il giorno o a un'ora, si ripete, avviso, luogo, note
+- Anche le date ora avvisano (alle 9 del giorno, o il giorno prima) e si possono spuntare; l'avviso si può togliere dalla scheda
+- Nella scheda di un evento si vede anche ogni quanto si ripete e quando avvisa
+- Una data di tutto il giorno non finisce mai fra gli scaduti: se si ripete passa da sola alla volta dopo
+- Nel calendario, il filtro Eventi mostra anche promemoria e date con un giorno
+
 ## 1.358.0
 **Media più chiara**
 - I titoli che si toccano (Musica, Video, Radio e podcast, In coda) sono colorati e hanno la freccia: si capisce subito cosa apre una pagina; "Continua" resta grigio perché è solo un'etichetta
