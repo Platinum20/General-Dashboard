@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.365.0
+## 1.366.0
 **Il QR del biglietto nell'evento**
 - Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
 - Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
