@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.362.0
+**Barra in basso più ordinata**
+- Le pillole della barra stanno di nuovo alla stessa distanza dal bordo su tutti i lati: la scheda agli estremi segue gli angoli arrotondati della barra, come prima che togliessimo una voce
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
