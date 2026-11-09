@@ -57,6 +57,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.today.BriefKind
@@ -214,7 +216,14 @@ fun TimelineRow(
     }
     if (entry.later && (!showMonth || entry.month == null)) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick)
     // Fra un giorno e l'altro un filo sottile: si capisce dove finisce un giorno. Dove c'è già un segno, no.
-    if (entry.divider && !entry.later && !(showMonth && entry.month != null)) TimelineDayDivider(start, line, top)
+    // Il giorno su una riga sua, con il divisorio sulla stessa riga: "———— Ieri ●" (Antonio). Così la linea non
+    // passa sopra il titolo della prima cosa del giorno. Dove c'è già un segno (mese, PIÙ AVANTI) niente filo.
+    val headed = entry.dayLabel != null && !entry.todayHeader
+    if (headed) TimelineDayHeader(
+        entry.dayLabel!!, start, line, top,
+        rule = entry.divider && !entry.later && !(showMonth && entry.month != null),
+        late = entry.late, past = entry.past,
+    )
     if (entry.todayHeader) {
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
@@ -324,34 +333,13 @@ fun TimelineRow(
         }
         }
         Spacer(Modifier.width(8.dp))
-        val first = entry.dayLabel != null
-        // Nel viaggio il giorno e il pallino stanno all'altezza della partenza.
-        Box(
-            if (entry.trip != null) Modifier.align(Alignment.Top).padding(top = TRIP_PAD).height(TRIP_LINE) else Modifier,
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                entry.dayLabel.orEmpty(),
-                style = MaterialTheme.typography.labelLarge,
-                color = when {
-                    entry.late -> MaterialTheme.colorScheme.error
-                    entry.past -> MaterialTheme.colorScheme.onSurfaceVariant
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                maxLines = 1,
-                textAlign = TextAlign.End,
-            )
-        }
+        // Il giorno e il suo pallino grande stanno nella riga sopra ([TimelineDayHeader]).
         Spacer(Modifier.width(4.dp))
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
-            dot = when {
-                first && entry.past -> MaterialTheme.colorScheme.outline to 7.dp
-                first -> (if (entry.late) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary) to 7.dp
-                else -> MaterialTheme.colorScheme.outline to 4.dp
-            },
-            top = top,
+            dot = MaterialTheme.colorScheme.outline to 4.dp,
+            top = top || headed,
             bottom = bottom,
             dotY = if (entry.trip != null) TRIP_PAD + TRIP_LINE / 2 else null,
         )
@@ -438,14 +426,31 @@ private val GUTTER = 22.dp
  */
 private val LINE_END = 19.dp
 
-/** Il divisore fra due giorni: un filo a sinistra che si ferma prima della linea, che resta continua. */
+/**
+ * L'intestazione di un giorno: a destra il nome e il pallino grande sulla linea, a sinistra il filo che separa
+ * dal giorno prima, sulla stessa riga del nome ([rule]; no dove sopra c'è già il segno del mese).
+ */
 @Composable
-private fun TimelineDayDivider(start: Dp, line: Color, top: Boolean) {
-    Row(Modifier.fillMaxWidth().height(9.dp).padding(start = start, end = LINE_END), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f).height(1.dp).drawBehind { drawRect(line.copy(alpha = 0.5f)) })
-        // Finisce dove finisce la scritta del giorno (4 dp prima della linea, come lei), non prima (Antonio).
+private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
+    val color = when {
+        late -> MaterialTheme.colorScheme.error
+        past -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.primary
+    }
+    val dot = when {
+        past -> MaterialTheme.colorScheme.outline
+        late -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.primary
+    }
+    Row(
+        Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line.copy(alpha = 0.5f)) })
+        Spacer(Modifier.width(10.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1, textAlign = TextAlign.End)
         Spacer(Modifier.width(4.dp))
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = null, top = top, bottom = top)
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true)
     }
 }
 
