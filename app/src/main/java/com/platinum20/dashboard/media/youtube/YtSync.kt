@@ -93,6 +93,13 @@ object YtSync {
     private const val KEY_UNDISLIKE_PENDING = "undislike_pending"
     private const val KEY_WATCHED = "watched"
     private const val KEY_AT = "at"
+    /** Il primo video della cronologia di YouTube all'ultima lettura, e quando: dice cosa hai visto dopo. */
+    private const val KEY_HISTORY_HEAD = "history_head"
+    private const val KEY_HISTORY_AT = "history_at"
+    /** Quanti video in cima si ricordano: uno solo, se lo rivedi sul PC, risale e non si vedrebbe più il confine. */
+    internal const val HEAD = 5
+    /** Più avanti di così sul PC che in Canvas: l'hai ripreso là. */
+    internal const val REWATCH_MS = 30_000L
     private const val KEY_STATUS = "status"
     /** Guarda più tardi ha al massimo 5000 video: 50 pagine da 100 lo leggono tutto. */
     private const val LATER_PAGES = 50
@@ -151,7 +158,7 @@ object YtSync {
                 YouTubeWeb.withAccount(app) { page ->
                     syncLater(app, p, page)
                     syncLikes(app, p, page)
-                    syncHistory(app, page)
+                    syncHistory(app, p, page)
                 }
             }
             p.edit().putLong(KEY_AT, System.currentTimeMillis()).apply()
@@ -339,38 +346,105 @@ object YtSync {
 
     // ---------- Cronologia ----------
 
-    private suspend fun syncHistory(context: Context, page: YouTubeWeb.AccountPage) {
+    private suspend fun syncHistory(context: Context, p: SharedPreferences, page: YouTubeWeb.AccountPage) {
         val raw = page.run("__cvApi('browse', {browseId: 'FEhistory'}).then(function(r) { return __cvCollect(r).videos; })")
         val videos = YouTubeWeb.videos(runCatching { JSONArray(raw) }.getOrNull())
         if (videos.isNotEmpty()) YtHistory.mergeRemote(context, videos)
-        // I video lasciati a metà sul PC compaiono anche in "Continua".
+        // I video visti sul PC compaiono anche in "Continua", al loro posto nel tempo.
         MediaHistory.init(context)
-        MediaHistory.merge(continueItems(MediaHistory.items.value, videos, System.currentTimeMillis()))
+        val now = System.currentTimeMillis()
+        MediaHistory.merge(
+            continueItems(MediaHistory.items.value, videos, now, p.getString(KEY_HISTORY_HEAD, null)?.split(",").orEmpty(), p.getLong(KEY_HISTORY_AT, 0)),
+        )
+        val head = watchable(videos).take(HEAD)
+        if (head.isNotEmpty()) p.edit().putString(KEY_HISTORY_HEAD, head.joinToString(",") { it.id }).putLong(KEY_HISTORY_AT, now).apply()
     }
 
     /**
-     * I video della cronologia di YouTube ([remote], dal più recente) lasciati a metà, come voci di
-     * "Continua": i nuovi con l'ordine di YouTube, a quelli già presenti si aggiorna solo il punto se
-     * sul PC sei andato più avanti. Funzione pura, provata nei test.
+     * I video della cronologia di YouTube ([remote], dal più recente) come voci di "Continua" e di
+     * "Riprendi". YouTube non dice quando li hai visti, solo l'ordine: quelli sopra la testa della
+     * lettura precedente ([lastHead], i primi [HEAD], letta a [lastAt]) li hai visti dopo, quindi passano davanti
+     * (anche se c'erano già: li hai rivisti sul PC). Quelli visti in Canvas da allora tengono la loro
+     * ora vera e fanno da riferimento: quello che YouTube mette sopra viene dopo, quello sotto prima.
+     * I vecchi non cambiano ora, si aggiorna solo il punto se sul PC sei andato più avanti.
+     * Funzione pura, provata nei test.
      */
-    internal fun continueItems(existing: List<ResumeItem>, remote: List<YtVideo>, now: Long): List<ResumeItem> {
-        val known = existing.filter { it.kind == ResumeKind.YOUTUBE }.associateBy { it.key }
-        return remote.withIndex()
-            .filter { (_, v) -> !v.isShort && !v.live && v.durationSec > 0 && v.watchedPercent in 2 until 95 }
-            .take(MediaHistory.PER_KIND)
-            .mapNotNull { (index, v) ->
-                val durationMs = v.durationSec * 1000L
-                val positionMs = durationMs * v.watchedPercent / 100
-                val old = known[v.id]
-                when {
-                    old == null -> ResumeItem(
-                        ResumeKind.YOUTUBE, v.id, v.title, v.channel, "https://i.ytimg.com/vi/${v.id}/hqdefault.jpg",
-                        positionMs = positionMs, durationMs = durationMs, at = now - index * 1_000L,
-                    )
-                    positionMs > old.positionMs -> old.copy(positionMs = positionMs, durationMs = durationMs)
-                    else -> null
+    internal fun continueItems(
+        existing: List<ResumeItem>,
+        remote: List<YtVideo>,
+        now: Long,
+        lastHead: List<String> = emptyList(),
+        lastAt: Long = 0,
+    ): List<ResumeItem> {
+        val list = watchable(remote)
+        val youtube = existing.filter { it.kind == ResumeKind.YOUTUBE }.associateBy { it.key }
+        val canvas = existing.filter { it.kind == ResumeKind.YOUTUBE || it.kind == ResumeKind.MUSIC }
+            .groupBy { it.key }.mapValues { (_, v) -> v.maxOf { it.at } }
+        // Senza la testa di prima (prima lettura, cronologia svuotata) è nuovo quello sopra il primo già noto.
+        var fresh = headIndex(list.map { it.id }, lastHead) ?: list.indexOfFirst { it.id in canvas }.let { if (it < 0) list.size else it }
+        // Il primo in cima rivisto sul PC non si sposta: lo dice il punto, andato avanti di almeno [REWATCH_MS].
+        while (fresh < list.size) {
+            val v = list[fresh]
+            val old = youtube[v.id] ?: break
+            if (v.durationSec * 1000L * v.watchedPercent.coerceIn(0, 100) / 100 < old.positionMs + REWATCH_MS) break
+            fresh++
+        }
+        val out = mutableListOf<ResumeItem>()
+        var cap = now
+        list.forEachIndexed { index, v ->
+            val durationMs = v.durationSec * 1000L
+            val positionMs = durationMs * v.watchedPercent.coerceIn(0, 100) / 100
+            val old = youtube[v.id]
+            val seenInCanvas = canvas[v.id]?.takeIf { it > lastAt }
+            if (index < fresh) {
+                if (seenInCanvas != null) {
+                    // Visto qui: la sua ora è vera, ciò che sta sotto è venuto prima.
+                    cap = minOf(cap, seenInCanvas) - 1_000L
+                    return@forEachIndexed
                 }
+                val at = cap.also { cap -= 1_000L }
+                when {
+                    old != null -> out += old.copy(positionMs = positionMs, durationMs = durationMs, at = at)
+                    v.watchedPercent in 2 until 95 -> out += ResumeItem(
+                        ResumeKind.YOUTUBE, v.id, v.title, v.channel, "https://i.ytimg.com/vi/${v.id}/hqdefault.jpg",
+                        positionMs = positionMs, durationMs = durationMs, at = at,
+                    )
+                }
+            } else {
+                // Già letti la volta scorsa: non cambiano ora. I nuovi (prima lettura) vanno subito dietro
+                // a quello che YouTube mette sopra di loro.
+                val known = old?.at ?: canvas[v.id]
+                if (known != null) cap = minOf(cap, known) - 1_000L
+                when {
+                    old != null -> if (positionMs > old.positionMs) out += old.copy(positionMs = positionMs, durationMs = durationMs)
+                    known == null && v.watchedPercent in 2 until 95 -> out += ResumeItem(
+                        ResumeKind.YOUTUBE, v.id, v.title, v.channel, "https://i.ytimg.com/vi/${v.id}/hqdefault.jpg",
+                        positionMs = positionMs, durationMs = durationMs, at = cap,
+                    )
+                }
+                if (known == null) cap -= 1_000L
             }
+        }
+        return out.take(MediaHistory.PER_KIND)
+    }
+
+    /** I video della cronologia che possono finire in "Continua": niente Shorts, live o senza durata. */
+    internal fun watchable(remote: List<YtVideo>): List<YtVideo> =
+        remote.filter { !it.isShort && !it.live && it.durationSec > 0 }.distinctBy { it.id }
+
+    /**
+     * Dove finisce in [ids] quello che hai visto dopo la lettura precedente ([head], dal più recente):
+     * sopra stanno i nuovi e quelli di [head] rivisti (risaliti in cima), da lì in giù ci sono, attaccati
+     * e nello stesso ordine, i video di [head] rimasti al loro posto. Null se non si ritrova.
+     */
+    internal fun headIndex(ids: List<String>, head: List<String>): Int? {
+        val present = head.filter { it in ids }
+        return ids.indices.firstOrNull { i ->
+            if (ids[i] !in present) return@firstOrNull false
+            val above = ids.subList(0, i).toSet()
+            val rest = present.filterNot { it in above }
+            ids.subList(i, minOf(ids.size, i + rest.size)) == rest
+        }
     }
 
     /**
