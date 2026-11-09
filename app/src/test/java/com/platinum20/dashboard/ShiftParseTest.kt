@@ -197,6 +197,10 @@ class ShiftParseTest {
     fun creatorDelTurnoSottoIlNome() {
         assertEquals(listOf("Debora Martini", "Chiara Rossi"), ShiftParse.creators("Turno · Debora Martini, Chiara Rossi"))
         assertEquals(emptyList<String>(), ShiftParse.creators("Turno"))
+        // Solo il nome, mai il cognome.
+        assertEquals("Turno · Debora, Francesca", ShiftParse.shortTitle("Turno · Debora Martini, Francesca Mon Cherie"))
+        assertEquals("Psichiatra", ShiftParse.shortTitle("Psichiatra"))
+        assertEquals("Chiara", ShiftParse.firstName(" Chiara Stefane "))
         assertEquals(emptyList<String>(), ShiftParse.creators("Psichiatra"))
     }
 }

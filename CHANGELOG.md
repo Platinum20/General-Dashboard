@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.399.0
+**Solo il nome delle creator**
+- Nei turni c'è solo il nome delle creator, mai il cognome: "Turno su Debora e Chiara", anche nella scheda del turno e nei widget
+
 ## 1.396.0
 **Turni e treni da leggere al volo**
 - Accanto all'ora di inizio di un turno c'è "Turno su …" con le creator, sulla stessa riga

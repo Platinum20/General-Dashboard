@@ -33,7 +33,7 @@ private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
 
 /** Il turno nel calendario: accanto alla durata quanto ha fruttato, dalla busta paga ("$60,56 · 12%"). */
 internal fun shiftEvent(s: Shift, pay: com.platinum20.dashboard.shifts.ShiftEarning? = null) =
-    CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::line).orEmpty(), people = s.mates.size + 1, color = SHIFT_COLOR)
+    CalendarEvent(s.eventId, com.platinum20.dashboard.shifts.ShiftParse.shortTitle(s.title), s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::line).orEmpty(), people = s.mates.size + 1, color = SHIFT_COLOR)
 
 /** La scheda di un turno: solo lettura, si cambia su Creators Pro. Nelle note com'è andato e il mese. */
 internal fun shiftDetail(
@@ -41,7 +41,7 @@ internal fun shiftDetail(
     pay: com.platinum20.dashboard.shifts.ShiftEarning? = null,
     month: com.platinum20.dashboard.shifts.PayMonth? = null,
 ) = EventDetail(
-    id = s.eventId, title = s.title, begin = s.start, end = s.end, allDay = false, location = "",
+    id = s.eventId, title = com.platinum20.dashboard.shifts.ShiftParse.shortTitle(s.title), begin = s.start, end = s.end, allDay = false, location = "",
     description = com.platinum20.dashboard.shifts.ShiftPay.detail(pay, month), recurring = false, calendarId = -1, calendarName = "Creators Pro", writable = false, color = SHIFT_COLOR,
 )
 
