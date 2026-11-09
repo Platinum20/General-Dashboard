@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.362.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte

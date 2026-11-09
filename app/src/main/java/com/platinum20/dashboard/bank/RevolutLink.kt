@@ -10,6 +10,7 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.net.WebSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -72,7 +73,7 @@ object RevolutLink {
             return sendX.apply(this, arguments);
           };
         })();
-    """.trimIndent()
+    """.trimIndent() + "\n" + WebSession.snapshotScript("CanvasBank")
 
     /**
      * Rilegge saldo e movimenti con la sessione della pagina (la home dell'app web ne carica pochi).
@@ -112,6 +113,9 @@ object RevolutLink {
 
         @JavascriptInterface
         fun pulled(complete: Boolean) = RevolutStore.pullEnded(complete)
+
+        @JavascriptInterface
+        fun storage(origin: String, json: String) = RevolutSession.offer(origin, json)
     }
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "RequiresFeature")
@@ -122,10 +126,16 @@ object RevolutLink {
         CookieManager.getInstance().setAcceptCookie(true)
         // Dopo un aggiornamento la WebView ha perso i cookie di sessione: si rimettono quelli salvati.
         if (RevolutStore.linked.value) RevolutSession.restore(context)
+        // Ogni WebView nuova parte col sessionStorage vuoto: si rimette quello dell'ultima lettura buona
+        // (non quando si sta rifacendo l'accesso, lì servirebbe solo a confondere la pagina).
+        val keep = if (RevolutStore.linked.value && !RevolutStore.expired.value) RevolutSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasBank")
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
-        if (early) WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.revolut.com"))
+        if (early) {
+            keep?.let { WebViewCompat.addDocumentStartJavaScript(view, it, setOf("https://*.revolut.com")) }
+            WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.revolut.com"))
+        }
         view.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
                 if (request.url.host?.endsWith("revolut.com") == true) RevolutStore.seen(request.url.toString())
@@ -133,7 +143,7 @@ object RevolutLink {
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
-                if (!early) view.evaluateJavascript(script, null)
+                if (!early) { keep?.let { view.evaluateJavascript(it, null) }; view.evaluateJavascript(script, null) }
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -192,7 +202,7 @@ object RevolutLink {
     }
 
     /** Toglie la sessione Revolut dal telefono. */
-    fun forget() {
+    fun forget(context: Context) {
         val cookies = CookieManager.getInstance()
         listOf("https://app.revolut.com", "https://www.revolut.com", "https://revolut.com").forEach { url ->
             cookies.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.forEach { name ->
@@ -201,6 +211,7 @@ object RevolutLink {
             }
         }
         cookies.flush()
+        RevolutSession.clear(context)
         // Anche lo storage della pagina: l'app web tiene lì parte della sessione.
         runCatching { android.webkit.WebStorage.getInstance().deleteOrigin("https://app.revolut.com") }
         RevolutStore.unlink()

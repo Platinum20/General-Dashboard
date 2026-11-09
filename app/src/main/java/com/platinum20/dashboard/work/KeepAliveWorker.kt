@@ -1,0 +1,153 @@
+package com.platinum20.dashboard.work
+
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.os.SystemClock
+import android.provider.Settings
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import com.platinum20.dashboard.bank.RevolutLink
+import com.platinum20.dashboard.bank.RevolutStore
+import com.platinum20.dashboard.sim.SimStore
+import com.platinum20.dashboard.sim.WindTreLink
+import java.util.concurrent.TimeUnit
+
+/**
+ * Tiene vivi gli accessi web di Revolut e WindTre anche con l'app chiusa: i siti chiudono la
+ * sessione dopo un po' che nessuno la usa. Due giri insieme: il lavoro periodico di Android (ogni
+ * 15 minuti, ma di notte Doze lo rimanda di ore, ed era lì che la sessione scadeva) e una sveglia
+ * "anche a riposo" ([KeepAliveAlarm]) che lo fa partire subito. Con Canvas fuori dall'ottimizzazione
+ * batteria ([askBattery]) la rete c'è anche col telefono fermo.
+ */
+class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+
+    override suspend fun doWork(): Result {
+        val app = applicationContext
+        RevolutStore.init(app)
+        SimStore.init(app)
+        if (!anyLinked()) {
+            update(app)
+            return Result.success()
+        }
+        // Scaduta: senza un nuovo accesso non si può fare niente; appena letta: non serve.
+        if (RevolutStore.linked.value && !RevolutStore.expired.value && RevolutStore.isStale()) {
+            runCatching { RevolutLink.refresh(app) }
+        }
+        if (SimStore.linked.value && SimStore.isStale(within = SimStore.KEEP_MS)) {
+            runCatching { WindTreLink.refresh(app) }
+        }
+        return Result.success()
+    }
+
+    companion object {
+        private const val PERIODIC = "web_keepalive"
+        private const val NOW = "web_keepalive_now"
+        /** Il nome del lavoro fino alla 1.361 (solo Revolut): si toglie per non farne due. */
+        private const val OLD = "revolut_keepalive"
+        private const val PREFS = "keepalive"
+        private const val KEY_ASKED = "batteryAsked"
+        /** La sveglia: sotto i 15 minuti Android la allunga comunque a riposo. */
+        const val ALARM_MS = 15 * 60 * 1000L
+
+        private fun anyLinked() = RevolutStore.linked.value || SimStore.linked.value
+
+        /** Accende o spegne il giro secondo cosa è collegato. */
+        fun update(context: Context) {
+            val app = context.applicationContext
+            RevolutStore.init(app)
+            SimStore.init(app)
+            val wm = WorkManager.getInstance(app)
+            wm.cancelUniqueWork(OLD)
+            if (anyLinked()) {
+                val request = PeriodicWorkRequestBuilder<KeepAliveWorker>(15, TimeUnit.MINUTES)
+                    .setConstraints(online())
+                    .build()
+                wm.enqueueUniquePeriodicWork(PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+                KeepAliveAlarm.arm(app)
+            } else {
+                wm.cancelUniqueWork(PERIODIC)
+                KeepAliveAlarm.disarm(app)
+            }
+        }
+
+        /** Un giro subito (dalla sveglia): "urgente" dove Android lo permette, così Doze non lo rimanda. */
+        fun runNow(context: Context) {
+            val builder = OneTimeWorkRequestBuilder<KeepAliveWorker>().setConstraints(online())
+            // Sotto Android 12 un lavoro urgente vorrebbe una notifica in primo piano: lì basta il normale.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.KEEP, builder.build())
+        }
+
+        private fun online() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+
+        /**
+         * Una volta sola, con qualcosa collegato: chiede ad Android di lasciare Canvas fuori
+         * dall'ottimizzazione batteria, senza la quale col telefono fermo non c'è rete per tenere viva la sessione.
+         */
+        @SuppressLint("BatteryLife")
+        fun askBattery(activity: Activity) {
+            if (!anyLinked()) return
+            val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (prefs.getBoolean(KEY_ASKED, false)) return
+            val power = activity.getSystemService(PowerManager::class.java) ?: return
+            if (power.isIgnoringBatteryOptimizations(activity.packageName)) return
+            prefs.edit().putBoolean(KEY_ASKED, true).apply()
+            runCatching {
+                activity.startActivity(
+                    Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + activity.packageName)),
+                )
+            }
+        }
+    }
+}
+
+/** La sveglia del giro: parte anche col telefono a riposo, fa partire il giro e si rimette. */
+class KeepAliveAlarm : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val app = context.applicationContext
+        RevolutStore.init(app)
+        SimStore.init(app)
+        if (!RevolutStore.linked.value && !SimStore.linked.value) return
+        if (intent.action == ACTION) KeepAliveWorker.runNow(app)
+        arm(app)
+    }
+
+    companion object {
+        private const val ACTION = "com.platinum20.dashboard.KEEP_ALIVE"
+
+        private fun intent(context: Context) = PendingIntent.getBroadcast(
+            context, 7301,
+            Intent(context, KeepAliveAlarm::class.java).setAction(ACTION),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        fun arm(context: Context) {
+            val alarms = context.getSystemService(AlarmManager::class.java) ?: return
+            alarms.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + KeepAliveWorker.ALARM_MS,
+                intent(context),
+            )
+        }
+
+        fun disarm(context: Context) {
+            context.getSystemService(AlarmManager::class.java)?.cancel(intent(context))
+        }
+    }
+}
