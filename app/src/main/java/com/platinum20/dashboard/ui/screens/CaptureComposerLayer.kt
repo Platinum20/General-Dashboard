@@ -159,8 +159,11 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
             val isDoc = found is PhotoAttach.Found.Document || found is PhotoAttach.Found.Back
             // Se diventa una nota la foto si tiene, copiata nell'app; quella della fotocamera in cache no.
             val kept = when {
-                isDoc -> DocumentsStore.keep(context, uri)
-                found is PhotoAttach.Found.Photo -> PhotoAttach.keep(context, uri)
+                isDoc -> {
+                    val kind = (found as? PhotoAttach.Found.Document)?.scan?.kind ?: waiting?.kind ?: com.platinum20.dashboard.docs.DocKind.OTHER
+                    DocumentsStore.keep(context, uri, kind)
+                }
+                found is PhotoAttach.Found.Photo -> PhotoAttach.keep(context, uri)?.let { DocumentsStore.Kept(it, null) }
                 else -> null
             }
             if (cameraFile) runCatching { java.io.File(context.cacheDir, "receipts/scontrino.jpg").delete() }
@@ -182,7 +185,7 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
                 kept != null -> {
                     // Quello già scritto nella barra fa da titolo della nota.
                     val title = CaptureComposer.text.text.trim().ifEmpty { "Foto" }
-                    val note = NotesStore.addPhotoNote(listOf(title, (found as PhotoAttach.Found.Photo).text).filter { it.isNotBlank() }.joinToString("\n"), kept)
+                    val note = NotesStore.addPhotoNote(listOf(title, (found as PhotoAttach.Found.Photo).text).filter { it.isNotBlank() }.joinToString("\n"), kept.path)
                     CaptureComposer.close()
                     CaptureFeedback.show(CaptureNotice(CaptureMode.NOTE, "Foto salvata nelle note", undo = { NotesStore.deleteNote(note.id) }))
                 }

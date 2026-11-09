@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.358.0
+**Documenti ritagliati e PDF da esportare davvero**
+- Documenti: la foto viene raddrizzata leggendo il testo (anche se è di lato o sottosopra) e ritagliata sul bordo della tessera, senza il tavolo intorno
+- I documenti già salvati si raddrizzano da soli la prima volta che li apri
+- Tieni premuto il fronte o il retro per ruotarlo di un quarto di giro, o per tornare alla foto intera se il ritaglio non ti piace
+- PDF: fronte e retro ritagliati su un foglio A4 a grandezza vera, come una fotocopia
+- Il PDF ora sta in "Altro" insieme agli altri tasti: "Condividi PDF" oppure "Salva PDF in Download", che lo trovi subito nell'app File
+
 ## 1.357.0
 **Tutta l'app rivista, sezione per sezione**
 - Calendario: le abitudini sono una riga dentro OGGI ("Abitudini · 2 su 4", toccala per spuntarle); prima stavano in fondo e non ci si arrivava mai
