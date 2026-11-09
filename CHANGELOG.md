@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.388.0
+**Il giorno su una riga sua**
+- Nel calendario ogni giorno ha la sua riga, con il divisorio che arriva fino al nome del giorno ("——— Ieri ●"): la prima cosa del giorno resta pulita sotto
+
 ## 1.387.0
 **Turni più ordinati, e con chi eri**
 - Nel calendario il nome di ogni evento sta su una riga sua, sopra l'ora di inizio e di fine; per i promemoria l'ora va sotto il nome
