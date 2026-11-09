@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.358.0
+**Media più chiara**
+- I titoli che si toccano (Musica, Video, Radio e podcast, In coda) sono colorati e hanno la freccia: si capisce subito cosa apre una pagina; "Continua" resta grigio perché è solo un'etichetta
+- Le copertine sono più larghe e i titoli vanno fino a tre righe: episodi e video lunghi non si fermano più a metà
+
 ## 1.357.0
 **Tutta l'app rivista, sezione per sezione**
 - Calendario: le abitudini sono una riga dentro OGGI ("Abitudini · 2 su 4", toccala per spuntarle); prima stavano in fondo e non ci si arrivava mai

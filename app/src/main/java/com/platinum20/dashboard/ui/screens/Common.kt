@@ -73,6 +73,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Grain
@@ -600,6 +601,41 @@ fun SectionHeader(
                     .padding(horizontal = 6.dp, vertical = 6.dp),
             )
         }
+    }
+}
+
+/**
+ * Un'etichetta che apre una pagina (1.358): colore primario e freccia accanto, così si distingue a colpo
+ * d'occhio da un'etichetta semplice come "Continua", che resta grigia e non si tocca.
+ */
+@Composable
+fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val haptic = rememberHaptic()
+    val color = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = modifier
+            .entrance()
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
+            .clickable { haptic(Haptic.TICK); onOpen() }
+            .heightIn(min = 36.dp)
+            .padding(start = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title.uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.8.sp, fontWeight = FontWeight.SemiBold),
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Icon(
+            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = "Apri",
+            tint = color,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 

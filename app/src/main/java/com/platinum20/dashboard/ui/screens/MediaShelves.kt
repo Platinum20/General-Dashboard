@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,28 +55,6 @@ internal object MediaShelves {
         (first + then).distinctBy(key).take(max)
 }
 
-/** Il titolo di una fila: tocca e apre la pagina intera (non è un tasto in un'intestazione: è il titolo stesso). */
-@Composable
-private fun ShelfTitle(title: String, onOpen: () -> Unit) {
-    val haptic = rememberHaptic()
-    Row(
-        Modifier
-            .padding(horizontal = 12.dp)
-            .clip(MaterialTheme.shapes.small)
-            .clickable { haptic(Haptic.TICK); onOpen() }
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SectionHeader(title)
-        Icon(
-            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-            contentDescription = "Apri $title",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-    }
-}
-
 /** Una copertina della fila: immagine, titolo su due righe, una riga piccola. */
 @Composable
 private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, onClick: () -> Unit) {
@@ -96,7 +71,8 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text(title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        // Tre righe: i titoli lunghi (episodi, mix) si leggono interi invece di fermarsi a metà (1.358).
+        Text(title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
         if (subtitle.isNotBlank()) {
             Text(
                 subtitle,
@@ -126,7 +102,7 @@ private fun ShelfPlaceholder(width: Dp, height: Dp, shape: Shape) {
 @Composable
 private fun Shelf(title: String, onOpen: () -> Unit, content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ShelfTitle(title, onOpen)
+        OpenableHeader(title, onOpen, Modifier.padding(horizontal = 12.dp))
         content()
     }
 }
@@ -165,7 +141,7 @@ internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
             )
         }
         val recent = home?.recent.orEmpty()
-        val size = 112.dp
+        val size = 132.dp
         if (home == null && homeState.loading) {
             ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             return@Shelf
@@ -229,7 +205,7 @@ internal fun ListenShelf(onOpenAll: () -> Unit) {
     val radios = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
     val episodes = latest.data.orEmpty().take(MediaShelves.MAX - radios.size)
     Shelf("Radio e podcast", onOpenAll) {
-        val size = 96.dp
+        val size = 120.dp
         if (radios.isEmpty() && episodes.isEmpty()) {
             if (latest.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             else ShelfInvite("Scegli una radio o segui un podcast", onOpenAll)
