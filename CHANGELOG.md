@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.386.0
+**Quanto hai preso in ogni turno**
+- Sotto ogni turno passato del calendario c'è quanto hai guadagnato e a che percentuale, presi dalla busta paga di Creators Pro (il turno in corso dice "finora")
+- Aprendo un turno vedi anche quanto hai venduto, le ore lavorate e il totale del mese con il minimo garantito
+- I dati del bonifico (IBAN, indirizzo) e i nomi dei fan non vengono mai salvati
+
 ## 1.385.0
 **Eventi lunghi quanto durano, e un filo fra i giorni**
 - Lo spazio fra inizio e fine di un evento ora cresce con quanto dura, come lo spazio fra i giorni: un'ora è corta, un turno di cinque ore si vede più lungo, senza mai riempire lo schermo

@@ -33,6 +33,12 @@ object ShiftStore {
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
 
+    /** La busta paga: com'è andato ogni turno, e i mesi. */
+    private val _pay = MutableStateFlow<List<ShiftEarning>>(emptyList())
+    val pay: StateFlow<List<ShiftEarning>> = _pay.asStateFlow()
+    private val _payMonths = MutableStateFlow<List<PayMonth>>(emptyList())
+    val payMonths: StateFlow<List<PayMonth>> = _payMonths.asStateFlow()
+
     /** Gli id con cui Creators Pro indica Antonio (righe della timeline, utente): servono ai turni senza nome. */
     @Volatile private var myIds: Set<String> = emptySet()
     /** L'ultima pagina timeline aperta: la rilettura nascosta riapre quella. */
@@ -66,6 +72,8 @@ object ShiftStore {
         _readAt.value = prefs.getLong("readAt", 0)
         _expired.value = prefs.getBoolean("expired", false)
         _shifts.value = ShiftParse.fromJson(prefs.getString("shifts", null))
+        _pay.value = ShiftPay.fromJson(prefs.getString("pay", null))
+        _payMonths.value = ShiftPay.monthsFromJson(prefs.getString("payMonths", null))
         myIds = prefs.getStringSet("myIds", emptySet()).orEmpty()
         timelineUrl = prefs.getString("timelineUrl", null)
         runCatching {
@@ -77,14 +85,15 @@ object ShiftStore {
 
     fun isStale(now: Long = System.currentTimeMillis()) = readAt.value < now - STALE_MS
 
-    /** Le risposte di accesso non si tengono mai (password, token). */
-    fun isPrivate(url: String) = Regex("(?i)login|signin|sign-in|auth|token|password|session|otp|2fa").containsMatchIn(url)
+    /** Le risposte di accesso non si tengono mai (password, token), né i dati del bonifico (IBAN, indirizzo). */
+    fun isPrivate(url: String) = Regex("(?i)login|signin|sign-in|auth|token|password|session|otp|2fa|payout").containsMatchIn(url)
 
     /** Una risposta della pagina (chiamato dalla pagina, su un thread qualsiasi). */
     fun capture(url: String, status: Int, body: String) {
         if (isPrivate(url) || NOISE.containsMatchIn(url)) return
         if (status == 401 && _linked.value) { main.post { setExpired(true) }; return }
         if (status !in 200..299) return
+        if (ShiftPay.isPay(url)) return payCapture(url, body)
         val read = ShiftParse.read(body, myIds, url = url)
         synchronized(this) {
             val clean = url.substringBefore('#')
@@ -98,6 +107,35 @@ object ShiftStore {
         val partial = read?.let { if (url.startsWith("ws") || (it.seen == 1 && it.mine.isEmpty())) it.additive() else it }
         if (partial != null) main.post { commit(partial) }
     }
+
+    /**
+     * La busta paga: si tengono solo i numeri dei turni e del mese. Il dettaglio porta ogni vendita coi nomi
+     * dei fan: nel file dei dati letti va solo quanti turni sono stati letti, non la risposta.
+     */
+    private fun payCapture(url: String, body: String) {
+        val months = ShiftPay.months(body, url)
+        val shifts = ShiftPay.shifts(body, url)
+        synchronized(this) {
+            val clean = url.substringBefore('#')
+            captures.removeAll { it.optString("url") == clean }
+            val kept = if (months != null) body.take(20_000) else "turni letti: ${shifts?.size ?: -1}"
+            captures.addLast(JSONObject().put("url", clean).put("at", System.currentTimeMillis()).put("turni", shifts?.size ?: months?.size ?: -1).put("body", kept))
+            while (captures.size > MAX_CAPTURES) captures.removeFirst()
+        }
+        _hasData.value = true
+        saveCaptures()
+        main.post {
+            if (months != null) _payMonths.value = ShiftPay.mergeMonths(_payMonths.value, months)
+            if (shifts != null) _pay.value = ShiftPay.mergeShifts(_pay.value, shifts)
+            appContext?.getSharedPreferences(PREFS, Context.MODE_PRIVATE)?.edit()
+                ?.putString("pay", ShiftPay.toJson(_pay.value))
+                ?.putString("payMonths", ShiftPay.monthsToJson(_payMonths.value))
+                ?.apply()
+        }
+    }
+
+    /** Com'è andato quel turno, se la busta paga lo dice. */
+    fun payFor(shift: Shift): ShiftEarning? = ShiftPay.of(shift, _pay.value)
 
     fun seen(url: String) {
         if (isPrivate(url)) return
@@ -157,6 +195,8 @@ object ShiftStore {
         _linked.value = false
         appContext?.let { ShiftWorker.cancel(it) }
         _shifts.value = emptyList()
+        _pay.value = emptyList()
+        _payMonths.value = emptyList()
         _readAt.value = 0
         _expired.value = false
         myIds = emptySet()
