@@ -164,7 +164,9 @@ internal fun dueDays(
             else -> dated += DueRow("parcel-${p.id}", day, startOf(day), parcel = p)
         }
     }
-    events.filter { it.end > nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
+    // Nel calendario unico anche gli eventi di oggi già finiti stanno sotto OGGI: [pastDays] tiene solo i giorni
+    // prima, e senza questo il turno fatto oggi spariva (Antonio).
+    events.filter { it.end > nowMs || (withToday && dayOf(it.begin) == today) }.distinctBy { it.eventId to it.begin }.forEach { e ->
         // Un evento iniziato ieri e ancora in corso conta oggi.
         val day = maxOf(dayOf(e.begin), today)
         dated += DueRow("event-${e.eventId}-${e.begin}", day, if (e.allDay) startOf(day) else maxOf(e.begin, startOf(day)), event = e)
