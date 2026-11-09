@@ -605,7 +605,7 @@ fun SectionHeader(
 }
 
 /**
- * Un'etichetta che apre una pagina (1.359): colore primario e freccia accanto, così si distingue a colpo
+ * Un'etichetta che apre una pagina (1.361): colore primario e freccia accanto, così si distingue a colpo
  * d'occhio da un'etichetta semplice come "Continua", che resta grigia e non si tocca.
  */
 @Composable

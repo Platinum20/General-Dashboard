@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.359.0
+## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
 - Ogni scheda ha le stesse righe degli eventi, nello stesso ordine: quando, tutto il giorno o a un'ora, si ripete, avviso, luogo, note
@@ -8,6 +8,14 @@
 - Nella scheda di un evento si vede anche ogni quanto si ripete e quando avvisa
 - Una data di tutto il giorno non finisce mai fra gli scaduti: se si ripete passa da sola alla volta dopo
 - Nel calendario, il filtro Eventi mostra anche promemoria e date con un giorno
+
+## 1.360.0
+**Documenti ritagliati e PDF da esportare davvero**
+- Documenti: la foto viene raddrizzata leggendo il testo (anche se è di lato o sottosopra) e ritagliata sul bordo della tessera, senza il tavolo intorno
+- I documenti già salvati si raddrizzano da soli la prima volta che li apri
+- Tieni premuto il fronte o il retro per ruotarlo di un quarto di giro, o per tornare alla foto intera se il ritaglio non ti piace
+- PDF: fronte e retro ritagliati su un foglio A4 a grandezza vera, come una fotocopia
+- Il PDF ora sta in "Altro" insieme agli altri tasti: "Condividi PDF" oppure "Salva PDF in Download", che lo trovi subito nell'app File
 
 ## 1.358.0
 **Media più chiara**

@@ -50,7 +50,7 @@ import java.util.Locale
 
 /**
  * Le cose delle Note che si aprono a schermo intero, con la stessa pagina degli eventi del calendario.
- * Promemoria e date da ricordare sono la stessa cosa dalla 1.359 ([TASK], anche tutto il giorno).
+ * Promemoria e date da ricordare sono la stessa cosa dalla 1.361 ([TASK], anche tutto il giorno).
  */
 enum class ItemKind { TASK, PARCEL, HABIT, EXPENSE, FIXED }
 

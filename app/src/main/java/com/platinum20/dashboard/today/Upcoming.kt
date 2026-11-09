@@ -86,7 +86,7 @@ object Upcoming {
     fun build(
         today: LocalDate,
         events: Map<LocalDate, List<CalendarEvent>>,
-        /** Promemoria e date di tutto il giorno insieme (1.359). */
+        /** Promemoria e date di tutto il giorno insieme (1.361). */
         tasks: List<TaskItem>,
         parcels: List<Parcel> = emptyList(),
         fixedExpenses: List<FixedExpense> = emptyList(),

@@ -23,7 +23,7 @@ class ItemDetailTest {
 
     @Test
     fun taskHasTheSameLinesAsAnEvent() {
-        // Quando, tutto il giorno, si ripete, avviso, luogo, note: le stesse righe della scheda di un evento (1.359).
+        // Quando, tutto il giorno, si ripete, avviso, luogo, note: le stesse righe della scheda di un evento (1.361).
         val data = NotesData(tasks = listOf(TaskItem(1, "Bollo auto", dueAt = ms(now.plusDays(2)), repeat = Repeat.YEARLY)))
         val d = itemDetail(data, ItemKind.TASK, 1, now)!!
         assertEquals("Bollo auto", d.title)

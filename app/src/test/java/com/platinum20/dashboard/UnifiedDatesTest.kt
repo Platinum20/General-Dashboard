@@ -18,7 +18,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/** Promemoria e date da ricordare sono una cosa sola (1.359), con le stesse righe degli eventi. */
+/** Promemoria e date da ricordare sono una cosa sola (1.361), con le stesse righe degli eventi. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class UnifiedDatesTest {

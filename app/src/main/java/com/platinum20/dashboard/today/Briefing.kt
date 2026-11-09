@@ -77,7 +77,7 @@ object Briefing {
         forecast: Forecast?,
         today: List<CalendarEvent>?,
         tomorrow: List<CalendarEvent>?,
-        /** Promemoria e date di tutto il giorno insieme (1.359: sono la stessa cosa). */
+        /** Promemoria e date di tutto il giorno insieme (1.361: sono la stessa cosa). */
         tasks: List<TaskItem>,
         zone: ZoneId = ZoneId.systemDefault(),
         max: Int = 4,

@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.notes
 
 /**
- * Le stesse parole per eventi, promemoria e date (1.359, Antonio: "che abbiano le stesse cose"):
+ * Le stesse parole per eventi, promemoria e date (1.361, Antonio: "che abbiano le stesse cose"):
  * quando si ripete e quando avvisa si leggono allo stesso modo in tutte le schede. Pura, per i test.
  */
 object WhenText {

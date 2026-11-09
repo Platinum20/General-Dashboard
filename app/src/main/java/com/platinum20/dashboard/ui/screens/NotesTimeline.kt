@@ -611,7 +611,7 @@ internal enum class CalendarFilter(val label: String) { EXPENSES("Spese"), NOTES
 
 /**
  * A quale filtro appartiene una riga: eventi, promemoria con una data, date da ricordare, pacchi e rinnovo SIM
- * stanno insieme (1.359: sono la stessa cosa); le cose senza data con le note.
+ * stanno insieme (1.361: sono la stessa cosa); le cose senza data con le note.
  */
 internal fun DueRow.filter(): CalendarFilter = when {
     spend != null || expense != null || charge != null -> CalendarFilter.EXPENSES

@@ -38,7 +38,7 @@ data class TaskItem(
     val doneTimes: List<Long> = emptyList(),
     /**
      * Tutto il giorno, senza ora: compleanni, viaggi, scadenze (le vecchie "date da ricordare", unite ai
-     * promemoria nella 1.359). Non va mai in "Scaduti": se si ripete passa da solo alla volta dopo.
+     * promemoria nella 1.361). Non va mai in "Scaduti": se si ripete passa da solo alla volta dopo.
      */
     val allDay: Boolean = false,
     /** Quando avvisare: uguale per promemoria e date, come negli eventi del calendario. */
@@ -854,7 +854,7 @@ object NotesStore {
                     firstYear = if (o.has("firstYear")) o.optInt("firstYear") else null,
                 )
             }
-        // Prima della 1.359 le date da ricordare erano a parte: ora sono promemoria di tutto il giorno.
+        // Prima della 1.361 le date da ricordare erano a parte: ora sono promemoria di tutto il giorno.
         val oldDates = (0 until countdowns.length()).mapNotNull { i ->
             val o = countdowns.getJSONObject(i)
             val date = runCatching { LocalDate.parse(o.optString("date")) }.getOrNull() ?: return@mapNotNull null

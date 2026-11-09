@@ -116,7 +116,7 @@ class CalendarUnicoTest {
         )
         assertEquals(listOf("spend-today", "expense-4"), groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.map { it.key })
         assertEquals(listOf("task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
-        // Un promemoria con la data sta con gli eventi (1.359: sono la stessa cosa).
+        // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
         assertEquals(listOf("task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
         assertEquals(groups, groups.only(null))
     }

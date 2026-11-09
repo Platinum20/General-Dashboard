@@ -40,7 +40,7 @@ object NotesSearch {
         fun hit(vararg texts: String) = texts.any { normalize(it).contains(q) }
         return buildList {
             // Prima quelli ancora da fare, poi i completati.
-            // Le date di tutto il giorno sono promemoria (1.359), ma si cercano con la loro riga "12 marzo · compie…".
+            // Le date di tutto il giorno sono promemoria (1.361), ma si cercano con la loro riga "12 marzo · compie…".
             data.tasks.sortedBy { it.done }.filter { hit(it.text) }
                 .forEach { add(SearchHit(if (it.allDay) SearchKind.DATE else SearchKind.TASK, it.id, it.text)) }
             data.notes.sortedByDescending { it.updatedAt }.filter { hit(it.text) }

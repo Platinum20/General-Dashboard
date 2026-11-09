@@ -223,7 +223,7 @@ object AutoFill {
             when (item.found) {
                 is Found.NewParcel -> NotesStore.deleteParcel(ref)
                 is Found.Spent -> NotesStore.deleteExpense(ref)
-                // Una data di tutto il giorno: dalla 1.359 è un promemoria come gli altri.
+                // Una data di tutto il giorno: dalla 1.361 è un promemoria come gli altri.
                 is Found.Deadline -> NotesStore.deleteTask(ref)
                 is Found.Delivered -> Unit
             }

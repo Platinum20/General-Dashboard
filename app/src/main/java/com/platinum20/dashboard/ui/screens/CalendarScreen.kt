@@ -245,7 +245,7 @@ fun EventDetailScreen(
                     RowDivider()
                     DetailRow(Icons.Outlined.Train, "$label $value")
                 }
-                // Le stesse righe, nello stesso ordine, di promemoria e date (1.359): si ripete, avviso, luogo, note.
+                // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
                 RowDivider()
                 DetailRow(Icons.Outlined.Repeat, com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule) ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
                 RowDivider()

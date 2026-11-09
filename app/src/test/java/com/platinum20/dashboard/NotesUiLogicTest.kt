@@ -52,7 +52,7 @@ class NotesUiLogicTest {
                 TaskItem(2, "Palestra", dueAt = ms(oggi.atTime(18, 0))),
                 TaskItem(3, "Senza data"),
                 TaskItem(4, "Fatto", done = true, dueAt = ms(oggi.atTime(15, 0))),
-                // Le date da ricordare sono promemoria di tutto il giorno (1.359): quella passata non è "scaduta".
+                // Le date da ricordare sono promemoria di tutto il giorno (1.361): quella passata non è "scaduta".
                 TaskItem.date(5, "Viaggio", oggi.plusDays(10), zone = zone),
                 TaskItem.date(6, "Compleanno Sara", LocalDate.of(1990, 10, 24), yearly = true, zone = zone),
                 TaskItem.date(7, "Passato", oggi.minusDays(3), zone = zone),
