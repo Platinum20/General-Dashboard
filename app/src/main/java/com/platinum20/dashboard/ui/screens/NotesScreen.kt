@@ -242,7 +242,7 @@ fun NotesScreen(
     val day = LocalDate.now()
     val timeline = remember(data, events, sim, simLinked, day) {
         dueDays(
-            data.tasks, data.upcoming, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
+            data.tasks, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
             withToday = true, notes = data.notes, expenses = data.expenses,
         )
     }
