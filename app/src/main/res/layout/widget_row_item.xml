@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Una cosa del calendario: cerchio da spuntare (promemoria) o segno colorato (evento, data), titolo e ora. -->
+<!-- Una cosa del calendario (evento, promemoria, data): barretta colorata, titolo e ora. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/item_root"
     android:layout_width="match_parent"
@@ -10,18 +10,6 @@
     <FrameLayout
         android:layout_width="28dp"
         android:layout_height="36dp">
-
-        <ImageView
-            android:id="@+id/item_check"
-            android:layout_width="28dp"
-            android:layout_height="36dp"
-            android:paddingTop="9dp"
-            android:paddingBottom="9dp"
-            android:paddingStart="5dp"
-            android:paddingEnd="5dp"
-            android:src="@drawable/widget_check"
-            android:contentDescription="Segna come fatto"
-            android:visibility="gone" />
 
         <ImageView
             android:id="@+id/item_mark"

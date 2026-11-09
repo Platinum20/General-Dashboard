@@ -14,7 +14,7 @@ import java.time.ZoneId
 
 /**
  * Widget "Calendario" (era "Da fare": il nome della classe resta per non toglierlo dalla Home).
- * Come la card della Home: oggi con eventi, promemoria da spuntare e date, poi i prossimi giorni.
+ * Come la card della Home: oggi con eventi, promemoria e date, poi i prossimi giorni.
  */
 class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
 
@@ -73,18 +73,13 @@ class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
                 setTextViewText(R.id.item_time, row.time.orEmpty())
                 setViewVisibility(R.id.item_time, if (row.time == null) View.GONE else View.VISIBLE)
                 setTextColor(R.id.item_time, context.getColor(if (row.late) R.color.widget_late else R.color.widget_text_secondary))
-                when (row.kind) {
-                    AgendaRow.Kind.TASK -> {
-                        setViewVisibility(R.id.item_check, View.VISIBLE)
-                        setImageViewResource(R.id.item_check, if (row.late) R.drawable.widget_check_late else R.drawable.widget_check)
-                        setOnClickPendingIntent(R.id.item_check, doneIntent(context, row.id))
-                    }
-                    AgendaRow.Kind.EVENT, AgendaRow.Kind.DATE -> {
-                        setViewVisibility(R.id.item_mark, View.VISIBLE)
-                        val color = row.color?.takeIf { it != 0 }?.let { it or 0xFF000000.toInt() } ?: context.getColor(R.color.widget_accent)
-                        setInt(R.id.item_mark, "setColorFilter", color)
-                    }
+                // Niente spunta (Antonio, 1.374): eventi, promemoria e date sono la stessa cosa, con la barretta colorata.
+                setViewVisibility(R.id.item_mark, View.VISIBLE)
+                val color = when {
+                    row.late -> context.getColor(R.color.widget_late)
+                    else -> row.color?.takeIf { it != 0 }?.let { it or 0xFF000000.toInt() } ?: context.getColor(R.color.widget_accent)
                 }
+                setInt(R.id.item_mark, "setColorFilter", color)
                 // Toccando la riga si apre la sua scheda, come nel calendario dell'app.
                 val request = when (row.kind) {
                     AgendaRow.Kind.EVENT -> OpenRequest(OpenRequest.EVENT, url = "${row.id}/${row.begin}/${row.end}")
