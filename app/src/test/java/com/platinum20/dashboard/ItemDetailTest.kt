@@ -83,6 +83,13 @@ class ItemDetailTest {
     }
 
     @Test
+    fun expenseShowsItsTime() {
+        val data = NotesData(expenses = listOf(Expense(5, 920, "DropPOS", ExpenseCategory.FOOD, LocalDate.of(2026, 11, 9), at = java.time.LocalTime.of(14, 32))))
+        val d = itemDetail(data, ItemKind.EXPENSE, 5, now)!!
+        assertTrue(d.lines.first { it.kind == LineKind.WHEN }.text.endsWith(", 14:32"))
+    }
+
+    @Test
     fun missingItemIsNull() {
         assertNull(itemDetail(NotesData(), ItemKind.HABIT, 9, now))
     }

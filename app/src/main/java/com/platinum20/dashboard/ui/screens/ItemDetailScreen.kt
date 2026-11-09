@@ -136,7 +136,8 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 e.text.ifBlank { e.category.label },
                 listOfNotNull(
                     DetailLine(LineKind.AMOUNT, Expenses.format(e.cents)),
-                    DetailLine(LineKind.WHEN, longDate(e.date)),
+                    // L'ora della spesa (Revolut, notifica, a mano) accanto al giorno, come nelle cose a un'ora (Antonio).
+                    DetailLine(LineKind.WHEN, longDate(e.date) + (e.at?.let { ", " + it.format(hourFormat) } ?: "")),
                     DetailLine(LineKind.CATEGORY, e.category.label),
                     e.fixedId?.let { DetailLine(LineKind.REPEAT, "Spesa fissa, aggiunta da sola") },
                 ),
