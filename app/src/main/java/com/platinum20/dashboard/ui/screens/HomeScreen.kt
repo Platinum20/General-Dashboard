@@ -202,7 +202,8 @@ fun HomeScreen(
     // I turni di Creators Pro: con la Home aperta si rileggono spesso, e ogni cambio ridisegna il calendario.
     remember { com.platinum20.dashboard.shifts.ShiftStore.init(context) }
     val shifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
-    LaunchedEffect(shifts) { calendarRefresh++ }
+    val workPay by com.platinum20.dashboard.shifts.ShiftStore.pay.collectAsStateWithLifecycle()
+    LaunchedEffect(shifts, workPay) { calendarRefresh++ }
     AutoRefresh(everyMs = com.platinum20.dashboard.shifts.ShiftStore.STALE_MS) {
         val work = com.platinum20.dashboard.shifts.ShiftStore
         if (work.linked.value && !work.expired.value && work.isStale()) com.platinum20.dashboard.shifts.CreatorsLink.refresh(context)

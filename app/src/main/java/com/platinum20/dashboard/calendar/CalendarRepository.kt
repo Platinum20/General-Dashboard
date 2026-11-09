@@ -29,12 +29,18 @@ data class CalendarEvent(
 /** Il colore dei turni nel calendario. */
 private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
 
-internal fun shiftEvent(s: Shift) = CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = "", color = SHIFT_COLOR)
+/** Il turno nel calendario: accanto alla durata quanto ha fruttato, dalla busta paga ("$60,56 · 12%"). */
+internal fun shiftEvent(s: Shift, pay: com.platinum20.dashboard.shifts.ShiftEarning? = null) =
+    CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = pay?.let(com.platinum20.dashboard.shifts.ShiftPay::line).orEmpty(), color = SHIFT_COLOR)
 
-/** La scheda di un turno: solo lettura, si cambia su Creators Pro. */
-internal fun shiftDetail(s: Shift) = EventDetail(
+/** La scheda di un turno: solo lettura, si cambia su Creators Pro. Nelle note com'è andato e il mese. */
+internal fun shiftDetail(
+    s: Shift,
+    pay: com.platinum20.dashboard.shifts.ShiftEarning? = null,
+    month: com.platinum20.dashboard.shifts.PayMonth? = null,
+) = EventDetail(
     id = s.eventId, title = s.title, begin = s.start, end = s.end, allDay = false, location = "",
-    description = "", recurring = false, calendarId = -1, calendarName = "Creators Pro", writable = false, color = SHIFT_COLOR,
+    description = com.platinum20.dashboard.shifts.ShiftPay.detail(pay, month), recurring = false, calendarId = -1, calendarName = "Creators Pro", writable = false, color = SHIFT_COLOR,
 )
 
 /** Eventi dei calendari del telefono (Google, Samsung, Outlook…), letti dal provider di sistema. */
@@ -90,7 +96,7 @@ object CalendarRepository {
         }
         // I turni di Creators Pro: eventi come gli altri, ma solo in Canvas (non nel calendario del telefono).
         ShiftStore.init(context)
-        val shifts = ShiftStore.shifts.value.filter { it.end > start && it.start < end }.map(::shiftEvent)
+        val shifts = ShiftStore.shifts.value.filter { it.end > start && it.start < end }.map { shiftEvent(it, ShiftStore.payFor(it)) }
         // I treni di Gmail: un viaggio solo, con partenza e arrivo.
         CalendarDays.group((Trips.shape(events) + shifts).sortedBy { it.begin }, first, days, zone)
     }
@@ -99,7 +105,9 @@ object CalendarRepository {
     suspend fun event(context: Context, id: Long): EventDetail? = withContext(Dispatchers.IO) {
         if (id < -1) {
             ShiftStore.init(context)
-            return@withContext ShiftStore.shifts.value.firstOrNull { it.eventId == id }?.let(::shiftDetail)
+            return@withContext ShiftStore.shifts.value.firstOrNull { it.eventId == id }?.let {
+                shiftDetail(it, ShiftStore.payFor(it), com.platinum20.dashboard.shifts.ShiftPay.monthOf(it.start, ShiftStore.payMonths.value))
+            }
         }
         if (!hasPermission(context)) return@withContext null
         val projection = arrayOf(

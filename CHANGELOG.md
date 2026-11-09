@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.385.0
+**Quanto hai preso in ogni turno**
+- Sotto ogni turno passato del calendario c'è quanto hai guadagnato e a che percentuale, presi dalla busta paga di Creators Pro (il turno in corso dice "finora")
+- Aprendo un turno vedi anche quanto hai venduto, le ore lavorate e il totale del mese con il minimo garantito
+- I dati del bonifico (IBAN, indirizzo) e i nomi dei fan non vengono mai salvati
+
 ## 1.384.0
 **Turni con le creator**
 - Nel calendario il turno dice "Turno" e sotto, per intero, i nomi delle creator (la prima, la seconda, e così via), senza tagli

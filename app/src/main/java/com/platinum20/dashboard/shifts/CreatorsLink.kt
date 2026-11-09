@@ -90,12 +90,18 @@ object CreatorsLink {
      * pagina si chiedono gli eventi di ogni creator per questo mese e il prossimo. La fine la dice [Bridge.pulled].
      */
     private fun pullScript(ranges: List<Pair<String, String>>): String {
+        // L'anno della busta paga: da gennaio scorso, così a gennaio c'è ancora dicembre.
+        val year = java.time.LocalDate.now().year
+        val yearFrom = "${year - 1}-01-01T00:00:00.000Z"
+        val yearTo = "$year-12-31T23:59:59.999Z"
         val list = ranges.joinToString(",") { "['${it.first}','${it.second}']" }
         return """
         (function () {
           var opt = { method: 'GET', credentials: 'include', headers: window.__cvHeaders || {} };
           var api = 'https://api.creatorspro.com/v1/timeline/', ranges = [$list];
-          function end(ok) { try { CanvasShift.pulled(ok); } catch (e) {} }
+          // Due parti (turni e busta paga): la fine si dice quando sono finite tutte e due.
+          var parts = 2, good = false;
+          function end(ok) { good = good || ok; if (--parts == 0) try { CanvasShift.pulled(good); } catch (e) {} }
           fetch(api + 'creators', opt).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
             var cs = (j && j.data) || [];
             var left = cs.length * ranges.length;
@@ -107,6 +113,20 @@ object CreatorsLink {
               });
             });
           }).catch(function () { end(false); });
+          // La busta paga: chi è Antonio, i suoi mesi di quest'anno, i turni di ognuno (venduto, guadagno, percentuale).
+          var wage = 'https://api.creatorspro.com/v1/sellers-wage/wages';
+          fetch('https://api.creatorspro.com/v1/accounts/members', opt).then(function (r) { return r.ok ? r.json() : null; }).then(function (m) {
+            var id = m && m.data && m.data.id;
+            if (!id) return;
+            return fetch(wage + '?startedAt=' + encodeURIComponent('$yearFrom') + '&endedAt=' + encodeURIComponent('$yearTo') + '&memberId=' + id, opt)
+              .then(function (r) { return r.ok ? r.json() : null; }).then(function (w) {
+                // Solo i mesi finiti da meno di due mesi: i vecchi non cambiano più.
+                var since = Date.now() - 62 * 86400000;
+                var ids = ((w && w.data) || []).filter(function (x) { return x && x.info && x.info.id && Date.parse(x.info.endedAt) > since; })
+                  .map(function (x) { return x.info.id; });
+                return Promise.all(ids.map(function (i) { return fetch(wage + '/' + i, opt).catch(function () {}); }));
+              });
+          }).catch(function () {}).then(function () { end(false); });
         })()
         """
     }
