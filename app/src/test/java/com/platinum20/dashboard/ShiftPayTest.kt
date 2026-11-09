@@ -1,14 +1,19 @@
 package com.platinum20.dashboard
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.shifts.Shift
 import com.platinum20.dashboard.shifts.ShiftPay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.ZoneId
 
 /** La busta paga di Creators Pro, col formato vero (file di Antonio, 9/11/2026, vendite tolte). */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class ShiftPayTest {
     private val zone = ZoneId.of("Europe/Rome")
     private val listUrl = "https://api.creatorspro.com/v1/sellers-wage/wages?startedAt=2026-01-01T00:00:00.000Z&endedAt=2026-12-31T23:59:59.999Z&memberId=m1"
