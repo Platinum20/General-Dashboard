@@ -133,7 +133,45 @@ object YouTubeStore {
         load(context, _history, force, FeedCache.videos("yt-cronologia.json"), web = { YouTubeWeb.history(it) }, api = null)
 
     fun refreshHome(context: Context, force: Boolean = false) =
-        load(context, _home, force, FeedCache.videos("yt-home.json"), web = { YouTubeWeb.home(it) }, api = null)
+        load(context, _home, force, FeedCache.videos("yt-home.json"), web = { ctx ->
+            YouTubeWeb.home(ctx).also { homeNext = it.next; _homeEnded.value = false }.videos
+        }, api = null)
+
+    /** Segno di YouTube per i consigliati dopo; null se la Home è venuta dalla copia salvata. */
+    private var homeNext: String? = null
+    private var loadingHome = false
+    private val _homeEnded = MutableStateFlow(false)
+    /** YouTube non ha più consigliati da dare (succede di rado): in fondo niente più caricamento. */
+    val homeEnded: StateFlow<Boolean> = _homeEnded.asStateFlow()
+
+    /**
+     * Altri consigliati in fondo alla Home, come scorrendo l'app di YouTube. Senza segno (Home presa dalla
+     * copia salvata) si rilegge la Home e si aggiungono quelli nuovi: anche così il segno arriva.
+     */
+    fun loadMoreHome(context: Context) {
+        val old = _home.value
+        if (loadingHome || old.loading || old.data == null || _homeEnded.value) return
+        loadingHome = true
+        val app = context.applicationContext
+        scope.launch {
+            try {
+                val token = homeNext
+                val page = withTimeoutOrNull(90_000) {
+                    if (token != null) YouTubeWeb.homeMore(app, token) else YouTubeWeb.home(app)
+                } ?: return@launch
+                homeNext = page.next
+                val before = _home.value.data.orEmpty()
+                val merged = mergeChannelPage(before, page.videos)
+                _homeEnded.value = endOfHome(page.next, before.size, merged.size)
+                _home.update { it.copy(data = merged) }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Fine silenziosa: i video restano, al prossimo arrivo in fondo si riprova.
+            } finally {
+                loadingHome = false
+            }
+        }
+    }
 
     fun refreshPlaylists(context: Context, force: Boolean = false) =
         load(context, _playlists, force, FeedCache.playlists, web = { YouTubeWeb.playlists(it) }) { token -> YouTubeApi.playlists(token) }
@@ -179,6 +217,8 @@ object YouTubeStore {
         _playlistItems.value = emptyMap()
         _search.value = Loadable()
         _home.value = Loadable()
+        homeNext = null
+        _homeEnded.value = false
         _history.value = Loadable()
         _channels.value = Loadable()
         _channelVideos.value = emptyMap()
@@ -251,6 +291,9 @@ object YouTubeStore {
         }
     }
 }
+
+/** La Home è finita solo se YouTube non dà più il segno per continuare e quest'ultima pagina non ha portato niente di nuovo. */
+internal fun endOfHome(next: String?, before: Int, after: Int): Boolean = next == null && after <= before
 
 /** Aggiunge in fondo una pagina di video del canale senza doppioni (YouTube a volte ne ripete uno a cavallo). */
 internal fun mergeChannelPage(old: List<YtVideo>, page: List<YtVideo>): List<YtVideo> = (old + page).distinctBy { it.id }

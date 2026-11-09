@@ -1,12 +1,24 @@
 # Changelog
 
-## 1.370.0
+## 1.372.0
 **Treni: il viaggio su una riga sola**
 - Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce
 - In mezzo quanto dura il viaggio e che treno è (per esempio "4 h 32 min · Intercity 612"); se arrivi il giorno dopo, accanto all'arrivo c'è il giorno
 - Mentre sei in treno, un pallino sulla linea mostra a che punto del viaggio sei
 - Nella scheda del treno lo stesso viaggio disegnato, poi carrozza, posto e PNR; tolte le righe che non dicevano niente ("Non si ripete", il luogo uguale alla partenza)
 - Le spese Trenitalia e Italo hanno l'icona del treno
+
+## 1.371.0
+**La Home di YouTube non finisce più**
+- Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
+- I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
+
+## 1.370.0
+**YouTube: testi puliti e sottotitoli solo italiano e inglese**
+- Nei commenti non compaiono più scritte strane come "&quot;": virgolette, apostrofi ed emoji si leggono giusti
+- La descrizione del video resta sempre nella lingua in cui l'ha scritta l'autore, mai tradotta (serve YouTube collegato in Impostazioni › Account)
+- Nei sottotitoli trovi solo Italiano e Inglese; se il video non li ha, YouTube li traduce da un'altra lingua
+- SponsorBlock: sull'etichetta "Salta" c'è una X per chiuderla e non saltare quel pezzo
 
 ## 1.369.0
 **Il QR del biglietto nell'evento**
