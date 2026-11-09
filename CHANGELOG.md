@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.382.0
+**Il biglietto si apre con un tasto**
+- Il QR del biglietto non sta più sempre aperto sotto il titolo: in basso a sinistra nella pagina del treno c'è il tasto "Biglietto"
+- Toccandolo il QR si apre grande su fondo bianco, con lo schermo alla luminosità massima; tocca ovunque o Indietro per chiuderlo
+- Modifica, per gli eventi che si possono cambiare, è passato in "Altro"
+
 ## 1.380.0
 **Turni: ora li legge davvero**
 - Grazie ai dati che mi hai mandato, Canvas capisce la Timeline di Creators Pro: i tuoi turni compaiono nel calendario con l'ora giusta (Morning 7–12, Afternoon 12–17, Evening 17–22, Night 22–3, After 3–7)

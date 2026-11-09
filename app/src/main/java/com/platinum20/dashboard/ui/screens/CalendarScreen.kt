@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
@@ -201,9 +202,17 @@ fun EventDetailScreen(
 
     val current = event
     val writable = current?.writable == true
+    // Il QR del biglietto, dalla mail: dietro il tasto in basso a sinistra, si apre solo quando serve (Antonio).
+    val codes = rememberTicketCodes(current)
+    var showTicket by remember { mutableStateOf(false) }
+    if (showTicket && codes.isNotEmpty()) TicketSheet(codes) { showTicket = false }
     DetailPage(
         onBack = onBack,
         meta = "Evento",
+        primary = if (codes.isNotEmpty()) DetailAction(Icons.Outlined.QrCode2, "Biglietto") {
+            haptic(Haptic.CONFIRM)
+            showTicket = true
+        } else null,
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({
@@ -242,8 +251,6 @@ fun EventDetailScreen(
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
             DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
-            // Il QR del biglietto, dalla mail: subito sotto il titolo, è quello che serve al controllo.
-            TicketCodes(current)
             CanvasCard(Modifier.fillMaxWidth()) {
                 if (trip != null && !current.allDay) {
                     // Il viaggio come sulla linea del tempo: partenza, linea, arrivo (Antonio).
