@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.369.0
+**Il QR del biglietto nell'evento**
+- Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
+- Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
+- Una volta trovato resta sul telefono: si apre anche senza rete
+- Serve la posta collegata con la password per app (Impostazioni › Account › Posta)
+
 ## 1.368.0
 **Calendario: le righe non saltano più**
 - Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga

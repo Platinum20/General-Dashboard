@@ -239,6 +239,8 @@ fun EventDetailScreen(
             val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description) else emptyList()
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary)
+            // Il QR del biglietto, dalla mail: subito sotto il titolo, è quello che serve al controllo.
+            TicketCodes(current)
             CanvasCard(Modifier.fillMaxWidth()) {
                 DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
                 ticket.forEach { (label, value) ->
