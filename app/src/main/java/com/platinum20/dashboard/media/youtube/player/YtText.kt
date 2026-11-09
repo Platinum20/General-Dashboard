@@ -63,4 +63,50 @@ object YtText {
     fun links(text: String): List<IntRange> = link.findAll(text)
         .map { m -> m.range.first..(m.range.last - m.value.length + m.value.trimEnd('.', ',', ';', ':', '!', '?').length) }
         .toList()
+    private val entity = Regex("&(#[0-9]+|#[xX][0-9a-fA-F]+|[a-zA-Z]+);")
+    private val named = mapOf("amp" to "&", "quot" to "\"", "apos" to "'", "lt" to "<", "gt" to ">", "nbsp" to "\u00A0")
+
+    /**
+     * I commenti a volte arrivano con le entità HTML ancora scritte, anche doppie ("&amp;quot;"):
+     * si sciolgono finché ne restano, così si legge «"» e non «&quot;».
+     */
+    fun decodeEntities(text: String): String {
+        var out = text
+        repeat(3) {
+            if ('&' !in out) return out
+            val next = entity.replace(out) { m ->
+                val code = m.groupValues[1]
+                when {
+                    code.startsWith("#x") || code.startsWith("#X") -> code.drop(2).toIntOrNull(16)?.let(::codePoint)
+                    code.startsWith("#") -> code.drop(1).toIntOrNull()?.let(::codePoint)
+                    else -> named[code]
+                } ?: m.value
+            }
+            if (next == out) return out
+            out = next
+        }
+        return out
+    }
+
+    private fun codePoint(cp: Int): String? = if (Character.isValidCodePoint(cp)) String(Character.toChars(cp)) else null
+
+    /** Le uniche lingue dei sottotitoli che Antonio vuole vedere. */
+    val subtitleLanguages = listOf("it" to "Italiano", "en" to "Inglese")
+
+    /**
+     * Sottotitoli da offrire: solo italiano e inglese. Se il video non ne ha in una delle due,
+     * YouTube li traduce da un'altra traccia (tlang), segnati «(tradotti)».
+     */
+    fun pickSubtitles(all: List<YtSubtitle>): List<YtSubtitle> {
+        val source = all.minByOrNull { it.auto }
+        return subtitleLanguages.flatMap { (code, name) ->
+            val own = all.filter { it.language.substringBefore('-').lowercase() == code }
+                .sortedBy { it.auto }
+                .distinctBy { it.auto }
+                .map { it.copy(label = if (it.auto) "$name (automatici)" else name) }
+            own.ifEmpty {
+                listOfNotNull(source?.let { YtSubtitle(code, "$name (tradotti)", it.url + "&tlang=$code", auto = true) })
+            }
+        }
+    }
 }
