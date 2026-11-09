@@ -360,11 +360,12 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         begin = event.begin,
         end = event.end,
     ) else {
-    // Un turno: "Turno" in alto e sotto le creator, intere (Antonio).
+    // Il nome su una riga sua sopra inizio e fine (Antonio); per un turno "Turno" e fra inizio e fine le creator.
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno" else event.title.ifBlank { "Evento" },
+        from = if (labels) "Inizio" else "",
+        title = if (labels) null else if (creators.isNotEmpty()) "Turno" else event.title.ifBlank { "Evento" },
         names = creators.joinToString(", ").takeIf { it.isNotEmpty() },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
@@ -445,10 +446,9 @@ internal fun timelineEntries(
                     (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
                 // Tutto il giorno (compleanni, scadenze): niente ora, e gli anni che compie.
                 r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to r.task.titleWithYears(today)
-                r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to
-                    ((r.task.dueAt?.takeIf { !g.late && !g.past }?.time()?.let { "$it  " } ?: "") + r.task.text)
-                r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
-                    ((if (r.event.allDay) "" else r.event.begin.time() + "  ") + r.event.title)
+                // L'ora va sulla riga sotto il nome (Antonio): vedi [TimelineEntry.time].
+                r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to r.task.text
+                r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to r.event.title
                 // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
@@ -483,6 +483,11 @@ internal fun timelineEntries(
                 todayHeader = r.spend != null,
                 later = i == 0 && later,
                 divider = i == 0 && dayAfterDay && r.spend == null,
+                time = when {
+                    r.task != null && r.overdueFrom == null && !r.task.allDay -> r.task.dueAt?.takeIf { !g.late && !g.past }?.time()
+                    r.event != null && !r.event.allDay -> r.event.begin.time()
+                    else -> null
+                },
                 trip = r.event?.let { tripStops(it, today, zone) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r

@@ -148,7 +148,9 @@ class NotesUiLogicTest {
         )
         val entries = timelineEntries(groups, today, zone).map { it.first }
         assertEquals(listOf("Scaduti", "Domani", null, "Sab 31"), entries.map { it.dayLabel })
-        assertEquals(listOf("Bolletta", "09:30  Dentista", "18:00  Spesa", "07:00  Treno"), entries.map { it.text })
+        assertEquals(listOf("Bolletta", "Dentista", "Spesa", "Treno"), entries.map { it.text })
+        // L'ora sulla riga sotto il nome; lo scaduto no.
+        assertEquals(listOf(null, "09:30", "18:00", "07:00"), entries.map { it.time })
         assertEquals(listOf(true, false, false, false), entries.map { it.late })
         // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
         assertEquals(listOf(0f, 0f, 0f), entries.take(3).map { it.gapDp })
@@ -202,7 +204,7 @@ class NotesUiLogicTest {
         assertEquals(true, past.all { it.past })
         val entries = timelineEntries(past, today, zone).map { it.first }
         // I promemoria fatti restano nel passato anche se vecchi: non c'è più un limite.
-        assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "20:00  Cena", "Fatto ieri", "Ancora da fare", "09:00  Riunione"), entries.map { it.text })
+        assertEquals(listOf("Fatto troppo tempo fa", "Arrivato: Cuffie", "Cena", "Fatto ieri", "Ancora da fare", "Riunione"), entries.map { it.text })
         // Un promemoria passato e non spuntato resta nel suo giorno, come un evento (1.376).
         // Sotto il segno OTTOBRE il giorno è corto.
         assertEquals(listOf("Mar 28 lug", "Ven 23", null, "Ieri", null, "Oggi"), entries.map { it.dayLabel })

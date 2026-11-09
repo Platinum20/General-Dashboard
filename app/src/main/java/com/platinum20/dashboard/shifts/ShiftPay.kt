@@ -114,6 +114,17 @@ object ShiftPay {
         return if (abs(v - Math.round(v)) < 0.05) "${Math.round(v)}%" else String.format(Locale.ITALY, "%.1f%%", v)
     }
 
+    /** Il turno ha già dei numeri: uno ancora da fare dice "$0,00 · 10%", che non serve (Antonio). */
+    fun worked(e: ShiftEarning): Boolean = e.current || e.earned > 0 || e.sold > 0
+
+    /** Il nome del mese della busta paga: "Novembre". */
+    fun monthName(month: PayMonth, zone: ZoneId = ZoneId.systemDefault()): String =
+        Instant.ofEpochMilli(month.start).atZone(zone).month
+            .getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, Locale.ITALIAN).replaceFirstChar { it.uppercase() }
+
+    /** "5,3 h": le ore lavorate con un decimale. */
+    fun hours(h: Double): String = String.format(Locale.ITALY, "%.1f h", h).replace(",0 h", " h")
+
     /** Sulla linea del tempo, accanto alla durata: "$60,56 · 12%" (il turno in corso dice "finora"). */
     fun line(e: ShiftEarning): String =
         money(e.earned) + " · " + percent(e.percent) + if (e.current) " finora" else ""
