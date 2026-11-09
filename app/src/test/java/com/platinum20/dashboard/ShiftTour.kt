@@ -103,7 +103,7 @@ class ShiftTour {
             shiftRow(done, "s1", null, past = true),
             TimelineEntry("t0", BriefKind.MONEY, "Spesa di oggi", "Oggi", todayHeader = true, trailing = "9,20 €"),
             TimelineEntry("t1", BriefKind.TASK, "Chiamare il commercialista", null, time = "09:00"),
-            shiftRow(next, "s2", "Domani", past = false, divider = true).copy(later = true),
+            shiftRow(next, "s2", "Domani", past = false, divider = true),
             shiftRow(next.copy(id = "s3", start = next.start + 86_400_000L, end = next.end + 86_400_000L), "s3", "Mer 11", past = false, divider = true),
             TimelineEntry(
                 "m1", BriefKind.EVENT, meeting.title, null, color = meeting.color,
