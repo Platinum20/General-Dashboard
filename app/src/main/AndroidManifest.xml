@@ -25,6 +25,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Revolut e WindTre restano collegati anche col telefono fermo (KeepAliveWorker). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <!-- Dettatura tenendo premuto il +: serve vedere il servizio di riconoscimento vocale (Android 11+).
@@ -138,6 +140,16 @@
             android:name=".update.UpdateInstallReceiver"
             android:exported="false">
             <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Tiene vivi gli accessi Revolut e WindTre: si rimette dopo un riavvio o un aggiornamento. -->
+        <receiver
+            android:name=".work.KeepAliveAlarm"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>

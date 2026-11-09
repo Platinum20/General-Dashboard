@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.368.0
+## 1.369.0
 **La Home di YouTube non finisce più**
 - Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
 - I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
+
+## 1.367.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
 
 ## 1.365.0
 **I tuoi turni di lavoro nel calendario**
