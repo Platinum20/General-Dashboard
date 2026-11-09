@@ -120,6 +120,55 @@ class YtSyncTest {
     }
 
     @Test
+    fun watchedOnPcAfterLastReadComesFirst() {
+        // Ultima lettura alle 1000 con in cima a, b. Poi: Spotify in Canvas alle 5000, sul PC c (nuovo) e b rivisto.
+        val local = listOf(
+            ResumeItem(ResumeKind.SPOTIFY, "s", "Brano", at = 5_000L),
+            ResumeItem(ResumeKind.YOUTUBE, "a", "A", positionMs = 10_000, durationMs = 100_000, at = 900L),
+            ResumeItem(ResumeKind.YOUTUBE, "b", "B", positionMs = 10_000, durationMs = 100_000, at = 800L),
+        )
+        val remote = listOf(video("c", 40, 100), video("b", 60, 100), video("a", 10, 100))
+        val items = YtSync.continueItems(local, remote, now = 10_000L, lastHead = listOf("a", "b"), lastAt = 1_000L)
+        val all = (items + local).sortedByDescending { it.at }.distinctBy { it.kind to it.key }
+        assertEquals(listOf("c", "b", "s", "a"), all.map { it.key })
+        assertEquals(60_000L, all[1].positionMs)
+    }
+
+    @Test
+    fun canvasWatchKeepsItsTimeAndOrdersPcOnes() {
+        // In Canvas d alle 6000 (mandato a YouTube); sul PC e prima di d (sotto) ed f dopo (sopra).
+        val local = listOf(
+            ResumeItem(ResumeKind.YOUTUBE, "d", "D", positionMs = 50_000, durationMs = 100_000, at = 6_000L),
+            ResumeItem(ResumeKind.SPOTIFY, "s", "Brano", at = 5_500L),
+        )
+        val remote = listOf(video("f", 30, 100), video("d", 50, 100), video("e", 30, 100), video("old", 30, 100))
+        val items = YtSync.continueItems(local, remote, now = 10_000L, lastHead = listOf("old"), lastAt = 1_000L)
+        assertEquals(10_000L, items.first { it.key == "f" }.at)
+        assertTrue(items.first { it.key == "e" }.at < 6_000L)
+        assertTrue(items.none { it.key == "d" })
+    }
+
+    @Test
+    fun topVideoContinuedOnPcMovesUp() {
+        // a era già in cima: sul PC lo riprendi, l'ordine non cambia ma il punto va avanti.
+        val local = listOf(
+            ResumeItem(ResumeKind.SPOTIFY, "s", "Brano", at = 5_000L),
+            ResumeItem(ResumeKind.YOUTUBE, "a", "A", positionMs = 10_000, durationMs = 600_000, at = 900L),
+        )
+        val items = YtSync.continueItems(local, listOf(video("a", 50, 600)), now = 10_000L, lastHead = listOf("a"), lastAt = 1_000L)
+        assertEquals(10_000L, items.single().at)
+        assertEquals(300_000L, items.single().positionMs)
+    }
+
+    @Test
+    fun headFoundEvenIfItsFirstWasRewatched() {
+        assertEquals(2, YtSync.headIndex(listOf("x", "a", "b", "c"), listOf("b", "c")))
+        // a rivisto risale in cima: il confine è b, che ha ancora c sotto.
+        assertEquals(2, YtSync.headIndex(listOf("a", "x", "b", "c"), listOf("a", "b", "c")))
+        assertEquals(null, YtSync.headIndex(listOf("x"), listOf("a")))
+    }
+
+    @Test
     fun canvasPositionReachesYouTubeWithoutFlooding() {
         val min = 60_000L
         assertEquals(null, YtSync.nextPush(null, 10_000, 600_000, playing = true, now = 0))

@@ -147,7 +147,11 @@ fun MediaScreen(
     // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
     val hero = resumable.firstOrNull()?.takeIf { now == null }
     val continueList = resumable.filter { it != hero }.take(12)
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
+    // Aprendo Media si rilegge anche la cronologia di YouTube: "Riprendi" è l'ultima cosa vista, anche sul PC.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        Accounts.refresh()
+        com.platinum20.dashboard.media.youtube.YtSync.foreground(context)
+    }
     val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
     val podcasts = (followed.size + spotifyShows.size)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.394.0
+**Riprendi è l'ultima cosa vista davvero**
+- In Media, "Riprendi" e "Continua" mettono al loro posto anche i video visti su YouTube dal PC o da altre app: quello visto per ultimo sta in cima, anche se l'avevi già iniziato in Canvas
+- Se riprendi sul PC un video lasciato a metà, risale davanti al resto con il punto nuovo
+- Aprendo Media si rilegge subito la cronologia di YouTube
+
 ## 1.393.0
 **Turni tutti uguali**
 - Ogni turno ha la stessa altezza: le creator stanno su una riga sola, con i tre puntini se non ci stanno (tocca il turno per vederle tutte)
