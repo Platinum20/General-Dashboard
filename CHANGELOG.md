@@ -1,9 +1,22 @@
 # Changelog
 
-## 1.369.0
+## 1.370.0
 **La Home di YouTube non finisce più**
 - Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
 - I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
+
+## 1.369.0
+**Il QR del biglietto nell'evento**
+- Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
+- Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
+- Una volta trovato resta sul telefono: si apre anche senza rete
+- Serve la posta collegata con la password per app (Impostazioni › Account › Posta)
+
+## 1.368.0
+**Calendario: le righe non saltano più**
+- Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
+- Lo stesso per le spese quando apri il riepilogo del mese
+- Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
 
 ## 1.367.0
 **Revolut e WindTre restano collegati**
