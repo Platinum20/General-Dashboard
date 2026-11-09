@@ -205,7 +205,7 @@ private fun FollowedTile(podcast: Podcast, onClick: () -> Unit) {
     ) {
         Artwork(podcast.artwork, 96)
         Spacer(Modifier.height(6.dp))
-        Text(podcast.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        TileCaption(podcast.title, null)
     }
 }
 
