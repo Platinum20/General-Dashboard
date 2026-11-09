@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.378.0
+**Turni: manda i dati letti**
+- Nella pagina di accesso a Creators Pro c'è il tasto Condividi in alto: con la Timeline aperta manda tutto quello che Canvas ha letto, anche il testo della pagina
+- In Impostazioni › Account › Lavoro, "Salva i dati letti dei turni" c'è anche quando nessun turno è stato riconosciuto
+
 ## 1.377.0
 **Turni: accesso con Google**
 - L'accesso a Creators Pro con Google non resta più su una pagina bianca: la finestra di Google si apre sopra il sito e, finito l'accesso, si chiude da sola
