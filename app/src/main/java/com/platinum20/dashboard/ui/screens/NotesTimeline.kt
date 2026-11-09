@@ -164,7 +164,9 @@ internal fun dueDays(
             else -> dated += DueRow("parcel-${p.id}", day, startOf(day), parcel = p)
         }
     }
-    events.filter { it.end > nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
+    // Nel calendario unico anche gli eventi di oggi già finiti stanno sotto OGGI: [pastDays] tiene solo i giorni
+    // prima, e senza questo il turno fatto oggi spariva (Antonio).
+    events.filter { it.end > nowMs || (withToday && dayOf(it.begin) == today) }.distinctBy { it.eventId to it.begin }.forEach { e ->
         // Un evento iniziato ieri e ancora in corso conta oggi.
         val day = maxOf(dayOf(e.begin), today)
         dated += DueRow("event-${e.eventId}-${e.begin}", day, if (e.allDay) startOf(day) else maxOf(e.begin, startOf(day)), event = e)
@@ -360,18 +362,23 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         begin = event.begin,
         end = event.end,
     ) else {
-    // Il nome su una riga sua sopra inizio e fine (Antonio); per un turno "Turno" e fra inizio e fine le creator.
+    // Il nome su una riga sua sopra inizio e fine (Antonio); un turno senza nome, fra inizio e fine le creator.
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
         from = if (labels) "Inizio" else "",
-        title = if (labels) null else if (creators.isNotEmpty()) "Turno" else event.title.ifBlank { "Evento" },
+        // Un turno non ha titolo: le creator e il colore dicono già cos'è (Antonio).
+        title = if (labels || creators.isNotEmpty()) null else event.title.ifBlank { "Evento" },
         // Spazi che non vanno a capo dentro un nome: si va a capo solo fra una creator e l'altra.
         names = creators.joinToString(", ") { it.replace(' ', '\u00A0') }.takeIf { it.isNotEmpty() },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
-        middle = listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
+        // Per un turno: durata, icona di quanti siamo, poi guadagno (Antonio).
+        middle = if (creators.isNotEmpty()) duration
+        else listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
+        people = event.people.takeIf { creators.isNotEmpty() },
+        extra = if (creators.isNotEmpty()) event.location.trim() else "",
         begin = event.begin,
         end = event.end,
     )

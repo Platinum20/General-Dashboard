@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Face
-import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,7 +50,7 @@ internal fun ShiftWhoRows(shift: Shift) {
         DetailRow(Icons.Outlined.Face, creators.joinToString("\n"), maxLines = Int.MAX_VALUE)
     }
     RowDivider()
-    DetailRow(if (shift.mates.isEmpty()) Icons.Outlined.Person else Icons.Outlined.Groups, ShiftParse.company(shift.mates), maxLines = Int.MAX_VALUE)
+    DetailRow(peopleIcon(shift.mates.size + 1), ShiftParse.company(shift.mates), maxLines = Int.MAX_VALUE)
 }
 
 /**

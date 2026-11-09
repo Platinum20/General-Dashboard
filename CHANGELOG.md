@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.393.0
+**Turni tutti uguali**
+- Ogni turno ha la stessa altezza: le creator stanno su una riga sola, con i tre puntini se non ci stanno (tocca il turno per vederle tutte)
+- Sotto le creator: durata, un'icona per da solo, in doppio o in tre, poi guadagno e percentuale
+- Il turno fatto oggi resta sotto OGGI anche quando è finito (prima spariva dal calendario)
+- I turni non hanno più il titolo "Turno": subito l'orario, le creator e la riga sotto
+- La riga dei mesi è più spessa di quella dei giorni, con il nome del mese in grassetto
+
 ## 1.392.0
 **L'ora nella scheda della spesa**
 - Aprendo una spesa, accanto al giorno c'è l'ora in cui l'hai fatta (es. "Lunedì 9 novembre, 14:32"), presa da Revolut, dalla notifica o da quando l'hai scritta

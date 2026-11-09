@@ -27,6 +27,9 @@ import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.LocalHospital
@@ -123,6 +126,9 @@ data class TripStops(
     val names: String? = null,
     /** Il nome su una riga sua sopra inizio e fine (Antonio); null per i treni, dove il nome è la stazione. */
     val title: String? = null,
+    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e il guadagno ([extra]). */
+    val people: Int? = null,
+    val extra: String = "",
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -403,10 +409,21 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
                 Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
                     Column(Modifier.padding(vertical = if (trip.names != null) 4.dp else 0.dp)) {
+                        // Una riga sola, anche con tre creator: tutti i turni alti uguali (Antonio).
                         trip.names?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = sub)
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        if (trip.middle.isNotEmpty()) Text(
+                        if (trip.people != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(trip.middle + " · ", style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1)
+                            Icon(peopleIcon(trip.people), contentDescription = peopleLabel(trip.people), tint = sub, modifier = Modifier.size(14.dp))
+                            if (trip.extra.isNotEmpty()) Text(
+                                " · " + trip.extra,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = sub,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        } else if (trip.middle.isNotEmpty()) Text(
                             trip.middle,
                             style = MaterialTheme.typography.labelMedium,
                             color = sub,
@@ -421,6 +438,20 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
     }
 }
 
+/** Una persona, due o un gruppo: da solo, in doppio, in tre o più. */
+internal fun peopleIcon(people: Int) = when {
+    people <= 1 -> Icons.Outlined.Person
+    people == 2 -> Icons.Outlined.People
+    else -> Icons.Outlined.Groups
+}
+
+/** Per TalkBack, al posto dell'icona. */
+internal fun peopleLabel(people: Int) = when {
+    people <= 1 -> "Da solo"
+    people == 2 -> "In doppio"
+    else -> "In $people"
+}
+
 @Composable
 private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier) {
     Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
@@ -433,6 +464,9 @@ private fun TripStop(time: String, station: String, color: Color, title: Modifie
 }
 
 private val GUTTER = 22.dp
+
+/** La linea del mese: più spessa di quella dei giorni (1 dp). */
+private val MONTH_RULE = 3.dp
 
 /**
  * Il margine destro dopo la linea: con la card a 16 dp dal bordo, il centro della linea cade a 46 dp
@@ -581,17 +615,19 @@ fun TimelineMonthMarker(
 ) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
+    val month = MaterialTheme.colorScheme.outline
     Row(
         Modifier.fillMaxWidth().height(30.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+        // Il mese pesa più dei giorni: scritta in grassetto e linea più spessa (Antonio).
+        Text(label, style = MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(10.dp))
         Box(
-            Modifier.weight(1f).height(2.dp).drawBehind {
-                drawLine(line, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.5.dp.toPx())
+            Modifier.weight(1f).height(4.dp).drawBehind {
+                drawLine(month, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), MONTH_RULE.toPx())
             },
         )
         total?.let {
@@ -612,7 +648,7 @@ fun TimelineMonthMarker(
                 val mid = size.height / 2
                 if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawLine(line, Offset(0f, mid), Offset(x, mid), 1.5.dp.toPx())
+                drawLine(month, Offset(0f, mid), Offset(x, mid), MONTH_RULE.toPx())
                 drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
             },
         )
