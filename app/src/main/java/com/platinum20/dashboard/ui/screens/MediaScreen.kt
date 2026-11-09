@@ -394,8 +394,8 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
         Spacer(Modifier.height(6.dp))
         // Il testo sta un po' dentro: gli angoli arrotondati della tessera non devono mangiarne i bordi.
         Column(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp)) {
-            // Sempre due righe, anche per i titoli corti: le tessere hanno tutte la stessa altezza e la pagina non salta.
-            Text(item.title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            // Almeno due righe, così le tessere corte non saltano; fino a tre per leggere i titoli lunghi interi (1.358).
+            Text(item.title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
             Text(
                 listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
