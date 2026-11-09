@@ -392,18 +392,12 @@ private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
             }
         }
         Spacer(Modifier.height(6.dp))
-        // Il testo sta un po' dentro: gli angoli arrotondati della tessera non devono mangiarne i bordi.
-        Column(Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp)) {
-            // Almeno due righe, così le tessere corte non saltano; fino a tre per leggere i titoli lunghi interi (1.361).
-            Text(item.title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            Text(
-                listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        TileCaption(
+            item.title,
+            listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
+            titleLines = MediaShelves.TITLE_LINES,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
     }
 }
 

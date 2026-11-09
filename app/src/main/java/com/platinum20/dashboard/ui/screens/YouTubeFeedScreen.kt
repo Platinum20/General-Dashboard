@@ -350,7 +350,7 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
                             .background(MaterialTheme.colorScheme.surfaceVariant),
                     )
                     Spacer(Modifier.height(4.dp))
-                    Text(short.title, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    TileCaption(short.title, null)
                 }
             }
         }

@@ -283,14 +283,7 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
                         }
                     }
                     Spacer(Modifier.height(6.dp))
-                    CoverTitle(release.item.title)
-                    Text(
-                        release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    TileCaption(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today))
                 }
             }
         }
@@ -309,22 +302,6 @@ internal object CoverTiles {
 
     /** Tre copertine più i margini e gli spazi tra loro riempiono esattamente lo schermo. */
     fun width(screenDp: Int): Int = (screenDp - 2 * EDGE - (PER_SCREEN - 1) * GAP) / PER_SCREEN
-}
-
-/**
- * Nome sotto una copertina: fino a due righe, così i nomi lunghi si leggono interi; il
- * sottotitolo segue subito sotto, senza il vuoto di una riga riservata.
- */
-@Composable
-private fun CoverTitle(text: String, centered: Boolean = false) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = if (centered) TextAlign.Center else TextAlign.Start,
-        modifier = Modifier.fillMaxWidth(),
-    )
 }
 
 /** Una sezione di Musica: titolo e copertine in fila orizzontale. */
@@ -354,16 +331,8 @@ private fun CoverTile(item: SpItem, onClick: () -> Unit) {
     ) {
         Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile)
         Spacer(Modifier.height(6.dp))
-        CoverTitle(item.title, centered = round)
-        if (!round) {
-            Text(
-                item.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        // Anche gli artisti tengono la riga del sottotitolo: tutta la fila resta alta uguale.
+        TileCaption(item.title, if (round) "Artista" else item.subtitle, centered = round)
     }
 }
 
@@ -397,14 +366,7 @@ private fun MixRow(mixes: List<SpMix>) {
                         )
                     }
                     Spacer(Modifier.height(6.dp))
-                    CoverTitle(mix.title)
-                    Text(
-                        mix.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    TileCaption(mix.title, mix.subtitle)
                 }
             }
         }
