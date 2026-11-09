@@ -399,7 +399,10 @@ internal fun timelineEntries(
     var shown: java.time.YearMonth? = null
     var reachedNow = false
     var laterShown = false
+    var rowsBefore = 0
     return groups.flatMap { g ->
+        val dayAfterDay = rowsBefore > 0
+        rowsBefore += g.rows.size
         val day = g.day
         val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
         if (!reachedNow && !g.past && !g.late && day != null) {
@@ -479,6 +482,7 @@ internal fun timelineEntries(
                 monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
                 todayHeader = r.spend != null,
                 later = i == 0 && later,
+                divider = i == 0 && dayAfterDay && r.spend == null,
                 trip = r.event?.let { tripStops(it, today, zone) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
