@@ -359,9 +359,13 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         middle = listOfNotNull(duration, trip.train).joinToString(" · "),
         begin = event.begin,
         end = event.end,
-    ) else TripStops(
+    ) else {
+    // Un turno: "Turno" in alto e sotto le creator, intere (Antonio).
+    val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
+    TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else event.title.ifBlank { "Evento" },
+        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno" else event.title.ifBlank { "Evento" },
+        names = creators.joinToString(", ").takeIf { it.isNotEmpty() },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
@@ -369,6 +373,7 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         begin = event.begin,
         end = event.end,
     )
+    }
 }
 
 /**

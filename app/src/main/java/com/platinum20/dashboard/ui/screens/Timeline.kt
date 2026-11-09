@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -114,6 +115,8 @@ data class TripStops(
     val middle: String,
     val begin: Long,
     val end: Long,
+    /** Sotto il nome, su quante righe servono: le creator di un turno. */
+    val names: String? = null,
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -358,9 +361,10 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
     val progress = trip.progress(System.currentTimeMillis())
-    Row(modifier.padding(vertical = TRIP_PAD)) {
+    Row(modifier.height(IntrinsicSize.Min).padding(vertical = TRIP_PAD)) {
+        // La linea va dalla partenza alla fine anche quando sotto il nome ci sono altre righe (le creator).
         Box(
-            Modifier.width(16.dp).height(TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
+            Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
                 val x = size.width / 2
                 val top = TRIP_LINE.toPx() / 2
                 val bottom = size.height - TRIP_LINE.toPx() / 2
@@ -374,7 +378,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            TripStop(trip.departAt, trip.from, text, title)
+            TripStop(trip.departAt, trip.from, text, title, trip.names)
             Box(Modifier.height(trip.midDp().dp), contentAlignment = Alignment.CenterStart) {
                 Text(
                     trip.middle,
@@ -390,12 +394,22 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
 }
 
 @Composable
-private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier) {
-    Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
-        Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
+private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier, names: String? = null) {
+    Row {
+        Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
+            Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
+        }
         Spacer(Modifier.width(10.dp))
-        // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
-        Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
+        Column(Modifier.weight(1f, fill = false)) {
+            Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
+                // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
+                Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
+            }
+            // Le creator del turno sotto "Turno", tutte e intere, allineate al nome (Antonio).
+            names?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
+            }
+        }
     }
 }
 

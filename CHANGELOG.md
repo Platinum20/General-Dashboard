@@ -1,9 +1,13 @@
 # Changelog
 
-## 1.384.0
+## 1.385.0
 **Eventi lunghi quanto durano, e un filo fra i giorni**
 - Lo spazio fra inizio e fine di un evento ora cresce con quanto dura, come lo spazio fra i giorni: un'ora è corta, un turno di cinque ore si vede più lungo, senza mai riempire lo schermo
 - Fra un giorno e l'altro c'è un filo sottile: si capisce subito dove finisce un giorno e comincia il prossimo
+
+## 1.384.0
+**Turni con le creator**
+- Nel calendario il turno dice "Turno" e sotto, per intero, i nomi delle creator (la prima, la seconda, e così via), senza tagli
 
 ## 1.383.0
 **Ogni evento come i treni**
