@@ -78,6 +78,11 @@ class TripsTest {
         assertEquals("12:00", row.arriveAt)
         assertEquals("", row.to)
         assertEquals("5 h · Ufficio", row.middle)
+        // Lo spazio fra inizio e fine cresce con la durata, con un minimo e un massimo.
+        assertEquals(18f + 12f * (Math.log(6.0) / Math.log(2.0)).toFloat(), row.midDp(), 0.01f)
+        assertEquals(30f, row.copy(end = row.begin + 3_600_000L).midDp(), 0.01f)
+        assertEquals(true, row.copy(end = row.begin + 15 * 60_000L).midDp() < row.midDp())
+        assertEquals(56f, row.copy(end = row.begin + 12 * 3_600_000L).midDp(), 0.01f)
         // Sulla pagina dell'evento il nome c'è già: Inizio e Fine, senza luogo.
         val page = tripStops(shift, LocalDate.of(2026, 11, 9), zone, labels = true)!!
         assertEquals("Inizio", page.from)

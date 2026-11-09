@@ -91,6 +91,8 @@ class CalendarUnicoTest {
         assertEquals(Expenses.format(0), entries[0].monthSpend)
         assertEquals("DICEMBRE", entries[1].month)
         assertNull(entries[1].monthSpend)
+        // Fra un giorno e l'altro il divisore; non sulla riga di oggi.
+        assertEquals(listOf(false, true), entries.take(2).map { it.divider })
     }
 
     @Test fun leCoseFatteStannoNelGiornoInCuiLeHaiSpuntate() {
