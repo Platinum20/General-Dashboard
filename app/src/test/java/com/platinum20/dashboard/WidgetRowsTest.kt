@@ -15,9 +15,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+/** Le parti pure dei widget (org.json vuole Robolectric). */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class WidgetRowsTest {
     @Test
     fun meteo() {
