@@ -199,6 +199,14 @@ fun HomeScreen(
     val weekAhead by produceState(emptyMap<LocalDate, List<CalendarEvent>>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
         value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().plusDays(1), Upcoming.DAYS) else emptyMap()
     }
+    // I turni di Creators Pro: con la Home aperta si rileggono spesso, e ogni cambio ridisegna il calendario.
+    remember { com.platinum20.dashboard.shifts.ShiftStore.init(context) }
+    val shifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
+    LaunchedEffect(shifts) { calendarRefresh++ }
+    AutoRefresh(everyMs = com.platinum20.dashboard.shifts.ShiftStore.STALE_MS) {
+        val work = com.platinum20.dashboard.shifts.ShiftStore
+        if (work.linked.value && !work.expired.value && work.isStale()) com.platinum20.dashboard.shifts.CreatorsLink.refresh(context)
+    }
     // Le spese Revolut entrano nel calendario da sole: con la Home aperta si rileggono ogni mezz'ora.
     remember { com.platinum20.dashboard.bank.RevolutStore.init(context) }
     AutoRefresh(everyMs = com.platinum20.dashboard.bank.RevolutStore.STALE_MS) {

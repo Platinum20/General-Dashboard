@@ -331,6 +331,8 @@ class MainActivity : ComponentActivity() {
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
                 com.platinum20.dashboard.bank.RevolutStore.init(app)
                 if (com.platinum20.dashboard.bank.RevolutStore.linked.value) com.platinum20.dashboard.work.RevolutWorker.schedule(app)
+                com.platinum20.dashboard.shifts.ShiftStore.init(app)
+                if (com.platinum20.dashboard.shifts.ShiftStore.linked.value) com.platinum20.dashboard.work.ShiftWorker.schedule(app)
             }
         }
         // Le notizie salvate tornano in memoria subito, così News e Oggi non partono vuote.
@@ -390,6 +392,8 @@ object Routes {
     fun document(id: Long) = "home/document/$id"
     /** L'accesso a Revolut (una volta, poi la lettura è nascosta): da Impostazioni › Account. */
     const val REVOLUT = "settings/revolut"
+    /** L'accesso a Creators Pro per i turni di lavoro (una volta, poi la lettura è nascosta). */
+    const val SHIFTS = "settings/shifts"
     /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
 
     /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
@@ -554,10 +558,13 @@ private fun CanvasNavBar(
                         listening, partial, locked, level, heardSound || music, notice, music,
                         slide = (slide / cancelDistance).coerceIn(0f, 1f), slidePx = slide, onCancel = onCancelDictation,
                     )
+                    // Le pillole stanno a 9 dp dal bordo su tutti i lati (60 − 42 = 18 / 2): ai lati
+                    // la pillola agli estremi è concentrica agli angoli della barra. Con tre voci
+                    // SpaceAround le staccava dai bordi (~23 dp) e gli angoli non combaciavano più.
                     else -> Row(
-                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 6.dp),
+                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = NAV_PILL_INSET),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceAround,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         topDestinations.forEach { dest ->
                             NavPill(
@@ -884,6 +891,9 @@ private fun DictationContent(
 }
 
 private const val BAR_COUNT = 14
+
+/** Distanza delle pillole dal bordo della barra, uguale sopra, sotto e ai lati. */
+private val NAV_PILL_INSET = 9.dp
 
 // Cosa mostra la barra in basso.
 private const val BAR_TABS = 0
@@ -1488,6 +1498,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.REVOLUT) {
                 com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })
+            }
+            composable(Routes.SHIFTS) {
+                com.platinum20.dashboard.ui.screens.ShiftsLoginScreen(onClose = { navController.popBackStack() })
             }
             composable(
                 Routes.EXPENSES,
