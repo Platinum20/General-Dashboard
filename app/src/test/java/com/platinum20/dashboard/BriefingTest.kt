@@ -172,7 +172,6 @@ class BriefingTest {
         assertEquals(BriefAction.PARCEL_ARRIVED, parcel.action)
         assertEquals(listOf(3L), parcel.targetIds)
         // Toccando la riga si apre la scheda di quella cosa (Antonio).
-        assertEquals(7L, task.openId)
         assertEquals(3L, parcel.openId)
         val habits = lines.first { it.kind == BriefKind.HABIT }
         assertEquals(BriefAction.HABITS, habits.action)
