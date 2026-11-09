@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.notes.Alert
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
@@ -11,11 +12,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 /** Promemoria e date da ricordare sono una cosa sola (1.359), con le stesse righe degli eventi. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class UnifiedDatesTest {
     private val zone = ZoneId.of("Europe/Rome")
     private val today = LocalDate.of(2026, 11, 9)
