@@ -465,6 +465,9 @@ private fun TripStop(time: String, station: String, color: Color, title: Modifie
 
 private val GUTTER = 22.dp
 
+/** La linea del mese: più spessa di quella dei giorni (1 dp). */
+private val MONTH_RULE = 3.dp
+
 /**
  * Il margine destro dopo la linea: con la card a 16 dp dal bordo, il centro della linea cade a 46 dp
  * dal bordo dello schermo, cioè sul centro del + rotondo in basso a destra (60 dp, a 16 dp dal bordo).
@@ -612,17 +615,19 @@ fun TimelineMonthMarker(
 ) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
+    val month = MaterialTheme.colorScheme.outline
     Row(
         Modifier.fillMaxWidth().height(30.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = color)
+        // Il mese pesa più dei giorni: scritta in grassetto e linea più spessa (Antonio).
+        Text(label, style = MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(10.dp))
         Box(
-            Modifier.weight(1f).height(2.dp).drawBehind {
-                drawLine(line, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.5.dp.toPx())
+            Modifier.weight(1f).height(4.dp).drawBehind {
+                drawLine(month, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), MONTH_RULE.toPx())
             },
         )
         total?.let {
@@ -643,7 +648,7 @@ fun TimelineMonthMarker(
                 val mid = size.height / 2
                 if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawLine(line, Offset(0f, mid), Offset(x, mid), 1.5.dp.toPx())
+                drawLine(month, Offset(0f, mid), Offset(x, mid), MONTH_RULE.toPx())
                 drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
             },
         )
