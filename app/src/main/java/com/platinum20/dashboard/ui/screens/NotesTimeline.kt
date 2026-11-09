@@ -400,7 +400,6 @@ internal fun timelineEntries(
     var monthPrevious: LocalDate? = null
     var shown: java.time.YearMonth? = null
     var reachedNow = false
-    var laterShown = false
     var rowsBefore = 0
     return groups.flatMap { g ->
         val dayAfterDay = rowsBefore > 0
@@ -417,10 +416,8 @@ internal fun timelineEntries(
             months && monthPrevious == null -> com.platinum20.dashboard.today.Upcoming.monthLabel(day!!, today)
             else -> com.platinum20.dashboard.today.Upcoming.monthBreak(monthPrevious, day!!, today)
         }
-        // Dopo oggi, il resto del mese in corso sta sotto "PIÙ AVANTI"; il mese dopo ha già il suo segno.
-        val later = months && !laterShown && !g.past && !g.late && day != null && day.isAfter(today) &&
-            java.time.YearMonth.from(day) == java.time.YearMonth.from(today)
-        if (months && !g.past && day != null && day.isAfter(today)) laterShown = true
+        // Niente più "PIÙ AVANTI" (Antonio, 1.389): dopo oggi ogni giorno ha già la sua riga ("——— Domani ●").
+        val later = false
         val monthSpend = if (months && month != null) java.time.YearMonth.from(day!!).let { m ->
             Expenses.total(expenses, m).takeIf { it > 0 || m == java.time.YearMonth.from(today) }?.let { Expenses.format(it) }
         } else null

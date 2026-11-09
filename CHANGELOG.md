@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.389.0
+**Calendario più ordinato**
+- Via "Più avanti": sotto OGGI c'è solo la giornata, poi i giorni uno per uno
+- Il nome del giorno sta tutto a sinistra, con la linea che arriva fino al pallino ("Domani ——— ●")
+- I turni sono più compatti, senza spazi vuoti
+
 ## 1.388.0
 **Il giorno su una riga sua**
 - Nel calendario ogni giorno ha la sua riga, con il divisorio che arriva fino al nome del giorno ("——— Ieri ●"): la prima cosa del giorno resta pulita sotto

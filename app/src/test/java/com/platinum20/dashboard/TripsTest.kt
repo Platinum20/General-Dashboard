@@ -86,6 +86,9 @@ class TripsTest {
         assertEquals(30f, row.copy(end = row.begin + 3_600_000L).midDp(), 0.01f)
         assertEquals(true, row.copy(end = row.begin + 15 * 60_000L).midDp() < row.midDp())
         assertEquals(56f, row.copy(end = row.begin + 12 * 3_600_000L).midDp(), 0.01f)
+        // Con le creator in mezzo l'altezza la decide il testo.
+        assertEquals(row.midDp(), row.middleMinDp(), 0.01f)
+        assertEquals(0f, row.copy(names = "Chiara").middleMinDp(), 0.01f)
         // Sulla pagina dell'evento il nome c'è già: Inizio e Fine, senza luogo.
         val page = tripStops(shift, LocalDate.of(2026, 11, 9), zone, labels = true)!!
         assertEquals("Inizio", page.from)
