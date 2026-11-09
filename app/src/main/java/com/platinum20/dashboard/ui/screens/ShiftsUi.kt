@@ -56,6 +56,7 @@ internal fun ShiftAccountRows() {
     val expired by ShiftStore.expired.collectAsStateWithLifecycle()
     val readAt by ShiftStore.readAt.collectAsStateWithLifecycle()
     val shifts by ShiftStore.shifts.collectAsStateWithLifecycle()
+    val hasData by ShiftStore.hasData.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
     val open = { inApp?.openRoute?.invoke(Routes.SHIFTS) }
     SettingsItem(
@@ -77,7 +78,8 @@ internal fun ShiftAccountRows() {
             }
         },
     )
-    if (linked) {
+    // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
+    if (linked || hasData) {
         RowDivider()
         SettingsItem(
             icon = Icons.Outlined.Share,
@@ -159,7 +161,13 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
                 TopAppBar(
                     title = { Text("Accedi a Creators Pro") },
                     navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Outlined.Close, contentDescription = "Chiudi") } },
-                    actions = { if (readAt > startedAt) TextButton(onClick = onClose) { Text("Fatto") } },
+                    actions = {
+                        // Con la timeline aperta: prende anche il testo della pagina e manda tutto, per sistemare la lettura.
+                        IconButton(onClick = {
+                            CreatorsLink.readText(webView) { shareTextFile(context, "turni-dati-letti.txt", ShiftStore.capturesText()) }
+                        }) { Icon(Icons.Outlined.Share, contentDescription = "Manda i dati letti") }
+                        if (readAt > startedAt) TextButton(onClick = onClose) { Text("Fatto") }
+                    },
                 )
                 Text(
                     if (readAt > startedAt) "Letto: " + shiftsLine(shifts).lowercase()
