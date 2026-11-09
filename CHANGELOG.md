@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.375.0
+**Widget: niente più spunta sui promemoria**
+- Nel widget Calendario promemoria, date ed eventi sono righe uguali, con la barretta colorata e l'ora (arancio se è passata): niente cerchio da spuntare
+- Nel widget Oggi il tasto Fatto resta solo per pacchi e abitudini
+
 ## 1.373.0
 **Widget rifatti da capo, e cinque nuovi**
 - Tutti i widget hanno lo stile di Canvas: carta chiara o scuro col telefono, blu e arancio, font Inter, angoli come quelli del launcher

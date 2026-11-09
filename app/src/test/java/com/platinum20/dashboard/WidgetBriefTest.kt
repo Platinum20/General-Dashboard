@@ -39,7 +39,8 @@ class WidgetBriefTest {
         )
         assertEquals(
             listOf(
-                WidgetBrief("Bollette scadute", urgent = true, action = BriefAction.TASK_DONE, targetId = 1),
+                // I promemoria non si spuntano più: niente bottone.
+                WidgetBrief("Bollette scadute", urgent = true),
                 WidgetBrief("Cuffie arrivano oggi", action = BriefAction.PARCEL_ARRIVED, targetId = 7),
                 // Più abitudini insieme si spuntano nell'app: niente bottone.
                 WidgetBrief("Ancora da fare: 2 abitudini"),
