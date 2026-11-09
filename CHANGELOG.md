@@ -1,10 +1,14 @@
 # Changelog
 
-## 1.362.0
+## 1.364.0
 **Video: scorrere nel punto giusto**
 - Col doppio tocco per andare avanti o indietro non torna più la copertina del video: resta l'immagine dov'eri finché arriva il punto nuovo
 - Trascinando la barra del tempo vedi sopra il dito il fotogramma dove lascerai il video, col minutaggio
 - Nuovo gesto: scorri di lato dal centro del video (come su e giù per il volume a schermo intero) per andare avanti e indietro piano, un minuto per tutta la larghezza; vibra ogni 5 secondi e mostra il fotogramma, quanto ti sposti e il punto d'arrivo. Il video salta quando alzi il dito
+
+## 1.362.0
+**Barra in basso più ordinata**
+- Le pillole della barra stanno di nuovo alla stessa distanza dal bordo su tutti i lati: la scheda agli estremi segue gli angoli arrotondati della barra, come prima che togliessimo una voce
 
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**

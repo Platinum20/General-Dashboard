@@ -546,10 +546,13 @@ private fun CanvasNavBar(
                         listening, partial, locked, level, heardSound || music, notice, music,
                         slide = (slide / cancelDistance).coerceIn(0f, 1f), slidePx = slide, onCancel = onCancelDictation,
                     )
+                    // Le pillole stanno a 9 dp dal bordo su tutti i lati (60 − 42 = 18 / 2): ai lati
+                    // la pillola agli estremi è concentrica agli angoli della barra. Con tre voci
+                    // SpaceAround le staccava dai bordi (~23 dp) e gli angoli non combaciavano più.
                     else -> Row(
-                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = 6.dp),
+                        modifier = Modifier.fillMaxWidth().height(60.dp).padding(horizontal = NAV_PILL_INSET),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceAround,
+                        horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         topDestinations.forEach { dest ->
                             NavPill(
@@ -876,6 +879,9 @@ private fun DictationContent(
 }
 
 private const val BAR_COUNT = 14
+
+/** Distanza delle pillole dal bordo della barra, uguale sopra, sotto e ai lati. */
+private val NAV_PILL_INSET = 9.dp
 
 // Cosa mostra la barra in basso.
 private const val BAR_TABS = 0
