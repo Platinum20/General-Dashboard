@@ -50,6 +50,14 @@ object ShiftParse {
             ?.split(", ")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
     /** "Da solo", "In doppio con Vincenzo C", "In tre con …": com'era il turno (Antonio). */
+    /** La versione corta per la riga del calendario, accanto alla durata (i nomi sono già sopra). */
+    fun size(mates: List<String>): String = when (mates.size) {
+        0 -> "Da solo"
+        1 -> "In doppio"
+        2 -> "In tre"
+        else -> "In ${mates.size + 1}"
+    }
+
     fun company(mates: List<String>): String = when (mates.size) {
         0 -> "Da solo"
         1 -> "In doppio con ${mates[0]}"
