@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.370.0
+## 1.371.0
 **La Home di YouTube non finisce più**
 - Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
 - I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
