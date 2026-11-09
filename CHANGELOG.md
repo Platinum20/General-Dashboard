@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.396.0
+**Turni e treni da leggere al volo**
+- Accanto all'ora di inizio di un turno c'è "Turno su …" con le creator, sulla stessa riga
+- I treni dicono "Treno per Pescara Centrale" alla partenza e "Arrivo a Pescara Centrale" all'arrivo (le stazioni restano nella pagina del viaggio)
+
 ## 1.394.0
 **Riprendi è l'ultima cosa vista davvero**
 - In Media, "Riprendi" e "Continua" mettono al loro posto anche i video visti su YouTube dal PC o da altre app: quello visto per ultimo sta in cima, anche se l'avevi già iniziato in Canvas

@@ -57,16 +57,20 @@ class TripsTest {
         val e = CalendarEvent(2, "Treno per Pescara Centrale", dep, arr, false, "", 0, Trip("Taranto", "Pescara Centrale", "Intercity 612"))
         val stops = tripStops(e, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("10:28", stops.departAt)
-        assertEquals("Taranto", stops.from)
+        assertEquals("Treno per Pescara Centrale", stops.from)
         assertEquals("15:00", stops.arriveAt)
-        assertEquals("Pescara Centrale", stops.to)
+        assertEquals("Arrivo a Pescara Centrale", stops.to)
+        // Sulla pagina del viaggio le due stazioni.
+        val page = tripStops(e, LocalDate.of(2026, 11, 9), zone, labels = true)!!
+        assertEquals("Taranto", page.from)
+        assertEquals("Pescara Centrale", page.to)
         assertEquals("4 h 32 min · Intercity 612", stops.middle)
         assertEquals(null, stops.title)
         assertEquals(null, stops.progress(dep - 1))
         assertEquals(0.5f, stops.progress(dep + (arr - dep) / 2)!!, 0.01f)
         // Treno di notte: accanto all'arrivo il giorno.
         val night = e.copy(end = LocalDateTime.of(2026, 11, 15, 7, 10).atZone(zone).toInstant().toEpochMilli())
-        assertEquals("Pescara Centrale · Dom 15", tripStops(night, LocalDate.of(2026, 11, 9), zone)!!.to)
+        assertEquals("Arrivo a Pescara Centrale · Dom 15", tripStops(night, LocalDate.of(2026, 11, 9), zone)!!.to)
     }
 
     @Test fun ogniEventoComeUnTreno() {
@@ -95,6 +99,9 @@ class TripsTest {
         val r2 = tripStops(paid, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("5 h", r2.middle)
         assertEquals(null, r2.title)
+        assertEquals("Turno su Chiara Stefane", r2.from)
+        assertEquals(null, r2.names)
+        assertEquals("Turno su A, B e C", tripStops(paid.copy(title = "Turno · A, B, C"), LocalDate.of(2026, 11, 9), zone)!!.from)
         assertEquals(2, r2.people)
         assertEquals("$110,41 · 15%", r2.extra)
         assertEquals("In doppio", peopleLabel(2))
