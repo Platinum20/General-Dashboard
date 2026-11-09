@@ -87,7 +87,7 @@ class FixedExpenseTest {
     @Test fun adessoIlGiornoPrima() {
         val netflix = FixedExpense(1, 12_99, "Netflix", ExpenseCategory.OTHER, 23, oct)
         val lines = Briefing.build(
-            today.atTime(10, 0), null, emptyList(), emptyList(), emptyList(), emptyList(),
+            today.atTime(10, 0), null, emptyList(), emptyList(), emptyList(),
             fixedExpenses = listOf(netflix),
         )
         assertTrue(lines.any { it.kind == BriefKind.MONEY && it.text.startsWith("Domani addebito: Netflix") })

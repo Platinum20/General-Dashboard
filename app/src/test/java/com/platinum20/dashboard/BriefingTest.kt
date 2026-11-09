@@ -101,7 +101,7 @@ class BriefingTest {
     fun seraAbitudiniEPacchi() {
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val lines = Briefing.build(
-            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone,
+            evening, null, emptyList(), emptyList(), emptyList(), zone,
             habits = listOf(Habit(1, "Acqua"), Habit(2, "Lettura", setOf(evening.toLocalDate()))),
             parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate().plusDays(1))),
         )
@@ -186,7 +186,7 @@ class BriefingTest {
     fun abitudineSegnataLaRigaScende() {
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         fun habitLine(habits: List<Habit>) = Briefing.build(
-            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone, habits = habits,
+            evening, null, emptyList(), emptyList(), emptyList(), zone, habits = habits,
         ).firstOrNull { it.kind == BriefKind.HABIT }
         val both = listOf(Habit(1, "Acqua"), Habit(2, "Lettura"))
         assertEquals(BriefAction.HABITS, habitLine(both)?.action)
@@ -200,7 +200,7 @@ class BriefingTest {
     @Test
     fun piuPacchiNessunArrivato() {
         val lines = Briefing.build(
-            morning, null, emptyList(), null, emptyList(), emptyList(), zone,
+            morning, null, emptyList(), null, emptyList(), zone,
             parcels = listOf(Parcel(1, "Cuffie", expected = morning.toLocalDate()), Parcel(2, "Libro", expected = morning.toLocalDate())),
         )
         assertEquals(null, lines.first { it.kind == BriefKind.PARCEL }.action)
