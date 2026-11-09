@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.367.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
+
 ## 1.365.0
 **I tuoi turni di lavoro nel calendario**
 - In Impostazioni › Account › Lavoro c'è "Turni Creators Pro": entri una volta sola sul sito dei turni e apri la Timeline
