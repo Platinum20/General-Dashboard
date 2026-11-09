@@ -62,7 +62,35 @@ data class YtStream(
     val related: List<YtVideo> = emptyList(),
     /** Indirizzo del canale su YouTube: serve per aprire la pagina del canale toccandolo. */
     val channelUrl: String = "",
+    /** Le miniature dei fotogrammi di YouTube per l'anteprima mentre si scorre nel video; null se non ci sono. */
+    val storyboard: YtStoryboard? = null,
 )
+
+/**
+ * Lo "storyboard" di YouTube: fogli di immagini con i fotogrammi del video in griglia, uno ogni
+ * [msPerFrame]. È quello che usa YouTube per l'anteprima sulla barra; pure, così si prova.
+ */
+data class YtStoryboard(
+    val urls: List<String>,
+    val frameWidth: Int,
+    val frameHeight: Int,
+    val perRow: Int,
+    val perColumn: Int,
+    val total: Int,
+    val msPerFrame: Int,
+) {
+    /** Dove sta il fotogramma: foglio, colonna e riga nella griglia. */
+    data class Spot(val url: String, val column: Int, val row: Int)
+
+    fun frameAt(positionMs: Long): Spot? {
+        val perPage = perRow * perColumn
+        if (urls.isEmpty() || perPage <= 0 || total <= 0 || msPerFrame <= 0) return null
+        val index = (positionMs.coerceAtLeast(0) / msPerFrame).coerceAtMost(total - 1L).toInt()
+        val page = (index / perPage).coerceAtMost(urls.size - 1)
+        val inPage = index - page * perPage
+        return Spot(urls[page], inPage % perRow, inPage / perRow)
+    }
+}
 
 /** Una pagina dei video di un canale, dal più recente; [next] è null quando sono finiti. */
 class YtChannelPage(val videos: List<YtVideo>, val tab: ListLinkHandler, val next: Page?)
@@ -302,12 +330,21 @@ object YtResolver {
             subtitles = subtitles,
             related = info.relatedItems.filterIsInstance<StreamInfoItem>().mapNotNull(::video),
             channelUrl = info.uploaderUrl.orEmpty(),
+            storyboard = if (live) null else storyboard(info),
         ).also {
             if (it.hlsUrl == null && it.muxedUrl == null && (it.videoUrl == null || it.audioUrl == null) && it.audioUrl == null) {
                 throw IllegalStateException("Nessun flusso riproducibile per questo video")
             }
         }
     }
+
+    /** Lo storyboard più nitido che non sia enorme (YouTube ne dà di più grandezze). */
+    private fun storyboard(info: StreamInfo): YtStoryboard? = runCatching {
+        info.previewFrames.orEmpty()
+            .filter { it.urls.isNotEmpty() && it.frameWidth in 1..400 && it.durationPerFrame > 0 }
+            .maxByOrNull { it.frameWidth }
+            ?.let { YtStoryboard(it.urls, it.frameWidth, it.frameHeight, it.framesPerPageX, it.framesPerPageY, it.totalCount, it.durationPerFrame) }
+    }.getOrNull()
 
     /**
      * Il controllo "non sei un bot" di YouTube su reti condivise (4G) spesso passa al secondo colpo:
