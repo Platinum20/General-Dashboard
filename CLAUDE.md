@@ -32,7 +32,7 @@ create something it lists, so the next thread doesn't have to explore.
   `Motion.settle()` (no bounce), `Motion.lively()` (press/appear), `Motion.gesture()` (finger release) + `Motion.fling(dist, v)`
   for swipe-outs at the finger's speed. `bouncyPress` (Common.kt, pure `PressRule`) presses after 80 ms still, innermost only.
 - `ui/screens/SharedItems.kt`: shared elements (`Modifier.sharedItem(key)`, `LocalSharedScope` = SharedTransitionLayout around
-  the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page.
+  the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page. Row titles are keyed per list (`SharedRows`: `TimelineRow(sharedScope=)` HOME/PAGE/EXPENSES, detail reads `SharedRows.origin`) so they never fly between two lists (1.363 jump fix).
   `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page). `Timeline.kt` `RowFlash`
   (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
   `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.368.0
+**Calendario: le righe non saltano più**
+- Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
+- Lo stesso per le spese quando apri il riepilogo del mese
+- Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
+
 ## 1.367.0
 **Revolut e WindTre restano collegati**
 - Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
