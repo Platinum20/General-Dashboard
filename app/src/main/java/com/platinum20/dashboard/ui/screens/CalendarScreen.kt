@@ -242,6 +242,8 @@ fun EventDetailScreen(
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
             DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
+            // Il QR del biglietto, dalla mail: subito sotto il titolo, è quello che serve al controllo.
+            TicketCodes(current)
             CanvasCard(Modifier.fillMaxWidth()) {
                 if (trip != null && !current.allDay) {
                     // Il viaggio come sulla linea del tempo: partenza, linea, arrivo (Antonio).

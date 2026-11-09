@@ -177,6 +177,8 @@ fun TimelineRow(
     onMonth: ((java.time.YearMonth) -> Unit)? = null,
     /** Il segno del mese è già stato disegnato sopra (sopra "OGGI"): qui non si ripete. */
     showMonth: Boolean = true,
+    /** La lista in cui sta la riga ([SharedRows]): il titolo vola solo verso la scheda aperta da qui. */
+    sharedScope: String = SharedRows.PAGE,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
@@ -233,9 +235,10 @@ fun TimelineRow(
             }
             .bouncyPress(0.98f)
             .combinedClickable(
-                onClick = onClick,
+                onClick = { SharedRows.origin = sharedScope; onClick() },
                 onLongClick = onLongClick?.let { long ->
                     {
+                        SharedRows.origin = sharedScope
                         haptic(Haptic.LONG_PRESS)
                         long()
                         // Finché il fumetto è aperto, questa riga resta accesa: si vede di chi sono le azioni.
@@ -281,7 +284,7 @@ fun TimelineRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
-            modifier = Modifier.weight(1f).padding(vertical = 7.dp).sharedItem(entry.key.takeIf { it.isSharedRow() }),
+            modifier = Modifier.weight(1f).padding(vertical = 7.dp).sharedItem(SharedRows.key(sharedScope, entry.key)),
         )
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))

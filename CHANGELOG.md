@@ -1,12 +1,31 @@
 # Changelog
 
-## 1.367.0
+## 1.370.0
 **Treni: il viaggio su una riga sola**
 - Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce
 - In mezzo quanto dura il viaggio e che treno è (per esempio "4 h 32 min · Intercity 612"); se arrivi il giorno dopo, accanto all'arrivo c'è il giorno
 - Mentre sei in treno, un pallino sulla linea mostra a che punto del viaggio sei
 - Nella scheda del treno lo stesso viaggio disegnato, poi carrozza, posto e PNR; tolte le righe che non dicevano niente ("Non si ripete", il luogo uguale alla partenza)
 - Le spese Trenitalia e Italo hanno l'icona del treno
+
+## 1.369.0
+**Il QR del biglietto nell'evento**
+- Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
+- Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
+- Una volta trovato resta sul telefono: si apre anche senza rete
+- Serve la posta collegata con la password per app (Impostazioni › Account › Posta)
+
+## 1.368.0
+**Calendario: le righe non saltano più**
+- Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
+- Lo stesso per le spese quando apri il riepilogo del mese
+- Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
+
+## 1.367.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
 
 ## 1.365.0
 **I tuoi turni di lavoro nel calendario**
