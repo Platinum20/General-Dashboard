@@ -371,7 +371,11 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
-        middle = listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
+        // Per un turno: durata, icona di quanti siamo, poi guadagno (Antonio).
+        middle = if (creators.isNotEmpty()) duration
+        else listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
+        people = event.people.takeIf { creators.isNotEmpty() },
+        extra = if (creators.isNotEmpty()) event.location.trim() else "",
         begin = event.begin,
         end = event.end,
     )

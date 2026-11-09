@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.390.0
+**Turni tutti uguali**
+- Ogni turno ha la stessa altezza: le creator stanno su una riga sola, con i tre puntini se non ci stanno (tocca il turno per vederle tutte)
+- Sotto le creator: durata, un'icona per da solo, in doppio o in tre, poi guadagno e percentuale
+
 ## 1.389.0
 **Calendario più ordinato**
 - Via "Più avanti": sotto OGGI c'è solo la giornata, poi i giorni uno per uno

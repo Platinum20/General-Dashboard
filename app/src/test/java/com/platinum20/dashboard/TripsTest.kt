@@ -4,6 +4,7 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.Trip
 import com.platinum20.dashboard.calendar.Trips
 import com.platinum20.dashboard.ui.screens.tripStops
+import com.platinum20.dashboard.ui.screens.peopleLabel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -89,6 +90,15 @@ class TripsTest {
         // Con le creator in mezzo l'altezza la decide il testo.
         assertEquals(row.midDp(), row.middleMinDp(), 0.01f)
         assertEquals(0f, row.copy(names = "Chiara").middleMinDp(), 0.01f)
+        // Un turno con le creator: durata, poi l'icona di quanti siamo, poi il guadagno.
+        val paid = CalendarEvent(-4, "Turno · Chiara Stefane", start, stop, false, "$110,41 · 15%", 0, people = 2)
+        val r2 = tripStops(paid, LocalDate.of(2026, 11, 9), zone)!!
+        assertEquals("5 h", r2.middle)
+        assertEquals(2, r2.people)
+        assertEquals("$110,41 · 15%", r2.extra)
+        assertEquals("In doppio", peopleLabel(2))
+        assertEquals("Da solo", peopleLabel(1))
+        assertEquals(null, row.people)
         // Sulla pagina dell'evento il nome c'è già: Inizio e Fine, senza luogo.
         val page = tripStops(shift, LocalDate.of(2026, 11, 9), zone, labels = true)!!
         assertEquals("Inizio", page.from)

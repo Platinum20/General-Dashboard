@@ -186,9 +186,6 @@ class ShiftParseTest {
         assertEquals("In doppio con Vincenzo C", ShiftParse.company(read.mine[0].mates))
         assertEquals("Da solo", ShiftParse.company(emptyList()))
         assertEquals("In tre con Anna e Bruno", ShiftParse.company(listOf("Anna", "Bruno")))
-        assertEquals("In doppio", ShiftParse.size(listOf("Anna")))
-        assertEquals("Da solo", ShiftParse.size(emptyList()))
-        assertEquals("In 4", ShiftParse.size(listOf("A", "B", "C")))
         // Si salvano e si rileggono.
         assertEquals(read.mine, ShiftParse.fromJson(ShiftParse.toJson(read.mine)))
         // Lo stesso turno letto dalla timeline di un'altra creator tiene i colleghi visti là.

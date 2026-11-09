@@ -24,6 +24,8 @@ data class CalendarEvent(
     val color: Int,
     /** Un viaggio in treno ([Trips.shape]): partenza e arrivo sulla stessa riga. */
     val trip: Trip? = null,
+    /** Per un turno: quante persone sono in turno (io compreso), mostrato come icona accanto alla durata. */
+    val people: Int? = null,
 )
 
 /** Il colore dei turni nel calendario. */
@@ -31,7 +33,7 @@ private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
 
 /** Il turno nel calendario: accanto alla durata quanto ha fruttato, dalla busta paga ("$60,56 · 12%"). */
 internal fun shiftEvent(s: Shift, pay: com.platinum20.dashboard.shifts.ShiftEarning? = null) =
-    CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = listOfNotNull(com.platinum20.dashboard.shifts.ShiftParse.size(s.mates), pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::line)).joinToString(" · "), color = SHIFT_COLOR)
+    CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::line).orEmpty(), people = s.mates.size + 1, color = SHIFT_COLOR)
 
 /** La scheda di un turno: solo lettura, si cambia su Creators Pro. Nelle note com'è andato e il mese. */
 internal fun shiftDetail(

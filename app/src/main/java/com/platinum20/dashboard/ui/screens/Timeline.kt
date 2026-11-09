@@ -27,6 +27,9 @@ import androidx.compose.material.icons.outlined.DirectionsCar
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Groups
+import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.LocalHospital
@@ -123,6 +126,9 @@ data class TripStops(
     val names: String? = null,
     /** Il nome su una riga sua sopra inizio e fine (Antonio); null per i treni, dove il nome è la stazione. */
     val title: String? = null,
+    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e il guadagno ([extra]). */
+    val people: Int? = null,
+    val extra: String = "",
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -407,7 +413,17 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                         trip.names?.let {
                             Text(it, style = MaterialTheme.typography.bodySmall, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                        if (trip.middle.isNotEmpty()) Text(
+                        if (trip.people != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(trip.middle + " · ", style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1)
+                            Icon(peopleIcon(trip.people), contentDescription = peopleLabel(trip.people), tint = sub, modifier = Modifier.size(14.dp))
+                            if (trip.extra.isNotEmpty()) Text(
+                                " · " + trip.extra,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = sub,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        } else if (trip.middle.isNotEmpty()) Text(
                             trip.middle,
                             style = MaterialTheme.typography.labelMedium,
                             color = sub,
@@ -420,6 +436,20 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
             }
         }
     }
+}
+
+/** Una persona, due o un gruppo: da solo, in doppio, in tre o più. */
+internal fun peopleIcon(people: Int) = when {
+    people <= 1 -> Icons.Outlined.Person
+    people == 2 -> Icons.Outlined.People
+    else -> Icons.Outlined.Groups
+}
+
+/** Per TalkBack, al posto dell'icona. */
+internal fun peopleLabel(people: Int) = when {
+    people <= 1 -> "Da solo"
+    people == 2 -> "In doppio"
+    else -> "In $people"
 }
 
 @Composable
