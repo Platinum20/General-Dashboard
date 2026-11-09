@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Expenses
@@ -105,6 +106,16 @@ class CalendarUnicoTest {
         val past = pastDays(listOf(oggiFatto, ieriFatto), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true)
         assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
         assertEquals("task-2", past.single().rows.single().key)
+    }
+
+    @Test fun eventoDiOggiFinitoStaSottoOggi() {
+        // Il turno di stamattina, finito alle 12: resta sotto OGGI, non sparisce e non va nel passato.
+        val turno = CalendarEvent(-5, "Turno", ms(oggi.atTime(7, 0)), ms(oggi.atTime(11, 0)), false, "", 0)
+        val ieri = CalendarEvent(-6, "Turno", ms(oggi.minusDays(1).atTime(17, 0)), ms(oggi.minusDays(1).atTime(22, 0)), false, "", 0)
+        val groups = dueDays(emptyList(), emptyList(), listOf(turno, ieri), now = adesso, zone = zone, withToday = true)
+        assertEquals(listOf("spend-today", "event--5-${turno.begin}"), groups.first().rows.map { it.key })
+        val past = pastDays(emptyList(), emptyList(), listOf(turno, ieri), now = adesso, zone = zone, withToday = true)
+        assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
     }
 
     @Test fun filtriSpeseNoteEventi() {
