@@ -221,10 +221,11 @@ fun TimelineRow(
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
-    if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
     val headed = entry.dayLabel != null && !entry.todayHeader
     val monthShown = showMonth && entry.month != null
     val laterShown = entry.later && !monthShown
+    val gap = timelineGap(entry, showMonth)
+    if (gap > 0f) TimelineGap(gap.dp, line, top = top)
     // Sotto un segno (mese, PIÙ AVANTI) il giorno sta sulla riga del segno, non su una riga vuota sua (Antonio).
     // Dal 1.389 il giorno ha sempre la sua riga, col nome a sinistra e la linea fino al pallino (Antonio).
     val dayOnMarker = false
@@ -505,6 +506,13 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true, joinLeft = rule)
     }
 }
+
+/**
+ * Lo spazio vuoto sopra una riga ([TimelineEntry.gapDp]). Sopra un segno del mese niente: il mese già dice
+ * che è passato del tempo, e il buco sotto la riga prima sembrava un errore (compleanni di ogni anno, Antonio).
+ */
+fun timelineGap(entry: TimelineEntry, showMonth: Boolean = true): Float =
+    if ((showMonth && entry.month != null) || entry.later) 0f else entry.gapDp
 
 /** Lo spazio vuoto fra due giorni lontani: solo la linea, allineata a quella delle righe. */
 @Composable
