@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.381.0
+## 1.383.0
 **Ogni evento come i treni**
 - Turni, impegni e ogni evento con un inizio e una fine ora sono una riga sola come i treni: in alto l'ora d'inizio e il nome, in basso l'ora di fine, in mezzo una linea con quanto dura (e il luogo)
 - Mentre l'evento è in corso, il pallino sulla linea ti dice a che punto sei
 - Anche la pagina dell'evento mostra inizio, linea e fine
-- Gli eventi di tutto il giorno restano una riga semplice
+- Gli eventi senza orario o di tutto il giorno restano una riga semplice
+
+## 1.382.0
+**Il biglietto si apre con un tasto**
+- Il QR del biglietto non sta più sempre aperto sotto il titolo: in basso a sinistra nella pagina del treno c'è il tasto "Biglietto"
+- Toccandolo il QR si apre grande su fondo bianco, con lo schermo alla luminosità massima; tocca ovunque o Indietro per chiuderlo
+- Modifica, per gli eventi che si possono cambiare, è passato in "Altro"
 
 ## 1.380.0
 **Turni: ora li legge davvero**
