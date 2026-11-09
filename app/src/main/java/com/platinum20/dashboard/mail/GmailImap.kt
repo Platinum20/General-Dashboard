@@ -155,6 +155,11 @@ object GmailImap {
             ImapParse.fetched(command("UID FETCH $uid (UID X-GM-MSGID X-GM-LABELS FLAGS INTERNALDATE BODY.PEEK[]<0.$MAX_BYTES>)"))
                 .firstOrNull { it.uid == uid }?.let { ImapParse.message(it) }
 
+        /** La mail intera con gli allegati (il PDF del biglietto), fino a [max] byte. */
+        fun raw(uid: Long, max: Int = 4_000_000): String? =
+            ImapParse.fetched(command("UID FETCH $uid (UID BODY.PEEK[]<0.$max>)"))
+                .firstOrNull { it.uid == uid }?.raw
+
         @Synchronized
         fun command(cmd: String): List<ImapLine> {
             val t = "C" + (++tag)

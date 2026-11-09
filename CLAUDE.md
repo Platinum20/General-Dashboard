@@ -32,7 +32,7 @@ create something it lists, so the next thread doesn't have to explore.
   `Motion.settle()` (no bounce), `Motion.lively()` (press/appear), `Motion.gesture()` (finger release) + `Motion.fling(dist, v)`
   for swipe-outs at the finger's speed. `bouncyPress` (Common.kt, pure `PressRule`) presses after 80 ms still, innermost only.
 - `ui/screens/SharedItems.kt`: shared elements (`Modifier.sharedItem(key)`, `LocalSharedScope` = SharedTransitionLayout around
-  the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page.
+  the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page. Row titles are keyed per list (`SharedRows`: `TimelineRow(sharedScope=)` HOME/PAGE/EXPENSES, detail reads `SharedRows.origin`) so they never fly between two lists (1.363 jump fix).
   `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page). `Timeline.kt` `RowFlash`
   (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
   `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.
@@ -117,6 +117,8 @@ the Google app is in Testing); `MailStore.sync` picks IMAP first (`Source` inter
 (sync: new mails into `AutoFill.offer`, important unread for the Home card), `work/MailWorker` (hourly + on
 Gmail notification; the listener skips Gmail previews when connected). UI `ui/screens/MailUi.kt` (`FromMailCard` = Home card "Dalla posta": only important unread mail (since 1.191 AutoFill always saves found items straight into Note, no "Aggiungi"; "La tua settimana" card removed),
 `GmailAccountRows` in Settings › Account "Posta" (1.328, like SIM/Conto; password dialog `GmailPasswordDialog`), MailScreen route `home/mail/{id}`).
+
+**Biglietti** (`tickets/`, 1.369): `TicketMail` (pure: event → Gmail query (PNR, else train number/destination + train senders, else title of events Google made from a mail), `codeImageUrls`, `crop`), `TicketQrStore` (IMAP `Session.raw` full mail → `MimeParse.binaryParts` images/PDF (PdfRenderer) + remote code images → ML Kit barcode-scanning → cropped PNGs in filesDir/tickets/<eventId>-N.png; misses retried after 6 h). UI `TicketCodes` (ui/screens/TicketQrUi.kt) under the event title in `EventDetailScreen`, tap = max brightness.
 
 **SIM** (`sim/`, 1.288): `WindTreParse` (pure: any JSON/page text from WindTre area clienti → `SimStatus` giga/minuti/SMS/credito/rinnovo by key names, format not public), `SimStore` (status, linked, last 40 captured responses in filesDir, login responses never saved), `WindTreLink` (JS hook on fetch/XHR via document-start script on `*.windtre.it`, one-time official login WebView, hidden-WebView refresh hourly from the Home card). UI `ui/screens/SimUi.kt` (`SimCard` = HomeCard.SIM, `SimScreen` route `home/sim`, "Condividi i dati letti" to fix the parser from real samples).
 

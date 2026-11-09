@@ -310,6 +310,7 @@ fun ExpensesTab(
                                 top = index > 0,
                                 bottom = index < entries.lastIndex,
                                 onClick = { openItem(ItemKind.EXPENSE, expense.id) },
+                                sharedScope = SharedRows.EXPENSES,
                                 onLongClick = {
                                     ActionBubble.show(
                                         BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
