@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.362.0
+**La Home di YouTube non finisce più**
+- Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
+- I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
