@@ -252,16 +252,15 @@ fun EventDetailScreen(
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
             DetailTitle(com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
             CanvasCard(Modifier.fillMaxWidth()) {
-                if (trip != null && !current.allDay) {
-                    // Il viaggio come sulla linea del tempo: partenza, linea, arrivo (Antonio).
+                // Ogni evento con inizio e fine come il viaggio sulla linea del tempo: inizio, linea, fine (Antonio).
+                val stops = if (current.allDay) null else tripStops(
+                    CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
+                    LocalDate.now(), zone, labels = trip == null,
+                )
+                if (stops != null) {
                     val day = Instant.ofEpochMilli(from).atZone(zone).toLocalDate().format(agendaDayFormat).replaceFirstChar { it.uppercase() }
                     DetailRow(Icons.Outlined.Schedule, day)
-                    tripStops(
-                        CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
-                        LocalDate.now(), zone,
-                    )?.let { stops ->
-                        TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, bottom = 8.dp))
-                    }
+                    TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, bottom = 8.dp))
                 } else {
                     DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
                 }
