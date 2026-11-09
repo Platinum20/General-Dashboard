@@ -12,7 +12,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** Un turno di lavoro di Antonio su Creators Pro: un evento con inizio e fine. */
-data class Shift(val id: String, val start: Long, val end: Long, val title: String = "Turno") {
+data class Shift(val id: String, val start: Long, val end: Long, val title: String = "Turno", val scope: String = "") {
     /** Id negativo: nel calendario non si confonde con gli eventi del telefono (positivi, -1 = nessuno). */
     val eventId: Long get() = -((id.hashCode().toLong() and 0xFFFFFFFFL) + 10)
 }
@@ -21,7 +21,7 @@ data class Shift(val id: String, val start: Long, val end: Long, val title: Stri
  * Quello che dice una risposta della timeline: i turni di Antonio, il periodo che la risposta copre
  * (per togliere quelli spariti) e gli id con cui Creators Pro lo indica.
  */
-data class ShiftRead(val mine: List<Shift>, val from: Long, val to: Long, val myIds: Set<String>, val seen: Int = mine.size) {
+data class ShiftRead(val mine: List<Shift>, val from: Long, val to: Long, val myIds: Set<String>, val seen: Int = mine.size, val scope: String = "") {
     /** Solo aggiunte, niente tolto: un messaggio in tempo reale o un turno solo (di un altro) non dicono tutto il periodo. */
     fun additive() = copy(from = 0, to = 0)
 }
@@ -217,6 +217,54 @@ object ShiftParse {
         return if (to > from) from to to else null
     }
 
+    private fun param(url: String, name: String): String? = url.substringAfter('?', "").split('&')
+        .firstOrNull { it.substringBefore('=').equals(name, ignoreCase = true) }
+        ?.substringAfter('=')?.let { java.net.URLDecoder.decode(it, "UTF-8") }
+
+    /**
+     * La timeline vera di Creators Pro (/v1/timeline/events, una creator per volta): ogni slot ha solo
+     * l'inizio, la fascia ("Morning" 7–12…) ha un modello con inizio e fine, e il turno dice chi c'è
+     * (shift.member). L'inizio salvato è sfasato di un'ora d'inverno (il sito lo scrive con l'ora del
+     * modello, estiva): l'ora giusta è quella del modello nel suo fuso, come la mostra la pagina.
+     */
+    fun creatorsEvents(root: Any, url: String, ids: Set<String>, me: String = ME, zone: ZoneId = ZoneId.systemDefault()): ShiftRead? {
+        val data = (root as? JSONObject)?.optJSONArray("data") ?: return null
+        val mine = ArrayList<Shift>()
+        var any = false
+        for (i in 0 until data.length()) {
+            val ev = data.optJSONObject(i) ?: continue
+            val begin = instant(ev.opt("startedAt"), zone) ?: continue
+            val interval = ev.optJSONObject("interval") ?: continue
+            any = true
+            val shift = ev.optJSONObject("shift") ?: continue
+            val member = shift.optJSONObject("member") ?: continue
+            if (!namesMe(member, me) && idOf(member) !in ids) continue
+            val model = interval.optJSONArray("creators")?.optJSONObject(0)
+            val tz = runCatching { ZoneId.of(model?.optString("timeZone")?.takeIf { it.isNotBlank() } ?: "Europe/Rome") }.getOrDefault(zone)
+            val ms = model?.let { instant(it.opt("startedAt"), zone) }
+            val me2 = model?.let { instant(it.opt("endedAt"), zone) }
+            val length = if (ms != null && me2 != null && me2 > ms && me2 - ms <= MAX_MS) me2 - ms else 5 * 3600_000L
+            // Data e ora come sulla pagina: l'istante salvato letto con lo scarto del modello.
+            val offset = tz.rules.getOffset(Instant.ofEpochMilli(ms ?: begin))
+            val local = LocalDateTime.ofEpochSecond(begin / 1000, 0, offset)
+            val start = local.atZone(tz).toInstant().toEpochMilli()
+            val aliases = ev.optJSONArray("creators")?.let { a ->
+                (0 until a.length()).mapNotNull { a.optJSONObject(it)?.optJSONObject("creator")?.optString("alias")?.takeIf { s -> s.isNotBlank() } }
+            }.orEmpty()
+            val title = if (aliases.isEmpty()) "Turno" else "Turno · " + aliases.joinToString(", ")
+            val scope = "cp:" + (param(url, "creatorId") ?: "")
+            mine += Shift(shift.optString("id").ifBlank { ev.optString("id") }, start, start + length, title, scope)
+        }
+        val from = instant(param(url, "startedAt"), zone)
+        val to = instant(param(url, "endedAt"), zone)
+        if (!any && (from == null || to == null)) return null
+        return ShiftRead(
+            mine.distinctBy { it.id }.sortedBy { it.start },
+            from ?: mine.minOfOrNull { it.start } ?: 0, to ?: mine.maxOfOrNull { it.end } ?: 0,
+            emptySet(), data.length(), "cp:" + (param(url, "creatorId") ?: ""),
+        )
+    }
+
     /** null se la risposta non è JSON o non contiene turni di nessuno (e l'indirizzo non dice il periodo). */
     fun read(body: String, known: Set<String> = emptySet(), me: String = ME, zone: ZoneId = ZoneId.systemDefault(), url: String = ""): ShiftRead? {
         val root: Any = runCatching {
@@ -224,6 +272,7 @@ object ShiftParse {
             if (t.startsWith("[")) JSONArray(t) else JSONObject(t)
         }.getOrNull() ?: return null
         val ids = HashSet(known).also { learn(root, me, zone, it) }
+        if (url.contains("/timeline/events")) creatorsEvents(root, url, ids, me, zone)?.let { return it.copy(myIds = ids - known) }
         val walk = Walk(me, zone, ids).also { it.visit(root, false) }
         // Il periodo dell'indirizzo vale solo per chiamate che parlano di turni: altrove svuoterebbe a torto.
         val asked = urlWindow(url, zone)?.takeIf { SHIFTY.containsMatchIn(url.substringBefore('?')) }
@@ -238,19 +287,20 @@ object ShiftParse {
      * (così un turno tolto sparisce), fuori dal periodo restano com'erano.
      */
     fun merge(old: List<Shift>, read: ShiftRead): List<Shift> {
-        val kept = old.filter { it.end <= read.from || it.start >= read.to }
-        return (kept + read.mine).distinctBy { it.id }.sortedBy { it.start }
+        // Solo la stessa fonte (es. la stessa creator): la timeline di una creator non dice niente delle altre.
+        val kept = old.filter { it.scope != read.scope || it.end <= read.from || it.start >= read.to }
+        return (read.mine + kept).distinctBy { it.id }.sortedBy { it.start }
     }
 
     fun toJson(list: List<Shift>): String = JSONArray().also { a ->
-        list.forEach { a.put(JSONObject().put("id", it.id).put("start", it.start).put("end", it.end).put("title", it.title)) }
+        list.forEach { a.put(JSONObject().put("id", it.id).put("start", it.start).put("end", it.end).put("title", it.title).put("scope", it.scope)) }
     }.toString()
 
     fun fromJson(text: String?): List<Shift> = runCatching {
         val a = JSONArray(text ?: return emptyList())
         (0 until a.length()).map { i ->
             val o = a.getJSONObject(i)
-            Shift(o.getString("id"), o.getLong("start"), o.getLong("end"), o.optString("title", "Turno"))
+            Shift(o.getString("id"), o.getLong("start"), o.getLong("end"), o.optString("title", "Turno"), o.optString("scope"))
         }
     }.getOrDefault(emptyList())
 }

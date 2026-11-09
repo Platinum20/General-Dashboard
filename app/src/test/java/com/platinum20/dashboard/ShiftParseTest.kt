@@ -127,4 +127,49 @@ class ShiftParseTest {
         assertEquals("Nessun turno in arrivo", shiftsLine(list, now = 5_000))
         assertTrue(list[0].eventId < -1)
     }
+
+    /** La forma vera della timeline di Creators Pro (dati inventati): fascia col modello estivo, turno con member. */
+    private val creatorsJson = """
+        {"message":"success","statusCode":200,"data":[
+          {"id":"ev1","startedAt":"2026-11-10T05:00:00.000Z",
+           "interval":{"id":"i1","name":"Morning","creators":[{"startedAt":"2026-09-12T05:00:00.000Z","endedAt":"2026-09-12T10:00:00.000Z","creatorId":1}]},
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}},{"creator":{"id":2,"alias":"Debora M"}}],
+           "shift":{"id":"sh1","eventId":"ev1","member":{"id":"m-me","firstName":"Antonio","lastName":"Nesca"}}},
+          {"id":"ev2","startedAt":"2026-11-12T20:00:00.000Z",
+           "interval":{"id":"i2","name":"Night","creators":[{"startedAt":"2026-09-11T20:00:00.000Z","endedAt":"2026-09-12T01:00:00.000Z","creatorId":1}]},
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],
+           "shift":{"id":"sh2","eventId":"ev2","member":{"id":"m-me","firstName":"Antonio","lastName":"Nesca"}}},
+          {"id":"ev3","startedAt":"2026-11-10T10:00:00.000Z",
+           "interval":{"id":"i3","name":"Afternoon","creators":[{"startedAt":"2026-09-12T10:00:00.000Z","endedAt":"2026-09-12T15:00:00.000Z","creatorId":1}]},
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],
+           "shift":{"id":"sh3","eventId":"ev3","member":{"id":"m-other","firstName":"Vincenzo","lastName":"C"}}},
+          {"id":"ev4","startedAt":"2026-11-11T10:00:00.000Z",
+           "interval":{"id":"i3","name":"Afternoon","creators":[{"startedAt":"2026-09-12T10:00:00.000Z","endedAt":"2026-09-12T15:00:00.000Z","creatorId":1}]},
+           "creators":[{"creator":{"id":1,"alias":"Chiara S"}}],"shift":null}
+        ]}
+    """.trimIndent()
+    private val creatorsUrl = "https://api.creatorspro.com/v1/timeline/events?startedAt=2026-10-31T23:00:00.000Z&endedAt=2026-11-30T22:59:59.999Z&creatorId=1"
+
+    @Test
+    fun timelineCreatorsPro() {
+        val read = ShiftParse.read(creatorsJson, zone = zone, url = creatorsUrl)!!
+        assertEquals(listOf("sh1", "sh2"), read.mine.map { it.id })
+        // Morning = 7–12 ora italiana anche d'inverno, come sulla pagina.
+        assertEquals(at(10, 7), read.mine[0].start)
+        assertEquals(at(10, 12), read.mine[0].end)
+        assertEquals("Turno · Chiara S, Debora M", read.mine[0].title)
+        // Night = 22–3.
+        assertEquals(at(12, 22), read.mine[1].start)
+        assertEquals(at(13, 3), read.mine[1].end)
+        assertEquals("cp:1", read.scope)
+        assertEquals(ZonedDateTime.of(2026, 11, 1, 0, 0, 0, 0, zone).toInstant().toEpochMilli(), read.from)
+    }
+
+    @Test
+    fun unaCreatorNonTogliLeAltre() {
+        val other = Shift("x", at(11, 7), at(11, 12), scope = "cp:2")
+        val gone = Shift("y", at(14, 7), at(14, 12), scope = "cp:1")
+        val merged = ShiftParse.merge(listOf(other, gone), ShiftParse.read(creatorsJson, zone = zone, url = creatorsUrl)!!)
+        assertEquals(listOf("sh1", "x", "sh2"), merged.map { it.id })
+    }
 }
