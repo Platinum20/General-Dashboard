@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.363.0
+**Calendario: le righe non saltano più**
+- Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
+- Lo stesso per le spese quando apri il riepilogo del mese
+- Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
