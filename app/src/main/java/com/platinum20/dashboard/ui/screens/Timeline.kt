@@ -134,6 +134,12 @@ data class TripStops(
         return (MID_MIN_DP + MID_STEP_DP * log2).coerceAtMost(MID_MAX_DP)
     }
 
+    /**
+     * L'altezza minima fra inizio e fine: quella della durata, ma con le creator in mezzo decide il testo,
+     * che dice già quanto dura ("5 h"): niente buchi sopra e sotto (Antonio).
+     */
+    fun middleMinDp(): Float = if (names != null) 0f else midDp()
+
     /** Quanto del viaggio è fatto (0..1) adesso; null prima di partire e dopo l'arrivo. */
     fun progress(now: Long): Float? =
         if (end > begin && now in begin until end) (now - begin).toFloat() / (end - begin) else null
@@ -210,16 +216,23 @@ fun TimelineRow(
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
     if (entry.gapDp > 0f) TimelineGap(entry.gapDp.dp, line, top = top)
-    if (showMonth) entry.month?.let {
+    val headed = entry.dayLabel != null && !entry.todayHeader
+    val monthShown = showMonth && entry.month != null
+    val laterShown = entry.later && !monthShown
+    // Sotto un segno (mese, PIÙ AVANTI) il giorno sta sulla riga del segno, non su una riga vuota sua (Antonio).
+    val dayOnMarker = headed && (monthShown || laterShown)
+    val dayColor = dayLabelColor(entry.late, entry.past)
+    if (monthShown) entry.month?.let {
         TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
-            onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } })
+            onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } },
+            day = entry.dayLabel.takeIf { dayOnMarker }, dayColor = dayColor)
     }
-    if (entry.later && (!showMonth || entry.month == null)) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick)
+    if (laterShown) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick,
+        day = entry.dayLabel.takeIf { dayOnMarker }, dayColor = dayColor)
     // Fra un giorno e l'altro un filo sottile: si capisce dove finisce un giorno. Dove c'è già un segno, no.
     // Il giorno su una riga sua, con il divisorio sulla stessa riga: "———— Ieri ●" (Antonio). Così la linea non
     // passa sopra il titolo della prima cosa del giorno. Dove c'è già un segno (mese, PIÙ AVANTI) niente filo.
-    val headed = entry.dayLabel != null && !entry.todayHeader
-    if (headed) TimelineDayHeader(
+    if (headed && !dayOnMarker) TimelineDayHeader(
         entry.dayLabel!!, start, line, top,
         rule = entry.divider && !entry.later && !(showMonth && entry.month != null),
         late = entry.late, past = entry.past,
@@ -346,7 +359,7 @@ fun TimelineRow(
     }
 }
 
-private val TRIP_LINE = 30.dp
+private val TRIP_LINE = 26.dp
 private val TRIP_PAD = 4.dp
 
 /**
@@ -370,7 +383,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
         Row(Modifier.height(IntrinsicSize.Min)) {
             // La linea va dall'inizio alla fine anche quando in mezzo ci sono più righe (le creator).
             Box(
-                Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
+                Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.middleMinDp().dp).drawBehind {
                     val x = size.width / 2
                     val top = TRIP_LINE.toPx() / 2
                     val bottom = size.height - TRIP_LINE.toPx() / 2
@@ -387,8 +400,8 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                 TripStop(trip.departAt, trip.from, text, if (trip.title == null) title else Modifier)
                 // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
-                Box(Modifier.fillMaxWidth().heightIn(min = trip.midDp().dp), contentAlignment = Alignment.CenterStart) {
-                    Column(Modifier.padding(vertical = if (trip.names != null) 2.dp else 0.dp)) {
+                Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
+                    Column(Modifier.padding(vertical = if (trip.names != null) 4.dp else 0.dp)) {
                         trip.names?.let {
                             Text(it, style = MaterialTheme.typography.bodySmall, color = sub)
                         }
@@ -426,17 +439,21 @@ private val GUTTER = 22.dp
  */
 private val LINE_END = 19.dp
 
+/** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti quello dell'app. */
+@Composable
+private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
+    late -> MaterialTheme.colorScheme.error
+    past -> MaterialTheme.colorScheme.onSurfaceVariant
+    else -> MaterialTheme.colorScheme.primary
+}
+
 /**
  * L'intestazione di un giorno: a destra il nome e il pallino grande sulla linea, a sinistra il filo che separa
  * dal giorno prima, sulla stessa riga del nome ([rule]; no dove sopra c'è già il segno del mese).
  */
 @Composable
 private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
-    val color = when {
-        late -> MaterialTheme.colorScheme.error
-        past -> MaterialTheme.colorScheme.onSurfaceVariant
-        else -> MaterialTheme.colorScheme.primary
-    }
+    val color = dayLabelColor(late, past)
     val dot = when {
         past -> MaterialTheme.colorScheme.outline
         late -> MaterialTheme.colorScheme.error
@@ -555,6 +572,9 @@ fun TimelineMonthMarker(
     /** La spesa del mese, a destra prima della linea (Antonio). */
     total: String? = null,
     onClick: (() -> Unit)? = null,
+    /** Il giorno della prima riga sotto il segno, a destra prima del pallino (Antonio). */
+    day: String? = null,
+    dayColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
@@ -574,6 +594,13 @@ fun TimelineMonthMarker(
         total?.let {
             Spacer(Modifier.width(10.dp))
             Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
+            Spacer(Modifier.width(4.dp))
+        }
+        day?.let {
+            Spacer(Modifier.width(if (total != null) 6.dp else 10.dp))
+            if (total != null) Text("·", style = MaterialTheme.typography.labelLarge, color = color)
+            if (total != null) Spacer(Modifier.width(6.dp))
+            Text(it, style = MaterialTheme.typography.labelLarge, color = dayColor, maxLines = 1)
             Spacer(Modifier.width(4.dp))
         }
         Box(
