@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
+import android.graphics.Canvas
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,7 +49,7 @@ import java.util.TimeZone
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-night-xxhdpi")
 class ShiftTour {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
     private val context: Context get() = ApplicationProvider.getApplicationContext()
     private val outDir = File(System.getProperty("tour.dir") ?: "build/tour", "turni").apply { mkdirs() }
     private val zone = ZoneId.of("Europe/Rome")
@@ -82,7 +80,10 @@ class ShiftTour {
 
     private fun save(name: String) {
         compose.waitForIdle()
-        val bitmap: Bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        // Disegniamo la finestra a mano, come ScreenshotTour: captureToImage aspetta un frame che non arriva.
+        val view = compose.activity.window.decorView
+        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+        view.draw(Canvas(bitmap))
         File(outDir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 
