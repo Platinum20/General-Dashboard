@@ -48,7 +48,7 @@ import java.util.TimeZone
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [35], qualifiers = "w411dp-h914dp-xxhdpi+night")
+@Config(sdk = [35], qualifiers = "w411dp-h914dp-night-xxhdpi")
 class ShiftTour {
     @get:Rule
     val compose = createComposeRule()
