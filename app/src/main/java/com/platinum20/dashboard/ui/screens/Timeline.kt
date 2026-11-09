@@ -403,8 +403,9 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
                 Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
                     Column(Modifier.padding(vertical = if (trip.names != null) 4.dp else 0.dp)) {
+                        // Una riga sola, anche con tre creator: tutti i turni alti uguali (Antonio).
                         trip.names?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = sub)
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         if (trip.middle.isNotEmpty()) Text(
                             trip.middle,
