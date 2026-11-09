@@ -1,5 +1,6 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.media.youtube.player.YtSubtitle
 import com.platinum20.dashboard.media.youtube.player.YtText
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -39,5 +40,26 @@ class YtTextTest {
         val text = "Discord: discord.gg/flow. Video: https://youtu.be/abcdefghijk e basta Part 1."
         val found = YtText.links(text).map { text.substring(it) }
         assertEquals(listOf("discord.gg/flow", "https://youtu.be/abcdefghijk"), found)
+    }
+
+    @Test fun entitaNeiCommentiSciolte() {
+        assertEquals("Lui ha detto \"ciao\" & basta", YtText.decodeEntities("Lui ha detto &quot;ciao&quot; &amp; basta"))
+        assertEquals("\"doppie\" e l'apostrofo", YtText.decodeEntities("&amp;quot;doppie&amp;quot; e l&#39;apostrofo"))
+        assertEquals("emoji \uD83D\uDE00 e <3", YtText.decodeEntities("emoji &#x1F600; e &lt;3"))
+        assertEquals("AT&T &boh; resta", YtText.decodeEntities("AT&T &boh; resta"))
+    }
+
+    @Test fun sottotitoliSoloItalianoEInglese() {
+        val all = listOf(
+            YtSubtitle("de", "de", "u/de", auto = false),
+            YtSubtitle("en", "en", "u/en-a", auto = true),
+            YtSubtitle("en-GB", "en-GB", "u/en", auto = false),
+            YtSubtitle("ja", "ja", "u/ja-a", auto = true),
+        )
+        val picked = YtText.pickSubtitles(all)
+        assertEquals(listOf("it", "en", "en"), picked.map { it.language.substringBefore('-') })
+        assertEquals(listOf("Italiano (tradotti)", "Inglese", "Inglese (automatici)"), picked.map { it.label })
+        assertEquals("u/de&tlang=it", picked.first().url)
+        assertEquals(emptyList<YtSubtitle>(), YtText.pickSubtitles(emptyList()))
     }
 }

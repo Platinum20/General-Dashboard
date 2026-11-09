@@ -78,6 +78,7 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material.icons.filled.Favorite
@@ -1447,7 +1448,7 @@ private fun votesFor(id: String): YtVotes? {
     return voteCache[id]
 }
 
-/** Il tasto di SponsorBlock sul video: «Salta sponsor», «Vai al momento clou». */
+/** Il tasto di SponsorBlock sul video: «Salta sponsor», «Vai al momento clou», con la X per non saltare. */
 @Composable
 private fun SponsorSkipButton(modifier: Modifier) {
     val state by SponsorBlock.state.collectAsState()
@@ -1458,23 +1459,37 @@ private fun SponsorSkipButton(modifier: Modifier) {
         if (offer != null) shown.value = offer
         val segment = shown.value ?: return@AnimatedVisibility
         Row(
-            Modifier
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.7f))
-                .bouncyPress()
-                .clickable(onClickLabel = "Salta") { SponsorBlock.takeOffer() }
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+            Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.7f)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(segment.category.color)))
-            Spacer(Modifier.width(8.dp))
-            Text(
-                if (segment.type == SbType.POI) "Vai al momento clou" else "Salta: ${segment.category.label}",
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Spacer(Modifier.width(4.dp))
-            Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            Row(
+                Modifier
+                    .bouncyPress()
+                    .clickable(onClickLabel = "Salta") { SponsorBlock.takeOffer() }
+                    .padding(start = 14.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(Color(segment.category.color)))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (segment.type == SbType.POI) "Vai al momento clou" else "Salta: ${segment.category.label}",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(Icons.Filled.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+            // X: l'etichetta sparisce e quel pezzo non si salta (Antonio).
+            Box(Modifier.width(1.dp).height(18.dp).background(Color.White.copy(alpha = 0.3f)))
+            Box(
+                Modifier
+                    .bouncyPress()
+                    .clickable(onClickLabel = "Non saltare") { SponsorBlock.dismissOffer() }
+                    .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = "Non saltare", tint = Color.White, modifier = Modifier.size(18.dp))
+            }
         }
     }
 }

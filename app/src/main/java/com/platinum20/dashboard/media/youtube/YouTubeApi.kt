@@ -184,6 +184,15 @@ object YouTubeApi {
         }
     }
 
+    /**
+     * La descrizione come l'ha scritta l'autore: l'API ufficiale dà in `snippet.description` sempre la
+     * lingua originale (le traduzioni stanno a parte in `localized`). 1 unità di quota. Null se non c'è.
+     */
+    suspend fun originalDescription(token: String, id: String): String? {
+        val item = get(token, "videos", mapOf("part" to "snippet", "id" to id)).optJSONArray("items")?.optJSONObject(0)
+        return item?.optJSONObject("snippet")?.optString("description")?.trim()?.takeIf { it.isNotBlank() }
+    }
+
     /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
     suspend fun uploads(channels: List<YtChannel>): List<YtVideo> = coroutineScope {
         val gate = Semaphore(5)

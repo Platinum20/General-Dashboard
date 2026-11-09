@@ -23,6 +23,8 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.youtube.YtHistory
+import com.platinum20.dashboard.media.youtube.YouTubeApi
+import com.platinum20.dashboard.media.youtube.YouTubeAuth
 import com.platinum20.dashboard.media.youtube.YtPremiere
 import com.platinum20.dashboard.media.youtube.YtUpcomingException
 import com.platinum20.dashboard.media.youtube.YtWatched
@@ -242,7 +244,25 @@ object YtPlayer {
         start(context, stream, if (auto) Mode.AUTO else Mode.FIXED, positionMs = from, play = autoplay, subtitle = pickSubtitle(stream), player = p)
         remember(p)
         SponsorBlock.attach(context, stream.id, live = stream.hlsUrl != null)
+        if (!audioOnly) originalDescription(stream.id)
         return stream
+    }
+
+    /**
+     * YouTube a volte manda la descrizione tradotta (anche in inglese): Antonio la vuole sempre nella
+     * lingua originale. Col suo YouTube collegato si prende quella dell'API ufficiale e si sostituisce.
+     */
+    private fun originalDescription(id: String) {
+        val context = appContext ?: return
+        YouTubeAuth.init(context)
+        if (!YouTubeAuth.connected.value) return
+        scope.launch {
+            val token = YouTubeAuth.token(context) ?: return@launch
+            val original = runCatching { YouTubeApi.originalDescription(token, id) }.getOrNull() ?: return@launch
+            val now = _now.value ?: return@launch
+            val stream = now.stream?.takeIf { it.id == id && it.description != original } ?: return@launch
+            _now.value = now.copy(stream = stream.copy(description = original))
+        }
     }
 
     /** Il motore ha dato errore: si prova il modo successivo di scaricare lo stesso video. */

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.364.0
+**YouTube: testi puliti e sottotitoli solo italiano e inglese**
+- Nei commenti non compaiono più scritte strane come "&quot;": virgolette, apostrofi ed emoji si leggono giusti
+- La descrizione del video resta sempre nella lingua in cui l'ha scritta l'autore, mai tradotta (serve YouTube collegato in Impostazioni › Account)
+- Nei sottotitoli trovi solo Italiano e Inglese; se il video non li ha, YouTube li traduce da un'altra lingua
+- SponsorBlock: sull'etichetta "Salta" c'è una X per chiuderla e non saltare quel pezzo
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte
