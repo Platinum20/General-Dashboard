@@ -7,6 +7,8 @@ import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
+import com.platinum20.dashboard.shifts.Shift
+import com.platinum20.dashboard.shifts.ShiftStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -24,6 +26,17 @@ data class CalendarEvent(
     val trip: Trip? = null,
 )
 
+/** Il colore dei turni nel calendario. */
+private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
+
+internal fun shiftEvent(s: Shift) = CalendarEvent(s.eventId, s.title, s.start, s.end, allDay = false, location = "", color = SHIFT_COLOR)
+
+/** La scheda di un turno: solo lettura, si cambia su Creators Pro. */
+internal fun shiftDetail(s: Shift) = EventDetail(
+    id = s.eventId, title = s.title, begin = s.start, end = s.end, allDay = false, location = "",
+    description = "", recurring = false, calendarId = -1, calendarName = "Creators Pro", writable = false, color = SHIFT_COLOR,
+)
+
 /** Eventi dei calendari del telefono (Google, Samsung, Outlook…), letti dal provider di sistema. */
 object CalendarRepository {
 
@@ -39,7 +52,6 @@ object CalendarRepository {
 
     /** Eventi dei [days] giorni da [first] in poi, giorno per giorno (un evento di più giorni compare in ognuno). */
     suspend fun eventsFrom(context: Context, first: LocalDate, days: Int): Map<LocalDate, List<CalendarEvent>> = withContext(Dispatchers.IO) {
-        if (!hasPermission(context)) return@withContext emptyMap()
         val zone = ZoneId.systemDefault()
         val start = first.atStartOfDay(zone).toInstant().toEpochMilli()
         val end = first.plusDays(days.toLong()).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -58,7 +70,7 @@ object CalendarRepository {
             CalendarContract.Instances.DISPLAY_COLOR,
         )
         val events = mutableListOf<CalendarEvent>()
-        runCatching {
+        if (hasPermission(context)) runCatching {
             // Solo i calendari visibili nell'app Calendario, senza gli inviti rifiutati.
             val selection = "${CalendarContract.Instances.VISIBLE} = 1 AND " +
                 "${CalendarContract.Instances.SELF_ATTENDEE_STATUS} != ${CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED}"
@@ -76,12 +88,19 @@ object CalendarRepository {
                 }
             }
         }
+        // I turni di Creators Pro: eventi come gli altri, ma solo in Canvas (non nel calendario del telefono).
+        ShiftStore.init(context)
+        val shifts = ShiftStore.shifts.value.filter { it.end > start && it.start < end }.map(::shiftEvent)
         // I treni di Gmail: un viaggio solo, con partenza e arrivo.
-        CalendarDays.group(Trips.shape(events), first, days, zone)
+        CalendarDays.group((Trips.shape(events) + shifts).sortedBy { it.begin }, first, days, zone)
     }
 
     /** Tutto quello che serve per la scheda di un evento; null se non esiste più. */
     suspend fun event(context: Context, id: Long): EventDetail? = withContext(Dispatchers.IO) {
+        if (id < -1) {
+            ShiftStore.init(context)
+            return@withContext ShiftStore.shifts.value.firstOrNull { it.eventId == id }?.let(::shiftDetail)
+        }
         if (!hasPermission(context)) return@withContext null
         val projection = arrayOf(
             CalendarContract.Events.TITLE,

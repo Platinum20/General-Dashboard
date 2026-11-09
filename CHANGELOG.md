@@ -1,12 +1,30 @@
 # Changelog
 
-## 1.363.0
+## 1.367.0
 **Treni: il viaggio su una riga sola**
 - Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce
 - In mezzo quanto dura il viaggio e che treno è (per esempio "4 h 32 min · Intercity 612"); se arrivi il giorno dopo, accanto all'arrivo c'è il giorno
 - Mentre sei in treno, un pallino sulla linea mostra a che punto del viaggio sei
 - Nella scheda del treno lo stesso viaggio disegnato, poi carrozza, posto e PNR; tolte le righe che non dicevano niente ("Non si ripete", il luogo uguale alla partenza)
 - Le spese Trenitalia e Italo hanno l'icona del treno
+
+## 1.365.0
+**I tuoi turni di lavoro nel calendario**
+- In Impostazioni › Account › Lavoro c'è "Turni Creators Pro": entri una volta sola sul sito dei turni e apri la Timeline
+- Da lì in poi i turni di Antonio Nesca compaiono nel calendario come eventi, con ora di inizio e fine (es. 7–12, 12–17)
+- Solo i tuoi: i turni degli altri non entrano
+- Si aggiornano da soli: ogni 15 minuti anche con l'app chiusa, ogni 5 con Home o calendario aperti, e subito quando apri l'app. Un turno nuovo compare, uno tolto sparisce
+- Se un turno non torna, "Salva i dati letti dei turni" prepara il file da mandarmi per sistemare la lettura
+
+## 1.364.0
+**Video: scorrere nel punto giusto**
+- Col doppio tocco per andare avanti o indietro non torna più la copertina del video: resta l'immagine dov'eri finché arriva il punto nuovo
+- Trascinando la barra del tempo vedi sopra il dito il fotogramma dove lascerai il video, col minutaggio
+- Nuovo gesto: scorri di lato dal centro del video (come su e giù per il volume a schermo intero) per andare avanti e indietro piano, un minuto per tutta la larghezza; vibra ogni 5 secondi e mostra il fotogramma, quanto ti sposti e il punto d'arrivo. Il video salta quando alzi il dito
+
+## 1.362.0
+**Barra in basso più ordinata**
+- Le pillole della barra stanno di nuovo alla stessa distanza dal bordo su tutti i lati: la scheda agli estremi segue gli angoli arrotondati della barra, come prima che togliessimo una voce
 
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**

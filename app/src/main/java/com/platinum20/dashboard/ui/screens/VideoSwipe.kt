@@ -33,6 +33,12 @@ object VideoSwipe {
     fun volumeArmed(dx: Float, dy: Float, deadZonePx: Float): Boolean =
         abs(dy) > deadZonePx && abs(dy) > abs(dx) * 1.5f
 
+    /**
+     * La miniatura del video si mostra solo finché non è arrivato il primo fotogramma di quel video:
+     * dopo un salto resta l'immagine dov'era, non si torna alla copertina.
+     */
+    fun showsPoster(link: String?, seenLink: String?): Boolean = link == null || link != seenLink
+
     /** Swipe su sul video in verticale: basta un po' di strada verso l'alto, o uno scatto. */
     fun opensFullscreen(travelledPx: Float, velocityY: Float, thresholdPx: Float): Boolean =
         travelledPx < 0f && (-travelledPx > thresholdPx || velocityY < -1_000f)
