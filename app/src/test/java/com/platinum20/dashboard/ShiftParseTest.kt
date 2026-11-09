@@ -172,4 +172,11 @@ class ShiftParseTest {
         val merged = ShiftParse.merge(listOf(other, gone), ShiftParse.read(creatorsJson, zone = zone, url = creatorsUrl)!!)
         assertEquals(listOf("sh1", "x", "sh2"), merged.map { it.id })
     }
+
+    @Test
+    fun creatorDelTurnoSottoIlNome() {
+        assertEquals(listOf("Debora Martini", "Chiara Rossi"), ShiftParse.creators("Turno · Debora Martini, Chiara Rossi"))
+        assertEquals(emptyList<String>(), ShiftParse.creators("Turno"))
+        assertEquals(emptyList<String>(), ShiftParse.creators("Psichiatra"))
+    }
 }
