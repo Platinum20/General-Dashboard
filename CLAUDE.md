@@ -128,7 +128,7 @@ Gmail notification; the listener skips Gmail previews when connected). UI `ui/sc
 **Turni** (`shifts/`, 1.365): Antonio's work shifts from Creators Pro (creatorspro.com Timeline, no API). `ShiftParse` (pure: any JSON →
 `Shift` = object with start+end (ISO/epoch/date+"07:00"), mine if it names "Antonio Nesca" (own field, person child, strict-name group above)
 or cites an id learned from a named row (`myIds`); `merge` replaces shifts inside the period read (tolti spariscono), `additive` for WS/single),
-`ShiftStore` (shifts in prefs, captures, `timelineUrl`), `CreatorsLink` (same JS hook as Revolut + WebSocket, hidden refresh of the timeline),
+`ShiftStore` (shifts in prefs, captures, `timelineUrl`), `CreatorsLink` (same JS hook as Revolut + WebSocket, hidden refresh of the timeline; login WebView handles popups via `PopupHost` = Google sign-in window, 1.377),
 `work/ShiftWorker` (15 min). Shown as virtual events in `CalendarRepository.eventsFrom` (negative `Shift.eventId`, `event()` → read-only
 detail); never written to the phone calendar. UI `ui/screens/ShiftsUi.kt` (Settings › Account "Lavoro", login route `settings/shifts`).
 

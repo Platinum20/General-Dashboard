@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.377.0
+**Turni: accesso con Google**
+- L'accesso a Creators Pro con Google non resta più su una pagina bianca: la finestra di Google si apre sopra il sito e, finito l'accesso, si chiude da sola
+- L'accesso parte direttamente da app.creatorspro.com
+
 ## 1.376.0
 **Niente più spunta su promemoria e date**
 - Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi

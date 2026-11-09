@@ -3,7 +3,9 @@ package com.platinum20.dashboard.shifts
 import android.annotation.SuppressLint
 import android.content.Context
 import android.webkit.CookieManager
+import android.os.Message
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -21,7 +23,7 @@ import kotlinx.coroutines.withTimeoutOrNull
  * pagina riceve, come per WindTre e Revolut. Solo lettura; la password non passa da Canvas.
  */
 object CreatorsLink {
-    const val HOME = "https://creatorspro.com/"
+    const val HOME = "https://app.creatorspro.com/"
     /** La timeline è un'app web: il tempo per caricare i turni della settimana. */
     private const val READ_MS = 30_000L
 
@@ -73,8 +75,48 @@ object CreatorsLink {
         fun capture(url: String, status: Int, body: String) = ShiftStore.capture(url, status, body)
     }
 
+    /**
+     * L'accesso con Google apre una finestra a parte (popup) che poi parla con la pagina che l'ha
+     * aperta. Una WebView senza finestre multiple la ignora e resta tutta bianca (Antonio, 1.377):
+     * qui la finestra diventa una seconda WebView che lo schermo mostra sopra, e si chiude da sola.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun allowPopups(view: WebView, context: Context, popups: PopupHost) {
+        view.settings.setSupportMultipleWindows(true)
+        view.settings.javaScriptCanOpenWindowsAutomatically = true
+        view.webChromeClient = object : WebChromeClient() {
+            override fun onCreateWindow(parent: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message): Boolean {
+                val child = WebView(parent.context)
+                child.settings.javaScriptEnabled = true
+                child.settings.domStorageEnabled = true
+                child.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
+                child.settings.setSupportMultipleWindows(true)
+                child.settings.javaScriptCanOpenWindowsAutomatically = true
+                CookieManager.getInstance().setAcceptThirdPartyCookies(child, true)
+                child.webViewClient = WebViewClient()
+                child.webChromeClient = object : WebChromeClient() {
+                    override fun onCloseWindow(window: WebView) = popups.close(window)
+                }
+                popups.open(child)
+                val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                transport.webView = child
+                resultMsg.sendToTarget()
+                return true
+            }
+
+            override fun onCloseWindow(window: WebView) = popups.close(window)
+        }
+    }
+
+    /** Chi mostra le finestre aperte dalla pagina (solo la schermata d'accesso: quella nascosta non ne apre). */
+    interface PopupHost {
+        fun open(view: WebView)
+        fun close(view: WebView)
+    }
+
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface", "RequiresFeature")
-    fun prepare(view: WebView, context: Context, onPage: (String) -> Unit = {}) {
+    fun prepare(view: WebView, context: Context, popups: PopupHost? = null, onPage: (String) -> Unit = {}) {
+        if (popups != null) allowPopups(view, context, popups)
         view.settings.javaScriptEnabled = true
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
@@ -146,7 +188,10 @@ object CreatorsLink {
             }
         }
         cookies.flush()
-        runCatching { android.webkit.WebStorage.getInstance().deleteOrigin("https://creatorspro.com") }
+        runCatching {
+            android.webkit.WebStorage.getInstance().deleteOrigin("https://creatorspro.com")
+            android.webkit.WebStorage.getInstance().deleteOrigin("https://app.creatorspro.com")
+        }
         ShiftStore.unlink()
     }
 }

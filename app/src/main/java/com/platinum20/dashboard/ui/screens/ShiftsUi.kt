@@ -114,15 +114,27 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
     val startedAt = remember { System.currentTimeMillis() }
     var canGoBack by remember { mutableStateOf(false) }
     var url by remember { mutableStateOf<String?>(null) }
+    // La finestra dell'accesso con Google, sopra la pagina finché Google non la chiude.
+    var popup by remember { mutableStateOf<WebView?>(null) }
+    val popups = remember {
+        object : CreatorsLink.PopupHost {
+            override fun open(view: WebView) { popup = view }
+            override fun close(view: WebView) {
+                if (popup == view) popup = null
+                view.destroy()
+            }
+        }
+    }
     val webView = remember {
         WebView(context).also { view ->
-            CreatorsLink.prepare(view, context) { canGoBack = view.canGoBack(); url = it }
+            CreatorsLink.prepare(view, context, popups) { canGoBack = view.canGoBack(); url = it }
             view.loadUrl(ShiftStore.timelineUrl ?: CreatorsLink.HOME)
         }
     }
     DisposableEffect(Unit) {
         onDispose {
             android.webkit.CookieManager.getInstance().flush()
+            popup?.destroy()
             webView.stopLoading()
             webView.destroy()
         }
@@ -135,7 +147,12 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
             onClose()
         }
     }
-    BackHandler(enabled = canGoBack) { webView.goBack() }
+    BackHandler(enabled = canGoBack && popup == null) { webView.goBack() }
+    // Indietro sulla finestra di Google: torna indietro lì, o la chiude.
+    BackHandler(enabled = popup != null) {
+        val p = popup ?: return@BackHandler
+        if (p.canGoBack()) p.goBack() else popups.close(p)
+    }
     Scaffold(
         topBar = {
             Column {
@@ -155,6 +172,13 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
             }
         },
     ) { inner ->
-        AndroidView(factory = { ctx -> webView.inFrame(ctx) }, modifier = Modifier.fillMaxSize().padding(inner))
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize().padding(inner)) {
+            AndroidView(factory = { ctx -> webView.inFrame(ctx) }, modifier = Modifier.fillMaxSize())
+            popup?.let { p ->
+                androidx.compose.runtime.key(p) {
+                    AndroidView(factory = { ctx -> p.inFrame(ctx) }, modifier = Modifier.fillMaxSize())
+                }
+            }
+        }
     }
 }
