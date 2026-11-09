@@ -1,10 +1,24 @@
 # Changelog
 
-## 1.365.0
+## 1.368.0
 **Calendario: le righe non saltano più**
 - Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
 - Lo stesso per le spese quando apri il riepilogo del mese
 - Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
+
+## 1.367.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
+
+## 1.365.0
+**I tuoi turni di lavoro nel calendario**
+- In Impostazioni › Account › Lavoro c'è "Turni Creators Pro": entri una volta sola sul sito dei turni e apri la Timeline
+- Da lì in poi i turni di Antonio Nesca compaiono nel calendario come eventi, con ora di inizio e fine (es. 7–12, 12–17)
+- Solo i tuoi: i turni degli altri non entrano
+- Si aggiornano da soli: ogni 15 minuti anche con l'app chiusa, ogni 5 con Home o calendario aperti, e subito quando apri l'app. Un turno nuovo compare, uno tolto sparisce
+- Se un turno non torna, "Salva i dati letti dei turni" prepara il file da mandarmi per sistemare la lettura
 
 ## 1.364.0
 **Video: scorrere nel punto giusto**

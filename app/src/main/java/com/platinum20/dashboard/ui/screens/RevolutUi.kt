@@ -173,7 +173,7 @@ internal fun RevolutAccountRows() {
             when {
                 !linked -> FilledTonalButton(onClick = { open() }) { Text("Accedi") }
                 expired -> FilledTonalButton(onClick = { open() }) { Text("Rientra") }
-                else -> TextButton(onClick = { RevolutLink.forget() }) { Text("Esci") }
+                else -> TextButton(onClick = { RevolutLink.forget(context) }) { Text("Esci") }
             }
         },
     )
