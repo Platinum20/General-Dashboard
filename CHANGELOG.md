@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.370.0
+**YouTube: testi puliti e sottotitoli solo italiano e inglese**
+- Nei commenti non compaiono più scritte strane come "&quot;": virgolette, apostrofi ed emoji si leggono giusti
+- La descrizione del video resta sempre nella lingua in cui l'ha scritta l'autore, mai tradotta (serve YouTube collegato in Impostazioni › Account)
+- Nei sottotitoli trovi solo Italiano e Inglese; se il video non li ha, YouTube li traduce da un'altra lingua
+- SponsorBlock: sull'etichetta "Salta" c'è una X per chiuderla e non saltare quel pezzo
+
 ## 1.369.0
 **Il QR del biglietto nell'evento**
 - Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini

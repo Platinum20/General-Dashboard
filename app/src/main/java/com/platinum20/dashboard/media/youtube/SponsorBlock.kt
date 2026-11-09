@@ -237,6 +237,13 @@ object SponsorBlock {
         }
     }
 
+    /** La X sull'etichetta: sparisce e quel segmento, in questo video, non si salta più. */
+    fun dismissOffer() {
+        val offer = _state.value?.offer ?: return
+        done += offer.uuid
+        _state.value = _state.value?.copy(offer = null)
+    }
+
     private fun skip(segment: SbSegment, from: Long, to: Long) {
         CanvasPlayer.seekTo(to)
         record(to - from)

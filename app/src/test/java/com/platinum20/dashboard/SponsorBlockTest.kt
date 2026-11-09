@@ -71,6 +71,13 @@ class SponsorBlockTest {
     }
 
     @Test
+    fun closedLabelDoesNotComeBack() {
+        val segments = listOf(seg("a", SbCategory.INTRO, 0, 8_000))
+        val manual = defaults + (SbCategory.INTRO to SbAction.MANUAL)
+        assertNull(SponsorBlock.step(segments, manual, 2_000, done = setOf("a")).offer)
+    }
+
+    @Test
     fun eachChoiceIsRespected() {
         val segments = listOf(seg("a", SbCategory.INTRO, 0, 8_000))
         val manual = SponsorBlock.step(segments, defaults + (SbCategory.INTRO to SbAction.MANUAL), 1_000)
