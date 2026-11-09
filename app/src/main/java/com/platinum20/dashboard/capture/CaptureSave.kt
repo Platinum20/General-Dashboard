@@ -113,8 +113,8 @@ internal object CaptureSave {
             }
             CaptureMode.DATE -> {
                 val d = dateOf(text, now) ?: return CaptureResult(false, "Scrivi anche il giorno: es. 12 marzo")
-                val id = NotesStore.saveCountdown(null, d.title, d.date, d.yearly)
-                CaptureResult(true, "Data: ${d.title} · ${longDate(d.date)}", undo = id?.let { { NotesStore.deleteCountdown(it) } })
+                val id = NotesStore.saveDate(null, d.title, d.date, d.yearly)
+                CaptureResult(true, "Data: ${d.title} · ${longDate(d.date)}", undo = id?.let { { NotesStore.deleteTask(it) } })
             }
             CaptureMode.TASK -> {
                 val task = NotesStore.addTask(text) ?: return CaptureResult(false, "Scrivi qualcosa")

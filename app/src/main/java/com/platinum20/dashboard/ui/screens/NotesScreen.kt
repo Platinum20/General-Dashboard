@@ -131,7 +131,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.notes.Checklist
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.HabitReminder
 import com.platinum20.dashboard.notes.Note
@@ -518,31 +517,6 @@ private const val NEAR_ROWS = 20
 /** Lo spazio sopra la lista per la riga dei filtri. */
 private val CHIPS_ROOM = 48.dp
 
-/** Un conto alla rovescia: compleanno, viaggio o scadenza, con i giorni che mancano. */
-@Composable
-private fun DateCard(item: Countdown, onClick: () -> Unit) {
-    val days = item.daysLeft()
-    CanvasCard(
-        onClick = onClick,
-        shape = MaterialTheme.shapes.large,
-        modifier = Modifier.fillMaxWidth().bouncyPress(),
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    item.dateLine(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            val (big, small) = dueBadge(item.nextDate())
-            DueBadge(big, small)
-        }
-    }
-}
 
 /**
  * Abitudini di ogni giorno: un tocco per spuntare oggi, la serie di giorni di fila, l'ultima settimana.
@@ -912,8 +886,8 @@ private fun savedIcon(link: SavedLink) = when (link) {
 }
 
 /** Riga sotto il titolo di una data: "12 marzo · compie 30 anni" o "· ogni anno". */
-fun Countdown.dateLine(): String = longDate(nextDate()) + when {
-    !yearly -> ""
+fun com.platinum20.dashboard.notes.TaskItem.dateLine(): String = (nextDay()?.let(::longDate) ?: "Senza data") + when {
+    repeat != com.platinum20.dashboard.notes.Repeat.YEARLY -> ""
     else -> yearsAtNext()?.let { " · compie $it anni" } ?: " · ogni anno"
 }
 

@@ -15,6 +15,10 @@ import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -34,16 +38,24 @@ import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.HabitReminder
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
+import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.notes.WhenText
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-/** Le cose delle Note che si aprono a schermo intero, con la stessa pagina degli eventi del calendario. */
-enum class ItemKind { TASK, DATE, PARCEL, HABIT, EXPENSE, FIXED }
+/**
+ * Le cose delle Note che si aprono a schermo intero, con la stessa pagina degli eventi del calendario.
+ * Promemoria e date da ricordare sono la stessa cosa dalla 1.359 ([TASK], anche tutto il giorno).
+ */
+enum class ItemKind { TASK, PARCEL, HABIT, EXPENSE, FIXED }
 
 /** Che cosa dice una riga della scheda: decide l'icona. */
-enum class LineKind { WHEN, REPEAT, STATUS, CODE, AMOUNT, CATEGORY }
+enum class LineKind { WHEN, ALL_DAY, REPEAT, ALERT, PLACE, NOTES, STATUS, CODE, AMOUNT, CATEGORY }
 
 data class DetailLine(val kind: LineKind, val text: String)
 
@@ -60,32 +72,39 @@ private fun daysText(days: Long): String = when (days) {
     else -> "${-days} giorni fa"
 }
 
+/**
+ * Le righe di un promemoria o di una data, nello stesso ordine della scheda di un evento (Antonio: "che abbiano
+ * le stesse cose"): quando, tutto il giorno, si ripete, avviso, luogo, note, e quanto manca. Pura, per i test.
+ */
+internal fun taskLines(t: TaskItem, now: LocalDateTime, zone: ZoneId = ZoneId.systemDefault()): List<DetailLine> {
+    val today = now.toLocalDate()
+    val day = t.nextDay(today, zone)
+    val time = t.dueAt?.takeIf { !t.allDay }?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalTime().format(hourFormat) }
+    val status = when {
+        t.done -> "Fatto"
+        day == null -> "Da fare"
+        t.isLate(now.atZone(zone).toInstant().toEpochMilli()) -> "Scaduto · " + daysText(ChronoUnit.DAYS.between(today, day)).replaceFirstChar { it.lowercase() }
+        else -> daysText(ChronoUnit.DAYS.between(today, day)) + (t.yearsAtNext(today, zone)?.let { " · compie $it anni" } ?: "")
+    }
+    return listOfNotNull(
+        DetailLine(LineKind.WHEN, day?.let { longDate(it) + (time?.let { h -> ", $h" } ?: "") } ?: "Senza data"),
+        // Con una data si vede sempre tutto: sono le righe che si toccano per cambiarlo.
+        day?.let { DetailLine(LineKind.ALL_DAY, if (t.allDay) "Tutto il giorno" else "A un'ora precisa") },
+        day?.let { DetailLine(LineKind.REPEAT, WhenText.repeat(t.repeat)) },
+        day?.let { DetailLine(LineKind.ALERT, WhenText.alert(t)) },
+        DetailLine(LineKind.PLACE, t.place),
+        DetailLine(LineKind.NOTES, t.notes),
+        DetailLine(LineKind.STATUS, status),
+    )
+}
+
+private val hourFormat = DateTimeFormatter.ofPattern("H:mm")
+
 /** Le righe della scheda per ogni tipo; null se la cosa non c'è più. Pura, per i test. */
 fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = LocalDateTime.now()): ItemDetail? {
     val today = now.toLocalDate()
     return when (kind) {
-        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
-            ItemDetail(
-                t.text.ifBlank { "(Senza titolo)" },
-                listOfNotNull(
-                    DetailLine(LineKind.WHEN, t.dueAt?.let { "Avviso: " + dueLabel(it) } ?: "Senza scadenza"),
-                    // Con una scadenza si vede sempre se si ripete: è la riga che si tocca per cambiarlo.
-                    t.dueAt?.let { DetailLine(LineKind.REPEAT, t.repeat?.let { "Si ripete " + it.label } ?: "Non si ripete") },
-                    DetailLine(LineKind.STATUS, if (t.done) "Fatto" else "Da fare"),
-                ),
-            )
-        }
-        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { c ->
-            val next = c.nextDate(today)
-            ItemDetail(
-                c.title,
-                listOfNotNull(
-                    DetailLine(LineKind.WHEN, longDate(next)),
-                    DetailLine(LineKind.STATUS, daysText(c.daysLeft(today)) + (c.yearsAtNext(today)?.let { " · compie $it anni" } ?: "")),
-                    DetailLine(LineKind.REPEAT, if (c.yearly) "Ogni anno" else "Una volta sola"),
-                ),
-            )
-        }
+        ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t -> ItemDetail(t.text.ifBlank { "(Senza titolo)" }, taskLines(t, now)) }
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p ->
             ItemDetail(
                 p.title.ifBlank { "Pacco" },
@@ -140,7 +159,11 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
 
 private fun LineKind.icon(): ImageVector = when (this) {
     LineKind.WHEN -> Icons.Outlined.Schedule
+    LineKind.ALL_DAY -> Icons.Outlined.WbSunny
     LineKind.REPEAT -> Icons.Outlined.Repeat
+    LineKind.ALERT -> Icons.Outlined.Notifications
+    LineKind.PLACE -> Icons.Outlined.Place
+    LineKind.NOTES -> Icons.AutoMirrored.Outlined.Notes
     LineKind.STATUS -> Icons.Outlined.Info
     LineKind.CODE -> Icons.Outlined.QrCode2
     LineKind.AMOUNT -> Icons.Outlined.Euro
@@ -151,7 +174,6 @@ private fun LineKind.icon(): ImageVector = when (this) {
 @Composable
 private fun ItemKind.dot(): Color = when (this) {
     ItemKind.TASK, ItemKind.HABIT -> MaterialTheme.colorScheme.primary
-    ItemKind.DATE -> MaterialTheme.colorScheme.tertiary
     ItemKind.PARCEL -> MaterialTheme.colorScheme.secondary
     ItemKind.EXPENSE, ItemKind.FIXED -> MaterialTheme.colorScheme.outline
 }
@@ -159,7 +181,6 @@ private fun ItemKind.dot(): Color = when (this) {
 /** La riga piccola in alto nella scheda: che cosa è. */
 private fun ItemKind.metaLabel(): String = when (this) {
     ItemKind.TASK -> "Promemoria"
-    ItemKind.DATE -> "Data da ricordare"
     ItemKind.PARCEL -> "Pacco"
     ItemKind.HABIT -> "Abitudine"
     ItemKind.EXPENSE -> "Spesa"
@@ -190,7 +211,6 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     }
     val delete: (() -> Unit)? = if (detail == null) null else when (kind) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t -> { NotesStore.deleteTask(id); gone("Promemoria eliminato") { NotesStore.restoreTask(t) } } }
-        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { c -> { NotesStore.deleteCountdown(id); gone("Data eliminata") { NotesStore.restoreCountdown(c) } } }
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p -> { NotesStore.deleteParcel(id); gone("Pacco eliminato") { NotesStore.restoreParcel(p) } } }
         ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h -> { NotesStore.deleteHabit(id); gone("Abitudine eliminata") { NotesStore.restoreHabit(h) } } }
         ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e -> { NotesStore.deleteExpense(id); gone("Spesa eliminata") { NotesStore.restoreExpense(e) } } }
@@ -243,7 +263,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 when (val edit = lineEdit(kind, id, data, line.kind)) {
                     null -> DetailRow(line.kind.icon(), line.text)
                     is LineEdit.Tap -> DetailTapRow(line.kind.icon(), line.text, onClick = { picker = edit.picker ?: run { edit.onClick(); null } }, onClear = edit.onClear)
-                    is LineEdit.Field -> DetailFieldRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.number, edit.onCommit)
+                    is LineEdit.Field -> DetailFieldRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.number, edit.prose, edit.onCommit)
                 }
             }
         }
@@ -270,7 +290,7 @@ private sealed interface Picker {
 /** Come si cambia una riga: toccandola (un picker o il fumetto) o scrivendoci dentro. */
 private sealed interface LineEdit {
     class Tap(val picker: Picker? = null, val onClick: () -> Unit = {}, val onClear: (() -> Unit)? = null) : LineEdit
-    class Field(val value: String, val placeholder: String, val number: Boolean, val onCommit: (String) -> Unit) : LineEdit
+    class Field(val value: String, val placeholder: String, val number: Boolean, val prose: Boolean = false, val onCommit: (String) -> Unit) : LineEdit
 }
 
 private fun centsText(cents: Long): String = "%d,%02d".format(cents / 100, cents % 100)
@@ -279,7 +299,6 @@ private fun centsText(cents: Long): String = "%d,%02d".format(cents / 100, cents
 private fun rename(kind: ItemKind, id: Long, data: NotesData, title: String) {
     when (kind) {
         ItemKind.TASK -> NotesStore.editTask(id, title)
-        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { NotesStore.saveCountdown(id, title, it.date, it.yearly) }
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { NotesStore.saveParcel(id, title, it.code, it.expected) }
         ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { NotesStore.saveHabit(id, title, it.perWeek, it.remindAt) }
         ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { NotesStore.saveExpense(it.copy(text = title)) }
@@ -298,25 +317,28 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
     return when (kind) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
             when (line) {
+                // Tutto il giorno si sceglie solo il giorno; con l'ora, giorno e ora.
                 LineKind.WHEN -> LineEdit.Tap(
-                    Picker.DateTime(t.dueAt) { NotesStore.setTaskDue(id, it) },
+                    if (t.allDay) Picker.Date(t.nextDay() ?: LocalDate.now()) { NotesStore.setTaskDay(id, it) }
+                    else Picker.DateTime(t.dueAt) { NotesStore.setTaskDue(id, it) },
                     onClear = t.dueAt?.let { { NotesStore.setTaskRepeat(id, null); NotesStore.setTaskDue(id, null) } },
                 )
+                LineKind.ALL_DAY -> LineEdit.Tap(onClick = { NotesStore.setTaskAllDay(id, !t.allDay) })
                 LineKind.REPEAT -> LineEdit.Tap(onClick = {
                     ActionBubble.show(
-                        BubbleAction(Icons.Outlined.Repeat, "Non si ripete") { NotesStore.setTaskRepeat(id, null) },
+                        BubbleAction(Icons.Outlined.Repeat, "Non si ripete", detail = if (t.repeat == null) "adesso" else "") { NotesStore.setTaskRepeat(id, null) },
                         *com.platinum20.dashboard.notes.Repeat.entries.map { r ->
-                            BubbleAction(Icons.Outlined.Repeat, r.label.replaceFirstChar { it.uppercase() }) { NotesStore.setTaskRepeat(id, r) }
+                            BubbleAction(Icons.Outlined.Repeat, r.label.replaceFirstChar { it.uppercase() }, detail = if (t.repeat == r) "adesso" else "") { NotesStore.setTaskRepeat(id, r) }
                         }.toTypedArray(),
                     )
                 })
-                else -> null
-            }
-        }
-        ItemKind.DATE -> data.countdowns.firstOrNull { it.id == id }?.let { c ->
-            when (line) {
-                LineKind.WHEN -> LineEdit.Tap(Picker.Date(c.date) { NotesStore.saveCountdown(id, c.title, it, c.yearly) })
-                LineKind.REPEAT -> LineEdit.Tap(onClick = { NotesStore.saveCountdown(id, c.title, c.date, !c.yearly) })
+                LineKind.ALERT -> LineEdit.Tap(onClick = {
+                    ActionBubble.show(*com.platinum20.dashboard.notes.Alert.entries.map { a ->
+                        BubbleAction(Icons.Outlined.Notifications, WhenText.alert(t.copy(alert = a)), detail = if (t.alert == a) "adesso" else "") { NotesStore.setTaskAlert(id, a) }
+                    }.toTypedArray())
+                })
+                LineKind.PLACE -> LineEdit.Field(t.place, "Luogo", number = false, prose = true) { NotesStore.setTaskPlace(id, it) }
+                LineKind.NOTES -> LineEdit.Field(t.notes, "Note", number = false, prose = true) { NotesStore.setTaskNotes(id, it) }
                 else -> null
             }
         }

@@ -1,6 +1,6 @@
 package com.platinum20.dashboard
 
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Habit
@@ -9,7 +9,6 @@ import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesSearch
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.SearchKind
-import com.platinum20.dashboard.notes.TaskItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -22,6 +21,7 @@ class NotesSearchTest {
         tasks = listOf(
             TaskItem(1, "Chiamare il meccanico", done = true),
             TaskItem(2, "Comprare il caffè"),
+            TaskItem.date(8, "Compleanno di Nicolò", day),
         ),
         notes = listOf(Note(3, "Idee\nportare l'auto dal Meccanico", updatedAt = 10)),
         expenses = listOf(
@@ -30,7 +30,6 @@ class NotesSearchTest {
             Expense(6, 12_00, "Pizza", ExpenseCategory.entries.first(), day),
         ),
         parcels = listOf(Parcel(7, "Cuffie", code = "1Z999AA10345678")),
-        countdowns = listOf(Countdown(8, "Compleanno di Nicolò", day)),
         habits = listOf(Habit(9, "Caffè senza zucchero")),
     )
 

@@ -75,12 +75,12 @@ object Backup {
     fun summary(d: NotesData): String {
         fun count(n: Int, one: String, many: String) = if (n == 0) null else "$n ${if (n == 1) one else many}"
         return listOfNotNull(
-            count(d.tasks.size, "promemoria", "promemoria"),
+            count(d.tasks.count { !it.allDay }, "promemoria", "promemoria"),
             count(d.habits.size, "abitudine", "abitudini"),
             count(d.expenses.size, "spesa", "spese"),
             count(d.notes.size, "nota", "note"),
             count(d.parcels.size, "pacco", "pacchi"),
-            count(d.countdowns.size, "data", "date"),
+            count(d.dates.size, "data", "date"),
         ).joinToString(", ").ifEmpty { "Nessun dato" }
     }
 

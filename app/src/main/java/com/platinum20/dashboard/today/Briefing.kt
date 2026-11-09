@@ -5,7 +5,6 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.weather.WeatherStore
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.FixedExpense
@@ -78,8 +77,8 @@ object Briefing {
         forecast: Forecast?,
         today: List<CalendarEvent>?,
         tomorrow: List<CalendarEvent>?,
+        /** Promemoria e date di tutto il giorno insieme (1.359: sono la stessa cosa). */
         tasks: List<TaskItem>,
-        countdowns: List<Countdown>,
         zone: ZoneId = ZoneId.systemDefault(),
         max: Int = 4,
         /** false per il widget, che si aggiorna ogni ora: "alle 15:00" invece di "tra 25 min". */
@@ -125,8 +124,8 @@ object Briefing {
 
         // Promemoria: prima gli scaduti, poi quelli in scadenza entro stasera.
         val endOfDay = now.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val overdue = tasks.filter { !it.done && it.dueAt != null && it.dueAt < nowMs }
-        val dueToday = tasks.filter { !it.done && it.dueAt != null && it.dueAt in nowMs until endOfDay }
+        val overdue = tasks.filter { it.isLate(nowMs) }
+        val dueToday = tasks.filter { !it.done && !it.allDay && it.dueAt != null && it.dueAt in nowMs until endOfDay }
         // Fino a [EACH_TASKS] (o uno solo nel widget) si legge cos'è e si chiude da qui; oltre, il numero.
         val each = if (wholeDay) EACH_TASKS else 1
         when {
@@ -149,9 +148,9 @@ object Briefing {
         // Date: oggi sempre, domani solo la sera (al mattino è presto per pensarci).
         val date = now.toLocalDate()
         // Per compleanni e anniversari con l'anno vero, anche quanti anni compie.
-        fun Countdown.label() = title + (yearsAtNext(date)?.let { " ($it anni)" } ?: "")
-        countdowns.filter { it.daysLeft(date) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.label()}", openId = it.id) }
-        if (aboutTomorrow) countdowns.filter { it.daysLeft(date) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.label()}", openId = it.id) }
+        val days = tasks.filter { it.allDay && !it.done }
+        days.filter { it.daysLeft(date, zone) == 0L }.forEach { lines += BriefLine(BriefKind.DATE, "Oggi: ${it.titleWithYears(date, zone)}", openId = it.id) }
+        if (aboutTomorrow) days.filter { it.daysLeft(date, zone) == 1L }.forEach { lines += BriefLine(BriefKind.DATE, "Domani: ${it.titleWithYears(date, zone)}", openId = it.id) }
 
         // Pacchi attesi oggi (o in ritardo), la sera anche quelli di domani.
         val waiting = parcels.filter { !it.delivered && it.expected != null }
@@ -280,8 +279,7 @@ object Briefing {
             forecast = WeatherStore.cached(context),
             today = if (calendar) CalendarRepository.eventsOn(context, day) else null,
             tomorrow = if (calendar) CalendarRepository.eventsOn(context, day.plusDays(1)) else null,
-            tasks = notes.openTasks,
-            countdowns = notes.countdowns,
+            tasks = notes.openItems,
             habits = notes.habits,
             parcels = notes.parcels,
             expenses = notes.expenses,

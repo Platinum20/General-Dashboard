@@ -32,7 +32,6 @@ object SharedKeys {
 
     fun item(kind: ItemKind, id: Long): String? = when (kind) {
         ItemKind.TASK -> "task-$id"
-        ItemKind.DATE -> "date-$id"
         ItemKind.PARCEL -> "parcel-$id"
         ItemKind.EXPENSE -> "expense-$id"
         ItemKind.HABIT, ItemKind.FIXED -> null

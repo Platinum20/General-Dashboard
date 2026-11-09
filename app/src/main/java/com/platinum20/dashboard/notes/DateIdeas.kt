@@ -19,9 +19,9 @@ object DateIdeas {
     )
 
     /** Gli esempi da mostrare: nessuno da [UNTIL] date in su, e mai uno che c'è già. */
-    fun suggest(existing: List<Countdown>, max: Int = 4, until: Int = UNTIL): List<DateIdea> {
+    fun suggest(existing: List<TaskItem>, max: Int = 4, until: Int = UNTIL): List<DateIdea> {
         if (existing.size >= until) return emptyList()
-        val titles = existing.map { key(it.title) }
+        val titles = existing.map { key(it.text) }
         return all.filter { idea -> titles.none { it.startsWith(key(idea.title)) } }.take(max)
     }
 

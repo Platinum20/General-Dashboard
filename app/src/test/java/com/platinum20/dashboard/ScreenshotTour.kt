@@ -78,7 +78,7 @@ class ScreenshotTour {
             NotesStore.addTask("Pagare la bolletta della luce")
             NotesStore.saveNote(null, "Idee per le vacanze\nLisbona, Porto, oppure Sicilia in macchina.")
             NotesStore.saveNote(null, "Libri da leggere\nIl nome della rosa, Le città invisibili")
-            NotesStore.saveCountdown(null, "Compleanno di Marco", LocalDate.now().plusDays(12), yearly = true)
+            NotesStore.saveDate(null, "Compleanno di Marco", LocalDate.now().plusDays(12), yearly = true)
             NotesStore.addTask("ogni mese il 5 pagare l'affitto")
             NotesStore.addTask("domani alle 9 chiamare il commercialista")
             NotesStore.saveHabit(null, "Bere 2 litri d'acqua")
@@ -195,7 +195,7 @@ class ScreenshotTour {
         val data = NotesStore.data.value
         val pages = listOfNotNull(
             data.tasks.firstOrNull()?.let { "60_dettaglio_promemoria" to Routes.noteItem(ItemKind.TASK, it.id) },
-            data.countdowns.firstOrNull()?.let { "61_dettaglio_data" to Routes.noteItem(ItemKind.DATE, it.id) },
+            data.dates.firstOrNull()?.let { "61_dettaglio_data" to Routes.noteItem(ItemKind.TASK, it.id) },
             data.parcels.firstOrNull()?.let { "62_dettaglio_pacco" to Routes.noteItem(ItemKind.PARCEL, it.id) },
             data.expenses.firstOrNull()?.let { "63_dettaglio_spesa" to Routes.noteItem(ItemKind.EXPENSE, it.id) },
             data.habits.firstOrNull()?.let { "64_dettaglio_abitudine" to Routes.noteItem(ItemKind.HABIT, it.id) },

@@ -2,13 +2,12 @@ package com.platinum20.dashboard
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.backup.Backup
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.Expense
 import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.weather.GeoPlace
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -22,10 +21,12 @@ import java.time.LocalDate
 class BackupTest {
     private val today = LocalDate.now()
     private val data = NotesData(
-        tasks = listOf(TaskItem(1, "Dentista", createdAt = 1, dueAt = 2), TaskItem(2, "Latte", createdAt = 3)),
+        tasks = listOf(
+            TaskItem(1, "Dentista", createdAt = 1, dueAt = 2), TaskItem(2, "Latte", createdAt = 3),
+            TaskItem.date(5, "Compleanno di Marco", LocalDate.of(1990, 3, 14), yearly = true).copy(createdAt = 4),
+        ),
         habits = listOf(Habit(3, "Palestra", setOf(today, today.minusDays(1)))),
         expenses = listOf(Expense(4, 1_250, "pizza", ExpenseCategory.EATING_OUT, today)),
-        countdowns = listOf(Countdown(5, "Compleanno di Marco", LocalDate.of(1990, 3, 14), yearly = true)),
         budgetCents = 50_000,
     )
     private val settings = mapOf<String, Any?>(

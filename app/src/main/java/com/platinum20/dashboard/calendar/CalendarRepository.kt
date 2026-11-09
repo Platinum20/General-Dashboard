@@ -115,10 +115,19 @@ object CalendarRepository {
                     calendarName = c.getString(8).orEmpty(),
                     writable = c.getInt(9) >= CalendarContract.Calendars.CAL_ACCESS_CONTRIBUTOR,
                     color = c.getInt(10),
+                    rrule = c.getString(6).orEmpty(),
+                    reminders = reminders(context, id),
                 )
             }
         }.getOrNull()
     }
+
+    /** Gli avvisi dell'evento (minuti prima); vuota se non ne ha o non si leggono. */
+    private fun reminders(context: Context, id: Long): List<Int> = runCatching {
+        CalendarContract.Reminders.query(context.contentResolver, id, arrayOf(CalendarContract.Reminders.MINUTES))?.use { c ->
+            buildList { while (c.moveToNext()) add(c.getInt(0)) }
+        }.orEmpty()
+    }.getOrDefault(emptyList())
 
     /** I calendari in cui si può scrivere, il principale per primo. */
     suspend fun writableCalendars(context: Context): List<CalendarInfo> = withContext(Dispatchers.IO) {

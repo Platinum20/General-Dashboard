@@ -212,13 +212,13 @@ fun HomeScreen(
     // Il calendario unico (1.314): oggi in cima con la spesa e le note senza data, poi i prossimi giorni.
     val calendar = remember(minute, agenda.today, weekAhead, notes, simRenewal) {
         dueDays(
-            notes.tasks, notes.upcoming, notes.parcels, agenda.today.orEmpty() + weekAhead.values.flatten(), notes.fixedExpenses,
+            notes.tasks, notes.parcels, agenda.today.orEmpty() + weekAhead.values.flatten(), notes.fixedExpenses,
             simRenewal = simRenewal, withToday = true, notes = notes.notes, expenses = notes.expenses,
         )
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
-            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns,
+            minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openItems,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
             fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Int.MAX_VALUE,
         ).filter { it.kind in ADESSO_KINDS }.take(Briefing.CARD_MAX)
@@ -237,7 +237,7 @@ fun HomeScreen(
     // Il widget mostra le stesse righe, con l'orario esatto perché si aggiorna solo ogni ora.
     LaunchedEffect(weather.forecast, agenda.today, agenda.tomorrow, notes) {
         if (agenda.granted && agenda.today == null) return@LaunchedEffect
-        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openTasks, notes.countdowns, max = 6, relative = false,
+        val lines = Briefing.build(LocalDateTime.now(), weather.forecast, agenda.today, agenda.tomorrow, notes.openItems, max = 6, relative = false,
             habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
             fixedExpenses = notes.fixedExpenses,
         )
@@ -298,8 +298,7 @@ fun HomeScreen(
                     val event = line.event
                     when {
                         event != null -> inApp?.openEvent?.invoke(event)
-                        id != null && line.kind == BriefKind.TASK -> openItem(ItemKind.TASK, id)
-                        id != null && line.kind == BriefKind.DATE -> openItem(ItemKind.DATE, id)
+                        id != null && (line.kind == BriefKind.TASK || line.kind == BriefKind.DATE) -> openItem(ItemKind.TASK, id)
                         id != null && line.kind == BriefKind.PARCEL -> openItem(ItemKind.PARCEL, id)
                         else -> when (line.kind) {
                             BriefKind.EVENT -> inApp?.openCalendar?.invoke()

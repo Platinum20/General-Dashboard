@@ -52,8 +52,7 @@ object AutoFillRules {
                 it.cents == found.cents && (it.date == found.date ||
                     (it.bankId != null && kotlin.math.abs(it.date.toEpochDay() - found.date.toEpochDay()) <= 1))
             }
-            is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) } &&
-                notes.countdowns.none { it.title.equals(found.title, true) && it.date == found.due.toLocalDate() }
+            is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) }
             is Found.Delivered -> true
         }
     }
@@ -128,10 +127,10 @@ object AutoFill {
             when (val f = s.found) {
                 is Found.Deadline -> {
                     val title = Extractor.shortTitle(f.title).ifEmpty { f.title }
-                    val task = s.ref?.let { NotesStore.task(it) }?.takeIf { s.state == SuggestionState.ADDED && !it.done && it.dueAt != null }
+                    val task = s.ref?.let { NotesStore.task(it) }?.takeIf { s.state == SuggestionState.ADDED && !it.done && !it.allDay && it.dueAt != null }
                     val ref = if (task == null) s.ref else {
                         NotesStore.deleteTask(task.id)
-                        NotesStore.saveCountdown(null, title, Instant.ofEpochMilli(task.dueAt!!).atZone(zone).toLocalDate(), false)
+                        NotesStore.saveDate(null, title, Instant.ofEpochMilli(task.dueAt!!).atZone(zone).toLocalDate(), false)
                     }
                     s.copy(found = f.copy(title = title), ref = ref)
                 }
@@ -224,11 +223,8 @@ object AutoFill {
             when (item.found) {
                 is Found.NewParcel -> NotesStore.deleteParcel(ref)
                 is Found.Spent -> NotesStore.deleteExpense(ref)
-                // Prima della 1.181 era un promemoria, ora è una data: l'id è di uno dei due.
-                is Found.Deadline -> {
-                    NotesStore.deleteCountdown(ref)
-                    NotesStore.deleteTask(ref)
-                }
+                // Una data di tutto il giorno: dalla 1.359 è un promemoria come gli altri.
+                is Found.Deadline -> NotesStore.deleteTask(ref)
                 is Found.Delivered -> Unit
             }
         }
@@ -245,7 +241,7 @@ object AutoFill {
         is Found.NewParcel -> NotesStore.addParcel(found.title, found.code, found.expected)
         is Found.Spent -> NotesStore.addExpense(Expense(0, found.cents, found.merchant, found.category, found.date, at = found.at.toLocalTime().withSecond(0).withNano(0))).id
         // Una data da aspettare, non un promemoria da spuntare: la scadenza di un abbonamento non si "fa".
-        is Found.Deadline -> NotesStore.saveCountdown(null, found.title, found.due.toLocalDate(), false)
+        is Found.Deadline -> NotesStore.saveDate(null, found.title, found.due.toLocalDate(), false)
         is Found.Delivered -> null
     }
 

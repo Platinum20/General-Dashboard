@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.platinum20.dashboard.notes.ContactCandidate
 import com.platinum20.dashboard.notes.ContactDates
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.NotesStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -44,7 +44,7 @@ import java.util.Locale
  * e li mostra con le caselle; quelli già in Date restano spenti. [onImported] riceve le date create.
  */
 @Composable
-fun ContactImportDialog(existing: List<Countdown>, onDismiss: () -> Unit, onImported: (List<Countdown>) -> Unit) {
+fun ContactImportDialog(existing: List<TaskItem>, onDismiss: () -> Unit, onImported: (List<TaskItem>) -> Unit) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
     var granted by remember {
@@ -144,5 +144,5 @@ internal fun contactDateLine(c: ContactCandidate, locale: Locale = Locale.ITALIA
 internal const val CONTACT_IMPORT_UNTIL = 3
 
 /** L'invito a importare i compleanni: solo finché le date ogni anno sono poche. */
-internal fun showContactImport(countdowns: List<Countdown>): Boolean =
-    countdowns.count { it.yearly } < CONTACT_IMPORT_UNTIL
+internal fun showContactImport(dates: List<TaskItem>): Boolean =
+    dates.count { it.repeat == com.platinum20.dashboard.notes.Repeat.YEARLY } < CONTACT_IMPORT_UNTIL

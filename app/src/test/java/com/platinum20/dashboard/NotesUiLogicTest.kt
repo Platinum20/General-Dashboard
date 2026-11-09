@@ -1,12 +1,11 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesData
-import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.label
 import com.platinum20.dashboard.ui.screens.shortLabel
 import com.platinum20.dashboard.ui.screens.dueBadge
@@ -53,11 +52,10 @@ class NotesUiLogicTest {
                 TaskItem(2, "Palestra", dueAt = ms(oggi.atTime(18, 0))),
                 TaskItem(3, "Senza data"),
                 TaskItem(4, "Fatto", done = true, dueAt = ms(oggi.atTime(15, 0))),
-            ),
-            countdowns = listOf(
-                Countdown(5, "Viaggio", oggi.plusDays(10)),
-                Countdown(6, "Compleanno Sara", LocalDate.of(1990, 10, 24), yearly = true),
-                Countdown(7, "Passato", oggi.minusDays(3)),
+                // Le date da ricordare sono promemoria di tutto il giorno (1.359): quella passata non è "scaduta".
+                TaskItem.date(5, "Viaggio", oggi.plusDays(10), zone = zone),
+                TaskItem.date(6, "Compleanno Sara", LocalDate.of(1990, 10, 24), yearly = true, zone = zone),
+                TaskItem.date(7, "Passato", oggi.minusDays(3), zone = zone),
             ),
             parcels = listOf(
                 Parcel(8, "Tazza", expected = oggi.plusDays(1)),
@@ -75,7 +73,7 @@ class NotesUiLogicTest {
         )
         assertEquals(listOf("Scaduti", "Oggi", "Domani", "Lun 26", "Lun 2", "Senza data"), groups.map { it.shortLabel(oggi) })
         assertEquals(
-            listOf(listOf("parcel-9", "task-1"), listOf("task-2"), listOf("date-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("date-5"), listOf("parcel-10")),
+            listOf(listOf("parcel-9", "task-1"), listOf("task-2"), listOf("task-6", "parcel-8"), listOf("event-12-${ms(oggi.plusDays(3).atTime(9, 0))}"), listOf("task-5"), listOf("parcel-10")),
             groups.map { g -> g.rows.map { it.key } },
         )
     }
@@ -91,19 +89,19 @@ class NotesUiLogicTest {
         val affitto = com.platinum20.dashboard.notes.FixedExpense(
             1, 65000, "affitto", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), day = 5, from = java.time.YearMonth.of(2026, 1),
         )
-        val groups = dueDays(emptyList(), emptyList(), emptyList(), emptyList(), listOf(affitto), now = adesso, zone = zone)
+        val groups = dueDays(emptyList(), emptyList(), emptyList(), listOf(affitto), now = adesso, zone = zone)
         assertEquals(listOf(LocalDate.of(2026, 11, 5)), groups.map { it.day })
         assertEquals("charge-1", groups.single().rows.single().key)
     }
 
     @Test fun rinnovoSimFraIProssimiGiorni() {
         val day = adesso.toLocalDate().plusDays(5)
-        val groups = dueDays(emptyList(), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = day)
+        val groups = dueDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = day)
         assertEquals(listOf(day), groups.map { it.day })
         val entry = timelineEntries(groups, adesso.toLocalDate(), zone).single().first
         assertEquals(Upcoming.SIM_RENEWAL, entry.text)
         // Già passato: non si mostra.
-        assertEquals(emptyList<Any>(), dueDays(emptyList(), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = adesso.toLocalDate().minusDays(1)))
+        assertEquals(emptyList<Any>(), dueDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, simRenewal = adesso.toLocalDate().minusDays(1)))
     }
 
     @Test fun lineaDeiGiorni() {

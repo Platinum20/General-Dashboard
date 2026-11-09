@@ -1,9 +1,8 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Countdown
-import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.today.Upcoming
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,8 +36,8 @@ class UpcomingTest {
                 TaskItem(1, "Bolletta", dueAt = ms(d1.atTime(8, 0))),
                 TaskItem(2, "Fatto", done = true, dueAt = ms(d1.atTime(7, 0))),
                 TaskItem(3, "Oggi", dueAt = ms(today.atTime(20, 0))),
+                TaskItem.date(11, "Compleanno Marta", d3, zone = zone),
             ),
-            countdowns = listOf(Countdown(1, "Compleanno Marta", d3)),
             parcels = listOf(Parcel(1, "Cuffie", expected = d1)),
             zone = zone,
             days = 7,
@@ -58,8 +57,7 @@ class UpcomingTest {
         val items = Upcoming.build(
             today,
             events = mapOf(d1 to listOf(event(2, "Treno", d1, 9))),
-            tasks = listOf(TaskItem(4, "Bolletta", dueAt = ms(d1.atTime(8, 0)))),
-            countdowns = listOf(Countdown(6, "Compleanno Marta", d1)),
+            tasks = listOf(TaskItem(4, "Bolletta", dueAt = ms(d1.atTime(8, 0))), TaskItem.date(6, "Compleanno Marta", d1, zone = zone)),
             parcels = listOf(Parcel(8, "Cuffie", expected = d1)),
             zone = zone,
             days = 3,
@@ -67,7 +65,7 @@ class UpcomingTest {
         )
         assertEquals(2L, items.first { it.text == "Treno" }.event?.eventId)
         assertEquals(4L, items.first { it.text == "Bolletta" }.task?.id)
-        assertEquals(6L, items.first { it.text == "Compleanno Marta" }.countdownId)
+        assertEquals(6L, items.first { it.text == "Compleanno Marta" }.task?.id)
         assertEquals(8L, items.first { it.text == "Arriva: Cuffie" }.parcelId)
         assertTrue(items.any { it.simRenewal })
     }
@@ -82,7 +80,7 @@ class UpcomingTest {
     }
 
     @Test
-    fun vuota() = assertTrue(Upcoming.build(today, emptyMap(), emptyList(), emptyList()).isEmpty())
+    fun vuota() = assertTrue(Upcoming.build(today, emptyMap(), emptyList()).isEmpty())
 
     @Test
     fun lineaDellaCard() {
@@ -121,7 +119,7 @@ class UpcomingTest {
     @Test
     fun guardaPiuInLaDiUnaSettimana() {
         val far = today.plusDays(30)
-        val items = Upcoming.build(today, mapOf(far to listOf(event(9, "Concerto", far, 21))), emptyList(), emptyList(), zone = zone)
+        val items = Upcoming.build(today, mapOf(far to listOf(event(9, "Concerto", far, 21))), emptyList(), zone = zone)
         assertEquals(listOf("Concerto"), items.map { it.text })
     }
 
@@ -129,14 +127,14 @@ class UpcomingTest {
     fun promemoriaSiSpuntaDallaCard() {
         // La riga porta il promemoria: dalla card in Oggi si spunta senza entrare.
         val d1 = today.plusDays(1)
-        val items = Upcoming.build(today, emptyMap(), listOf(TaskItem(7, "Bolletta", dueAt = ms(d1.atTime(8, 0)))), emptyList(), zone = zone)
+        val items = Upcoming.build(today, emptyMap(), listOf(TaskItem(7, "Bolletta", dueAt = ms(d1.atTime(8, 0)))), zone = zone)
         assertEquals(7L, items.single().task?.id)
     }
 
     @Test
     fun rinnovoDellaSim() {
         val day = today.plusDays(5)
-        val items = Upcoming.build(today, emptyMap(), emptyList(), emptyList(), zone = zone, simRenewal = day)
+        val items = Upcoming.build(today, emptyMap(), emptyList(), zone = zone, simRenewal = day)
         assertEquals(listOf(Upcoming.SIM_RENEWAL), items.map { it.text })
         assertEquals(day, items.single().day)
     }

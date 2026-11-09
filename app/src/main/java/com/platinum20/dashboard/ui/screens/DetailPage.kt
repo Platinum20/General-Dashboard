@@ -240,7 +240,12 @@ fun DetailTapRow(icon: ImageVector, text: String, onClick: () -> Unit, onClear: 
 
 /** Una riga in cui si scrive (importo, codice del pacco): si salva da sola quando smetti di scrivere. */
 @Composable
-fun DetailFieldRow(key: Any, icon: ImageVector, value: String, placeholder: String, number: Boolean = false, onCommit: (String) -> Unit) {
+fun DetailFieldRow(
+    key: Any, icon: ImageVector, value: String, placeholder: String, number: Boolean = false,
+    /** Testo libero (note, luogo): più righe e la maiuscola solo a inizio frase, non tutto maiuscolo come un codice. */
+    prose: Boolean = false,
+    onCommit: (String) -> Unit,
+) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
     val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
     androidx.compose.runtime.LaunchedEffect(text) {
@@ -256,12 +261,16 @@ fun DetailFieldRow(key: Any, icon: ImageVector, value: String, placeholder: Stri
         androidx.compose.foundation.text.BasicTextField(
             value = text,
             onValueChange = { text = it },
-            singleLine = true,
+            singleLine = !prose,
             textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                 keyboardType = if (number) androidx.compose.ui.text.input.KeyboardType.Decimal else androidx.compose.ui.text.input.KeyboardType.Text,
-                capitalization = if (number) androidx.compose.ui.text.input.KeyboardCapitalization.None else androidx.compose.ui.text.input.KeyboardCapitalization.Characters,
+                capitalization = when {
+                    number -> androidx.compose.ui.text.input.KeyboardCapitalization.None
+                    prose -> androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                    else -> androidx.compose.ui.text.input.KeyboardCapitalization.Characters
+                },
             ),
             modifier = Modifier.weight(1f),
             decorationBox = { inner ->

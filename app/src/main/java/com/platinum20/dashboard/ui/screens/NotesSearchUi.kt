@@ -106,7 +106,7 @@ fun NotesSearchPanel(
                                 SearchKind.EXPENSE -> openItem(ItemKind.EXPENSE, hit.id)
                                 SearchKind.PARCEL -> openItem(ItemKind.PARCEL, hit.id)
                                 SearchKind.TASK -> openItem(ItemKind.TASK, hit.id)
-                                SearchKind.DATE -> openItem(ItemKind.DATE, hit.id)
+                                SearchKind.DATE -> openItem(ItemKind.TASK, hit.id)
                                 SearchKind.HABIT -> openItem(ItemKind.HABIT, hit.id)
                             }
                         }
@@ -141,7 +141,7 @@ private fun HitRow(hit: SearchHit, data: NotesData, onClick: () -> Unit) {
         SearchKind.NOTE -> data.notes.firstOrNull { it.id == hit.id }?.let { "Modificata " + relativeTime(Instant.ofEpochMilli(it.updatedAt)) }
         SearchKind.EXPENSE -> data.expenses.firstOrNull { it.id == hit.id }?.let { "${Expenses.format(it.cents)} · ${it.category.label} · ${longDate(it.date)}" }
         SearchKind.PARCEL -> data.parcels.firstOrNull { it.id == hit.id }?.let { if (it.delivered) "Arrivato" else it.code.ifEmpty { "In arrivo" } }
-        SearchKind.DATE -> data.countdowns.firstOrNull { it.id == hit.id }?.dateLine()
+        SearchKind.DATE -> data.tasks.firstOrNull { it.id == hit.id }?.dateLine()
         SearchKind.HABIT -> null
     }
     Row(
