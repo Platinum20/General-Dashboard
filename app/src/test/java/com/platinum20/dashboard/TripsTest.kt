@@ -94,6 +94,7 @@ class TripsTest {
         val paid = CalendarEvent(-4, "Turno · Chiara Stefane", start, stop, false, "$110,41 · 15%", 0, people = 2)
         val r2 = tripStops(paid, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("5 h", r2.middle)
+        assertEquals(null, r2.title)
         assertEquals(2, r2.people)
         assertEquals("$110,41 · 15%", r2.extra)
         assertEquals("In doppio", peopleLabel(2))

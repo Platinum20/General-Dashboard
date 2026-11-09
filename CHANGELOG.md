@@ -5,6 +5,7 @@
 - Ogni turno ha la stessa altezza: le creator stanno su una riga sola, con i tre puntini se non ci stanno (tocca il turno per vederle tutte)
 - Sotto le creator: durata, un'icona per da solo, in doppio o in tre, poi guadagno e percentuale
 - Il turno fatto oggi resta sotto OGGI anche quando è finito (prima spariva dal calendario)
+- I turni non hanno più il titolo "Turno": subito l'orario, le creator e la riga sotto
 - La riga dei mesi è più spessa di quella dei giorni, con il nome del mese in grassetto
 
 ## 1.389.0
