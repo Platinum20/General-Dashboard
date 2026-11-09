@@ -71,7 +71,7 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
             }
         }
         Spacer(Modifier.height(6.dp))
-        // Tre righe: i titoli lunghi (episodi, mix) si leggono interi invece di fermarsi a metà (1.358).
+        // Tre righe: i titoli lunghi (episodi, mix) si leggono interi invece di fermarsi a metà (1.361).
         Text(title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
         if (subtitle.isNotBlank()) {
             Text(

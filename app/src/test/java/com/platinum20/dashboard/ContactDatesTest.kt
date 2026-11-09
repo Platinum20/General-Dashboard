@@ -12,7 +12,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.notes.ContactCandidate
 import com.platinum20.dashboard.notes.ContactDate
 import com.platinum20.dashboard.notes.ContactDates
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.ui.screens.contactDateLine
 import com.platinum20.dashboard.ui.screens.showContactImport
 import org.junit.Assert.assertEquals
@@ -60,12 +60,12 @@ class ContactDatesTest {
         assertEquals("Compleanno di Marta Rossi", marta.title)
         assertEquals(LocalDate.of(1990, 3, 12), marta.date(today))
         // Con l'anno vero Date sa dire quanti anni compie.
-        assertEquals(37, Countdown(1, marta.title, marta.date(today), yearly = true).yearsAtNext(today))
+        assertEquals(37, TaskItem.date(1, marta.title, marta.date(today), yearly = true).yearsAtNext(today))
 
         val nozze = ContactDate("Luca", anniversary = true, monthDay = MonthDay.of(6, 1), year = null)
         assertEquals("Anniversario di Luca", nozze.title)
         assertEquals(LocalDate.of(2026, 6, 1), nozze.date(today))
-        assertNull(Countdown(2, nozze.title, nozze.date(today), yearly = true).yearsAtNext(today))
+        assertNull(TaskItem.date(2, nozze.title, nozze.date(today), yearly = true).yearsAtNext(today))
     }
 
     @Test fun ventinoveFebbraioSenzaAnno() {
@@ -75,8 +75,8 @@ class ContactDatesTest {
 
     @Test fun doppioniPerNomeEGiorno() {
         val existing = listOf(
-            Countdown(1, "Compleanno Marta", LocalDate.of(2026, 3, 12), yearly = true),
-            Countdown(2, "compleanno di LUCA bianchi", LocalDate.of(2026, 9, 9), yearly = true),
+            TaskItem.date(1, "Compleanno Marta", LocalDate.of(2026, 3, 12), yearly = true),
+            TaskItem.date(2, "compleanno di LUCA bianchi", LocalDate.of(2026, 9, 9), yearly = true),
         )
         val marta = ContactDate("Marta Rossi", false, MonthDay.of(3, 12), 1990)
         val luca = ContactDate("Luca Bianchi", false, MonthDay.of(1, 2), null)
@@ -93,7 +93,7 @@ class ContactDatesTest {
             ContactDate("Anna", false, MonthDay.of(4, 4), 2000), // stessa persona su due account
             ContactDate("Bruno", true, MonthDay.of(1, 15), 2010),
         )
-        val existing = listOf(Countdown(1, "Compleanno di Zoe", LocalDate.of(2026, 12, 1), yearly = true))
+        val existing = listOf(TaskItem.date(1, "Compleanno di Zoe", LocalDate.of(2026, 12, 1), yearly = true))
         val list = ContactDates.candidates(found, existing)
         assertEquals(listOf("Anniversario di Bruno", "Compleanno di Anna", "Compleanno di Zoe"), list.map { it.date.title })
         assertEquals(listOf(false, false, true), list.map { it.already })
@@ -135,9 +135,9 @@ class ContactDatesTest {
     }
 
     @Test fun invitoSoloConPocheDateDiOgniAnno() {
-        fun yearly(n: Int) = List(n) { Countdown(it.toLong(), "C$it", LocalDate.of(1990, 1, 1 + it), yearly = true) }
+        fun yearly(n: Int) = List(n) { TaskItem.date(it.toLong(), "C$it", LocalDate.of(1990, 1, 1 + it), yearly = true) }
         assertTrue(showContactImport(emptyList()))
-        assertTrue(showContactImport(yearly(2) + Countdown(9, "Viaggio", today.plusDays(3))))
+        assertTrue(showContactImport(yearly(2) + TaskItem.date(9, "Viaggio", today.plusDays(3))))
         assertFalse(showContactImport(yearly(3)))
     }
 }

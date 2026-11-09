@@ -49,9 +49,9 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Promemoria")
-            .setContentText(task.text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(task.text))
+            .setContentTitle(when { task.alert == Alert.DAY_BEFORE -> "Domani"; task.allDay -> "Oggi"; else -> "Promemoria" })
+            .setContentText(task.titleWithYears())
+            .setStyle(NotificationCompat.BigTextStyle().bigText(task.titleWithYears()))
             .setContentIntent(
                 PendingIntent.getActivity(context, notificationId(id), open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             )
@@ -61,6 +61,8 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
                 PendingIntent.getBroadcast(context, notificationId(id), done, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE),
             )
             .apply {
+                // Una data di tutto il giorno non si rimanda a un'ora: resterebbe con l'ora per sempre.
+                if (task.allDay) return@apply
                 // Etichetta e orario dallo stesso istante: quello in cui la notifica appare.
                 val shownAt = System.currentTimeMillis()
                 Snooze.entries.forEach { option ->
@@ -94,7 +96,7 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
         private fun workName(id: Long) = "task_reminder_$id"
 
         fun schedule(context: Context, task: TaskItem) {
-            val due = task.dueAt ?: return
+            val due = task.alertAt() ?: return cancel(context, task.id)
             val delay = (due - System.currentTimeMillis()).coerceAtLeast(0)
             // Una scadenza già passata da più di un'ora non va più notificata.
             if (due < System.currentTimeMillis() - 60 * 60_000L) {

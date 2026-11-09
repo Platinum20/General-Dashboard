@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
@@ -46,7 +45,6 @@ internal data class DueRow(
     /** Per l'ordine dentro il giorno: prima le cose di tutto il giorno, poi per orario. */
     val at: Long,
     val task: TaskItem? = null,
-    val countdown: Countdown? = null,
     val parcel: Parcel? = null,
     val event: CalendarEvent? = null,
     val charge: FixedExpense? = null,
@@ -109,6 +107,11 @@ internal fun pastDays(
         val at = t.doneAt ?: t.dueAt ?: t.createdAt
         if (at <= nowMs) rows += DueRow("task-${t.id}", dayOf(at), at, task = t)
     }
+    // Una data di tutto il giorno che non si ripete, passata: resta nel suo giorno, non diventa "scaduta".
+    tasks.filter { !it.done && it.allDay && it.repeat == null }.forEach { t ->
+        val day = t.day(zone) ?: return@forEach
+        if (day.isBefore(today)) rows += DueRow("task-${t.id}", day, startOf(day), task = t)
+    }
     parcels.forEach { p -> p.deliveredOn?.let { rows += DueRow("parcel-${p.id}", it, startOf(it), parcel = p) } }
     events.filter { it.end <= nowMs }.distinctBy { it.eventId to it.begin }.forEach { e ->
         rows += DueRow("event-${e.eventId}-${e.begin}", dayOf(e.begin), if (e.allDay) startOf(dayOf(e.begin)) else e.begin, event = e)
@@ -123,7 +126,6 @@ internal const val EVENT_DAYS = com.platinum20.dashboard.today.Upcoming.DAYS
 
 internal fun dueDays(
     tasks: List<TaskItem>,
-    countdowns: List<Countdown>,
     parcels: List<Parcel>,
     events: List<CalendarEvent>,
     fixedExpenses: List<FixedExpense> = emptyList(),
@@ -147,13 +149,14 @@ internal fun dueDays(
     val dated = mutableListOf<DueRow>()
     val undated = mutableListOf<DueRow>()
     tasks.filter { !it.done && it.dueAt != null }.forEach { t ->
-        val row = DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
-        if (t.dueAt < nowMs) late += row else dated += row
-    }
-    countdowns.forEach { c ->
-        val day = c.nextDate(today)
-        // Una data non annuale già passata non ha più niente da contare.
-        if (!day.isBefore(today)) dated += DueRow("date-${c.id}", day, startOf(day), countdown = c)
+        if (t.allDay) {
+            // Tutto il giorno: la prossima volta, prima delle cose con l'ora. Passata e non ripetuta sta nel passato.
+            val day = t.nextDay(today, zone) ?: return@forEach
+            if (!day.isBefore(today)) dated += DueRow("task-${t.id}", day, startOf(day), task = t)
+        } else {
+            val row = DueRow("task-${t.id}", dayOf(t.dueAt!!), t.dueAt, task = t)
+            if (t.dueAt < nowMs) late += row else dated += row
+        }
     }
     parcels.filter { !it.delivered }.forEach { p ->
         val day = p.expected
@@ -398,12 +401,12 @@ internal fun timelineEntries(
                 // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
                 r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
                     (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
+                // Tutto il giorno (compleanni, scadenze): niente ora, e gli anni che compie.
+                r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to r.task.titleWithYears(today)
                 r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to
                     ((r.task.dueAt?.takeIf { !g.late && !g.past }?.time()?.let { "$it  " } ?: "") + r.task.text)
                 r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     ((if (r.event.allDay) "" else r.event.begin.time() + "  ") + r.event.title)
-                r.countdown != null -> com.platinum20.dashboard.today.BriefKind.DATE to
-                    (r.countdown.title + (r.countdown.yearsAtNext(today)?.let { " ($it anni)" } ?: ""))
                 // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
@@ -606,10 +609,13 @@ private fun com.platinum20.dashboard.notes.Note.icon() = when {
 /** I filtri del calendario intero (Antonio): uno per le spese, uno per le note, uno per gli eventi. */
 internal enum class CalendarFilter(val label: String) { EXPENSES("Spese"), NOTES("Note"), EVENTS("Eventi") }
 
-/** A quale filtro appartiene una riga: date da ricordare, pacchi e rinnovo SIM con gli eventi, promemoria con le note. */
+/**
+ * A quale filtro appartiene una riga: eventi, promemoria con una data, date da ricordare, pacchi e rinnovo SIM
+ * stanno insieme (1.361: sono la stessa cosa); le cose senza data con le note.
+ */
 internal fun DueRow.filter(): CalendarFilter = when {
     spend != null || expense != null || charge != null -> CalendarFilter.EXPENSES
-    event != null || countdown != null || parcel != null || simRenewal -> CalendarFilter.EVENTS
+    event != null || task?.dueAt != null || parcel != null || simRenewal -> CalendarFilter.EVENTS
     else -> CalendarFilter.NOTES
 }
 

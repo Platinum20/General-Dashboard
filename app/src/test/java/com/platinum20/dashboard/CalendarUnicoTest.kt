@@ -32,7 +32,7 @@ class CalendarUnicoTest {
         tasks: List<TaskItem> = emptyList(),
         notes: List<Note> = emptyList(),
         expenses: List<Expense> = emptyList(),
-    ) = dueDays(tasks, emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, notes = notes, expenses = expenses)
+    ) = dueDays(tasks, emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, notes = notes, expenses = expenses)
 
     @Test fun oggiCeSempreConLaSpesaAZero() {
         val groups = calendario()
@@ -115,15 +115,15 @@ class CalendarUnicoTest {
             expenses = listOf(Expense(4, 500, "bar", ExpenseCategory.EATING_OUT, oggi)),
         )
         assertEquals(listOf("spend-today", "expense-4"), groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.map { it.key })
-        assertEquals(listOf("task-1", "note-3", "task-2"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
-        // Nessun evento: nessun giorno.
-        assertTrue(groups.only(CalendarFilter.EVENTS).isEmpty())
+        assertEquals(listOf("task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
+        // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
+        assertEquals(listOf("task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
         assertEquals(groups, groups.only(null))
     }
 
     @Test fun pacchiERinnovoSimSonoEventi() {
         val groups = dueDays(
-            emptyList(), emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
+            emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
             now = adesso, zone = zone, simRenewal = oggi.plusDays(3), withToday = true,
         )
         assertEquals(listOf("parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
@@ -146,7 +146,7 @@ class CalendarUnicoTest {
     }
 
     @Test fun senzaIlCalendarioUnicoTuttoComePrima() {
-        val groups = dueDays(listOf(TaskItem(1, "Latte")), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone)
+        val groups = dueDays(listOf(TaskItem(1, "Latte")), emptyList(), emptyList(), now = adesso, zone = zone)
         assertTrue(groups.isEmpty())
     }
 }

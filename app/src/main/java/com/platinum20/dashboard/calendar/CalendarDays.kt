@@ -23,6 +23,10 @@ data class EventDetail(
     val calendarName: String,
     val writable: Boolean,
     val color: Int,
+    /** La regola della ripetizione (RRULE), per dirla con le parole dei promemoria. */
+    val rrule: String = "",
+    /** Gli avvisi dell'evento, in minuti prima: la stessa riga "Avviso" di promemoria e date. */
+    val reminders: List<Int> = emptyList(),
 )
 
 data class CalendarInfo(

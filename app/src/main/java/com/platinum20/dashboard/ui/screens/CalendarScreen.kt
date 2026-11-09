@@ -37,6 +37,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Train
@@ -244,23 +245,23 @@ fun EventDetailScreen(
                     RowDivider()
                     DetailRow(Icons.Outlined.Train, "$label $value")
                 }
-                if (current.recurring) {
-                    RowDivider()
-                    DetailRow(Icons.Outlined.Repeat, "Si ripete")
-                }
+                // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
+                RowDivider()
+                DetailRow(Icons.Outlined.Repeat, com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule) ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
+                RowDivider()
+                DetailRow(Icons.Outlined.Notifications, com.platinum20.dashboard.notes.WhenText.alert(current.reminders))
                 if (current.location.isNotBlank()) {
                     RowDivider()
                     DetailRow(Icons.Outlined.Place, current.location)
                 }
+                // Con i dati del biglietto già sopra, le note del treno non dicono altro.
+                if (notes.isNotBlank() && ticket.isEmpty()) {
+                    RowDivider()
+                    DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
+                }
                 if (current.calendarName.isNotBlank()) {
                     RowDivider()
                     DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
-                }
-            }
-            // Con i dati del biglietto già sopra, le note del treno non dicono altro.
-            if (notes.isNotBlank() && ticket.isEmpty()) {
-                Section(title = "Note") {
-                    DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
                 }
             }
             if (!current.writable) {

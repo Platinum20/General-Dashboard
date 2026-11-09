@@ -73,13 +73,6 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
                     share(row.event.title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(java.time.Instant.ofEpochMilli(row.event.begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now()))
                 },
             )
-            row.countdown != null -> listOf(
-                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.countdown.title) { openItem(ItemKind.DATE, row.countdown.id) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                    NotesStore.deleteCountdown(row.countdown.id)
-                    offerUndo("Data eliminata") { NotesStore.restoreCountdown(row.countdown) }
-                },
-            )
             row.parcel != null -> listOf(
                 BubbleAction(Icons.Outlined.LocalShipping, "Apri", detail = row.parcel.title) { openItem(ItemKind.PARCEL, row.parcel.id) },
                 BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {

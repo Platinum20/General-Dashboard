@@ -49,7 +49,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.DateIdea
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.HabitIdea

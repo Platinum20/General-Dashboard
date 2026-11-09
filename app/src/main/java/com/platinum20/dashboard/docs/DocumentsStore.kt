@@ -125,17 +125,17 @@ object DocumentsStore {
     fun delete(id: Long) {
         val doc = doc(id) ?: return
         listOfNotNull(doc.front, doc.back, doc.frontFull, doc.backFull).forEach { File(it).delete() }
-        doc.countdownId?.let(NotesStore::deleteCountdown)
+        doc.countdownId?.let(NotesStore::deleteTask)
         update { list -> list.filter { it.id != id } }
     }
 
     /** La scadenza va (o si sposta, o si toglie) nel calendario come data "Scade …". */
     private fun withExpiry(doc: Document, expiry: LocalDate?): Document {
         if (expiry == null) {
-            doc.countdownId?.let(NotesStore::deleteCountdown)
+            doc.countdownId?.let(NotesStore::deleteTask)
             return doc.copy(expiry = null, countdownId = null)
         }
-        val id = NotesStore.saveCountdown(doc.countdownId, expiryTitle(doc.title), expiry, yearly = false)
+        val id = NotesStore.saveDate(doc.countdownId, expiryTitle(doc.title), expiry, yearly = false)
         return doc.copy(expiry = expiry, countdownId = id)
     }
 

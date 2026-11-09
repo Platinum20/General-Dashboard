@@ -57,7 +57,6 @@ import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.settings.HomeCard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.Repeat
@@ -202,7 +201,6 @@ internal fun rememberDueOpen(): (DueRow) -> Unit {
         when {
             row.event != null -> inApp?.openEvent?.invoke(row.event)
             row.task != null -> openItem(ItemKind.TASK, row.task.id)
-            row.countdown != null -> openItem(ItemKind.DATE, row.countdown.id)
             row.parcel != null -> openItem(ItemKind.PARCEL, row.parcel.id)
             row.charge != null -> openItem(ItemKind.FIXED, row.charge.id)
             row.expense != null -> openItem(ItemKind.EXPENSE, row.expense.id)

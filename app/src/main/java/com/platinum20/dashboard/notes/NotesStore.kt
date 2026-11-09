@@ -26,7 +26,7 @@ data class TaskItem(
     val text: String,
     val done: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
-    /** Scadenza con promemoria (millisecondi), null se non c'è. */
+    /** Quando (millisecondi): con [allDay] è la mezzanotte del giorno. Null = senza data. */
     val dueAt: Long? = null,
     /** Se si ripete, spuntandolo la scadenza passa alla volta dopo invece di chiuderlo. */
     val repeat: Repeat? = null,
@@ -36,38 +36,95 @@ data class TaskItem(
     val doneAt: Long? = null,
     /** Le volte in cui un ricorrente è stato spuntato (millisecondi, le più recenti): non si chiude mai, ma conta. */
     val doneTimes: List<Long> = emptyList(),
+    /**
+     * Tutto il giorno, senza ora: compleanni, viaggi, scadenze (le vecchie "date da ricordare", unite ai
+     * promemoria nella 1.361). Non va mai in "Scaduti": se si ripete passa da solo alla volta dopo.
+     */
+    val allDay: Boolean = false,
+    /** Quando avvisare: uguale per promemoria e date, come negli eventi del calendario. */
+    val alert: Alert = Alert.ON_TIME,
+    /** Note libere sotto il titolo, come la descrizione di un evento. */
+    val notes: String = "",
+    /** Luogo, come negli eventi del calendario. */
+    val place: String = "",
+    /** L'anno vero di un compleanno o anniversario, per dire quanti anni compie; null se non si sa. */
+    val firstYear: Int? = null,
 ) {
     /** Segna una spunta del ricorrente, tenendo solo le ultime [MAX_DONE_TIMES]. */
     fun withDoneTime(at: Long): TaskItem = copy(doneTimes = (doneTimes + at).takeLast(MAX_DONE_TIMES))
 
+    /** Il giorno della scadenza così com'è salvata. */
+    fun day(zone: ZoneId = ZoneId.systemDefault()): LocalDate? = dueAt?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }
+
+    /**
+     * Il giorno in cui cade la prossima volta: per una data di tutto il giorno che si ripete, già passata,
+     * la volta dopo oggi (un compleanno non si spunta, passa da solo). Per il resto, il giorno salvato.
+     */
+    fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? {
+        val day = day(zone) ?: return null
+        val r = repeat
+        if (!allDay || r == null || !day.isBefore(today)) return day
+        return r.nextAfter(day.atStartOfDay(), today.minusDays(1).atStartOfDay()).toLocalDate()
+    }
+
+    /** Quanti giorni mancano alla prossima volta; null senza data. */
+    fun daysLeft(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Long? =
+        nextDay(today, zone)?.let { ChronoUnit.DAYS.between(today, it) }
+
+    /**
+     * Quanti anni compie alla prossima ricorrenza (compleanni, anniversari). Solo se si conosce l'anno vero:
+     * con l'anno corrente o il precedente non si sa, e non lo diciamo.
+     */
+    fun yearsAtNext(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Int? {
+        val first = firstYear ?: return null
+        if (repeat != Repeat.YEARLY) return null
+        return nextDay(today, zone)?.let { it.year - first }?.takeIf { it >= 2 }
+    }
+
+    /** Il titolo con gli anni che compie: "Compleanno di Marta (30 anni)". */
+    fun titleWithYears(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): String =
+        text + (yearsAtNext(today, zone)?.let { " ($it anni)" } ?: "")
+
+    /** Già passato e non fatto: solo i promemoria con l'ora; una data di tutto il giorno non scade. */
+    fun isLate(nowMs: Long): Boolean = !done && !allDay && dueAt != null && dueAt < nowMs
+
+    /**
+     * Quando suonare l'avviso (millisecondi), null se non serve. Per tutto il giorno alle [ALL_DAY_ALERT],
+     * per gli altri all'ora; "il giorno prima" toglie un giorno a entrambi.
+     */
+    fun alertAt(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Long? {
+        if (done || alert == Alert.NONE) return null
+        val base = if (allDay) {
+            (nextDay(today, zone) ?: return null).atTime(ALL_DAY_ALERT).atZone(zone)
+        } else {
+            Instant.ofEpochMilli(dueAt ?: return null).atZone(zone)
+        }
+        return (if (alert == Alert.DAY_BEFORE) base.minusDays(1) else base).toInstant().toEpochMilli()
+    }
+
     companion object {
         /** Bastano per qualche mese di un ricorrente di ogni giorno: servono solo a "La tua settimana". */
         const val MAX_DONE_TIMES = 60
+
+        /** L'ora dell'avviso per le cose di tutto il giorno. */
+        val ALL_DAY_ALERT: LocalTime = LocalTime.of(9, 0)
+
+        /** Una data di tutto il giorno (le vecchie "date da ricordare"): ogni anno se [yearly]. */
+        fun date(id: Long, title: String, date: LocalDate, yearly: Boolean = false, zone: ZoneId = ZoneId.systemDefault()): TaskItem = TaskItem(
+            id, title.trim(),
+            dueAt = date.atStartOfDay(zone).toInstant().toEpochMilli(),
+            repeat = if (yearly) Repeat.YEARLY else null,
+            allDay = true,
+            firstYear = if (yearly) date.year else null,
+        )
     }
 }
 
-/** Una data da aspettare: compleanni, viaggi, scadenze. Se [yearly] si ripete ogni anno. */
-data class Countdown(
-    val id: Long,
-    val title: String,
-    val date: LocalDate,
-    val yearly: Boolean = false,
-) {
-    fun nextDate(today: LocalDate = LocalDate.now()): LocalDate {
-        if (!yearly) return date
-        var next = date.withYear(today.year)
-        if (next.isBefore(today)) next = next.plusYears(1)
-        return next
-    }
-
-    fun daysLeft(today: LocalDate = LocalDate.now()): Long = ChronoUnit.DAYS.between(today, nextDate(today))
-
-    /**
-     * Quanti anni compie alla prossima ricorrenza (compleanni, anniversari). Solo se la data
-     * è stata scritta con l'anno vero: con l'anno corrente o il precedente non si sa, e non lo diciamo.
-     */
-    fun yearsAtNext(today: LocalDate = LocalDate.now()): Int? =
-        if (!yearly) null else (nextDate(today).year - date.year).takeIf { it >= 2 }
+/** Quando avvisare, per promemoria e date: all'ora (o alle 9 per tutto il giorno), il giorno prima, mai. */
+enum class Alert(val label: String) {
+    ON_TIME("All'ora"),
+    DAY_BEFORE("Il giorno prima"),
+    NONE("Nessun avviso"),
 }
 
 /**
@@ -187,7 +244,6 @@ data class Note(
 data class NotesData(
     val tasks: List<TaskItem> = emptyList(),
     val notes: List<Note> = emptyList(),
-    val countdowns: List<Countdown> = emptyList(),
     val habits: List<Habit> = emptyList(),
     val expenses: List<Expense> = emptyList(),
     /** Tetto di spesa del mese in centesimi, null se non impostato. */
@@ -201,13 +257,20 @@ data class NotesData(
     val incoming: List<Parcel>
         get() = parcels.filter { !it.delivered }.sortedBy { it.expected ?: LocalDate.MAX }
 
-    /** I promemoria aperti, prima quelli con scadenza (dal più vicino). */
+    /**
+     * Le cose da fare aperte, prima quelle con scadenza (dal più vicino): widget, contatori, notifica del mattino.
+     * Le date di tutto il giorno (compleanni) no: non si "fanno" e non scadono.
+     */
     val openTasks: List<TaskItem>
-        get() = tasks.filter { !it.done }.sortedWith(compareBy<TaskItem> { it.dueAt ?: Long.MAX_VALUE })
+        get() = tasks.filter { !it.done && !it.allDay }.sortedWith(compareBy<TaskItem> { it.dueAt ?: Long.MAX_VALUE })
 
-    /** Le date in arrivo, dalla più vicina; quelle non ripetute già passate spariscono. */
-    val upcoming: List<Countdown>
-        get() = countdowns.filter { it.daysLeft() >= 0 }.sortedBy { it.daysLeft() }
+    /** Promemoria e date di tutto il giorno ancora aperti, insieme: per "Adesso" e la notifica del mattino. */
+    val openItems: List<TaskItem>
+        get() = tasks.filter { !it.done }
+
+    /** Le date di tutto il giorno (compleanni, scadenze): servono alla rubrica e ai suggerimenti. */
+    val dates: List<TaskItem>
+        get() = tasks.filter { it.allDay }
 }
 
 /** Promemoria e note salvati in un file JSON sul telefono. */
@@ -231,6 +294,7 @@ object NotesStore {
         _data.value = loaded
         _readProblem.value = copy?.name
         applyFixedExpenses()
+        rollDates()
         // Le categorie imparano parole nuove: quelle rimaste in "Altro" si risistemano da sole.
         update { d -> Expenses.recategorized(d.expenses).let { if (it == d.expenses) d else d.copy(expenses = it) } }
         val prefs = appContext.getSharedPreferences("notes_upgrades", Context.MODE_PRIVATE)
@@ -238,6 +302,13 @@ object NotesStore {
             update(::withUpgradedCategories)
             prefs.edit().putInt("categories", CATEGORIES_VERSION).apply()
         }
+    }
+
+    /** Porta alla volta dopo compleanni e date ricorrenti già passati, con il loro avviso. */
+    fun rollDates(today: LocalDate = LocalDate.now()) {
+        val before = _data.value.tasks
+        update { withDatesRolled(it, today) }
+        _data.value.tasks.filter { t -> before.none { it == t } }.forEach { syncReminder(it.id) }
     }
 
     /** Sale quando le categorie cambiano forma (1.289: Bollette e Acquisti): le spese vecchie si spostano una volta. */
@@ -377,7 +448,7 @@ object NotesStore {
     private fun syncReminder(id: Long) {
         if (!::appContext.isInitialized) return
         val task = task(id)
-        if (task?.dueAt != null && !task.done) TaskReminderWorker.schedule(appContext, task)
+        if (task?.alertAt() != null) TaskReminderWorker.schedule(appContext, task)
         else TaskReminderWorker.cancel(appContext, id)
     }
 
@@ -399,12 +470,73 @@ object NotesStore {
     /** Elimina i promemoria spuntati; [which] sceglie quali (in Note solo quelli senza data, in Prossimi giorni quelli con). */
     fun clearDone(which: (TaskItem) -> Boolean = { true }) = update { d -> d.copy(tasks = d.tasks.filter { !it.done || !which(it) }) }
 
-    /** Restituisce l'id della data salvata (per l'"Annulla"), null se il titolo è vuoto. */
-    fun saveCountdown(id: Long?, title: String, date: LocalDate, yearly: Boolean): Long? {
+    /**
+     * Salva una data di tutto il giorno (compleanno, scadenza): è un promemoria come gli altri, con
+     * [TaskItem.allDay]. Restituisce l'id (per l'"Annulla"), null se il titolo è vuoto. Una data che c'è già
+     * tiene note, luogo e avviso.
+     */
+    fun saveDate(id: Long?, title: String, date: LocalDate, yearly: Boolean): Long? {
         val clean = title.trim().ifEmpty { return null }
-        val item = Countdown(id ?: newId(), clean, date, yearly)
-        update { d -> d.copy(countdowns = d.countdowns.filter { it.id != item.id } + item) }
+        val fresh = TaskItem.date(id ?: newId(), clean, date, yearly)
+        val old = id?.let(::task)
+        val item = old?.copy(
+            text = clean, dueAt = fresh.dueAt, allDay = true, snoozedFrom = null,
+            repeat = if (yearly) Repeat.YEARLY else old.repeat.takeIf { it != Repeat.YEARLY },
+            firstYear = if (yearly) old.firstYear ?: date.year else null,
+        ) ?: fresh
+        update { d -> d.copy(tasks = if (d.tasks.any { it.id == item.id }) d.tasks.map { if (it.id == item.id) item else it } else listOf(item) + d.tasks) }
+        syncReminder(item.id)
         return item.id
+    }
+
+    /** Con l'ora o tutto il giorno: passando a tutto il giorno l'ora si perde, tornando indietro si mette alle 9. */
+    fun setTaskAllDay(id: Long, allDay: Boolean) {
+        val zone = ZoneId.systemDefault()
+        update { d ->
+            d.copy(tasks = d.tasks.map { t ->
+                if (t.id != id || t.allDay == allDay) t else {
+                    val day = t.nextDay(LocalDate.now(), zone) ?: LocalDate.now()
+                    val at = if (allDay) day.atStartOfDay(zone) else day.atTime(TaskItem.ALL_DAY_ALERT).atZone(zone)
+                    t.copy(allDay = allDay, dueAt = at.toInstant().toEpochMilli(), snoozedFrom = null)
+                }
+            })
+        }
+        syncReminder(id)
+    }
+
+    /** Solo il giorno di una cosa di tutto il giorno, che resta senza ora. */
+    fun setTaskDay(id: Long, day: LocalDate) {
+        val at = day.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        // Un anno lontano scritto a mano è l'anno vero (compleanno): da lì si contano gli anni.
+        val real = day.year.takeIf { it < LocalDate.now().year - 1 }
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(dueAt = at, snoozedFrom = null, firstYear = real ?: it.firstYear) else it }) }
+        syncReminder(id)
+    }
+
+    fun setTaskAlert(id: Long, alert: Alert) {
+        update { d -> d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(alert = alert) else it }) }
+        syncReminder(id)
+    }
+
+    fun setTaskNotes(id: Long, notes: String) = update { d ->
+        d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(notes = notes.trim()) else it })
+    }
+
+    fun setTaskPlace(id: Long, place: String) = update { d ->
+        d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(place = place.trim()) else it })
+    }
+
+    /**
+     * Le date di tutto il giorno che si ripetono e sono passate vanno alla volta dopo: così la data salvata è
+     * sempre la prossima (avviso compreso). Pura, per i test; si fa all'avvio.
+     */
+    internal fun withDatesRolled(d: NotesData, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): NotesData {
+        val rolled = d.tasks.map { t ->
+            val next = t.nextDay(today, zone)
+            if (!t.allDay || t.done || t.repeat == null || next == null || next == t.day(zone)) t
+            else t.copy(dueAt = next.atStartOfDay(zone).toInstant().toEpochMilli(), snoozedFrom = null)
+        }
+        return if (rolled == d.tasks) d else d.copy(tasks = rolled)
     }
 
     /** Restituisce l'id dell'abitudine salvata (per l'"Annulla"), null se il titolo è vuoto. */
@@ -536,21 +668,19 @@ object NotesStore {
         if (d.parcels.any { it.id == item.id }) d else d.copy(parcels = d.parcels + item)
     }
 
-    fun deleteCountdown(id: Long) = update { d -> d.copy(countdowns = d.countdowns.filter { it.id != id }) }
-
     /** Aggiunge le date scelte dalla rubrica come date "ogni anno"; restituisce le nuove, per "Annulla". */
-    fun importContactDates(picked: List<ContactDate>, today: LocalDate = LocalDate.now()): List<Countdown> {
+    fun importContactDates(picked: List<ContactDate>, today: LocalDate = LocalDate.now()): List<TaskItem> {
         val base = newId()
-        val added = picked.mapIndexed { i, c -> Countdown(base + i, c.title, c.date(today), yearly = true) }
-        if (added.isNotEmpty()) update { d -> d.copy(countdowns = d.countdowns + added) }
+        val added = picked.mapIndexed { i, c -> TaskItem.date(base + i, c.title, c.date(today), yearly = true) }
+        if (added.isNotEmpty()) update { d -> d.copy(tasks = d.tasks + added) }
+        added.forEach { syncReminder(it.id) }
         return added
     }
 
     /** Toglie le date appena importate: serve ad "Annulla". */
-    fun removeCountdowns(ids: Set<Long>) = update { d -> d.copy(countdowns = d.countdowns.filter { it.id !in ids }) }
-
-    fun restoreCountdown(item: Countdown) = update { d ->
-        if (d.countdowns.any { it.id == item.id }) d else d.copy(countdowns = d.countdowns + item)
+    fun removeTasks(ids: Set<Long>) {
+        update { d -> d.copy(tasks = d.tasks.filter { it.id !in ids }) }
+        ids.forEach(::syncReminder)
     }
 
     /** Salva una nota (nuova se [id] è null) e ne restituisce l'id. Una nota vuota viene eliminata. */
@@ -632,6 +762,11 @@ object NotesStore {
                         .apply { it.snoozedFrom?.let { s -> put("snoozedFrom", s) } }
                         .apply { it.doneAt?.let { t -> put("doneAt", t) } }
                         .apply { if (it.doneTimes.isNotEmpty()) put("doneTimes", JSONArray(it.doneTimes)) }
+                        .apply { if (it.allDay) put("allDay", true) }
+                        .apply { if (it.alert != Alert.ON_TIME) put("alert", it.alert.name) }
+                        .apply { if (it.notes.isNotEmpty()) put("notes", it.notes) }
+                        .apply { if (it.place.isNotEmpty()) put("place", it.place) }
+                        .apply { it.firstYear?.let { y -> put("firstYear", y) } }
                 )
             }
         })
@@ -639,11 +774,6 @@ object NotesStore {
             d.notes.forEach {
                 put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt)
                     .apply { if (it.photo.isNotEmpty()) put("photo", it.photo) })
-            }
-        })
-        .put("countdowns", JSONArray().apply {
-            d.countdowns.forEach {
-                put(JSONObject().put("id", it.id).put("title", it.title).put("date", it.date.toString()).put("yearly", it.yearly))
             }
         })
         .put("habits", JSONArray().apply {
@@ -705,8 +835,7 @@ object NotesStore {
             if (has(key)) runCatching { YearMonth.parse(optString(key)) }.getOrNull() else null
         fun JSONObject.date(key: String): LocalDate? =
             if (has(key)) runCatching { LocalDate.parse(optString(key)) }.getOrNull() else null
-        return NotesData(
-            tasks = (0 until tasks.length()).map { i ->
+        val parsedTasks = (0 until tasks.length()).map { i ->
                 val o = tasks.getJSONObject(i)
                 TaskItem(
                     o.getLong("id"),
@@ -718,18 +847,26 @@ object NotesStore {
                     if (o.has("snoozedFrom")) o.optLong("snoozedFrom") else null,
                     if (o.has("doneAt")) o.optLong("doneAt") else null,
                     o.optJSONArray("doneTimes")?.let { a -> (0 until a.length()).map { a.optLong(it) }.filter { it > 0 } }.orEmpty(),
+                    allDay = o.optBoolean("allDay"),
+                    alert = runCatching { Alert.valueOf(o.optString("alert")) }.getOrDefault(Alert.ON_TIME),
+                    notes = o.optString("notes"),
+                    place = o.optString("place"),
+                    firstYear = if (o.has("firstYear")) o.optInt("firstYear") else null,
                 )
-            },
+            }
+        // Prima della 1.361 le date da ricordare erano a parte: ora sono promemoria di tutto il giorno.
+        val oldDates = (0 until countdowns.length()).mapNotNull { i ->
+            val o = countdowns.getJSONObject(i)
+            val date = runCatching { LocalDate.parse(o.optString("date")) }.getOrNull() ?: return@mapNotNull null
+            TaskItem.date(o.getLong("id"), o.optString("title"), date, o.optBoolean("yearly"))
+        }.filter { c -> parsedTasks.none { it.id == c.id } }
+        return NotesData(
+            tasks = parsedTasks + oldDates,
             notes = (0 until notes.length()).map { i ->
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
                     Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), o.optString("photo"))
                 }
-            },
-            countdowns = (0 until countdowns.length()).mapNotNull { i ->
-                val o = countdowns.getJSONObject(i)
-                val date = runCatching { LocalDate.parse(o.optString("date")) }.getOrNull() ?: return@mapNotNull null
-                Countdown(o.getLong("id"), o.optString("title"), date, o.optBoolean("yearly"))
             },
             habits = (0 until habits.length()).map { i ->
                 val o = habits.getJSONObject(i)

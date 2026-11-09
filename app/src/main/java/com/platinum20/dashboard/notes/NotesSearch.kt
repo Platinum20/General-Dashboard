@@ -40,8 +40,9 @@ object NotesSearch {
         fun hit(vararg texts: String) = texts.any { normalize(it).contains(q) }
         return buildList {
             // Prima quelli ancora da fare, poi i completati.
+            // Le date di tutto il giorno sono promemoria (1.361), ma si cercano con la loro riga "12 marzo · compie…".
             data.tasks.sortedBy { it.done }.filter { hit(it.text) }
-                .forEach { add(SearchHit(SearchKind.TASK, it.id, it.text)) }
+                .forEach { add(SearchHit(if (it.allDay) SearchKind.DATE else SearchKind.TASK, it.id, it.text)) }
             data.notes.sortedByDescending { it.updatedAt }.filter { hit(it.text) }
                 .forEach { add(SearchHit(SearchKind.NOTE, it.id, it.title.ifEmpty { "Nota" })) }
             data.expenses.sortedWith(Expenses.byTime.reversed())
@@ -49,8 +50,6 @@ object NotesSearch {
                 .forEach { add(SearchHit(SearchKind.EXPENSE, it.id, it.text)) }
             data.parcels.filter { hit(it.title, it.code) }
                 .forEach { add(SearchHit(SearchKind.PARCEL, it.id, it.title)) }
-            data.countdowns.filter { hit(it.title) }
-                .forEach { add(SearchHit(SearchKind.DATE, it.id, it.title)) }
             data.habits.filter { hit(it.title) }
                 .forEach { add(SearchHit(SearchKind.HABIT, it.id, it.title)) }
         }

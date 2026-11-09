@@ -78,7 +78,7 @@ class ResumeTest {
         val nowMs = at.toInstant(ZoneOffset.UTC).toEpochMilli()
         val item = yt("aaaaaaaaaaa", nowMs - hour, 750_000, 2_700_000)
         // "Adesso" non parla più di media: resta per orari e scadenze.
-        val lines = Briefing.build(at, null, emptyList(), null, emptyList(), emptyList(), zone = ZoneOffset.UTC)
+        val lines = Briefing.build(at, null, emptyList(), null, emptyList(), zone = ZoneOffset.UTC)
         assertTrue(lines.none { it.text.startsWith("Riprendi") })
         assertEquals(item, HomeResume.pick(listOf(item), nowMs, somethingPlaying = false))
         assertEquals(null, HomeResume.pick(listOf(item), nowMs, somethingPlaying = true))

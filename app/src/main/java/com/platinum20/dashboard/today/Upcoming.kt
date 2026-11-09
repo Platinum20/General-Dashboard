@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.today
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Countdown
 import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Parcel
@@ -24,8 +23,7 @@ data class UpcomingItem(
     val event: CalendarEvent? = null,
     /** Il promemoria, per spuntarlo dalla card senza entrare. */
     val task: TaskItem? = null,
-    /** La data, il pacco o l'addebito della riga: toccandola si apre la sua scheda (Antonio). */
-    val countdownId: Long? = null,
+    /** Il pacco o l'addebito della riga: toccandola si apre la sua scheda (Antonio). */
     val parcelId: Long? = null,
     val chargeId: Long? = null,
     /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
@@ -88,8 +86,8 @@ object Upcoming {
     fun build(
         today: LocalDate,
         events: Map<LocalDate, List<CalendarEvent>>,
+        /** Promemoria e date di tutto il giorno insieme (1.361). */
         tasks: List<TaskItem>,
-        countdowns: List<Countdown>,
         parcels: List<Parcel> = emptyList(),
         fixedExpenses: List<FixedExpense> = emptyList(),
         zone: ZoneId = ZoneId.systemDefault(),
@@ -104,14 +102,14 @@ object Upcoming {
             val day = today.plusDays(d.toLong())
             val allDay = mutableListOf<UpcomingItem>()
             val timed = mutableListOf<Pair<Long, UpcomingItem>>()
-            countdowns.filter { it.daysLeft(today) == d.toLong() }.forEach {
-                allDay += UpcomingItem(day, BriefKind.DATE, it.title + (it.yearsAtNext(today)?.let { y -> " ($y anni)" } ?: ""), countdownId = it.id)
+            tasks.filter { !it.done && it.allDay && it.daysLeft(today, zone) == d.toLong() }.forEach {
+                allDay += UpcomingItem(day, BriefKind.DATE, it.titleWithYears(today, zone), task = it)
             }
             events[day].orEmpty().filter { seen.add(it.eventId) }.forEach {
                 if (it.allDay) allDay += UpcomingItem(day, BriefKind.EVENT, it.title, event = it)
                 else timed += it.begin to UpcomingItem(day, BriefKind.EVENT, it.title, it.begin.at(zone), event = it)
             }
-            tasks.filter { !it.done && it.dueAt != null && it.dueAt.day(zone) == day }.forEach {
+            tasks.filter { !it.done && !it.allDay && it.dueAt != null && it.dueAt.day(zone) == day }.forEach {
                 timed += it.dueAt!! to UpcomingItem(day, BriefKind.TASK, it.text, it.dueAt.at(zone), task = it)
             }
             parcels.filter { !it.delivered && it.expected == day }.forEach {

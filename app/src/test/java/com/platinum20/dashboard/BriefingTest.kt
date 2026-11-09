@@ -1,10 +1,9 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
-import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.BriefAction
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.Briefing
@@ -37,7 +36,6 @@ class BriefingTest {
             today = listOf(event("Dentista", morning.plusMinutes(25), morning.plusMinutes(85))),
             tomorrow = null,
             tasks = emptyList(),
-            countdowns = emptyList(),
             zone = zone,
         )
         assertEquals("Tra 25 min: Dentista", lines.first().text)
@@ -51,7 +49,6 @@ class BriefingTest {
             today = listOf(event("Riunione", morning.plusHours(3), morning.plusHours(4))),
             tomorrow = null,
             tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.minusHours(2)))),
-            countdowns = emptyList(),
             zone = zone,
         )
         assertEquals(BriefKind.TASK, lines.first().kind)
@@ -67,8 +64,7 @@ class BriefingTest {
             forecast = null,
             today = emptyList(),
             tomorrow = listOf(event("Treno", tomorrow, tomorrow.plusHours(2))),
-            tasks = emptyList(),
-            countdowns = listOf(Countdown(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23))),
+            tasks = listOf(TaskItem.date(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23), zone = zone)),
             zone = zone,
         )
         val texts = lines.map { it.text }
@@ -83,8 +79,7 @@ class BriefingTest {
             forecast = null,
             today = emptyList(),
             tomorrow = null,
-            tasks = emptyList(),
-            countdowns = listOf(Countdown(3, "Compleanno di Marta", morning.toLocalDate().withYear(1996), yearly = true)),
+            tasks = listOf(TaskItem.date(3, "Compleanno di Marta", morning.toLocalDate().withYear(1996), yearly = true, zone = zone)),
             zone = zone,
         )
         assertTrue(lines.map { it.text }.contains("Oggi: Compleanno di Marta (30 anni)"))
@@ -92,13 +87,13 @@ class BriefingTest {
 
     @Test
     fun giornataLibera() {
-        val lines = Briefing.build(morning, null, emptyList(), null, emptyList(), emptyList(), zone)
+        val lines = Briefing.build(morning, null, emptyList(), null, emptyList(), zone)
         assertEquals(listOf(BriefKind.FREE), lines.map { it.kind })
     }
 
     @Test
     fun senzaCalendarioNessunaFraseInventata() {
-        val lines = Briefing.build(morning, null, null, null, emptyList(), emptyList(), zone)
+        val lines = Briefing.build(morning, null, null, null, emptyList(), zone)
         assertTrue(lines.isEmpty())
     }
 
@@ -106,7 +101,7 @@ class BriefingTest {
     fun seraAbitudiniEPacchi() {
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         val lines = Briefing.build(
-            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone,
+            evening, null, emptyList(), emptyList(), emptyList(), zone,
             habits = listOf(Habit(1, "Acqua"), Habit(2, "Lettura", setOf(evening.toLocalDate()))),
             parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate().plusDays(1))),
         )
@@ -131,8 +126,7 @@ class BriefingTest {
             forecast = rainyTomorrow(evening.toLocalDate()),
             today = emptyList(),
             tomorrow = listOf(event("Treno", tomorrow, tomorrow.plusHours(2))),
-            tasks = emptyList(),
-            countdowns = listOf(Countdown(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23))),
+            tasks = listOf(TaskItem.date(2, "Compleanno di Marta", LocalDate.of(2026, 10, 23), zone = zone)),
             parcels = listOf(Parcel(1, "Cuffie", expected = LocalDate.of(2026, 10, 23))),
             zone = zone,
             withTomorrow = widget,
@@ -155,7 +149,6 @@ class BriefingTest {
             today = emptyList(),
             tomorrow = emptyList(),
             tasks = emptyList(),
-            countdowns = emptyList(),
             zone = zone,
         ).first { it.kind == BriefKind.WEATHER }
         assertEquals("Domani 22° / 10°, pioggia 60%", line.text)
@@ -169,7 +162,7 @@ class BriefingTest {
         val lines = Briefing.build(
             evening, null, emptyList(), emptyList(),
             tasks = listOf(TaskItem(7, "Bolletta", dueAt = ms(evening.minusHours(2)))),
-            countdowns = emptyList(), zone = zone,
+            zone = zone,
             habits = listOf(Habit(1, "Acqua"), Habit(2, "Leggere 20 minuti")),
             parcels = listOf(Parcel(3, "Cuffie", expected = evening.toLocalDate())),
             max = 6,
@@ -193,7 +186,7 @@ class BriefingTest {
     fun abitudineSegnataLaRigaScende() {
         val evening = LocalDateTime.of(2026, 10, 22, 19, 0)
         fun habitLine(habits: List<Habit>) = Briefing.build(
-            evening, null, emptyList(), emptyList(), emptyList(), emptyList(), zone, habits = habits,
+            evening, null, emptyList(), emptyList(), emptyList(), zone, habits = habits,
         ).firstOrNull { it.kind == BriefKind.HABIT }
         val both = listOf(Habit(1, "Acqua"), Habit(2, "Lettura"))
         assertEquals(BriefAction.HABITS, habitLine(both)?.action)
@@ -207,7 +200,7 @@ class BriefingTest {
     @Test
     fun piuPacchiNessunArrivato() {
         val lines = Briefing.build(
-            morning, null, emptyList(), null, emptyList(), emptyList(), zone,
+            morning, null, emptyList(), null, emptyList(), zone,
             parcels = listOf(Parcel(1, "Cuffie", expected = morning.toLocalDate()), Parcel(2, "Libro", expected = morning.toLocalDate())),
         )
         assertEquals(null, lines.first { it.kind == BriefKind.PARCEL }.action)
@@ -235,7 +228,7 @@ class BriefingTest {
         fun line(at: LocalDateTime) = Briefing.build(
             now = morning, forecast = forecast,
             today = listOf(event("Calcetto", at, at.plusHours(1))),
-            tomorrow = null, tasks = emptyList(), countdowns = emptyList(), zone = zone,
+            tomorrow = null, tasks = emptyList(), zone = zone,
         ).first { it.kind == BriefKind.EVENT }.text
         assertEquals("Alle 12:00: Calcetto · pioggia 70%", line(start))
         assertEquals("Alle 13:30: Calcetto", line(start.plusMinutes(90)))
@@ -251,7 +244,6 @@ class BriefingTest {
             today = listOf(allDay, event("Riunione", morning.plusHours(2), morning.plusHours(3)), event("Palestra", morning.plusHours(9), morning.plusHours(10))),
             tomorrow = null,
             tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.plusHours(4))), TaskItem(2, "Latte", dueAt = ms(morning.plusHours(6)))),
-            countdowns = emptyList(),
             budgetCents = 100,
             expenses = listOf(com.platinum20.dashboard.notes.Expense(1, 500, "pizza", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), date = morning.toLocalDate())),
             zone = zone,
@@ -278,7 +270,7 @@ class BriefingTest {
         val lines = Briefing.build(
             now = morning, forecast = null,
             today = listOf(event("Riunione", morning.plusHours(2), morning.plusHours(3))),
-            tomorrow = null, tasks = emptyList(), countdowns = emptyList(), zone = zone,
+            tomorrow = null, tasks = emptyList(), zone = zone,
             wholeDay = true, withTomorrow = false,
         )
         assertEquals("Riunione", lines.first { it.kind == BriefKind.EVENT }.event?.title)

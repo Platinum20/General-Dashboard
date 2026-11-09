@@ -68,7 +68,7 @@ class HabitWeeklyTest {
     @Test fun adessoNonRimproveraLaSettimanaleInPari() {
         val evening = mon.plusDays(3).atTime(19, 0)
         val lines = Briefing.build(
-            evening, null, emptyList(), emptyList(), emptyList(), emptyList(),
+            evening, null, emptyList(), emptyList(), emptyList(),
             habits = listOf(gym(mon, mon.plusDays(1), mon.plusDays(2))),
         )
         assertFalse(lines.any { it.kind == BriefKind.HABIT })

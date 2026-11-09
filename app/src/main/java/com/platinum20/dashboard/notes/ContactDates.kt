@@ -60,7 +60,7 @@ object ContactDates {
      * Le date da proporre: senza doppioni tra loro (lo stesso contatto salvato su due account)
      * e con [ContactCandidate.already] vero per quelle che in Date ci sono già.
      */
-    fun candidates(found: List<ContactDate>, existing: List<Countdown>): List<ContactCandidate> =
+    fun candidates(found: List<ContactDate>, existing: List<TaskItem>): List<ContactCandidate> =
         found.distinctBy { it.key }
             .sortedWith(compareBy<ContactDate> { it.monthDay }.thenBy { it.name })
             .map { ContactCandidate(it, already = isDuplicate(it, existing)) }
@@ -69,12 +69,13 @@ object ContactDates {
      * Già in Date: stesso titolo, oppure stesso giorno dell'anno con il nome della persona nel titolo
      * ("Compleanno Marta" scritto a mano il 12 marzo vale per Marta Rossi).
      */
-    fun isDuplicate(item: ContactDate, existing: List<Countdown>): Boolean {
+    fun isDuplicate(item: ContactDate, existing: List<TaskItem>): Boolean {
         val title = normalize(item.title)
         val first = normalize(item.name).substringBefore(' ')
         return existing.any { c ->
-            val t = normalize(c.title)
-            t == title || (MonthDay.from(c.date) == item.monthDay && first.length >= 2 && t.split(' ').contains(first))
+            val t = normalize(c.text)
+            val day = c.day()
+            t == title || (day != null && MonthDay.from(day) == item.monthDay && first.length >= 2 && t.split(' ').contains(first))
         }
     }
 

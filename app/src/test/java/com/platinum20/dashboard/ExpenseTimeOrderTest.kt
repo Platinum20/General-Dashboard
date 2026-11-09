@@ -36,7 +36,7 @@ class ExpenseTimeOrderTest {
     )
 
     @Test fun oggiPerOrario() {
-        val today = dueDays(emptyList(), emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, expenses = sparse(oggi)).first()
+        val today = dueDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, expenses = sparse(oggi)).first()
         assertEquals(listOf(3L, 2L, 4L, 1L), today.rows.mapNotNull { it.expense?.id })
     }
 

@@ -1,6 +1,6 @@
 package com.platinum20.dashboard
 
-import com.platinum20.dashboard.notes.Countdown
+import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.DateIdeas
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -9,7 +9,7 @@ import java.time.LocalDate
 
 /** Gli esempi in Date compaiono solo con poche voci e mai per una data che c'è già. */
 class DateIdeasTest {
-    private fun date(title: String) = Countdown(title.hashCode().toLong(), title, LocalDate.of(2027, 1, 1))
+    private fun date(title: String) = TaskItem.date(title.hashCode().toLong(), title, LocalDate.of(2027, 1, 1))
 
     @Test fun senzaDateQuattroEsempi() {
         val ideas = DateIdeas.suggest(emptyList())
