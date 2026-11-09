@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.384.0
+**Turni con le creator**
+- Nel calendario il turno dice "Turno" e sotto, per intero, i nomi delle creator (la prima, la seconda, e così via), senza tagli
+
 ## 1.383.0
 **Ogni evento come i treni**
 - Turni, impegni e ogni evento con un inizio e una fine ora sono una riga sola come i treni: in alto l'ora d'inizio e il nome, in basso l'ora di fine, in mezzo una linea con quanto dura (e il luogo)

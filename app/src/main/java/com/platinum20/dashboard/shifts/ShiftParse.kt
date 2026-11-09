@@ -32,6 +32,14 @@ data class ShiftRead(val mine: List<Shift>, val from: Long, val to: Long, val my
  * (anche in un oggetto persona dentro o sopra) o un id che altrove è legato al suo nome.
  */
 object ShiftParse {
+    /**
+     * Le creator del turno, dal titolo "Turno · Prima, Seconda": sulla linea del tempo vanno sotto "Turno",
+     * tutte e intere (Antonio). Vuoto se il titolo non è quello di un turno.
+     */
+    fun creators(title: String): List<String> =
+        title.removePrefix("Turno · ").takeIf { title.startsWith("Turno · ") }
+            ?.split(", ")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
+
     const val ME = "Antonio Nesca"
     private const val MAX_MS = 24 * 3600_000L
     private val START = Regex("^(shift|work)?(start|begin|from)(s)?(at|on|date|time|datetime|ts|timestamp)?$")
