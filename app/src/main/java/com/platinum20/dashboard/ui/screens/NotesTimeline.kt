@@ -344,6 +344,10 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
  * [labels] = sulla pagina dell'evento, dove il nome c'è già: "Inizio" e "Fine" al posto del nome.
  * Null per gli eventi di tutto il giorno o senza durata: quelli restano una riga semplice.
  */
+/** "A", "A e B", "A, B e C". */
+internal fun andList(names: List<String>): String =
+    if (names.size <= 1) names.joinToString() else names.dropLast(1).joinToString(", ") + " e " + names.last()
+
 internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), labels: Boolean = false): TripStops? {
     if (event.allDay || event.end <= event.begin) return null
     val trip = event.trip
@@ -355,22 +359,20 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
     val duration = com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end)
     return if (trip != null) TripStops(
         departAt = from.format(hour),
-        from = trip.from ?: "Partenza",
+        // Nel calendario dove va e quando arriva (Antonio); sulla pagina del viaggio le due stazioni.
+        from = if (labels) trip.from ?: "Partenza" else "Treno per ${trip.to}",
         arriveAt = to.format(hour),
-        to = trip.to + endDay?.let { " · $it" }.orEmpty(),
+        to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
         middle = listOfNotNull(duration, trip.train).joinToString(" · "),
         begin = event.begin,
         end = event.end,
     ) else {
-    // Il nome su una riga sua sopra inizio e fine (Antonio); un turno senza nome, fra inizio e fine le creator.
+    // Il nome su una riga sua sopra inizio e fine (Antonio); un turno "Turno su A, B e C" accanto all'inizio.
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else "",
-        // Un turno non ha titolo: le creator e il colore dicono già cos'è (Antonio).
+        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else "",
         title = if (labels || creators.isNotEmpty()) null else event.title.ifBlank { "Evento" },
-        // Spazi che non vanno a capo dentro un nome: si va a capo solo fra una creator e l'altra.
-        names = creators.joinToString(", ") { it.replace(' ', '\u00A0') }.takeIf { it.isNotEmpty() },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.

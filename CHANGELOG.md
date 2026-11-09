@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.396.0
+**Turni e treni da leggere al volo**
+- Accanto all'ora di inizio di un turno c'è "Turno su …" con le creator, sulla stessa riga
+- I treni dicono "Treno per Pescara Centrale" alla partenza e "Arrivo a Pescara Centrale" all'arrivo (le stazioni restano nella pagina del viaggio)
+
 ## 1.395.0
 **Niente più buco sotto gli eventi lontani**
 - Nel calendario, prima del segno di un nuovo mese non c'è più lo spazio vuoto: i compleanni di ogni anno (e le altre cose lontane) stanno uno sotto l'altro, ordinati
