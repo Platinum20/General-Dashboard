@@ -301,19 +301,8 @@ internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
     val next = queue.upcoming
     if (next.isEmpty()) return
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        // Il titolo stesso apre la coda (1.357), come le file di Media: niente tasto "Apri" nell'intestazione.
-        Row(
-            Modifier.clip(MaterialTheme.shapes.small).clickable(onClick = onOpenQueue).padding(vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SectionHeader("In coda · ${next.size}")
-            Icon(
-                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                contentDescription = "Apri la coda",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
-        }
+        // Il titolo stesso apre la coda, con lo stesso aspetto dei titoli delle file di Media.
+        OpenableHeader("In coda · ${next.size}", onOpenQueue)
         next.take(3).forEach { entry -> androidx.compose.runtime.key(entry.id) { SwipeQueueRow(entry) } }
     }
 }
