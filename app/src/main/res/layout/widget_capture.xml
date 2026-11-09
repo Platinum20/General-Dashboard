@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget "Scrivi": la barra in basso di Canvas sulla schermata Home. Campo = scrivi, tondo = detta. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:clipToOutline="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/cap_write"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:background="@drawable/widget_field"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/widget_ic_edit"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            style="@style/WidgetSub"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:textSize="15sp"
+            android:text="Scrivi qualcosa…" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/cap_voice"
+        style="@style/WidgetRoundButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:padding="12dp"
+        android:src="@drawable/widget_ic_mic"
+        android:contentDescription="Detta" />
+</LinearLayout>

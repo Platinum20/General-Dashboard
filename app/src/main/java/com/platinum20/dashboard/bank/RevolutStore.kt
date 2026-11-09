@@ -143,6 +143,8 @@ object RevolutStore {
         if (_expired.value) setExpired(false)
         // Lettura riuscita = sessione buona: se ne tiene la copia per dopo un aggiornamento.
         appContext?.let { RevolutSession.save(it) }
+        // Il widget Spese mostra il saldo.
+        appContext?.let { runCatching { com.platinum20.dashboard.widget.Widgets.refresh(it, com.platinum20.dashboard.widget.SpendWidget::class.java) } }
     }
 
     private fun commitPockets(read: PocketRead) {

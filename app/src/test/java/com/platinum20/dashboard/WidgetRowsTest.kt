@@ -1,8 +1,22 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.notes.Expense
+import com.platinum20.dashboard.notes.ExpenseCategory
+import com.platinum20.dashboard.sim.Allowance
+import com.platinum20.dashboard.sim.SimStatus
+import com.platinum20.dashboard.weather.HourlyPoint
+import com.platinum20.dashboard.widget.NewsWidgetRows
+import com.platinum20.dashboard.widget.SavedStory
+import com.platinum20.dashboard.widget.SimWidgetRows
+import com.platinum20.dashboard.widget.SpendWidgetRows
 import com.platinum20.dashboard.widget.WidgetRows
+import com.platinum20.dashboard.widget.WidgetSize
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 class WidgetRowsTest {
     @Test
@@ -13,9 +27,70 @@ class WidgetRowsTest {
     }
 
     @Test
-    fun quanteNotizie() {
-        assertEquals(3, WidgetRows.newsCount(0, hasTasks = false))
-        assertEquals(2, WidgetRows.newsCount(1, hasTasks = false))
-        assertEquals(2, WidgetRows.newsCount(0, hasTasks = true))
+    fun dateDelWidget() {
+        val day = LocalDate.of(2026, 11, 9)
+        assertEquals("LUNEDÌ 9 NOVEMBRE", WidgetRows.dateLabel(day))
+        assertEquals("Lunedì 9", WidgetRows.dayTitle(day))
+    }
+
+    @Test
+    fun leProssimeOreUnaOgniDue() {
+        val now = LocalDateTime.of(2026, 11, 9, 10, 20)
+        val hourly = (0..12).map { HourlyPoint(now.withMinute(0).plusHours(it.toLong()), 10.0 + it, 1, 0, true) }
+        val hours = WidgetRows.hours(hourly, now, count = 3)
+        assertEquals(listOf(11, 13, 15), hours.map { it.time.hour })
+        assertEquals(0, WidgetRows.hourColumns(WidgetSize(110, 110)))
+        assertEquals(4, WidgetRows.hourColumns(WidgetSize(250, 200)))
+    }
+
+    @Test
+    fun notizie() {
+        val now = 10_000_000_000L
+        val s = SavedStory("Titolo", "https://x", "ANSA", sources = 4, at = now - 2 * 3_600_000)
+        assertEquals("ANSA · 4 fonti · 2 h fa", NewsWidgetRows.meta(s, now))
+        assertEquals("ANSA", NewsWidgetRows.meta(s.copy(sources = 1, at = 0), now))
+        assertEquals(listOf(s), NewsWidgetRows.decode(NewsWidgetRows.encode(listOf(s))))
+        // Le vecchie storie salvate (prima della 1.362) avevano solo titolo, link e fonte.
+        assertEquals(listOf(SavedStory("T", "l", "Post")), NewsWidgetRows.decode("""[{"title":"T","link":"l","source":"Post"}]"""))
+        assertEquals(emptyList<SavedStory>(), NewsWidgetRows.decode("non json"))
+        assertEquals("3 NUOVE", NewsWidgetRows.countLabel(3))
+        assertEquals("1 NUOVA", NewsWidgetRows.countLabel(1))
+        assertNull(NewsWidgetRows.countLabel(0))
+        assertNull(NewsWidgetRows.countLabel(null))
+        assertEquals(2, NewsWidgetRows.storiesForHeight(180))
+    }
+
+    @Test
+    fun speseSoloDelMeseInCorso() {
+        val today = LocalDate.of(2026, 11, 9)
+        val list = listOf(
+            Expense(1, 1250, "pizza", ExpenseCategory.OTHER, today),
+            Expense(2, 3000, "benzina", ExpenseCategory.OTHER, today.minusDays(3)),
+            // Ottobre non entra mai nel totale (regola di Antonio).
+            Expense(3, 99_900, "affitto", ExpenseCategory.OTHER, LocalDate.of(2026, 10, 30)),
+        )
+        val m = SpendWidgetRows.model(list, today, balanceCents = null)
+        assertEquals("NOVEMBRE", m.month)
+        assertTrue(m.total, m.total.contains("42,50"))
+        assertTrue(m.today, m.today.contains("12,50"))
+        assertNull(m.balance)
+        assertTrue(SpendWidgetRows.model(list, today, 123_456).balance!!.contains("1.234,56"))
+    }
+
+    @Test
+    fun simGigaEBarra() {
+        val today = LocalDate.of(2026, 11, 9)
+        assertEquals("Collega la SIM", SimWidgetRows.model(null, linked = false, today).line1)
+        val m = SimWidgetRows.model(
+            SimStatus(data = Allowance(25.0, 100.0), credit = 3.2, renewal = today.plusDays(5)),
+            linked = true,
+            today,
+        )
+        assertEquals("25 GB", m.big)
+        assertEquals("di 100 GB", m.of)
+        assertEquals(250, m.progress)
+        assertTrue(m.line1, m.line1.endsWith("tra 5 giorni"))
+        assertTrue(m.line2, m.line2.contains("3,20"))
+        assertEquals("∞", SimWidgetRows.model(SimStatus(data = Allowance(0.0, unlimited = true)), true, today).big)
     }
 }

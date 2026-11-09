@@ -106,6 +106,7 @@ object SimStore {
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_STATUS, merged.toJson().toString()).apply()
         saveCaptures()
+        runCatching { com.platinum20.dashboard.widget.Widgets.refresh(app, com.platinum20.dashboard.widget.SimWidget::class.java) }
     }
 
     private fun saveCaptures() {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'intestazione di un giorno nel widget Calendario: "DOMANI", "MER 11 NOV". -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/day_text"
+    style="@style/WidgetLabel"
+    android:layout_width="match_parent"
+    android:layout_height="26dp"
+    android:gravity="bottom"
+    android:paddingBottom="3dp"
+    android:textColor="@color/widget_text_secondary" />

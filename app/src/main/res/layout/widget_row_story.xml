@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Una storia: titolo su due righe e sotto la fonte con quante altre ne parlano. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/story_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/story_title"
+        style="@style/WidgetText"
+        android:layout_width="match_parent"
+        android:fontFamily="@font/inter_semibold"
+        android:lineSpacingExtra="1dp"
+        android:maxLines="2" />
+
+    <TextView
+        android:id="@+id/story_meta"
+        style="@style/WidgetSub"
+        android:layout_width="match_parent"
+        android:layout_marginTop="2dp"
+        android:textSize="11sp" />
+</LinearLayout>

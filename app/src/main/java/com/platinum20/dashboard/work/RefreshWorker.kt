@@ -14,13 +14,13 @@ import com.platinum20.dashboard.news.NewsRecap
 import com.platinum20.dashboard.net.DiskCache
 import com.platinum20.dashboard.news.NewsStore
 import com.platinum20.dashboard.notes.NotesStore
-import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.weather.WeatherStore
-import com.platinum20.dashboard.widget.DashboardWidget
-import com.platinum20.dashboard.widget.TasksWidget
+import com.platinum20.dashboard.news.NewsStories
+import com.platinum20.dashboard.widget.NewsWidget
+import com.platinum20.dashboard.widget.Widgets
 import java.util.concurrent.TimeUnit
 
-/** Aggiorna meteo, "Adesso" e temi del giorno in background, per il widget. */
+/** Aggiorna meteo e notizie in background, poi ridisegna i widget. */
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
@@ -33,12 +33,11 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         val weather = runCatching { WeatherStore.fetch(applicationContext, freshLocation = false) }
         val news = runCatching {
             val result = NewsStore.load(force = true)
-            DashboardWidget.saveRecap(applicationContext, NewsStore.widgetStories(applicationContext, result.items))
+            val feed = NewsStore.widgetFeed(applicationContext, result.items)
+            NewsWidget.save(applicationContext, NewsStories.forWidget(feed), feed.fresh.size)
         }
-        runCatching { DashboardWidget.saveBriefing(applicationContext, Briefing.load(applicationContext, max = 6)) }
-        DashboardWidget.updateAll(applicationContext)
-        // Allo scoccare della mezzanotte i promemoria di "oggi" cambiano anche senza modifiche.
-        runCatching { TasksWidget.updateAll(applicationContext) }
+        // Ogni ora (e dopo mezzanotte) tutti i widget si ridisegnano: meteo, Adesso, il giorno nuovo.
+        Widgets.refresh(applicationContext)
         return if (weather.isFailure && news.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }
 

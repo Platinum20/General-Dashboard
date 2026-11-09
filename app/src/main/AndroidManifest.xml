@@ -99,10 +99,11 @@
             </intent-filter>
         </service>
 
+        <!-- Widget "Oggi": meteo e Adesso (nome della classe di sempre, se no sparisce dalla Home). -->
         <receiver
             android:name=".widget.DashboardWidget"
             android:exported="false"
-            android:label="Canvas">
+            android:label="@string/widget_today_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -111,17 +112,82 @@
                 android:resource="@xml/widget_dashboard_info" />
         </receiver>
 
-        <!-- Widget "Da fare": i promemoria di oggi da spuntare dalla schermata Home. -->
+        <!-- Widget "Calendario": oggi e i prossimi giorni (era "Da fare"). -->
         <receiver
             android:name=".widget.TasksWidget"
             android:exported="false"
-            android:label="Canvas · Da fare">
+            android:label="@string/widget_calendar_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_tasks_info" />
+        </receiver>
+
+        <!-- Widget "News". -->
+        <receiver
+            android:name=".widget.NewsWidget"
+            android:exported="false"
+            android:label="@string/widget_news_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_news_info" />
+        </receiver>
+
+        <!-- Widget "Spese": solo il mese in corso. -->
+        <receiver
+            android:name=".widget.SpendWidget"
+            android:exported="false"
+            android:label="@string/widget_spend_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_spend_info" />
+        </receiver>
+
+        <!-- Widget "SIM". -->
+        <receiver
+            android:name=".widget.SimWidget"
+            android:exported="false"
+            android:label="@string/widget_sim_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_sim_info" />
+        </receiver>
+
+        <!-- Widget "Meteo". -->
+        <receiver
+            android:name=".widget.WeatherWidget"
+            android:exported="false"
+            android:label="@string/widget_weather_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_weather_info" />
+        </receiver>
+
+        <!-- Widget "Scrivi": scrivi o detta al volo. -->
+        <receiver
+            android:name=".widget.CaptureWidget"
+            android:exported="false"
+            android:label="@string/widget_capture_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_capture_info" />
         </receiver>
 
         <receiver

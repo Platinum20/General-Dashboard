@@ -1,64 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="widget_description">Meteo e temi del giorno</string>
-    <string name="widget_tasks_description">I promemoria di oggi, da spuntare senza aprire Canvas</string>
+    <!-- Nomi e descrizioni nell'elenco dei widget del telefono. -->
+    <string name="widget_today_label">Oggi</string>
+    <string name="widget_description">Il meteo e quello che conta adesso, come in cima alla Home</string>
+    <string name="widget_calendar_label">Calendario</string>
+    <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, promemoria da spuntare, date</string>
+    <string name="widget_news_label">News</string>
+    <string name="widget_news_description">Le storie nuove dall\'ultima visita</string>
+    <string name="widget_spend_label">Spese</string>
+    <string name="widget_spend_description">Quanto hai speso questo mese e oggi</string>
+    <string name="widget_sim_label">SIM</string>
+    <string name="widget_sim_description">Giga rimasti e rinnovo della SIM</string>
+    <string name="widget_weather_label">Meteo</string>
+    <string name="widget_weather_description">Temperatura adesso e le prossime ore</string>
+    <string name="widget_capture_label">Scrivi</string>
+    <string name="widget_capture_description">Scrivi o detta al volo: Canvas capisce da solo cos\'è</string>
 
-    <style name="WidgetHeadline">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">6dp</item>
-        <item name="android:ellipsize">end</item>
-        <item name="android:maxLines">2</item>
-        <item name="android:textColor">@color/widget_text</item>
-        <item name="android:textSize">13sp</item>
-    </style>
+    <dimen name="widget_radius">24dp</dimen>
+    <dimen name="widget_inner_radius">16dp</dimen>
 
-    <!-- Righe di "Adesso": una sola riga ciascuna, in evidenza rispetto alle notizie. -->
-    <style name="WidgetBrief">
-        <item name="android:layout_width">match_parent</item>
+    <!-- L'etichetta maiuscola sopra un blocco, come SectionHeader nell'app. -->
+    <style name="WidgetLabel">
+        <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">2dp</item>
-        <item name="android:ellipsize">end</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:letterSpacing">0.08</item>
         <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/widget_accent</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">11sp</item>
     </style>
 
-    <!-- Widget "Da fare": una riga per promemoria, alta abbastanza da toccare il cerchio. -->
-    <style name="WidgetTaskRow">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">36dp</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:orientation">horizontal</item>
-        <item name="android:visibility">gone</item>
-    </style>
-
-    <style name="WidgetTaskCheck">
-        <item name="android:layout_width">36dp</item>
-        <item name="android:layout_height">36dp</item>
-        <item name="android:padding">8dp</item>
-        <item name="android:layout_marginStart">-8dp</item>
-        <item name="android:src">@drawable/widget_check</item>
-    </style>
-
-    <style name="WidgetTaskText">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">match_parent</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginStart">4dp</item>
-        <item name="android:gravity">center_vertical</item>
-        <item name="android:ellipsize">end</item>
+    <!-- Il numero grande: temperatura, euro, giga. -->
+    <style name="WidgetBig">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_display_semibold</item>
+        <item name="android:includeFontPadding">false</item>
         <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">30sp</item>
+    </style>
+
+    <style name="WidgetText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_regular</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/widget_text</item>
         <item name="android:textSize">14sp</item>
     </style>
 
-    <style name="WidgetTaskTime">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginStart">8dp</item>
-        <item name="android:maxLines">1</item>
+    <style name="WidgetSub" parent="WidgetText">
         <item name="android:textColor">@color/widget_text_secondary</item>
         <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Il tasto tondo pieno in alto a destra o accanto al campo. -->
+    <style name="WidgetRoundButton">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:padding">9dp</item>
+        <item name="android:background">@drawable/widget_round_accent</item>
     </style>
 </resources>

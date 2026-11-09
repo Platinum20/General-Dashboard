@@ -228,7 +228,7 @@ import com.platinum20.dashboard.ui.screens.ExpensesScreen
 import com.platinum20.dashboard.ui.screens.SimScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
-import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.Widgets
 import com.platinum20.dashboard.work.MorningWorker
 import com.platinum20.dashboard.work.RainAlertWorker
 import com.platinum20.dashboard.work.RefreshWorker
@@ -263,6 +263,14 @@ data class OpenRequest(
         /** Video, audio o link condiviso da un'altra app (url = indirizzo o content://). */
         const val PLAY = "play"
         const val UPDATES = "updates"
+        /** Dai widget: scheda di un promemoria (url = id, source = ItemKind), di un evento (url = "id/inizio/fine"). */
+        const val ITEM = "item"
+        const val EVENT = "event"
+        const val EXPENSES = "expenses"
+        const val SIM = "sim"
+        /** Widget Scrivi e "+" del Calendario: la barra si apre già pronta per scrivere, o in ascolto. */
+        const val WRITE = "write"
+        const val VOICE = "voice"
 
         private const val EXTRA_TARGET = "open_target"
         private const val EXTRA_URL = "open_url"
@@ -315,7 +323,7 @@ class MainActivity : ComponentActivity() {
         val app = applicationContext
         lifecycleScope.launch(Dispatchers.Default) {
             runCatching {
-                if (DashboardWidget.hasWidgets(app)) RefreshWorker.schedule(app)
+                if (Widgets.hasAny(app)) RefreshWorker.schedule(app)
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
@@ -1016,6 +1024,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         if (saved != null) SavedLinks.open(context, saved) { navController.navigate(it) }
         else navController.navigate(Routes.noteEdit(id))
     }
+    // Il microfono del widget Scrivi: si detta appena la barra c'è (startDictation è definito più sotto).
+    var voiceRequested by remember { mutableStateOf(false) }
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
         runCatching {
@@ -1035,6 +1045,17 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.UPDATES)
                 }
                 OpenRequest.WEATHER -> navController.navigate(Routes.WEATHER)
+                OpenRequest.ITEM -> request.url.toLongOrNull()?.let { id ->
+                    val kind = runCatching { ItemKind.valueOf(request.source) }.getOrDefault(ItemKind.TASK)
+                    navController.navigate(Routes.noteItem(kind, id))
+                }
+                OpenRequest.EVENT -> request.url.split("/").mapNotNull { it.toLongOrNull() }.takeIf { it.size == 3 }?.let { (id, begin, end) ->
+                    navController.navigate(Routes.calendarEvent(id, begin, end))
+                }
+                OpenRequest.EXPENSES -> navController.navigate(Routes.expenses())
+                OpenRequest.SIM -> navController.navigate(Routes.SIM)
+                OpenRequest.WRITE -> CaptureComposer.open()
+                OpenRequest.VOICE -> voiceRequested = true
                 OpenRequest.RECAP -> Unit
                 OpenRequest.ARTICLE -> if (request.url.isNotBlank()) {
                     navController.navigate(Routes.reader(request.url, request.source, request.title))
@@ -1166,6 +1187,16 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
         }
         true
+    }
+    // Dal widget Scrivi: si ascolta a mani libere (bloccato), si conferma con "Inserisci" come tenendo premuto.
+    LaunchedEffect(voiceRequested) {
+        if (!voiceRequested) return@LaunchedEffect
+        voiceRequested = false
+        delay(350)
+        if (startDictation()) {
+            delay(250)
+            dictation.lock()
+        }
     }
 
     // Le pagine sono la sorgente del vetro: barra in basso e mini player le sfocano sotto di sé.

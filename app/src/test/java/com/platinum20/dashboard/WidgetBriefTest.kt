@@ -30,36 +30,34 @@ class WidgetBriefTest {
         NotesStore.init(context)
     }
 
-    @Test fun soloPaccoEAbitudineHannoIlBottone() {
+    @Test fun ilBottoneFattoSoloSuUnaCosaSola() {
         val lines = listOf(
-            BriefLine(BriefKind.TASK, "Bollette scadute", action = BriefAction.TASK_DONE, targetIds = listOf(1)),
+            BriefLine(BriefKind.TASK, "Bollette scadute", urgent = true, action = BriefAction.TASK_DONE, targetIds = listOf(1)),
             BriefLine(BriefKind.PARCEL, "Cuffie arrivano oggi", action = BriefAction.PARCEL_ARRIVED, targetIds = listOf(7)),
             BriefLine(BriefKind.HABIT, "Ancora da fare: 2 abitudini", action = BriefAction.HABITS, targetIds = listOf(3, 4)),
             BriefLine(BriefKind.WEATHER, "Pioggia dalle 17"),
         )
         assertEquals(
             listOf(
-                WidgetBrief("Cuffie arrivano oggi", BriefAction.PARCEL_ARRIVED, 7),
+                WidgetBrief("Bollette scadute", urgent = true, action = BriefAction.TASK_DONE, targetId = 1),
+                WidgetBrief("Cuffie arrivano oggi", action = BriefAction.PARCEL_ARRIVED, targetId = 7),
                 // Più abitudini insieme si spuntano nell'app: niente bottone.
                 WidgetBrief("Ancora da fare: 2 abitudini"),
             ),
-            WidgetRows.briefEntries(lines),
+            WidgetRows.briefEntries(lines, max = 3),
         )
     }
 
-    @Test fun andataERitornoEFormatoVecchio() {
-        val entries = listOf(WidgetBrief("Leggere 20 minuti", BriefAction.HABIT_DONE, 5), WidgetBrief("Pioggia dalle 17"))
-        assertEquals(entries, WidgetRows.decodeBrief(WidgetRows.encodeBrief(entries)))
-        // Fino alla 1.110 si salvavano solo i testi.
-        assertEquals(listOf(WidgetBrief("Pioggia dalle 17"), WidgetBrief("Compleanno di Marco")), WidgetRows.decodeBrief("[\"Pioggia dalle 17\",\"Compleanno di Marco\"]"))
-        assertEquals(emptyList<WidgetBrief>(), WidgetRows.decodeBrief("non json"))
-        assertEquals(emptyList<WidgetBrief>(), WidgetRows.decodeBrief(null))
+    @Test fun righeSecondoLAltezza() {
+        assertEquals(0, WidgetRows.linesForHeight(110))
+        assertEquals(2, WidgetRows.linesForHeight(180))
+        assertEquals(5, WidgetRows.linesForHeight(600))
     }
 
-    @Test fun dopoLAzioneLaRigaSparisce() {
-        val entries = listOf(WidgetBrief("Cuffie", BriefAction.PARCEL_ARRIVED, 7), WidgetBrief("Pioggia"))
-        assertEquals(listOf(WidgetBrief("Pioggia")), WidgetRows.withoutTarget(entries, BriefAction.PARCEL_ARRIVED, 7))
-        assertEquals(entries, WidgetRows.withoutTarget(entries, BriefAction.HABIT_DONE, 7))
+    @Test fun ilBottoneSpuntaIlPromemoria() {
+        val t = NotesStore.addTaskAt("Pagare il bollo dal widget", System.currentTimeMillis() - 60_000)
+        tap(BriefAction.TASK_DONE, t.id)
+        assertTrue(NotesStore.task(t.id)!!.done)
     }
 
     private fun tap(action: BriefAction, id: Long) = DashboardWidget().onReceive(

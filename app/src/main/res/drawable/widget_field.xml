@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Il "campo" del widget Scrivi: la stessa pillola della barra in basso dell'app. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_chip" />
+    <corners android:radius="999dp" />
+</shape>

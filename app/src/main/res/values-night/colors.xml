@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_background">#F2111318</color>
-    <color name="widget_text">#FFE2E2E9</color>
-    <color name="widget_text_secondary">#FFC4C6D0</color>
-    <color name="widget_accent">#FFAEC6FF</color>
-    <color name="widget_late">#FFF2B8B5</color>
+    <color name="widget_background">#FF1C1B19</color>
+    <color name="widget_text">#FFEFECE6</color>
+    <color name="widget_text_secondary">#FFA8A39A</color>
+    <color name="widget_accent">#FF9AABFF</color>
+    <color name="widget_on_accent">#FF0D1A5C</color>
+    <color name="widget_late">#FFFF8F66</color>
+    <color name="widget_divider">#FF2C2A27</color>
+    <color name="widget_chip">#FF2E2C28</color>
+    <color name="widget_hero">#FF26326E</color>
+    <color name="widget_on_hero">#FFDDE2FF</color>
+    <color name="widget_on_hero_secondary">#FFAEB7EE</color>
 </resources>
