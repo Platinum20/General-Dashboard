@@ -43,7 +43,7 @@ internal fun rememberShift(eventId: Long): Shift? {
  */
 @Composable
 internal fun ShiftWhoRows(shift: Shift) {
-    val creators = ShiftParse.creators(shift.title)
+    val creators = ShiftParse.creators(shift.title).map(ShiftParse::firstName)
     if (creators.isNotEmpty()) {
         RowDivider()
         // Una creator per riga: si leggono tutte intere senza andare a capo a metà nome.

@@ -41,7 +41,7 @@ class ExpenseTimeOrderTest {
         assertEquals(listOf(3L, 2L, 4L, 1L), today.rows.mapNotNull { it.expense?.id })
     }
 
-    /** 1.398: le spese stanno fra eventi e turni secondo l'ora, non tutte in cima (Antonio). */
+    /** 1.400: le spese stanno fra eventi e turni secondo l'ora, non tutte in cima (Antonio). */
     @Test fun speseInMezzoAgliEventi() {
         fun ms(h: Int) = oggi.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
         val events = listOf(

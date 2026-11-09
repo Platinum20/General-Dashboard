@@ -187,7 +187,7 @@ internal fun dueDays(
         val spentToday = expenses.filter { it.date == today }.sortedWith(Expenses.byTime)
         val todayRows = buildList {
             add(DueRow("spend-today", today, Long.MIN_VALUE, spend = spentToday.sumOf { it.cents }))
-            // Spese, cose in ritardo, eventi, turni e treni di oggi tutti insieme in ordine d'orario (Antonio, 1.398).
+            // Spese, cose in ritardo, eventi, turni e treni di oggi tutti insieme in ordine d'orario (Antonio, 1.400).
             addAll((spentToday.map { e -> DueRow("expense-${e.id}", today, expenseAt(e, zone), expense = e) } +
                 late.sortedBy { it.at }.map { it.copy(day = today, overdueFrom = it.day) } +
                 dated.filter { it.day == today }).sortedBy { it.at })

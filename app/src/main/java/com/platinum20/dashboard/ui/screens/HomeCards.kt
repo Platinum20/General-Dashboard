@@ -159,7 +159,7 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
     // Le cose già spuntate solo nel calendario intero, non nella card (Antonio). Le spese di oggi invece sì,
-    // una per una come nella pagina: tutto quello di oggi sta sotto OGGI (Antonio, 1.398).
+    // una per una come nella pagina: tutto quello di oggi sta sotto OGGI (Antonio, 1.400).
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
         .filter { it.rows.isNotEmpty() }
     val all = timelineEntries(pending, today, months = true, expenses = expenses)
