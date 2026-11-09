@@ -99,6 +99,8 @@ data class TimelineEntry(
     val later: Boolean = false,
     /** Un evento con inizio e fine (treni, turni, impegni): la riga mostra inizio e fine uniti da una linea. */
     val trip: TripStops? = null,
+    /** La prima riga di un giorno dopo un altro giorno: sopra c'è un sottile divisore (Antonio). */
+    val divider: Boolean = false,
 )
 
 /**
@@ -116,9 +118,25 @@ data class TripStops(
     /** Sotto il nome, su quante righe servono: le creator di un turno. */
     val names: String? = null,
 ) {
+    /**
+     * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
+     * (Antonio). 15 min ≈ 22, 1 h = 30, 5 h ≈ 49, da 8 h in su 56: si vede quanto dura senza riempire lo schermo.
+     */
+    fun midDp(): Float {
+        val hours = ((end - begin).coerceAtLeast(0) / 60_000L) / 60f
+        val log2 = (kotlin.math.ln(1.0 + hours) / kotlin.math.ln(2.0)).toFloat()
+        return (MID_MIN_DP + MID_STEP_DP * log2).coerceAtMost(MID_MAX_DP)
+    }
+
     /** Quanto del viaggio è fatto (0..1) adesso; null prima di partire e dopo l'arrivo. */
     fun progress(now: Long): Float? =
         if (end > begin && now in begin until end) (now - begin).toFloat() / (end - begin) else null
+
+    companion object {
+        const val MID_MIN_DP = 18f
+        const val MID_STEP_DP = 12f
+        const val MID_MAX_DP = 56f
+    }
 }
 
 /** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
@@ -191,6 +209,8 @@ fun TimelineRow(
             onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } })
     }
     if (entry.later && (!showMonth || entry.month == null)) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick)
+    // Fra un giorno e l'altro un filo sottile: si capisce dove finisce un giorno. Dove c'è già un segno, no.
+    if (entry.divider && !entry.later && !(showMonth && entry.month != null)) TimelineDayDivider(start, line, top)
     if (entry.todayHeader) {
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
@@ -329,7 +349,6 @@ fun TimelineRow(
 }
 
 private val TRIP_LINE = 30.dp
-private val TRIP_MID = 18.dp
 private val TRIP_PAD = 4.dp
 
 /**
@@ -345,7 +364,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
     Row(modifier.height(IntrinsicSize.Min).padding(vertical = TRIP_PAD)) {
         // La linea va dalla partenza alla fine anche quando sotto il nome ci sono altre righe (le creator).
         Box(
-            Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + TRIP_MID).drawBehind {
+            Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.midDp().dp).drawBehind {
                 val x = size.width / 2
                 val top = TRIP_LINE.toPx() / 2
                 val bottom = size.height - TRIP_LINE.toPx() / 2
@@ -360,7 +379,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             TripStop(trip.departAt, trip.from, text, title, trip.names)
-            Box(Modifier.height(TRIP_MID), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.height(trip.midDp().dp), contentAlignment = Alignment.CenterStart) {
                 Text(
                     trip.middle,
                     style = MaterialTheme.typography.labelMedium,
@@ -401,6 +420,16 @@ private val GUTTER = 22.dp
  * dal bordo dello schermo, cioè sul centro del + rotondo in basso a destra (60 dp, a 16 dp dal bordo).
  */
 private val LINE_END = 19.dp
+
+/** Il divisore fra due giorni: un filo a sinistra che si ferma prima della linea, che resta continua. */
+@Composable
+private fun TimelineDayDivider(start: Dp, line: Color, top: Boolean) {
+    Row(Modifier.fillMaxWidth().height(9.dp).padding(start = start, end = LINE_END), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f).height(1.dp).drawBehind { drawRect(line.copy(alpha = 0.5f)) })
+        Spacer(Modifier.width(12.dp))
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = null, top = top, bottom = top)
+    }
+}
 
 /** Lo spazio vuoto fra due giorni lontani: solo la linea, allineata a quella delle righe. */
 @Composable
