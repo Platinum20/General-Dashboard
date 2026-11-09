@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.391.0
+**Riquadri di Media tutti uguali**
+- Titolo e autore stanno alla stessa altezza in ogni riquadro della fila: il titolo ha sempre le sue righe, l'autore sempre una
+- Le lettere non vengono più tagliate dagli angoli arrotondati dei riquadri
+- Vale per Media, Continua, Musica, Shorts e podcast seguiti
+
 ## 1.389.0
 **Calendario più ordinato**
 - Via "Più avanti": sotto OGGI c'è solo la giornata, poi i giorni uno per uno
