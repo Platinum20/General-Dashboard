@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.395.0
+**Niente più buco sotto gli eventi lontani**
+- Nel calendario, prima del segno di un nuovo mese non c'è più lo spazio vuoto: i compleanni di ogni anno (e le altre cose lontane) stanno uno sotto l'altro, ordinati
+
 ## 1.394.0
 **Riprendi è l'ultima cosa vista davvero**
 - In Media, "Riprendi" e "Continua" mettono al loro posto anche i video visti su YouTube dal PC o da altre app: quello visto per ultimo sta in cima, anche se l'avevi già iniziato in Canvas

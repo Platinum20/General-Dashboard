@@ -138,4 +138,13 @@ class UpcomingTest {
         assertEquals(listOf(Upcoming.SIM_RENEWAL), items.map { it.text })
         assertEquals(day, items.single().day)
     }
+
+    @Test
+    fun noGapAboveMonthMarker() {
+        val base = com.platinum20.dashboard.ui.screens.TimelineEntry("a", com.platinum20.dashboard.today.BriefKind.TASK, "Buon compleanno!", "Lun 29", 28f)
+        assertEquals(28f, com.platinum20.dashboard.ui.screens.timelineGap(base), 0.01f)
+        assertEquals(0f, com.platinum20.dashboard.ui.screens.timelineGap(base.copy(month = "GENNAIO 2029")), 0.01f)
+        // Se il mese è già disegnato sopra, la riga tiene il suo spazio.
+        assertEquals(28f, com.platinum20.dashboard.ui.screens.timelineGap(base.copy(month = "GENNAIO 2029"), showMonth = false), 0.01f)
+    }
 }
