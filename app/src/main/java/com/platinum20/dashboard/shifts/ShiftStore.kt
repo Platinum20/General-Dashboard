@@ -17,7 +17,7 @@ import java.io.File
 object ShiftStore {
     private const val PREFS = "shifts"
     private const val CAPTURES = "shift-captures.json"
-    private const val MAX_CAPTURES = 30
+    private const val MAX_CAPTURES = 60
     /** Rilettura con l'app aperta: spesso, perché un turno nuovo deve comparire subito. */
     const val STALE_MS = 5 * 60 * 1000L
 
@@ -39,6 +39,20 @@ object ShiftStore {
     @Volatile var timelineUrl: String? = null
         private set
 
+    /** Statistiche, chat di assistenza, errori: riempirebbero il file dei dati letti senza dire niente dei turni. */
+    private val NOISE = Regex("(?i)google-analytics|googletagmanager|sentry|intercom|hotjar|segment\\.io|mixpanel|amplitude|clarity\\.ms|doubleclick|facebook")
+
+    /** C'è qualcosa da mandare per sistemare la lettura (anche se nessun turno è stato riconosciuto). */
+    private val _hasData = MutableStateFlow(false)
+    val hasData: StateFlow<Boolean> = _hasData.asStateFlow()
+    /** Il testo visibile della pagina (la timeline come la vede Antonio), solo per il file dei dati letti. */
+    @Volatile private var pageText: String = ""
+
+    fun pageText(text: String) {
+        pageText = text.take(200_000)
+        _hasData.value = true
+    }
+
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
     private val captures = ArrayDeque<JSONObject>()
     private val requests = LinkedHashSet<String>()
@@ -58,6 +72,7 @@ object ShiftStore {
             val arr = JSONArray(File(app.filesDir, CAPTURES).readText())
             for (i in 0 until arr.length()) captures.addLast(arr.getJSONObject(i))
         }
+        _hasData.value = captures.isNotEmpty()
     }
 
     fun isStale(now: Long = System.currentTimeMillis()) = readAt.value < now - STALE_MS
@@ -67,7 +82,7 @@ object ShiftStore {
 
     /** Una risposta della pagina (chiamato dalla pagina, su un thread qualsiasi). */
     fun capture(url: String, status: Int, body: String) {
-        if (isPrivate(url)) return
+        if (isPrivate(url) || NOISE.containsMatchIn(url)) return
         if (status == 401 && _linked.value) { main.post { setExpired(true) }; return }
         if (status !in 200..299) return
         val read = ShiftParse.read(body, myIds, url = url)
@@ -77,6 +92,7 @@ object ShiftStore {
             captures.addLast(JSONObject().put("url", clean).put("at", System.currentTimeMillis()).put("turni", read?.mine?.size ?: -1).put("body", body.take(100_000)))
             while (captures.size > MAX_CAPTURES) captures.removeFirst()
         }
+        _hasData.value = true
         saveCaptures()
         // Tempo reale (WebSocket) o un turno solo che non è suo: si aggiunge e basta, non si toglie niente.
         val partial = read?.let { if (url.startsWith("ws") || (it.seen == 1 && it.mine.isEmpty())) it.additive() else it }
@@ -146,12 +162,20 @@ object ShiftStore {
         myIds = emptySet()
         timelineUrl = null
         synchronized(this) { captures.clear(); requests.clear() }
+        pageText = ""
+        _hasData.value = false
         val app = appContext ?: return
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
         File(app.filesDir, CAPTURES).delete()
     }
 
     fun capturesText(): String = synchronized(this) {
-        JSONObject().put("richieste", JSONArray(requests.toList())).put("risposte", JSONArray(captures.toList())).toString(1)
+        JSONObject()
+            .put("turni_letti", JSONArray(ShiftParse.toJson(_shifts.value)))
+            .put("pagina", timelineUrl ?: "")
+            .put("testo_pagina", pageText)
+            .put("richieste", JSONArray(requests.toList()))
+            .put("risposte", JSONArray(captures.toList()))
+            .toString(1)
     }
 }

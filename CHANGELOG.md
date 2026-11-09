@@ -1,8 +1,13 @@
 # Changelog
 
-## 1.378.0
+## 1.379.0
 **Video: lo scorrimento di lato muove la barra del tempo**
 - Scorrendo di lato sul video ora compare la barra del tempo e si muove il suo pallino, con l'anteprima del fotogramma sopra, esattamente come quando trascini la barra: niente più riquadro separato al centro
+
+## 1.378.0
+**Turni: manda i dati letti**
+- Nella pagina di accesso a Creators Pro c'è il tasto Condividi in alto: con la Timeline aperta manda tutto quello che Canvas ha letto, anche il testo della pagina
+- In Impostazioni › Account › Lavoro, "Salva i dati letti dei turni" c'è anche quando nessun turno è stato riconosciuto
 
 ## 1.377.0
 **Turni: accesso con Google**

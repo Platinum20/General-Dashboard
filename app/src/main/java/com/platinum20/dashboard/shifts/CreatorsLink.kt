@@ -73,6 +73,9 @@ object CreatorsLink {
     private object Bridge {
         @JavascriptInterface
         fun capture(url: String, status: Int, body: String) = ShiftStore.capture(url, status, body)
+
+        @JavascriptInterface
+        fun text(text: String) = ShiftStore.pageText(text)
     }
 
     /**
@@ -148,6 +151,14 @@ object CreatorsLink {
             }
         }
     }
+
+    /** Legge il testo visibile della pagina aperta (per il file dei dati letti), poi [then] sul thread principale. */
+    fun readText(view: WebView, then: () -> Unit) =
+        view.evaluateJavascript("(function(){try{return document.body?document.body.innerText:''}catch(e){return ''}})()") { raw ->
+            // evaluateJavascript restituisce la stringa in JSON: si toglie l'involucro.
+            ShiftStore.pageText(runCatching { org.json.JSONArray("[$raw]").optString(0) }.getOrDefault(raw.orEmpty()))
+            then()
+        }
 
     fun isLoginPage(url: String?) = url != null && Regex("(?i)/(login|signin|sign-in|auth|register)").containsMatchIn(url)
 
