@@ -220,7 +220,8 @@ fun TimelineRow(
     val monthShown = showMonth && entry.month != null
     val laterShown = entry.later && !monthShown
     // Sotto un segno (mese, PIÙ AVANTI) il giorno sta sulla riga del segno, non su una riga vuota sua (Antonio).
-    val dayOnMarker = headed && (monthShown || laterShown)
+    // Dal 1.389 il giorno ha sempre la sua riga, col nome a sinistra e la linea fino al pallino (Antonio).
+    val dayOnMarker = false
     val dayColor = dayLabelColor(entry.late, entry.past)
     if (monthShown) entry.month?.let {
         TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
@@ -234,7 +235,7 @@ fun TimelineRow(
     // passa sopra il titolo della prima cosa del giorno. Dove c'è già un segno (mese, PIÙ AVANTI) niente filo.
     if (headed && !dayOnMarker) TimelineDayHeader(
         entry.dayLabel!!, start, line, top,
-        rule = entry.divider && !entry.later && !(showMonth && entry.month != null),
+        rule = true,
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
@@ -448,8 +449,8 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
 }
 
 /**
- * L'intestazione di un giorno: a destra il nome e il pallino grande sulla linea, a sinistra il filo che separa
- * dal giorno prima, sulla stessa riga del nome ([rule]; no dove sopra c'è già il segno del mese).
+ * L'intestazione di un giorno: a sinistra il nome, poi la linea che arriva fino al pallino grande sulla linea
+ * del tempo, come OGGI e i mesi: separa dal giorno prima.
  */
 @Composable
 private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
@@ -463,11 +464,11 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line.copy(alpha = 0.5f)) })
+        // Il nome tutto a sinistra e la linea che arriva fino al pallino: "Domani ——————— ●" (Antonio).
+        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1, textAlign = TextAlign.End)
-        Spacer(Modifier.width(4.dp))
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true)
+        Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true, joinLeft = rule)
     }
 }
 
@@ -482,12 +483,14 @@ private fun TimelineGap(height: Dp, line: Color, top: Boolean) {
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null) {
+private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null, joinLeft: Boolean = false) {
     Box(
         modifier.width(GUTTER).drawBehind {
             val x = size.width / 2
             val mid = dotY?.toPx() ?: (size.height / 2)
             val stroke = 2.dp.toPx()
+            // La linea del giorno entra fino al pallino.
+            if (joinLeft) drawLine(line, Offset(0f, mid), Offset(x, mid), 1.dp.toPx())
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
             dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
