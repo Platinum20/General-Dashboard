@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.381.0
+**Ogni evento come i treni**
+- Turni, impegni e ogni evento con un inizio e una fine ora sono una riga sola come i treni: in alto l'ora d'inizio e il nome, in basso l'ora di fine, in mezzo una linea con quanto dura (e il luogo)
+- Mentre l'evento è in corso, il pallino sulla linea ti dice a che punto sei
+- Anche la pagina dell'evento mostra inizio, linea e fine
+- Gli eventi di tutto il giorno restano una riga semplice
+
 ## 1.380.0
 **Turni: ora li legge davvero**
 - Grazie ai dati che mi hai mandato, Canvas capisce la Timeline di Creators Pro: i tuoi turni compaiono nel calendario con l'ora giusta (Morning 7–12, Afternoon 12–17, Evening 17–22, Night 22–3, After 3–7)

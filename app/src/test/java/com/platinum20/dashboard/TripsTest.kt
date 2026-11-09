@@ -67,6 +67,30 @@ class TripsTest {
         assertEquals("Pescara Centrale · Dom 15", tripStops(night, LocalDate.of(2026, 11, 9), zone)!!.to)
     }
 
+    @Test fun ogniEventoComeUnTreno() {
+        val zone = ZoneId.of("Europe/Rome")
+        val start = LocalDateTime.of(2026, 11, 14, 7, 0).atZone(zone).toInstant().toEpochMilli()
+        val stop = LocalDateTime.of(2026, 11, 14, 12, 0).atZone(zone).toInstant().toEpochMilli()
+        val shift = CalendarEvent(-3, "Turno Morning", start, stop, false, "Ufficio", 0)
+        val row = tripStops(shift, LocalDate.of(2026, 11, 9), zone)!!
+        assertEquals("07:00", row.departAt)
+        assertEquals("Turno Morning", row.from)
+        assertEquals("12:00", row.arriveAt)
+        assertEquals("", row.to)
+        assertEquals("5 h · Ufficio", row.middle)
+        // Sulla pagina dell'evento il nome c'è già: Inizio e Fine, senza luogo.
+        val page = tripStops(shift, LocalDate.of(2026, 11, 9), zone, labels = true)!!
+        assertEquals("Inizio", page.from)
+        assertEquals("Fine", page.to)
+        assertEquals("5 h", page.middle)
+        // Turno di notte: accanto alla fine il giorno dopo.
+        val night = shift.copy(end = LocalDateTime.of(2026, 11, 15, 3, 0).atZone(zone).toInstant().toEpochMilli(), location = "")
+        assertEquals("Dom 15", tripStops(night, LocalDate.of(2026, 11, 9), zone)!!.to)
+        // Tutto il giorno o senza durata: riga normale.
+        assertEquals(null, tripStops(shift.copy(allDay = true), LocalDate.of(2026, 11, 9), zone))
+        assertEquals(null, tripStops(shift.copy(end = start), LocalDate.of(2026, 11, 9), zone))
+    }
+
     @Test fun speseDelTreno() {
         assertEquals(true, Trips.isTrainMerchant("Trenitalia"))
         assertEquals(true, Trips.isTrainMerchant("Italo"))

@@ -96,7 +96,7 @@ data class TimelineEntry(
     val todayHeader: Boolean = false,
     /** La prima cosa dopo oggi nel mese in corso: sopra c'è il segno "PIÙ AVANTI" (Antonio). */
     val later: Boolean = false,
-    /** Un viaggio in treno: la riga mostra partenza e arrivo uniti da una linea, non il nome. */
+    /** Un evento con inizio e fine (treni, turni, impegni): la riga mostra inizio e fine uniti da una linea. */
     val trip: TripStops? = null,
 )
 
@@ -251,7 +251,7 @@ fun TimelineRow(
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
         if (entry.trip != null) {
-            TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f))
+            TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)))
         } else {
         if (onIcon != null || entry.done) {
             Icon(
@@ -334,7 +334,7 @@ private val TRIP_PAD = 4.dp
  * "sei qui" mentre sei in treno; a destra ore e stazioni, e in mezzo durata e treno.
  */
 @Composable
-internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Modifier) {
+internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Modifier, title: Modifier = Modifier) {
     val text = if (past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
@@ -355,7 +355,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            TripStop(trip.departAt, trip.from, text)
+            TripStop(trip.departAt, trip.from, text, title)
             Box(Modifier.height(TRIP_MID), contentAlignment = Alignment.CenterStart) {
                 Text(
                     trip.middle,
@@ -371,11 +371,12 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
 }
 
 @Composable
-private fun TripStop(time: String, station: String, color: Color) {
+private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier) {
     Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
         Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
-        Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
+        Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
     }
 }
 

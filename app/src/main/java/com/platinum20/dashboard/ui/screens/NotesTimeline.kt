@@ -336,23 +336,36 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
 }
 
 /**
- * Un treno sulla linea del tempo: partenza e arrivo con ora e stazione, in mezzo durata e treno.
- * Se arriva un altro giorno (notte), accanto alla stazione c'è il giorno d'arrivo.
+ * Un evento con inizio e fine sulla linea del tempo, come i treni (Antonio): in alto l'ora d'inizio e il nome
+ * (per un treno la stazione di partenza), in basso l'ora di fine (per un treno l'arrivo), in mezzo quanto dura
+ * con il treno o il luogo. Se finisce un altro giorno (notte), accanto alla fine c'è quel giorno.
+ * [labels] = sulla pagina dell'evento, dove il nome c'è già: "Inizio" e "Fine" al posto del nome.
+ * Null per gli eventi di tutto il giorno o senza durata: quelli restano una riga semplice.
  */
-internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): TripStops? {
-    val trip = event.trip ?: return null
-    if (event.allDay) return null
+internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), labels: Boolean = false): TripStops? {
+    if (event.allDay || event.end <= event.begin) return null
+    val trip = event.trip
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     val from = Instant.ofEpochMilli(event.begin).atZone(zone)
     val to = Instant.ofEpochMilli(event.end).atZone(zone)
-    val arriveDay = to.toLocalDate().takeIf { it != from.toLocalDate() }
-        ?.let { " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }.orEmpty()
-    return TripStops(
+    val endDay = to.toLocalDate().takeIf { it != from.toLocalDate() }
+        ?.let { com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }
+    val duration = com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end)
+    return if (trip != null) TripStops(
         departAt = from.format(hour),
         from = trip.from ?: "Partenza",
         arriveAt = to.format(hour),
-        to = trip.to + arriveDay,
-        middle = listOfNotNull(com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end), trip.train).joinToString(" · "),
+        to = trip.to + endDay?.let { " · $it" }.orEmpty(),
+        middle = listOfNotNull(duration, trip.train).joinToString(" · "),
+        begin = event.begin,
+        end = event.end,
+    ) else TripStops(
+        departAt = from.format(hour),
+        from = if (labels) "Inizio" else event.title.ifBlank { "Evento" },
+        arriveAt = to.format(hour),
+        to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
+        // Il luogo sta già nella sua riga sulla pagina dell'evento.
+        middle = listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
         begin = event.begin,
         end = event.end,
     )
