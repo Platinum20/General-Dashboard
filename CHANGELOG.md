@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.363.0
+**Treni: il viaggio su una riga sola**
+- Nel calendario un treno non è più diviso in "Partenza" e "Arrivo" su due righe: è una riga sola con l'ora e la stazione di partenza in alto, quelle di arrivo in basso, e una linea che le unisce
+- In mezzo quanto dura il viaggio e che treno è (per esempio "4 h 32 min · Intercity 612"); se arrivi il giorno dopo, accanto all'arrivo c'è il giorno
+- Mentre sei in treno, un pallino sulla linea mostra a che punto del viaggio sei
+- Nella scheda del treno lo stesso viaggio disegnato, poi carrozza, posto e PNR; tolte le righe che non dicevano niente ("Non si ripete", il luogo uguale alla partenza)
+- Le spese Trenitalia e Italo hanno l'icona del treno
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte

@@ -20,6 +20,8 @@ data class CalendarEvent(
     val allDay: Boolean,
     val location: String,
     val color: Int,
+    /** Un viaggio in treno ([Trips.shape]): partenza e arrivo sulla stessa riga. */
+    val trip: Trip? = null,
 )
 
 /** Eventi dei calendari del telefono (Google, Samsung, Outlook…), letti dal provider di sistema. */
