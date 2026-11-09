@@ -75,6 +75,8 @@ class ShiftTour {
                 PayMonth("m1", at(month, 0), at(month.plusMonths(1), 0) - 1, 747.04, 4980.0, 7, 36.0, 604.0, 19, "open"),
             )))
             .commit()
+        // Il negozio è un singleton già aperto da altri test: si riapre per leggere questi dati.
+        ShiftStore::class.java.getDeclaredField("appContext").apply { isAccessible = true }.set(null, null)
         ShiftStore.init(context)
     }
 
