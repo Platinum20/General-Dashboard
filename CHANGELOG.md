@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.367.0
+**Widget rifatti da capo, e cinque nuovi**
+- Tutti i widget hanno lo stile di Canvas: carta chiara o scuro col telefono, blu e arancio, font Inter, angoli come quelli del launcher
+- Oggi: il blocco colorato col meteo e sotto le righe di Adesso, con il tasto Fatto per promemoria, pacchi e abitudini
+- Calendario (era "Da fare"): oggi con eventi, turni, promemoria da spuntare e date, poi i prossimi giorni finché c'è posto; tocchi una riga e si apre la sua scheda, il + apre la barra per scrivere
+- Nuovo News: le storie nuove dall'ultima visita, con quante testate ne parlano; tocchi e leggi
+- Nuovo Spese: quanto hai speso questo mese e oggi, e il saldo del conto se è collegato
+- Nuovo SIM: giga rimasti con la barra, rinnovo e credito
+- Nuovo Meteo: temperatura grande e, se lo allarghi, le prossime ore
+- Nuovo Scrivi: la barra di Canvas sulla schermata Home; tocchi il campo e scrivi, tocchi il microfono e detti a mani libere
+- I widget si ridisegnano subito quando cambia qualcosa, anche spuntando dall'app
+
 ## 1.365.0
 **I tuoi turni di lavoro nel calendario**
 - In Impostazioni › Account › Lavoro c'è "Turni Creators Pro": entri una volta sola sul sito dei turni e apri la Timeline
