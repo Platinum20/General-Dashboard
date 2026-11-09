@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.362.0
+**Il QR del biglietto nell'evento**
+- Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
+- Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
+- Una volta trovato resta sul telefono: si apre anche senza rete
+- Serve la posta collegata con la password per app (Impostazioni › Account › Posta)
+
 ## 1.361.0
 **Eventi, promemoria e date: le stesse cose**
 - Promemoria e date da ricordare sono diventati una cosa sola: un compleanno è un promemoria "tutto il giorno" che si ripete ogni anno, e le date che avevi ci sono tutte

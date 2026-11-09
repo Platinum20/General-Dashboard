@@ -44,6 +44,13 @@ object MimeParse {
         return ""
     }
 
+    /** L'HTML della mail così com'è (per le immagini), null se non c'è. */
+    fun htmlBody(raw: String): String? {
+        val parts = mutableListOf<Pair<String, String>>()
+        collect(raw, parts, depth = 0)
+        return parts.firstOrNull { it.first == "text/html" }?.second
+    }
+
     private fun collect(entity: String, out: MutableList<Pair<String, String>>, depth: Int) {
         if (depth > 6) return
         val headers = headers(entity)
@@ -59,6 +66,38 @@ object MimeParse {
         if (disposition.startsWith("attachment") || "filename" in disposition) return
         val bytes = transferDecode(body, headers["content-transfer-encoding"])
         out += type to charset(bytes, params["charset"])
+    }
+
+    /** Un allegato o un'immagine della mail: tipo in minuscolo, nome del file (se c'è) e byte veri. */
+    class Part(val type: String, val name: String, val bytes: ByteArray)
+
+    /**
+     * Le immagini e i PDF della mail, allegati o dentro il testo (il QR di un biglietto sta in uno dei due).
+     * L'HTML delle mail resta fuori: si legge con [bodyText].
+     */
+    fun binaryParts(raw: String): List<Part> {
+        val out = mutableListOf<Part>()
+        collectBinary(raw, out, depth = 0)
+        return out
+    }
+
+    private fun collectBinary(entity: String, out: MutableList<Part>, depth: Int) {
+        if (depth > 6) return
+        val headers = headers(entity)
+        val (type, params) = contentType(headers["content-type"])
+        val body = split(entity).second
+        if (type.startsWith("multipart/")) {
+            val boundary = params["boundary"] ?: return
+            for (child in parts(body, boundary)) collectBinary(child, out, depth + 1)
+            return
+        }
+        val name = params["name"] ?: Regex("filename\\*?=\"?([^\";]+)", RegexOption.IGNORE_CASE)
+            .find(headers["content-disposition"].orEmpty())?.groupValues?.get(1).orEmpty()
+        // Molti mittenti mandano il PDF come "application/octet-stream": conta anche il nome.
+        val pdf = type == "application/pdf" || (type == "application/octet-stream" && name.lowercase().endsWith(".pdf"))
+        if (!type.startsWith("image/") && !pdf) return
+        val bytes = transferDecode(body, headers["content-transfer-encoding"])
+        if (bytes.isNotEmpty()) out += Part(if (pdf) "application/pdf" else type, name, bytes)
     }
 
     /** Le parti tra i separatori "--boundary"; l'ultima può mancare della chiusura se la mail è tagliata. */
