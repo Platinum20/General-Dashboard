@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,9 @@ import java.time.LocalDate
 internal object MediaShelves {
     /** Quante copertine al massimo in una fila: il resto sta nella pagina intera. */
     const val MAX = 12
+
+    /** Righe del titolo nelle file di Media e in Continua: tutte uguali, così le tessere di una fila sono alte uguali. */
+    const val TITLE_LINES = 3
 
     /** Che cosa mostra la fila Musica: prima i mix, poi gli ascoltati di recente, senza doppioni. */
     fun <T> mix(first: List<T>, then: List<T>, key: (T) -> String, max: Int = MAX): List<T> =
@@ -71,15 +75,38 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
             }
         }
         Spacer(Modifier.height(6.dp))
-        // Tre righe: i titoli lunghi (episodi, mix) si leggono interi invece di fermarsi a metà (1.361).
-        Text(title, style = MaterialTheme.typography.labelLarge, minLines = 2, maxLines = 3, overflow = TextOverflow.Ellipsis)
-        if (subtitle.isNotBlank()) {
+        TileCaption(title, subtitle, titleLines = MediaShelves.TITLE_LINES)
+    }
+}
+
+/**
+ * Il testo sotto ogni copertina di Media (1.390, Antonio: altezze diverse tra le tessere): il titolo occupa
+ * sempre [titleLines] righe e il sottotitolo sempre una, anche se vuoto, così titolo e autore stanno alla
+ * stessa altezza in tutta la fila. Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
+ */
+@Composable
+internal fun TileCaption(title: String, subtitle: String?, titleLines: Int = 2, centered: Boolean = false, modifier: Modifier = Modifier) {
+    val align = if (centered) TextAlign.Center else TextAlign.Start
+    Column(modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp)) {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            minLines = titleLines,
+            maxLines = titleLines,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = align,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (subtitle != null) {
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                minLines = 1,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = align,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
