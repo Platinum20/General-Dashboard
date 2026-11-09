@@ -145,7 +145,10 @@ fun ShiftsLoginScreen(onClose: () -> Unit) {
     val done = readAt > startedAt && url?.contains("timeline", ignoreCase = true) == true
     LaunchedEffect(done) {
         if (done) {
-            kotlinx.coroutines.delay(4_000)
+            // Poi i turni di tutte le creator, non solo quella aperta.
+            kotlinx.coroutines.delay(1_500)
+            CreatorsLink.pull(webView)
+            kotlinx.coroutines.delay(6_000)
             onClose()
         }
     }

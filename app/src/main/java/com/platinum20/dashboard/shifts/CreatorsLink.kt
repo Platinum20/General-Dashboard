@@ -25,7 +25,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 object CreatorsLink {
     const val HOME = "https://app.creatorspro.com/"
     /** La timeline è un'app web: il tempo per caricare i turni della settimana. */
-    private const val READ_MS = 30_000L
+    private const val READ_MS = 60_000L
 
     /** Intercetta fetch e XMLHttpRequest della pagina e passa a Canvas le risposte JSON (anche da altri domini: l'API può stare altrove). */
     private val script = """
@@ -34,18 +34,33 @@ object CreatorsLink {
           function send(u, s, t) {
             try { if (t && t.length < 3000000 && /^\s*[\[{]/.test(t)) CanvasShift.capture(String(u), s, t); else if (s == 401) CanvasShift.capture(String(u), s, ''); } catch (e) {}
           }
+          // Le intestazioni delle chiamate all'API (il token d'accesso): servono per rileggere i turni di tutte le creator.
+          function keep(u, h) {
+            try {
+              if (!/api\.creatorspro\.com/.test(String(u)) || !h) return;
+              var o = {};
+              if (typeof h.forEach === 'function' && !Array.isArray(h)) h.forEach(function (v, k) { o[k] = v; });
+              else if (Array.isArray(h)) h.forEach(function (p) { o[p[0]] = p[1]; });
+              else for (var k in h) o[k] = h[k];
+              delete o['content-type']; delete o['Content-Type'];
+              if (Object.keys(o).length) window.__cvHeaders = o;
+            } catch (e) {}
+          }
           var f = window.fetch;
           if (f) window.fetch = function () {
             var a = arguments;
+            try { var req = a[0]; keep(req && req.url ? req.url : req, (a[1] && a[1].headers) || (req && req.headers)); } catch (e) {}
             return f.apply(this, a).then(function (r) {
               try { var u = r.url || (a[0] && a[0].url) || a[0]; r.clone().text().then(function (t) { send(u, r.status, t); }); } catch (e) {}
               return r;
             });
           };
-          var open = XMLHttpRequest.prototype.open, sendX = XMLHttpRequest.prototype.send;
-          XMLHttpRequest.prototype.open = function (m, u) { this.__u = u; return open.apply(this, arguments); };
+          var open = XMLHttpRequest.prototype.open, sendX = XMLHttpRequest.prototype.send, setH = XMLHttpRequest.prototype.setRequestHeader;
+          XMLHttpRequest.prototype.open = function (m, u) { this.__u = u; this.__h = {}; return open.apply(this, arguments); };
+          XMLHttpRequest.prototype.setRequestHeader = function (k, v) { try { this.__h[k] = v; } catch (e) {} return setH.apply(this, arguments); };
           XMLHttpRequest.prototype.send = function () {
             var x = this;
+            keep(x.__u, x.__h);
             x.addEventListener('load', function () {
               try {
                 var u = x.responseURL || x.__u;
@@ -70,7 +85,52 @@ object CreatorsLink {
         })();
     """.trimIndent()
 
+    /**
+     * La pagina mostra una creator alla volta, i turni di Antonio sono su tutte: con la sessione della
+     * pagina si chiedono gli eventi di ogni creator per questo mese e il prossimo. La fine la dice [Bridge.pulled].
+     */
+    private fun pullScript(ranges: List<Pair<String, String>>): String {
+        val list = ranges.joinToString(",") { "['${it.first}','${it.second}']" }
+        return """
+        (function () {
+          var opt = { method: 'GET', credentials: 'include', headers: window.__cvHeaders || {} };
+          var api = 'https://api.creatorspro.com/v1/timeline/', ranges = [$list];
+          function end(ok) { try { CanvasShift.pulled(ok); } catch (e) {} }
+          fetch(api + 'creators', opt).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+            var cs = (j && j.data) || [];
+            var left = cs.length * ranges.length;
+            if (!left) return end(false);
+            cs.forEach(function (c) {
+              ranges.forEach(function (g) {
+                fetch(api + 'events?startedAt=' + encodeURIComponent(g[0]) + '&endedAt=' + encodeURIComponent(g[1]) + '&creatorId=' + c.id, opt)
+                  .catch(function () {}).then(function () { if (--left == 0) end(true); });
+              });
+            });
+          }).catch(function () { end(false); });
+        })()
+        """
+    }
+
+    /** Questo mese e il prossimo, coi confini a mezzanotte di qui come li chiede la pagina. */
+    internal fun months(today: java.time.LocalDate, zone: java.time.ZoneId): List<Pair<String, String>> =
+        (0L..1L).map { i ->
+            val first = today.withDayOfMonth(1).plusMonths(i)
+            val a = first.atStartOfDay(zone).toInstant()
+            val b = first.plusMonths(1).atStartOfDay(zone).toInstant().minusMillis(1)
+            a.toString() to b.toString()
+        }
+
+    /** Chiede alla pagina (già entrata) i turni di tutte le creator. */
+    fun pull(view: WebView) =
+        view.evaluateJavascript(pullScript(months(java.time.LocalDate.now(), java.time.ZoneId.systemDefault())), null)
+
+    @Volatile var pullEndedAt = 0L
+        private set
+
     private object Bridge {
+        @JavascriptInterface
+        fun pulled(ok: Boolean) { pullEndedAt = System.currentTimeMillis() }
+
         @JavascriptInterface
         fun capture(url: String, status: Int, body: String) = ShiftStore.capture(url, status, body)
 
@@ -176,8 +236,14 @@ object CreatorsLink {
                 view.loadUrl(ShiftStore.timelineUrl ?: HOME)
                 withTimeoutOrNull(READ_MS) {
                     while (ShiftStore.readAt.value == before && !isLoginPage(lastUrl)) delay(400)
-                    // Arrivata la prima risposta coi turni: ancora un attimo per le altre (altre settimane, righe).
-                    if (ShiftStore.readAt.value != before) delay(3_000)
+                    // La pagina ha letto la sua creator: ora tutte le altre, con la stessa sessione.
+                    if (ShiftStore.readAt.value != before) {
+                        delay(1_500)
+                        val asked = System.currentTimeMillis()
+                        pull(view)
+                        while (pullEndedAt < asked) delay(400)
+                        delay(1_500)
+                    }
                 }
                 if (ShiftStore.readAt.value == before && isLoginPage(lastUrl ?: view.url)) ShiftStore.setExpired(true)
                 CookieManager.getInstance().flush()

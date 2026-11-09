@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.380.0
+**Turni: ora li legge davvero**
+- Grazie ai dati che mi hai mandato, Canvas capisce la Timeline di Creators Pro: i tuoi turni compaiono nel calendario con l'ora giusta (Morning 7–12, Afternoon 12–17, Evening 17–22, Night 22–3, After 3–7)
+- Legge i turni di tutte le creator, non solo di quella aperta nella pagina, per questo mese e il prossimo
+- Nel titolo del turno ci sono le creator su cui lavori
+- Un turno tolto da una creator sparisce, senza toccare quelli delle altre
+
 ## 1.379.0
 **Video: lo scorrimento di lato muove la barra del tempo**
 - Scorrendo di lato sul video ora compare la barra del tempo e si muove il suo pallino, con l'anteprima del fotogramma sopra, esattamente come quando trascini la barra: niente più riquadro separato al centro
