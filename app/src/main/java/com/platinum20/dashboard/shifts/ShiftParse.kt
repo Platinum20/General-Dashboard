@@ -49,6 +49,13 @@ object ShiftParse {
         title.removePrefix("Turno · ").takeIf { title.startsWith("Turno · ") }
             ?.split(", ")?.map { it.trim() }?.filter { it.isNotEmpty() }.orEmpty()
 
+    /** Solo il nome della creator, mai il cognome (Antonio): "Debora Martini" → "Debora". */
+    fun firstName(name: String): String = name.trim().substringBefore(' ')
+
+    /** Il titolo da mostrare: "Turno · Debora, Chiara"; il titolo salvato resta con i nomi interi. */
+    fun shortTitle(title: String): String =
+        creators(title).takeIf { it.isNotEmpty() }?.let { "Turno · " + it.joinToString(", ") { n -> firstName(n) } } ?: title
+
     /** "Da solo", "In doppio con Vincenzo C", "In tre con …": com'era il turno (Antonio). */
     fun company(mates: List<String>): String = when (mates.size) {
         0 -> "Da solo"
