@@ -171,6 +171,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
     // Lettura degli scontrini sul telefono (modello incluso nell'app, senza rete)
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Il QR del biglietto dentro il PDF o le immagini della mail (modello incluso, niente download).
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
     // Voce di lettura neurale sul telefono (Piper), e l'apertura dei suoi archivi tar.bz2
     implementation(files(sherpaOnnxAar))
     implementation("org.apache.commons:commons-compress:1.27.1")

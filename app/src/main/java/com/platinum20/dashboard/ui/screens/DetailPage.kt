@@ -199,6 +199,8 @@ fun DetailMissing(icon: ImageVector, text: String) {
 fun EditableDetailTitle(key: Any, value: String, dot: Color, sharedKey: String? = null, onCommit: (String) -> Unit) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
     val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
+    // La lista da cui si è aperta la scheda, letta una volta: tornando indietro il titolo vola nella stessa riga.
+    val origin = androidx.compose.runtime.remember { SharedRows.origin }
     androidx.compose.runtime.LaunchedEffect(text) {
         kotlinx.coroutines.delay(500)
         if (text.isNotBlank() && text.trim() != value.trim()) commit(text.trim())
@@ -213,7 +215,7 @@ fun EditableDetailTitle(key: Any, value: String, dot: Color, sharedKey: String? 
             cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences),
             // Aprendo dalla riga del calendario, il titolo arriva volando da lì.
-            modifier = Modifier.weight(1f).sharedItem(sharedKey),
+            modifier = Modifier.weight(1f).sharedItem(sharedKey?.let { SharedRows.key(origin, it) }),
             decorationBox = { inner ->
                 if (text.isEmpty()) Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.outline)
                 inner()

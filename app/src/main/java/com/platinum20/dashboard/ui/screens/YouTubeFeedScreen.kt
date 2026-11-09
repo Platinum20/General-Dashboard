@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -249,8 +250,12 @@ private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
 private fun HomeTab(hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.home.collectAsState()
+    val ended by YouTubeStore.homeEnded.collectAsState()
     LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
-    VideoFeed(state, empty = "La Home è vuota", hideShorts, hideLive, onPlay = onPlay)
+    VideoFeed(
+        state, empty = "La Home è vuota", hideShorts, hideLive, onPlay = onPlay,
+        onNearEnd = if (ended) null else ({ YouTubeStore.loadMoreHome(context) }),
+    )
 }
 
 @Composable
@@ -284,16 +289,33 @@ internal fun pickFeed(all: List<YtVideo>, hideShorts: Boolean, hideLive: Boolean
  * e i video con le anteprime grandi. Cosa stai guardando lo mostra già il mini player.
  */
 @Composable
-fun VideoFeed(state: Loadable<List<YtVideo>>, empty: String, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
+fun VideoFeed(
+    state: Loadable<List<YtVideo>>, empty: String, hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit,
+    onNearEnd: (() -> Unit)? = null,
+) {
     val hideMembers by AppSettings.hideMembers.collectAsState()
     val pick = pickFeed(state.data.orEmpty(), hideShorts, hideLive, hideMembers)
+    val count = state.data.orEmpty().size
     FeedList(state, empty = empty) {
         if (pick.shorts.isNotEmpty()) {
             item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
         }
-        items(pick.videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
+        itemsIndexed(pick.videos, key = { _, v -> v.id }) { i, video ->
+            // Qualche video prima del fondo parte già la pagina dopo: scorrendo non ci si ferma ad aspettare.
+            if (onNearEnd != null && i >= pick.videos.size - NEAR_END) LaunchedEffect(count) { onNearEnd() }
+            VideoCard(video, onClick = { onPlay(video.watchUrl) })
+        }
+        if (onNearEnd != null && count > 0) {
+            item(key = "more") {
+                LaunchedEffect(count) { onNearEnd() }
+                Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+            }
+        }
     }
 }
+
+/** Quanti video prima del fondo si chiedono i consigliati dopo. */
+private const val NEAR_END = 6
 
 @Composable
 private fun SimpleVideos(state: Loadable<List<YtVideo>>, empty: String, onPlay: (String) -> Unit, list: String? = null, load: () -> Unit) {

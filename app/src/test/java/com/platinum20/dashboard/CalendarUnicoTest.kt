@@ -56,7 +56,7 @@ class CalendarUnicoTest {
             notes = listOf(Note(5, "Vecchia", createdAt = 1), Note(6, "Nuova", createdAt = 2), Note(7, "Fissata", createdAt = 0, pinned = true)),
         )
         val today = groups.first().rows.map { it.key }
-        // Il promemoria di ieri non è "in ritardo": è passato, come un evento (1.365).
+        // Il promemoria di ieri non è "in ritardo": è passato, come un evento (1.372).
         assertEquals(listOf("spend-today", "task-1", "note-7", "note-6", "note-5"), today)
         // Domani resta nel suo giorno, niente "Scaduti" né "Senza data".
         assertEquals(listOf(oggi, oggi.plusDays(1)), groups.map { it.day })

@@ -51,7 +51,7 @@ class BriefingTest {
             tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.minusHours(2)))),
             zone = zone,
         )
-        // Come un evento finito: passa da solo, niente "Scaduto" da spuntare (Antonio, 1.365).
+        // Come un evento finito: passa da solo, niente "Scaduto" da spuntare (Antonio, 1.372).
         assertTrue(lines.none { it.kind == BriefKind.TASK })
     }
 

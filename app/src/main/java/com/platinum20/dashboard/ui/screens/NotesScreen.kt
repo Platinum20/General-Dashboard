@@ -234,6 +234,14 @@ fun NotesScreen(
             events = NotesEvents.load(context)
         }
     }
+    // Un turno messo o tolto su Creators Pro: il calendario si ridisegna subito, e con la pagina aperta si rilegge.
+    remember { com.platinum20.dashboard.shifts.ShiftStore.init(context) }
+    val workShifts by com.platinum20.dashboard.shifts.ShiftStore.shifts.collectAsStateWithLifecycle()
+    LaunchedEffect(workShifts) { events = NotesEvents.load(context) }
+    AutoRefresh(everyMs = com.platinum20.dashboard.shifts.ShiftStore.STALE_MS) {
+        val work = com.platinum20.dashboard.shifts.ShiftStore
+        if (work.linked.value && !work.expired.value && work.isStale()) com.platinum20.dashboard.shifts.CreatorsLink.refresh(context)
+    }
     val openRow = rememberDueOpen()
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()

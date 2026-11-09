@@ -58,7 +58,7 @@ data class TaskItem(
 
     /**
      * Il giorno in cui cade la prossima volta: se si ripete ed è già passato, la volta dopo oggi (come un evento:
-     * niente si spunta, passa da solo; Antonio, 1.365). Per il resto, il giorno salvato.
+     * niente si spunta, passa da solo; Antonio, 1.372). Per il resto, il giorno salvato.
      */
     fun nextDay(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): LocalDate? =
         nextAt(today, zone)?.toLocalDate()
@@ -93,7 +93,7 @@ data class TaskItem(
         text + (yearsAtNext(today, zone)?.let { " ($it anni)" } ?: "")
 
     /**
-     * Si spunta solo una cosa senza data (Antonio, 1.365: promemoria e date sono come gli eventi, passano da soli).
+     * Si spunta solo una cosa senza data (Antonio, 1.372: promemoria e date sono come gli eventi, passano da soli).
      */
     val tickable: Boolean get() = dueAt == null
 

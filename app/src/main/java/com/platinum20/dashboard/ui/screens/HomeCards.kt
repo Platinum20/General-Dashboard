@@ -177,7 +177,7 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
-        // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.365).
+        // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.372).
         ticks = shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } },
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
         rows = shown.map { (_, row) -> { open(row) } },
@@ -262,7 +262,7 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
             }
             footer?.let { text ->
                 Text(

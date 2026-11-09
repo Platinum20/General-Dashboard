@@ -1,10 +1,49 @@
 # Changelog
 
-## 1.365.0
+## 1.372.0
 **Niente più spunta su promemoria e date**
 - Promemoria, date da ricordare ed eventi non si spuntano più: passano da soli quando arriva il giorno, come gli eventi
 - Non finiscono più fra gli "scaduti": quelli passati restano nel loro giorno, quelli che si ripetono vanno da soli alla volta dopo
 - La spunta resta solo sulle cose senza data, nella parte delle note
+
+## 1.371.0
+**La Home di YouTube non finisce più**
+- Scorrendo la Home di Video arrivano sempre altri consigliati, come nell'app di YouTube
+- I video dopo si caricano qualche riga prima del fondo, così di solito non c'è da aspettare
+
+## 1.370.0
+**YouTube: testi puliti e sottotitoli solo italiano e inglese**
+- Nei commenti non compaiono più scritte strane come "&quot;": virgolette, apostrofi ed emoji si leggono giusti
+- La descrizione del video resta sempre nella lingua in cui l'ha scritta l'autore, mai tradotta (serve YouTube collegato in Impostazioni › Account)
+- Nei sottotitoli trovi solo Italiano e Inglese; se il video non li ha, YouTube li traduce da un'altra lingua
+- SponsorBlock: sull'etichetta "Salta" c'è una X per chiuderla e non saltare quel pezzo
+
+## 1.369.0
+**Il QR del biglietto nell'evento**
+- Aprendo un treno (o un altro evento nato da una mail) trovi il QR del biglietto subito sotto il titolo, preso dalla mail: dal PDF allegato o dalle immagini
+- Toccalo e lo schermo va alla luminosità massima, per i tornelli; tocca di nuovo per tornare
+- Una volta trovato resta sul telefono: si apre anche senza rete
+- Serve la posta collegata con la password per app (Impostazioni › Account › Posta)
+
+## 1.368.0
+**Calendario: le righe non saltano più**
+- Aprendo e chiudendo il calendario, i promemoria e le date (come "Claude scade") non saltano più per conto loro: si muovono insieme alla card che si allarga
+- Lo stesso per le spese quando apri il riepilogo del mese
+- Toccando una riga, il titolo vola ancora nella sua scheda e torna nella stessa riga
+
+## 1.367.0
+**Revolut e WindTre restano collegati**
+- Canvas ora si ricorda per intero l'accesso a Revolut e all'area clienti WindTre: prima ogni aggiornamento in sottofondo ripartiva da una pagina "vuota" e sembrava che l'accesso fosse scaduto
+- Il controllo che tiene viva la sessione gira anche di notte e col telefono fermo, ogni quarto d'ora, e ora vale anche per WindTre
+- Una volta sola Android ti chiede di lasciare Canvas sempre attiva in sottofondo: rispondi Consenti, serve proprio a non farti rifare l'accesso
+
+## 1.365.0
+**I tuoi turni di lavoro nel calendario**
+- In Impostazioni › Account › Lavoro c'è "Turni Creators Pro": entri una volta sola sul sito dei turni e apri la Timeline
+- Da lì in poi i turni di Antonio Nesca compaiono nel calendario come eventi, con ora di inizio e fine (es. 7–12, 12–17)
+- Solo i tuoi: i turni degli altri non entrano
+- Si aggiornano da soli: ogni 15 minuti anche con l'app chiusa, ogni 5 con Home o calendario aperti, e subito quando apri l'app. Un turno nuovo compare, uno tolto sparisce
+- Se un turno non torna, "Salva i dati letti dei turni" prepara il file da mandarmi per sistemare la lettura
 
 ## 1.364.0
 **Video: scorrere nel punto giusto**

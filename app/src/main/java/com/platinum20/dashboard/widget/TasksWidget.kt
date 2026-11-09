@@ -108,7 +108,7 @@ class TasksWidget : AppWidgetProvider() {
                 views.setViewVisibility(TIMES[i], if (row.time == null) View.GONE else View.VISIBLE)
                 views.setTextColor(TIMES[i], context.getColor(if (row.late) R.color.widget_late else R.color.widget_text_secondary))
                 views.setImageViewResource(CHECKS[i], if (row.late) R.drawable.widget_check_late else R.drawable.widget_check)
-                // Con un orario è un promemoria: passa da solo, non si spunta (1.365).
+                // Con un orario è un promemoria: passa da solo, non si spunta (1.372).
                 views.setViewVisibility(CHECKS[i], if (row.time == null) View.VISIBLE else View.INVISIBLE)
                 views.setOnClickPendingIntent(CHECKS[i], doneIntent(context, row.id))
                 views.setOnClickPendingIntent(TEXTS[i], openNotes)

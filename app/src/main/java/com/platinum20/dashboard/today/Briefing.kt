@@ -124,7 +124,7 @@ object Briefing {
 
         // Promemoria: prima gli scaduti, poi quelli in scadenza entro stasera.
         val endOfDay = now.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        // Niente "scaduti": un promemoria passa da solo come un evento (Antonio, 1.365).
+        // Niente "scaduti": un promemoria passa da solo come un evento (Antonio, 1.372).
         val overdue = emptyList<TaskItem>()
         val dueToday = tasks.filter { !it.done && !it.allDay && it.dueAt != null && it.dueAt in nowMs until endOfDay }
         // Fino a [EACH_TASKS] (o uno solo nel widget) si legge cos'è e si chiude da qui; oltre, il numero.
