@@ -76,13 +76,16 @@ object NewsStore {
     }
 
     /** Le storie per il widget e la notifica del mattino, con le stesse regole della card in Home. */
-    suspend fun widgetStories(context: android.content.Context, items: List<NewsItem>): List<NewsStory> {
+    suspend fun widgetStories(context: android.content.Context, items: List<NewsItem>): List<NewsStory> =
+        NewsStories.forWidget(widgetFeed(context, items))
+
+    /** Le storie divise in nuove e già viste come nella scheda News: il widget dice anche quante sono nuove. */
+    suspend fun widgetFeed(context: android.content.Context, items: List<NewsItem>): NewsFeed {
         NewsHistory.init(context)
         com.platinum20.dashboard.news.reader.ArticleVerifier.restore()
         val readable = com.platinum20.dashboard.news.reader.ArticleVerifier.state.value.readable.takeIf { it.isNotEmpty() }
         val hidden = com.platinum20.dashboard.settings.AppSettings.hiddenNewsSources.value
-        val feed = NewsStories.split(NewsStories.group(items, readable, hidden), NewsHistory.lastVisit(), NewsHistory.read.value.toSet())
-        return NewsStories.forWidget(feed)
+        return NewsStories.split(NewsStories.group(items, readable, hidden), NewsHistory.lastVisit(), NewsHistory.read.value.toSet())
     }
 
     internal fun encode(items: List<NewsItem>, savedAt: Long): String {

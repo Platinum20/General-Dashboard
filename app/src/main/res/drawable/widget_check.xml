@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Il cerchio da toccare per spuntare un promemoria nel widget "Da fare". -->
+<!-- Il cerchio da toccare per spuntare un promemoria dal widget. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <stroke android:width="2dp" android:color="@color/widget_accent" />
+    <stroke android:width="1.75dp" android:color="@color/widget_text_secondary" />
     <size android:width="20dp" android:height="20dp" />
 </shape>

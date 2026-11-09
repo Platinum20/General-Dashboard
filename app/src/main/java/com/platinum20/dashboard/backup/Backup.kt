@@ -7,7 +7,7 @@ import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.weather.GeoPlace
 import com.platinum20.dashboard.weather.WeatherStore
-import com.platinum20.dashboard.widget.DashboardWidget
+import com.platinum20.dashboard.widget.Widgets
 import com.platinum20.dashboard.work.MorningWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -142,7 +142,7 @@ object Backup {
         if (content.place != WeatherStore.manualPlace(context)) WeatherStore.setManualPlace(context, content.place)
         // Le impostazioni della notifica del mattino sono cambiate: riprogrammarla subito, non al prossimo avvio.
         runCatching { MorningWorker.schedule(context) }
-        runCatching { DashboardWidget.updateAll(context) }
+        runCatching { Widgets.refresh(context) }
     }
 
     /** Quando è stato fatto l'ultimo backup (millisecondi), null se mai. */
