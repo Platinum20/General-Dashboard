@@ -29,6 +29,11 @@ object MorningText {
         tasks: List<TaskItem>,
         /** Fine di oggi (millisecondi): i promemoria entro stasera sono già in "Oggi". */
         endOfDay: Long,
+        /**
+         * Lo stesso Oggi del calendario (righe del widget Calendario): se c'è sostituisce le righe di Adesso e
+         * "Da fare", perché le cose senza data stanno già dentro Oggi (Antonio, 2026-11-10).
+         */
+        calendar: List<String>? = null,
     ): List<MorningGroup> {
         val weather = mutableListOf<String>()
         today?.let { d ->
@@ -39,11 +44,11 @@ object MorningText {
         adesso.filter { it.kind == BriefKind.RAIN || it.kind == BriefKind.WEATHER }.forEach { weather += it.text }
         air?.takeIf { it.europeanAqi >= AIR_WORTH }?.let { weather += "Aria ${it.label.lowercase()}" }
 
-        val day = adesso.filter { it.kind != BriefKind.RAIN && it.kind != BriefKind.WEATHER }.map { it.text }
+        val day = calendar ?: adesso.filter { it.kind != BriefKind.RAIN && it.kind != BriefKind.WEATHER }.map { it.text }
 
         // Le altre cose da fare: senza scadenza o più avanti (scaduti e di oggi sono già in "Oggi").
         val open = tasks.filter { !it.done && (it.dueAt == null || it.dueAt >= endOfDay) }
-        val todo = open.take(TASKS).map { it.text } + listOfNotNull(more(open.size))
+        val todo = if (calendar != null) emptyList() else open.take(TASKS).map { it.text } + listOfNotNull(more(open.size))
 
         return listOfNotNull(
             weather.takeIf { it.isNotEmpty() }?.let { MorningGroup(null, it) },

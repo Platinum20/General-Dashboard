@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.widget
 
 import com.platinum20.dashboard.today.BriefAction
+import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.today.BriefLine
 import com.platinum20.dashboard.weather.HourlyPoint
 import java.time.LocalDate
@@ -39,6 +40,23 @@ object WidgetRows {
             if (line.action in WIDGET_ACTIONS && id != null) WidgetBrief(line.text, line.urgent, line.action, id)
             else WidgetBrief(line.text, line.urgent)
         }
+
+    /** Che cosa resta di "Adesso" nel widget, come nella Home dalla 1.314: pioggia, meteo, abitudini. */
+    private val ADESSO_KINDS = setOf(BriefKind.RAIN, BriefKind.WEATHER, BriefKind.HABIT)
+
+    /**
+     * Le righe del widget Oggi: prima pioggia e abitudini di Adesso, poi tutto Oggi del calendario ([items], le stesse
+     * righe del widget Calendario e dell'app, anche le cose finite), niente "oggi" diverso (Antonio, 2026-11-10).
+     * Se non c'è posto l'ultima riga dice quante ne restano.
+     */
+    fun todayEntries(brief: List<BriefLine>, items: List<AgendaRow.Item>, max: Int): List<WidgetBrief> {
+        if (max <= 0) return emptyList()
+        val all = briefEntries(brief.filter { it.kind in ADESSO_KINDS }, Int.MAX_VALUE) +
+            items.map { WidgetBrief(listOfNotNull(it.time, (if (it.done) "✓ " else "") + it.title).joinToString("  "), urgent = it.late) }
+        if (all.size <= max) return all
+        val shown = (max - 1).coerceAtLeast(1)
+        return all.take(shown) + WidgetBrief(AgendaRows.moreText(all.size - shown))
+    }
 
     /** Quante righe di Adesso stanno sotto il blocco del meteo: 34dp l'una, niente se il widget è basso. */
     fun linesForHeight(heightDp: Int): Int = ((heightDp - HERO_DP) / LINE_DP).coerceIn(0, 5)
