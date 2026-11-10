@@ -21,7 +21,7 @@ import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.sim.WindTreLink
 
 /**
- * La card della SIM (dalla 1.447 da sola: niente più soldi nell'app). Dalla 1.448 (Antonio) mostra tutto:
+ * La card della SIM (dalla 1.447 da sola: niente più soldi nell'app). Dalla 1.450 (Antonio) mostra tutto:
  * giga, minuti e SMS ognuno con la sua linea, poi credito e rinnovo. Un solo "SIM": il titolo.
  * Il tocco apre la pagina della SIM.
  */

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.448.0
+## 1.450.0
 **La card SIM in Home mostra tutto**
 - Giga, minuti e SMS, ognuno con la sua linea di quanto resta
 - Sotto, il credito residuo e la data del rinnovo

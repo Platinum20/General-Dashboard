@@ -130,7 +130,7 @@ internal fun SimPanel(s: SimStatus, big: Boolean = false, faded: Boolean = false
     val soft = LocalContentColor.current.copy(alpha = 0.7f)
     val barColor = if (big) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
     val track = barColor.copy(alpha = 0.18f)
-    // Nella card della Home il titolo "SIM" basta (1.448, Antonio): niente riga dell'offerta sopra.
+    // Nella card della Home il titolo "SIM" basta (1.450, Antonio): niente riga dell'offerta sopra.
     if (big) Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             (s.offer ?: "WindTre").uppercase(Locale.ITALIAN),

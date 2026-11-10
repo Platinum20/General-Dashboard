@@ -6,7 +6,7 @@ import com.platinum20.dashboard.ui.screens.simRows
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** La card SIM della Home (1.448): giga, minuti e SMS, ognuno con la sua linea. */
+/** La card SIM della Home (1.450): giga, minuti e SMS, ognuno con la sua linea. */
 class ContiTextTest {
     @Test
     fun cardConGigaMinutiESms() {
