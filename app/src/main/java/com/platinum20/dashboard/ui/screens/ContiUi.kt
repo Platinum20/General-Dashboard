@@ -47,7 +47,7 @@ object ContiText {
     ).joinToString(" · ").ifEmpty { null }
 }
 
-/** La card della SIM (dalla 1.438 da sola: niente più soldi nell'app). Il tocco apre la pagina della SIM. */
+/** La card della SIM (dalla 1.443 da sola: niente più soldi nell'app). Il tocco apre la pagina della SIM. */
 @Composable
 internal fun ContiCard(onOpenSim: () -> Unit) {
     CardSection(title = "SIM") {

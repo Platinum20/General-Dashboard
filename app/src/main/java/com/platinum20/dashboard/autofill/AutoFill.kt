@@ -270,7 +270,7 @@ object AutoFill {
         return (0 until arr.length()).mapNotNull { i ->
             runCatching {
                 val o = arr.getJSONObject(i)
-                // Le spese lette dalle notifiche non ci sono più (1.438): quelle vecchie nel file si scartano.
+                // Le spese lette dalle notifiche non ci sono più (1.443): quelle vecchie nel file si scartano.
                 val found: Found = when (o.getString("type")) {
                     "parcel" -> Found.NewParcel(
                         o.optString("title"), o.optString("code"),

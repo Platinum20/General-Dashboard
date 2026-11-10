@@ -167,7 +167,7 @@ internal fun CalendarCard(
     // Le cose già spuntate solo nel calendario intero, non nella card (Antonio): tutto il resto di oggi sta sotto OGGI.
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
         .filter { it.rows.isNotEmpty() }
-    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.438: niente più totale nel titolo).
+    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.443: niente più totale nel titolo).
     val all = timelineEntries(pending, today, months = true)
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
