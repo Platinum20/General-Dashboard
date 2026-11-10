@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.453.0
+**La casella del + è più compatta**
+- Quando scrivi, la casella resta sempre alta quanto il +: niente più riga in più sopra, anche con un testo lungo
+- Gli esempi ("domani alle 9 chiamare il dentista"…) ora sono il testo grigio dentro la casella vuota e cambiano da soli
+- Tutto a destra compare un simbolo che ti dice cosa diventerà quello che scrivi: promemoria, evento, data, abitudine, nota o pacco, e cambia mentre scrivi
+- La X cancella il testo scritto; a casella vuota chiude come prima
 ## 1.452.0
 **Una barra di ricerca nuova, tonda e morbida**
 - Il campo di Cerca è ora una pillola tonda e piena, senza bordo, che si vede bene in ogni tema

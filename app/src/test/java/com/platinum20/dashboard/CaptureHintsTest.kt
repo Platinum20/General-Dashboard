@@ -5,30 +5,30 @@ import com.platinum20.dashboard.capture.CaptureHints
 import com.platinum20.dashboard.capture.CaptureMode
 import java.time.LocalDateTime
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Le parole sopra la barra del +: esempi le prime volte, poi il riassunto di cosa diventa. */
+/** La barra del +: esempi come segnaposto, poi il simbolo (e il riassunto) di cosa diventa. */
 class CaptureHintsTest {
     private val now = LocalDateTime.of(2026, 11, 10, 10, 0)
 
     private fun line(text: String) = CaptureHints.summary(CaptureGuess.guess(text, now), text, now)
 
-    @Test fun esempiSoloPerIPrimiCinqueSalvataggi() {
-        assertTrue(CaptureHints.showExamples(0))
-        assertTrue(CaptureHints.showExamples(4))
-        assertFalse(CaptureHints.showExamples(5))
-    }
-
     @Test fun gliEsempiGiranoSenzaFinire() {
         assertEquals(CaptureHints.example(0), CaptureHints.example(CaptureHints.examples.size))
-        assertTrue(CaptureHints.example(-1).startsWith("Prova: "))
+        assertEquals(CaptureHints.examples.last(), CaptureHints.example(-1))
     }
 
-    @Test fun ilSegnapostoCiStaSempre() {
-        assertTrue(CaptureHints.PLACEHOLDER.length <= 20)
+    @Test fun ogniEsempioDiventaIlSuoTipo() {
+        // Il segnaposto deve insegnare tutti i tipi: un esempio per tipo, tutti diversi.
+        val kinds = CaptureHints.examples.map { CaptureGuess.guess(it, now) }
+        assertEquals(kinds.size, kinds.toSet().size)
+        assertTrue(CaptureMode.EVENT in kinds && CaptureMode.TASK in kinds)
+    }
+
+    @Test fun gliEsempiCiStannoInUnaRiga() {
+        assertTrue(CaptureHints.examples.all { it.length <= 36 })
     }
 
     @Test fun campoVuotoNienteRiassunto() {
