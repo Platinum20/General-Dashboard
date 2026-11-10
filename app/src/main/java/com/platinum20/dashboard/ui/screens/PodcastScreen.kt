@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -89,18 +90,21 @@ internal fun LazyListScope.podcastSections(
         // Primo uso: niente pagina vuota, ma da dove cominciare.
         item(key = "podcast-start") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("Podcast per iniziare", Modifier.padding(top = 8.dp))
+                SectionHeader("Podcast per iniziare", Modifier.padding(top = 16.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     podcastIdeas.forEach { idea -> CanvasChip(selected = false, onClick = { onIdea(idea) }, label = idea) }
                 }
             }
         }
-        items(ideas?.data.orEmpty(), key = { "idea-${it.feedUrl}" }) { result -> PodcastRow(result, onOpen = { onOpen(result) }) }
+        val found = ideas?.data.orEmpty()
+        itemsIndexed(found, key = { _, r -> "idea-${r.feedUrl}" }) { i, result ->
+            PodcastRow(result, i == 0, i == found.lastIndex, onOpen = { onOpen(result) })
+        }
         return
     }
     item(key = "followed") {
         Column {
-            SectionHeader("I tuoi podcast", Modifier.padding(top = 8.dp))
+            SectionHeader("I tuoi podcast", Modifier.padding(top = 16.dp))
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 followed.forEach { podcast -> FollowedTile(podcast, onClick = { onOpen(podcast) }) }
             }
@@ -108,9 +112,10 @@ internal fun LazyListScope.podcastSections(
     }
     val episodes = latest.data.orEmpty()
     if (episodes.isNotEmpty()) {
-        item(key = "latest-header") { SectionHeader("Ultimi episodi", Modifier.padding(top = 8.dp)) }
-        items(episodes.take(LATEST_SHOWN), key = { "latest-${it.id}" }) { episode ->
-            EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = true)
+        item(key = "latest-header") { SectionHeader("Ultimi episodi", Modifier.padding(top = 16.dp, bottom = 4.dp)) }
+        val shown = episodes.take(LATEST_SHOWN)
+        itemsIndexed(shown, key = { _, e -> "latest-${e.id}" }) { i, episode ->
+            EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = true, group = (i == 0) to (i == shown.lastIndex))
         }
     }
 }
@@ -166,17 +171,11 @@ internal fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
 }
 
 @Composable
-private fun PodcastRow(podcast: Podcast, onOpen: () -> Unit) {
+private fun PodcastRow(podcast: Podcast, first: Boolean, last: Boolean, onOpen: () -> Unit) {
     val followed by PodcastStore.followed.collectAsState()
     val spotify by PodcastStore.spotify.collectAsState()
     val isFollowed = remember(followed, spotify, podcast) { PodcastStore.isInLibrary(podcast) }
-    Surface(
-        onClick = onOpen,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f),
-    ) {
+    Box(Modifier.fillMaxWidth().cardGroupItem(first, last).clickable(onClick = onOpen)) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Artwork(podcast.artwork, 56)
             Spacer(Modifier.width(12.dp))
@@ -210,20 +209,29 @@ private fun FollowedTile(podcast: Podcast, onClick: () -> Unit) {
 }
 
 @Composable
-private fun EpisodeRow(episode: Episode, now: PodcastNow?, savedMs: Long, showPodcast: Boolean) {
+private fun EpisodeRow(
+    episode: Episode,
+    now: PodcastNow?,
+    savedMs: Long,
+    showPodcast: Boolean,
+    /** Prima e ultima di un gruppo: righe di un'unica card (1.420). null = card a sé, come nella pagina del podcast. */
+    group: Pair<Boolean, Boolean>? = null,
+) {
     val playing = now?.episode?.id == episode.id
     val today = remember { ZonedDateTime.now() }
     val durationMs = episode.durationSec * 1000
     val started = PodcastProgress.resumeAt(savedMs, durationMs) > 0
     val finished = durationMs > 0 && savedMs >= durationMs - 30_000
+    val container = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card
+    val tap = Modifier.tapOrSave({ episodeLink(episode, PodcastProgress.resumeAt(savedMs, durationMs)) }) {
+        if (playing) PodcastStore.togglePause() else PodcastStore.play(episode)
+    }
     Surface(
-        shape = MaterialTheme.shapes.large,
-        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
-        border = if (playing) null else cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
-            .tapOrSave({ episodeLink(episode, PodcastProgress.resumeAt(savedMs, durationMs)) }) {
-                if (playing) PodcastStore.togglePause() else PodcastStore.play(episode)
-            },
+        shape = if (group != null) androidx.compose.ui.graphics.RectangleShape else MaterialTheme.shapes.large,
+        color = if (group != null) androidx.compose.ui.graphics.Color.Transparent else container,
+        border = if (playing || group != null) null else cardBorder(),
+        modifier = if (group != null) Modifier.fillMaxWidth().cardGroupItem(group.first, group.second, container).then(tap)
+        else Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large).then(tap),
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

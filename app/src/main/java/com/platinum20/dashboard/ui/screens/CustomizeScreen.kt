@@ -96,7 +96,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
                 )
             }
-            itemsIndexed(layout.order, key = { _, card -> card.name }) { _, card ->
+            itemsIndexed(layout.order, key = { _, card -> card.name }) { index, card ->
                 val visible = card !in layout.hidden
                 val haptic = rememberHaptic()
                 val toggle = hapticToggle { AppSettings.setCardVisible(card, it) }
@@ -105,12 +105,13 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     modifier = Modifier
                         .then(if (reorder.isDragging(card.name)) Modifier else Modifier.animateItem())
                         .reorderItem(reorder, card.name)
-                        .padding(vertical = 4.dp)
                         .fillMaxWidth()
-                        .bouncyPress(0.98f)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.card)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                        // Righe di un'unica card, come Impostazioni (1.420, punto 8 A); quella che trascini resta intera.
+                        .then(
+                            if (reorder.isDragging(card.name)) Modifier.clip(MaterialTheme.shapes.large).background(MaterialTheme.colorScheme.card)
+                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
+                            else Modifier.cardGroupItem(index == 0, index == layout.order.lastIndex),
+                        )
                         .clickable { toggle(!visible) }
                         .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,

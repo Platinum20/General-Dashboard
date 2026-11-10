@@ -2,6 +2,7 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -104,8 +105,10 @@ data class TimelineEntry(
     val trip: TripStops? = null,
     /** La prima riga di un giorno dopo un altro giorno: sopra c'è un sottile divisore (Antonio). */
     val divider: Boolean = false,
-    /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". */
+    /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". Dal 1.420 sta nella colonna dell'icona. */
     val time: String? = null,
+    /** L'importo delle spese, prima del nome in una colonna fissa allineata a destra (1.420, punto 9 B). */
+    val amount: String? = null,
 )
 
 /**
@@ -325,8 +328,32 @@ fun TimelineRow(
                 modifier = Modifier.padding(vertical = 3.dp).width(40.dp).height(24.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp)),
             )
             Spacer(Modifier.width(10.dp))
+        } else if (entry.time != null) {
+            // Le cose con un orario hanno l'ora nella colonna dell'icona (1.420): una colonna sola a sinistra.
+            Text(
+                entry.time,
+                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = 26.dp),
+            )
+            Spacer(Modifier.width(8.dp))
         } else {
             Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(10.dp))
+        }
+        entry.amount?.let {
+            // Importo prima del nome, in colonna: le cifre si confrontano a colpo d'occhio (Antonio, 9 B).
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                softWrap = false,
+                modifier = Modifier.widthIn(min = AMOUNT_COLUMN),
+            )
             Spacer(Modifier.width(10.dp))
         }
         Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
@@ -340,10 +367,6 @@ fun TimelineRow(
                 // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
                 modifier = Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)),
             )
-            // L'ora sotto il nome, piccola: il nome resta per primo (Antonio).
-            entry.time?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-            }
         }
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
@@ -364,6 +387,9 @@ fun TimelineRow(
 }
 
 private val TRIP_LINE = 26.dp
+
+/** Larga quanto "123,45 €": gli importi fino a mille stanno tutti nella stessa colonna. */
+private val AMOUNT_COLUMN = 64.dp
 private val TRIP_PAD = 4.dp
 
 /**

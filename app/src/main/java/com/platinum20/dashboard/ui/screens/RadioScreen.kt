@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import com.platinum20.dashboard.media.radio.RadioGenre
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -68,7 +69,7 @@ internal fun LazyListScope.radioSections(
     val top = popular.data.orEmpty()
     if (top.isNotEmpty()) {
         item(key = "popular-header") { SectionTitle("Le radio più ascoltate in Italia") }
-        items(top, key = { "list-${it.id}" }) { StationRow(it, now) }
+        itemsIndexed(top, key = { _, s -> "list-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == top.lastIndex) }
     } else if (popular.loading) item(key = "popular-loading") {
         PlaceholderList(rows = 4, label = "Carico le radio")
     }
@@ -77,25 +78,24 @@ internal fun LazyListScope.radioSections(
 private fun LazyListScope.stationSection(title: String, stations: List<RadioStation>, now: RadioNow?) {
     if (stations.isEmpty()) return
     item(key = "header-$title") { SectionTitle(title) }
-    items(stations, key = { "$title-${it.id}" }) { StationRow(it, now) }
+    itemsIndexed(stations, key = { _, s -> "$title-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == stations.lastIndex) }
 }
 
 @Composable
 private fun SectionTitle(text: String) {
-    SectionHeader(text, Modifier.padding(top = 8.dp))
+    SectionHeader(text, Modifier.padding(top = 16.dp, bottom = 4.dp))
 }
 
 @Composable
-private fun StationRow(station: RadioStation, now: RadioNow?) {
+private fun StationRow(station: RadioStation, now: RadioNow?, first: Boolean, last: Boolean) {
     val favorites by RadioStore.favorites.collectAsState()
     val favorite = favorites.any { it.id == station.id }
     val playing = now?.station?.id == station.id
     val haptic = rememberHaptic()
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card,
-        border = if (playing) null else cardBorder(),
-        modifier = Modifier.fillMaxWidth().bouncyPress(0.97f).clip(MaterialTheme.shapes.large)
+    // Le radio di una sezione sono righe di un'unica card (1.420, punto 8 A): 12 a schermo invece di 9.
+    Box(
+        Modifier.fillMaxWidth()
+            .cardGroupItem(first, last, if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card)
             .tapOrSave({ SavedLinks.radio(station) }) { RadioStore.play(station) },
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {

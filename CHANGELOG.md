@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.420.0
+**Spese in colonna nel calendario, l'ora al posto dell'icona, radio e podcast in una card sola**
+- Nel calendario l'importo delle spese sta prima del nome in una colonna allineata: le cifre si confrontano a colpo d'occhio, coi colori delle categorie di sempre
+- Le cose con un orario mostrano l'ora nella colonna dell'icona, a sinistra del nome: una riga in meno per ognuna
+- Le radio, i podcast e la lista delle Card della Home sono righe di un'unica card, come le Impostazioni: ne vedi di più nello stesso schermo
+
 ## 1.419.0
 **Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**
 - Niente più etichette maiuscole sopra le card: ogni card ha il suo nome dentro, in alto
