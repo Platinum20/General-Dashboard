@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.433.0
+**Nella scheda di una spesa si vede di nuovo l'importo**
+- Accanto al nome c'era solo "€": il numero era schiacciato a zero. Ora il campo è largo quanto l'importo e si può ancora toccare e correggere lì
+
 ## 1.432.0
 **La pagina SIM ti dice se i giga bastano fino al rinnovo**
 - Sotto la barra dei giga: "Ti bastano fino al rinnovo" oppure "Non ti bastano", con il perché in una riga ("1,2 GB al giorno · ne avanzano 15 GB" o "finiscono verso il 18/11")
