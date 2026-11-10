@@ -538,7 +538,7 @@ private fun SpotifyKeyRow() {
         icon = Icons.Outlined.Key,
         accent = TileAccent.GREEN,
         title = "Chiave di Spotify",
-        subtitle = "Client ID su developer.spotify.com",
+        subtitle = "Client ID della tua app Spotify",
         value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
         showChevron = true,
         onClick = { editSpotifyKey = true },
