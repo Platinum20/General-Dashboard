@@ -44,6 +44,7 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
         val repository = UpdateRepository(context)
         val releases = runCatching { repository.fetchReleases() }
             .getOrElse { return if (runAttemptCount < 2) Result.retry() else Result.success() }
+        com.platinum20.dashboard.update.UpdateText.markChecked(context)
         val latest = releases.firstOrNull()
             ?.takeIf { compareVersions(it.version, BuildConfig.VERSION_NAME) > 0 && it.apkUrl != null }
             ?: return Result.success()

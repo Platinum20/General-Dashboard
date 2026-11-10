@@ -78,28 +78,6 @@ internal fun ShiftAccountRows() {
             }
         },
     )
-    // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
-    if (linked || hasData) {
-        RowDivider()
-        SettingsItem(
-            icon = Icons.Outlined.Share,
-            title = "Salva i dati letti dei turni",
-            subtitle = "Un file in Download, da allegare se un turno non torna",
-            onClick = {
-                val where = saveTextToDownloads(context, stampedName("turni-dati-letti"), ShiftStore.capturesText())
-                com.platinum20.dashboard.capture.CaptureFeedback.show(
-                    com.platinum20.dashboard.capture.CaptureNotice(
-                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
-                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
-                        undo = null,
-                        icon = Icons.Outlined.Share,
-                        fly = false,
-                    ),
-                )
-            },
-            trailing = { TextButton(onClick = { shareTextFile(context, "turni-dati-letti.txt", ShiftStore.capturesText()) }) { Text("Condividi") } },
-        )
-    }
 }
 
 /**

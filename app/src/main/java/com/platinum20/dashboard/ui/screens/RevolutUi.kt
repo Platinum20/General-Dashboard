@@ -91,27 +91,6 @@ internal fun RevolutAccountRows() {
             }
         },
     )
-    if (linked) {
-        RowDivider()
-        SettingsItem(
-            icon = Icons.Outlined.Share,
-            title = "Salva i dati letti di Revolut",
-            subtitle = "Un file in Download, da allegare se qualcosa non torna",
-            onClick = {
-                val where = saveTextToDownloads(context, stampedName("revolut-dati-letti"), RevolutStore.capturesText())
-                com.platinum20.dashboard.capture.CaptureFeedback.show(
-                    com.platinum20.dashboard.capture.CaptureNotice(
-                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
-                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
-                        undo = null,
-                        icon = Icons.Outlined.Share,
-                        fly = false,
-                    ),
-                )
-            },
-            trailing = { TextButton(onClick = { shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText()) }) { Text("Condividi") } },
-        )
-    }
 }
 
 /**
