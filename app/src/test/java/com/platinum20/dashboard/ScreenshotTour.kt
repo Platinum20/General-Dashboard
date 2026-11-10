@@ -260,12 +260,20 @@ class ScreenshotTour {
             "76_personalizza" to Routes.CUSTOMIZE,
             "77_turno" to Routes.calendarEvent(tourShift),
             "78_cerca" to Routes.SEARCH,
+            "79_calendario" to Routes.NOTES,
+            "80_musica" to Routes.SPOTIFY_FEED,
+            "81_video" to Routes.YOUTUBE_FEED,
+            "82_radio_podcast" to Routes.RADIO,
+            "83_compila_da_solo" to Routes.AUTOFILL,
         )
         for ((name, route) in pages) {
             val open = tourNavigate
             if (open == null) { missing += p + name; continue }
             scenario?.onActivity { open(route) }
             settle(1_500); shot(p + name)
+            if (name == "79_calendario") {
+                scroll(down = true); shot(p + name + "_fondo")
+            }
             back()
         }
         // Il fumetto delle azioni (tieni premuto su una riga), sopra la pagina Note.
