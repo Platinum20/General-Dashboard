@@ -395,7 +395,7 @@ fun TopLevelBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    // Si restringe col dito (1.433): la barra assorbe i primi 24 dp di scorrimento, quindi il contenuto
+    // Si restringe col dito (1.435): la barra assorbe i primi 24 dp di scorrimento, quindi il contenuto
     // segue il dito senza scatti e il titolo rimpicciolisce in modo continuo, mai di colpo.
     val rangePx = with(density) { TopBarCollapse.RANGE_DP.dp.toPx() }
     val state = scrollBehavior?.state

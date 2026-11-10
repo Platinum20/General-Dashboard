@@ -1,11 +1,15 @@
 # Changelog
 
-## 1.433.0
+## 1.435.0
 **Il titolo della pagina si restringe insieme al dito**
 - Scorrendo, il titolo grande rimpicciolisce in modo continuo mentre muovi il dito, invece di scattare da grande a piccolo con una dissolvenza
 - La riga piccola sopra il titolo svanisce piano e la barra si abbassa insieme: il contenuto segue il dito senza saltare
 - Se lasci a metà, la barra finisce da sola il movimento; tornando in cima alla pagina il titolo torna grande
 - Uguale su tutte le pagine: Home, Calendario, News, Media, Meteo, Impostazioni e le altre
+
+## 1.434.0
+**Nella scheda di una spesa si vede di nuovo l'importo**
+- Accanto al nome c'era solo "€": il numero era schiacciato a zero. Ora il campo è largo quanto l'importo e si può ancora toccare e correggere lì
 
 ## 1.432.0
 **La pagina SIM ti dice se i giga bastano fino al rinnovo**

@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
@@ -247,6 +246,11 @@ fun DetailAmountField(key: Any, value: String, onCommit: (String) -> Unit) {
         textAlign = TextAlign.End,
         fontFeatureSettings = "tnum",
     )
+    // Larga quanto il numero scritto: IntrinsicSize.Min su un campo di testo lo schiacciava a zero (1.434, si vedeva solo "€").
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val textPx = measurer.measure(text.ifEmpty { "0" }, style, maxLines = 1).size.width
+    val fieldWidth = with(density) { textPx.toDp() } .let { amountFieldWidth(it.value).dp }
     Row(verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.foundation.text.BasicTextField(
             value = text,
@@ -255,11 +259,14 @@ fun DetailAmountField(key: Any, value: String, onCommit: (String) -> Unit) {
             textStyle = style,
             cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-            modifier = Modifier.widthIn(min = 48.dp, max = 160.dp).width(androidx.compose.foundation.layout.IntrinsicSize.Min),
+            modifier = Modifier.width(fieldWidth),
         )
         Text(" €", style = style)
     }
 }
+
+/** La larghezza del campo importo in dp: il testo più lo spazio del cursore, tra 24 e 180. Pura, per i test. */
+internal fun amountFieldWidth(textDp: Float): Float = (textDp + 4f).coerceIn(24f, 180f)
 
 /** Un chip toccabile con la freccia ›: la categoria di una spesa (tocco = il fumetto con le categorie). */
 @Composable
