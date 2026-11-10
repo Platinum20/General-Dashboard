@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.457.0
+**Card SIM: "Letto alle…" sulla riga del titolo**
+- Quando i dati della SIM sono vecchi, "Letto …" con l'orario ora sta a destra del titolo "SIM", non più in una riga sua
+
 ## 1.456.0
 **Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
 - Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
