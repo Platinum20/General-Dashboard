@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.448.0
+**Una barra di ricerca nuova, tonda e morbida**
+- Il campo di Cerca è ora una pillola tonda e piena, senza bordo, che si vede bene in ogni tema
+- Quando la tocchi si accende piano, e la X per svuotare compare da sola appena scrivi
+- Niente più linee tra i risultati: la lista scorre più leggera
+- I gruppi di risultati entrano e escono scivolando mentre scrivi, senza scatti
+- Stessa barra anche nella ricerca della località del meteo
+
 ## 1.447.0
 **Niente più soldi nell'app: tolti Revolut e le spese**
 - Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo

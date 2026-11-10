@@ -210,7 +210,6 @@ fun SearchScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (recents.isNotEmpty()) Section(title = "Recenti") {
                         recents.forEachIndexed { i, r ->
-                            if (i > 0) RowDivider()
                             HintRow(Icons.Outlined.History, r, onLongClick = {
                                 ActionBubble.show(BubbleAction(Icons.Outlined.Delete, "Togli dalle recenti", danger = true) { SearchRecents.forget(r) })
                             }) { haptic(Haptic.TICK); setQuery(r) }
@@ -229,13 +228,13 @@ fun SearchScreen(
                 val foundEvents = if (shows(SearchFilter.AGENDA)) EverywhereSearch.events(events, q, today) else emptyList()
                 val foundNews = if (shows(SearchFilter.NEWS)) EverywhereSearch.news(news?.items.orEmpty(), q) else emptyList()
                 if (foundEvents.isNotEmpty()) item(key = "events") {
-                    SourceSection("Calendario", foundEvents, "events" in expanded, { expanded = expanded + "events" }) { (day, e) ->
+                    SourceSection("Calendario", foundEvents, "events" in expanded, { expanded = expanded + "events" }, Modifier.animateItem()) { (day, e) ->
                         val time = if (e.allDay) "" else " · " + Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).format(eventHour)
                         ResultRow(e.title, longDate(day) + time) { inApp?.openEvent?.invoke(e) }
                     }
                 }
                 if (foundNews.isNotEmpty()) item(key = "news") {
-                    SourceSection("News", foundNews, "news" in expanded, { expanded = expanded + "news" }) { n ->
+                    SourceSection("News", foundNews, "news" in expanded, { expanded = expanded + "news" }, Modifier.animateItem()) { n ->
                         val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
                         ResultRow(n.title, n.source.name + whenText, onLongClick = { SavedLinks.offer(n.savedLink()) }) { onOpenArticle(n) }
                     }
@@ -248,7 +247,7 @@ fun SearchScreen(
                 val radio = if (fresh && shows(SearchFilter.RADIO)) media.radio else emptyList()
                 val pods = if (shows(SearchFilter.MUSIC) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
                 if (music.isNotEmpty()) item(key = "music") {
-                    SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }) { item ->
+                    SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }, Modifier.animateItem()) { item ->
                         ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {
                             SpotifyPlayer.play(context, item)
                             onOpenPlayer()
@@ -256,12 +255,12 @@ fun SearchScreen(
                     }
                 }
                 if (videos.isNotEmpty()) item(key = "videos") {
-                    SourceSection("YouTube", videos, "videos" in expanded, { expanded = expanded + "videos" }) { v ->
+                    SourceSection("YouTube", videos, "videos" in expanded, { expanded = expanded + "videos" }, Modifier.animateItem()) { v ->
                         ResultRow(v.title, v.channel, onLongClick = { SavedLinks.offer(SavedLinks.youtube(v)) }) { onWatch(v.watchUrl) }
                     }
                 }
                 if (radio.isNotEmpty()) item(key = "radio") {
-                    SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }) { station ->
+                    SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }, Modifier.animateItem()) { station ->
                         ResultRow(station.name, com.platinum20.dashboard.media.radio.RadioGenre.of(station.tags) ?: "Radio", onLongClick = { SavedLinks.offer(SavedLinks.radio(station)) }) {
                             RadioStore.play(station)
                             onOpenPlayer()
@@ -269,7 +268,7 @@ fun SearchScreen(
                     }
                 }
                 if (pods.isNotEmpty()) item(key = "podcasts") {
-                    SourceSection("Podcast", pods, "podcasts" in expanded, { expanded = expanded + "podcasts" }) { podcast ->
+                    SourceSection("Podcast", pods, "podcasts" in expanded, { expanded = expanded + "podcasts" }, Modifier.animateItem()) { podcast ->
                         ResultRow(podcast.title, "Ultimo episodio · ${podcast.author}") {
                             // Parte l'episodio più recente: gli altri si trovano in Media › Podcast.
                             scope.launch {
@@ -318,15 +317,19 @@ private const val PER_SOURCE = 4
 
 /** Una fonte di risultati: i primi [PER_SOURCE] e, se ce ne sono altri, "Mostra altri" per vederli tutti. */
 @Composable
-private fun <T> SourceSection(title: String, items: List<T>, expanded: Boolean, onExpand: () -> Unit, row: @Composable (T) -> Unit) {
-    Section(title = "$title · ${items.size}") {
+private fun <T> SourceSection(
+    title: String,
+    items: List<T>,
+    expanded: Boolean,
+    onExpand: () -> Unit,
+    modifier: Modifier = Modifier,
+    row: @Composable (T) -> Unit,
+) {
+    // Senza divisori (1.448): le righe hanno già il loro respiro, una linea in più spezzava la lista.
+    Section(title = "$title · ${items.size}", modifier = modifier) {
         val shown = if (expanded) items else items.take(PER_SOURCE)
-        shown.forEachIndexed { i, item ->
-            if (i > 0) RowDivider()
-            row(item)
-        }
+        shown.forEach { item -> row(item) }
         if (!expanded && items.size > PER_SOURCE) {
-            RowDivider()
             TextButton(onClick = onExpand, modifier = Modifier.fillMaxWidth()) {
                 Text("Mostra altri ${items.size - PER_SOURCE}")
             }
