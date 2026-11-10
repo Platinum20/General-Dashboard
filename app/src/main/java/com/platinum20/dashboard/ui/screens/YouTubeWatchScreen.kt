@@ -4,12 +4,6 @@ import androidx.compose.material.icons.outlined.QueueMusic
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.RadioButtonUnchecked
-import androidx.compose.material.icons.outlined.HighQuality
-import androidx.compose.material.icons.outlined.Speed
-import androidx.compose.material.icons.outlined.ClosedCaption
-import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -85,7 +79,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.mutableStateListOf
-import com.platinum20.dashboard.media.youtube.player.YtSubtitle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -158,7 +151,6 @@ import androidx.compose.material.icons.filled.HowToReg
 import androidx.compose.material.icons.outlined.PersonAdd
 import com.platinum20.dashboard.settings.AppSettings
 
-private val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
 /**
  * Player di YouTube dell'app: il video arriva direttamente nel player di Android (niente sito,
@@ -447,7 +439,7 @@ private fun VideoArea(
 
     // I comandi spariscono da soli dopo 3 secondi mentre il video va (non con un menu aperto).
     // Con il fumetto del menu aperto i comandi restano.
-    val menuOpen = ActionBubble.actions != null
+    val menuOpen = ActionBubble.actions != null || VideoSettings.open
     LaunchedEffect(controls, playing, flashKey, menuOpen) {
         if (controls && playing && !menuOpen) {
             delay(3_000)
@@ -816,7 +808,7 @@ private fun VideoArea(
                 Row(Modifier.align(Alignment.TopEnd).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val stream = now?.stream
                     if (stream != null) {
-                        IconButton(onClick = { flashKey++; showVideoMenu(context, stream, now, VideoMenu.MAIN) }) {
+                        IconButton(onClick = { flashKey++; VideoSettings.open = true }) {
                             Icon(Icons.Outlined.Settings, contentDescription = "Impostazioni del video", tint = Color.White)
                         }
                     }
@@ -1174,56 +1166,6 @@ private fun PillButton(
         }
     }
 }
-
-/** Le pagine del menu del video: impostazioni, qualità, velocità, sottotitoli. */
-private enum class VideoMenu { MAIN, QUALITY, SPEED, SUBTITLES }
-
-/**
- * Menu sul video (come nell'app di YouTube): dalla rotella si sceglie qualità, velocità, sottotitoli
- * e ripeti. Ogni scelta vale subito, dal punto in cui si è.
- */
-/**
- * Il menu del video nel fumetto di vetro in basso (1.357), come tutti gli altri menu: prima un menu a tendina
- * di Material. Una voce porta alla sua scelta (Qualità › Auto, 1080p…); ogni scelta vale subito.
- */
-private fun showVideoMenu(context: android.content.Context, stream: YtStream, now: YtNow?, page: VideoMenu) {
-    val auto = YtPlayer.isAuto() && stream.dashManifest != null
-    val showing = now?.playingHeight?.takeIf { it > 0 } ?: stream.height
-    val speed = YtPlayer.speed()
-    fun pick(on: Boolean) = if (on) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked
-    val actions = when (page) {
-        VideoMenu.MAIN -> listOfNotNull(
-            stream.qualities.takeIf { it.isNotEmpty() }?.let {
-                BubbleAction(Icons.Outlined.HighQuality, "Qualità", if (auto) "Automatica (${showing}p)" else "${stream.height}p") {
-                    showVideoMenu(context, stream, now, VideoMenu.QUALITY)
-                }
-            },
-            BubbleAction(Icons.Outlined.Speed, "Velocità", speedLabel(speed)) { showVideoMenu(context, stream, now, VideoMenu.SPEED) },
-            stream.subtitles.takeIf { it.isNotEmpty() }?.let {
-                BubbleAction(Icons.Outlined.ClosedCaption, "Sottotitoli", now?.subtitle?.substringBefore('-')?.uppercase() ?: "Disattivati") {
-                    showVideoMenu(context, stream, now, VideoMenu.SUBTITLES)
-                }
-            },
-            BubbleAction(Icons.Outlined.Repeat, "Ripeti il video", if (YtPlayer.loop()) "Acceso" else "Spento") {
-                YtPlayer.setLoop(context, !YtPlayer.loop())
-            },
-        )
-        VideoMenu.QUALITY -> listOfNotNull(
-            stream.dashManifest?.let { BubbleAction(pick(auto), "Automatica") { YtPlayer.setQuality(context, 0) } },
-        ) + stream.qualities.map { q ->
-            BubbleAction(pick(!auto && q.height == stream.height), "${q.height}p") { YtPlayer.setQuality(context, q.height) }
-        }
-        VideoMenu.SPEED -> speeds.map { s -> BubbleAction(pick(s == speed), speedLabel(s)) { YtPlayer.setSpeed(context, s) } }
-        VideoMenu.SUBTITLES -> listOf(BubbleAction(pick(now?.subtitle == null), "Disattivati") { YtPlayer.setSubtitle(context, null) }) +
-            stream.subtitles.map { sub: YtSubtitle ->
-                BubbleAction(pick(sub.language == now?.subtitle), sub.label) { YtPlayer.setSubtitle(context, sub) }
-            }
-    }
-    ActionBubble.show(*actions.toTypedArray())
-}
-
-private fun speedLabel(speed: Float): String =
-    if (speed == 1f) "normale" else (if (speed % 1f == 0f) "${speed.toInt()}" else speed.toString().replace('.', ',')) + "×"
 
 /**
  * Descrizione in una card grande (sotto non c'è altro): molte righe, tocca per leggerla tutta. I link sono veri: un video di
