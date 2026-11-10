@@ -404,28 +404,6 @@ internal fun WindTreAccountRows() {
             else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
         },
     )
-    if (linked) {
-        RowDivider()
-        // Se un numero esce sbagliato, quello che WindTre ha mandato serve a correggere la lettura.
-        SettingsItem(
-            icon = Icons.Outlined.Share,
-            title = "Salva i dati letti di WindTre",
-            subtitle = "Un file in Download, da allegare se qualcosa non torna",
-            onClick = {
-                val where = saveTextToDownloads(context, stampedName("windtre-dati-letti"), SimStore.capturesText())
-                com.platinum20.dashboard.capture.CaptureFeedback.show(
-                    com.platinum20.dashboard.capture.CaptureNotice(
-                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
-                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
-                        undo = null,
-                        icon = Icons.Outlined.Share,
-                        fly = false,
-                    ),
-                )
-            },
-            trailing = { TextButton(onClick = { shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText()) }) { Text("Condividi") } },
-        )
-    }
 }
 
 

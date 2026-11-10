@@ -269,7 +269,7 @@ fun SearchScreen(
                 }
                 if (radio.isNotEmpty()) item(key = "radio") {
                     SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }) { station ->
-                        ResultRow(station.name, listOf(station.country, station.tags.split(',').firstOrNull().orEmpty()).filter { it.isNotBlank() }.joinToString(" · "), onLongClick = { SavedLinks.offer(SavedLinks.radio(station)) }) {
+                        ResultRow(station.name, com.platinum20.dashboard.media.radio.RadioGenre.of(station.tags) ?: "Radio", onLongClick = { SavedLinks.offer(SavedLinks.radio(station)) }) {
                             RadioStore.play(station)
                             onOpenPlayer()
                         }
