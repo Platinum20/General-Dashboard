@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.446.0
+**La linea a destra del Calendario è una vera barra di scorrimento**
+- La linea è tutto il calendario: dito in cima = il primo giorno, in fondo = l'ultimo, a metà = a metà. Dove lo metti, lì sei, subito
+- Il giorno sotto il dito arriva proprio lì, con il suo filo attaccato alla linea, e si accende in blu: niente più fumetto a parte
+- Un tic per ogni giorno che passi, un colpo più netto quando cambia il mese
+- Lasciando il dito non si apre niente
+
 ## 1.445.0
 **Home: la card del meteo è centrata**
 - Quando sotto il meteo non c'è nessuna riga, la card ha lo stesso spazio sopra e sotto: icona, temperatura e cielo stanno al centro.
