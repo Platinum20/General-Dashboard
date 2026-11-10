@@ -333,6 +333,9 @@ fun NotesScreen(
         // La lista nasce già su OGGI (1.357): niente salto né dissolvenza dopo. Sotto c'è spazio quanto lo schermo
         // finché non si misura quanto c'è davvero dopo OGGI, così il primo fotogramma è già quello giusto.
         val listState = rememberReselectListState(Routes.NOTES, initialIndex = nowItem ?: 0)
+        // La linea a destra è una barra di scorrimento (Antonio, 1.446): dito in cima = primo giorno, in fondo = ultimo; lasciandola non si apre niente.
+        val scrubDays = remember(entries, timelineIndex, habitsAt, habitCount) { DayScrub.days(entries.map { it.first }, timelineIndex, habitsAt, habitCount) }
+        val scrub = rememberDayScrub(listState, scrubDays)
         LaunchedEffect(Unit) {
             androidx.compose.runtime.withFrameNanos { }
             startedAtNow = true
@@ -362,8 +365,8 @@ fun NotesScreen(
             }
         }
         var grown by remember { mutableStateOf(0) }
-        LaunchedEffect(nearEnd, grown, calendarGranted) {
-            if (nearEnd && calendarGranted && NotesEvents.grow()) {
+        LaunchedEffect(nearEnd, grown, calendarGranted, scrub.active) {
+            if (nearEnd && calendarGranted && !scrub.active && NotesEvents.grow()) {
                 val before = events.size
                 events = NotesEvents.load(context)
                 // Un anno intero senza niente di nuovo: il calendario è finito, ci si ferma qui.
@@ -378,8 +381,8 @@ fun NotesScreen(
             derivedStateOf { startedAtNow && entries.isNotEmpty() && listState.firstVisibleItemIndex <= timelineIndex + NEAR_ROWS }
         }
         var grownPast by remember { mutableStateOf(0) }
-        LaunchedEffect(nearStart, grownPast, calendarGranted) {
-            if (nearStart && calendarGranted && NotesEvents.growPast()) {
+        LaunchedEffect(nearStart, grownPast, calendarGranted, scrub.active) {
+            if (nearStart && calendarGranted && !scrub.active && NotesEvents.growPast()) {
                 val before = events.size
                 // Le righe hanno chiavi stabili: la lista tiene ferma quella che stai guardando da sola.
                 events = NotesEvents.load(context)
@@ -389,9 +392,6 @@ fun NotesScreen(
             }
         }
         val barrier = rememberPastBarrier(listState, nowItem ?: -1, nowItem?.let { 0 })
-        // La linea a destra è una barra di scorrimento (Antonio, 1.446): dito in cima = primo giorno, in fondo = ultimo; lasciandola non si apre niente.
-        val scrubDays = remember(entries, timelineIndex, habitsAt, habitCount) { DayScrub.days(entries.map { it.first }, timelineIndex, habitsAt, habitCount) }
-        val scrub = rememberDayScrub(listState, scrubDays)
         Box(Modifier.fillMaxSize()) {
         // Trascinando la linea a destra si accende la riga del giorno sotto il dito (niente fumetti).
         androidx.compose.runtime.CompositionLocalProvider(LocalScrubbedRow provides scrub.hot) {

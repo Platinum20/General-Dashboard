@@ -522,15 +522,16 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
 private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean, hot: Boolean = false) {
     // Mentre si trascina la linea a destra ([DayScrub]) il giorno sotto il dito si accende: nome, filo e pallino blu.
     val primary = MaterialTheme.colorScheme.primary
-    val color by androidx.compose.animation.animateColorAsState(if (hot) primary else dayLabelColor(late, past), Motion.settle(), label = "giorno")
+    // Si accende e si spegne di colpo: con una dissolvenza i giorni appena passati lasciavano una scia che lampeggiava.
+    val color by androidx.compose.animation.animateColorAsState(if (hot) primary else dayLabelColor(late, past), androidx.compose.animation.core.snap(), label = "giorno")
     val dotColor = when {
         past -> MaterialTheme.colorScheme.outline
         late -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurface
     }
-    val dotTint by androidx.compose.animation.animateColorAsState(if (hot) primary else dotColor, Motion.settle(), label = "pallino")
-    val dotSize by androidx.compose.animation.core.animateDpAsState(if (hot) 12.dp else 7.dp, Motion.lively(), label = "pallino")
-    val ruleTint by androidx.compose.animation.animateColorAsState(if (hot) primary else line, Motion.settle(), label = "filo")
+    val dotTint by androidx.compose.animation.animateColorAsState(if (hot) primary else dotColor, androidx.compose.animation.core.snap(), label = "pallino")
+    val dotSize by androidx.compose.animation.core.animateDpAsState(if (hot) 12.dp else 7.dp, androidx.compose.animation.core.snap(), label = "pallino")
+    val ruleTint by androidx.compose.animation.animateColorAsState(if (hot) primary else line, androidx.compose.animation.core.snap(), label = "filo")
     val dot = dotTint
     Row(
         Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },

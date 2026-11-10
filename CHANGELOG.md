@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.456.0
+**Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
+- Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
+- Il giorno sotto il dito si accende e si spegne subito, senza lasciare una scia di giorni blu
+- Mentre tieni la linea il calendario non carica altri mesi sotto il dito: lo fa quando lasci
+
 ## 1.455.0
 **Coda e impostazioni del video rifatte**
 - Coda: in alto cosa suona, con la copertina grande nel blocco blu; sotto cosa viene dopo, righe libere senza riquadri né linee
