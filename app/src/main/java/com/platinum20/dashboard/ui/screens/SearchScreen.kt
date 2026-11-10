@@ -83,16 +83,16 @@ enum class SearchFilter(val label: String) {
     // Dalla 1.357 note ed eventi sono un filtro solo, "Calendario", come il calendario unico. AGENDA resta per le
     // ricerche salvate nelle rotte, ma non ha più il suo chip.
     ALL("Tutto"), NOTES("Calendario"), AGENDA("Calendario"), NEWS("News"),
-    // Radio e podcast insieme, come la loro pagina in Media; il chip dice solo "Radio" così il sesto ci sta intero.
+    // Dalla 1.437 i podcast stanno con la Musica, come in Media; Radio è solo radio.
     MUSIC("Musica"), VIDEO("Video"), RADIO("Radio");
 
     companion object {
         /** Il filtro già scelto quando si tira giù dentro una pagina di Media (es. "media/spotify" → Musica). */
         fun forRoute(route: String?): SearchFilter? = when {
             route == null -> null
-            route.startsWith("media/spotify") -> MUSIC
+            route.startsWith("media/spotify") || route.startsWith("media/podcast") -> MUSIC
             route.startsWith("media/youtube") || route.startsWith("media/video") -> VIDEO
-            route.startsWith("media/radio") || route.startsWith("media/podcast") -> RADIO
+            route.startsWith("media/radio") -> RADIO
             else -> null
         }
     }
@@ -253,7 +253,7 @@ fun SearchScreen(
                 val music = if (fresh && shows(SearchFilter.MUSIC)) media.spotify.filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE } else emptyList()
                 val videos = if (fresh && shows(SearchFilter.VIDEO)) media.videos else emptyList()
                 val radio = if (fresh && shows(SearchFilter.RADIO)) media.radio else emptyList()
-                val pods = if (shows(SearchFilter.RADIO) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
+                val pods = if (shows(SearchFilter.MUSIC) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
                 if (music.isNotEmpty()) item(key = "music") {
                     SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }) { item ->
                         ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {

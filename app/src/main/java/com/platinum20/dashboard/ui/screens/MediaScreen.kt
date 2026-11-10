@@ -101,6 +101,7 @@ import com.platinum20.dashboard.media.Playback
 import com.platinum20.dashboard.media.Playing
 import com.platinum20.dashboard.media.podcast.EpisodeDate
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -108,7 +109,7 @@ import androidx.compose.material3.LocalContentColor
 
 /**
  * Media: in cima quello che suona adesso (o da riprendere), la coda e "Continua"; sotto tre file di copertine
- * (Musica, Video, Radio e podcast) con quello che c'è dentro, e il titolo della fila apre la pagina intera.
+ * (Musica con i podcast, Video, Radio) con quello che c'è dentro, e il titolo della fila apre la pagina intera.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -116,7 +117,7 @@ fun MediaScreen(
     bottomPadding: PaddingValues,
     onOpenMusic: () -> Unit,
     onOpenVideo: () -> Unit,
-    onOpenListen: (ListenTab) -> Unit,
+    onOpenRadio: () -> Unit,
     onOpenPlayer: (Playing) -> Unit,
     onOpenSettings: () -> Unit,
     /** Un video della fila Video: si apre nel player. */
@@ -137,8 +138,6 @@ fun MediaScreen(
     val now by Playback.now.collectAsState()
     val history by MediaHistory.items.collectAsState()
     val videos by VideoLibrary.recent.collectAsState()
-    val followed by PodcastStore.followed.collectAsState()
-    val spotifyShows by PodcastStore.spotify.collectAsState()
     val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
     val inApp = LocalInAppNav.current
     val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
@@ -154,7 +153,6 @@ fun MediaScreen(
     }
     val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
-    val podcasts = (followed.size + spotifyShows.size)
 
     // La coda si apre nello stesso riquadro del player (1.357): una coda sola, un posto solo.
     var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -204,17 +202,15 @@ fun MediaScreen(
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
                 item(key = "continue") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(continueList, key = { "${it.kind}-${it.key}" }) { item -> ContinueTile(item, onClick = { openResume(item) }) }
+                        itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { i, item -> ContinueTile(item, first = i == 0, onClick = { openResume(item) }) }
                     }
                 }
             }
-            // Le tre file (1.357): quello che c'è in Musica, Video e Radio e podcast, non tre tessere da aprire.
+            // Le tre file (1.357): quello che c'è in Musica (con i podcast, 1.437), Video e Radio, non tre tessere da aprire.
             // Il titolo di ogni fila apre la pagina intera.
             item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
             item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
-            item(key = "shelf-listen") {
-                ListenShelf(onOpenAll = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) })
-            }
+            item(key = "shelf-radio") { RadioShelf(onOpenAll = onOpenRadio) }
         }
     }
     // Sopra Media la barra resta in basso: l'ultima voce della coda le sta sopra.
@@ -367,41 +363,42 @@ private fun MediaRowCard(
 
 /** "Continua": anteprima grande con la barra di dove eri, titolo e fonte. */
 @Composable
-private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
+private fun ContinueTile(item: ResumeItem, first: Boolean, onClick: () -> Unit) {
     Column(
         Modifier
+            .tileDivider(first)
             .width(168.dp)
             .clip(MaterialTheme.shapes.large)
             .bouncyPress()
             .tapOrSave({ SavedLink.Media(item) }, onClick)
     ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(94.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            IconTile(item.icon(), item.accent())
-            if (item.image.isNotBlank()) {
-                AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-            }
-            if (item.unfinished && item.durationMs > 0) {
-                LinearProgressIndicator(
-                    progress = { item.progress },
-                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
-                    drawStopIndicator = {},
-                )
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        TileCaption(
+        CaptionedCover(
             item.title,
             listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
             titleLines = MediaShelves.TITLE_LINES,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
+            textModifier = Modifier.padding(horizontal = 4.dp),
+        ) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(94.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconTile(item.icon(), item.accent())
+                if (item.image.isNotBlank()) {
+                    AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                }
+                if (item.unfinished && item.durationMs > 0) {
+                    LinearProgressIndicator(
+                        progress = { item.progress },
+                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                        drawStopIndicator = {},
+                    )
+                }
+            }
+        }
     }
 }
 

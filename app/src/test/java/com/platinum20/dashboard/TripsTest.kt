@@ -35,7 +35,7 @@ class TripsTest {
         assertEquals(2L, trip.eventId)
         assertEquals(begin, trip.begin)
         assertEquals(end, trip.end)
-        assertEquals(Trip("Taranto", "Pescara Centrale", "Intercity 612"), trip.trip)
+        assertEquals(Trip("Taranto", "Pescara Centrale", "Intercity 612", "8", "11D"), trip.trip)
         assertEquals(null, out[1].trip)
     }
 
@@ -64,7 +64,11 @@ class TripsTest {
         val page = tripStops(e, LocalDate.of(2026, 11, 9), zone, labels = true)!!
         assertEquals("Taranto", page.from)
         assertEquals("Pescara Centrale", page.to)
-        assertEquals("4 h 32 min · Intercity 612", stops.middle)
+        // La durata in mezzo, sotto treno, carrozza e posto.
+        assertEquals("4 h 32 min", stops.middle)
+        assertEquals("Intercity 612", stops.below)
+        assertEquals("Intercity 612 · Carrozza 5 · Posto 42D",
+            tripStops(e.copy(trip = Trip("Taranto", "Pescara Centrale", "Intercity 612", "5", "42D")), LocalDate.of(2026, 11, 9), zone)!!.below)
         assertEquals(null, stops.title)
         assertEquals(null, stops.progress(dep - 1))
         assertEquals(0.5f, stops.progress(dep + (arr - dep) / 2)!!, 0.01f)
@@ -138,5 +142,18 @@ class TripsTest {
             "Questo evento è stato creato a partire da un'email che hai ricevuto in Gmail. https://mail.google.com/mail?extsrc=cal"
         assertEquals("", Trips.cleanDescription(text))
         assertEquals("Portare il caricabatterie", Trips.cleanDescription("Portare il caricabatterie\n\n$text"))
+    }
+
+    @Test fun carrozzaEPostoDalBiglietto() {
+        assertEquals("8", Trips.coach(viaggio))
+        assertEquals("11D", Trips.seat(viaggio))
+        assertEquals("5", Trips.coach("Carrozza 5 Posto 42d"))
+        assertEquals("42D", Trips.seat("Carrozza 5 Posto 42d"))
+        assertEquals(null, Trips.seat("Treno Intercity 612"))
+        // Dalle note dell'evento, quando il titolo non le ha.
+        val withNotes = ev(1, "Train to Pescara Centrale").copy(description = "Treno: Intercity 612, Carrozza 3, Posto 7A")
+        assertEquals(Trip("Taranto", "Pescara Centrale", "Intercity 612", "3", "7A"), Trips.shape(listOf(withNotes)).single().trip)
+        assertEquals(null, Trips.ticketLine(Trip("Taranto", "Pescara Centrale", null)))
+        assertEquals("Carrozza 3 · Posti 7A-7B", Trips.ticketLine(Trip(null, "X", null, "3", "7A-7B")))
     }
 }

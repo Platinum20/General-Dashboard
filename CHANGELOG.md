@@ -1,10 +1,23 @@
 # Changelog
 
-## 1.437.0
+## 1.439.0
 **Il turno si chiama con le sue creator**
 - Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario
 - Tolta la riga con le creator sotto l'orario: stanno già nel titolo
 - Nel calendario, fra inizio e fine del turno: la durata con l'icona e "Da solo" o "In doppio con …", e sotto, su una riga sua, venduto, scaglione raggiunto e guadagno ("Venduto $504,67 · 12% → $60,56"); le due righe stanno al centro
+
+## 1.438.0
+**Nei treni, sotto la durata, il treno con carrozza e posto**
+- Nel calendario fra partenza e arrivo: in mezzo la durata, sotto "Intercity 612 · Carrozza 5 · Posto 42D", tutte e due al centro
+- Carrozza e posto si leggono dal biglietto (titolo o note dell'evento); se manca qualcosa si mostra quello che c'è
+- Nella scheda del treno le stesse due righe; sotto resta solo il PNR
+
+## 1.437.0
+**In Media il titolo sta sopra la copertina e chi lo pubblica sotto; i podcast passano in Musica**
+- Musica, Video, Continua, Shorts e i video di YouTube: il titolo sopra l'immagine, appoggiato a lei (se è lungo va a capo verso l'alto), l'autore o il canale subito sotto (se è lungo va a capo verso il basso)
+- Un divisorio leggero fra un contenuto e l'altro, nelle file e fra i video uno sotto l'altro
+- I podcast stanno dentro Musica: in Media nella fila Musica i nuovi episodi, nella pagina Musica "I tuoi podcast" e "Nuovi episodi" in fondo
+- La radio è una sezione a parte: fila "Radio" in Media e pagina Radio solo con le radio
 
 ## 1.436.0
 **Tornano come prima le schede, Media, gli Aggiornamenti e le letture negli account; il fumetto delle categorie è uno solo**

@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.podcast.Episode
+import com.platinum20.dashboard.media.podcast.Podcast
+import com.platinum20.dashboard.media.podcast.PodcastStore
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.SavedLinks
@@ -98,6 +101,7 @@ import com.platinum20.dashboard.media.spotify.NewReleases
 import com.platinum20.dashboard.media.spotify.SpRelease
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import java.time.LocalDate
 import com.platinum20.dashboard.media.spotify.SpPlayback
 import com.platinum20.dashboard.media.spotify.SpotifyApi
@@ -134,8 +138,14 @@ fun MusicScreen(
     val connected = official || MediaService.SPOTIFY in loggedIn
     val message by SpotifyStore.message.collectAsState()
     var opened by remember { mutableStateOf<SpItem?>(null) }
+    // Un podcast aperto dalla sua fila (1.437: i podcast stanno in Musica): i suoi episodi al posto della pagina.
+    var podcast by remember { mutableStateOf<Podcast?>(null) }
+    remember { PodcastStore.init(context) }
+    val podcastNow by PodcastStore.now.collectAsState()
 
-    BackHandler(enabled = opened != null) { opened = null }
+    BackHandler(enabled = opened != null || podcast != null) {
+        if (podcast != null) podcast = null else opened = null
+    }
 
     LaunchedEffect(message) {
         message?.let {
@@ -166,10 +176,16 @@ fun MusicScreen(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
-                title = opened?.title ?: "Musica",
+                title = podcast?.title ?: opened?.title ?: "Musica",
                 scrollBehavior = barScroll,
-                subtitle = "Spotify",
-                onBack = { if (opened != null) opened = null else onBack() },
+                subtitle = podcast?.let { p -> p.author.ifBlank { if (p.fromSpotify) "Da Spotify" else "Podcast" } } ?: "Spotify e podcast",
+                onBack = {
+                    when {
+                        podcast != null -> podcast = null
+                        opened != null -> opened = null
+                        else -> onBack()
+                    }
+                },
             )
         },
     ) { inner ->
@@ -178,6 +194,10 @@ fun MusicScreen(
                 .fillMaxSize()
                 .padding(inner)
         ) {
+            podcast?.let { page ->
+                PodcastPage(page, podcastNow)
+                return@Column
+            }
             if (!connected) {
                 ConnectSpotify(onLogin)
                 return@Column
@@ -194,21 +214,28 @@ fun MusicScreen(
                 })
                 return@Column
             }
-            MusicHome(onOpen = { opened = it })
+            MusicHome(onOpen = { opened = it }, onOpenPodcast = { podcast = it })
         }
     }
 }
 
 /** La pagina unica di Musica: ogni sezione è una fila che scorre di lato. */
 @Composable
-private fun MusicHome(onOpen: (SpItem) -> Unit) {
+private fun MusicHome(onOpen: (SpItem) -> Unit, onOpenPodcast: (Podcast) -> Unit) {
     val context = LocalContext.current
     val homeState by SpotifyStore.home.collectAsState()
     val playlistsState by SpotifyStore.playlists.collectAsState()
     val libraryState by SpotifyStore.library.collectAsState()
     val releases by SpotifyStore.releases.collectAsState()
     val seen by SpotifyStore.seenReleases.collectAsState()
+    val followedHere by PodcastStore.followed.collectAsState()
+    val spotifyShows by PodcastStore.spotify.collectAsState()
+    val followed = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
+    val latest by PodcastStore.latest.collectAsState()
+    val search by PodcastStore.search.collectAsState()
+    var idea by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) {
+        PodcastStore.loadLatest()
         SpotifyStore.refreshHome()
         SpotifyStore.refreshPlaylists()
         SpotifyStore.refreshLibrary()
@@ -254,6 +281,89 @@ private fun MusicHome(onOpen: (SpItem) -> Unit) {
         coverRow("Album salvati", library?.albums.orEmpty(), open)
         coverRow("I tuoi brani del mese", home?.topTracks.orEmpty(), open)
         coverRow("Artisti che ascolti di più", home?.topArtists.orEmpty(), open)
+        // In fondo i podcast (1.437, Antonio: dentro Musica, la radio resta a parte).
+        podcastRows(followed, latest.data.orEmpty(), ideas = search.data.orEmpty().takeIf { idea != null }, onIdea = { text ->
+            idea = text
+            PodcastStore.search(text)
+        }, onOpenPodcast = onOpenPodcast)
+    }
+}
+
+/**
+ * I podcast dentro Musica, con le stesse copertine in fila: quelli che segui (anche salvati su Spotify) e i loro
+ * episodi nuovi. Senza podcast seguiti, qualche idea da cui partire.
+ */
+private fun LazyListScope.podcastRows(
+    followed: List<Podcast>,
+    latest: List<Episode>,
+    ideas: List<Podcast>?,
+    onIdea: (String) -> Unit,
+    onOpenPodcast: (Podcast) -> Unit,
+) {
+    if (followed.isEmpty()) {
+        item(key = "podcast-start") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionHeader("Podcast per iniziare", Modifier.padding(horizontal = 16.dp))
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    podcastIdeas.forEach { idea -> CanvasChip(selected = false, onClick = { onIdea(idea) }, label = idea) }
+                }
+            }
+        }
+        if (!ideas.isNullOrEmpty()) item(key = "podcast-ideas") {
+            PodcastCovers(ideas, onOpenPodcast)
+        }
+        return
+    }
+    item(key = "podcast-followed") {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionHeader("I tuoi podcast", Modifier.padding(horizontal = 16.dp))
+            PodcastCovers(followed, onOpenPodcast)
+        }
+    }
+    if (latest.isNotEmpty()) item(key = "podcast-latest") {
+        val tile = coverTileWidth()
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionHeader("Nuovi episodi", Modifier.padding(horizontal = 16.dp))
+            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                itemsIndexed(latest, key = { _, e -> "ep-${e.id}" }) { i, episode ->
+                    Column(
+                        Modifier
+                            .tileDivider(i == 0)
+                            .width(tile)
+                            .bouncyPress(0.96f)
+                            .clickable { PodcastStore.play(episode) },
+                    ) {
+                        CaptionedCover(episode.title, episode.podcastTitle) {
+                            Cover(episode.image, MaterialTheme.shapes.medium, tile)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Copertine di podcast in fila: titolo sopra, autore sotto; un tocco apre gli episodi. */
+@Composable
+private fun PodcastCovers(list: List<Podcast>, onOpen: (Podcast) -> Unit) {
+    val tile = coverTileWidth()
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        itemsIndexed(list, key = { _, p -> "pod-${p.feedUrl}" }) { i, podcast ->
+            Column(
+                Modifier
+                    .tileDivider(i == 0)
+                    .width(tile)
+                    .bouncyPress(0.96f)
+                    .clickable { onOpen(podcast) },
+            ) {
+                CaptionedCover(podcast.title, podcast.author.ifBlank { if (podcast.fromSpotify) "Spotify" else "Podcast" }) {
+                    Cover(podcast.artwork, MaterialTheme.shapes.medium, tile)
+                }
+            }
+        }
     }
 }
 
@@ -266,28 +376,29 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(if (fresh > 0) "Nuove uscite · $fresh da ascoltare" else "Nuove uscite", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(list, key = { "release-${it.item.id}" }) { release ->
+            itemsIndexed(list, key = { _, r -> "release-${r.item.id}" }) { i, release ->
                 Column(
                     Modifier
+                        .tileDivider(i == 0)
                         .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { onOpen(release) },
                 ) {
-                    Box {
-                        Cover(release.item.image, MaterialTheme.shapes.medium, tile)
-                        if (release.item.id !in seen) {
-                            Box(
-                                Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(6.dp)
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                            )
+                    CaptionedCover(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today)) {
+                        Box {
+                            Cover(release.item.image, MaterialTheme.shapes.medium, tile)
+                            if (release.item.id !in seen) {
+                                Box(
+                                    Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(6.dp)
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.height(6.dp))
-                    TileCaption(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today))
                 }
             }
         }
@@ -315,28 +426,28 @@ private fun LazyListScope.coverRow(title: String, list: List<SpItem>, onItem: (S
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionHeader(title, Modifier.padding(horizontal = 16.dp))
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(list, key = { "$title-${it.uri}" }) { item -> CoverTile(item, onClick = { onItem(item, list) }) }
+                itemsIndexed(list, key = { _, r -> "$title-${r.uri}" }) { i, item -> CoverTile(item, first = i == 0, onClick = { onItem(item, list) }) }
             }
         }
     }
 }
 
 @Composable
-private fun CoverTile(item: SpItem, onClick: () -> Unit) {
+private fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
     val round = item.kind == SpKind.ARTIST
     val tile = coverTileWidth()
     Column(
         Modifier
+            .tileDivider(first)
             .width(tile)
             .bouncyPress(0.96f)
             // Tenendo premuto un brano si salva nelle note.
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
         horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
     ) {
-        Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile)
-        Spacer(Modifier.height(6.dp))
-        // Anche gli artisti tengono la riga del sottotitolo: tutta la fila resta alta uguale.
-        TileCaption(item.title, if (round) "Artista" else item.subtitle, centered = round)
+        CaptionedCover(item.title, if (round) "Artista" else item.subtitle, centered = round) {
+            Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile)
+        }
     }
 }
 
@@ -348,29 +459,30 @@ private fun MixRow(mixes: List<SpMix>) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader("Mix per te", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(mixes, key = { it.id }) { mix ->
+            itemsIndexed(mixes, key = { _, m -> m.id }) { i, mix ->
                 Column(
                     Modifier
+                        .tileDivider(i == 0)
                         .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { playTracks(context, mix.tracks, null) },
                 ) {
-                    Box {
-                        Cover(mix.image, MaterialTheme.shapes.medium, tile)
-                        Text(
-                            "Mix",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp)
-                                .clip(MaterialTheme.shapes.small)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
-                        )
+                    CaptionedCover(mix.title, mix.subtitle) {
+                        Box {
+                            Cover(mix.image, MaterialTheme.shapes.medium, tile)
+                            Text(
+                                "Mix",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .padding(8.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
                     }
-                    Spacer(Modifier.height(6.dp))
-                    TileCaption(mix.title, mix.subtitle)
                 }
             }
         }

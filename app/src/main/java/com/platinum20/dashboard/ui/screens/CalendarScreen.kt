@@ -249,8 +249,9 @@ fun EventDetailScreen(
             val from = if (begin > 0 && !train) begin else current.begin
             val to = if (begin > 0 && end > 0 && !train) end else current.end
             val trip = if (train) com.platinum20.dashboard.calendar.Trips.tripOf(current.title, current.location, current.description) else null
-            // Il treno è già nella riga di mezzo del viaggio: qui non si ripete.
-            val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description).filter { it.first != "Treno" || trip?.train == null } else emptyList()
+            // Treno, carrozza e posto sono già sotto la durata del viaggio: qui non si ripetono (resta il PNR).
+            val ticketAll = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description) else emptyList()
+            val ticket = ticketAll.filter { it.first == "PNR" }
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
             DetailTitle(if (shift != null) RowText.shift(shift.title) ?: "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
@@ -289,7 +290,7 @@ fun EventDetailScreen(
                         DetailRow(Icons.Outlined.Place, current.location)
                     }
                     // Con i dati del biglietto già sopra, le note del treno non dicono altro.
-                    if (notes.isNotBlank() && ticket.isEmpty()) {
+                    if (notes.isNotBlank() && ticketAll.isEmpty()) {
                         RowDivider()
                         DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
                     }
