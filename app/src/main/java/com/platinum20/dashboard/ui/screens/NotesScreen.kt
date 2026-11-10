@@ -362,8 +362,8 @@ fun NotesScreen(
             }
         }
         var grown by remember { mutableStateOf(0) }
-        LaunchedEffect(nearEnd, grown, calendarGranted) {
-            if (nearEnd && calendarGranted && NotesEvents.grow()) {
+        LaunchedEffect(nearEnd, grown, calendarGranted, scrub.active) {
+            if (nearEnd && calendarGranted && !scrub.active && NotesEvents.grow()) {
                 val before = events.size
                 events = NotesEvents.load(context)
                 // Un anno intero senza niente di nuovo: il calendario è finito, ci si ferma qui.
@@ -378,8 +378,8 @@ fun NotesScreen(
             derivedStateOf { startedAtNow && entries.isNotEmpty() && listState.firstVisibleItemIndex <= timelineIndex + NEAR_ROWS }
         }
         var grownPast by remember { mutableStateOf(0) }
-        LaunchedEffect(nearStart, grownPast, calendarGranted) {
-            if (nearStart && calendarGranted && NotesEvents.growPast()) {
+        LaunchedEffect(nearStart, grownPast, calendarGranted, scrub.active) {
+            if (nearStart && calendarGranted && !scrub.active && NotesEvents.growPast()) {
                 val before = events.size
                 // Le righe hanno chiavi stabili: la lista tiene ferma quella che stai guardando da sola.
                 events = NotesEvents.load(context)
