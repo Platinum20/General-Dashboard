@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
@@ -182,18 +183,12 @@ fun YouTubeFeedScreen(
     }
 }
 
+/**
+ * Un pulsante solo: accedere a YouTube qui nell'app. Il collegamento con l'API ufficiale di Google sta in
+ * Impostazioni › Account, per chi lo vuole; i video del telefono sono una riga, non un'altra strada.
+ */
 @Composable
 private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var busy by remember { mutableStateOf(false) }
-    var problem by remember { mutableStateOf<String?>(null) }
-
-    val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        busy = false
-        if (!YouTubeAuth.handleConsent(context, result.data)) problem = "Accesso annullato"
-    }
-
     Column(
         Modifier
             .fillMaxSize()
@@ -203,49 +198,26 @@ private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
     ) {
         IconTile(Icons.Outlined.OndemandVideo, TileAccent.ORANGE, size = 72.dp, iconSize = 36.dp)
         Spacer(Modifier.height(20.dp))
-        Text("Collega il tuo YouTube", style = MaterialTheme.typography.headlineSmall)
+        Text("Collega YouTube", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Vedrai qui la tua Home, i nuovi video dei canali che segui, le playlist, i Mi piace e Guarda più tardi. " +
-                "Basta accedere a YouTube una volta, qui nell'app.",
+            "Iscrizioni, playlist e Mi piace, qui nell'app.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onLogin) { Text("Accedi a YouTube") }
-        Spacer(Modifier.height(8.dp))
-        TextButton(
-            enabled = !busy,
-            onClick = {
-                busy = true
-                problem = null
-                scope.launch {
-                    when (val outcome = YouTubeAuth.authorize(context)) {
-                        is YouTubeAuth.Outcome.Authorized -> busy = false
-                        is YouTubeAuth.Outcome.NeedsConsent -> consent.launch(IntentSenderRequest.Builder(outcome.sender).build())
-                        is YouTubeAuth.Outcome.Failed -> {
-                            busy = false
-                            problem = if (outcome.notConfigured) {
-                                "Google non riconosce ancora l'app: va registrata una volta su Google Cloud."
-                            } else {
-                                "Accesso non riuscito: ${outcome.message}"
-                            }
-                        }
-                    }
-                }
-            },
-        ) {
-            if (busy) {
-                LoadingPulse()
-                Spacer(Modifier.width(8.dp))
+        CanvasButton("Accedi a YouTube", onClick = onLogin, primary = true)
+        Spacer(Modifier.height(24.dp))
+        CanvasCard(onClick = onOpenPhone, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Video del telefono", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text("Oppure collega l'API ufficiale di Google")
-        }
-        TextButton(onClick = onOpenPhone) { Text("Guarda i video del telefono") }
-        problem?.let {
-            Spacer(Modifier.height(16.dp))
-            Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         }
     }
 }

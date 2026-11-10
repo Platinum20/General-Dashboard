@@ -1,5 +1,11 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.SwipeDown
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.media.VideoLibrary
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.Resume
+import com.platinum20.dashboard.media.MediaHistory
 import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
@@ -131,6 +137,15 @@ fun PlayerScreen(
         startUrl?.let { YtPlayer.play(context, it) }
         starting = false
     }
+    // Niente pulsante per chiudere (regola di Antonio): la prima volta che suona qualcosa una riga spiega i gesti.
+    val hasNow = now != null
+    LaunchedEffect(hasNow) {
+        if (hasNow && !GestureHints.seen(context, PLAYER_GESTURES_HINT)) {
+            GestureHints.mark(context, PLAYER_GESTURES_HINT)
+            kotlinx.coroutines.delay(700)
+            CaptureFeedback.tell(context, PLAYER_GESTURES_TEXT, Icons.Outlined.SwipeDown)
+        }
+    }
     // La coda si apre sopra il player, non in un'altra pagina: il video resta a schermo intero e in orizzontale.
     var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     val onOpenQueue = { queueOpen = true }
@@ -195,18 +210,34 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
     ) { inner ->
         val current = now
         if (current == null) {
+            // Il player vuoto non è un vicolo cieco: "Riprendi" con le ultime cose, come in Media (punto 43).
+            remember { MediaHistory.init(context); VideoLibrary.init(context) }
+            val history by MediaHistory.items.collectAsState()
+            val videos by VideoLibrary.recent.collectAsState()
+            val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)).take(3) }
             Column(
-                Modifier.fillMaxSize().padding(inner).padding(32.dp),
+                Modifier.fillMaxSize().padding(inner).padding(horizontal = 16.dp, vertical = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
             ) {
                 Text("Non sta suonando niente", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Scegli musica, un video, una radio o un podcast da Media.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
+                if (resumable.isEmpty()) {
+                    Text(
+                        "Scegli musica, un video, una radio o un podcast da Media.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                // Parte qui, nel player stesso: la pagina diventa quella di quello che suona.
+                resumable.forEachIndexed { i, item ->
+                    MediaResumeCard(
+                        item,
+                        onClick = { com.platinum20.dashboard.media.MediaLauncher.start(context, item) },
+                        modifier = Modifier.fillMaxWidth(),
+                        hero = i == 0,
+                    )
+                }
             }
             return@Scaffold
         }
@@ -559,3 +590,7 @@ internal fun livePosition(now: Playing): Long {
     val end = now.durationMs.takeIf { it > 0 } ?: Long.MAX_VALUE
     return (anchor.first + elapsed).coerceIn(0, end)
 }
+
+/** Il suggerimento dei gesti del player, una volta sola (punto 44). */
+private const val PLAYER_GESTURES_HINT = "player_gestures"
+internal const val PLAYER_GESTURES_TEXT = "Trascina giù per il mini player, di lato per chiudere"

@@ -1,10 +1,19 @@
 # Changelog
 
-## 1.418.0
+## 1.419.0
 **Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**
 - Niente più etichette maiuscole sopra le card: ogni card ha il suo nome dentro, in alto
 - La card Calendario scrive accanto al titolo quanto hai speso questo mese ("novembre 486,30 €"): toccalo e si apre il mese. In cima alla card resta solo OGGI con la spesa di oggi
 - SIM e Revolut stanno in una card sola, "Conti": a sinistra i giga rimasti, a destra il saldo con quanto hai da spendere sul conto principale. Ogni metà apre la sua pagina come prima
+
+## 1.417.0
+**Media: prima quello che va, radio col genere, "Riprendi" nel player vuoto**
+- In Media le file che funzionano subito stanno in cima; quelle da collegare vanno in fondo, una riga con il pulsante "Accedi"
+- Senza radio preferite, la fila Radio si riempie con le più ascoltate: si può ascoltare subito, senza account
+- Per collegare YouTube o Spotify c'è un pulsante solo; il collegamento ufficiale resta in Impostazioni › Account. "Video del telefono" è una riga
+- Sotto ogni radio c'è il genere in italiano ("Notizie e parlato", "Classica e cultura") e non più tag in inglese e kbps; senza logo, le iniziali
+- Il player vuoto propone "Riprendi" con le ultime cose ascoltate o viste
+- La prima volta che suona qualcosa, una riga spiega i gesti: giù per il mini player, di lato per chiudere
 
 ## 1.415.0
 **News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
