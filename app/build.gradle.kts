@@ -117,6 +117,8 @@ android {
                 // Giro fotografico dell'app: gradle testDebugUnitTest -Ptour=true
                 it.systemProperty("tour", project.findProperty("tour") ?: "false")
                 it.systemProperty("tour.dir", layout.buildDirectory.dir("tour").get().asFile.absolutePath)
+                // Foto col disegno hardware di Robolectric: gli elementi condivisi usano RenderNode.
+                it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
                 // Controlli con la rete vera (notizie, meteo, aggiornamenti, radio): gradle testDebugUnitTest -Plive=true
                 it.systemProperty("live", project.findProperty("live") ?: "false")
                 it.systemProperty("live.dir", layout.buildDirectory.dir("live").get().asFile.absolutePath)
