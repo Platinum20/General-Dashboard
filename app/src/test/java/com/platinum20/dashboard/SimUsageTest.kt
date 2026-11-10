@@ -9,9 +9,15 @@ import com.platinum20.dashboard.ui.screens.gigaVerdictText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.ZoneOffset
 
+/** Robolectric per org.json (lo storico si salva in JSON). */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class SimUsageTest {
     private val zone = ZoneOffset.UTC
     private fun at(day: Int, hour: Int = 12) = LocalDate.of(2026, 11, day).atTime(hour, 0).toInstant(zone).toEpochMilli()
