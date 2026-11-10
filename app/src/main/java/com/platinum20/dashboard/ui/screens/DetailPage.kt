@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
@@ -21,8 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -48,11 +45,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-/**
- * Il tasto in basso a sinistra di una scheda: l'azione di tutti i giorni, una pillola col verbo (punto 29).
- * Piena quando è da fare ("Segna fatta oggi"), tonale quando è già fatta ([done], "Fatta oggi").
- */
-internal data class DetailAction(val icon: ImageVector, val label: String, val done: Boolean = false, val onClick: () -> Unit)
+/** Il tasto in basso a sinistra di una scheda: l'azione di tutti i giorni (Fatto, È arrivato, Modifica). */
+internal data class DetailAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
 
 /**
  * La pagina a schermo intero di una cosa sola, uguale per eventi, promemoria, date, pacchi, abitudini e spese.
@@ -77,7 +71,7 @@ internal fun DetailPage(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val haptic = rememberHaptic()
-    val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", onClick = it) }
+    val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", it) }
     val extra = more +
         listOfNotNull(
             onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", onClick = it) },
@@ -122,9 +116,16 @@ internal fun DetailPage(
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     left?.let { action ->
-                        CanvasButton(action.label, onClick = action.onClick, icon = action.icon, primary = !action.done)
+                        RoundIconButton(action.icon, action.label, onClick = action.onClick)
                     }
-                    Spacer(Modifier.weight(1f))
+                    Text(
+                        left?.label.orEmpty(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f),
+                    )
                     if (extra.isNotEmpty()) {
                         RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") {
                             haptic(Haptic.LONG_PRESS)
@@ -195,12 +196,7 @@ fun DetailMissing(icon: ImageVector, text: String) {
  * da solo mezzo secondo dopo l'ultima lettera; vuoto non si salva.
  */
 @Composable
-fun EditableDetailTitle(
-    key: Any, value: String, dot: Color, sharedKey: String? = null,
-    /** A destra del titolo, sulla stessa riga: l'importo di una spesa (punto 27 B). */
-    trailing: (@Composable () -> Unit)? = null,
-    onCommit: (String) -> Unit,
-) {
+fun EditableDetailTitle(key: Any, value: String, dot: Color, sharedKey: String? = null, onCommit: (String) -> Unit) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
     val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
     // La lista da cui si è aperta la scheda, letta una volta: tornando indietro il titolo vola nella stessa riga.
@@ -225,67 +221,6 @@ fun EditableDetailTitle(
                 inner()
             },
         )
-        trailing?.let {
-            Spacer(Modifier.width(12.dp))
-            it()
-        }
-    }
-}
-
-/** L'importo accanto al titolo di una spesa: si scrive lì e si salva da solo, come il titolo. */
-@Composable
-fun DetailAmountField(key: Any, value: String, onCommit: (String) -> Unit) {
-    var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
-    val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
-    androidx.compose.runtime.LaunchedEffect(text) {
-        kotlinx.coroutines.delay(600)
-        if (text.trim() != value.trim()) commit(text.trim())
-    }
-    val style = MaterialTheme.typography.headlineSmall.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.End,
-        fontFeatureSettings = "tnum",
-    )
-    // Larga quanto il numero scritto: IntrinsicSize.Min su un campo di testo lo schiacciava a zero (1.434, si vedeva solo "€").
-    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    val textPx = measurer.measure(text.ifEmpty { "0" }, style, maxLines = 1).size.width
-    val fieldWidth = with(density) { textPx.toDp() } .let { amountFieldWidth(it.value).dp }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.foundation.text.BasicTextField(
-            value = text,
-            onValueChange = { text = it },
-            singleLine = true,
-            textStyle = style,
-            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
-            modifier = Modifier.width(fieldWidth),
-        )
-        Text(" €", style = style)
-    }
-}
-
-/** La larghezza del campo importo in dp: il testo più lo spazio del cursore, tra 24 e 180. Pura, per i test. */
-internal fun amountFieldWidth(textDp: Float): Float = (textDp + 4f).coerceIn(24f, 180f)
-
-/** Un chip toccabile con la freccia ›: la categoria di una spesa (tocco = il fumetto con le categorie). */
-@Composable
-fun DetailChip(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .padding(start = 22.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.card)
-            .border(androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), CircleShape)
-            .bouncyPress(0.96f)
-            .clickable(onClick = onClick)
-            .padding(start = 10.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge)
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Cambia categoria", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -311,8 +246,6 @@ fun DetailFieldRow(
     key: Any, icon: ImageVector, value: String, placeholder: String, number: Boolean = false,
     /** Testo libero (note, luogo): più righe e la maiuscola solo a inizio frase, non tutto maiuscolo come un codice. */
     prose: Boolean = false,
-    /** Appena aggiunta da "+ Luogo": il cursore è già dentro. */
-    focus: Boolean = false,
     onCommit: (String) -> Unit,
 ) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
@@ -341,63 +274,11 @@ fun DetailFieldRow(
                     else -> androidx.compose.ui.text.input.KeyboardCapitalization.Characters
                 },
             ),
-            modifier = Modifier.weight(1f).autoFocus(focus),
+            modifier = Modifier.weight(1f),
             decorationBox = { inner ->
                 if (text.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 inner()
             },
         )
-    }
-}
-
-/**
- * Il "quando" sotto il titolo (punto 26): si legge come una frase ("Domani alle 9:00", sotto "mercoledì 11 novembre")
- * ed è scritto una volta sola. Si tocca per cambiarlo (la freccia › come le altre righe toccabili); la prima volta
- * dice anche "tocca per cambiare".
- */
-@Composable
-fun DetailWhen(main: String, sub: String, onClick: (() -> Unit)?) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    // Il suggerimento una volta sola: si segna come visto appena compare.
-    val hint = androidx.compose.runtime.remember { onClick != null && !GestureHints.seen(context, GestureHints.DETAIL_WHEN) }
-    androidx.compose.runtime.LaunchedEffect(hint) { if (hint) GestureHints.mark(context, GestureHints.DETAIL_WHEN) }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.medium)
-            .then(if (onClick != null) Modifier.bouncyPress(0.98f).clickable(onClick = onClick) else Modifier)
-            .padding(start = 26.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(main, style = MaterialTheme.typography.titleMedium)
-            val line = listOfNotNull(sub.takeIf { it.isNotBlank() }, "tocca per cambiare".takeIf { hint }).joinToString(" · ")
-            if (line.isNotEmpty()) {
-                Text(line, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        if (onClick != null) {
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Cambia",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-    }
-}
-
-/** Le righe vuote non si mostrano (punto 28): in fondo diventano piccoli inviti "+ Luogo", "+ Note". */
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-fun DetailAddRow(labels: List<String>, onAdd: (Int) -> Unit) {
-    if (labels.isEmpty()) return
-    androidx.compose.foundation.layout.FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 4.dp),
-    ) {
-        labels.forEachIndexed { i, label ->
-            CanvasButton(label, onClick = { onAdd(i) }, icon = Icons.Outlined.Add)
-        }
     }
 }

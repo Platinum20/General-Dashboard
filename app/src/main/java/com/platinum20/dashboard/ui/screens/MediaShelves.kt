@@ -58,17 +58,6 @@ internal object MediaShelves {
     /** Che cosa mostra la fila Musica: prima i mix, poi gli ascoltati di recente, senza doppioni. */
     fun <T> mix(first: List<T>, then: List<T>, key: (T) -> String, max: Int = MAX): List<T> =
         (first + then).distinctBy(key).take(max)
-
-    enum class Kind { MUSIC, VIDEO, LISTEN }
-
-    /**
-     * Prima quello che va subito (punto 39): le file piene nell'ordine di sempre, sotto gli inviti a collegare.
-     * Radio e podcast vanno sempre, anche senza account.
-     */
-    fun order(spotifyOn: Boolean, youTubeOn: Boolean): List<Kind> {
-        val ready = mapOf(Kind.MUSIC to spotifyOn, Kind.VIDEO to youTubeOn, Kind.LISTEN to true)
-        return Kind.entries.sortedBy { if (ready.getValue(it)) 0 else 1 }
-    }
 }
 
 /** Una copertina della fila: immagine, titolo su due righe, una riga piccola. */
@@ -166,7 +155,7 @@ internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
     val context = LocalContext.current
     Shelf("Musica", onOpenAll) {
         if (!connected) {
-            ShelfInvite("Collega Spotify", onOpenAll, action = "Accedi")
+            ShelfInvite("Collega Spotify per vedere qui i tuoi mix", onOpenAll)
             return@Shelf
         }
         val homeState by SpotifyStore.home.collectAsState()
@@ -226,7 +215,7 @@ internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll:
         val width = 200.dp
         val height = 112.dp
         when {
-            !connected -> ShelfInvite("Collega YouTube", onOpenAll, action = "Accedi")
+            !connected -> ShelfInvite("Collega YouTube per vedere qui i video nuovi", onOpenAll)
             videos.isEmpty() && state.loading -> ShelfPlaceholder(width, height, MaterialTheme.shapes.medium)
             videos.isEmpty() -> ShelfInvite("Niente di nuovo dai canali che segui", onOpenAll)
             else -> LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -246,17 +235,13 @@ internal fun ListenShelf(onOpenAll: () -> Unit) {
     val favorites by RadioStore.favorites.collectAsState()
     val recentRadios by RadioStore.recent.collectAsState()
     val latest by PodcastStore.latest.collectAsState()
-    val popular by RadioStore.popular.collectAsState()
     LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-    // Le radio vanno senza account: senza preferite né recenti la fila si riempie con le più ascoltate.
-    val own = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
-    LaunchedEffect(own.isEmpty()) { if (own.isEmpty()) RadioStore.loadPopular() }
-    val radios = own.ifEmpty { popular.data.orEmpty().take(6) }
+    val radios = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
     val episodes = latest.data.orEmpty().take(MediaShelves.MAX - radios.size)
     Shelf("Radio e podcast", onOpenAll) {
         val size = 120.dp
         if (radios.isEmpty() && episodes.isEmpty()) {
-            if (latest.loading || popular.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
+            if (latest.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             else ShelfInvite("Scegli una radio o segui un podcast", onOpenAll)
             return@Shelf
         }

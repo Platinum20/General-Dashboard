@@ -78,6 +78,11 @@ internal fun ShiftAccountRows() {
             }
         },
     )
+    // Anche se nessun turno è stato riconosciuto: è proprio allora che serve mandare i dati (Antonio, 1.378).
+    if (linked || hasData) {
+        RowDivider()
+        CaptureFileRow("Salva i dati letti dei turni", "turni-dati-letti") { ShiftStore.capturesText() }
+    }
 }
 
 /**

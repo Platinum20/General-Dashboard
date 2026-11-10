@@ -94,6 +94,10 @@ internal fun RevolutAccountRows() {
             }
         },
     )
+    if (linked) {
+        RowDivider()
+        CaptureFileRow("Salva i dati letti di Revolut", "revolut-dati-letti") { RevolutStore.capturesText() }
+    }
 }
 
 /**

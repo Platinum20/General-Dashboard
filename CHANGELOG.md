@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.436.0
+**Tornano come prima le schede, Media, gli Aggiornamenti e le letture negli account; il fumetto delle categorie è uno solo**
+- Promemoria, date, pacchi, spese, abitudini e turni hanno di nuovo la scheda della 1.401: il quando nella prima riga con la X, Luogo e Note sempre visibili, il tasto tondo in basso con la scritta accanto
+- Spesa: importo, data e categoria di nuovo come righe; abitudine: le tre righe di prima; turno: "Turno" con il blocco inizio e fine
+- Media: di nuovo le tre file Musica, Video, Radio e podcast nell'ordine di sempre, con gli inviti di prima per collegare Spotify e YouTube
+- Aggiornamenti: di nuovo il riquadro con la versione e le note di ogni versione per intero
+- "Salva i dati letti" torna sotto WindTre, Revolut e i turni in Account, la chiave di Spotify sotto Spotify, le liste dei filtri sotto il blocco pubblicità; la pagina Strumenti non c'è più
+- Tieni premuta una spesa: le categorie stanno nello stesso fumetto di Apri ed Elimina, senza un riquadro sopra l'altro
+
 ## 1.435.0
 **Il titolo della pagina si restringe insieme al dito**
 - Scorrendo, il titolo grande rimpicciolisce in modo continuo mentre muovi il dito, invece di scattare da grande a piccolo con una dissolvenza

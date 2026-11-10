@@ -95,32 +95,30 @@ internal fun BoxScope.ActionBubbleLayer() {
     }
 }
 
-/** Una riga del fumetto fatta di chip: un titolo piccolo e le scelte in fila, che vanno a capo. */
+/**
+ * Una riga del fumetto fatta di chip: un titolo piccolo e le scelte in fila, che vanno a capo. Sta dentro lo
+ * stesso blocco di vetro delle altre righe, senza un riquadro suo (Antonio: "una bolla sopra l'altra").
+ */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun BubbleChips(title: String, chips: List<BubbleChip>, onPick: (BubbleChip) -> Unit) {
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
-    androidx.compose.material3.Surface(
-        shape = shape,
-        color = androidx.compose.ui.graphics.Color.Transparent,
-        contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
-        border = cardBorder(),
-        modifier = androidx.compose.ui.Modifier.fillMaxWidth().glass(shape),
+    androidx.compose.foundation.layout.Column(
+        androidx.compose.ui.Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
     ) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-            if (title.isNotBlank()) {
-                androidx.compose.material3.Text(
-                    title,
-                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                )
-            }
-            androidx.compose.foundation.layout.FlowRow(
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
-            ) {
-                chips.forEach { c -> CanvasChip(selected = c.selected, onClick = { onPick(c) }, label = c.label) }
-            }
+        if (title.isNotBlank()) {
+            androidx.compose.material3.Text(
+                title,
+                style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+        }
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        ) {
+            chips.forEach { c -> CanvasChip(selected = c.selected, onClick = { onPick(c) }, label = c.label) }
         }
     }
 }
