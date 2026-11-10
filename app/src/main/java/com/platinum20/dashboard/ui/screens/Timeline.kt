@@ -207,7 +207,7 @@ fun TimelineRow(
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
-        TimelineNowMarker(modifier.padding(start = start, end = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
+        TimelineNowMarker(modifier.padding(start = start, end = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() }, top = top)
         return
     }
     // La riga appena cambiata (spuntata, salvata, spostata) si accende un attimo nel suo nuovo posto.
@@ -534,8 +534,11 @@ fun TimelineNowMarker(
     /** Un valore a destra prima della linea, come accanto al mese. */
     total: String? = null,
     onClick: (() -> Unit)? = null,
+    /** Se la linea del tempo continua sopra OGGI (c'è il passato). */
+    top: Boolean = true,
 ) {
     val primary = MaterialTheme.colorScheme.primary
+    val rail = MaterialTheme.colorScheme.outlineVariant
     // Arrivando su OGGI, oltre alla vibrazione, "OGGI" pulsa e una freccetta in su dice che il passato sta sopra.
     val pulse = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(0f) }
     val tick = NowPulse.ticks.intValue
@@ -548,10 +551,14 @@ fun TimelineNowMarker(
         (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).then(modifier).fillMaxWidth().height(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Il pallino grande sulla linea a sinistra, con il filo blu che parte da lì (1.465).
+        // Il pallino grande sulla linea a sinistra (1.465).
         Box(
             Modifier.width(GUTTER).fillMaxHeight().drawBehind {
-                drawLine(primary, Offset(size.width / 2, size.height / 2), Offset(size.width + 6.dp.toPx(), size.height / 2), 2.dp.toPx())
+                val x = size.width / 2
+                val mid = size.height / 2
+                // La linea grigia continua sopra e sotto OGGI: niente buchi intorno al pallino.
+                if (top) drawLine(rail, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
+                drawLine(rail, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
                 drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
