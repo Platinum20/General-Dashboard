@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.414.0
+**Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**
+- Niente più etichette maiuscole sopra le card: ogni card ha il suo nome dentro, in alto
+- La card Calendario scrive accanto al titolo quanto hai speso questo mese ("novembre 486,30 €"): toccalo e si apre il mese. In cima alla card resta solo OGGI con la spesa di oggi
+- SIM e Revolut stanno in una card sola, "Conti": a sinistra i giga rimasti, a destra il saldo con quanto hai da spendere sul conto principale. Ogni metà apre la sua pagina come prima
+
 ## 1.413.0
 **Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
 - In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra

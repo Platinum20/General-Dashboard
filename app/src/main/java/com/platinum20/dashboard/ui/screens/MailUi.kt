@@ -130,7 +130,7 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
     }
     if (mail.isEmpty() && !consent) return
 
-    Section(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
+    CardSection(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
             if (consent) {
                 Row(

@@ -162,7 +162,12 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
     // una per una come nella pagina: tutto quello di oggi sta sotto OGGI (Antonio, 1.400).
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
         .filter { it.rows.isNotEmpty() }
-    val all = timelineEntries(pending, today, months = true, expenses = expenses)
+    // Il mese in corso non ha più la sua riga in cima alla card: il suo totale sta nel titolo (1.404, punto 18 D).
+    val thisMonth = YearMonth.from(today)
+    val all = timelineEntries(pending, today, months = true, expenses = expenses).map { (e, r) ->
+        (if (e.monthOf == thisMonth) e.copy(month = null, monthSpend = null, monthOf = null) else e) to r
+    }
+    val monthTotal = Expenses.format(Expenses.total(expenses, thisMonth))
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today, Upcoming.MAX)
@@ -186,6 +191,21 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
         onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
         onLongOpen = onOpenAll,
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
+        // "novembre 486,30 €": solo il mese in corso (regola di Antonio); toccandolo si apre il mese.
+        titleTrailing = {
+            val haptic = rememberHaptic()
+            Text(
+                "$monthName $monthTotal ›",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.small)
+                    .bouncyPress(0.94f)
+                    .clickable { haptic(Haptic.TICK); inApp?.openRoute?.invoke(Routes.expenses(thisMonth)) }
+                    .padding(horizontal = 6.dp, vertical = 8.dp),
+            )
+        },
     )
 }
 
@@ -241,16 +261,19 @@ fun TimelineCard(
     rowLongs: List<(() -> Unit)?> = emptyList(),
     /** L'ultima riga, "Altre 8 a novembre": quello che non sta nella card; toccandola si apre la pagina. */
     footer: String? = null,
+    /** Accanto al titolo, a destra (il totale del mese nel Calendario); se c'è vince su [count]. */
+    titleTrailing: (@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
-    Section(
+    // Il titolo dentro la card, non più un'etichetta fuori (1.404, punto 7 B).
+    CardSection(
         title = title,
         modifier = modifier,
-        trailing = {
+        trailing = titleTrailing ?: {
             count?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp)) }
         },
     ) {
-        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(vertical = 6.dp)) {
+        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(bottom = 6.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,
