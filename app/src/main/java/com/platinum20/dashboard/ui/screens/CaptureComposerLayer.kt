@@ -68,13 +68,16 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.platinum20.dashboard.capture.AUTO_HINT
+import com.platinum20.dashboard.capture.CaptureHints
+import com.platinum20.dashboard.capture.icon
+import com.platinum20.dashboard.settings.AppSettings
+import androidx.compose.animation.Crossfade
+import androidx.compose.runtime.collectAsState
+import kotlinx.coroutines.delay
 import com.platinum20.dashboard.capture.CaptureComposer
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureGuess
-import com.platinum20.dashboard.capture.CaptureKindTag
 import com.platinum20.dashboard.capture.CaptureNotice
-import com.platinum20.dashboard.capture.CapturePreview
 import com.platinum20.dashboard.capture.PhotoAttach
 import com.platinum20.dashboard.docs.DocumentsStore
 import com.platinum20.dashboard.notes.NotesStore
@@ -109,7 +112,7 @@ internal fun BoxScope.CaptureComposerVeil() {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.22f))
+                .background(Color.Black.copy(alpha = 0.10f))
                 .pointerInput(Unit) { detectTapGestures { CaptureComposer.close() } },
         )
     }
@@ -131,8 +134,10 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
                 scope.launch {
                     when (val outcome = VoiceCapture.save(context, value)) {
                         VoiceCapture.Outcome.NeedsDialog -> needsDialog(value)
-                        is VoiceCapture.Outcome.Saved ->
+                        is VoiceCapture.Outcome.Saved -> {
+                            AppSettings.countCaptureSave()
                             CaptureFeedback.show(CaptureNotice(outcome.mode, outcome.message, outcome.undo))
+                        }
                     }
                 }
             }
@@ -241,11 +246,36 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
     var reading by remember { mutableStateOf(false) }
     val attach = rememberPhotoAttach { reading = it }
     Column(modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)) {
-        // Non una scelta ma una risposta: che cosa diventa e cosa ha capito Canvas.
-        if (text.text.isNotBlank()) {
-            Column(Modifier.padding(start = 14.dp, top = 6.dp, end = 10.dp)) {
-                CaptureKindTag(mode)
-                CapturePreview(mode, text.text)
+        // Non una scelta ma una risposta: in una riga cosa diventa. Prima di scrivere, le prime volte, un esempio che cambia.
+        val saves by AppSettings.captureSaves.collectAsState()
+        val summary = remember(text.text, mode) { CaptureHints.summary(mode, text.text) }
+        val showExample = summary == null && !reading && CaptureHints.showExamples(saves)
+        var exampleAt by remember { mutableStateOf(0) }
+        LaunchedEffect(showExample) {
+            while (showExample) {
+                delay(3_000)
+                exampleAt += 1
+            }
+        }
+        val line = summary ?: if (showExample) CaptureHints.example(exampleAt) else null
+        if (line != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 14.dp, top = 6.dp, end = 10.dp),
+            ) {
+                if (summary != null) {
+                    Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                }
+                Crossfade(line, animationSpec = tween(Motion.EXIT_MS), label = "esempio") { shown ->
+                    Text(
+                        shown,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (summary != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 48.dp)) {
@@ -261,7 +291,7 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
             Box(Modifier.weight(1f).padding(vertical = 8.dp)) {
                 val style = MaterialTheme.typography.bodyLarge
                 if (text.text.isEmpty()) {
-                    Text(if (reading) "Leggo la foto…" else AUTO_HINT, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (reading) "Leggo la foto…" else CaptureHints.PLACEHOLDER, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 BasicTextField(
                     value = text,

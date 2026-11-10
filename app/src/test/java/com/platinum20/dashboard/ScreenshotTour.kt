@@ -43,8 +43,23 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowLooper
+import android.os.Handler
+import android.os.Looper
+import android.view.PixelCopy
+import com.platinum20.dashboard.bank.Pocket
+import com.platinum20.dashboard.bank.RevolutPockets
+import com.platinum20.dashboard.bank.RevolutStore
+import com.platinum20.dashboard.shifts.Shift
+import com.platinum20.dashboard.shifts.ShiftEarning
+import com.platinum20.dashboard.shifts.ShiftParse
+import com.platinum20.dashboard.shifts.ShiftPay
+import com.platinum20.dashboard.shifts.ShiftStore
+import com.platinum20.dashboard.sim.Allowance
+import com.platinum20.dashboard.sim.SimStatus
+import com.platinum20.dashboard.sim.SimStore
 import java.io.File
 import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Giro dell'app con foto di ogni schermata, per controllare l'aspetto senza un telefono.
@@ -60,12 +75,16 @@ class ScreenshotTour {
     private val context: Context get() = ApplicationProvider.getApplicationContext()
     private val outDir = File(System.getProperty("tour.dir") ?: "build/tour").apply { mkdirs() }
     private var scenario: ActivityScenario<MainActivity>? = null
+    private var tourShift = 0L
     /** Le schermate che il giro doveva fotografare e non ha trovato: alla fine il giro fallisce e le elenca. */
     private val missing = mutableListOf<String>()
 
     @Before
     fun setUp() {
         assumeTrue(System.getProperty("tour") == "true")
+        // Il disegno hardware di Robolectric per PixelCopy (RenderNode degli elementi condivisi).
+        System.setProperty("robolectric.pixelCopyRenderMode", "hardware")
+        System.setProperty("robolectric.screenshot.hwrdr.native", "true")
         // Il giro gira in UTC: con il fuso di Antonio saluto, card del giorno e "Domani" sono quelli veri.
         TimeZone.setDefault(TimeZone.getTimeZone("Europe/Rome"))
         runCatching { WorkManagerTestInitHelper.initializeTestWorkManager(context) }
@@ -92,6 +111,37 @@ class ScreenshotTour {
             NotesStore.setBudget(60_000)
             NotesStore.saveParcel(null, "Cuffie", "TBA123456789012", LocalDate.now())
         }
+        seedAccounts()
+    }
+
+    /** Turni, SIM e Revolut finti: così Home e calendario somigliano a quelli veri di Antonio. */
+    private fun seedAccounts() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.now(zone)
+        fun at(day: LocalDate, h: Int) = day.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val now = System.currentTimeMillis()
+        val done = Shift("s1", at(today.minusDays(1), 17), at(today.minusDays(1), 22),
+            "Turno · Chiara Stefane, Debora Martini", "cp:1", listOf("Vincenzo Rossi"))
+        val next = Shift("s2", at(today.plusDays(1), 7), at(today.plusDays(1), 12), "Turno · Debora Martini", "cp:1")
+        tourShift = next.eventId
+        context.getSharedPreferences("shifts", Context.MODE_PRIVATE).edit()
+            .putString("shifts", ShiftParse.toJson(listOf(done, next)))
+            .putString("pay", ShiftPay.toJson(listOf(ShiftEarning("s1", done.start, done.end, 736.08, 110.41, 0.15, 5.0))))
+            .commit()
+        context.getSharedPreferences("sim", Context.MODE_PRIVATE).edit()
+            .putBoolean("linked", true).putInt("format", 2)
+            .putString("status", SimStatus(Allowance(62.4, 150.0), Allowance(0.0, unlimited = true), Allowance(80.0, 100.0),
+                credit = 7.32, renewal = today.plusDays(9), offer = "Wind Tre GO 150", at = now).toJson().toString())
+            .commit()
+        context.getSharedPreferences("revolut", Context.MODE_PRIVATE).edit()
+            .putBoolean("linked", true).putLong("balance", 84_210).putLong("readAt", now).putBoolean("historyDone", true)
+            .putString("pockets", RevolutPockets.toJson(listOf(Pocket("p1", "Conto", 84_210, true), Pocket("p2", "Risparmi", 250_000, false))))
+            .commit()
+        // I negozi sono già aperti dall'app di prova: si riaprono per leggere questi dati.
+        for (store in listOf(ShiftStore, SimStore, RevolutStore)) {
+            store::class.java.getDeclaredField("appContext").apply { isAccessible = true }.set(null, null)
+        }
+        ShiftStore.init(context); SimStore.init(context); RevolutStore.init(context)
     }
 
     @After
@@ -205,12 +255,25 @@ class ScreenshotTour {
             "68_news" to Routes.NEWS,
             "69_player" to Routes.PLAYER,
             "71_video_youtube" to Routes.youtubeWatch(),
+            "74_sim" to Routes.SIM,
+            "75_meteo" to Routes.WEATHER,
+            "76_personalizza" to Routes.CUSTOMIZE,
+            "77_turno" to Routes.calendarEvent(tourShift),
+            "78_cerca" to Routes.SEARCH,
+            "79_calendario" to Routes.NOTES,
+            "80_musica" to Routes.SPOTIFY_FEED,
+            "81_video" to Routes.YOUTUBE_FEED,
+            "82_radio_podcast" to Routes.RADIO,
+            "83_compila_da_solo" to Routes.AUTOFILL,
         )
         for ((name, route) in pages) {
             val open = tourNavigate
             if (open == null) { missing += p + name; continue }
             scenario?.onActivity { open(route) }
             settle(1_500); shot(p + name)
+            if (name == "79_calendario") {
+                scroll(down = true); shot(p + name + "_fondo")
+            }
             back()
         }
         // Il fumetto delle azioni (tieni premuto su una riga), sopra la pagina Note.
@@ -332,18 +395,28 @@ class ScreenshotTour {
 
     private fun shot(name: String) {
         // Disegniamo la finestra a mano: captureToImage aspetterebbe un frame che col clock fermo non arriva.
+        // Prima col disegno hardware di Robolectric (gli elementi condivisi usano RenderNode, che il disegno
+        // software rifiuta), poi col disegno software se quello non c'è.
         scenario?.onActivity { activity ->
             val view = activity.window.decorView
             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            var copied = false
+            runCatching {
+                PixelCopy.request(activity.window, bitmap, { copied = it == PixelCopy.SUCCESS }, Handler(Looper.getMainLooper()))
+                ShadowLooper.idleMainLooper()
+            }
             val canvas = Canvas(bitmap)
-            view.draw(canvas)
+            if (!copied) {
+                val ok = runCatching { view.draw(canvas) }.isSuccess
+                if (!ok) { missing += "$name (disegno)"; return@onActivity }
+            }
             // I dialoghi (il + della barra, "Nuovo pacco"…) sono un'altra finestra: si disegnano sopra, al centro, col velo.
             ShadowDialog.getLatestDialog()?.takeIf { it.isShowing }?.window?.decorView?.let { dialog ->
                 if (dialog.width > 0 && dialog.height > 0) {
                     canvas.drawColor(0x99000000.toInt())
                     canvas.save()
                     canvas.translate((view.width - dialog.width) / 2f, (view.height - dialog.height) / 2f)
-                    dialog.draw(canvas)
+                    runCatching { dialog.draw(canvas) }
                     canvas.restore()
                 }
             }

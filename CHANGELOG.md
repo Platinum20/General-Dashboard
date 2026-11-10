@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.404.0
+**Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
+- Il campo dice solo "Scrivi qualcosa…" e il velo dietro è più leggero
+- Le prime cinque volte sopra la barra girano degli esempi ("Prova: pizza 12,50"); spariscono appena inizi a scrivere
+- Mentre scrivi, una riga sola ti dice cosa verrà salvato: "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00"
+
 ## 1.401.0
 **Calendario più compatto: niente buchi fra i giorni, nome degli eventi accanto all'orario**
 - Fra due giorni lontani non c'è più lo spazio vuoto che si allungava coi giorni in mezzo: ogni giorno ha già la sua riga col nome, e basta quella
