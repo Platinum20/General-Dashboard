@@ -16,7 +16,7 @@ import java.time.LocalDate
 
 /**
  * Widget "Oggi" (il primo widget di Canvas, il nome della classe resta per non toglierlo dalla Home):
- * il blocco colorato col meteo e sotto le righe di "Adesso", calcolate ogni volta dai dati di adesso.
+ * il blocco colorato col meteo e sotto pioggia e abitudini di "Adesso" più tutto Oggi del calendario.
  */
 class DashboardWidget : CanvasWidget(Renderer, WidgetSize(250, 180)) {
 
@@ -67,10 +67,14 @@ class DashboardWidget : CanvasWidget(Renderer, WidgetSize(250, 180)) {
                 )
             }
 
-            // Le righe di Adesso, ricalcolate adesso: una cosa spuntata altrove sparisce subito anche qui.
+            // Pioggia e abitudini di Adesso, poi lo stesso Oggi del calendario: ricalcolati adesso a ogni disegno.
             val max = WidgetRows.linesForHeight(size.heightDp)
-            val lines = if (max == 0) emptyList()
-            else WidgetRows.briefEntries(runCatching { Briefing.load(context, max = max) }.getOrDefault(emptyList()), max)
+            val lines = if (max == 0) emptyList() else {
+                val zone = java.time.ZoneId.systemDefault()
+                val brief = runCatching { Briefing.load(context, max = Int.MAX_VALUE) }.getOrDefault(emptyList())
+                val days = runCatching { TasksWidget.loadDays(context, zone) }.getOrDefault(emptyList())
+                WidgetRows.todayEntries(brief, AgendaRows.todayItems(days, LocalDate.now(zone), zone), max)
+            }
             views.removeAllViews(R.id.today_lines)
             views.setViewVisibility(R.id.today_lines, if (lines.isEmpty()) View.GONE else View.VISIBLE)
             lines.forEachIndexed { i, line ->

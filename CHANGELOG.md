@@ -5,6 +5,18 @@
 - Quando sotto il meteo non c'è nessuna riga, la card ha lo stesso spazio sopra e sotto: icona, temperatura e cielo stanno al centro.
 - Anche la forma grigia che si vede mentre cerca il meteo è centrata allo stesso modo.
 
+## 1.444.0
+**Il turno si chiama con le sue creator**
+- Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario
+- Tolta la riga con le creator sotto l'orario: stanno già nel titolo
+- Nel calendario, fra inizio e fine del turno: la durata con l'icona e "Da solo" o "In doppio con …", e sotto, su una riga sua, venduto, scaglione raggiunto e guadagno ("Venduto $504,67 · 12% → $60,56"); le due righe stanno al centro
+## 1.443.0
+**Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
+- Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)
+- Notifica del mattino: il gruppo "Oggi" elenca lo stesso Oggi del calendario; le cose senza data sono già lì dentro
+- Card Calendario in Home: si vedono anche le cose spuntate oggi, come nella pagina
+- Calendario con un filtro acceso (Note, Eventi): il segno OGGI resta in cima invece di diventare un giorno qualsiasi o sparire
+
 ## 1.442.0
 **Media: Video prima di Musica, niente più divisori, e le scritte delle copertine hanno un'altezza fissa**
 - In Media la fila Video viene prima di Musica e mostra i video delle tue iscrizioni dal più recente

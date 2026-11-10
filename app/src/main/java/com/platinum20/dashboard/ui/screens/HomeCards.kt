@@ -166,10 +166,8 @@ internal fun CalendarCard(
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
-    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio). Le spese di oggi invece sì,
-    // una per una come nella pagina: tutto quello di oggi sta sotto OGGI (Antonio, 1.400).
-    val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
-        .filter { it.rows.isNotEmpty() }
+    // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi e le spese, una per una (Antonio, 1.400 e 2026-11-10).
+    val pending = groups.filter { it.rows.isNotEmpty() }
     // Il mese in corso non ha più la sua riga in cima alla card: il suo totale sta nel titolo (1.404, punto 18 D).
     val thisMonth = YearMonth.from(today)
     val all = timelineEntries(pending, today, months = true, expenses = expenses).map { (e, r) ->

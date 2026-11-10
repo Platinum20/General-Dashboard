@@ -384,11 +384,12 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
-        // Per un turno: durata, icona di quanti siamo, poi guadagno (Antonio).
+        // Per un turno: durata, icona e "Da solo"/"In doppio con …"; sotto, su una riga sua, il venduto (Antonio).
         middle = if (creators.isNotEmpty()) duration
         else listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
         people = event.people.takeIf { creators.isNotEmpty() },
-        extra = if (creators.isNotEmpty()) event.location.trim() else "",
+        extra = if (creators.isNotEmpty()) com.platinum20.dashboard.shifts.ShiftParse.company(event.mates.map(com.platinum20.dashboard.shifts.ShiftParse::firstName)) else "",
+        below = event.location.trim().takeIf { creators.isNotEmpty() && it.isNotEmpty() },
         begin = event.begin,
         end = event.end,
     )
@@ -682,9 +683,14 @@ internal fun DueRow.filter(): CalendarFilter = when {
     else -> CalendarFilter.NOTES
 }
 
-/** Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. */
+/**
+ * Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. La riga di OGGI ([DueRow.spend])
+ * resta con ogni filtro: senza, oggi diventava un giorno qualsiasi col vecchio titolo "Oggi" o spariva (Antonio, 2026-11-10).
+ */
 internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
-    if (filter == null) this else mapNotNull { d -> d.rows.filter { it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
+    if (filter == null) this else mapNotNull { d ->
+        d.rows.filter { it.spend != null || it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) }
+    }
 
 
 /**
