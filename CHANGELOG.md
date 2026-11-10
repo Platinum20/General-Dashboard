@@ -1,12 +1,18 @@
 # Changelog
 
-## 1.438.0
+## 1.440.0
 **Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
 - Appoggia il dito sulla linea a destra e trascina su o giù: il calendario scorre un giorno alla volta, con un tic per ogni giorno e un colpo più netto quando cambia il mese
 - Più allunghi il gesto, più va veloce: con un pollice attraversi settimane
 - Accanto al dito un fumetto dice su che giorno sei; in cima e in fondo il cursore fa da elastico e torna al suo posto
 - Lasciando il dito non si apre niente: la linea serve solo a muoversi. Un tocco normale sulle righe resta com'era
 - Con l'accesso ai turni scaduto la pagina si apre di nuovo esattamente su OGGI
+
+## 1.438.0
+**Nei treni, sotto la durata, il treno con carrozza e posto**
+- Nel calendario fra partenza e arrivo: in mezzo la durata, sotto "Intercity 612 · Carrozza 5 · Posto 42D", tutte e due al centro
+- Carrozza e posto si leggono dal biglietto (titolo o note dell'evento); se manca qualcosa si mostra quello che c'è
+- Nella scheda del treno le stesse due righe; sotto resta solo il PNR
 
 ## 1.437.0
 **In Media il titolo sta sopra la copertina e chi lo pubblica sotto; i podcast passano in Musica**

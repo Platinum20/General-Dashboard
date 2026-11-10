@@ -26,6 +26,8 @@ data class CalendarEvent(
     val trip: Trip? = null,
     /** Per un turno: quante persone sono in turno (io compreso), mostrato come icona accanto alla durata. */
     val people: Int? = null,
+    /** Le note dell'evento: per un treno ci sono carrozza e posto del biglietto ([Trips.shape]). */
+    val description: String = "",
 )
 
 /** Il colore dei turni nel calendario. */
@@ -76,6 +78,7 @@ object CalendarRepository {
             CalendarContract.Instances.ALL_DAY,
             CalendarContract.Instances.EVENT_LOCATION,
             CalendarContract.Instances.DISPLAY_COLOR,
+            CalendarContract.Instances.DESCRIPTION,
         )
         val events = mutableListOf<CalendarEvent>()
         if (hasPermission(context)) runCatching {
@@ -92,6 +95,7 @@ object CalendarRepository {
                         allDay = c.getInt(4) == 1,
                         location = c.getString(5).orEmpty(),
                         color = c.getInt(6),
+                        description = c.getString(7).orEmpty(),
                     )
                 }
             }

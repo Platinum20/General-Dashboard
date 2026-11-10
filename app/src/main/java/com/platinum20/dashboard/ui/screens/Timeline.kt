@@ -132,6 +132,8 @@ data class TripStops(
     /** Un turno: quanti siamo, come icona fra la durata ([middle]) e il guadagno ([extra]). */
     val people: Int? = null,
     val extra: String = "",
+    /** Una riga sotto [middle]: per un treno "Intercity 612 · Carrozza 5 · Posto 42D" (Antonio). */
+    val below: String? = null,
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -458,6 +460,10 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        // Le due righe stanno insieme al centro fra partenza e arrivo.
+                        trip.below?.let {
+                            Text(it, style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
                 TripStop(trip.arriveAt, trip.to, text)
