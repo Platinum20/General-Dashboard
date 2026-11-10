@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.445.0
+**Home: la card del meteo è centrata**
+- Quando sotto il meteo non c'è nessuna riga, la card ha lo stesso spazio sopra e sotto: icona, temperatura e cielo stanno al centro.
+- Anche la forma grigia che si vede mentre cerca il meteo è centrata allo stesso modo.
+
 ## 1.444.0
 **Il turno si chiama con le sue creator**
 - Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario

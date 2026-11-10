@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.platinum20.dashboard.weather.DailyPoint
 import com.platinum20.dashboard.weather.Forecast
@@ -386,12 +387,13 @@ internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
 /**
  * L'eroe compatto della Home (1.402): icona, temperatura e una riga di condizioni, tutto su una riga.
  * Niente "Adesso · Roma": la città si vede in Meteo. L'ora del dato compare solo quando è vecchio.
+ * [bottom] = 14 dp quando sotto non c'è nessuna riga: la riga sta al centro della card (1.443).
  */
 @Composable
-internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean) {
+internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean, bottom: Dp = 6.dp) {
     val content = LocalContentColor.current
     Row(
-        modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 6.dp),
+        modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = bottom),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
