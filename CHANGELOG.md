@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.439.0
+## 1.440.0
 **Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
 - Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)
 - Notifica del mattino: il gruppo "Oggi" elenca lo stesso Oggi del calendario; le cose senza data sono già lì dentro
