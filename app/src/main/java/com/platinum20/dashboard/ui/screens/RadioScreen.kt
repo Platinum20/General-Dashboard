@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.radio.RadioGenre
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -103,8 +104,8 @@ private fun StationRow(station: RadioStation, now: RadioNow?) {
             Column(Modifier.weight(1f)) {
                 Text(station.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    listOf(station.tags, station.country, if (station.bitrate > 0) "${station.bitrate} kbps" else "")
-                        .filter { it.isNotBlank() }.joinToString(" · "),
+                    // Il genere in italiano, non i tag in inglese con i kbps (punto 42).
+                    RadioGenre.of(station.tags) ?: "Radio",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -134,7 +135,13 @@ fun StationLogo(station: RadioStation, sizeDp: Int) {
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Outlined.Radio, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Senza logo (o se non si carica, sta sotto) le iniziali: ogni radio si riconosce, non la stessa icona per tutte.
+        Text(
+            RadioGenre.initials(station.name),
+            style = if (sizeDp >= 40) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
         if (station.logo.isNotBlank()) {
             AsyncImage(model = station.logo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(sizeDp.dp))
         }
