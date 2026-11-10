@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.437.0
+**In Media il titolo sta sopra la copertina e chi lo pubblica sotto; i podcast passano in Musica**
+- Musica, Video, Continua, Shorts e i video di YouTube: il titolo sopra l'immagine, appoggiato a lei (se è lungo va a capo verso l'alto), l'autore o il canale subito sotto (se è lungo va a capo verso il basso)
+- Un divisorio leggero fra un contenuto e l'altro, nelle file e fra i video uno sotto l'altro
+- I podcast stanno dentro Musica: in Media nella fila Musica i nuovi episodi, nella pagina Musica "I tuoi podcast" e "Nuovi episodi" in fondo
+- La radio è una sezione a parte: fila "Radio" in Media e pagina Radio solo con le radio
+
 ## 1.436.0
 **Tornano come prima le schede, Media, gli Aggiornamenti e le letture negli account; il fumetto delle categorie è uno solo**
 - Promemoria, date, pacchi, spese, abitudini e turni hanno di nuovo la scheda della 1.401: il quando nella prima riga con la X, Luogo e Note sempre visibili, il tasto tondo in basso con la scritta accanto

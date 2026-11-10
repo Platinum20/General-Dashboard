@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +27,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -60,56 +65,96 @@ internal object MediaShelves {
         (first + then).distinctBy(key).take(max)
 }
 
-/** Una copertina della fila: immagine, titolo su due righe, una riga piccola. */
+/** Una copertina della fila: titolo sopra, immagine, chi lo pubblica sotto. */
 @Composable
-private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, onClick: () -> Unit) {
+private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, first: Boolean, onClick: () -> Unit) {
     Column(
         Modifier
+            .tileDivider(first)
             .width(width)
             .bouncyPress(0.96f)
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.size(width, height).clip(shape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-            if (image.isNotBlank()) {
-                AsyncImage(model = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(width, height))
+        CaptionedCover(title, subtitle, titleLines = MediaShelves.TITLE_LINES) {
+            Box(Modifier.size(width, height).clip(shape).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                if (image.isNotBlank()) {
+                    AsyncImage(model = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(width, height))
+                }
             }
         }
-        Spacer(Modifier.height(6.dp))
-        TileCaption(title, subtitle, titleLines = MediaShelves.TITLE_LINES)
     }
 }
 
 /**
- * Il testo sotto ogni copertina di Media (1.390, Antonio: altezze diverse tra le tessere): il titolo occupa
- * sempre [titleLines] righe e il sottotitolo sempre una, anche se vuoto, così titolo e autore stanno alla
- * stessa altezza in tutta la fila. Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
+ * Copertina con le sue scritte (1.437, Antonio): il titolo SOPRA l'immagine e chi lo pubblica SOTTO. Tutte e due
+ * partono dal bordo dell'immagine: il titolo è appoggiato in basso e se è lungo va a capo verso l'alto, l'autore
+ * parte subito sotto e va a capo verso il basso. Lo spazio del titolo è sempre di [titleLines] righe, così le
+ * immagini di una fila stanno alla stessa altezza. Va chiamata dentro la Column della tessera.
  */
 @Composable
-internal fun TileCaption(title: String, subtitle: String?, titleLines: Int = 2, centered: Boolean = false, modifier: Modifier = Modifier) {
+internal fun CaptionedCover(
+    title: String,
+    subtitle: String?,
+    titleLines: Int = 2,
+    centered: Boolean = false,
+    textModifier: Modifier = Modifier,
+    cover: @Composable () -> Unit,
+) {
     val align = if (centered) TextAlign.Center else TextAlign.Start
-    Column(modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp)) {
+    val titleStyle = MaterialTheme.typography.labelLarge
+    // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
+    Box(
+        textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp),
+        contentAlignment = if (centered) Alignment.BottomCenter else Alignment.BottomStart,
+    ) {
+        // Riga vuota invisibile: tiene l'altezza di [titleLines] righe qualunque sia il titolo.
+        Text(" ", style = titleStyle, minLines = titleLines, maxLines = titleLines, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
         Text(
             title,
-            style = MaterialTheme.typography.labelLarge,
-            minLines = titleLines,
+            style = titleStyle,
             maxLines = titleLines,
             overflow = TextOverflow.Ellipsis,
             textAlign = align,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (subtitle != null) {
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                minLines = 1,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = align,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
+    }
+    cover()
+    if (subtitle != null) {
+        Text(
+            subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = align,
+            modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
+        )
+    }
+}
+
+/**
+ * Il divisorio leggero fra una tessera e la successiva in una fila (1.437, Antonio: "altrimenti si confonde"):
+ * una linea sottile verticale a metà dello spazio [gap], prima di ogni tessera tranne la prima.
+ */
+@Composable
+internal fun Modifier.tileDivider(first: Boolean, gap: Dp = 12.dp): Modifier {
+    if (first) return this
+    val color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    return drawBehind {
+        val x = -gap.toPx() / 2f
+        drawLine(color, Offset(x, size.height * 0.08f), Offset(x, size.height * 0.92f), strokeWidth = 1.dp.toPx())
+    }
+}
+
+/** Lo stesso divisorio per i contenuti uno sotto l'altro (i video di YouTube): orizzontale, a metà dello spazio [gap]. */
+@Composable
+internal fun Modifier.stackDivider(first: Boolean, gap: Dp = 16.dp): Modifier {
+    if (first) return this
+    val color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    return drawBehind {
+        val y = -gap.toPx() / 2f
+        drawLine(color, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
     }
 }
 
@@ -119,8 +164,9 @@ private fun ShelfPlaceholder(width: Dp, height: Dp, shape: Shape) {
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), userScrollEnabled = false) {
         items(4) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Placeholder(width, height, shape = shape)
                 Placeholder(width * 0.8f, 12.dp)
+                Placeholder(width, height, shape = shape)
+                Placeholder(width * 0.5f, 10.dp)
             }
         }
     }
@@ -149,13 +195,28 @@ private fun ShelfInvite(text: String, onClick: () -> Unit, action: String? = nul
     }
 }
 
-/** Musica: i mix per te e gli ascoltati di recente; un tocco e parte, il resto nella pagina Musica. */
+/**
+ * Musica: i mix per te, gli ascoltati di recente e, in fondo, i nuovi episodi dei podcast che segui (1.437, Antonio:
+ * i podcast stanno dentro Musica). Un tocco e parte, il resto nella pagina Musica.
+ */
 @Composable
 internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
     val context = LocalContext.current
+    remember { PodcastStore.init(context) }
+    val latest by PodcastStore.latest.collectAsState()
+    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
+    val episodes = latest.data.orEmpty().take(MediaShelves.MAX / 2)
     Shelf("Musica", onOpenAll) {
+        val size = 132.dp
         if (!connected) {
             ShelfInvite("Collega Spotify per vedere qui i tuoi mix", onOpenAll)
+            if (episodes.isNotEmpty()) {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    itemsIndexed(episodes, key = { _, e -> "ep-${e.id}" }) { i, episode ->
+                        ShelfTile(episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium, first = i == 0) { PodcastStore.play(episode) }
+                    }
+                }
+            }
             return@Shelf
         }
         val homeState by SpotifyStore.home.collectAsState()
@@ -175,25 +236,33 @@ internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
             )
         }
         val recent = home?.recent.orEmpty()
-        val size = 132.dp
-        if (home == null && homeState.loading) {
+        if (home == null && homeState.loading && episodes.isEmpty()) {
             ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             return@Shelf
         }
-        if (mixes.isEmpty() && recent.isEmpty()) {
+        if (mixes.isEmpty() && recent.isEmpty() && episodes.isEmpty()) {
             ShelfInvite("Ancora niente da Spotify: apri Musica", onOpenAll)
             return@Shelf
         }
+        val shownMixes = mixes.take(MediaShelves.MAX / 2)
+        val shownRecent = MediaShelves.mix(emptyList(), recent, { it.uri }, MediaShelves.MAX / 2)
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(mixes.take(MediaShelves.MAX / 2), key = { "mix-${it.id}" }) { mix ->
-                ShelfTile(mix.image, mix.title, mix.subtitle, size, size, MaterialTheme.shapes.medium) {
+            itemsIndexed(shownMixes, key = { _, m -> "mix-${m.id}" }) { i, mix ->
+                ShelfTile(mix.image, mix.title, mix.subtitle, size, size, MaterialTheme.shapes.medium, first = i == 0) {
                     playTracks(context, mix.tracks, null)
                 }
             }
-            items(MediaShelves.mix(emptyList(), recent, { it.uri }, MediaShelves.MAX / 2), key = { "recent-${it.uri}" }) { item ->
-                ShelfTile(item.image, item.title, item.subtitle, size, size, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium) {
+            itemsIndexed(shownRecent, key = { _, r -> "recent-${r.uri}" }) { i, item ->
+                val shape = if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium
+                ShelfTile(item.image, item.title, item.subtitle, size, size, shape, first = i == 0 && shownMixes.isEmpty()) {
                     if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) playTracks(context, recent, item) else onOpenAll()
                 }
+            }
+            itemsIndexed(episodes, key = { _, e -> "ep-${e.id}" }) { i, episode ->
+                ShelfTile(
+                    episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium,
+                    first = i == 0 && shownMixes.isEmpty() && shownRecent.isEmpty(),
+                ) { PodcastStore.play(episode) }
             }
         }
     }
@@ -219,38 +288,31 @@ internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll:
             videos.isEmpty() && state.loading -> ShelfPlaceholder(width, height, MaterialTheme.shapes.medium)
             videos.isEmpty() -> ShelfInvite("Niente di nuovo dai canali che segui", onOpenAll)
             else -> LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(videos, key = { it.id }) { video ->
-                    ShelfTile(video.thumbnail, video.title, video.channel, width, height, MaterialTheme.shapes.medium) { onPlay(video.watchUrl) }
+                itemsIndexed(videos, key = { _, v -> v.id }) { i, video ->
+                    ShelfTile(video.thumbnail, video.title, video.channel, width, height, MaterialTheme.shapes.medium, first = i == 0) { onPlay(video.watchUrl) }
                 }
             }
         }
     }
 }
 
-/** Radio e podcast: le radio preferite (tonde) e i nuovi episodi dei podcast che segui. */
+/** Radio (1.437: da sola, i podcast sono passati in Musica): le preferite e poi le ascoltate di recente, tonde. */
 @Composable
-internal fun ListenShelf(onOpenAll: () -> Unit) {
+internal fun RadioShelf(onOpenAll: () -> Unit) {
     val context = LocalContext.current
     remember { RadioStore.init(context) }
     val favorites by RadioStore.favorites.collectAsState()
     val recentRadios by RadioStore.recent.collectAsState()
-    val latest by PodcastStore.latest.collectAsState()
-    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-    val radios = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
-    val episodes = latest.data.orEmpty().take(MediaShelves.MAX - radios.size)
-    Shelf("Radio e podcast", onOpenAll) {
+    val radios = MediaShelves.mix(favorites, recentRadios, { it.id })
+    Shelf("Radio", onOpenAll) {
         val size = 120.dp
-        if (radios.isEmpty() && episodes.isEmpty()) {
-            if (latest.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
-            else ShelfInvite("Scegli una radio o segui un podcast", onOpenAll)
+        if (radios.isEmpty()) {
+            ShelfInvite("Scegli una radio", onOpenAll)
             return@Shelf
         }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(radios, key = { "radio-${it.id}" }) { station ->
-                ShelfTile(station.logo, station.name, RadioGenre.of(station.tags) ?: "Radio", size, size, CircleShape) { RadioStore.play(station) }
-            }
-            items(episodes, key = { "ep-${it.id}" }) { episode ->
-                ShelfTile(episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium) { PodcastStore.play(episode) }
+            itemsIndexed(radios, key = { _, s -> "radio-${s.id}" }) { i, station ->
+                ShelfTile(station.logo, station.name, RadioGenre.of(station.tags) ?: "Radio", size, size, CircleShape, first = i == 0) { RadioStore.play(station) }
             }
         }
     }

@@ -73,56 +73,6 @@ import java.time.ZonedDateTime
 /** Ricerche già pronte per chi non segue ancora nessun podcast. */
 internal val podcastIdeas = listOf("Il Post", "Muschio Selvaggio", "Geopop", "Tintoria", "Storia")
 
-/**
- * La parte podcast della pagina unica "Radio e podcast": quelli seguiti qui e quelli salvati su
- * Spotify insieme, poi gli ultimi episodi. Senza podcast seguiti, qualche idea da cui partire.
- */
-internal fun LazyListScope.podcastSections(
-    followed: List<Podcast>,
-    latest: Loadable<List<Episode>>,
-    now: PodcastNow?,
-    positions: Map<String, Long>,
-    ideas: Loadable<List<Podcast>>?,
-    onIdea: (String) -> Unit,
-    onOpen: (Podcast) -> Unit,
-) {
-    if (followed.isEmpty()) {
-        // Primo uso: niente pagina vuota, ma da dove cominciare.
-        item(key = "podcast-start") {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionHeader("Podcast per iniziare", Modifier.padding(top = 16.dp))
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    podcastIdeas.forEach { idea -> CanvasChip(selected = false, onClick = { onIdea(idea) }, label = idea) }
-                }
-            }
-        }
-        val found = ideas?.data.orEmpty()
-        itemsIndexed(found, key = { _, r -> "idea-${r.feedUrl}" }) { i, result ->
-            PodcastRow(result, i == 0, i == found.lastIndex, onOpen = { onOpen(result) })
-        }
-        return
-    }
-    item(key = "followed") {
-        Column {
-            SectionHeader("I tuoi podcast", Modifier.padding(top = 16.dp))
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                followed.forEach { podcast -> FollowedTile(podcast, onClick = { onOpen(podcast) }) }
-            }
-        }
-    }
-    val episodes = latest.data.orEmpty()
-    if (episodes.isNotEmpty()) {
-        item(key = "latest-header") { SectionHeader("Ultimi episodi", Modifier.padding(top = 16.dp, bottom = 4.dp)) }
-        val shown = episodes.take(LATEST_SHOWN)
-        itemsIndexed(shown, key = { _, e -> "latest-${e.id}" }) { i, episode ->
-            EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = true, group = (i == 0) to (i == shown.lastIndex))
-        }
-    }
-}
-
-/** Gli ultimi episodi nella pagina unica: abbastanza per scegliere, senza seppellire le radio. */
-private const val LATEST_SHOWN = 8
-
 @Composable
 internal fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
     val all by PodcastStore.episodes.collectAsState()
@@ -167,44 +117,6 @@ internal fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
         items(state.data.orEmpty(), key = { "ep-${it.id}" }) { episode ->
             EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = false)
         }
-    }
-}
-
-@Composable
-private fun PodcastRow(podcast: Podcast, first: Boolean, last: Boolean, onOpen: () -> Unit) {
-    val followed by PodcastStore.followed.collectAsState()
-    val spotify by PodcastStore.spotify.collectAsState()
-    val isFollowed = remember(followed, spotify, podcast) { PodcastStore.isInLibrary(podcast) }
-    Box(Modifier.fillMaxWidth().cardGroupItem(first, last).clickable(onClick = onOpen)) {
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Artwork(podcast.artwork, 56)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(podcast.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    if (isFollowed) "Seguito · ${podcast.author}" else podcast.author,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FollowedTile(podcast: Podcast, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .width(96.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .bouncyPress()
-            .clickable(onClick = onClick)
-    ) {
-        Artwork(podcast.artwork, 96)
-        Spacer(Modifier.height(6.dp))
-        TileCaption(podcast.title, null)
     }
 }
 
