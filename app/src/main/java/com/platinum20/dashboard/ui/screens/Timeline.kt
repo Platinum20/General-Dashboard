@@ -129,10 +129,10 @@ data class TripStops(
     val names: String? = null,
     /** Il nome su una riga sua sopra inizio e fine (Antonio); null per i treni, dove il nome è la stazione. */
     val title: String? = null,
-    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e il guadagno ([extra]). */
+    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e con chi ([extra]: "In doppio con Marco"). */
     val people: Int? = null,
     val extra: String = "",
-    /** Una riga sotto [middle]: per un treno "Intercity 612 · Carrozza 5 · Posto 42D" (Antonio). */
+    /** Una riga sotto [middle]: per un treno "Intercity 612 · Carrozza 5 · Posto 42D", per un turno venduto, scaglione e guadagno (Antonio). */
     val below: String? = null,
 ) {
     /**
@@ -445,9 +445,9 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                         }
                         if (trip.people != null) Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(trip.middle + " · ", style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1)
-                            Icon(peopleIcon(trip.people), contentDescription = peopleLabel(trip.people), tint = sub, modifier = Modifier.size(14.dp))
+                            Icon(peopleIcon(trip.people), contentDescription = null, tint = sub, modifier = Modifier.size(14.dp))
                             if (trip.extra.isNotEmpty()) Text(
-                                " · " + trip.extra,
+                                " " + trip.extra,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = sub,
                                 maxLines = 1,

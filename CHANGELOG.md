@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.444.0
+**Il turno si chiama con le sue creator**
+- Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario
+- Tolta la riga con le creator sotto l'orario: stanno già nel titolo
+- Nel calendario, fra inizio e fine del turno: la durata con l'icona e "Da solo" o "In doppio con …", e sotto, su una riga sua, venduto, scaglione raggiunto e guadagno ("Venduto $504,67 · 12% → $60,56"); le due righe stanno al centro
 ## 1.443.0
 **Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
 - Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)

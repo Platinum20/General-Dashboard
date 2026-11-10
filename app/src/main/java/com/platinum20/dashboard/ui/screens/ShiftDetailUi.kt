@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Face
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,17 +36,11 @@ internal fun rememberShift(eventId: Long): Shift? {
 }
 
 /**
- * Nella card dell'orario, sotto inizio e fine: con quali creator e con chi (da solo, in doppio…).
+ * Nella card dell'orario, sotto inizio e fine: con chi (da solo, in doppio…). Le creator stanno nel titolo.
  * Niente "Non si ripete" o "Nessun avviso": per un turno non dicono niente (Antonio).
  */
 @Composable
 internal fun ShiftWhoRows(shift: Shift) {
-    val creators = ShiftParse.creators(shift.title).map(ShiftParse::firstName)
-    if (creators.isNotEmpty()) {
-        RowDivider()
-        // Una creator per riga: si leggono tutte intere senza andare a capo a metà nome.
-        DetailRow(Icons.Outlined.Face, creators.joinToString("\n"), maxLines = Int.MAX_VALUE)
-    }
     RowDivider()
     DetailRow(peopleIcon(shift.mates.size + 1), ShiftParse.company(shift.mates), maxLines = Int.MAX_VALUE)
 }

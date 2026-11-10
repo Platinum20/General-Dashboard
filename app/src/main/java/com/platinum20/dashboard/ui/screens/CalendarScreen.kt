@@ -254,7 +254,7 @@ fun EventDetailScreen(
             val ticket = ticketAll.filter { it.first == "PNR" }
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
-            DetailTitle(if (shift != null) "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
+            DetailTitle(if (shift != null) RowText.shift(shift.title) ?: "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
             CanvasCard(Modifier.fillMaxWidth()) {
                 // Ogni evento con inizio e fine come il viaggio sulla linea del tempo: inizio, linea, fine (Antonio).
                 val stops = if (current.allDay) null else tripStops(

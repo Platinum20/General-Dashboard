@@ -384,11 +384,12 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
-        // Per un turno: durata, icona di quanti siamo, poi guadagno (Antonio).
+        // Per un turno: durata, icona e "Da solo"/"In doppio con …"; sotto, su una riga sua, il venduto (Antonio).
         middle = if (creators.isNotEmpty()) duration
         else listOfNotNull(duration, event.location.trim().takeIf { it.isNotEmpty() && !labels }).joinToString(" · "),
         people = event.people.takeIf { creators.isNotEmpty() },
-        extra = if (creators.isNotEmpty()) event.location.trim() else "",
+        extra = if (creators.isNotEmpty()) com.platinum20.dashboard.shifts.ShiftParse.company(event.mates.map(com.platinum20.dashboard.shifts.ShiftParse::firstName)) else "",
+        below = event.location.trim().takeIf { creators.isNotEmpty() && it.isNotEmpty() },
         begin = event.begin,
         end = event.end,
     )
