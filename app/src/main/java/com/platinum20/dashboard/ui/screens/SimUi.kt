@@ -126,11 +126,12 @@ internal fun renewalLine(day: LocalDate, today: LocalDate = LocalDate.now()): St
  * Il colore del testo viene da fuori: nella card normale e nel blocco colorato della pagina.
  */
 @Composable
-private fun SimPanel(s: SimStatus, big: Boolean = false) {
+internal fun SimPanel(s: SimStatus, big: Boolean = false, faded: Boolean = false) {
     val soft = LocalContentColor.current.copy(alpha = 0.7f)
     val barColor = if (big) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
     val track = barColor.copy(alpha = 0.18f)
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // Nella card della Home il titolo "SIM" basta (1.448, Antonio): niente riga dell'offerta sopra.
+    if (big) Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             (s.offer ?: "WindTre").uppercase(Locale.ITALIAN),
             style = MaterialTheme.typography.labelMedium,
@@ -144,21 +145,17 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
     }
     // Un dato per riga (Antonio): nome a sinistra, valore a destra, barra sottile sotto le soglie.
     // Il roaming UE solo nella pagina, non nella card della Home.
-    val data = s.data
-    val rows = buildList {
-        add(SimRow("Giga", data?.let { if (it.unlimited) "illimitati" else gbLabel(it.left) + (it.total?.let { t -> " di " + gbLabel(t) } ?: "") } ?: "–", data))
-        s.minutes?.let { add(SimRow("Minuti", meterText(it, ""), it)) }
-        s.sms?.let { add(SimRow("SMS", meterText(it, ""), it)) }
-        if (big) s.roaming?.let { add(SimRow("Roaming UE", meterText(it, "GB"), it)) }
-    }
-    rows.forEach { r ->
-        Spacer(Modifier.height(if (big) 14.dp else 10.dp))
+    val rows = simRows(s, big)
+    rows.forEachIndexed { i, r ->
+        if (big || i > 0) Spacer(Modifier.height(if (big) 14.dp else 10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(r.name, style = MaterialTheme.typography.bodyMedium, color = soft, modifier = Modifier.weight(1f))
+            // Il dato vecchio resta, sbiadito (1.402): c'è, ma non è di adesso.
             RollingText(
                 r.value,
                 style = if (big) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
+                modifier = if (faded) Modifier.alpha(FADED_ALPHA) else Modifier,
             )
         }
         r.meter?.let { a ->
@@ -183,7 +180,19 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
 }
 
 /** Una riga del blocco SIM: nome, valore e, per giga/minuti/SMS, quanto resta. */
-private data class SimRow(val name: String, val value: String, val meter: Allowance?)
+internal data class SimRow(val name: String, val value: String, val meter: Allowance?)
+
+/**
+ * Le righe con la linea: giga sempre, minuti e SMS quando WindTre li dà; il roaming UE solo nella pagina.
+ * Pura, per i test.
+ */
+internal fun simRows(s: SimStatus, big: Boolean = false): List<SimRow> = buildList {
+    val data = s.data
+    add(SimRow("Giga", data?.let { if (it.unlimited) "illimitati" else gbLabel(it.left) + (it.total?.let { t -> " di " + gbLabel(t) } ?: "") } ?: "–", data))
+    s.minutes?.let { add(SimRow("Minuti", meterText(it, ""), it)) }
+    s.sms?.let { add(SimRow("SMS", meterText(it, ""), it)) }
+    if (big) s.roaming?.let { add(SimRow("Roaming UE", meterText(it, "GB"), it)) }
+}
 
 
 /** Una barra orizzontale arrotondata: quanto resta. Sotto il 10% diventa rossa. */

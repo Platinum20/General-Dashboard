@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.448.0
+**La card SIM in Home mostra tutto**
+- Giga, minuti e SMS, ognuno con la sua linea di quanto resta
+- Sotto, il credito residuo e la data del rinnovo
+- "SIM" scritto una volta sola: resta solo il titolo della card
+
 ## 1.447.0
 **Niente più soldi nell'app: tolti Revolut e le spese**
 - Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo
