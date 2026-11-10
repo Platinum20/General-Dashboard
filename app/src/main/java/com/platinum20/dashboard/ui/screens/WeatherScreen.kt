@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,12 +89,14 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val pull = rememberPullRefresh(state.loading)
     LaunchedEffect(Unit) { WeatherStore.refresh(context) }
 
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
-        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true),
+        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = "Meteo",
+                scrollBehavior = barScroll,
                 onBack = onBack,
             )
         },
@@ -377,6 +380,71 @@ private fun TempBar(min: Double, max: Double, low: Double, high: Double, modifie
  */
 @Composable
 internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
+    WeatherNowFull(forecast, loading)
+}
+
+/**
+ * L'eroe compatto della Home (1.402): icona, temperatura e una riga di condizioni, tutto su una riga.
+ * Niente "Adesso · Roma": la città si vede in Meteo. L'ora del dato compare solo quando è vecchio.
+ */
+@Composable
+internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean) {
+    val content = LocalContentColor.current
+    Row(
+        modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            weatherIcon(forecast.current.code, forecast.current.isDay),
+            contentDescription = WeatherCodes.description(forecast.current.code),
+            modifier = Modifier.size(30.dp),
+        )
+        Spacer(Modifier.size(10.dp))
+        Text(
+            forecast.current.temperature.asTemp(),
+            style = MaterialTheme.typography.displayMedium.copy(fontSize = 36.sp, lineHeight = 40.sp),
+        )
+        Spacer(Modifier.size(12.dp))
+        val today = forecast.today
+        Text(
+            Greeting.weatherLine(
+                WeatherCodes.description(forecast.current.code),
+                if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = content.copy(alpha = 0.8f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        var slow by remember { mutableStateOf(false) }
+        LaunchedEffect(loading) {
+            slow = false
+            if (loading) {
+                delay(Freshness.SPINNER_MS)
+                slow = true
+            }
+        }
+        if (loading && !slow) {
+            Spacer(Modifier.size(8.dp))
+            LoadingPulse(color = content.copy(alpha = 0.6f), size = 8.dp)
+        } else {
+            val minute by produceState(LocalDateTime.now(), forecast.fetchedAt) {
+                while (true) {
+                    value = LocalDateTime.now()
+                    delay(60_000L)
+                }
+            }
+            Freshness.label(forecast.fetchedAt, minute)?.let { age ->
+                Spacer(Modifier.size(8.dp))
+                Text(age, style = MaterialTheme.typography.labelSmall, color = content.copy(alpha = 0.6f), maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherNowFull(forecast: Forecast, loading: Boolean) {
     Row(
         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.Top,

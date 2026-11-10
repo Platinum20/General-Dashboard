@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.413.0
+**Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
+- In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
+- Il meteo in cima è un blocco basso: icona, temperatura e condizioni su una riga, sotto l'avviso di pioggia. Niente più "Adesso · Roma": la città la trovi in Meteo
+- Scorrendo una pagina il titolo grande diventa una riga sottile, così resta più spazio alla lista (Home, Calendario, News, Media, Meteo, Impostazioni e le altre)
+
 ## 1.411.0
 **Schede più chiare, Spese con le frecce, Meteo e SIM più puliti**
 - Promemoria, date e pacchi: il "quando" sta sotto il titolo e si legge come una frase ("Domani alle 9:00", sotto la data); si tocca per cambiarlo, "Togli la data" è in Altro

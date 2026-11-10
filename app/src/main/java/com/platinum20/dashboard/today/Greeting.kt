@@ -17,4 +17,13 @@ object Greeting {
     fun weatherLine(vararg parts: String?): String =
         parts.filterNotNull().filter { it.isNotBlank() }.joinToString(" · ") { it.replace(' ', NBSP) }
 
+    /** Il titolo della Home (1.402): "Martedì 10", corto perché stia su una riga anche col carattere grande. */
+    fun dateTitle(day: java.time.LocalDate): String =
+        day.format(java.time.format.DateTimeFormatter.ofPattern("EEEE d", java.util.Locale.ITALIAN))
+            .replaceFirstChar { it.uppercase() }
+
+    /** La riga piccola sopra: il saluto e il mese, che il titolo corto non dice ("Buonanotte · novembre"). */
+    fun subtitle(hour: Int, day: java.time.LocalDate): String =
+        forHour(hour) + " · " + day.month.getDisplayName(java.time.format.TextStyle.FULL_STANDALONE, java.util.Locale.ITALIAN)
+
 }
