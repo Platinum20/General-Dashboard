@@ -179,33 +179,29 @@ fun NewsScreen(
                             } else {
                                 StoryDivider()
                                 SwipeToRead(story) {
-                                    StoryRow(story, read = { it in read }, onOpen = open, onLongClick = actions)
+                                    StoryRow(story, read = { it in read }, onOpen = open, onLongClick = actions, thumb = 0.dp)
                                 }
                             }
                         }
                     }
                     if (markerIndex != null) {
-                        if (feed.fresh.isEmpty()) item(key = "quiet") {
-                            NewsQuietLine("Niente di nuovo dall'ultima visita", Modifier.animateItem())
-                        }
                         item(key = "marker") {
                             NewsVisitMarker(
-                                NewsStories.markerLabel(since!!, Instant.now(), ::newsClock),
+                                NewsStories.markerLabel(since!!, Instant.now(), ::newsClock, nothingNew = feed.fresh.isEmpty()),
                                 Modifier.animateItem().padding(vertical = 6.dp),
                             )
                         }
                     }
                     itemsIndexed(feed.seen, key = { _, s -> "v:" + s.key }) { index, story ->
                         Column(Modifier.animateItem()) {
-                            if (index > 0) StoryDivider()
-                            StoryRow(
-                                story,
-                                read = { it in read },
-                                onOpen = open,
-                                onLongClick = { ActionBubble.show(*storyActions(context, story) {}) },
-                                dim = 0.85f,
-                                thumb = 52.dp,
-                            )
+                            val actions = { ActionBubble.show(*storyActions(context, story) {}) }
+                            // Come un giornale: anche fra le già viste la prima storia ha la foto grande, poi titoli puliti.
+                            if (index == 0) {
+                                StoryLead(story, read = story.items.any { it.link in read }, onOpen = open, onLongClick = actions, modifier = Modifier.padding(vertical = 6.dp))
+                            } else {
+                                StoryDivider()
+                                StoryRow(story, read = { it in read }, onOpen = open, onLongClick = actions, dim = 0.85f, thumb = 0.dp)
+                            }
                         }
                     }
                     if (feed.isEmpty) item(key = "empty") {

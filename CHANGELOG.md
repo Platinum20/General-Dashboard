@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.415.0
+**News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
+- Senza novità, il segno dell'ultima visita dice da solo "niente di nuovo": una riga in meno
+- I telegiornali interi ("World24 del 09/11", "Tg1 delle 20") non compaiono più tra le storie
+- Una foto grande sulla prima storia delle nuove e sulla prima delle già viste; le altre sono titoli puliti
+- Al posto della freccina accanto alla fonte c'è "· 2 fonti": il tocco apre le versioni come prima
+- L'icona di News nella barra è un foglio di testo, non sembra più un calendario
+
 ## 1.413.0
 **Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
 - In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
