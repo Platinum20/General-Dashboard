@@ -78,7 +78,7 @@ internal fun DetailPage(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val haptic = rememberHaptic()
-    val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", it) }
+    val left = primary ?: onEdit?.let { DetailAction(Icons.Outlined.Edit, "Modifica", onClick = it) }
     val extra = more +
         listOfNotNull(
             onEdit?.takeIf { primary != null }?.let { BubbleAction(Icons.Outlined.Edit, "Modifica", onClick = it) },
