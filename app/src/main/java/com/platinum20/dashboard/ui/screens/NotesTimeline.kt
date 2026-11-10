@@ -448,8 +448,7 @@ internal fun timelineEntries(
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
                 r.spend != null -> com.platinum20.dashboard.today.BriefKind.MONEY to "Spesa di oggi"
-                r.expense != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
-                    "${Expenses.format(r.expense.cents)}  ${Expenses.displayName(r.expense)}"
+                r.expense != null -> com.platinum20.dashboard.today.BriefKind.MONEY to Expenses.displayName(r.expense)
                 r.note != null -> com.platinum20.dashboard.today.BriefKind.FREE to r.note.title.ifEmpty { "Nota" }
                 // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
                 r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
@@ -463,7 +462,7 @@ internal fun timelineEntries(
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
                 r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
-                    "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }} ${Expenses.format(r.charge.cents)}"
+                    "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }}"
                 r.simRenewal -> com.platinum20.dashboard.today.BriefKind.EVENT to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
@@ -498,6 +497,7 @@ internal fun timelineEntries(
                     else -> null
                 },
                 trip = r.event?.let { tripStops(it, today, zone) },
+                amount = (r.expense?.cents ?: r.charge?.cents)?.let { Expenses.format(it) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }
@@ -627,13 +627,14 @@ internal fun expenseEntries(
         TimelineEntry(
             "expense-${e.id}",
             com.platinum20.dashboard.today.BriefKind.MONEY,
-            // L'importo per primo (Antonio), come l'ora degli eventi.
-            "${Expenses.format(e.cents)}  ${Expenses.displayName(e)}",
+            // L'importo per primo (Antonio), nella sua colonna fissa ([TimelineEntry.amount], 9 B).
+            Expenses.displayName(e),
             if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today, shown) else null,
             // Icona e colore dicono la categoria, come la barra del riepilogo.
             color = e.category.color(),
             icon = e.category.icon(),
             month = month,
+            amount = Expenses.format(e.cents),
         ) to e
     }
 }

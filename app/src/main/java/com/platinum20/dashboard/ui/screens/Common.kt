@@ -39,6 +39,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.graphics.Color
@@ -738,6 +740,36 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = MaterialTheme.colorScheme.card,
     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
 )
+
+/**
+ * Una riga di un elenco lungo (LazyColumn) disegnata come parte di un'unica card (1.423, punto 8 A): la prima ha gli
+ * angoli in alto, l'ultima in basso, in mezzo un separatore come [RowDivider]. Le righe vanno messe senza spazio fra loro.
+ */
+@Composable
+fun Modifier.cardGroupItem(first: Boolean, last: Boolean, container: Color = MaterialTheme.colorScheme.card): Modifier {
+    val border = MaterialTheme.colorScheme.outlineVariant
+    val radius = 18.dp
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        topStart = if (first) radius else 0.dp, topEnd = if (first) radius else 0.dp,
+        bottomStart = if (last) radius else 0.dp, bottomEnd = if (last) radius else 0.dp,
+    )
+    return this.clip(shape).background(container).drawWithContent {
+        drawContent()
+        val sw = 1.dp.toPx()
+        val r = androidx.compose.ui.geometry.CornerRadius(radius.toPx())
+        val zero = androidx.compose.ui.geometry.CornerRadius.Zero
+        // I lati in alto e in basso delle righe di mezzo cadono fuori: si vede un bordo solo, intorno a tutto.
+        val rect = androidx.compose.ui.geometry.RoundRect(
+            left = sw / 2, top = if (first) sw / 2 else -sw * 2,
+            right = size.width - sw / 2, bottom = if (last) size.height - sw / 2 else size.height + sw * 2,
+            topLeftCornerRadius = if (first) r else zero, topRightCornerRadius = if (first) r else zero,
+            bottomRightCornerRadius = if (last) r else zero, bottomLeftCornerRadius = if (last) r else zero,
+        )
+        val path = androidx.compose.ui.graphics.Path().apply { addRoundRect(rect) }
+        drawPath(path, border, style = androidx.compose.ui.graphics.drawscope.Stroke(sw))
+        if (!first) drawLine(border, Offset(16.dp.toPx(), sw / 2), Offset(size.width - 16.dp.toPx(), sw / 2), sw)
+    }
+}
 
 /** Separatore tra le righe di una card. */
 @Composable
