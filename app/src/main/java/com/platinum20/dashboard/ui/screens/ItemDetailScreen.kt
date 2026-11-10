@@ -327,7 +327,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     // Il quando sotto il titolo si tocca per cambiarlo (punto 26).
     val whenEdit = if (detail?.whenLine != null) lineEdit(kind, id, data, LineKind.WHEN) as? LineEdit.Tap else null
     // Le righe vuote aggiunte con "+": restano finché si è nella scheda, poi se scritte sono righe piene.
-    var adding by androidx.compose.runtime.saveable.rememberSaveable("$kind-$id") { mutableStateOf(listOf<String>()) }
+    var adding by remember(kind, id) { mutableStateOf(listOf<String>()) }
     DetailPage(
         onBack = onBack,
         onEdit = null,
