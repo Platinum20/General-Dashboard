@@ -367,7 +367,7 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
     return if (trip != null) TripStops(
         departAt = from.format(hour),
         // Nel calendario dove va e quando arriva (Antonio); sulla pagina del viaggio le due stazioni.
-        from = if (labels) trip.from ?: "Partenza" else "Treno per ${trip.to}",
+        from = if (labels) trip.from ?: "Partenza" else RowText.event(event),
         arriveAt = to.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
         middle = listOfNotNull(duration, trip.train).joinToString(" · "),
@@ -378,7 +378,7 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else event.title.ifBlank { "Evento" },
+        from = if (labels) "Inizio" else RowText.event(event),
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
@@ -455,10 +455,10 @@ internal fun timelineEntries(
                     (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
                 // Tutto il giorno (compleanni, scadenze): niente ora.
                 // Gli anni che compie stanno nella riga sotto ([TimelineEntry.detail]), con quanto manca.
-                r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to r.task.text
+                r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to RowText.date(r.task)
                 // L'ora va sulla riga sotto il nome (Antonio): vedi [TimelineEntry.time].
                 r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to r.task.text
-                r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to r.event.title
+                r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to RowText.event(r.event)
                 // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title

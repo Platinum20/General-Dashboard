@@ -2,6 +2,7 @@ package com.platinum20.dashboard.widget
 
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.RowText
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -34,6 +35,7 @@ sealed interface AgendaRow {
 }
 
 /**
+ * Le parole delle righe vengono da [RowText], le stesse del calendario dell'app.
  * Cosa mostra il widget Calendario: come la card della Home, prima tutto oggi (scaduti, eventi, promemoria,
  * date, da fare senza data) e poi i prossimi giorni finché c'è posto.
  */
@@ -109,13 +111,13 @@ object AgendaRows {
                 if (t.toLocalDate() == day) t.format(HOUR) else null
             }
             timed += (if (e.allDay) Long.MIN_VALUE else e.begin) to
-                AgendaRow.Item(AgendaRow.Kind.EVENT, e.eventId, e.title, time, color = e.color, begin = e.begin, end = e.end)
+                AgendaRow.Item(AgendaRow.Kind.EVENT, e.eventId, RowText.event(e), time, color = e.color, begin = e.begin, end = e.end)
         }
         open.forEach { t ->
             val next = t.nextDay(day, zone) ?: return@forEach
             if (next != day) return@forEach
             if (t.allDay) {
-                timed += Long.MIN_VALUE to AgendaRow.Item(AgendaRow.Kind.DATE, t.id, t.titleWithYears(day, zone), null)
+                timed += Long.MIN_VALUE to AgendaRow.Item(AgendaRow.Kind.DATE, t.id, RowText.dateOneLine(t, day, zone), null)
             } else {
                 val at = t.nextAt(day, zone)?.atZone(zone) ?: return@forEach
                 // Passa da solo come un evento: mai "in ritardo" (1.376).
@@ -134,9 +136,8 @@ object AgendaRows {
     private fun lateLabel(due: LocalDate, today: LocalDate): String =
         if (due == today.minusDays(1)) "ieri" else due.format(SHORT)
 
-    /** "DOMANI" o "MER 11 NOV". */
-    fun dayLabel(day: LocalDate, today: LocalDate): String =
-        (if (day == today.plusDays(1)) "domani" else day.format(SHORT)).uppercase(Locale.ITALIAN).replace(".", "")
+    /** "Domani" o "Gio 12": le stesse parole del calendario dell'app (punto 15). */
+    fun dayLabel(day: LocalDate, today: LocalDate): String = RowText.day(day, today)
 
     fun moreText(n: Int): String = if (n == 1) "+ un'altra cosa oggi" else "+ altre $n cose oggi"
 
