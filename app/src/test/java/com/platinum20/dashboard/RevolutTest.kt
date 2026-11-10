@@ -195,7 +195,7 @@ class RevolutTest {
     fun balanceLine() {
         assertNull(revolutLine(linked = false, expired = false, balance = 100))
         assertTrue(revolutLine(true, false, 123456)!!.startsWith("Saldo Revolut"))
-        assertTrue(revolutLine(true, true, 123456)!!.contains("rifai l'accesso"))
+        assertTrue(revolutLine(true, true, 123456)!!.contains("accesso scaduto"))
     }
 
     @Test
