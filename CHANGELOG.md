@@ -1,6 +1,7 @@
 # Changelog
 
-## 1.406.0
+<<<<<<< HEAD
+## 1.411.0
 **Schede più chiare, Spese con le frecce, Meteo e SIM più puliti**
 - Promemoria, date e pacchi: il "quando" sta sotto il titolo e si legge come una frase ("Domani alle 9:00", sotto la data); si tocca per cambiarlo, "Togli la data" è in Altro
 - Le righe vuote non ci sono più: in fondo "+ Luogo", "+ Note", "+ Codice" per aggiungerle
@@ -12,6 +13,14 @@
 - Spese del mese: frecce accanto al mese per cambiarlo, niente saldo, categorie con nome a sinistra e importo a destra
 - Meteo: la pioggia dentro il blocco colorato, i dettagli in una card sola; via pressione e "pioggia oggi", l'UV solo da 3 in su
 - SIM: i giga in grande nel blocco colorato, il resto in righe senza barre; "letto" una volta sola, sotto il titolo
+=======
+## 1.409.0
+**Cerca ricorda le ultime ricerche**
+- Col campo vuoto, sotto i filtri ci sono le ultime cinque ricerche: un tocco e la rifai, tieni premuto per toglierne una
+- Sotto, due scorciatoie: le spese del mese e i turni
+- Il chip "Radio e podcast" ora è "Radio", così si legge intero
+- Il campo di Cerca è uguale a quello della località del meteo: bianco, senza il bordo blu spesso
+>>>>>>> origin/main
 
 ## 1.404.0
 **Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
