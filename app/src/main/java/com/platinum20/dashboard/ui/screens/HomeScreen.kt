@@ -597,20 +597,22 @@ private fun NewsCard(
 ) {
     val context = LocalContext.current
     run {
-        CardSection("News", onClick = onOpenNews) {
-            val feed = state.feed
+        val feed = state.feed
+        val shown = feed.fresh.take(3)
+        // "25 nuove dalle 18:40" sta sulla riga del titolo, tutto a destra: una riga in meno (Antonio, 2026-11-10).
+        CardSection("News", onClick = onOpenNews, trailing = {
+            if (!feed.isEmpty) Text(
+                NewsStories.homeLine(if (feed.since == null) shown.size else feed.fresh.size, feed.since, Instant.now(), ::newsClock),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (shown.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 12.dp, end = 4.dp),
+            )
+        }) {
             Column(Modifier.padding(bottom = 4.dp)) {
                 when {
                     !feed.isEmpty -> {
-                        val shown = feed.fresh.take(3)
-                        Text(
-                            NewsStories.homeLine(if (feed.since == null) shown.size else feed.fresh.size, feed.since, Instant.now(), ::newsClock),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (shown.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = if (shown.isEmpty()) 12.dp else 8.dp),
-                        )
                         shown.forEachIndexed { index, story ->
                             if (index > 0) RowDivider()
                             StoryRow(
