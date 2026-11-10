@@ -389,10 +389,12 @@ fun NotesScreen(
             }
         }
         val barrier = rememberPastBarrier(listState, nowItem ?: -1, nowItem?.let { 0 })
-        // La linea a destra si trascina per correre di giorno in giorno (Antonio); lasciandola non si apre niente.
+        // La linea a destra è una barra di scorrimento (Antonio, 1.446): dito in cima = primo giorno, in fondo = ultimo; lasciandola non si apre niente.
         val scrubDays = remember(entries, timelineIndex, habitsAt, habitCount) { DayScrub.days(entries.map { it.first }, timelineIndex, habitsAt, habitCount) }
         val scrub = rememberDayScrub(listState, scrubDays)
         Box(Modifier.fillMaxSize()) {
+        // Trascinando la linea a destra si accende la riga del giorno sotto il dito (niente fumetti).
+        androidx.compose.runtime.CompositionLocalProvider(LocalScrubbedRow provides scrub.hot) {
         // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
             state = listState,
@@ -519,11 +521,7 @@ fun NotesScreen(
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
-        DayScrubThumb(
-            scrub,
-            lineFromEnd = listPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr) + TimelineLineInset,
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM, bottom = listPadding.calculateBottomPadding()),
-        )
+        }
         // I filtri stanno fermi sotto il titolo, fuori dalla lista: la pagina si apre su OGGI e restano a portata.
         Row(
             Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 4.dp),

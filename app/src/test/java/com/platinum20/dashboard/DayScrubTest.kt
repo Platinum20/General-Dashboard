@@ -5,44 +5,22 @@ import com.platinum20.dashboard.ui.screens.DayScrub
 import com.platinum20.dashboard.ui.screens.ScrubDay
 import com.platinum20.dashboard.ui.screens.TimelineEntry
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DayScrubTest {
     private fun row(key: String, day: String? = null, month: String? = null, today: Boolean = false) =
         TimelineEntry(key = key, kind = BriefKind.TASK, text = key, dayLabel = day, month = month, todayHeader = today)
 
-    @Test fun pocoDitoNonSpostaNiente() {
-        assertEquals(0, DayScrub.shift(0f))
-        assertEquals(0, DayScrub.shift(DayScrub.STEP_DP - 1))
+    @Test fun inCimaIlPrimoInFondoLUltimo() {
+        assertEquals(0, DayScrub.at(0f, 10))
+        assertEquals(9, DayScrub.at(1f, 10))
+        assertEquals(5, DayScrub.at(0.5f, 11))
     }
 
-    @Test fun unGiornoPerPassoNeiDueVersi() {
-        assertEquals(1, DayScrub.shift(DayScrub.STEP_DP + 1))
-        assertEquals(-1, DayScrub.shift(-DayScrub.STEP_DP - 1))
-    }
-
-    @Test fun allungandoIlGestoAccelera() {
-        val short = DayScrub.shift(100f)
-        val long = DayScrub.shift(500f)
-        assertTrue(long > short * 5)
-    }
-
-    @Test fun nonEsceDallaLinea() {
-        assertEquals(0, DayScrub.target(2, -1000f, 10))
-        assertEquals(9, DayScrub.target(2, 1000f, 10))
-    }
-
-    @Test fun elasticoLimitato() {
-        assertTrue(DayScrub.rubber(10f) < 10f)
-        assertTrue(DayScrub.rubber(10_000f) <= DayScrub.PULL_DP)
-        assertTrue(DayScrub.rubber(-10_000f) >= -DayScrub.PULL_DP)
-    }
-
-    @Test fun partenzaDalGiornoInCima() {
-        val days = listOf(ScrubDay(2, "Ieri"), ScrubDay(5, "Oggi"), ScrubDay(9, "Domani"))
-        assertEquals(1, DayScrub.from(days, 7))
-        assertEquals(0, DayScrub.from(days, 0))
+    @Test fun fuoriDallaLineaRestaAiBordi() {
+        assertEquals(0, DayScrub.at(-0.3f, 10))
+        assertEquals(9, DayScrub.at(1.4f, 10))
+        assertEquals(0, DayScrub.at(0.7f, 1))
     }
 
     @Test fun giorniDallaLinea() {
@@ -57,10 +35,10 @@ class DayScrubTest {
         val days = DayScrub.days(entries, first = 1, habitsAt = 3, habitRows = 1)
         assertEquals(
             listOf(
-                ScrubDay(1, "Ieri", "Novembre"),
-                ScrubDay(3, "Oggi", "Novembre"),
-                ScrubDay(5, "Domani", "Novembre"),
-                ScrubDay(6, "Lunedì 1", "Dicembre"),
+                ScrubDay(1, "a", "NOVEMBRE", DayScrub.MONTH_DP + DayScrub.DAY_DOT_DP),
+                ScrubDay(3, "oggi", "NOVEMBRE", DayScrub.NOW_DOT_DP),
+                ScrubDay(5, "c", "NOVEMBRE", DayScrub.DAY_DOT_DP),
+                ScrubDay(6, "d", "DICEMBRE", DayScrub.MONTH_DP + DayScrub.DAY_DOT_DP),
             ),
             days,
         )
