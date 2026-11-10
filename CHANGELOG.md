@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.454.0
+**Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
+- Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
+- Il giorno sotto il dito si accende e si spegne subito, senza lasciare una scia di giorni blu
+- Mentre tieni la linea il calendario non carica altri mesi sotto il dito: lo fa quando lasci
+
 ## 1.453.0
 **La casella del + è più compatta**
 - Quando scrivi, la casella resta sempre alta quanto il +: niente più riga in più sopra, anche con un testo lungo
