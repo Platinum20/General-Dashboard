@@ -58,6 +58,23 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Work
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.platinum20.dashboard.search.SearchRecents
+import java.time.YearMonth
+import java.time.format.TextStyle
+import java.util.Locale
 
 private val eventHour = DateTimeFormatter.ofPattern("HH:mm")
 
@@ -66,8 +83,8 @@ enum class SearchFilter(val label: String) {
     // Dalla 1.357 note ed eventi sono un filtro solo, "Calendario", come il calendario unico. AGENDA resta per le
     // ricerche salvate nelle rotte, ma non ha più il suo chip.
     ALL("Tutto"), NOTES("Calendario"), AGENDA("Calendario"), NEWS("News"),
-    // Radio e podcast insieme, come la loro pagina in Media.
-    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio e podcast");
+    // Radio e podcast insieme, come la loro pagina in Media; il chip dice solo "Radio" così il sesto ci sta intero.
+    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio");
 
     companion object {
         /** Il filtro già scelto quando si tira giù dentro una pagina di Media (es. "media/spotify" → Musica). */
@@ -122,6 +139,8 @@ fun SearchScreen(
     val haptic = rememberHaptic()
     val scope = rememberCoroutineScope()
     val today = remember { LocalDate.now() }
+    SearchRecents.init(context)
+    val recents by SearchRecents.list.collectAsStateWithLifecycle()
     var events by remember { mutableStateOf<Map<LocalDate, List<CalendarEvent>>>(emptyMap()) }
     var filter by rememberSaveable { mutableStateOf(initialFilter) }
     var query by remember { mutableStateOf("") }
@@ -151,6 +170,9 @@ fun SearchScreen(
             expanded = emptySet()
         }
     }
+    // Uscendo da Cerca l'ultima ricerca diventa una "recente".
+    val lastQuery by rememberUpdatedState(query)
+    DisposableEffect(Unit) { onDispose { SearchRecents.keep(lastQuery) } }
     fun shows(f: SearchFilter) = filter == SearchFilter.ALL || filter == f ||
         (f == SearchFilter.AGENDA && filter == SearchFilter.NOTES) || (f == SearchFilter.NOTES && filter == SearchFilter.AGENDA)
 
@@ -182,6 +204,30 @@ fun SearchScreen(
                             onClick = { haptic(Haptic.TICK); filter = f },
                             label = f.label,
                         )
+                    }
+                }
+            },
+            empty = { setQuery ->
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (recents.isNotEmpty()) Section(title = "Recenti") {
+                        recents.forEachIndexed { i, r ->
+                            if (i > 0) RowDivider()
+                            HintRow(Icons.Outlined.History, r, onLongClick = {
+                                ActionBubble.show(BubbleAction(Icons.Outlined.Delete, "Togli dalle recenti", danger = true) { SearchRecents.forget(r) })
+                            }) { haptic(Haptic.TICK); setQuery(r) }
+                        }
+                    }
+                    // Cosa si può cercare, con un tocco: insegna senza spiegare.
+                    Section(title = "Prova") {
+                        val month = remember { YearMonth.now() }
+                        HintRow(Icons.Outlined.Payments, "Spese di " + month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN)) {
+                            haptic(Haptic.TICK)
+                            inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.expenses(month))
+                        }
+                        RowDivider()
+                        HintRow(Icons.Outlined.Work, "Turni") {
+                            haptic(Haptic.TICK); filter = SearchFilter.NOTES; setQuery("Turno")
+                        }
                     }
                 }
             },
@@ -307,5 +353,23 @@ private fun ResultRow(title: String, detail: String, onLongClick: (() -> Unit)? 
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(detail, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** Una riga corta sotto il campo vuoto: una ricerca recente o una scorciatoia. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HintRow(icon: ImageVector, title: String, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .bouncyPress()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

@@ -63,6 +63,8 @@ fun NotesSearchPanel(
     onQuery: (String) -> Unit = {},
     /** Quanti risultati per gruppo prima di "Mostra altri" (Cerca ovunque ne mostra pochi per fonte). */
     perGroup: Int = Int.MAX_VALUE,
+    /** Sotto i filtri quando il campo è vuoto (ricerche recenti, scorciatoie): può riempire il campo. */
+    empty: (@Composable (setQuery: (String) -> Unit) -> Unit)? = null,
 ) {
     var more by remember { mutableStateOf(emptySet<SearchKind>()) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -74,26 +76,22 @@ fun NotesSearchPanel(
 
     LazyColumn(contentPadding = padding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "field") {
-            OutlinedTextField(
+            CanvasSearchField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text(placeholder) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                trailingIcon = {
+                placeholder = placeholder,
+                trailing = {
                     IconButton(onClick = { if (query.isEmpty()) onClose() else query = "" }) {
                         Icon(Icons.Outlined.Close, contentDescription = if (query.isEmpty()) "Chiudi ricerca" else "Cancella ricerca")
                     }
                 },
-                singleLine = true,
-                shape = MaterialTheme.shapes.large,
-                colors = canvasFieldColors(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 modifier = Modifier
                     .fillMaxWidth()
                     .autoFocus(),
             )
         }
         if (header != null) item(key = "header") { header() }
+        if (empty != null && query.isBlank()) item(key = "empty-hints") { empty { query = it } }
         hits.groupBy { it.kind }.forEach { (kind, group) ->
             item(key = kind.name) {
                 Section(title = "${kind.label} · ${group.size}") {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.409.0
+**Cerca ricorda le ultime ricerche**
+- Col campo vuoto, sotto i filtri ci sono le ultime cinque ricerche: un tocco e la rifai, tieni premuto per toglierne una
+- Sotto, due scorciatoie: le spese del mese e i turni
+- Il chip "Radio e podcast" ora è "Radio", così si legge intero
+- Il campo di Cerca è uguale a quello della località del meteo: bianco, senza il bordo blu spesso
+
 ## 1.404.0
 **Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
 - Il campo dice solo "Scrivi qualcosa…" e il velo dietro è più leggero
