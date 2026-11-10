@@ -478,7 +478,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                 onClick = if (!official) connectOfficial else null,
                 trailing = {
                     if (connected) {
-                        TextButton(onClick = {
+                        DangerButton(onClick = {
                             haptic(Haptic.TICK)
                             Accounts.logout(service)
                             when (service) {
@@ -536,13 +536,13 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(
+                ConfirmButton(
                     enabled = valid != null,
                     onClick = { valid?.let(SpotifyAuth::setClientId); editSpotifyKey = false },
                 ) { Text("Salva") }
             },
             dismissButton = {
-                TextButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
+                DismissButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
                     Text("Ripristina")
                 }
             },
@@ -589,9 +589,9 @@ private fun SongIdSetting() {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { SongId.setToken(value); editing = false }) { Text("Salva") }
+                ConfirmButton(onClick = { SongId.setToken(value); editing = false }) { Text("Salva") }
             },
-            dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
+            dismissButton = { DismissButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
 }
@@ -669,7 +669,7 @@ private fun InfoBlock() {
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
-            confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("OK") } },
+            confirmButton = { DismissButton(onClick = { showLicenses = false }) { Text("OK") } },
         )
     }
 }
@@ -988,14 +988,14 @@ private fun MorningSettings() {
             title = { Text("Orario della notifica") },
             text = { TimePicker(state = state) },
             confirmButton = {
-                TextButton(onClick = {
+                ConfirmButton(onClick = {
                     AppSettings.setMorning(morning.copy(hour = state.hour, minute = state.minute))
                     MorningWorker.schedule(context)
                     pickTime = false
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { pickTime = false }) { Text("Annulla") }
+                DismissButton(onClick = { pickTime = false }) { Text("Annulla") }
             },
         )
     }
@@ -1433,7 +1433,7 @@ private fun AdBlockSettings() {
             title = "Liste dei filtri",
             subtitle = adBlockStatusText(status),
             trailing = {
-                TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
+                FilledTonalButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
             },
         )
     } }

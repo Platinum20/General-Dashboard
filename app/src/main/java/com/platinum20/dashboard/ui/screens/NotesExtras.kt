@@ -411,10 +411,10 @@ internal fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (
             }
         },
         confirmButton = {
-            TextButton(onClick = save, enabled = cents != null) { Text("Salva") }
+            ConfirmButton(onClick = save, enabled = cents != null) { Text("Salva") }
         },
         dismissButton = {
-            TextButton(onClick = {
+            DismissButton(danger = true, onClick = {
                 NotesStore.deleteExpense(expense.id)
                 onDismiss()
                 onDeleted(expense)
@@ -586,13 +586,13 @@ fun ParcelDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            ConfirmButton(onClick = {
                 NotesStore.saveParcel(parcel?.id, title, code, expected)
                 onDismiss()
             }, enabled = title.isNotBlank() || code.isNotBlank()) { Text("Salva") }
         },
         dismissButton = {
-            TextButton(onClick = {
+            DismissButton(danger = parcel != null, onClick = {
                 onDismiss()
                 parcel?.let {
                     NotesStore.deleteParcel(it.id)

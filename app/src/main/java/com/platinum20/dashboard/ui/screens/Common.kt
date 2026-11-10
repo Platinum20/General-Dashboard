@@ -905,8 +905,15 @@ fun LoadingPulse(modifier: Modifier = Modifier, color: Color = MaterialTheme.col
 }
 
 /**
+ * I tre livelli di pulsante (1.402, Antonio): [PRIMARY] pieno blu = l'azione principale, una per pagina o
+ * dialogo ("Salva", "Collega Spotify"); [TONAL] = azioni di riga ("Accedi", "Condividi"); [DANGER] = testo
+ * rosso, per quello che toglie qualcosa ("Esci", "Elimina"). Niente link blu nelle righe.
+ */
+enum class ButtonLevel { PRIMARY, TONAL, DANGER }
+
+/**
  * Il bottone di Canvas (1.357): una pillola tonale per le azioni dentro card e pagine ("Riprova", "Accedi",
- * "Guarda il video"). [primary] = pieno, solo per l'unica azione di una pagina vuota ("Collega Spotify").
+ * "Guarda il video"). [primary] = pieno, solo per l'unica azione della pagina; [level] per i tre livelli.
  * Prima c'erano quattro tipi di bottone diversi per la stessa cosa.
  */
 @Composable
@@ -916,6 +923,8 @@ fun CanvasButton(
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     primary: Boolean = false,
+    level: ButtonLevel = if (primary) ButtonLevel.PRIMARY else ButtonLevel.TONAL,
+    enabled: Boolean = true,
 ) {
     val content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
         icon?.let {
@@ -924,9 +933,70 @@ fun CanvasButton(
         }
         Text(text, maxLines = 1)
     }
-    if (primary) {
-        androidx.compose.material3.Button(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
-    } else {
-        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+    when (level) {
+        ButtonLevel.PRIMARY ->
+            androidx.compose.material3.Button(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.TONAL ->
+            androidx.compose.material3.FilledTonalButton(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.DANGER ->
+            androidx.compose.material3.TextButton(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = modifier.bouncyPress(),
+                shape = CircleShape,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                content = content,
+            )
     }
 }
+
+/** La conferma di un dialogo ("Salva", "Collega"): piena, è l'azione principale; [danger] rossa ("Cancella"). */
+@Composable
+fun ConfirmButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.Button(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier.bouncyPress(),
+    shape = CircleShape,
+    colors = if (danger) {
+        androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.error,
+            contentColor = MaterialTheme.colorScheme.onError,
+        )
+    } else {
+        androidx.compose.material3.ButtonDefaults.buttonColors()
+    },
+    content = content,
+)
+
+/** L'alternativa di un dialogo ("Annulla", "OK" dei dialoghi che informano): solo testo, in inchiostro. */
+@Composable
+fun DismissButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.TextButton(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier,
+    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+        contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+    ),
+    content = content,
+)
+
+/** Un'azione di riga che toglie qualcosa ("Esci"): testo rosso, il livello più basso dei tre. */
+@Composable
+fun DangerButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = DismissButton(onClick = onClick, modifier = modifier, enabled = enabled, danger = true, content = content)

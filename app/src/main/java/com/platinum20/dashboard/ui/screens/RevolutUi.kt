@@ -173,7 +173,7 @@ internal fun RevolutAccountRows() {
             when {
                 !linked -> FilledTonalButton(onClick = { open() }) { Text("Accedi") }
                 expired -> FilledTonalButton(onClick = { open() }) { Text("Rientra") }
-                else -> TextButton(onClick = { RevolutLink.forget(context) }) { Text("Esci") }
+                else -> DangerButton(onClick = { RevolutLink.forget(context) }) { Text("Esci") }
             }
         },
     )
@@ -195,7 +195,7 @@ internal fun RevolutAccountRows() {
                     ),
                 )
             },
-            trailing = { TextButton(onClick = { shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText()) }) { Text("Condividi") } },
+            trailing = { FilledTonalButton(onClick = { shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText()) }) { Text("Condividi") } },
         )
     }
 }

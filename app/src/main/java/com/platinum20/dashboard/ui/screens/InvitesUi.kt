@@ -92,7 +92,7 @@ fun InvitesRow(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Chiudi") } },
+            confirmButton = { DismissButton(onClick = { open = false }) { Text("Chiudi") } },
         )
     }
 }
@@ -106,7 +106,7 @@ private fun InviteItem(icon: ImageVector, text: String, action: String, onAction
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onLater) { Text("Non ora") }
+            DismissButton(onClick = onLater) { Text("Non ora") }
             FilledTonalButton(onClick = onAction) { Text(action) }
         }
     }

@@ -111,8 +111,8 @@ fun ContactImportDialog(existing: List<TaskItem>, onDismiss: () -> Unit, onImpor
         },
         confirmButton = {
             when {
-                denied -> TextButton(onClick = { openAppInfo(context); onDismiss() }) { Text("Impostazioni") }
-                !list.isNullOrEmpty() -> TextButton(
+                denied -> ConfirmButton(onClick = { openAppInfo(context); onDismiss() }) { Text("Impostazioni") }
+                !list.isNullOrEmpty() -> ConfirmButton(
                     enabled = picked.isNotEmpty(),
                     onClick = {
                         haptic(Haptic.CONFIRM)
@@ -125,7 +125,7 @@ fun ContactImportDialog(existing: List<TaskItem>, onDismiss: () -> Unit, onImpor
             }
         },
         dismissButton = {
-            if (!list.isNullOrEmpty() || denied) TextButton(onClick = onDismiss) { Text("Annulla") }
+            if (!list.isNullOrEmpty() || denied) DismissButton(onClick = onDismiss) { Text("Annulla") }
         },
     )
 }

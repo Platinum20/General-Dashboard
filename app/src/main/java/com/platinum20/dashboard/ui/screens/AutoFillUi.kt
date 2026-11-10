@@ -109,7 +109,7 @@ internal fun SuggestionRow(s: Suggestion, onAccept: () -> Unit, onDismiss: () ->
                 Icon(Icons.Outlined.Check, contentDescription = "Aggiungi", tint = MaterialTheme.colorScheme.primary)
             }
         } else {
-            TextButton(onClick = onUndo) { Text("Annulla") }
+            DismissButton(onClick = onUndo) { Text("Annulla") }
         }
     }
 }
@@ -241,7 +241,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                             title = "Android dice \"impostazione con limitazioni\"?",
                             subtitle = "Succede alle app installate dall'APK: apri Info app, tocca ⋮ in alto e scegli \"Consenti impostazioni con limitazioni\", poi riprova",
                             onClick = { openAppInfo(context) },
-                            trailing = { TextButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
+                            trailing = { FilledTonalButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
                         )
                     }
                 }
@@ -279,7 +279,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                                 title = SuggestionText.title(s.found),
                                 subtitle = (if (s.state == SuggestionState.ADDED) "Aggiunto · " else "Ignorato · ") + SuggestionText.detail(s),
                                 trailing = if (s.state == SuggestionState.ADDED && s.ref != null) {
-                                    { TextButton(onClick = { AutoFill.undo(s.id) }) { Text("Togli") } }
+                                    { DangerButton(onClick = { AutoFill.undo(s.id) }) { Text("Togli") } }
                                 } else null,
                             )
                         }

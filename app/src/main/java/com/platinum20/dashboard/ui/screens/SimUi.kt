@@ -345,7 +345,7 @@ internal fun WindTreAccountRows() {
         },
         onClick = if (!linked) ({ inApp?.openRoute?.invoke(Routes.SIM) }) else null,
         trailing = {
-            if (linked) TextButton(onClick = { WindTreLink.forget(context) }) { Text("Esci") }
+            if (linked) DangerButton(onClick = { WindTreLink.forget(context) }) { Text("Esci") }
             else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
         },
     )
@@ -368,7 +368,7 @@ internal fun WindTreAccountRows() {
                     ),
                 )
             },
-            trailing = { TextButton(onClick = { shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText()) }) { Text("Condividi") } },
+            trailing = { FilledTonalButton(onClick = { shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText()) }) { Text("Condividi") } },
         )
     }
 }

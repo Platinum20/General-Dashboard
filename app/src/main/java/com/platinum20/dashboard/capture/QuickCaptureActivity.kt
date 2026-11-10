@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.capture
 
+import com.platinum20.dashboard.ui.screens.ConfirmButton
+import com.platinum20.dashboard.ui.screens.DismissButton
 import com.platinum20.dashboard.ui.screens.CanvasDialog
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
@@ -227,8 +229,8 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 CapturePreview(mode, text)
             }
         },
-        confirmButton = { TextButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annulla") } },
+        confirmButton = { ConfirmButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
+        dismissButton = { DismissButton(onClick = onClose) { Text("Annulla") } },
     )
 }
 

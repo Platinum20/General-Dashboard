@@ -111,6 +111,6 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fatto") } },
+        confirmButton = { DismissButton(onClick = onDismiss) { Text("Fatto") } },
     )
 }

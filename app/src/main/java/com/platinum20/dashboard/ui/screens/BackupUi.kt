@@ -85,14 +85,14 @@ internal fun BackupSettings() {
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                ConfirmButton(onClick = {
                     Backup.restore(context, content)
                     pending = null
                     haptic(Haptic.CONFIRM)
                     toast("Backup ripristinato")
                 }) { Text("Ripristina") }
             },
-            dismissButton = { TextButton(onClick = { pending = null }) { Text("Annulla") } },
+            dismissButton = { DismissButton(onClick = { pending = null }) { Text("Annulla") } },
         )
     }
 }

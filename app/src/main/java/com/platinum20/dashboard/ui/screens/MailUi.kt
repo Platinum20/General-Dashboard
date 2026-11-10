@@ -146,7 +146,7 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(enabled = !connect.busy, onClick = {
+                    FilledTonalButton(enabled = !connect.busy, onClick = {
                         haptic(Haptic.TICK)
                         if (imap) askPassword = true else connect.start()
                     }) { Text("Ricollega") }
@@ -260,10 +260,10 @@ internal fun GmailPasswordDialog(onDismiss: () -> Unit, onLinked: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(enabled = ready, onClick = { link() }) { Text(if (busy) "Provo…" else "Collega") }
+            ConfirmButton(enabled = ready, onClick = { link() }) { Text(if (busy) "Provo…" else "Collega") }
         },
         dismissButton = {
-            TextButton(enabled = !busy, onClick = onDismiss) { Text("Annulla") }
+            DismissButton(enabled = !busy, onClick = onDismiss) { Text("Annulla") }
         },
     )
 }

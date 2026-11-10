@@ -669,13 +669,13 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
             title = { Text("Svuotare la cronologia?") },
             text = { Text("${watched.size} video guardati qui e i punti in cui eri. Spariscono anche da Riprendi in Media.") },
             confirmButton = {
-                TextButton(onClick = {
+                ConfirmButton(danger = true, onClick = {
                     confirmClear = false
                     MediaHistory.init(context)
                     undo = YtHistory.clear() to MediaHistory.removeKind(ResumeKind.YOUTUBE)
                 }) { Text("Svuota") }
             },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Annulla") } },
+            dismissButton = { DismissButton(onClick = { confirmClear = false }) { Text("Annulla") } },
         )
     }
     Column(Modifier.fillMaxSize()) {
@@ -697,7 +697,7 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                 item(key = "local-h") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)) { SectionHeader("Guardati qui") }
-                        TextButton(onClick = { confirmClear = true }) { Text("Svuota") }
+                        DangerButton(onClick = { confirmClear = true }) { Text("Svuota") }
                     }
                 }
                 items(watched, key = { "l" + it.id }) { w ->

@@ -94,12 +94,12 @@ internal fun RadioAlarmSetting() {
                 }
             },
             confirmButton = {
-                TextButton(enabled = station != null, onClick = {
+                ConfirmButton(enabled = station != null, onClick = {
                     RadioAlarm.update(context, alarm.copy(enabled = true, hour = time.hour, minute = time.minute, weekdaysOnly = weekdays, station = station))
                     editing = false
                 }) { Text("Attiva") }
             },
-            dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
+            dismissButton = { DismissButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
 }
