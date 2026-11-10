@@ -246,7 +246,7 @@ fun DetailAmountField(key: Any, value: String, onCommit: (String) -> Unit) {
         textAlign = TextAlign.End,
         fontFeatureSettings = "tnum",
     )
-    // Larga quanto il numero scritto: IntrinsicSize.Min su un campo di testo lo schiacciava a zero (1.433, si vedeva solo "€").
+    // Larga quanto il numero scritto: IntrinsicSize.Min su un campo di testo lo schiacciava a zero (1.434, si vedeva solo "€").
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val density = androidx.compose.ui.platform.LocalDensity.current
     val textPx = measurer.measure(text.ifEmpty { "0" }, style, maxLines = 1).size.width

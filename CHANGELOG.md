@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.433.0
+## 1.434.0
 **Nella scheda di una spesa si vede di nuovo l'importo**
 - Accanto al nome c'era solo "€": il numero era schiacciato a zero. Ora il campo è largo quanto l'importo e si può ancora toccare e correggere lì
 
