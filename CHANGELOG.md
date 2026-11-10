@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.432.0
+**La pagina SIM ti dice se i giga bastano fino al rinnovo**
+- Sotto la barra dei giga: "Ti bastano fino al rinnovo" oppure "Non ti bastano", con il perché in una riga ("1,2 GB al giorno · ne avanzano 15 GB" o "finiscono verso il 18/11")
+- Canvas tiene una lettura dei giga al giorno per cinque settimane e ne fa la media; i giorni del rinnovo o di una ricarica non contano
+- Nei primi due giorni dice "Ti dico presto se bastano": non tira a indovinare
+
 ## 1.431.0
 **Il widget Calendario parla come l'app**
 - Le righe del widget usano le stesse parole del calendario: "Treno per Pescara", "Turno su Debora e Chiara", "Domani", "Gio 12"

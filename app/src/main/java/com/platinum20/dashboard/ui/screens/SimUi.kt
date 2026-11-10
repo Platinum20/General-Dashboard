@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.FilledTonalButton
 import com.platinum20.dashboard.Routes
+import com.platinum20.dashboard.sim.GigaVerdict
+import com.platinum20.dashboard.sim.SimUsage
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -216,6 +218,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
     val context = LocalContext.current
     SimStore.init(context)
     val status by SimStore.status.collectAsStateWithLifecycle()
+    val history by SimStore.history.collectAsStateWithLifecycle()
     val refreshing by SimStore.refreshing.collectAsStateWithLifecycle()
     var login by rememberSaveable { mutableStateOf(!SimStore.linked.value) }
     val scope = rememberCoroutineScope()
@@ -262,7 +265,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                     if (s == null) {
                         Text(if (refreshing) "Sto leggendo i dati…" else "Ancora nessun dato da WindTre", style = MaterialTheme.typography.titleMedium)
                     } else {
-                        SimGigaHero(s)
+                        SimGigaHero(s, SimUsage.verdict(s, history, LocalDate.now()))
                     }
                 }
             }
@@ -291,7 +294,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
 
 /** L'eroe della pagina SIM: l'offerta, i giga grandi e la barra di quanto resta. */
 @Composable
-private fun SimGigaHero(s: SimStatus) {
+private fun SimGigaHero(s: SimStatus, verdict: GigaVerdict?) {
     val soft = LocalContentColor.current.copy(alpha = 0.7f)
     val barColor = MaterialTheme.colorScheme.onPrimaryContainer
     Text(
@@ -315,6 +318,22 @@ private fun SimGigaHero(s: SimStatus) {
         Spacer(Modifier.height(12.dp))
         SimBar(data.fraction ?: 0f, barColor, barColor.copy(alpha = 0.18f), height = 6.dp)
     }
+    // La domanda della pagina (punto 47): bastano fino al rinnovo? Sotto la barra, col perché in una riga.
+    verdict?.let { v ->
+        val (answer, why) = gigaVerdictText(v)
+        Spacer(Modifier.height(14.dp))
+        Text(answer, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Text(why, style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** La risposta e il suo perché: "Ti bastano" / "1,2 GB al giorno · ne avanzano 15 GB". */
+internal fun gigaVerdictText(v: GigaVerdict): Pair<String, String> = when (v) {
+    GigaVerdict.Learning -> "Ti dico presto se bastano" to "Sto imparando quanto usi al giorno"
+    is GigaVerdict.Enough -> "Ti bastano fino al rinnovo" to
+        (gbLabel(v.perDay) + " al giorno · " + if (v.spare >= 0.05) "ne avanzano " + gbLabel(v.spare) else "giusti giusti")
+    is GigaVerdict.NotEnough -> "Non ti bastano" to
+        (gbLabel(v.perDay) + " al giorno · finiscono verso il " + v.runsOut.format(WindTreParse.shortDate))
 }
 
 /** Le righe sotto l'eroe della pagina SIM: minuti, SMS, roaming, credito, rinnovo (solo quelle note). */
