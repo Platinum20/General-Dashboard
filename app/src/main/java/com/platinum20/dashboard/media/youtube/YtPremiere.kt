@@ -157,8 +157,9 @@ class PremiereReminderWorker(context: Context, params: WorkerParameters) : Corou
         val notificationId = 5000 + (id.hashCode() and 0xFFFFF)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Sta iniziando l'anteprima")
-            .setContentText(title.ifBlank { "Il video che aspettavi" })
+            // Il titolo è la cosa, il testo è il quando (1.402).
+            .setContentTitle(title.ifBlank { "Il video che aspettavi" })
+            .setContentText("Anteprima · inizia adesso")
             .setContentIntent(PendingIntent.getActivity(context, notificationId, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

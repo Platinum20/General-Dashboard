@@ -44,23 +44,22 @@ class RainAlertWorker(context: Context, params: WorkerParameters) : CoroutineWor
             ?: return Result.success()
         val notice = RainAlert.decide(forecast.nowcast, now, last) ?: return Result.success()
         if (MorningWorker.canNotify(context)) {
-            post(context, notice.text(forecast.place))
+            post(context, notice.title(), notice.detail(forecast.place))
             prefs.edit().putLong(KEY_LAST, System.currentTimeMillis()).apply()
         }
         return Result.success()
     }
 
     @SuppressLint("MissingPermission")
-    private fun post(context: Context, text: String) {
+    private fun post(context: Context, title: String, text: String) {
         ensureChannel(context)
         val intent = Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         OpenRequest(OpenRequest.WEATHER).writeTo(intent)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("☔ Sta per piovere")
+            .setContentTitle(title)
             .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(
                 PendingIntent.getActivity(context, 300, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             )

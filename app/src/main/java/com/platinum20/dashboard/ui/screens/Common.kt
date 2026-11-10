@@ -95,6 +95,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -393,6 +394,11 @@ fun TopLevelBar(
             // Niente pulsanti, ma chi usa TalkBack trova ricerca e impostazioni tra le azioni del titolo.
             val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
             val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
+            // Senza rete lo dice la riga sopra il titolo (1.402), e sparisce da sola quando la rete torna.
+            val context = androidx.compose.ui.platform.LocalContext.current
+            remember { com.platinum20.dashboard.net.Online.init(context) }
+            val online by com.platinum20.dashboard.net.Online.online.collectAsState()
+            val line = com.platinum20.dashboard.net.Online.subtitle(online, subtitle)
             Column(
                 Modifier.semantics {
                     customActions = listOfNotNull(
@@ -401,10 +407,10 @@ fun TopLevelBar(
                     )
                 },
             ) {
-                if (subtitle != null) {
+                if (line != null) {
                     // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
                     AnimatedContent(
-                        subtitle.uppercase(),
+                        line.uppercase(),
                         transitionSpec = {
                             (slideInVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) { it / 2 } +
                                 fadeIn(tween(Motion.ENTER_MS, easing = Motion.Decelerate)))
@@ -828,6 +834,17 @@ fun PlaceholderLine(fraction: Float, height: Dp = 12.dp, modifier: Modifier = Mo
 @Composable
 fun PlaceholderList(modifier: Modifier = Modifier, rows: Int = 6, thumb: Boolean = true, label: String = "Carico…") {
     val widths = listOf(0.86f, 0.7f, 0.78f, 0.62f, 0.82f, 0.68f)
+    // Senza rete le righe grigie resterebbero lì per sempre: lo dice una riga sopra (1.402).
+    val online by com.platinum20.dashboard.net.Online.online.collectAsState()
+    if (!online) {
+        Text(
+            "Senza rete: riprovo quando torna",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        return
+    }
     Column(
         modifier
             .fillMaxWidth()
