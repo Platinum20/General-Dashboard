@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.439.0
+**Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
+- Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)
+- Notifica del mattino: il gruppo "Oggi" elenca lo stesso Oggi del calendario; le cose senza data sono già lì dentro
+- Card Calendario in Home: si vedono anche le cose spuntate oggi, come nella pagina
+- Calendario con un filtro acceso (Note, Eventi): il segno OGGI resta in cima invece di diventare un giorno qualsiasi o sparire
+
 ## 1.438.0
 **Nei treni, sotto la durata, il treno con carrozza e posto**
 - Nel calendario fra partenza e arrivo: in mezzo la durata, sotto "Intercity 612 · Carrozza 5 · Posto 42D", tutte e due al centro
