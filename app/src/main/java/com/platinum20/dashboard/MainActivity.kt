@@ -200,7 +200,6 @@ import com.platinum20.dashboard.ui.screens.LoginScreen
 import com.platinum20.dashboard.ui.screens.MediaScreen
 import com.platinum20.dashboard.ui.screens.FloatingPlayer
 import com.platinum20.dashboard.ui.screens.ListenScreen
-import com.platinum20.dashboard.ui.screens.ListenTab
 import com.platinum20.dashboard.ui.screens.PlayerScreen
 import com.platinum20.dashboard.media.PlayerService
 import androidx.compose.foundation.layout.Box
@@ -1303,18 +1302,21 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     bottomPadding = padding,
                     onOpenMusic = { navController.navigate(Routes.SPOTIFY_FEED) },
                     onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
-                    onOpenListen = { navController.navigate(if (it == ListenTab.RADIO) Routes.RADIO else Routes.PODCAST) },
+                    onOpenRadio = { navController.navigate(Routes.RADIO) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
                     onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // Radio e podcast sono una sezione sola: le due strade aprono la stessa pagina sulla scheda giusta.
+            // Dalla 1.437 la radio è una sezione da sola e i podcast stanno in Musica: la vecchia strada dei podcast apre Musica.
             composable(Routes.RADIO) {
-                ListenScreen(start = ListenTab.RADIO, onBack = { navController.popBackStack() })
+                ListenScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.PODCAST) {
-                ListenScreen(start = ListenTab.PODCAST, onBack = { navController.popBackStack() })
+                MusicScreen(
+                    onBack = { navController.popBackStack() },
+                    onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
+                )
             }
             composable(
                 Routes.PLAYER,

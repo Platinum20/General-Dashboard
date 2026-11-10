@@ -263,7 +263,7 @@ class ScreenshotTour {
             "79_calendario" to Routes.NOTES,
             "80_musica" to Routes.SPOTIFY_FEED,
             "81_video" to Routes.YOUTUBE_FEED,
-            "82_radio_podcast" to Routes.RADIO,
+            "82_radio" to Routes.RADIO,
             "83_compila_da_solo" to Routes.AUTOFILL,
         )
         for ((name, route) in pages) {

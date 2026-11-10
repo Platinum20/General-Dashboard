@@ -279,7 +279,7 @@ fun VideoFeed(
         itemsIndexed(pick.videos, key = { _, v -> v.id }) { i, video ->
             // Qualche video prima del fondo parte già la pagina dopo: scorrendo non ci si ferma ad aspettare.
             if (onNearEnd != null && i >= pick.videos.size - NEAR_END) LaunchedEffect(count) { onNearEnd() }
-            VideoCard(video, onClick = { onPlay(video.watchUrl) })
+            VideoCard(video, onClick = { onPlay(video.watchUrl) }, first = i == 0)
         }
         if (onNearEnd != null && count > 0) {
             item(key = "more") {
@@ -297,8 +297,8 @@ private const val NEAR_END = 6
 private fun SimpleVideos(state: Loadable<List<YtVideo>>, empty: String, onPlay: (String) -> Unit, list: String? = null, load: () -> Unit) {
     LaunchedEffect(Unit) { load() }
     FeedList(state, empty = empty) {
-        items(state.data.orEmpty(), key = { it.id }) { video ->
-            VideoCard(video, onClick = { onPlay(video.watchUrl + (list?.let { "&list=$it" } ?: "")) })
+        itemsIndexed(state.data.orEmpty(), key = { _, v -> v.id }) { i, video ->
+            VideoCard(video, onClick = { onPlay(video.watchUrl + (list?.let { "&list=$it" } ?: "")) }, first = i == 0)
         }
     }
 }
@@ -308,25 +308,26 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
     Column {
         SectionHeader("Shorts · ${shorts.size}")
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(shorts.take(20), key = { it.id }) { short ->
+            itemsIndexed(shorts.take(20), key = { _, v -> v.id }) { i, short ->
                 Column(
                     Modifier
+                        .tileDivider(i == 0, gap = 8.dp)
                         .width(120.dp)
                         .bouncyPress(0.96f)
                         .clickable { onPlay(short.watchUrl) }
                 ) {
-                    AsyncImage(
-                        model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(9f / 16f)
-                            .clip(MaterialTheme.shapes.medium)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    TileCaption(short.title, null)
+                    CaptionedCover(short.title, null) {
+                        AsyncImage(
+                            model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(9f / 16f)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                        )
+                    }
                 }
             }
         }
@@ -478,7 +479,7 @@ private fun ChannelVideos(channel: YtChannel, hideShorts: Boolean, hideLive: Boo
         if (pick.shorts.isNotEmpty()) {
             item(key = "shorts") { ShortsShelf(pick.shorts, onPlay) }
         }
-        items(pick.videos, key = { it.id }) { VideoCard(it, onClick = { onPlay(it.watchUrl) }) }
+        itemsIndexed(pick.videos, key = { _, v -> v.id }) { i, v -> VideoCard(v, onClick = { onPlay(v.watchUrl) }, first = i == 0) }
         if (channel.id in more) {
             // Composto solo quando si arriva vicino al fondo della lista: lì parte la pagina dopo.
             item(key = "more") {
@@ -526,39 +527,43 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
     }
 }
 
-/** Video come nell'app di YouTube: anteprima grande con la durata, sotto foto del canale, titolo e dettagli. */
+/**
+ * Video in grande (1.437, Antonio): il titolo SOPRA l'anteprima, appoggiato a lei; sotto foto del canale, canale e
+ * dettagli, che vanno a capo verso il basso. Fra un video e l'altro un divisorio leggero ([first] = niente linea).
+ */
 @Composable
-fun VideoCard(video: YtVideo, onClick: () -> Unit) {
+fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
     Column(
         Modifier
+            .stackDivider(first)
             .fillMaxWidth()
             .bouncyPress(0.97f)
             .clip(MaterialTheme.shapes.large)
             .tapOrSave({ SavedLinks.youtube(video) }, onClick)
     ) {
+        Text(
+            video.title,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 2.dp, end = 2.dp, bottom = 8.dp),
+        )
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
-        Row(Modifier.padding(top = 10.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
-            ChannelAvatar(video.channelAvatar, video.channel, 36)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    video.title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    videoMeta(video),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        Row(Modifier.padding(start = 2.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
+            ChannelAvatar(video.channelAvatar, video.channel, 24)
+            Spacer(Modifier.width(10.dp))
+            Text(
+                videoMeta(video),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(top = 3.dp),
+            )
         }
     }
 }
