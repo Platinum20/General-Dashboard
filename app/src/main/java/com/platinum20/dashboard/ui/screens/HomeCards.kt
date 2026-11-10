@@ -270,7 +270,7 @@ fun TimelineCard(
         title = title,
         modifier = modifier,
         trailing = titleTrailing ?: {
-            count?.let { Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp)) }
+            if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         },
     ) {
         Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(bottom = 6.dp)) {
