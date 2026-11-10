@@ -118,60 +118,6 @@ internal fun renewalLine(day: LocalDate, today: LocalDate = LocalDate.now()): St
     "Rinnovo " + day.format(WindTreParse.shortDate) + " · " + renewalLabel(day, today)
 
 /**
- * La card della Home: tutto quello che c'è da sapere della SIM in un blocco solo, uguale (più grande)
- * nella pagina. Prima del collegamento dice solo come collegarsi.
- */
-@Composable
-internal fun SimCard(onOpen: () -> Unit) {
-    val context = LocalContext.current
-    SimStore.init(context)
-    val status by SimStore.status.collectAsStateWithLifecycle()
-    val linked by SimStore.linked.collectAsStateWithLifecycle()
-    // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
-    AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
-    Section(title = "SIM", modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true)) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpen)
-                .padding(16.dp),
-        ) {
-            val s = status
-            // Mentre legge: le barre in grigio, già alla loro altezza (1.357), invece di una frase che poi si allunga.
-            if (s == null && linked) {
-                Column(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Sto leggendo i dati di WindTre" },
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Placeholder(96.dp, 10.dp)
-                    repeat(3) {
-                        PlaceholderLine(1f, 14.dp)
-                        PlaceholderLine(1f, 4.dp)
-                    }
-                }
-                return@Column
-            }
-            if (s == null || !linked) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconTile(Icons.Outlined.SimCard, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        if (linked) "Sto leggendo i dati di WindTre…" else "Collega WindTre: giga, minuti e credito qui",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                }
-                return@Column
-            }
-            SimPanel(s)
-        }
-    }
-}
-
-/**
  * Il blocco della SIM: in alto l'offerta e quando è stato letto, poi un dato per riga.
  * Il roaming UE solo nella pagina (big).
  * Il colore del testo viene da fuori: nella card normale e nel blocco colorato della pagina.
