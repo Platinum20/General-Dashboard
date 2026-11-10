@@ -61,7 +61,7 @@ private const val NOTICE_MS = 2_600L
 private data class Flight(val icon: ImageVector, val from: Offset, val to: Offset, val key: String)
 
 /**
- * Sopra tutta l'app: il fumetto "Spesa: 12,50 € · Cibo · Annulla" sopra la barra e poi il pallino
+ * Sopra tutta l'app: il fumetto "Nota salvata · Annulla" sopra la barra e poi il pallino
  * che vola dove la cosa è finita. Nelle Note atterra sulla sezione giusta (se è a schermo),
  * altrimenti sulla scheda Note in basso (gli eventi su Oggi, dove c'è l'agenda).
  */

@@ -20,7 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Il collegamento con Creators Pro, dove l'agenzia mette i turni. Nessuna API per i turni: Canvas
  * apre il sito (visibile solo per l'accesso, poi nascosto sulla timeline) e legge le risposte che la
- * pagina riceve, come per WindTre e Revolut. Solo lettura; la password non passa da Canvas.
+ * pagina riceve, come per WindTre. Solo lettura; la password non passa da Canvas.
  */
 object CreatorsLink {
     const val HOME = "https://app.creatorspro.com/"

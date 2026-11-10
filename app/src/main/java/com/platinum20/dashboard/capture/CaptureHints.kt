@@ -19,7 +19,6 @@ internal object CaptureHints {
 
     /** Uno per tipo, nell'ordine in cui girano. */
     val examples = listOf(
-        "pizza 12,50",
         "domani alle 9 chiamare il dentista",
         "venerdì alle 20 cena da Luca",
         "compleanno di Marta 12 marzo",
@@ -33,7 +32,7 @@ internal object CaptureHints {
     private val day = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
     private val hour = DateTimeFormatter.ofPattern("H:mm")
 
-    /** "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00": in una riga sola, cosa diventerà. */
+    /** "Promemoria · domani 9:00": in una riga sola, cosa diventerà. */
     fun summary(mode: CaptureMode, text: String, now: LocalDateTime = LocalDateTime.now()): String? {
         if (text.isBlank()) return null
         val detail = when (mode) {

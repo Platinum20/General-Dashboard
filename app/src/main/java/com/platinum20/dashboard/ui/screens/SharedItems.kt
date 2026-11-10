@@ -27,26 +27,23 @@ object SharedKeys {
     /** Le card della Home che si allargano nella loro pagina (1.357). */
     const val WEATHER = "weather"
     const val SIM = "sim"
-    const val BANK = "bank"
     fun document(id: Long) = "document-$id"
 
     fun item(kind: ItemKind, id: Long): String? = when (kind) {
         ItemKind.TASK -> "task-$id"
         ItemKind.PARCEL -> "parcel-$id"
-        ItemKind.EXPENSE -> "expense-$id"
-        ItemKind.HABIT, ItemKind.FIXED -> null
+        ItemKind.HABIT -> null
     }
 }
 
 /**
- * Il titolo di una riga vola solo fra la riga e la sua scheda, mai fra due liste (card Calendario ↔ pagina,
- * pagina ↔ spese del mese): lì la riga si staccava dalla card che si allarga e "saltava" per conto suo.
+ * Il titolo di una riga vola solo fra la riga e la sua scheda, mai fra due liste (card Calendario ↔ pagina):
+ * lì la riga si staccava dalla card che si allarga e "saltava" per conto suo.
  * Ogni lista ha il suo [scope]; la scheda usa quello della lista da cui è stata aperta ([origin]).
  */
 object SharedRows {
     const val PAGE = "page"
     const val HOME = "home"
-    const val EXPENSES = "expenses"
 
     /** L'ultima lista da cui si è aperta una riga: la scheda lo legge una volta, all'apertura. */
     var origin: String = PAGE

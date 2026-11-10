@@ -28,6 +28,6 @@ class SettingsSummaryTest {
         assertEquals("Nessun account collegato", SettingsSummary.accounts(emptyList()))
         assertEquals("Spotify collegato", SettingsSummary.accounts(listOf("Spotify")))
         assertEquals("YouTube e Spotify collegati", SettingsSummary.accounts(listOf("YouTube", "Spotify")))
-        assertEquals("4 account collegati", SettingsSummary.accounts(listOf("YouTube", "Spotify", "WindTre", "Revolut")))
+        assertEquals("4 account collegati", SettingsSummary.accounts(listOf("YouTube", "Spotify", "WindTre", "Gmail")))
     }
 }

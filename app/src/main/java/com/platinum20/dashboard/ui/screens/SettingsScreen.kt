@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.mail.GmailAuth
 import com.platinum20.dashboard.mail.GmailImap
 import com.platinum20.dashboard.shifts.ShiftStore
@@ -224,9 +223,8 @@ fun SettingsScreen(
     remember { YouTubeAuth.init(context); SpotifyAuth.init(context); RadioAlarm.init(context); VoiceStore.init(context) }
     val youTubeOfficial by YouTubeAuth.connected.collectAsState()
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
-    remember { SimStore.init(context); RevolutStore.init(context); ShiftStore.init(context); GmailImap.init(context); GmailAuth.init(context) }
+    remember { SimStore.init(context); ShiftStore.init(context); GmailImap.init(context); GmailAuth.init(context) }
     val simLinked by SimStore.linked.collectAsState()
-    val bankLinked by RevolutStore.linked.collectAsState()
     val shiftsLinked by ShiftStore.linked.collectAsState()
     val gmailImap by GmailImap.linked.collectAsState()
     val gmailApi by GmailAuth.connected.collectAsState()
@@ -274,7 +272,7 @@ fun SettingsScreen(
                 SettingsBlock("Le sezioni") {
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
                     MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
-                        if (autoFillOn) "Spese e pacchi da soli" else "Compilazione automatica spenta",
+                        if (autoFillOn) "Pacchi e scadenze da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()
                     val hiddenNews = AppSettings.hiddenNewsSources.collectAsState().value.size
@@ -309,7 +307,6 @@ fun SettingsScreen(
                         }.map { it.label } + listOfNotNull(
                             "Gmail".takeIf { gmailImap || gmailApi },
                             "WindTre".takeIf { simLinked },
-                            "Revolut".takeIf { bankLinked },
                             "Creators Pro".takeIf { shiftsLinked },
                         ))) { onOpenPage(SettingsPage.ACCOUNTS) }
                 }
@@ -403,7 +400,6 @@ fun SettingsPageScreen(
                     item { AccountsPage(onLogin) }
                     // Il collegamento WindTre sta qui, non nella pagina SIM (Antonio): là restano solo i dati.
                     item { SettingsBlock("SIM") { WindTreAccountRows() } }
-                    item { SettingsBlock("Conto") { RevolutAccountRows() } }
                     item { SettingsBlock("Lavoro") { ShiftAccountRows() } }
                     item { SettingsBlock("Posta") { GmailAccountRows() } }
                 }

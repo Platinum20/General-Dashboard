@@ -46,9 +46,6 @@ import org.robolectric.shadows.ShadowLooper
 import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
-import com.platinum20.dashboard.bank.Pocket
-import com.platinum20.dashboard.bank.RevolutPockets
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.shifts.Shift
 import com.platinum20.dashboard.shifts.ShiftEarning
 import com.platinum20.dashboard.shifts.ShiftParse
@@ -105,16 +102,12 @@ class ScreenshotTour {
             NotesStore.data.value.habits.firstOrNull()?.let { h ->
                 (1L..5L).forEach { NotesStore.toggleHabit(h.id, LocalDate.now().minusDays(it)) }
             }
-            NotesStore.addExpense("spesa conad 63,40")
-            NotesStore.addExpense("benzina 40€")
-            NotesStore.addExpense("12,50 pizza")
-            NotesStore.setBudget(60_000)
             NotesStore.saveParcel(null, "Cuffie", "TBA123456789012", LocalDate.now())
         }
         seedAccounts()
     }
 
-    /** Turni, SIM e Revolut finti: così Home e calendario somigliano a quelli veri di Antonio. */
+    /** Turni e SIM finti: così Home e calendario somigliano a quelli veri di Antonio. */
     private fun seedAccounts() {
         val zone = ZoneId.of("Europe/Rome")
         val today = LocalDate.now(zone)
@@ -133,15 +126,11 @@ class ScreenshotTour {
             .putString("status", SimStatus(Allowance(62.4, 150.0), Allowance(0.0, unlimited = true), Allowance(80.0, 100.0),
                 credit = 7.32, renewal = today.plusDays(9), offer = "Wind Tre GO 150", at = now).toJson().toString())
             .commit()
-        context.getSharedPreferences("revolut", Context.MODE_PRIVATE).edit()
-            .putBoolean("linked", true).putLong("balance", 84_210).putLong("readAt", now).putBoolean("historyDone", true)
-            .putString("pockets", RevolutPockets.toJson(listOf(Pocket("p1", "Conto", 84_210, true), Pocket("p2", "Risparmi", 250_000, false))))
-            .commit()
         // I negozi sono già aperti dall'app di prova: si riaprono per leggere questi dati.
-        for (store in listOf(ShiftStore, SimStore, RevolutStore)) {
+        for (store in listOf(ShiftStore, SimStore)) {
             store::class.java.getDeclaredField("appContext").apply { isAccessible = true }.set(null, null)
         }
-        ShiftStore.init(context); SimStore.init(context); RevolutStore.init(context)
+        ShiftStore.init(context); SimStore.init(context)
     }
 
     @After
@@ -238,7 +227,7 @@ class ScreenshotTour {
     }
 
     /**
-     * Le pagine profonde (dettagli, editor, Spese, player, coda, nuovo evento), aperte per rotta:
+     * Le pagine profonde (dettagli, editor, player, coda, nuovo evento), aperte per rotta:
      * così si confrontano fra loro senza dipendere da dove stanno i tocchi. In ognuna anche il fumetto delle azioni.
      */
     private fun deepPages(p: String) {
@@ -247,11 +236,9 @@ class ScreenshotTour {
             data.tasks.firstOrNull()?.let { "60_dettaglio_promemoria" to Routes.noteItem(ItemKind.TASK, it.id) },
             data.dates.firstOrNull()?.let { "61_dettaglio_data" to Routes.noteItem(ItemKind.TASK, it.id) },
             data.parcels.firstOrNull()?.let { "62_dettaglio_pacco" to Routes.noteItem(ItemKind.PARCEL, it.id) },
-            data.expenses.firstOrNull()?.let { "63_dettaglio_spesa" to Routes.noteItem(ItemKind.EXPENSE, it.id) },
             data.habits.firstOrNull()?.let { "64_dettaglio_abitudine" to Routes.noteItem(ItemKind.HABIT, it.id) },
             "65_evento_nuovo" to Routes.calendarEdit(null),
             data.notes.firstOrNull()?.let { "66_editor_nota" to Routes.noteEdit(it.id) },
-            "67_spese" to Routes.expenses(),
             "68_news" to Routes.NEWS,
             "69_player" to Routes.PLAYER,
             "71_video_youtube" to Routes.youtubeWatch(),

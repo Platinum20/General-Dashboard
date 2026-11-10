@@ -3,8 +3,6 @@ package com.platinum20.dashboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.backup.Backup
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
@@ -26,8 +24,6 @@ class BackupTest {
             TaskItem.date(5, "Compleanno di Marco", LocalDate.of(1990, 3, 14), yearly = true).copy(createdAt = 4),
         ),
         habits = listOf(Habit(3, "Palestra", setOf(today, today.minusDays(1)))),
-        expenses = listOf(Expense(4, 1_250, "pizza", ExpenseCategory.EATING_OUT, today)),
-        budgetCents = 50_000,
     )
     private val settings = mapOf<String, Any?>(
         "theme" to "AMOLED",
@@ -72,7 +68,7 @@ class BackupTest {
     }
 
     @Test fun riepilogo() {
-        assertEquals("2 promemoria, 1 abitudine, 1 spesa, 1 data", Backup.summary(data))
+        assertEquals("2 promemoria, 1 abitudine, 1 data", Backup.summary(data))
         assertEquals("Nessun dato", Backup.summary(NotesData()))
     }
 

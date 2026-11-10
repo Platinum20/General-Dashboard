@@ -23,15 +23,4 @@
             android:targetPackage="com.platinum20.dashboard"
             android:targetClass="com.platinum20.dashboard.capture.QuickCaptureActivity" />
     </shortcut>
-    <shortcut
-        android:shortcutId="new_expense"
-        android:enabled="true"
-        android:icon="@drawable/ic_shortcut_expense"
-        android:shortcutShortLabel="@string/shortcut_expense_short"
-        android:shortcutLongLabel="@string/shortcut_expense_long">
-        <intent
-            android:action="com.platinum20.dashboard.NEW_EXPENSE"
-            android:targetPackage="com.platinum20.dashboard"
-            android:targetClass="com.platinum20.dashboard.capture.QuickCaptureActivity" />
-    </shortcut>
 </shortcuts>

@@ -4,7 +4,6 @@ package com.platinum20.dashboard.today
 enum class Invite(val label: String) {
     AGENDA("agenda"),
     AUTOFILL("compila da solo"),
-    REVOLUT("Revolut scaduto"),
     SHIFTS("turni scaduti"),
 }
 
@@ -18,11 +17,9 @@ object Invites {
         calendarGranted: Boolean,
         autoFillEnabled: Boolean,
         autoFillDismissed: Boolean,
-        revolutExpired: Boolean = false,
         shiftsExpired: Boolean = false,
     ): List<Invite> = buildList {
         // Prima gli accessi scaduti: senza, i dati smettono di arrivare.
-        if (revolutExpired) add(Invite.REVOLUT)
         if (shiftsExpired) add(Invite.SHIFTS)
         if (agendaVisible && !calendarGranted) add(Invite.AGENDA)
         if (!autoFillEnabled && !autoFillDismissed) add(Invite.AUTOFILL)

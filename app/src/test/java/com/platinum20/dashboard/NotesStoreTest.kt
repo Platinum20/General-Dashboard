@@ -3,8 +3,6 @@ package com.platinum20.dashboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.notes.Alert
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesData
@@ -38,11 +36,6 @@ class NotesStoreTest {
             Note(11, "Idee per le vacanze", updatedAt = 500),
         ),
         habits = listOf(Habit(30, "Palestra", setOf(today, today.minusDays(1), today.minusDays(3)))),
-        expenses = listOf(
-            Expense(40, 1_250, "pizza", ExpenseCategory.EATING_OUT, today),
-            Expense(41, 123_450, "affitto", ExpenseCategory.HOME, today.minusDays(2)),
-        ),
-        budgetCents = 80_000,
         parcels = listOf(
             Parcel(50, "Cuffie", "1Z999AA10123456784", expected = today.plusDays(2)),
             Parcel(51, "Libro", "", deliveredOn = today.minusDays(1)),
@@ -68,16 +61,16 @@ class NotesStoreTest {
         val date = d.tasks.single { it.allDay }
         assertEquals(LocalDate.of(1990, 3, 14), date.day())
         assertEquals(1990, date.firstYear)
-        assertTrue(d.habits.isEmpty() && d.expenses.isEmpty() && d.parcels.isEmpty())
-        assertNull(d.budgetCents)
+        assertTrue(d.habits.isEmpty() && d.parcels.isEmpty())
     }
 
     @Test fun valoriSconosciutiNonFannoPerdereIlResto() {
         val raw = """{"tasks":[{"id":1,"text":"x","repeat":"OGNI_ORA"}],
-            "expenses":[{"id":2,"cents":100,"text":"y","category":"NUOVA","date":"2026-10-22"},{"id":3,"cents":5,"text":"z","date":"rotta"}]}"""
+            "expenses":[{"id":2,"cents":100,"text":"y","category":"NUOVA","date":"2026-10-22"}]}"""
         val d = NotesStore.parse(raw)
         assertNull(d.tasks.single().repeat)
-        assertEquals(ExpenseCategory.OTHER, d.expenses.single().category)
+        // Le spese di prima della 1.438 si scartano: riscrivendo il file non ci sono più.
+        assertTrue("expenses" !in NotesStore.serialize(d))
     }
 
     @Test fun iPacchiConsegnatiDaPiuDiUnMeseSpariscono() {

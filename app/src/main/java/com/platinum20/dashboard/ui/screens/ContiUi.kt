@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -25,24 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.platinum20.dashboard.Routes
-import com.platinum20.dashboard.bank.Pocket
-import com.platinum20.dashboard.bank.RevolutPockets
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.sim.WindTreLink
-import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 
-/** I testi della card Conti (1.404), puri per i test: brevi perché stiano in mezza card. */
+/** I testi della card della SIM (1.404), puri per i test: brevi perché stiano in mezza card. */
 object ContiText {
-    /** "3.342 €": nella card i centesimi non servono, la pagina li ha. */
-    fun euros(cents: Long): String =
-        NumberFormat.getIntegerInstance(Locale.ITALIAN).format(Math.round(cents / 100.0)) + " €"
-
     /** "62 GB", "illimitati". */
     fun giga(s: SimStatus): String = s.data?.let { if (it.unlimited) "Illimitati" else gbLabel(it.left) } ?: "–"
 
@@ -57,23 +45,14 @@ object ContiText {
             }
         },
     ).joinToString(" · ").ifEmpty { null }
-
-    /** "842 € da spendere": il conto principale; gli altri sono salvadanai. Con una tasca sola niente riga. */
-    fun spendable(pockets: List<Pocket>): String? =
-        pockets.takeIf { it.size > 1 }?.firstOrNull { it.main }?.let { euros(it.cents) + " da spendere" }
 }
 
-/**
- * SIM e Revolut in una card sola (punto 22): a sinistra i giga, a destra il saldo. Ogni metà apre la sua pagina,
- * come le due card di prima. Una metà spenta in Card della Home sparisce, e l'altra prende tutta la card.
- */
+/** La card della SIM (dalla 1.438 da sola: niente più soldi nell'app). Il tocco apre la pagina della SIM. */
 @Composable
-internal fun ContiCard(showSim: Boolean, showBank: Boolean, onOpenSim: () -> Unit, onOpenBank: () -> Unit) {
-    CardSection(title = "Conti") {
+internal fun ContiCard(onOpenSim: () -> Unit) {
+    CardSection(title = "SIM") {
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(bottom = 6.dp)) {
-            if (showSim) SimHalf(onOpenSim)
-            if (showSim && showBank) VerticalDivider(Modifier.fillMaxHeight().padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
-            if (showBank) RevolutHalf(onOpenBank)
+            SimHalf(onOpenSim)
         }
     }
 }
@@ -94,37 +73,6 @@ private fun androidx.compose.foundation.layout.RowScope.SimHalf(onOpen: () -> Un
             s == null && linked -> HalfPlaceholder("Sto leggendo i dati di WindTre")
             s == null || !linked -> HalfValue("Collega", "giga e credito WindTre")
             else -> HalfValue(ContiText.giga(s), link.line ?: ContiText.simLine(s), faded = link.faded)
-        }
-    }
-}
-
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.RevolutHalf(onOpen: () -> Unit) {
-    val context = LocalContext.current
-    RevolutStore.init(context)
-    val linked by RevolutStore.linked.collectAsStateWithLifecycle()
-    val expired by RevolutStore.expired.collectAsStateWithLifecycle()
-    val pockets by RevolutStore.pockets.collectAsStateWithLifecycle()
-    val balance by RevolutStore.balance.collectAsStateWithLifecycle()
-    val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
-    val link = LinkStatus.of(linked, expired, readAt, System.currentTimeMillis(), staleAfter = 4 * RevolutStore.STALE_MS)
-    val inApp = LocalInAppNav.current
-    // Prima che arrivi il wallet c'è almeno il saldo del conto (lettura delle versioni prima).
-    val shown = pockets.ifEmpty { balance?.let { listOf(Pocket("main", "Conto", it, main = true)) } ?: emptyList() }
-    Half(
-        "Revolut",
-        Modifier.sharedItem(SharedKeys.BANK, rounded = true),
-        onClick = { if (!linked || expired) inApp?.openRoute?.invoke(Routes.REVOLUT) else onOpen() },
-    ) {
-        when {
-            linked && !expired && shown.isEmpty() -> HalfPlaceholder("Sto leggendo il conto Revolut")
-            !linked || shown.isEmpty() -> HalfValue(if (expired) "Rientra" else "Collega", if (expired) "accesso scaduto" else "saldo e tasche", warn = expired)
-            else -> HalfValue(
-                ContiText.euros(RevolutPockets.total(shown)),
-                if (expired) "accesso scaduto · tocca per rientrare" else link.line ?: ContiText.spendable(shown),
-                warn = expired,
-                faded = link.faded,
-            )
         }
     }
 }

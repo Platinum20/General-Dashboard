@@ -1,14 +1,11 @@
 package com.platinum20.dashboard
 
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.sim.Allowance
 import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.weather.HourlyPoint
 import com.platinum20.dashboard.widget.NewsWidgetRows
 import com.platinum20.dashboard.widget.SavedStory
 import com.platinum20.dashboard.widget.SimWidgetRows
-import com.platinum20.dashboard.widget.SpendWidgetRows
 import com.platinum20.dashboard.widget.WidgetRows
 import com.platinum20.dashboard.widget.WidgetSize
 import org.junit.Assert.assertEquals
@@ -64,23 +61,6 @@ class WidgetRowsTest {
         assertNull(NewsWidgetRows.countLabel(0))
         assertNull(NewsWidgetRows.countLabel(null))
         assertEquals(2, NewsWidgetRows.storiesForHeight(200))
-    }
-
-    @Test
-    fun speseSoloDelMeseInCorso() {
-        val today = LocalDate.of(2026, 11, 9)
-        val list = listOf(
-            Expense(1, 1250, "pizza", ExpenseCategory.OTHER, today),
-            Expense(2, 3000, "benzina", ExpenseCategory.OTHER, today.minusDays(3)),
-            // Ottobre non entra mai nel totale (regola di Antonio).
-            Expense(3, 99_900, "affitto", ExpenseCategory.OTHER, LocalDate.of(2026, 10, 30)),
-        )
-        val m = SpendWidgetRows.model(list, today, balanceCents = null)
-        assertEquals("NOVEMBRE", m.month)
-        assertTrue(m.total, m.total.contains("42,50"))
-        assertTrue(m.today, m.today.contains("12,50"))
-        assertNull(m.balance)
-        assertTrue(SpendWidgetRows.model(list, today, 123_456).balance!!.contains("1.234,56"))
     }
 
     @Test

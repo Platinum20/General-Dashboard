@@ -109,7 +109,7 @@ private data class MediaHits(
 
 /**
  * Cerca ovunque, trascinando giù dalla cima di una sezione: tutto quello che sta in Note
- * (promemoria, note, spese, pacchi, date, abitudini), gli impegni del calendario di un mese
+ * (promemoria, note, pacchi, date, abitudini), gli impegni del calendario di un mese
  * indietro e tre avanti, le notizie già scaricate e, in rete, brani e playlist di Spotify,
  * video di YouTube, radio e podcast. Toccando un brano, una radio o un podcast parte nel player
  * dell'app; i chip in alto restringono a una parte sola.
@@ -186,7 +186,6 @@ fun SearchScreen(
             ),
             onClose = onBack,
             onOpenNote = onOpenNote,
-            onOpenExpenses = { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.expenses()) },
             onOpenParcels = { onOpenNotes() },
             placeholder = "Cerca…",
             showNotes = shows(SearchFilter.NOTES),
@@ -219,12 +218,6 @@ fun SearchScreen(
                     }
                     // Cosa si può cercare, con un tocco: insegna senza spiegare.
                     Section(title = "Prova") {
-                        val month = remember { YearMonth.now() }
-                        HintRow(Icons.Outlined.Payments, "Spese di " + month.month.getDisplayName(TextStyle.FULL, Locale.ITALIAN)) {
-                            haptic(Haptic.TICK)
-                            inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.expenses(month))
-                        }
-                        RowDivider()
                         HintRow(Icons.Outlined.Work, "Turni") {
                             haptic(Haptic.TICK); filter = SearchFilter.NOTES; setQuery("Turno")
                         }

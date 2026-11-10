@@ -6,6 +6,4 @@
     <string name="shortcut_task_long">Nuovo promemoria</string>
     <string name="shortcut_note_short">Nota</string>
     <string name="shortcut_note_long">Nuova nota</string>
-    <string name="shortcut_expense_short">Spesa</string>
-    <string name="shortcut_expense_long">Nuova spesa</string>
 </resources>

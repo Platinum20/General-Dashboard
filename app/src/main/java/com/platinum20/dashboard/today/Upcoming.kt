@@ -1,8 +1,6 @@
 package com.platinum20.dashboard.today
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Expenses
-import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import java.time.Instant
@@ -23,16 +21,15 @@ data class UpcomingItem(
     val event: CalendarEvent? = null,
     /** Il promemoria, per spuntarlo dalla card senza entrare. */
     val task: TaskItem? = null,
-    /** Il pacco o l'addebito della riga: toccandola si apre la sua scheda (Antonio). */
+    /** Il pacco della riga: toccandola si apre la sua scheda (Antonio). */
     val parcelId: Long? = null,
-    val chargeId: Long? = null,
     /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
     val simRenewal: Boolean = false,
 )
 
 /**
  * "Prossimi giorni" in Oggi: le prossime [MAX] cose da domani in poi (fino a [DAYS] giorni), tutto in un posto solo (impegni del calendario,
- * promemoria con data, compleanni e date, pacchi, addebiti, anche quelli trovati in notifiche, SMS e mail).
+ * promemoria con data, compleanni e date, pacchi, anche quelli trovati in notifiche, SMS e mail).
  * "Adesso" sopra resta su oggi; il meteo dei giorni dopo sta nel dettaglio Meteo. Funzione pura.
  */
 object Upcoming {
@@ -70,7 +67,6 @@ object Upcoming {
         /** Promemoria e date di tutto il giorno insieme (1.361). */
         tasks: List<TaskItem>,
         parcels: List<Parcel> = emptyList(),
-        fixedExpenses: List<FixedExpense> = emptyList(),
         zone: ZoneId = ZoneId.systemDefault(),
         days: Int = DAYS,
         /** Il giorno in cui si rinnova l'offerta della SIM (WindTre), se collegata. */
@@ -95,9 +91,6 @@ object Upcoming {
             }
             parcels.filter { !it.delivered && it.expected == day }.forEach {
                 allDay += UpcomingItem(day, BriefKind.PARCEL, "Arriva: ${it.title}", parcelId = it.id)
-            }
-            fixedExpenses.filter { it.nextDate(today) == day }.forEach {
-                allDay += UpcomingItem(day, BriefKind.MONEY, "Addebito: ${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}", chargeId = it.id)
             }
             if (simRenewal == day) allDay += UpcomingItem(day, BriefKind.MONEY, SIM_RENEWAL, simRenewal = true)
             out += allDay + timed.sortedBy { it.first }.map { it.second }

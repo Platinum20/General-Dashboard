@@ -5,7 +5,6 @@ import android.view.View
 import android.widget.RemoteViews
 import com.platinum20.dashboard.OpenRequest
 import com.platinum20.dashboard.R
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.news.NewsStory
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.sim.SimStore
@@ -66,24 +65,6 @@ class NewsWidget : CanvasWidget(Renderer, WidgetSize(250, 220)) {
                 )
                 views.addView(R.id.news_rows, row)
             }
-            views
-        }
-    }
-}
-
-/** Widget "Spese": il mese in corso, oggi e il saldo del conto se è collegato. */
-class SpendWidget : CanvasWidget(Renderer, WidgetSize(110, 110)) {
-    companion object {
-        private val Renderer: WidgetRenderer = { context, _ ->
-            val views = RemoteViews(context.packageName, R.layout.widget_spend)
-            views.setOnClickPendingIntent(android.R.id.background, Widgets.open(context, OpenRequest(OpenRequest.EXPENSES), 400))
-            val balance = RevolutStore.balance.value.takeIf { RevolutStore.linked.value }
-            val m = SpendWidgetRows.model(NotesStore.data.value.expenses, LocalDate.now(), balance)
-            views.setTextViewText(R.id.spend_label, m.month)
-            views.setTextViewText(R.id.spend_total, m.total)
-            views.setTextViewText(R.id.spend_today, m.today)
-            views.setViewVisibility(R.id.spend_balance_row, if (m.balance == null) View.GONE else View.VISIBLE)
-            views.setTextViewText(R.id.spend_balance, m.balance.orEmpty())
             views
         }
     }

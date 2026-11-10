@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.capture
 
 import com.platinum20.dashboard.notes.Carrier
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.QuickParse
 import com.platinum20.dashboard.notes.Repeat
@@ -64,9 +63,6 @@ internal object CaptureSave {
     fun preview(mode: CaptureMode, text: String, now: LocalDateTime = LocalDateTime.now()): String? {
         if (text.isBlank()) return null
         return when (mode) {
-            CaptureMode.EXPENSE -> Expenses.parseFixed(text)?.let { "Ogni mese il ${it.day} · ${Expenses.format(it.cents)} · ${it.category.label}" }
-                ?: Expenses.parse(text)?.let { "${Expenses.format(it.cents)} · ${it.category.label}" }
-                ?: "Scrivi anche l'importo"
             CaptureMode.HABIT -> habitOf(text, now)?.let { h ->
                 (if (h.perWeek > 0) "${h.perWeek} volte a settimana" else "Ogni giorno") +
                     (h.remindAt?.let { " · avviso alle ${it.hour}:${"%02d".format(it.minute)}" } ?: "") + " · ${h.title}"
@@ -85,16 +81,6 @@ internal object CaptureSave {
             CaptureMode.NOTE -> {
                 val id = NotesStore.saveNote(null, text.trim())
                 CaptureResult(true, "Nota salvata", undo = id?.let { { NotesStore.deleteNote(it) } })
-            }
-            CaptureMode.EXPENSE -> {
-                // "ogni mese il 5 affitto 650" è una spesa fissa; il resto una spesa di oggi.
-                if (Expenses.parseFixed(text) != null) {
-                    val fixed = NotesStore.addFixedExpense(text) ?: return CaptureResult(false, "Manca l'importo")
-                    CaptureResult(true, "Spesa fissa: ${Expenses.format(fixed.cents)} il ${fixed.day} di ogni mese", undo = { NotesStore.undoFixedExpense(fixed.id) })
-                } else {
-                    val saved = NotesStore.addExpense(text) ?: return CaptureResult(false, "Manca l'importo")
-                    CaptureResult(true, "Spesa: ${Expenses.format(saved.cents)} · ${saved.category.label}", undo = { NotesStore.deleteExpense(saved.id) })
-                }
             }
             CaptureMode.PARCEL -> {
                 val code = Carrier.findCode(text).orEmpty()

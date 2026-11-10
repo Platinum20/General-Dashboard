@@ -7,8 +7,6 @@
     <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, promemoria da spuntare, date</string>
     <string name="widget_news_label">News</string>
     <string name="widget_news_description">Le storie nuove dall\'ultima visita</string>
-    <string name="widget_spend_label">Spese</string>
-    <string name="widget_spend_description">Quanto hai speso questo mese e oggi</string>
     <string name="widget_sim_label">SIM</string>
     <string name="widget_sim_description">Giga rimasti e rinnovo della SIM</string>
     <string name="widget_weather_label">Meteo</string>

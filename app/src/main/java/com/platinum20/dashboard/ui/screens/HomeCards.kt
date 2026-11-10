@@ -65,7 +65,6 @@ import com.platinum20.dashboard.notes.TaskItem
 import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.Upcoming
 import com.platinum20.dashboard.today.UpcomingItem
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.captureTarget
@@ -151,14 +150,13 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
 }
 
 /**
- * Il calendario in Home (Antonio): un'unica card con il mese e quanto hai speso, poi Oggi sempre in cima
- * (la spesa di oggi, anche 0, gli impegni, le cose in ritardo, i promemoria e le note senza data), poi le
+ * Il calendario in Home (Antonio): un'unica card con il mese, poi Oggi sempre in cima
+ * (gli impegni, le cose in ritardo, i promemoria e le note senza data), poi le
  * prossime [Upcoming.MAX] cose. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
  */
 @Composable
 internal fun CalendarCard(
     groups: List<DueDay>,
-    expenses: List<com.platinum20.dashboard.notes.Expense>,
     today: LocalDate,
     onOpenAll: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
@@ -166,16 +164,11 @@ internal fun CalendarCard(
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
-    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio). Le spese di oggi invece sì,
-    // una per una come nella pagina: tutto quello di oggi sta sotto OGGI (Antonio, 1.400).
+    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio): tutto il resto di oggi sta sotto OGGI.
     val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
         .filter { it.rows.isNotEmpty() }
-    // Il mese in corso non ha più la sua riga in cima alla card: il suo totale sta nel titolo (1.404, punto 18 D).
-    val thisMonth = YearMonth.from(today)
-    val all = timelineEntries(pending, today, months = true, expenses = expenses).map { (e, r) ->
-        (if (e.monthOf == thisMonth) e.copy(month = null, monthSpend = null, monthOf = null) else e) to r
-    }
-    val monthTotal = Expenses.format(Expenses.total(expenses, thisMonth))
+    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.438: niente più totale nel titolo).
+    val all = timelineEntries(pending, today, months = true)
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today, Upcoming.MAX)
@@ -196,38 +189,22 @@ internal fun CalendarCard(
         empty = "Niente in programma.",
         // La card si allarga fino a diventare la pagina Calendario (e ci torna chiudendola).
         modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).captureTarget(CaptureMode.TASK).captureTarget(CaptureMode.DATE).captureTarget(CaptureMode.PARCEL)
-            .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
+            .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
         // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.376).
         ticks = withHabit(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, null),
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
-        rows = withHabit(shown.map { (_, row) -> { open(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
+        rows = withHabit(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
         // Tenendo premuta una riga: le sue azioni, come nella pagina intera.
         rowLongs = withHabit(shown.map { (_, row) -> { actions(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
-        onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
         onLongOpen = onOpenAll,
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
-        // "novembre 486,30 €": solo il mese in corso (regola di Antonio); toccandolo si apre il mese.
-        titleTrailing = {
-            val haptic = rememberHaptic()
-            Text(
-                "$monthName $monthTotal ›",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                modifier = Modifier
-                    .clip(MaterialTheme.shapes.small)
-                    .bouncyPress(0.94f)
-                    .clickable { haptic(Haptic.TICK); inApp?.openRoute?.invoke(Routes.expenses(thisMonth)) }
-                    .padding(horizontal = 6.dp, vertical = 8.dp),
-            )
-        },
     )
 }
 
 /**
  * Che cosa apre il tocco su una riga del calendario, uguale in Home e nella pagina intera: la scheda della cosa,
- * la nota (o il video salvato, che parte), il riepilogo del mese per la spesa di oggi.
+ * la nota (o il video salvato, che parte).
  */
 @Composable
 internal fun rememberDueOpen(): (DueRow) -> Unit {
@@ -239,9 +216,6 @@ internal fun rememberDueOpen(): (DueRow) -> Unit {
             row.event != null -> inApp?.openEvent?.invoke(row.event)
             row.task != null -> openItem(ItemKind.TASK, row.task.id)
             row.parcel != null -> openItem(ItemKind.PARCEL, row.parcel.id)
-            row.charge != null -> openItem(ItemKind.FIXED, row.charge.id)
-            row.expense != null -> openItem(ItemKind.EXPENSE, row.expense.id)
-            row.spend != null -> inApp?.openRoute?.invoke(Routes.expenses(YearMonth.from(row.day ?: LocalDate.now())))
             row.note != null -> {
                 val saved = com.platinum20.dashboard.capture.SavedLinks.find(row.note.text)
                 if (saved != null) com.platinum20.dashboard.capture.SavedLinks.open(context, saved) { inApp?.openRoute?.invoke(it) }
@@ -269,15 +243,13 @@ fun TimelineCard(
     ticks: List<(() -> Unit)?> = emptyList(),
     /** Per ogni riga, che cosa apre toccarla (la sua scheda); null = come il resto della card, la pagina intera. */
     rows: List<(() -> Unit)?> = emptyList(),
-    /** Toccando il segno di un mese: il riepilogo delle spese di quel mese. */
-    onMonth: ((YearMonth) -> Unit)? = null,
     /** Tenendo premuta la card fuori dalle righe: la pagina intera. */
     onLongOpen: (() -> Unit)? = null,
     /** Per ogni riga, tenendola premuta: il fumetto delle sue azioni (uguale alla pagina intera). */
     rowLongs: List<(() -> Unit)?> = emptyList(),
     /** L'ultima riga, "Altre 8 a novembre": quello che non sta nella card; toccandola si apre la pagina. */
     footer: String? = null,
-    /** Accanto al titolo, a destra (il totale del mese nel Calendario); se c'è vince su [count]. */
+    /** Accanto al titolo, a destra; se c'è vince su [count]. */
     titleTrailing: (@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
@@ -301,7 +273,7 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onMonth = onMonth, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
             }
             footer?.let { text ->
                 Text(

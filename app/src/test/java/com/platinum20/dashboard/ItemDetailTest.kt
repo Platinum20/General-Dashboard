@@ -1,8 +1,6 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.Repeat
@@ -72,21 +70,6 @@ class ItemDetailTest {
         assertEquals("Arrivato il 20 ottobre", d.lines.first().text)
         assertTrue(d.lines.any { it.kind == LineKind.CODE && it.text.startsWith("ABC123") })
         assertEquals("Arrivato", d.lines.last().text)
-    }
-
-    @Test
-    fun expenseWithoutTextUsesCategory() {
-        val data = NotesData(expenses = listOf(Expense(4, 1250, "", ExpenseCategory.FOOD, LocalDate.of(2026, 10, 1))))
-        val d = itemDetail(data, ItemKind.EXPENSE, 4, now)!!
-        assertEquals("Spesa", d.title)
-        assertEquals(LineKind.AMOUNT, d.lines.first().kind)
-    }
-
-    @Test
-    fun expenseShowsItsTime() {
-        val data = NotesData(expenses = listOf(Expense(5, 920, "DropPOS", ExpenseCategory.FOOD, LocalDate.of(2026, 11, 9), at = java.time.LocalTime.of(14, 32))))
-        val d = itemDetail(data, ItemKind.EXPENSE, 5, now)!!
-        assertTrue(d.lines.first { it.kind == LineKind.WHEN }.text.endsWith(", 14:32"))
     }
 
     @Test

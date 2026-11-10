@@ -16,14 +16,12 @@ import com.platinum20.dashboard.notes.NoteText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import com.platinum20.dashboard.notes.Expenses
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.notes.TaskItem
 import java.time.Instant
@@ -37,7 +35,7 @@ import java.util.Locale
 
 /**
  * "Prossimi giorni": tutto quello che arriva un giorno (promemoria, date da ricordare, pacchi, eventi del
- * calendario, addebiti) in una lista sola divisa per giorno, con quanto manca a destra. In Oggi la stessa
+ * calendario) in una lista sola divisa per giorno, con quanto manca a destra. In Oggi la stessa
  * lista si ferma a una settimana; qui va avanti finché c'è qualcosa.
  */
 internal data class DueRow(
@@ -48,15 +46,12 @@ internal data class DueRow(
     val task: TaskItem? = null,
     val parcel: Parcel? = null,
     val event: CalendarEvent? = null,
-    val charge: FixedExpense? = null,
     /** Il rinnovo dell'offerta SIM: tocco = pagina SIM. */
     val simRenewal: Boolean = false,
     /** Una nota senza data: sta sempre in Oggi finché c'è (Antonio, calendario unico). */
     val note: com.platinum20.dashboard.notes.Note? = null,
-    /** Una spesa, nel suo giorno. */
-    val expense: com.platinum20.dashboard.notes.Expense? = null,
-    /** La riga "Spesa di oggi" in cima a Oggi: il totale in centesimi, anche 0. */
-    val spend: Long? = null,
+    /** La riga "OGGI" in cima a oggi: si disegna come il segno di oggi, non come una voce. */
+    val today: Boolean = false,
     /** Un promemoria o un pacco in ritardo, portato a oggi: qui il giorno in cui scadeva. */
     val overdueFrom: LocalDate? = null,
 )
@@ -90,8 +85,6 @@ internal fun pastDays(
     events: List<CalendarEvent>,
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
-    /** Le spese, nel giorno in cui le hai fatte: quelle di oggi stanno sotto OGGI, non qui. */
-    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
     /** Il calendario unico: le cose fatte oggi stanno sotto OGGI (in [dueDays]), qui solo i giorni prima. */
     withToday: Boolean = false,
 ): List<DueDay> {
@@ -100,8 +93,6 @@ internal fun pastDays(
     fun startOf(day: LocalDate) = day.atStartOfDay(zone).toInstant().toEpochMilli()
     fun dayOf(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).toLocalDate()
     val rows = mutableListOf<DueRow>()
-    // In ordine d'orario con eventi e turni (Antonio); quelle senza ora in cima al giorno.
-    expenses.filter { it.date.isBefore(today) }.sortedWith(Expenses.byTime).forEach { e -> rows += DueRow("expense-${e.id}", e.date, expenseAt(e, zone), expense = e) }
     // I promemoria con data spuntati vanno nel giorno in cui li hai fatti (o della scadenza, per i vecchi).
     // Nel calendario unico anche quelli senza data: fatti nel giorno in cui li hai spuntati (Antonio).
     tasks.filter { it.done && (it.dueAt != null || withToday) }.forEach { t ->
@@ -122,12 +113,6 @@ internal fun pastDays(
         .map { (day, r) -> DueDay(day, false, r.sortedBy { it.at }, past = true) }
 }
 
-/** Il momento di una spesa per ordinarla fra eventi e turni: la sua ora, o l'inizio del giorno se non ce l'ha. */
-internal fun expenseAt(e: com.platinum20.dashboard.notes.Expense, zone: ZoneId): Long {
-    val start = e.date.atStartOfDay(zone).toInstant().toEpochMilli()
-    return e.at?.let { e.date.atTime(it).atZone(zone).toInstant().toEpochMilli() } ?: (start - 1)
-}
-
 /** Quanti giorni di calendario si guardano per gli eventi: più di un anno, così c'è anche l'anno dopo (Antonio). */
 internal const val EVENT_DAYS = com.platinum20.dashboard.today.Upcoming.DAYS
 
@@ -135,17 +120,15 @@ internal fun dueDays(
     tasks: List<TaskItem>,
     parcels: List<Parcel>,
     events: List<CalendarEvent>,
-    fixedExpenses: List<FixedExpense> = emptyList(),
     now: LocalDateTime = LocalDateTime.now(),
     zone: ZoneId = ZoneId.systemDefault(),
     simRenewal: LocalDate? = null,
     /**
-     * Il calendario unico (Antonio): Oggi c'è sempre, in cima, con la spesa di oggi (anche 0), le cose in ritardo,
+     * Il calendario unico (Antonio): Oggi c'è sempre, in cima, con le cose in ritardo,
      * i promemoria e le note senza data (sono "sempre a oggi" e a mezzanotte passano a domani da sole).
      */
     withToday: Boolean = false,
     notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
-    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
 ): List<DueDay> {
     val today = now.toLocalDate()
     val nowMs = now.atZone(zone).toInstant().toEpochMilli()
@@ -177,19 +160,12 @@ internal fun dueDays(
         val day = maxOf(dayOf(e.begin), today)
         dated += DueRow("event-${e.eventId}-${e.begin}", day, if (e.allDay) startOf(day) else maxOf(e.begin, startOf(day)), event = e)
     }
-    fixedExpenses.forEach { f ->
-        val day = f.nextDate(today)
-        dated += DueRow("charge-${f.id}", day, startOf(day), charge = f)
-    }
     simRenewal?.takeIf { !it.isBefore(today) }?.let { dated += DueRow("sim-renewal", it, startOf(it), simRenewal = true) }
     if (withToday) {
-        expenses.filter { it.date.isAfter(today) }.sortedWith(Expenses.byTime).forEach { e -> dated += DueRow("expense-${e.id}", e.date, expenseAt(e, zone), expense = e) }
-        val spentToday = expenses.filter { it.date == today }.sortedWith(Expenses.byTime)
         val todayRows = buildList {
-            add(DueRow("spend-today", today, Long.MIN_VALUE, spend = spentToday.sumOf { it.cents }))
-            // Spese, cose in ritardo, eventi, turni e treni di oggi tutti insieme in ordine d'orario (Antonio, 1.400).
-            addAll((spentToday.map { e -> DueRow("expense-${e.id}", today, expenseAt(e, zone), expense = e) } +
-                late.sortedBy { it.at }.map { it.copy(day = today, overdueFrom = it.day) } +
+            add(DueRow("today", today, Long.MIN_VALUE, today = true))
+            // Cose in ritardo, eventi, turni e treni di oggi tutti insieme in ordine d'orario (Antonio, 1.400).
+            addAll((late.sortedBy { it.at }.map { it.copy(day = today, overdueFrom = it.day) } +
                 dated.filter { it.day == today }).sortedBy { it.at })
             tasks.filter { !it.done && it.dueAt == null }.sortedBy { it.createdAt }
                 .forEach { t -> add(DueRow("task-${t.id}", today, Long.MAX_VALUE, task = t)) }
@@ -297,32 +273,6 @@ internal fun EventCard(event: CalendarEvent, day: LocalDate?, onClick: () -> Uni
     }
 }
 
-/** Un addebito fisso fra le cose che arrivano: quanto, che cosa e i giorni che mancano. Si tocca per le Spese. */
-@Composable
-internal fun ChargeCard(charge: FixedExpense, day: LocalDate?, onClick: () -> Unit) {
-    val (big, small) = dueBadge(day)
-    CanvasCard(onClick = onClick, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth().bouncyPress()) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "Addebito: ${charge.text.ifEmpty { charge.category.label }}",
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    "${Expenses.format(charge.cents)} · ogni mese il ${charge.day}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            DueBadge(big, small)
-        }
-    }
-}
-
 /** In cima a Prossimi giorni finché il calendario non è consentito: gli impegni stanno qui insieme al resto. */
 @Composable
 internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
@@ -404,11 +354,9 @@ internal fun timelineEntries(
     today: LocalDate,
     zone: ZoneId = ZoneId.systemDefault(),
     /**
-     * Il calendario unico: ogni mese ha il suo segno, anche il primo e quello di oggi, con accanto quanto hai
-     * speso in quel mese (Antonio). [expenses] servono per quel totale.
+     * Il calendario unico: ogni mese ha il suo segno, anche il primo e quello di oggi (Antonio).
      */
     months: Boolean = false,
-    expenses: List<com.platinum20.dashboard.notes.Expense> = emptyList(),
 ): List<Pair<TimelineEntry, DueRow>> {
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
@@ -423,7 +371,7 @@ internal fun timelineEntries(
         val day = g.day
         if (!reachedNow && !g.past && !g.late && day != null) {
             reachedNow = true
-            // Nel calendario unico il mese di oggi ha il suo segno (col totale): non si salta.
+            // Nel calendario unico il mese di oggi ha il suo segno: non si salta.
             if (!months) monthPrevious = today
         }
         val month = when {
@@ -433,9 +381,6 @@ internal fun timelineEntries(
         }
         // Niente più "PIÙ AVANTI" (Antonio, 1.389): dopo oggi ogni giorno ha già la sua riga ("——— Domani ●").
         val later = false
-        val monthSpend = if (months && month != null) java.time.YearMonth.from(day!!).let { m ->
-            Expenses.total(expenses, m).takeIf { it > 0 || m == java.time.YearMonth.from(today) }?.let { Expenses.format(it) }
-        } else null
         if (day != null && !g.late) {
             monthPrevious = day
             // Da qui in giù il mese si legge già: nel segno appena messo, o sotto "OGGI" il mese di oggi.
@@ -449,8 +394,7 @@ internal fun timelineEntries(
         }
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
-                r.spend != null -> com.platinum20.dashboard.today.BriefKind.MONEY to "Spesa di oggi"
-                r.expense != null -> com.platinum20.dashboard.today.BriefKind.MONEY to Expenses.displayName(r.expense)
+                r.today -> com.platinum20.dashboard.today.BriefKind.FREE to "Oggi"
                 r.note != null -> com.platinum20.dashboard.today.BriefKind.FREE to r.note.title.ifEmpty { "Nota" }
                 // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
                 r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
@@ -464,8 +408,6 @@ internal fun timelineEntries(
                 // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
                     (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
-                r.charge != null -> com.platinum20.dashboard.today.BriefKind.MONEY to
-                    "Addebito: ${r.charge.text.ifEmpty { r.charge.category.label }}"
                 r.simRenewal -> com.platinum20.dashboard.today.BriefKind.EVENT to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
@@ -474,33 +416,27 @@ internal fun timelineEntries(
                 kind = kind,
                 text = text,
                 dayLabel = if (i == 0) label else null,
-                color = r.event?.color ?: r.expense?.category?.color() ?: 0,
+                color = r.event?.color ?: 0,
                 late = g.late || r.overdueFrom != null,
                 done = r.task?.done == true,
                 past = g.past,
                 icon = when {
                     r.simRenewal -> Icons.Outlined.SimCard
                     r.parcel != null -> Icons.Outlined.LocalShipping
-                    r.expense != null && com.platinum20.dashboard.calendar.Trips.isTrainMerchant(Expenses.displayName(r.expense)) ->
-                        Icons.Outlined.Train
-                    r.expense != null -> r.expense.category.icon()
                     r.note != null -> r.note.icon()
                     else -> null
                 },
-                trailing = r.spend?.let { Expenses.format(it) } ?: r.note?.let { NoteText.badge(it.text) },
+                trailing = r.note?.let { NoteText.badge(it.text) },
                 month = if (i == 0) month else null,
-                monthSpend = if (i == 0) monthSpend else null,
-                monthOf = if (i == 0 && month != null) java.time.YearMonth.from(day!!) else null,
-                todayHeader = r.spend != null,
+                todayHeader = r.today,
                 later = i == 0 && later,
-                divider = i == 0 && dayAfterDay && r.spend == null,
+                divider = i == 0 && dayAfterDay && !r.today,
                 time = when {
                     r.task != null && r.overdueFrom == null && !r.task.allDay -> r.task.dueAt?.takeIf { !g.late && !g.past }?.time()
                     r.event != null && !r.event.allDay -> r.event.begin.time()
                     else -> null
                 },
                 trip = r.event?.let { tripStops(it, today, zone) },
-                amount = (r.expense?.cents ?: r.charge?.cents)?.let { Expenses.format(it) },
                 detail = r.task?.takeIf { it.allDay && !g.past && day != null }
                     ?.let { com.platinum20.dashboard.notes.WhenText.dateLine(it.yearsAtNext(today, zone), day!!, today) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
@@ -596,69 +532,17 @@ internal fun timelineKeys(keys: List<String>): List<String> {
 /**
  * Lo spazio vuoto in fondo perché "OGGI" possa stare in cima allo schermo. [below] = quanto c'è sotto OGGI,
  * null finché non è misurato: allora niente spazio. Prima era Int.MAX_VALUE e sottraendo il margine
- * il conto andava in overflow, un'altezza enorme che faceva chiudere Spese all'apertura.
+ * il conto andava in overflow, un'altezza enorme che faceva chiudere la pagina all'apertura.
  */
 internal fun nowRoom(viewport: Int, bottomPadding: Int, below: Int?): Int =
     if (below == null) 0 else (viewport.toLong() - bottomPadding - below).coerceIn(0, viewport.coerceAtLeast(0).toLong()).toInt()
 
 /**
- * Dove va il segno "OGGI" in una linea che è quasi tutta passato (Note, Spese): prima della prima riga di oggi
+ * Dove va il segno "OGGI" in una linea che è quasi tutta passato (Note): prima della prima riga di oggi
  * o delle fissate, altrimenti in fondo ([entries] size). Sopra il passato, sotto oggi.
  */
 internal fun nowIndex(entries: List<TimelineEntry>): Int =
     entries.indexOfFirst { it.dayLabel == "Oggi" || it.dayLabel == "Fissate" }.takeIf { it >= 0 } ?: entries.size
-
-/**
- * Spese come linea del tempo, nello stesso verso delle altre (Antonio): le più vecchie in alto, le più recenti
- * in fondo, il giorno a destra sulla prima spesa di quel giorno e la linea che si allunga fra giorni lontani.
- * [limit] = solo le ultime (la card in Oggi).
- */
-internal fun expenseEntries(
-    expenses: List<com.platinum20.dashboard.notes.Expense>,
-    today: LocalDate,
-    /** Il mese già scritto sopra la linea (il riepilogo della pagina Spese): lì i giorni sono corti. */
-    header: java.time.YearMonth? = java.time.YearMonth.from(today),
-    limit: Int? = null,
-): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
-    var previous: LocalDate? = null
-    var shown = header
-    val sorted = expenses.sortedWith(Expenses.byTime).let { e -> limit?.let { e.takeLast(it) } ?: e }
-    return sorted.map { e ->
-        val first = e.date != previous
-        // In cima il mese della prima riga, se non è quello già scritto sopra.
-        val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous ?: header?.atDay(1) ?: today, e.date, today)
-        if (month != null) shown = java.time.YearMonth.from(e.date)
-        previous = e.date
-        TimelineEntry(
-            "expense-${e.id}",
-            com.platinum20.dashboard.today.BriefKind.MONEY,
-            // L'importo per primo (Antonio), nella sua colonna fissa ([TimelineEntry.amount], 9 B).
-            Expenses.displayName(e),
-            if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today, shown) else null,
-            // Icona e colore dicono la categoria, come la barra del riepilogo.
-            color = e.category.color(),
-            icon = e.category.icon(),
-            month = month,
-            amount = Expenses.format(e.cents),
-        ) to e
-    }
-}
-
-/**
- * La card Spese in Oggi (Antonio): solo il mese corrente, col suo nome in cima, le ultime [limit] spese.
- * Il totale accanto al titolo è già quello del mese, così righe e numero dicono la stessa cosa.
- */
-internal fun monthExpenseEntries(
-    expenses: List<com.platinum20.dashboard.notes.Expense>,
-    today: LocalDate,
-    limit: Int,
-): List<Pair<TimelineEntry, com.platinum20.dashboard.notes.Expense>> {
-    val month = java.time.YearMonth.from(today)
-    val rows = expenseEntries(expenses.filter { java.time.YearMonth.from(it.date) == month }, today, limit = limit)
-    if (rows.isEmpty()) return rows
-    val name = com.platinum20.dashboard.today.Upcoming.monthBreak(month.atDay(1).minusDays(1), today, today)
-    return listOf(rows.first().let { (entry, expense) -> entry.copy(month = name) to expense }) + rows.drop(1)
-}
 
 private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes
 
@@ -669,22 +553,21 @@ private fun com.platinum20.dashboard.notes.Note.icon() = when {
     else -> NOTE_ICON
 }
 
-/** I filtri del calendario intero (Antonio): uno per le spese, uno per le note, uno per gli eventi. */
-internal enum class CalendarFilter(val label: String) { EXPENSES("Spese"), NOTES("Note"), EVENTS("Eventi") }
+/** I filtri del calendario intero (Antonio): uno per le note, uno per gli eventi. */
+internal enum class CalendarFilter(val label: String) { NOTES("Note"), EVENTS("Eventi") }
 
 /**
  * A quale filtro appartiene una riga: eventi, promemoria con una data, date da ricordare, pacchi e rinnovo SIM
  * stanno insieme (1.361: sono la stessa cosa); le cose senza data con le note.
  */
 internal fun DueRow.filter(): CalendarFilter = when {
-    spend != null || expense != null || charge != null -> CalendarFilter.EXPENSES
     event != null || task?.dueAt != null || parcel != null || simRenewal -> CalendarFilter.EVENTS
     else -> CalendarFilter.NOTES
 }
 
-/** Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. */
+/** Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono, OGGI resta sempre. null = tutto. */
 internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
-    if (filter == null) this else mapNotNull { d -> d.rows.filter { it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
+    if (filter == null) this else mapNotNull { d -> d.rows.filter { it.today || it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
 
 
 /**

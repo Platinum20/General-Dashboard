@@ -80,23 +80,9 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
                     offerUndo("Pacco eliminato") { NotesStore.restoreParcel(row.parcel) }
                 },
             )
-            row.charge != null -> listOf(
-                BubbleAction(Icons.Outlined.Event, "Apri", detail = row.charge.text.ifEmpty { row.charge.category.label }) { openItem(ItemKind.FIXED, row.charge.id) },
-                BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                    NotesStore.deleteFixedExpense(row.charge.id)
-                    offerUndo("Spesa fissa eliminata") { NotesStore.restoreFixedExpense(row.charge) }
-                },
-            )
             else -> emptyList()
         }
         if (actions.isNotEmpty()) ActionBubble.show(*actions.toTypedArray())
-    }
-    // Tenendo premuta una spesa il fumetto dà subito le categorie (punto 32): due tocchi, senza lasciare il calendario.
-    fun expenseActions(e: com.platinum20.dashboard.notes.Expense) {
-        ActionBubble.show(*expenseBubble(e, onOpen = { openItem(ItemKind.EXPENSE, e.id) }) {
-            NotesStore.deleteExpense(e.id)
-            offerUndo("Spesa eliminata") { NotesStore.restoreExpense(e) }
-        }.toTypedArray())
     }
     fun noteActions(n: Note) {
         ActionBubble.show(
@@ -115,36 +101,7 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
     return { row ->
         when {
             row.note != null -> noteActions(row.note)
-            row.expense != null -> expenseActions(row.expense)
             else -> dueActions(row)
         }
     }
 }
-
-/** Le categorie come scelte del fumetto, quella di adesso segnata: usate dalla riga tenuta premuta e dalla scheda. */
-internal fun categoryChoices(
-    current: com.platinum20.dashboard.notes.ExpenseCategory,
-    pick: (com.platinum20.dashboard.notes.ExpenseCategory) -> Unit,
-): List<BubbleAction> = com.platinum20.dashboard.notes.ExpenseCategory.entries.map { c ->
-    BubbleAction(c.icon(), c.label, detail = if (c == current) "adesso" else "") { if (c != current) pick(c) }
-}
-
-/**
- * Il fumetto di una spesa tenuta premuta (punto 32): in cima "Pizza · 12,50 €" con le categorie in chip (quella di
- * adesso accesa), poi Apri ed Elimina. Cambiare categoria è un tocco solo.
- */
-internal fun expenseBubble(
-    e: com.platinum20.dashboard.notes.Expense,
-    onOpen: () -> Unit,
-    onDelete: () -> Unit,
-): List<BubbleAction> = listOf(
-    BubbleAction(
-        Icons.Outlined.Event,
-        com.platinum20.dashboard.notes.Expenses.displayName(e) + " · " + com.platinum20.dashboard.notes.Expenses.format(e.cents),
-        chips = com.platinum20.dashboard.notes.ExpenseCategory.entries.map { c ->
-            BubbleChip(c.label, selected = c == e.category) { if (c != e.category) NotesStore.saveExpense(e.copy(category = c)) }
-        },
-    ),
-    BubbleAction(Icons.Outlined.Event, "Apri", onClick = onOpen),
-    BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true, onClick = onDelete),
-)

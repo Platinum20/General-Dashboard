@@ -79,7 +79,7 @@ object WindTreLink {
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
         CookieManager.getInstance().setAcceptCookie(true)
-        // Come per Revolut: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
+        // Come per Creators Pro: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
         if (SimStore.linked.value) WindTreSession.restore(context)
         val keep = if (SimStore.linked.value) WindTreSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)

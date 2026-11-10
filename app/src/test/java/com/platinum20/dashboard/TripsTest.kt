@@ -125,12 +125,6 @@ class TripsTest {
         assertEquals(null, tripStops(shift.copy(end = start), LocalDate.of(2026, 11, 9), zone))
     }
 
-    @Test fun speseDelTreno() {
-        assertEquals(true, Trips.isTrainMerchant("Trenitalia"))
-        assertEquals(true, Trips.isTrainMerchant("Italo"))
-        assertEquals(false, Trips.isTrainMerchant("Esselunga"))
-    }
-
     @Test fun datiDelBiglietto() {
         val d = Trips.details(viaggio, "Taranto-Pescara Centrale;Treno: Intercity 612, partenza da Taranto Ore: 10:28; arrivo a Pescara Centrale Ore: 15:00 Carrozza 8, Posti 11D, CP 913601; codice pnr BG6GF5")
         assertEquals(listOf("Treno" to "Intercity 612", "Carrozza" to "8", "Posto" to "11D", "PNR" to "BG6GF5"), d)

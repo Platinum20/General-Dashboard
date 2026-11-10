@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.dp
 internal data class DetailAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
 
 /**
- * La pagina a schermo intero di una cosa sola, uguale per eventi, promemoria, date, pacchi, abitudini e spese.
+ * La pagina a schermo intero di una cosa sola, uguale per eventi, promemoria, date, pacchi, abitudini.
  * Dalla 1.315 ha la forma dell'editor delle note (Antonio): in alto solo Indietro e una riga piccola, in fondo
  * a sinistra l'azione principale ([primary], o Modifica) e a destra "Altro", che apre il fumetto di vetro
  * con il resto ([more], Modifica se non sta già a sinistra, Elimina).

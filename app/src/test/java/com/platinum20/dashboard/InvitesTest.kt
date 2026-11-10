@@ -36,8 +36,8 @@ class InvitesTest {
     @Test
     fun accessiScadutiPerPrimi() {
         assertEquals(
-            listOf(Invite.REVOLUT, Invite.SHIFTS, Invite.AGENDA),
-            Invites.pending(true, false, autoFillEnabled = true, autoFillDismissed = false, revolutExpired = true, shiftsExpired = true),
+            listOf(Invite.SHIFTS, Invite.AGENDA),
+            Invites.pending(true, false, autoFillEnabled = true, autoFillDismissed = false, shiftsExpired = true),
         )
     }
 }

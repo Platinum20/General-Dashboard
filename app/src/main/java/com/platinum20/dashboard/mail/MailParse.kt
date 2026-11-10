@@ -28,7 +28,7 @@ object MailParse {
     /** Le categorie che non contengono mai pacchi, bollette o prenotazioni vere. */
     private val noise = setOf("CATEGORY_PROMOTIONS", "CATEGORY_SOCIAL", "CATEGORY_FORUMS", "SPAM", "TRASH", "DRAFT", "SENT", "CHAT")
 
-    /** Le mail da leggere per pacchi, spese e scadenze arrivate dopo [sinceMs]. */
+    /** Le mail da leggere per pacchi e scadenze arrivate dopo [sinceMs]. */
     fun scanQuery(sinceMs: Long): String =
         "after:${sinceMs / 1000} -category:promotions -category:social -category:forums -in:chats -in:sent -in:drafts"
 

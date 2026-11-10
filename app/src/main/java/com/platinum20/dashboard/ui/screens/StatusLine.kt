@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import java.time.Instant
 
 /**
- * Lo stato di un collegamento (WindTre, Revolut, Creators Pro, Gmail), per la regola "lo stato dice la
+ * Lo stato di un collegamento (WindTre, Creators Pro, Gmail), per la regola "lo stato dice la
  * verità" (revisione 1.402): un dato vecchio lo dice, un accesso scaduto lo dice, e l'azione è lì accanto.
  */
 data class LinkStatus(val kind: Kind, val line: String?) {

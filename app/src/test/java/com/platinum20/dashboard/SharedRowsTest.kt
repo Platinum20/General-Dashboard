@@ -10,7 +10,6 @@ class SharedRowsTest {
     @Test
     fun `la stessa riga nella card e nella pagina non vola fra le due`() {
         assertNotEquals(SharedRows.key(SharedRows.HOME, "task-1"), SharedRows.key(SharedRows.PAGE, "task-1"))
-        assertNotEquals(SharedRows.key(SharedRows.PAGE, "expense-2"), SharedRows.key(SharedRows.EXPENSES, "expense-2"))
     }
 
     @Test

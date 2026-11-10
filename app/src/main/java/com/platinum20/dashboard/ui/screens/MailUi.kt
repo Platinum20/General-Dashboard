@@ -132,7 +132,7 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
 
     CardSection(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
-            // La stessa riga di stato di WindTre e Revolut (1.402), con "Rientra" lì.
+            // La stessa riga di stato di WindTre (1.402), con "Rientra" lì.
             StatusLine(
                 LinkStatus(LinkStatus.Kind.EXPIRED, if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail").takeIf { consent }
                     ?: LinkStatus(LinkStatus.Kind.OK, null),
@@ -351,7 +351,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.Refresh,
                 title = "Leggi adesso",
-                subtitle = "Spese, pacchi e prenotazioni",
+                subtitle = "Pacchi e prenotazioni",
                 onClick = { if (!syncing) syncNow() },
             )
         }

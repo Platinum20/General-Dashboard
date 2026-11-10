@@ -240,8 +240,6 @@ class BriefingTest {
             today = listOf(allDay, event("Riunione", morning.plusHours(2), morning.plusHours(3)), event("Palestra", morning.plusHours(9), morning.plusHours(10))),
             tomorrow = null,
             tasks = listOf(TaskItem(1, "Bolletta", dueAt = ms(morning.plusHours(4))), TaskItem(2, "Latte", dueAt = ms(morning.plusHours(6)))),
-            budgetCents = 100,
-            expenses = listOf(com.platinum20.dashboard.notes.Expense(1, 500, "pizza", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), date = morning.toLocalDate())),
             zone = zone,
             withTomorrow = !card,
             wholeDay = card,
@@ -253,7 +251,7 @@ class BriefingTest {
         assertTrue(card.contains("Alle 18:00: Palestra"))
         assertTrue(card.contains("Alle 13:00: Bolletta"))
         assertTrue(card.contains("Alle 15:00: Latte"))
-        // Il budget sta nella card Spese, non qui.
+        // Niente righe di soldi.
         assertFalse(card.any { it.contains("Budget") || it.contains("Spese") })
         val widget = build(card = false).map { it.text }
         assertTrue(widget.contains("2 promemoria entro stasera"))

@@ -11,7 +11,7 @@ import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureNotice
 
 /**
- * "Salva i dati letti" sotto l'account (WindTre, Revolut, turni): quello che il servizio ha mandato, per
+ * "Salva i dati letti" sotto l'account (WindTre, turni): quello che il servizio ha mandato, per
  * correggere la lettura quando un numero non torna. Sta di nuovo nel suo account (Antonio, 10/11: niente Strumenti).
  */
 @Composable

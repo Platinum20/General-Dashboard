@@ -19,7 +19,7 @@ internal data class BubbleAction(
     val title: String,
     val detail: String = "",
     val danger: Boolean = false,
-    /** Scelte rapide in fila (le categorie di una spesa, punto 32): la riga diventa una fila di chip, [title] sopra. */
+    /** Scelte rapide in fila (punto 32): la riga diventa una fila di chip, [title] sopra. */
     val chips: List<BubbleChip> = emptyList(),
     val onClick: () -> Unit = {},
 )

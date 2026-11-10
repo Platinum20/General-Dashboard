@@ -4,11 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EventBusy
-import androidx.compose.material.icons.outlined.Euro
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.QrCode2
@@ -34,7 +32,6 @@ import com.platinum20.dashboard.Routes
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.CaptureNotice
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.HabitReminder
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
@@ -52,10 +49,10 @@ import java.util.Locale
  * Le cose delle Note che si aprono a schermo intero, con la stessa pagina degli eventi del calendario.
  * Promemoria e date da ricordare sono la stessa cosa dalla 1.361 ([TASK], anche tutto il giorno).
  */
-enum class ItemKind { TASK, PARCEL, HABIT, EXPENSE, FIXED }
+enum class ItemKind { TASK, PARCEL, HABIT }
 
 /** Che cosa dice una riga della scheda: decide l'icona. */
-enum class LineKind { WHEN, ALL_DAY, REPEAT, ALERT, PLACE, NOTES, STATUS, CODE, AMOUNT, CATEGORY }
+enum class LineKind { WHEN, ALL_DAY, REPEAT, ALERT, PLACE, NOTES, STATUS, CODE }
 
 data class DetailLine(val kind: LineKind, val text: String)
 
@@ -131,29 +128,6 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 ),
             )
         }
-        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e ->
-            ItemDetail(
-                e.text.ifBlank { e.category.label },
-                listOfNotNull(
-                    DetailLine(LineKind.AMOUNT, Expenses.format(e.cents)),
-                    // L'ora della spesa (Revolut, notifica, a mano) accanto al giorno, come nelle cose a un'ora (Antonio).
-                    DetailLine(LineKind.WHEN, longDate(e.date) + (e.at?.let { ", " + it.format(hourFormat) } ?: "")),
-                    DetailLine(LineKind.CATEGORY, e.category.label),
-                    e.fixedId?.let { DetailLine(LineKind.REPEAT, "Spesa fissa, aggiunta da sola") },
-                ),
-            )
-        }
-        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f ->
-            ItemDetail(
-                f.text.ifBlank { f.category.label },
-                listOf(
-                    DetailLine(LineKind.AMOUNT, Expenses.format(f.cents) + " al mese"),
-                    DetailLine(LineKind.REPEAT, "Il ${f.day} di ogni mese"),
-                    DetailLine(LineKind.WHEN, "Prossima " + longDate(f.nextDate(today)).replaceFirstChar { it.lowercase() }),
-                    DetailLine(LineKind.CATEGORY, f.category.label),
-                ),
-            )
-        }
     }
 }
 
@@ -166,8 +140,6 @@ private fun LineKind.icon(): ImageVector = when (this) {
     LineKind.NOTES -> Icons.AutoMirrored.Outlined.Notes
     LineKind.STATUS -> Icons.Outlined.Info
     LineKind.CODE -> Icons.Outlined.QrCode2
-    LineKind.AMOUNT -> Icons.Outlined.Euro
-    LineKind.CATEGORY -> Icons.Outlined.Category
 }
 
 /** Il colore del pallino accanto al titolo, come quello del calendario per gli eventi. */
@@ -175,7 +147,6 @@ private fun LineKind.icon(): ImageVector = when (this) {
 private fun ItemKind.dot(): Color = when (this) {
     ItemKind.TASK, ItemKind.HABIT -> MaterialTheme.colorScheme.primary
     ItemKind.PARCEL -> MaterialTheme.colorScheme.secondary
-    ItemKind.EXPENSE, ItemKind.FIXED -> MaterialTheme.colorScheme.outline
 }
 
 /** La riga piccola in alto nella scheda: che cosa è. */
@@ -183,8 +154,6 @@ private fun ItemKind.metaLabel(): String = when (this) {
     ItemKind.TASK -> "Promemoria"
     ItemKind.PARCEL -> "Pacco"
     ItemKind.HABIT -> "Abitudine"
-    ItemKind.EXPENSE -> "Spesa"
-    ItemKind.FIXED -> "Spesa fissa"
 }
 
 private fun undo(message: String, restore: () -> Unit) {
@@ -192,7 +161,7 @@ private fun undo(message: String, restore: () -> Unit) {
 }
 
 /**
- * La pagina a schermo intero di promemoria, date, pacchi, abitudini e spese: la stessa dell'evento
+ * La pagina a schermo intero di promemoria, date, pacchi e abitudini: la stessa dell'evento
  * (titolo col pallino, una scheda di righe; in basso l'azione principale e "Altro" con Elimina). Si modifica qui dentro: il titolo si scrive, le righe si toccano.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -213,8 +182,6 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t -> { NotesStore.deleteTask(id); gone("Promemoria eliminato") { NotesStore.restoreTask(t) } } }
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { p -> { NotesStore.deleteParcel(id); gone("Pacco eliminato") { NotesStore.restoreParcel(p) } } }
         ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { h -> { NotesStore.deleteHabit(id); gone("Abitudine eliminata") { NotesStore.restoreHabit(h) } } }
-        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e -> { NotesStore.deleteExpense(id); gone("Spesa eliminata") { NotesStore.restoreExpense(e) } } }
-        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f -> { NotesStore.deleteFixedExpense(id); gone("Spesa fissa tolta") { NotesStore.restoreFixedExpense(f) } } }
     }
     // L'azione di tutti i giorni in basso a sinistra, come la lista nell'editor delle note (Antonio).
     val action: Triple<ImageVector, String, () -> Unit>? = when (kind) {
@@ -267,9 +234,6 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 }
             }
         }
-        if (kind == ItemKind.FIXED) {
-            DetailNote("Togliendola, le spese già aggiunte nei mesi passati restano.")
-        }
     }
 
     when (val p = picker) {
@@ -293,27 +257,17 @@ private sealed interface LineEdit {
     class Field(val value: String, val placeholder: String, val number: Boolean, val prose: Boolean = false, val onCommit: (String) -> Unit) : LineEdit
 }
 
-private fun centsText(cents: Long): String = "%d,%02d".format(cents / 100, cents % 100)
-
 /** Il nuovo titolo, salvato nel posto giusto per ogni tipo. */
 private fun rename(kind: ItemKind, id: Long, data: NotesData, title: String) {
     when (kind) {
         ItemKind.TASK -> NotesStore.editTask(id, title)
         ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.let { NotesStore.saveParcel(id, title, it.code, it.expected) }
         ItemKind.HABIT -> data.habits.firstOrNull { it.id == id }?.let { NotesStore.saveHabit(id, title, it.perWeek, it.remindAt) }
-        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { NotesStore.saveExpense(it.copy(text = title)) }
-        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { NotesStore.saveFixedExpense(it.copy(text = title)) }
     }
 }
 
 /** Per ogni riga della scheda, come si modifica; null = si legge e basta (lo stato, i giorni che mancano). */
 private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind): LineEdit? {
-    fun categories(current: com.platinum20.dashboard.notes.ExpenseCategory, pick: (com.platinum20.dashboard.notes.ExpenseCategory) -> Unit) =
-        LineEdit.Tap(onClick = {
-            ActionBubble.show(*com.platinum20.dashboard.notes.ExpenseCategory.entries.map { c ->
-                BubbleAction(c.icon(), c.label, detail = if (c == current) "adesso" else "") { pick(c) }
-            }.toTypedArray())
-        })
     return when (kind) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
             when (line) {
@@ -364,26 +318,6 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
                     Picker.Time(h.remindAt ?: java.time.LocalTime.of(21, 0)) { NotesStore.saveHabit(id, h.title, h.perWeek, it) },
                     onClear = h.remindAt?.let { { NotesStore.saveHabit(id, h.title, h.perWeek, null) } },
                 )
-                else -> null
-            }
-        }
-        ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e ->
-            when (line) {
-                LineKind.AMOUNT -> LineEdit.Field(centsText(e.cents), "Importo", number = true) { text ->
-                    centsOf(text)?.takeIf { it > 0 }?.let { NotesStore.saveExpense(e.copy(cents = it)) }
-                }
-                LineKind.WHEN -> LineEdit.Tap(Picker.Date(e.date) { NotesStore.saveExpense(e.copy(date = it)) })
-                LineKind.CATEGORY -> categories(e.category) { NotesStore.saveExpense(e.copy(category = it)) }
-                else -> null
-            }
-        }
-        ItemKind.FIXED -> data.fixedExpenses.firstOrNull { it.id == id }?.let { f ->
-            when (line) {
-                LineKind.AMOUNT -> LineEdit.Field(centsText(f.cents), "Importo", number = true) { text ->
-                    centsOf(text.removeSuffix("al mese").trim())?.takeIf { it > 0 }?.let { NotesStore.saveFixedExpense(f.copy(cents = it)) }
-                }
-                LineKind.REPEAT -> LineEdit.Tap(Picker.Date(LocalDate.now().withDayOfMonth(f.day.coerceIn(1, 28))) { NotesStore.saveFixedExpense(f.copy(day = it.dayOfMonth)) })
-                LineKind.CATEGORY -> categories(f.category) { NotesStore.saveFixedExpense(f.copy(category = it)) }
                 else -> null
             }
         }
