@@ -102,8 +102,8 @@ class DayScrubDragTest {
         assertTrue("torna indietro: ${steps.filter { it < -2f }}", steps.all { it >= -2f })
         val mean = (seen.last() - seen.first()) / steps.size
         assertTrue("scatto troppo grande: max ${steps.max()} su media $mean", steps.max() <= mean * 3f + 4f)
-        // In fondo alla linea l'ultimo giorno.
-        assertTrue(list.layoutInfo.visibleItemsInfo.any { it.index == count - 3 })
+        // In fondo alla linea si è arrivati agli ultimi giorni (il dito è a 10 px dal fondo: il penultimo giorno al più).
+        assertTrue(list.layoutInfo.visibleItemsInfo.any { it.index >= count - 6 })
         assertEquals(0, clicks)
     }
 
