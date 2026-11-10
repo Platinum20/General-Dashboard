@@ -105,6 +105,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import kotlin.math.roundToInt
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -384,8 +386,8 @@ fun TopLevelBar(
     /** Senza fondo: per le pagine con un'immagine dietro (il player). */
     transparent: Boolean = false,
     /**
-     * Ridotto a una riga sottile dopo un po' di scorrimento (1.402). Se non lo dice la pagina, si ricava da
-     * [scrollBehavior]: oltre [TopBarCollapse.THRESHOLD_DP] scorsi verso il basso il titolo si fa piccolo.
+     * Forza la riga sottile (con animazione). Se non lo dice la pagina, segue [scrollBehavior]
+     * (exitUntilCollapsed): il titolo rimpicciolisce col dito nei primi [TopBarCollapse.RANGE_DP] dp.
      */
     collapsed: Boolean? = null,
     /** Il titolo da ridotto, se diverso (la Home: "Martedì 10"). */
@@ -393,12 +395,23 @@ fun TopLevelBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val small = collapsed ?: scrollBehavior?.let {
-        TopBarCollapse.collapsed(it.state.contentOffset, with(density) { TopBarCollapse.THRESHOLD_DP.dp.toPx() })
-    } ?: false
-    val barHeight by androidx.compose.animation.core.animateDpAsState(
-        if (small) 52.dp else 76.dp, Motion.settle(), label = "barHeight",
+    // Si restringe col dito (1.435): la barra assorbe i primi 24 dp di scorrimento, quindi il contenuto
+    // segue il dito senza scatti e il titolo rimpicciolisce in modo continuo, mai di colpo.
+    val rangePx = with(density) { TopBarCollapse.RANGE_DP.dp.toPx() }
+    val state = scrollBehavior?.state
+    if (state != null) {
+        androidx.compose.runtime.SideEffect { if (state.heightOffsetLimit != -rangePx) state.heightOffsetLimit = -rangePx }
+    }
+    val forced by androidx.compose.animation.core.animateFloatAsState(
+        if (collapsed == true) 1f else 0f, Motion.settle(), label = "barCollapse",
     )
+    val fraction = when {
+        collapsed != null -> forced
+        state != null -> TopBarCollapse.fraction(state.heightOffset, rangePx)
+        else -> 0f
+    }
+    val barHeight = TopBarCollapse.height(fraction).dp
+    val titleScale = TopBarCollapse.titleScale(fraction)
     TopAppBar(
         navigationIcon = {
             if (onBack != null) {
@@ -424,10 +437,13 @@ fun TopLevelBar(
                     )
                 },
             ) {
-                if (line != null && !small) {
+                if (line != null && fraction < 1f) {
                     // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
                     AnimatedContent(
                         line.uppercase(),
+                        modifier = Modifier
+                            .collapseHeight { 1f - fraction }
+                            .graphicsLayer { alpha = TopBarCollapse.subtitleAlpha(fraction) },
                         transitionSpec = {
                             (slideInVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) { it / 2 } +
                                 fadeIn(tween(Motion.ENTER_MS, easing = Motion.Decelerate)))
@@ -444,17 +460,21 @@ fun TopLevelBar(
                         )
                     }
                 }
-                AnimatedContent(
-                    small,
-                    transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
-                    label = "barTitle",
-                ) { thin ->
-                    Text(
-                        if (thin) collapsedTitle else title,
-                        style = if (thin) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                // Un solo titolo che rimpicciolisce (niente dissolvenza tra due testi di misure diverse).
+                Box(Modifier.collapseHeight { titleScale }.graphicsLayer {
+                    scaleX = titleScale
+                    scaleY = titleScale
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+                }) {
+                    val style = MaterialTheme.typography.headlineLarge
+                    if (collapsedTitle == title) {
+                        Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    } else {
+                        Text(title, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = 1f - fraction })
+                        Text(collapsedTitle, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.graphicsLayer { alpha = fraction })
+                    }
                 }
             }
         },
@@ -467,17 +487,40 @@ fun TopLevelBar(
             containerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
             scrolledContainerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
         ),
-        scrollBehavior = scrollBehavior,
     )
 }
 
-/** Quando il titolo grande si riduce: logica pura, provata nei test. */
-object TopBarCollapse {
-    /** Circa un centimetro sullo schermo. */
-    const val THRESHOLD_DP = 40
+/** Altezza misurata moltiplicata per [factor], contenuto ancorato in alto: per far restringere davvero la riga. */
+private fun Modifier.collapseHeight(factor: () -> Float): Modifier = this.then(
+    Modifier.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val h = (placeable.height * factor().coerceIn(0f, 1f)).roundToInt()
+        layout(placeable.width, h) { placeable.placeRelative(0, 0) }
+    },
+)
 
-    /** [contentOffset] è negativo quando la pagina è scorsa verso il basso (come in TopAppBarState). */
-    fun collapsed(contentOffset: Float, thresholdPx: Float): Boolean = contentOffset < -thresholdPx
+/**
+ * Come si restringe il titolo grande: logica pura, provata nei test. [fraction] va da 0 (grande) a 1 (riga sottile)
+ * e segue lo scorrimento: le pagine usano exitUntilCollapsedScrollBehavior, la barra si riapre tornando in cima.
+ */
+object TopBarCollapse {
+    const val EXPANDED_DP = 76
+    const val COLLAPSED_DP = 52
+    const val RANGE_DP = EXPANDED_DP - COLLAPSED_DP
+
+    /** Da titleLarge (19 sp) a headlineLarge (30 sp). */
+    const val SMALL_SCALE = 19f / 30f
+
+    /** [heightOffset] è negativo quando la barra si sta chiudendo (come in TopAppBarState). */
+    fun fraction(heightOffset: Float, rangePx: Float): Float =
+        if (rangePx <= 0f) 0f else (-heightOffset / rangePx).coerceIn(0f, 1f)
+
+    fun height(fraction: Float): Float = EXPANDED_DP - RANGE_DP * fraction.coerceIn(0f, 1f)
+
+    fun titleScale(fraction: Float): Float = 1f - (1f - SMALL_SCALE) * fraction.coerceIn(0f, 1f)
+
+    /** La riga sopra svanisce nella prima metà, prima che il titolo le arrivi addosso. */
+    fun subtitleAlpha(fraction: Float): Float = (1f - fraction * 2f).coerceIn(0f, 1f)
 }
 
 /** Pulsante icona tondo con il bordo sottile: azioni nelle intestazioni delle sezioni. */

@@ -21,7 +21,7 @@ create something it lists, so the next thread doesn't have to explore.
   compact typography, Inter fonts in `res/font`.
 
 **Shared UI (always reuse, never re-create)**
-- `ui/screens/Common.kt`: `TopLevelBar(title, subtitle, onBack=, collapsed=)` (shrinks to a thin row after ~1 cm of scroll, 1.413), `CanvasCard`, `CardSection`/`CardTitle` (Home cards: title INSIDE the card, no label outside, 1.419), `SectionHeader`,
+- `ui/screens/Common.kt`: `TopLevelBar(title, subtitle, onBack=, collapsed=)` (shrinks with the finger over the first 24 dp: pages pass `exitUntilCollapsedScrollBehavior`, pure `TopBarCollapse.fraction` scales ONE title, 1.435), `CanvasCard`, `CardSection`/`CardTitle` (Home cards: title INSIDE the card, no label outside, 1.419), `SectionHeader`,
   `Section`, `RowDivider`, `CanvasChip`, `RoundIconButton`, `IconTile`/`TileAccent`,
   `canvasFieldColors()`, `cardBorder()`, `Modifier.glass()/glassSource()`, `bouncyPress()`,
   `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button; `ButtonLevel` PRIMARY/TONAL/DANGER since 1.402; dialogs use `ConfirmButton`/`DismissButton`, row "Esci" = `DangerButton`), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Springs`, `AutoRefresh`,

@@ -77,7 +77,7 @@ fun UpdatesScreen(
     viewModel: UpdateViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
 
     // Sei già qui: l'avviso della nuova versione non serve più.

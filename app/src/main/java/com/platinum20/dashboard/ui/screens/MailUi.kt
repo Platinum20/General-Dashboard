@@ -384,7 +384,7 @@ fun MailScreen(id: String, onBack: () -> Unit) {
     val mail = remember(id) { MailStore.find(id) }
     // Aperta: esce dalla card di Oggi.
     LaunchedEffect(id) { MailStore.markSeen(id) }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {

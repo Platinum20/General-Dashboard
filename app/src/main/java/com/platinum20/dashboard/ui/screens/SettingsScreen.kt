@@ -247,7 +247,7 @@ fun SettingsScreen(
         Accounts.refresh()
         place = WeatherStore.manualPlace(context)
     }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -354,7 +354,7 @@ fun SettingsPageScreen(
     onPickPlace: () -> Unit,
     onOpenPage: (SettingsPage) -> Unit = {},
 ) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = { TopLevelBar(title = page.title, subtitle = "Impostazioni", scrollBehavior = scrollBehavior, onBack = onBack) },

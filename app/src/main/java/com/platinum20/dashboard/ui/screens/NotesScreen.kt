@@ -275,7 +275,7 @@ fun NotesScreen(
     }
     val calendarOff by CalendarAsk.off.collectAsStateWithLifecycle()
 
-    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // La stessa card Calendario della Home, allargata: si apre da lì e lì si richiude.
         modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).nestedScroll(barScroll.nestedScrollConnection),

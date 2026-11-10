@@ -129,7 +129,7 @@ fun NewsScreen(
     }
     NewArrivals(feed, listState)
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val barrier = rememberVisitBarrier(listState, markerIndex.takeIf { feed.fresh.isNotEmpty() })
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
