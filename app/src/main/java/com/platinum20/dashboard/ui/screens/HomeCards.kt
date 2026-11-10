@@ -167,7 +167,8 @@ internal fun CalendarCard(
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.447: niente più totale nel titolo).
-    val all = timelineEntries(pending, today, months = true)
+    // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
+    val all = timelineEntries(pending, today)
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today, Upcoming.MAX)
@@ -182,7 +183,8 @@ internal fun CalendarCard(
         if (habitAt < 0) list else list.toMutableList().apply { add(habitAt.coerceAtMost(size), item) }
     val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
-        "Calendario",
+        // Senza titolo né mese: si apre direttamente su OGGI, una riga in meno (Antonio, 2026-11-10).
+        null,
         withHabit(shown.map { it.first }, habitRow),
         onOpenAll,
         empty = "Niente in programma.",
@@ -232,7 +234,8 @@ internal fun rememberDueOpen(): (DueRow) -> Unit {
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TimelineCard(
-    title: String,
+    /** null = niente riga del titolo: la card comincia dalle righe (il Calendario in Home). */
+    title: String?,
     entries: List<TimelineEntry>,
     onOpen: () -> Unit,
     empty: String,
@@ -253,14 +256,11 @@ fun TimelineCard(
 ) {
     val haptic = rememberHaptic()
     // Il titolo dentro la card, non più un'etichetta fuori (1.404, punto 7 B).
-    CardSection(
-        title = title,
-        modifier = modifier,
-        trailing = titleTrailing ?: {
+    CanvasCard(modifier.fillMaxWidth()) {
+        if (title != null) CardTitle(title, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
-        },
-    ) {
-        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(bottom = 6.dp)) {
+        })
+        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,
@@ -272,7 +272,7 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME, compact = true)
             }
             footer?.let { text ->
                 Text(

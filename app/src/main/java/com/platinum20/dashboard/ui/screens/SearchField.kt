@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 private val FIELD_HEIGHT = 54.dp
 
 /**
- * L'unico campo di ricerca di Canvas (Cerca, Località del meteo), rifatto nella 1.448: una pillola
+ * L'unico campo di ricerca di Canvas (Cerca, Località del meteo), rifatto nella 1.452: una pillola
  * piena, senza bordo, appena più scura dello sfondo, così si vede in tutti i temi (anche Puro bianco).
  * Toccandola si accende piano (fondo e lente diventano inchiostro, non blu: il blu resta per "adesso" e
  * per le azioni). La X per svuotare compare da sola appena c'è testo, con la molla viva.

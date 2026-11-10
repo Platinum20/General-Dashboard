@@ -325,7 +325,7 @@ private fun <T> SourceSection(
     modifier: Modifier = Modifier,
     row: @Composable (T) -> Unit,
 ) {
-    // Senza divisori (1.448): le righe hanno già il loro respiro, una linea in più spezzava la lista.
+    // Senza divisori (1.452): le righe hanno già il loro respiro, una linea in più spezzava la lista.
     Section(title = "$title · ${items.size}", modifier = modifier) {
         val shown = if (expanded) items else items.take(PER_SOURCE)
         shown.forEach { item -> row(item) }
