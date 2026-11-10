@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.453.0
+**La casella del + è più compatta**
+- Quando scrivi, la casella resta sempre alta quanto il +: niente più riga in più sopra, anche con un testo lungo
+- Gli esempi ("domani alle 9 chiamare il dentista"…) ora sono il testo grigio dentro la casella vuota e cambiano da soli
+- Tutto a destra compare un simbolo che ti dice cosa diventerà quello che scrivi: promemoria, evento, data, abitudine, nota o pacco, e cambia mentre scrivi
+- La X cancella il testo scritto; a casella vuota chiude come prima
+## 1.452.0
+**Una barra di ricerca nuova, tonda e morbida**
+- Il campo di Cerca è ora una pillola tonda e piena, senza bordo, che si vede bene in ogni tema
+- Quando la tocchi si accende piano, e la X per svuotare compare da sola appena scrivi
+- Niente più linee tra i risultati: la lista scorre più leggera
+- I gruppi di risultati entrano e escono scivolando mentre scrivi, senza scatti
+- Stessa barra anche nella ricerca della località del meteo
+## 1.451.0
+**Home più compatta**
+- Calendario: turni, treni ed eventi con inizio e fine sono una riga sola come le altre, tutte alte uguali (ora a sinistra, sotto "fino alle 13:00 · 6 h"); il disegno lungo resta nel calendario intero
+- Calendario: niente più titolo né mese in cima, la card comincia da OGGI
+- News: "25 nuove dalle…" sta sulla riga del titolo, a destra
+
+## 1.450.0
+**La card SIM in Home mostra tutto**
+- Giga, minuti e SMS, ognuno con la sua linea di quanto resta
+- Sotto, il credito residuo e la data del rinnovo
+- "SIM" scritto una volta sola: resta solo il titolo della card
+
 ## 1.447.0
 **Niente più soldi nell'app: tolti Revolut e le spese**
 - Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo

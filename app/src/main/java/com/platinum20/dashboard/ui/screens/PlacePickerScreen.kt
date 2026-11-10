@@ -93,14 +93,8 @@ fun PlacePickerScreen(onBack: () -> Unit) {
                     value = query,
                     onValueChange = { query = it },
                     placeholder = "Cerca una città",
-                    trailing = {
-                        when {
-                            searching -> LoadingPulse(Modifier.padding(16.dp))
-                            query.isNotEmpty() -> IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Outlined.Close, contentDescription = "Cancella ricerca")
-                            }
-                        }
-                    },
+                    // La X per svuotare è già nel campo; qui solo il pallino mentre cerca.
+                    trailing = searchingPulse(searching),
                     // Cerca sulla tastiera sceglie il primo risultato, come toccarlo.
                     onSearch = { results.firstOrNull()?.let(::choose) },
                     modifier = Modifier
@@ -154,3 +148,7 @@ fun PlacePickerScreen(onBack: () -> Unit) {
         }
     }
 }
+
+/** Il pallino "sto cercando" a destra nel campo, solo mentre cerca. */
+private fun searchingPulse(searching: Boolean): (@Composable () -> Unit)? =
+    if (searching) { { LoadingPulse(Modifier.padding(horizontal = 8.dp)) } } else null

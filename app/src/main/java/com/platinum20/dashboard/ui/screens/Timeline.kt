@@ -144,6 +144,23 @@ data class TripStops(
      */
     fun middleMinDp(): Float = if (names != null) 0f else midDp()
 
+    /** Il nome nella riga compatta della Home: quello dell'evento, o "Treno per X" accanto all'ora di partenza. */
+    fun compactTitle(): String = title ?: from
+
+    /**
+     * La riga sotto il nome nella card della Home, dove tutte le righe sono alte uguali (Antonio, 2026-11-10):
+     * "fino alle 13:00 · 6 h · In doppio con Marco", "Arrivo a Milano alle 10:30 · 2 h 18".
+     * Carrozza, posto e guadagno restano nella pagina intera e nella scheda.
+     */
+    fun compactLine(): String {
+        val arrival = when {
+            to.isEmpty() -> "fino alle $arriveAt"
+            to.startsWith("Arrivo") -> "$to alle $arriveAt"
+            else -> "fino a ${to.lowercase(java.util.Locale.ITALIAN)} alle $arriveAt"
+        }
+        return listOf(arrival, middle, extra).filter { it.isNotBlank() }.joinToString(" · ")
+    }
+
     /** Quanto del viaggio è fatto (0..1) adesso; null prima di partire e dopo l'arrivo. */
     fun progress(now: Long): Float? =
         if (end > begin && now in begin until end) (now - begin).toFloat() / (end - begin) else null
@@ -188,6 +205,11 @@ fun TimelineRow(
     showMonth: Boolean = true,
     /** La lista in cui sta la riga ([SharedRows]): il titolo vola solo verso la scheda aperta da qui. */
     sharedScope: String = SharedRows.PAGE,
+    /**
+     * La card della Home: gli eventi con inizio e fine sono una riga come le altre (ora a sinistra, nome, sotto
+     * fino a quando e quanto dura), tutte alte uguali, senza l'altezza in base alla durata (Antonio, 2026-11-10).
+     */
+    compact: Boolean = false,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
@@ -275,7 +297,30 @@ fun TimelineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
-        if (entry.trip != null) {
+        val trip = entry.trip
+        if (trip != null && compact) {
+            // Mentre è in corso l'ora è blu: è "adesso" (regola dei colori).
+            val now = trip.progress(System.currentTimeMillis()) != null
+            Text(
+                trip.departAt,
+                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
+                color = if (now) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = 26.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
+                Text(
+                    trip.compactTitle(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)),
+                )
+                Text(trip.compactLine(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        } else if (entry.trip != null) {
             TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)))
         } else {
         if (onIcon != null || entry.done) {
@@ -339,7 +384,7 @@ fun TimelineRow(
             dot = MaterialTheme.colorScheme.outline to 4.dp,
             top = top || headed,
             bottom = bottom,
-            dotY = if (entry.trip != null) TRIP_PAD + TRIP_LINE / 2 else null,
+            dotY = if (entry.trip != null && !compact) TRIP_PAD + TRIP_LINE / 2 else null,
         )
     }
 }

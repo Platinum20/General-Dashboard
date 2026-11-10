@@ -7,15 +7,16 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
- * Le parole sopra la barra del +: prima di scrivere un esempio che cambia (solo le prime volte),
- * mentre si scrive un riassunto di cosa verrà salvato. Non una domanda: il tipo lo sceglie Canvas.
+ * Cosa dice la barra del +: a campo vuoto il segnaposto è un esempio che cambia, mentre si scrive
+ * il simbolo a destra dice cosa verrà salvato (e il riassunto lo legge TalkBack). Non una domanda:
+ * il tipo lo sceglie Canvas.
  */
 internal object CaptureHints {
-    /** Il campo vuoto dice solo questo: ci sta sempre, anche sui telefoni stretti. */
-    const val PLACEHOLDER = "Scrivi qualcosa…"
+    /** Alta quanto il +, sempre: la barra non cresce né con gli esempi né col testo lungo. */
+    const val BAR_DP = 60
 
-    /** Dopo cinque salvataggi si sa già come funziona: gli esempi spariscono. */
-    const val EXAMPLE_SAVES = 5
+    /** Ogni quanto cambia l'esempio nel campo vuoto. */
+    const val EXAMPLE_MS = 3_000L
 
     /** Uno per tipo, nell'ordine in cui girano. */
     val examples = listOf(
@@ -25,9 +26,8 @@ internal object CaptureHints {
         "ogni giorno leggere 20 pagine",
     )
 
-    fun showExamples(saves: Int): Boolean = saves < EXAMPLE_SAVES
-
-    fun example(index: Int): String = "Prova: " + examples[Math.floorMod(index, examples.size)]
+    /** Il segnaposto: l'esempio così com'è, in grigio si capisce da sé che è un esempio. */
+    fun example(index: Int): String = examples[Math.floorMod(index, examples.size)]
 
     private val day = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
     private val hour = DateTimeFormatter.ofPattern("H:mm")
