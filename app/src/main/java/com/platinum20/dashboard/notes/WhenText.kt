@@ -43,4 +43,21 @@ object WhenText {
         min % 60 == 0 -> (min / 60).let { if (it == 1) "1 ora prima" else "$it ore prima" }
         else -> "$min minuti prima"
     }
+
+    /**
+     * La riga sotto una data (punto 23): "compie 34 anni · tra 12 giorni". Solo se si sa l'età o se manca più
+     * di 3 giorni: per domani basta il giorno a destra. Le date passate non dicono quanto manca.
+     */
+    fun dateLine(years: Int?, day: java.time.LocalDate, today: java.time.LocalDate): String? {
+        val days = java.time.temporal.ChronoUnit.DAYS.between(today, day)
+        if (years == null && days <= 3) return null
+        val distance = when {
+            days < 0 -> null
+            days == 0L -> "oggi"
+            days == 1L -> "domani"
+            days < 60 -> "tra $days giorni"
+            else -> java.time.temporal.ChronoUnit.MONTHS.between(today, day).let { if (it <= 1) "tra un mese" else "tra $it mesi" }
+        }
+        return listOfNotNull(years?.let { "compie $it anni" }, distance).joinToString(" · ").ifEmpty { null }
+    }
 }

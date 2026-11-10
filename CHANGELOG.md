@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.427.0
+**Le date dicono quanti anni compie e quanto manca, chip "Tutto" nel Calendario**
+- Sotto compleanni e date una riga piccola: "compie 34 anni · tra 12 giorni". Compare quando si sa l'età o quando manca più di 3 giorni, anche per le scadenze dei documenti
+- Nel Calendario i filtri cominciano con "Tutto", acceso di partenza: si vede subito che Spese, Note ed Eventi sono scelte
+- Toccando "Tutto" torni a vedere ogni cosa
+
 ## 1.426.0
 **Abitudini nel Calendario della Home, da segnare con un tocco**
 - Nella card Calendario, in fondo a OGGI, c'è la riga "Abitudini · 1 su 3": toccala e dal basso sale il fumetto con le abitudini da segnare fatte

@@ -508,6 +508,14 @@ fun NotesScreen(
             Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // "Tutto" per primo e acceso di partenza (punto 24): si vede che i filtri sono scelte, non tre sezioni.
+            CanvasTabChip(
+                selected = filter == null,
+                onClick = { haptic(Haptic.TICK); filter = null },
+                label = "Tutto",
+                modifier = Modifier.weight(1f),
+                tonal = true,
+            )
             CalendarFilter.entries.forEach { f ->
                 CanvasTabChip(
                     selected = filter == f,

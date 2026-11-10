@@ -53,7 +53,7 @@ month spend, then ALL of today, then `Upcoming.MAX` next rows; full page = `Note
 Both use `dueDays(withToday = true, notes, expenses)` (today group always first: "Spesa di oggi" row (`DueRow.spend`, 0 too),
 today's expenses, overdue items (`overdueFrom`), today's items, undated tasks, notes pinned-first) + `pastDays(expenses=)` +
 `timelineEntries(months = true, expenses)` (every month marker gets `monthSpend`/`monthOf`; tap → `Routes.expenses(month)` =
-ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Habits = one "Abitudini · N su M" row inside OGGI (`habitsIndex`, 1.357; tap = `habitsBubble` in BriefActions.kt, also in the Home CalendarCard, 1.426), no Completati section (long press OGGI = Elimina i completati); Home card = today + rest of week (min `Upcoming.MAX`) + "Altre N a <mese>" (`calendarCardCut`). Home cards Adesso/SIM/Revolut/Documenti grow into their page via `sharedItem` (`SharedKeys`). Full page has fixed `CalendarFilter` chips (Spese/Note/Eventi, pure `DueRow.filter()` + `List<DueDay>.only()`); long press on the Home card opens the full page; done tasks sit on the day they were checked (today's under OGGI). Adesso keeps only RAIN/WEATHER/HABIT lines.
+ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Habits = one "Abitudini · N su M" row inside OGGI (`habitsIndex`, 1.357; tap = `habitsBubble` in BriefActions.kt, also in the Home CalendarCard, 1.426), no Completati section (long press OGGI = Elimina i completati); Home card = today + rest of week (min `Upcoming.MAX`) + "Altre N a <mese>" (`calendarCardCut`). Home cards Adesso/SIM/Revolut/Documenti grow into their page via `sharedItem` (`SharedKeys`). Full page has fixed "Tutto" + `CalendarFilter` chips (Spese/Note/Eventi, 1.427 "Tutto" = null; pure `DueRow.filter()` + `List<DueDay>.only()`); long press on the Home card opens the full page; done tasks sit on the day they were checked (today's under OGGI). Adesso keeps only RAIN/WEATHER/HABIT lines.
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`CalendarCard`, `TimelineCard`),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses?month=`, `Routes.expenses(YearMonth?)`: month overview opened from a calendar month marker). Logic in `today/`: `Briefing.kt`
@@ -77,7 +77,7 @@ event's fields: `alert` (`Alert` ON_TIME/DAY_BEFORE/NONE, `alertAt()`; all-day a
 Since 1.365 (Antonio) NOTHING dated has a tick or goes late: only undated tasks are `tickable`; dated ones pass like events
 (past = `pastDays`), repeating ones roll by themselves (`nextAt`/`nextDay`, `withDatesRolled` at start). No "Fatto" in the notification.
 `openTasks` = to-dos only (widgets, counters), `openItems` = with dates (Briefing). Shared wording for event + task pages in
-`notes/WhenText.kt`; task page rows `taskLines` (ItemDetailScreen) in the same order as the event page: Quando, Tutto il giorno,
+`notes/WhenText.kt` (+ `dateLine` = "compie 34 anni · tra 12 giorni" under dates via `TimelineEntry.detail`, 1.427); task page rows `taskLines` (ItemDetailScreen) in the same order as the event page: Quando, Tutto il giorno,
 Si ripete, Avviso, Luogo, Note. Dated tasks sit under the Eventi calendar chip.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
