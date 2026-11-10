@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,6 +66,7 @@ internal fun BoxScope.ActionBubbleLayer() {
                 kotlinx.coroutines.delay((last.size - 1 - index) * 30L)
                 appear.animateTo(1f, Motion.lively())
             }
+            if (index > 0) RowDivider(androidx.compose.ui.Modifier.padding(horizontal = 16.dp))
             androidx.compose.foundation.layout.Box(
                 androidx.compose.ui.Modifier.graphicsLayer {
                     alpha = appear.value

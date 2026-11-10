@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -95,6 +97,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 CanvasPlayer.add(media)
                 CaptureFeedback.tell(context, "In coda: ${media.title}", Icons.Rounded.QueueMusic)
             }
+            RowDivider(Modifier.padding(horizontal = 16.dp))
         }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
@@ -132,9 +135,9 @@ internal fun BoxScope.BottomBubble(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BubbleBack(visible, onDismiss)
-    // La prima volta che si vede un fumetto, una riga piccola dice come si chiude (poi mai più).
+    // Le prime volte che si vede un fumetto, una riga piccola dice come si chiude (poi mai più).
     val context = LocalContext.current
-    val hint = remember(visible) { visible && !GestureHints.seen(context, GestureHints.SWIPE_BUBBLE) }
+    val hint = remember(visible) { visible && GestureHints.stillShow(context, GestureHints.SWIPE_BUBBLE) }
     LaunchedEffect(visible) { if (visible) GestureHints.mark(context, GestureHints.SWIPE_BUBBLE) }
     AnimatedVisibility(visible, enter = fadeIn(Motion.settle()), exit = fadeOut(tween(Motion.EXIT_MS)), modifier = Modifier.matchParentSize()) {
         Box(
@@ -159,7 +162,17 @@ internal fun BoxScope.BottomBubble(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.swipeAway(swipe) { if (visible) onDismiss() },
             ) {
-                content()
+                // Un solo blocco di vetro con le righe dentro (1.402): prima ogni azione era una pillola a sé.
+                val shape = RoundedCornerShape(22.dp)
+                Surface(
+                    shape = shape,
+                    color = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    border = cardBorder(),
+                    modifier = Modifier.fillMaxWidth().glass(shape),
+                ) {
+                    Column(Modifier.padding(vertical = 4.dp), content = content)
+                }
                 if (hint) {
                     Surface(
                         shape = CircleShape,
@@ -181,38 +194,34 @@ internal fun BoxScope.BottomBubble(
     }
 }
 
-/** Una riga del fumetto: pallino con l'icona, titolo e una riga di dettaglio. [danger] per le azioni che tolgono qualcosa. */
+/**
+ * Una riga del fumetto: icona in inchiostro, titolo e una riga di dettaglio (1.402: niente pallini colorati).
+ * [danger] = rosso, per le azioni che tolgono qualcosa. Le righe stanno nel blocco di [BottomBubble].
+ */
 @Composable
 internal fun BubbleRow(icon: ImageVector, title: String, detail: String = "", danger: Boolean = false, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    val tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-    val onTint = if (danger) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
-    Surface(
-        onClick = onClick,
-        shape = shape,
-        color = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = cardBorder(),
-        modifier = Modifier.fillMaxWidth().glass(shape).bouncyPress(0.97f),
+    val tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clickable(onClick = onClick)
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = tint, modifier = Modifier.size(36.dp)) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = onTint, modifier = Modifier.size(20.dp))
-                }
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                if (detail.isNotBlank()) {
-                    Text(
-                        detail,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = tint)
+            if (detail.isNotBlank()) {
+                Text(
+                    detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
