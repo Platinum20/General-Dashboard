@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.465.0
+**La linea del Calendario passa a sinistra**
+- La linea del tempo ora sta a sinistra, con il giorno subito accanto al suo pallino: "● Domani ———"
+- Turni ed eventi con orario colorano il loro pezzo di linea, dall'inizio alla fine
+- Tolti i filtri Tutto, Note ed Eventi in alto: il calendario mostra sempre tutto
+
 ## 1.464.0
 **Tolto lo scorrimento trascinando la linea a destra del Calendario**
 - La linea a destra torna solo da guardare: il calendario si scorre come prima, con il dito sulla pagina
