@@ -19,7 +19,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.314: il calendario unico, con le note senza data dentro (Antonio). Dalla 1.443 senza spese. */
+/** 1.314: il calendario unico, con le note senza data dentro (Antonio). Dalla 1.447 senza spese. */
 class CalendarUnicoTest {
     private val oggi = LocalDate.of(2026, 11, 3)
     private val adesso = oggi.atTime(12, 0)
@@ -99,6 +99,7 @@ class CalendarUnicoTest {
         assertEquals(listOf("today", "task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
         // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
         assertEquals(listOf("today", "task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertTrue(timelineEntries(groups.only(CalendarFilter.EVENTS), oggi, zone).first().first.todayHeader)
         assertEquals(groups, groups.only(null))
     }
 

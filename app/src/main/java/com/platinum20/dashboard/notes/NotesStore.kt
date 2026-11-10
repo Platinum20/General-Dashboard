@@ -296,7 +296,7 @@ object NotesStore {
         _data.value = loaded
         _readProblem.value = copy?.name
         rollDates()
-        // Dalla 1.443 l'app non tiene più spese (Antonio): se il file ne ha ancora, si riscrive subito senza.
+        // Dalla 1.447 l'app non tiene più spese (Antonio): se il file ne ha ancora, si riscrive subito senza.
         if (copy == null && runCatching { file.readText().let { "\"expenses\"" in it || "\"fixedExpenses\"" in it || "\"budgetCents\"" in it } }.getOrDefault(false)) {
             runCatching { file.writeText(serialize(_data.value)) }
         }

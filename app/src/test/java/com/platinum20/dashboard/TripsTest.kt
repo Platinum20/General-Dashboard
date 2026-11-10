@@ -98,16 +98,17 @@ class TripsTest {
         // Con le creator in mezzo l'altezza la decide il testo.
         assertEquals(row.midDp(), row.middleMinDp(), 0.01f)
         assertEquals(0f, row.copy(names = "Chiara").middleMinDp(), 0.01f)
-        // Un turno con le creator: durata, poi l'icona di quanti siamo, poi il guadagno.
-        val paid = CalendarEvent(-4, "Turno · Chiara Stefane", start, stop, false, "$110,41 · 15%", 0, people = 2)
+        // Un turno con le creator: durata, icona e con chi; sotto il venduto.
+        val paid = CalendarEvent(-4, "Turno · Chiara Stefane", start, stop, false, "Venduto $736,00", 0, people = 2, mates = listOf("Marco Bianchi"))
         val r2 = tripStops(paid, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("5 h", r2.middle)
         assertEquals(null, r2.title)
-        assertEquals("Turno su Chiara Stefane", r2.from)
+        assertEquals("Turno su Chiara", r2.from)
         assertEquals(null, r2.names)
         assertEquals("Turno su A, B e C", tripStops(paid.copy(title = "Turno · A, B, C"), LocalDate.of(2026, 11, 9), zone)!!.from)
         assertEquals(2, r2.people)
-        assertEquals("$110,41 · 15%", r2.extra)
+        assertEquals("In doppio con Marco", r2.extra)
+        assertEquals("Venduto $736,00", r2.below)
         assertEquals("In doppio", peopleLabel(2))
         assertEquals("Da solo", peopleLabel(1))
         assertEquals(null, row.people)

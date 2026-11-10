@@ -6,7 +6,7 @@ import android.webkit.WebStorage
 import java.io.File
 
 /**
- * Quello che resta sul telefono di cose tolte dall'app (1.443, Antonio: "non ci deve essere traccia"):
+ * Quello che resta sul telefono di cose tolte dall'app (1.447, Antonio: "non ci deve essere traccia"):
  * l'accesso e i dati letti del conto (cookie, storage della pagina, preferenze e copie delle risposte).
  * Si pulisce una volta sola, all'avvio.
  */

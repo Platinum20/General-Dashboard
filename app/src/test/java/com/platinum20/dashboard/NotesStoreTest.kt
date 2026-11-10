@@ -69,7 +69,7 @@ class NotesStoreTest {
             "expenses":[{"id":2,"cents":100,"text":"y","category":"NUOVA","date":"2026-10-22"}]}"""
         val d = NotesStore.parse(raw)
         assertNull(d.tasks.single().repeat)
-        // Le spese di prima della 1.443 si scartano: riscrivendo il file non ci sono più.
+        // Le spese di prima della 1.447 si scartano: riscrivendo il file non ci sono più.
         assertTrue("expenses" !in NotesStore.serialize(d))
     }
 

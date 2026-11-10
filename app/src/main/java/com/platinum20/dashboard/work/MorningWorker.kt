@@ -102,6 +102,10 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             adesso = adesso,
             tasks = notes.openTasks,
             endOfDay = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli(),
+            calendar = runCatching {
+                com.platinum20.dashboard.widget.AgendaRows.todayItems(com.platinum20.dashboard.widget.TasksWidget.loadDays(context, zone), day, zone)
+                    .map { listOfNotNull(it.time, (if (it.done) "✓ " else "") + it.title).joinToString("  ") }
+            }.getOrNull(),
         )
         // A notifica chiusa si legge una riga sola: quella più utile di "Adesso", come nella Home.
         val summary = adesso.firstOrNull { it.kind != BriefKind.WEATHER }?.text

@@ -36,7 +36,7 @@ class CaptureHintsTest {
     }
 
     @Test fun unImportoNonEUnaSpesa() {
-        // Dalla 1.443 l'app non tiene spese.
+        // Dalla 1.447 l'app non tiene spese.
         val s = line("pizza 12,50")
         assertTrue(s.toString(), s == null || !s.startsWith("Spesa"))
     }

@@ -472,7 +472,7 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry)
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, alone = briefing.isEmpty())
         if (briefing.isNotEmpty()) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
@@ -548,10 +548,12 @@ private fun WeatherSummary(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
     onRetry: () -> Unit,
+    /** Nessuna riga sotto: stesso margine sopra e sotto, così il meteo sta al centro della card. */
+    alone: Boolean,
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> WeatherNowCompact(forecast, state.loading)
+        forecast != null -> WeatherNowCompact(forecast, state.loading, bottom = if (alone) 14.dp else 6.dp)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",
@@ -562,7 +564,7 @@ private fun WeatherSummary(
         // Mentre cerca: la forma del meteo in grigio, già alla sua altezza, invece della rotella.
         state.loading || state.error == null -> Row(
             modifier = Modifier
-                .padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)
+                .padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 14.dp)
                 .semantics(mergeDescendants = true) { contentDescription = "Cerco il meteo della tua zona" },
             verticalAlignment = Alignment.CenterVertically,
         ) {

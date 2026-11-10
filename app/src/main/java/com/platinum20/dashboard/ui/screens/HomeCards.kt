@@ -164,10 +164,9 @@ internal fun CalendarCard(
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
-    // Le cose già spuntate solo nel calendario intero, non nella card (Antonio): tutto il resto di oggi sta sotto OGGI.
-    val pending = groups.map { g -> g.copy(rows = g.rows.filter { it.task?.done != true }) }
-        .filter { it.rows.isNotEmpty() }
-    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.443: niente più totale nel titolo).
+    // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
+    val pending = groups.filter { it.rows.isNotEmpty() }
+    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.447: niente più totale nel titolo).
     val all = timelineEntries(pending, today, months = true)
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".

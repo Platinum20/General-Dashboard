@@ -331,7 +331,6 @@ private fun LazyListScope.podcastRows(
                 itemsIndexed(latest, key = { _, e -> "ep-${e.id}" }) { i, episode ->
                     Column(
                         Modifier
-                            .tileDivider(i == 0)
                             .width(tile)
                             .bouncyPress(0.96f)
                             .clickable { PodcastStore.play(episode) },
@@ -354,7 +353,6 @@ private fun PodcastCovers(list: List<Podcast>, onOpen: (Podcast) -> Unit) {
         itemsIndexed(list, key = { _, p -> "pod-${p.feedUrl}" }) { i, podcast ->
             Column(
                 Modifier
-                    .tileDivider(i == 0)
                     .width(tile)
                     .bouncyPress(0.96f)
                     .clickable { onOpen(podcast) },
@@ -379,7 +377,6 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
             itemsIndexed(list, key = { _, r -> "release-${r.item.id}" }) { i, release ->
                 Column(
                     Modifier
-                        .tileDivider(i == 0)
                         .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { onOpen(release) },
@@ -438,7 +435,6 @@ private fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
     val tile = coverTileWidth()
     Column(
         Modifier
-            .tileDivider(first)
             .width(tile)
             .bouncyPress(0.96f)
             // Tenendo premuto un brano si salva nelle note.
@@ -462,7 +458,6 @@ private fun MixRow(mixes: List<SpMix>) {
             itemsIndexed(mixes, key = { _, m -> m.id }) { i, mix ->
                 Column(
                     Modifier
-                        .tileDivider(i == 0)
                         .width(tile)
                         .bouncyPress(0.96f)
                         .clickable { playTracks(context, mix.tracks, null) },

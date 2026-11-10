@@ -38,7 +38,7 @@ sealed interface Found {
 /**
  * Legge notifiche e SMS e ci trova pacchi in arrivo e scadenze.
  * Funzione pura, niente rete: tutto quello che legge resta sul telefono.
- * I soldi non si leggono più (1.443, Antonio): niente spese dalle notifiche e le app di banche e pagamenti si ignorano.
+ * I soldi non si leggono più (1.447, Antonio): niente spese dalle notifiche e le app di banche e pagamenti si ignorano.
  */
 object Extractor {
     private const val B0 = "(?<![\\p{L}\\d])"

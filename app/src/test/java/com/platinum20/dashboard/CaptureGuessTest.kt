@@ -11,7 +11,7 @@ class CaptureGuessTest {
     private fun guess(t: String) = CaptureGuess.guess(t, now)
 
     @Test fun importiNonSonoSpese() {
-        // Dalla 1.443 l'app non tiene spese: un importo resta un promemoria.
+        // Dalla 1.447 l'app non tiene spese: un importo resta un promemoria.
         assertEquals(CaptureMode.TASK, guess("12,50 pizza"))
         assertEquals(CaptureMode.TASK, guess("benzina 40 euro"))
     }
