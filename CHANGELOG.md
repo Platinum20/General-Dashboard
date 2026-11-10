@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.441.0
+## 1.443.0
 **Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
 - Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)
 - Notifica del mattino: il gruppo "Oggi" elenca lo stesso Oggi del calendario; le cose senza data sono già lì dentro
 - Card Calendario in Home: si vedono anche le cose spuntate oggi, come nella pagina
 - Calendario con un filtro acceso (Note, Eventi): il segno OGGI resta in cima invece di diventare un giorno qualsiasi o sparire
+
+## 1.442.0
+**Media: Video prima di Musica, niente più divisori, e le scritte delle copertine hanno un'altezza fissa**
+- In Media la fila Video viene prima di Musica e mostra i video delle tue iscrizioni dal più recente
+- Tolti i divisori fra una copertina e l'altra e fra i video di YouTube
+- Titolo sempre nello stesso spazio sopra l'immagine e autore su una riga sotto, con i puntini se il testo è lungo: le tessere sono tutte alte uguali e la pagina non si muove
 
 ## 1.440.0
 **Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
