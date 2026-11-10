@@ -1,12 +1,31 @@
 # Changelog
 
-## 1.410.0
+## 1.415.0
 **News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
 - Senza novità, il segno dell'ultima visita dice da solo "niente di nuovo": una riga in meno
 - I telegiornali interi ("World24 del 09/11", "Tg1 delle 20") non compaiono più tra le storie
 - Una foto grande sulla prima storia delle nuove e sulla prima delle già viste; le altre sono titoli puliti
 - Al posto della freccina accanto alla fonte c'è "· 2 fonti": il tocco apre le versioni come prima
 - L'icona di News nella barra è un foglio di testo, non sembra più un calendario
+
+## 1.413.0
+**Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
+- In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
+- Il meteo in cima è un blocco basso: icona, temperatura e condizioni su una riga, sotto l'avviso di pioggia. Niente più "Adesso · Roma": la città la trovi in Meteo
+- Scorrendo una pagina il titolo grande diventa una riga sottile, così resta più spazio alla lista (Home, Calendario, News, Media, Meteo, Impostazioni e le altre)
+
+## 1.411.0
+**Schede più chiare, Spese con le frecce, Meteo e SIM più puliti**
+- Promemoria, date e pacchi: il "quando" sta sotto il titolo e si legge come una frase ("Domani alle 9:00", sotto la data); si tocca per cambiarlo, "Togli la data" è in Altro
+- Le righe vuote non ci sono più: in fondo "+ Luogo", "+ Note", "+ Codice" per aggiungerle
+- Il pulsante in basso dice cosa fa: "Segna fatta oggi" pieno, "Fatta oggi" tenue quando è fatta
+- Scheda spesa: l'importo accanto al nome, la categoria è un chip con › che apre le categorie
+- Tieni premuta una spesa nel calendario o in Spese: le categorie subito nel fumetto, un tocco e cambia
+- Abitudine: la serie grande in alto ("5 giorni di fila") e la settimana a pallini; tocchi un giorno passato per segnarlo
+- Turno: lo stesso nome del calendario ("Turno su Debora"), orari in una riga ("Domani · 07:00 – 12:00 · 5 h"), la card del mese c'è sempre
+- Spese del mese: frecce accanto al mese per cambiarlo, niente saldo, categorie con nome a sinistra e importo a destra
+- Meteo: la pioggia dentro il blocco colorato, i dettagli in una card sola; via pressione e "pioggia oggi", l'UV solo da 3 in su
+- SIM: i giga in grande nel blocco colorato, il resto in righe senza barre; "letto" una volta sola, sotto il titolo
 
 ## 1.409.0
 **Cerca ricorda le ultime ricerche**

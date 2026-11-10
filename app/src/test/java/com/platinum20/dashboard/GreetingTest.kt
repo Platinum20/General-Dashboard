@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import com.platinum20.dashboard.today.Greeting
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GreetingTest {
@@ -29,6 +30,15 @@ class GreetingTest {
     @Test
     fun partiVuoteSaltate() {
         assertEquals("Sereno", Greeting.weatherLine("Sereno", null, ""))
+    }
+
+    @Test
+    fun dataComeTitoloCorta() {
+        val day = java.time.LocalDate.of(2026, 11, 10)
+        assertEquals("Martedì 10", Greeting.dateTitle(day))
+        assertEquals("Buonanotte · novembre", Greeting.subtitle(2, day))
+        // Anche il giorno più lungo sta in una riga di titolo.
+        assertTrue(Greeting.dateTitle(java.time.LocalDate.of(2026, 9, 30)).length <= 12)
     }
 
 }

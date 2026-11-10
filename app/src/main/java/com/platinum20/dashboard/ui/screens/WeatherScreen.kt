@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,12 +89,14 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val pull = rememberPullRefresh(state.loading)
     LaunchedEffect(Unit) { WeatherStore.refresh(context) }
 
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
-        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true),
+        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = "Meteo",
+                scrollBehavior = barScroll,
                 onBack = onBack,
             )
         },
@@ -180,24 +183,10 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                         "Percepita ${forecast.current.apparent.asTemp()}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.75f),
-                        modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = 16.dp),
+                        modifier = Modifier.padding(start = 18.dp, end = 18.dp, bottom = if (forecast.rainAlert == null) 16.dp else 10.dp),
                     )
-                }
-            }
-            forecast.rainAlert?.let { alert ->
-                item {
-                    Surface(
-                        shape = MaterialTheme.shapes.large,
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.Umbrella, contentDescription = null)
-                            Spacer(Modifier.size(12.dp))
-                            Text(alert, style = MaterialTheme.typography.bodyLarge)
-                        }
-                    }
+                    // La pioggia sta dentro l'eroe (punto 45): un solo blocco colorato, la stessa frase di Adesso.
+                    forecast.rainAlert?.let { alert -> HeroRainLine(alert) }
                 }
             }
             if (state.error != null) {
@@ -240,52 +229,66 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     }
 }
 
+/** La riga della pioggia dentro l'eroe: stessa frase di RainAlert usata da Adesso, in arancio di attenzione. */
 @Composable
-private fun DetailsGrid(forecast: Forecast) {
+private fun HeroRainLine(alert: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.Umbrella, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(8.dp))
+        Text(alert, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+    }
+}
+
+/**
+ * I dettagli in una card sola, una riga per voce (punto 45). Niente pressione né "pioggia oggi"
+ * (la striscia delle ore la dice già); l'UV solo quando conta, da 3 in su.
+ */
+internal fun weatherDetails(forecast: Forecast): List<Pair<String, String>> {
     val c = forecast.current
     val today = forecast.today
     val time = DateTimeFormatter.ofPattern("HH:mm")
-    val cells = listOfNotNull(
-        Triple(Icons.Outlined.Opacity, "Umidità", "${c.humidity}%"),
-        Triple(Icons.Outlined.Air, "Vento", "${c.windSpeed.roundToInt()} km/h ${WeatherCodes.windDirection(c.windDirection)}"),
-        today?.let { Triple(Icons.Outlined.Umbrella, "Pioggia oggi", "${it.precipitationProbability}% · ${"%.1f".format(Locale.ITALIAN, it.precipitationSum)} mm") },
-        forecast.air?.let { Triple(Icons.Outlined.Masks, "Qualità dell'aria", "${it.label} (${it.europeanAqi})") },
-        Triple(Icons.Outlined.Compress, "Pressione", if (c.pressure.isNaN()) "–" else "${c.pressure.roundToInt()} hPa"),
-        today?.let { Triple(Icons.Outlined.WbSunny, "Indice UV", if (it.uvMax.isNaN()) "–" else "%.0f".format(Locale.ITALIAN, it.uvMax)) },
-        today?.let {
-            Triple(
-                Icons.Outlined.WbTwilight,
-                "Alba · Tramonto",
-                "${it.sunrise?.format(time) ?: "–"} · ${it.sunset?.format(time) ?: "–"}",
-            )
-        },
+    return listOfNotNull(
+        "Umidità" to "${c.humidity}%",
+        "Vento" to "${c.windSpeed.roundToInt()} km/h ${WeatherCodes.windDirection(c.windDirection)}",
+        forecast.air?.let { "Qualità dell'aria" to "${it.label} (${it.europeanAqi})" },
+        today?.uvMax?.takeIf { !it.isNaN() && it >= 3.0 }?.let { "Indice UV" to "%.0f".format(Locale.ITALIAN, it) },
+        today?.let { "Alba · Tramonto" to "${it.sunrise?.format(time) ?: "–"} · ${it.sunset?.format(time) ?: "–"}" },
     )
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        cells.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // L'ultimo da solo prende tutta la riga: niente buco accanto ad "Alba · Tramonto".
-                row.forEach { (icon, label, value) -> DetailCell(icon, label, value, Modifier.weight(1f)) }
+}
+
+@Composable
+private fun DetailsGrid(forecast: Forecast) {
+    val icons = mapOf(
+        "Umidità" to Icons.Outlined.Opacity,
+        "Vento" to Icons.Outlined.Air,
+        "Qualità dell'aria" to Icons.Outlined.Masks,
+        "Indice UV" to Icons.Outlined.WbSunny,
+        "Alba · Tramonto" to Icons.Outlined.WbTwilight,
+    )
+    val rows = weatherDetails(forecast)
+    CanvasCard(shape = MaterialTheme.shapes.extraLarge) {
+        Column {
+            rows.forEachIndexed { i, (label, value) ->
+                if (i > 0) RowDivider()
+                DetailCell(icons[label] ?: Icons.Outlined.Opacity, label, value)
             }
         }
     }
 }
 
 @Composable
-private fun DetailCell(icon: ImageVector, label: String, value: String, modifier: Modifier) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
-        modifier = modifier,
+private fun DetailCell(icon: ImageVector, label: String, value: String) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.size(10.dp))
-            Column {
-                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(value, style = MaterialTheme.typography.bodyLarge)
-            }
-        }
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.size(12.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -377,6 +380,71 @@ private fun TempBar(min: Double, max: Double, low: Double, high: Double, modifie
  */
 @Composable
 internal fun WeatherNowHeader(forecast: Forecast, loading: Boolean) {
+    WeatherNowFull(forecast, loading)
+}
+
+/**
+ * L'eroe compatto della Home (1.402): icona, temperatura e una riga di condizioni, tutto su una riga.
+ * Niente "Adesso · Roma": la città si vede in Meteo. L'ora del dato compare solo quando è vecchio.
+ */
+@Composable
+internal fun WeatherNowCompact(forecast: Forecast, loading: Boolean) {
+    val content = LocalContentColor.current
+    Row(
+        modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            weatherIcon(forecast.current.code, forecast.current.isDay),
+            contentDescription = WeatherCodes.description(forecast.current.code),
+            modifier = Modifier.size(30.dp),
+        )
+        Spacer(Modifier.size(10.dp))
+        Text(
+            forecast.current.temperature.asTemp(),
+            style = MaterialTheme.typography.displayMedium.copy(fontSize = 36.sp, lineHeight = 40.sp),
+        )
+        Spacer(Modifier.size(12.dp))
+        val today = forecast.today
+        Text(
+            Greeting.weatherLine(
+                WeatherCodes.description(forecast.current.code),
+                if (today != null) "${today.max.asTemp()} / ${today.min.asTemp()}" else "percepita ${forecast.current.apparent.asTemp()}",
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = content.copy(alpha = 0.8f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        var slow by remember { mutableStateOf(false) }
+        LaunchedEffect(loading) {
+            slow = false
+            if (loading) {
+                delay(Freshness.SPINNER_MS)
+                slow = true
+            }
+        }
+        if (loading && !slow) {
+            Spacer(Modifier.size(8.dp))
+            LoadingPulse(color = content.copy(alpha = 0.6f), size = 8.dp)
+        } else {
+            val minute by produceState(LocalDateTime.now(), forecast.fetchedAt) {
+                while (true) {
+                    value = LocalDateTime.now()
+                    delay(60_000L)
+                }
+            }
+            Freshness.label(forecast.fetchedAt, minute)?.let { age ->
+                Spacer(Modifier.size(8.dp))
+                Text(age, style = MaterialTheme.typography.labelSmall, color = content.copy(alpha = 0.6f), maxLines = 1)
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherNowFull(forecast: Forecast, loading: Boolean) {
     Row(
         modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp),
         verticalAlignment = Alignment.Top,

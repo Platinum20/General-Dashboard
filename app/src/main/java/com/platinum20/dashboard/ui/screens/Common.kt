@@ -379,8 +379,22 @@ fun TopLevelBar(
     onBack: (() -> Unit)? = null,
     /** Senza fondo: per le pagine con un'immagine dietro (il player). */
     transparent: Boolean = false,
+    /**
+     * Ridotto a una riga sottile dopo un po' di scorrimento (1.402). Se non lo dice la pagina, si ricava da
+     * [scrollBehavior]: oltre [TopBarCollapse.THRESHOLD_DP] scorsi verso il basso il titolo si fa piccolo.
+     */
+    collapsed: Boolean? = null,
+    /** Il titolo da ridotto, se diverso (la Home: "Martedì 10"). */
+    collapsedTitle: String = title,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val small = collapsed ?: scrollBehavior?.let {
+        TopBarCollapse.collapsed(it.state.contentOffset, with(density) { TopBarCollapse.THRESHOLD_DP.dp.toPx() })
+    } ?: false
+    val barHeight by androidx.compose.animation.core.animateDpAsState(
+        if (small) 52.dp else 76.dp, Motion.settle(), label = "barHeight",
+    )
     TopAppBar(
         navigationIcon = {
             if (onBack != null) {
@@ -401,7 +415,7 @@ fun TopLevelBar(
                     )
                 },
             ) {
-                if (subtitle != null) {
+                if (subtitle != null && !small) {
                     // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
                     AnimatedContent(
                         subtitle.uppercase(),
@@ -421,20 +435,40 @@ fun TopLevelBar(
                         )
                     }
                 }
-                Text(title, style = MaterialTheme.typography.headlineLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                AnimatedContent(
+                    small,
+                    transitionSpec = { fadeIn(tween(Motion.ENTER_MS)).togetherWith(fadeOut(tween(Motion.EXIT_MS))) },
+                    label = "barTitle",
+                ) { thin ->
+                    Text(
+                        if (thin) collapsedTitle else title,
+                        style = if (thin) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         },
         actions = {
             actions()
             Spacer(Modifier.width(8.dp))
         },
-        expandedHeight = 76.dp,
+        expandedHeight = barHeight,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
             scrolledContainerColor = if (transparent) Color.Transparent else MaterialTheme.colorScheme.background,
         ),
         scrollBehavior = scrollBehavior,
     )
+}
+
+/** Quando il titolo grande si riduce: logica pura, provata nei test. */
+object TopBarCollapse {
+    /** Circa un centimetro sullo schermo. */
+    const val THRESHOLD_DP = 40
+
+    /** [contentOffset] è negativo quando la pagina è scorsa verso il basso (come in TopAppBarState). */
+    fun collapsed(contentOffset: Float, thresholdPx: Float): Boolean = contentOffset < -thresholdPx
 }
 
 /** Pulsante icona tondo con il bordo sottile: azioni nelle intestazioni delle sezioni. */

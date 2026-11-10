@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,19 +37,38 @@ internal fun rememberShift(eventId: Long): Shift? {
     return shifts.firstOrNull { it.eventId == eventId }
 }
 
+/** Il nome del turno, lo stesso del calendario (punto 31): "Turno su Debora", "Turno su Debora e Chiara". Pura. */
+internal fun shiftTitle(title: String): String =
+    ShiftParse.creators(title).map(ShiftParse::firstName).let { if (it.isEmpty()) "Turno" else "Turno su " + andList(it) }
+
 /**
- * Nella card dell'orario, sotto inizio e fine: con quali creator e con chi (da solo, in doppio…).
- * Niente "Non si ripete" o "Nessun avviso": per un turno non dicono niente (Antonio).
+ * Il quando del turno in una riga sola (punto 31): "Domani · 07:00 – 12:00 · 5 h", sotto "mercoledì 11 novembre".
+ * Se finisce il giorno dopo, la fine ha il suo giorno. Pura, per i test.
+ */
+internal fun shiftWhen(begin: Long, end: Long, today: java.time.LocalDate, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): WhenLine {
+    val hour = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+    val from = java.time.Instant.ofEpochMilli(begin).atZone(zone)
+    val to = java.time.Instant.ofEpochMilli(end).atZone(zone)
+    val day = from.toLocalDate()
+    val endDay = to.toLocalDate().takeIf { it != day }?.let { com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) + " " }.orEmpty()
+    val main = com.platinum20.dashboard.today.Upcoming.dayLabel(day, today) + " · " + from.format(hour) + " – " + endDay + to.format(hour) +
+        " · " + com.platinum20.dashboard.calendar.Trips.duration(begin, end)
+    return WhenLine(main, whenDate(day, today))
+}
+
+/**
+ * Le righe del turno: con quali creator e con chi (da solo, in doppio…). Niente "Non si ripete" o "Nessun avviso":
+ * per un turno non dicono niente (Antonio). [divider] = c'è già una riga sopra nella stessa card.
  */
 @Composable
-internal fun ShiftWhoRows(shift: Shift) {
+internal fun ShiftWhoRows(shift: Shift, divider: Boolean = true) {
     val creators = ShiftParse.creators(shift.title).map(ShiftParse::firstName)
     if (creators.isNotEmpty()) {
-        RowDivider()
+        if (divider) RowDivider()
         // Una creator per riga: si leggono tutte intere senza andare a capo a metà nome.
-        DetailRow(Icons.Outlined.Face, creators.joinToString("\n"), maxLines = Int.MAX_VALUE)
+        DetailRow(Icons.Outlined.Person, creators.joinToString("\n"), maxLines = Int.MAX_VALUE)
     }
-    RowDivider()
+    if (divider || creators.isNotEmpty()) RowDivider()
     DetailRow(peopleIcon(shift.mates.size + 1), ShiftParse.company(shift.mates), maxLines = Int.MAX_VALUE)
 }
 
@@ -64,7 +83,9 @@ internal fun ShiftPayCards(shift: Shift) {
     val earning = ShiftPay.of(shift, pay)?.takeIf(ShiftPay::worked)
     val month = ShiftPay.monthOf(shift.start, months)
     earning?.let { ShiftEarningCard(it) }
+    // La card del mese c'è sempre, anche prima del turno (punto 31): quanto hai guadagnato finora.
     month?.let { ShiftMonthCard(it) }
+    if (earning == null) DetailNote("Il guadagno di questo turno compare quando è finito.")
 }
 
 @Composable
@@ -80,7 +101,9 @@ private fun ShiftEarningCard(e: ShiftEarning) {
 @Composable
 private fun ShiftMonthCard(m: PayMonth) {
     CanvasCard(Modifier.fillMaxWidth()) {
-        PayHeadline(ShiftPay.monthName(m), ShiftPay.money(m.total), if (m.shifts == 1) "1 turno" else "${m.shifts} turni")
+        val now = System.currentTimeMillis()
+        val label = ShiftPay.monthName(m) + if (now in m.start..m.end) " · guadagnato finora" else ""
+        PayHeadline(label, ShiftPay.money(m.total), if (m.shifts == 1) "1 turno" else "${m.shifts} turni")
         if (m.guaranteed > 0 && m.minShifts > 0) {
             RowDivider()
             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
