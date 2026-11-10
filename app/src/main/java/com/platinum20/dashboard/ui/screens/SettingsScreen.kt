@@ -156,8 +156,6 @@ enum class SettingsPage(val title: String) {
     ACCOUNTS("Account"),
     DATA("Dati"),
     INFO("Informazioni"),
-    /** In fondo al menu: quello che serve a sistemare l'app (letture da mandare, chiavi, filtri), mai in mezzo. */
-    TOOLS("Strumenti"),
     /** Non sta nel menu: si apre dalla riga SponsorBlock di Media, i tipi di segmento sono tanti. */
     SPONSORBLOCK("SponsorBlock"),
 }
@@ -323,14 +321,11 @@ fun SettingsScreen(
                     BackupSettings()
                 }
             }
-            // In fondo: la versione e gli strumenti per sistemare l'app, sempre raggiungibili ma mai in mezzo.
+            // In fondo: la versione.
             item(key = "about") {
                 SettingsBlock("Canvas") {
                     MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni",
                         "Versione ${BuildConfig.VERSION_NAME} · novità e licenze") { onOpenPage(SettingsPage.INFO) }
-                    RowDivider()
-                    MenuRow(Icons.Outlined.Build, TileAccent.NEUTRAL, "Strumenti",
-                        "Letture di SIM, Revolut e turni da inviarmi") { onOpenPage(SettingsPage.TOOLS) }
                 }
             }
         }
@@ -420,11 +415,6 @@ fun SettingsPageScreen(
                     }
                 }
                 SettingsPage.SPONSORBLOCK -> item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
-                SettingsPage.TOOLS -> {
-                    item { SettingsBlock("Letture da inviarmi") { CaptureFileRows() } }
-                    item { SettingsBlock("Spotify") { SpotifyKeyRow() } }
-                    item { SettingsBlock("Pubblicità") { AdBlockListsRow() } }
-                }
                 SettingsPage.INFO -> {
                     item { AppHero(onClick = onOpenUpdates) }
                     item { InfoBlock() }
@@ -525,11 +515,13 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                 },
             )
         }
+        RowDivider()
+        SpotifyKeyRow()
     }
 
 }
 
-/** La chiave di Spotify: serve solo per sistemare l'app, quindi sta in Strumenti (punto 49). */
+/** La chiave di Spotify, sotto gli account di musica e video. */
 @Composable
 private fun SpotifyKeyRow() {
     val spotifyClientId by SpotifyAuth.clientId.collectAsState()
@@ -1456,9 +1448,13 @@ private fun AdBlockSettings() {
         onClick = { toggle(!enabled) },
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle(toggle)) },
     )
+    if (enabled) {
+        RowDivider()
+        AdBlockListsRow()
+    }
 }
 
-/** Le liste dei filtri del blocco pubblicità: si aggiornano da sole, il tasto serve solo a sistemare (Strumenti). */
+/** Le liste dei filtri del blocco pubblicità, sotto l'interruttore quando è acceso. */
 @Composable
 private fun AdBlockListsRow() {
     val status by AdBlocker.status.collectAsState()

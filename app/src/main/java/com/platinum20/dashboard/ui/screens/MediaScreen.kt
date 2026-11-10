@@ -210,15 +210,10 @@ fun MediaScreen(
             }
             // Le tre file (1.357): quello che c'è in Musica, Video e Radio e podcast, non tre tessere da aprire.
             // Il titolo di ogni fila apre la pagina intera.
-            // Prima le file che vanno subito, sotto gli inviti a collegare (punto 39).
-            MediaShelves.order(spotifyOn, youTubeOn).forEach { kind ->
-                when (kind) {
-                    MediaShelves.Kind.MUSIC -> item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
-                    MediaShelves.Kind.VIDEO -> item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
-                    MediaShelves.Kind.LISTEN -> item(key = "shelf-listen") {
-                        ListenShelf(onOpenAll = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) })
-                    }
-                }
+            item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
+            item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
+            item(key = "shelf-listen") {
+                ListenShelf(onOpenAll = { onOpenListen(if (now?.source == PlaySource.RADIO || podcasts == 0) ListenTab.RADIO else ListenTab.PODCAST) })
             }
         }
     }

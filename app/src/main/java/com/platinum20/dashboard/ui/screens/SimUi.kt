@@ -371,6 +371,11 @@ internal fun WindTreAccountRows() {
             else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
         },
     )
+    if (linked) {
+        RowDivider()
+        // Se un numero esce sbagliato, quello che WindTre ha mandato serve a correggere la lettura.
+        CaptureFileRow("Salva i dati letti di WindTre", "windtre-dati-letti") { SimStore.capturesText() }
+    }
 }
 
 

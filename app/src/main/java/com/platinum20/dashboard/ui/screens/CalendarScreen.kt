@@ -211,7 +211,7 @@ fun EventDetailScreen(
     val shift = if (eventId < -1) rememberShift(eventId) else null
     DetailPage(
         onBack = onBack,
-        meta = if (shift != null) "Turno · Creators Pro" else "Evento",
+        meta = if (shift != null) "Creators Pro" else "Evento",
         primary = if (codes.isNotEmpty()) DetailAction(Icons.Outlined.QrCode2, "Biglietto") {
             haptic(Haptic.CONFIRM)
             showTicket = true
@@ -253,25 +253,8 @@ fun EventDetailScreen(
             val ticket = if (train) com.platinum20.dashboard.calendar.Trips.details(current.title, current.description).filter { it.first != "Treno" || trip?.train == null } else emptyList()
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
-            DetailTitle(if (shift != null) shiftTitle(current.title) else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
-            if (shift != null) {
-                // Il turno (punto 31): lo stesso nome del calendario, il quando in una riga; il blocco inizio-fine col
-                // punto che avanza solo mentre è in corso.
-                val w = shiftWhen(from, to, LocalDate.now(), zone)
-                DetailWhen(w.main, w.sub, onClick = null)
-                val running = System.currentTimeMillis() in from until to
-                CanvasCard(Modifier.fillMaxWidth()) {
-                    val stops = if (running) tripStops(
-                        CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, null),
-                        LocalDate.now(), zone, labels = true,
-                    ) else null
-                    if (stops != null) {
-                        TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 8.dp, bottom = 8.dp))
-                    }
-                    ShiftWhoRows(shift, divider = stops != null)
-                }
-                ShiftPayCards(shift)
-            } else CanvasCard(Modifier.fillMaxWidth()) {
+            DetailTitle(if (shift != null) "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
+            CanvasCard(Modifier.fillMaxWidth()) {
                 // Ogni evento con inizio e fine come il viaggio sulla linea del tempo: inizio, linea, fine (Antonio).
                 val stops = if (current.allDay) null else tripStops(
                     CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
@@ -284,7 +267,9 @@ fun EventDetailScreen(
                 } else {
                     DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
                 }
-                run {
+                if (shift != null) {
+                    ShiftWhoRows(shift)
+                } else {
                     ticket.forEach { (label, value) ->
                         RowDivider()
                         DetailRow(Icons.Outlined.Train, "$label $value")
@@ -314,7 +299,9 @@ fun EventDetailScreen(
                     }
                 }
             }
-            if (shift == null && !current.writable) {
+            if (shift != null) {
+                ShiftPayCards(shift)
+            } else if (!current.writable) {
                 DetailNote("Questo calendario è di sola lettura: l'evento si può guardare ma non modificare.")
             }
         }
