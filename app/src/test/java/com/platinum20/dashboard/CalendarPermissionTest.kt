@@ -1,6 +1,7 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarPermission
+import com.platinum20.dashboard.calendar.EditPage
 import com.platinum20.dashboard.calendar.PermissionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -26,5 +27,13 @@ class CalendarPermissionTest {
         assertNull(CalendarPermission.writeDeniedMessage(PermissionStatus.GRANTED))
         assertEquals("Serve il permesso di scrittura del calendario", CalendarPermission.writeDeniedMessage(PermissionStatus.DENIED))
         assertTrue(CalendarPermission.writeDeniedMessage(PermissionStatus.BLOCKED)!!.contains("Info app"))
+    }
+
+    @Test fun nuovoEventoSenzaPermessoChiedeSempre() {
+        // Anche prima della risposta al dialog: mai una pagina vuota.
+        assertEquals(EditPage.ASK, CalendarPermission.editPage(granted = false, loaded = false, hasDraft = false))
+        assertEquals(EditPage.LOADING, CalendarPermission.editPage(granted = true, loaded = false, hasDraft = false))
+        assertEquals(EditPage.MISSING, CalendarPermission.editPage(granted = true, loaded = true, hasDraft = false))
+        assertEquals(EditPage.FORM, CalendarPermission.editPage(granted = true, loaded = true, hasDraft = true))
     }
 }

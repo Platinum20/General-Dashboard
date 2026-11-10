@@ -8,6 +8,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
+import com.platinum20.dashboard.bank.RevolutStore
+import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.GmailImap
+import com.platinum20.dashboard.shifts.ShiftStore
+import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
 import androidx.compose.material.icons.outlined.Wifi
@@ -179,10 +184,12 @@ internal object SettingsSummary {
         return if (on.isEmpty()) "Tutte spente" else on.joinToString(" · ").replaceFirstChar { it.uppercase() }
     }
 
+    /** Tutti gli account (1.402): non solo YouTube e Spotify. Oltre due nomi il conto, così la riga non si taglia. */
     fun accounts(connected: List<String>): String = when (connected.size) {
         0 -> "Nessun account collegato"
         1 -> "${connected[0]} collegato"
-        else -> connected.dropLast(1).joinToString(", ") + " e ${connected.last()} collegati"
+        2 -> "${connected[0]} e ${connected[1]} collegati"
+        else -> "${connected.size} account collegati"
     }
 }
 
@@ -206,6 +213,12 @@ fun SettingsScreen(
     remember { YouTubeAuth.init(context); SpotifyAuth.init(context); RadioAlarm.init(context); VoiceStore.init(context) }
     val youTubeOfficial by YouTubeAuth.connected.collectAsState()
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
+    remember { SimStore.init(context); RevolutStore.init(context); ShiftStore.init(context); GmailImap.init(context); GmailAuth.init(context) }
+    val simLinked by SimStore.linked.collectAsState()
+    val bankLinked by RevolutStore.linked.collectAsState()
+    val shiftsLinked by ShiftStore.linked.collectAsState()
+    val gmailImap by GmailImap.linked.collectAsState()
+    val gmailApi by GmailAuth.connected.collectAsState()
     AutoFill.init(context)
     val autoFillOn by AutoFill.enabled.collectAsState()
     val morning by AppSettings.morning.collectAsState()
@@ -283,7 +296,12 @@ fun SettingsScreen(
                                 MediaService.YOUTUBE -> youTubeOfficial
                                 MediaService.SPOTIFY -> spotifyOfficial
                             }
-                        }.map { it.label })) { onOpenPage(SettingsPage.ACCOUNTS) }
+                        }.map { it.label } + listOfNotNull(
+                            "Gmail".takeIf { gmailImap || gmailApi },
+                            "WindTre".takeIf { simLinked },
+                            "Revolut".takeIf { bankLinked },
+                            "Creators Pro".takeIf { shiftsLinked },
+                        ))) { onOpenPage(SettingsPage.ACCOUNTS) }
                     RowDivider()
                     MenuRow(Icons.Outlined.Storage, TileAccent.BLUE, "Dati",
                         if (wifiOnly) "Backup · download solo col Wi-Fi" else "Backup e download") { onOpenPage(SettingsPage.DATA) }
