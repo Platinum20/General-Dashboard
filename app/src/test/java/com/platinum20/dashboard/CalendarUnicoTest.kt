@@ -19,7 +19,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.314: il calendario unico, con le note senza data dentro (Antonio). Dalla 1.438 senza spese. */
+/** 1.314: il calendario unico, con le note senza data dentro (Antonio). Dalla 1.443 senza spese. */
 class CalendarUnicoTest {
     private val oggi = LocalDate.of(2026, 11, 3)
     private val adesso = oggi.atTime(12, 0)

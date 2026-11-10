@@ -14,7 +14,6 @@ import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.today.Upcoming
-import com.platinum20.dashboard.ui.screens.color
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
