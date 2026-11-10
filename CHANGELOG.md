@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.440.0
+## 1.441.0
 **Oggi è uno solo ovunque: widget, notifica del mattino e filtri del Calendario mostrano lo stesso Oggi del calendario**
 - Widget Calendario e widget Oggi: niente più il vecchio "oggi" a parte, ci sono tutte le cose di oggi come nel Calendario dell'app, in ordine d'orario: turni e treni anche già finiti, eventi, promemoria, date, note e le cose spuntate (più tenui, con ✓)
 - Notifica del mattino: il gruppo "Oggi" elenca lo stesso Oggi del calendario; le cose senza data sono già lì dentro
 - Card Calendario in Home: si vedono anche le cose spuntate oggi, come nella pagina
 - Calendario con un filtro acceso (Note, Eventi): il segno OGGI resta in cima invece di diventare un giorno qualsiasi o sparire
+
+## 1.440.0
+**Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
+- Appoggia il dito sulla linea a destra e trascina su o giù: il calendario scorre un giorno alla volta, con un tic per ogni giorno e un colpo più netto quando cambia il mese
+- Più allunghi il gesto, più va veloce: con un pollice attraversi settimane
+- Accanto al dito un fumetto dice su che giorno sei; in cima e in fondo il cursore fa da elastico e torna al suo posto
+- Lasciando il dito non si apre niente: la linea serve solo a muoversi. Un tocco normale sulle righe resta com'era
+- Con l'accesso ai turni scaduto la pagina si apre di nuovo esattamente su OGGI
 
 ## 1.438.0
 **Nei treni, sotto la durata, il treno con carrozza e posto**
