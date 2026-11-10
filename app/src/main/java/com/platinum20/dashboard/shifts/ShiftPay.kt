@@ -126,8 +126,12 @@ object ShiftPay {
     fun hours(h: Double): String = String.format(Locale.ITALY, "%.1f h", h).replace(",0 h", " h")
 
     /** Sulla linea del tempo, accanto alla durata: "$60,56 · 12%" (il turno in corso dice "finora"). */
-    /** La seconda riga del turno nel calendario, sotto durata e compagnia (Antonio). */
-    fun soldLine(e: ShiftEarning): String = "Venduto " + money(e.sold)
+    /**
+     * La seconda riga del turno nel calendario, sotto durata e compagnia: venduto, scaglione, guadagno,
+     * nell'ordine del conto (venduto × % = guadagno), la freccia porta al risultato (Antonio).
+     */
+    fun soldLine(e: ShiftEarning): String =
+        "Venduto " + money(e.sold) + " · " + percent(e.percent) + " → " + money(e.earned) + if (e.current) " finora" else ""
 
     fun line(e: ShiftEarning): String =
         money(e.earned) + " · " + percent(e.percent) + if (e.current) " finora" else ""

@@ -4,7 +4,7 @@
 **Il turno si chiama con le sue creator**
 - Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario
 - Tolta la riga con le creator sotto l'orario: stanno già nel titolo
-- Nel calendario, fra inizio e fine del turno: la durata con l'icona e "Da solo" o "In doppio con …", e sotto, su una riga sua, il venduto; le due righe stanno al centro
+- Nel calendario, fra inizio e fine del turno: la durata con l'icona e "Da solo" o "In doppio con …", e sotto, su una riga sua, venduto, scaglione raggiunto e guadagno ("Venduto $504,67 · 12% → $60,56"); le due righe stanno al centro
 
 ## 1.436.0
 **Tornano come prima le schede, Media, gli Aggiornamenti e le letture negli account; il fumetto delle categorie è uno solo**
