@@ -40,7 +40,7 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
-- `ui/screens/SearchField.kt` `CanvasSearchField` = the only search field (Cerca, Località). `search/SearchRecents.kt` = last 5 queries under Cerca's empty field (+ "Prova" shortcuts in SearchScreen).
+- `ui/screens/SearchField.kt` `CanvasSearchField` = the only search field (Cerca, Località): filled pill, no border, built-in animated clear X (1.452); search results have no RowDivider. `search/SearchRecents.kt` = last 5 queries under Cerca's empty field (+ "Prova" shortcuts in SearchScreen).
 - `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"; also on Media subpages, prefiltered via `SearchFilter.forRoute` + `Routes.search(filter)`), `SearchScreen.kt` + `search/EverywhereSearch.kt`. Media subpages have no search fields or header buttons.
 - `ui/screens/SwipeAway.kt`: "drag sideways to close" (rule + `Modifier.swipeAway` + X), shared by mini player and save bubble.
 - `ui/screens/Pickers.kt` (date/time/task edit dialogs), `SaveToNotesLayer.kt`/`SaveOnLongPress.kt`

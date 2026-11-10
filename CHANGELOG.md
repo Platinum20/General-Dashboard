@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.452.0
+**Una barra di ricerca nuova, tonda e morbida**
+- Il campo di Cerca è ora una pillola tonda e piena, senza bordo, che si vede bene in ogni tema
+- Quando la tocchi si accende piano, e la X per svuotare compare da sola appena scrivi
+- Niente più linee tra i risultati: la lista scorre più leggera
+- I gruppi di risultati entrano e escono scivolando mentre scrivi, senza scatti
+- Stessa barra anche nella ricerca della località del meteo
 ## 1.451.0
 **Home più compatta**
 - Calendario: turni, treni ed eventi con inizio e fine sono una riga sola come le altre, tutte alte uguali (ora a sinistra, sotto "fino alle 13:00 · 6 h"); il disegno lungo resta nel calendario intero
