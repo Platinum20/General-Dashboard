@@ -1,11 +1,18 @@
 # Changelog
 
-## 1.454.0
+## 1.456.0
 **Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
 - Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
 - Il giorno sotto il dito si accende e si spegne subito, senza lasciare una scia di giorni blu
 - Mentre tieni la linea il calendario non carica altri mesi sotto il dito: lo fa quando lasci
 
+## 1.455.0
+**Coda e impostazioni del video rifatte**
+- Coda: in alto cosa suona, con la copertina grande nel blocco blu; sotto cosa viene dopo, righe libere senza riquadri né linee
+- Ogni voce mostra autore e durata; le miniature dei video sono larghe, le copertine quadrate, i titoli tutti in colonna
+- In orizzontale la coda entra da destra a tutta altezza e si divide in due: a sinistra cosa suona, a destra cosa viene dopo
+- Impostazioni del video: non più un menu a pagine ma un pannello con tutto in vista: qualità, velocità, sottotitoli e ripeti
+- Ogni scelta vale subito con un tocco; in orizzontale il pannello sta di lato e il video resta a schermo intero
 ## 1.453.0
 **La casella del + è più compatta**
 - Quando scrivi, la casella resta sempre alta quanto il +: niente più riga in più sopra, anche con un testo lungo
