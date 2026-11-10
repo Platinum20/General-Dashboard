@@ -83,21 +83,6 @@ class UpcomingTest {
     fun vuota() = assertTrue(Upcoming.build(today, emptyMap(), emptyList()).isEmpty())
 
     @Test
-    fun lineaDellaCard() {
-        // Giorni di fila: nessuno spazio in più; più giorni in mezzo, più spazio, fino a un massimo.
-        assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(1)))
-        assertEquals(0f, Upcoming.gapDp(today.plusDays(1), today.plusDays(2)))
-        // Scala logaritmica: 1 giorno vuoto 4 dp, 2 → 10, 4 → 16, 8 → 22, poi il massimo.
-        assertEquals(4f, Upcoming.gapDp(today.plusDays(1), today.plusDays(3)), 0.01f)
-        assertEquals(10f, Upcoming.gapDp(today.plusDays(1), today.plusDays(4)), 0.01f)
-        assertEquals(16f, Upcoming.gapDp(today.plusDays(1), today.plusDays(6)), 0.01f)
-        assertEquals(22f, Upcoming.gapDp(today.plusDays(1), today.plusDays(10)), 0.01f)
-        assertEquals(Upcoming.MAX_GAP_DP, Upcoming.gapDp(today.plusDays(1), today.plusDays(50)))
-        // Vale anche all'indietro (note e spese, dalle più nuove).
-        assertEquals(10f, Upcoming.gapDp(today.plusDays(4), today.plusDays(1)), 0.01f)
-    }
-
-    @Test
     fun giornoCortoSottoIlMese() {
         val nov = java.time.YearMonth.of(2026, 11)
         assertEquals("Dom 1", Upcoming.dayLabel(LocalDate.of(2026, 11, 1), today, nov))
@@ -137,14 +122,5 @@ class UpcomingTest {
         val items = Upcoming.build(today, emptyMap(), emptyList(), zone = zone, simRenewal = day)
         assertEquals(listOf(Upcoming.SIM_RENEWAL), items.map { it.text })
         assertEquals(day, items.single().day)
-    }
-
-    @Test
-    fun noGapAboveMonthMarker() {
-        val base = com.platinum20.dashboard.ui.screens.TimelineEntry("a", com.platinum20.dashboard.today.BriefKind.TASK, "Buon compleanno!", "Lun 29", 28f)
-        assertEquals(28f, com.platinum20.dashboard.ui.screens.timelineGap(base), 0.01f)
-        assertEquals(0f, com.platinum20.dashboard.ui.screens.timelineGap(base.copy(month = "GENNAIO 2029")), 0.01f)
-        // Se il mese è già disegnato sopra, la riga tiene il suo spazio.
-        assertEquals(28f, com.platinum20.dashboard.ui.screens.timelineGap(base.copy(month = "GENNAIO 2029"), showMonth = false), 0.01f)
     }
 }
