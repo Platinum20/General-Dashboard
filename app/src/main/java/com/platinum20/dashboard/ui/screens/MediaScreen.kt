@@ -208,7 +208,7 @@ fun MediaScreen(
             }
             // Le tre file (1.357): quello che c'è in Musica (con i podcast, 1.437), Video e Radio, non tre tessere da aprire.
             // Il titolo di ogni fila apre la pagina intera.
-            // 1.439 (Antonio): prima Video, poi Musica.
+            // 1.442 (Antonio): prima Video, poi Musica.
             item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
             item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
             item(key = "shelf-radio") { RadioShelf(onOpenAll = onOpenRadio) }

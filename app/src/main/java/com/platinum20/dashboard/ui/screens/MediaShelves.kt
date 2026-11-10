@@ -59,7 +59,7 @@ internal object MediaShelves {
     /** Righe del titolo nelle file di Media e in Continua: tutte uguali, così le tessere di una fila sono alte uguali. */
     const val TITLE_LINES = 3
 
-    /** Fila Video (1.439, Antonio): i video dei canali a cui sei iscritto, dal più nuovo; senza data in fondo. */
+    /** Fila Video (1.442, Antonio): i video dei canali a cui sei iscritto, dal più nuovo; senza data in fondo. */
     fun newestFirst(videos: List<YtVideo>): List<YtVideo> =
         videos.sortedWith(compareByDescending<YtVideo, java.time.Instant?>(nullsFirst()) { it.published })
 
@@ -91,7 +91,7 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
 /**
  * Copertina con le sue scritte (1.437, Antonio): il titolo SOPRA l'immagine e chi lo pubblica SOTTO. Tutte e due
  * partono dal bordo dell'immagine: il titolo è appoggiato in basso e se è lungo va a capo verso l'alto, l'autore
- * sta subito sotto. Altezze fisse (1.439): il titolo occupa sempre [titleLines] righe e l'autore una, con i puntini
+ * sta subito sotto. Altezze fisse (1.442): il titolo occupa sempre [titleLines] righe e l'autore una, con i puntini
  * se non ci stanno, così nessuna tessera cambia altezza. Va chiamata dentro la Column della tessera.
  */
 @Composable
@@ -127,7 +127,7 @@ internal fun CaptionedCover(
             subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            // Altezza fissa (1.439, Antonio: la pagina non deve muoversi): sempre una riga, anche se vuota.
+            // Altezza fissa (1.442, Antonio: la pagina non deve muoversi): sempre una riga, anche se vuota.
             minLines = 1,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

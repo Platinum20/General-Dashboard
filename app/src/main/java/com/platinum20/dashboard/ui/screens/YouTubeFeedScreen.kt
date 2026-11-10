@@ -532,7 +532,7 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
 
 /**
  * Video in grande (1.437, Antonio): il titolo SOPRA l'anteprima, appoggiato a lei; sotto foto del canale, canale e
- * dettagli su una riga. Altezze fisse (1.439), niente divisori.
+ * dettagli su una riga. Altezze fisse (1.442), niente divisori.
  */
 @Composable
 fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
@@ -543,7 +543,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
             .clip(MaterialTheme.shapes.large)
             .tapOrSave({ SavedLinks.youtube(video) }, onClick)
     ) {
-        // Altezza fissa (1.439): sempre due righe, appoggiate all'anteprima; la lista non salta da un video all'altro.
+        // Altezza fissa (1.442): sempre due righe, appoggiate all'anteprima; la lista non salta da un video all'altro.
         val titleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
         Box(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 8.dp), contentAlignment = Alignment.BottomStart) {
             Text(" ", style = titleStyle, minLines = 2, maxLines = 2, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
