@@ -129,9 +129,11 @@ data class TripStops(
     val names: String? = null,
     /** Il nome su una riga sua sopra inizio e fine (Antonio); null per i treni, dove il nome è la stazione. */
     val title: String? = null,
-    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e il guadagno ([extra]). */
+    /** Un turno: quanti siamo, come icona fra la durata ([middle]) e con chi ([extra]: "In doppio con Marco"). */
     val people: Int? = null,
     val extra: String = "",
+    /** Un turno: una seconda riga sotto, il venduto. */
+    val below: String = "",
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
@@ -443,9 +445,9 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                         }
                         if (trip.people != null) Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(trip.middle + " · ", style = MaterialTheme.typography.labelMedium, color = sub, maxLines = 1)
-                            Icon(peopleIcon(trip.people), contentDescription = peopleLabel(trip.people), tint = sub, modifier = Modifier.size(14.dp))
+                            Icon(peopleIcon(trip.people), contentDescription = null, tint = sub, modifier = Modifier.size(14.dp))
                             if (trip.extra.isNotEmpty()) Text(
-                                " · " + trip.extra,
+                                " " + trip.extra,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = sub,
                                 maxLines = 1,
@@ -453,6 +455,14 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                             )
                         } else if (trip.middle.isNotEmpty()) Text(
                             trip.middle,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = sub,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        // Il venduto su una riga sua, sotto: le due righe insieme restano al centro fra inizio e fine.
+                        if (trip.below.isNotEmpty()) Text(
+                            trip.below,
                             style = MaterialTheme.typography.labelMedium,
                             color = sub,
                             maxLines = 1,

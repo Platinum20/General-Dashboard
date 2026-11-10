@@ -26,14 +26,16 @@ data class CalendarEvent(
     val trip: Trip? = null,
     /** Per un turno: quante persone sono in turno (io compreso), mostrato come icona accanto alla durata. */
     val people: Int? = null,
+    /** Per un turno: chi altro è in turno con me, per "In doppio con …" nella riga di mezzo. */
+    val mates: List<String> = emptyList(),
 )
 
 /** Il colore dei turni nel calendario. */
 private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
 
-/** Il turno nel calendario: accanto alla durata quanto ha fruttato, dalla busta paga ("$60,56 · 12%"). */
+/** Il turno nel calendario: sotto durata e compagnia, quanto ho venduto, dalla busta paga ("Venduto $1.234,00"). */
 internal fun shiftEvent(s: Shift, pay: com.platinum20.dashboard.shifts.ShiftEarning? = null) =
-    CalendarEvent(s.eventId, com.platinum20.dashboard.shifts.ShiftParse.shortTitle(s.title), s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::line).orEmpty(), people = s.mates.size + 1, color = SHIFT_COLOR)
+    CalendarEvent(s.eventId, com.platinum20.dashboard.shifts.ShiftParse.shortTitle(s.title), s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::soldLine).orEmpty(), people = s.mates.size + 1, mates = s.mates, color = SHIFT_COLOR)
 
 /** La scheda di un turno: solo lettura, si cambia su Creators Pro. Nelle note com'è andato e il mese. */
 internal fun shiftDetail(
