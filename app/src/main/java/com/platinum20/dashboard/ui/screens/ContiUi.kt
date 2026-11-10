@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -86,11 +87,13 @@ private fun androidx.compose.foundation.layout.RowScope.SimHalf(onOpen: () -> Un
     // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
     AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
     val s = status
+    // Lo stato vero (1.402): vecchio dopo tre ore, la riga lo dice e il numero si sbiadisce.
+    val link = LinkStatus.of(linked, expired = false, readAt = s?.at ?: 0, now = System.currentTimeMillis(), staleAfter = 3 * SimStore.STALE_MS)
     Half("SIM", Modifier.sharedItem(SharedKeys.SIM, rounded = true), onOpen) {
         when {
             s == null && linked -> HalfPlaceholder("Sto leggendo i dati di WindTre")
             s == null || !linked -> HalfValue("Collega", "giga e credito WindTre")
-            else -> HalfValue(ContiText.giga(s), ContiText.simLine(s))
+            else -> HalfValue(ContiText.giga(s), link.line ?: ContiText.simLine(s), faded = link.faded)
         }
     }
 }
@@ -103,6 +106,8 @@ private fun androidx.compose.foundation.layout.RowScope.RevolutHalf(onOpen: () -
     val expired by RevolutStore.expired.collectAsStateWithLifecycle()
     val pockets by RevolutStore.pockets.collectAsStateWithLifecycle()
     val balance by RevolutStore.balance.collectAsStateWithLifecycle()
+    val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
+    val link = LinkStatus.of(linked, expired, readAt, System.currentTimeMillis(), staleAfter = 4 * RevolutStore.STALE_MS)
     val inApp = LocalInAppNav.current
     // Prima che arrivi il wallet c'è almeno il saldo del conto (lettura delle versioni prima).
     val shown = pockets.ifEmpty { balance?.let { listOf(Pocket("main", "Conto", it, main = true)) } ?: emptyList() }
@@ -116,8 +121,9 @@ private fun androidx.compose.foundation.layout.RowScope.RevolutHalf(onOpen: () -
             !linked || shown.isEmpty() -> HalfValue(if (expired) "Rientra" else "Collega", if (expired) "accesso scaduto" else "saldo e tasche", warn = expired)
             else -> HalfValue(
                 ContiText.euros(RevolutPockets.total(shown)),
-                if (expired) "accesso scaduto" else ContiText.spendable(shown),
+                if (expired) "accesso scaduto · tocca per rientrare" else link.line ?: ContiText.spendable(shown),
                 warn = expired,
+                faded = link.faded,
             )
         }
     }
@@ -144,13 +150,17 @@ private fun androidx.compose.foundation.layout.RowScope.Half(
 }
 
 @Composable
-private fun HalfValue(value: String, line: String?, warn: Boolean = false) {
-    RollingText(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+private fun HalfValue(value: String, line: String?, warn: Boolean = false, faded: Boolean = false) {
+    // Il dato vecchio resta, sbiadito (1.402): c'è, ma non è di adesso.
+    androidx.compose.foundation.layout.Box(Modifier.then(if (faded) Modifier.alpha(FADED_ALPHA) else Modifier)) {
+        RollingText(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+    }
     line?.let {
         Text(
             it,
             style = MaterialTheme.typography.bodySmall,
-            color = if (warn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            // Arancio = attenzione (regola dei colori): l'accesso scaduto.
+            color = if (warn) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

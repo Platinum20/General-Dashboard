@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.draw.alpha
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -136,7 +137,8 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(relativeTime(Instant.ofEpochMilli(s.at)), style = MaterialTheme.typography.labelSmall, color = soft)
+        // Nella card l'ora la dice la riga di stato, solo quando il dato è vecchio (1.402).
+        if (big) Text(relativeTime(Instant.ofEpochMilli(s.at)), style = MaterialTheme.typography.labelSmall, color = soft)
     }
     // Un dato per riga (Antonio): nome a sinistra, valore a destra, barra sottile sotto le soglie.
     // Il roaming UE solo nella pagina, non nella card della Home.
@@ -346,7 +348,7 @@ internal fun WindTreAccountRows() {
         },
         onClick = if (!linked) ({ inApp?.openRoute?.invoke(Routes.SIM) }) else null,
         trailing = {
-            if (linked) TextButton(onClick = { WindTreLink.forget(context) }) { Text("Esci") }
+            if (linked) DangerButton(onClick = { WindTreLink.forget(context) }) { Text("Esci") }
             else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
         },
     )

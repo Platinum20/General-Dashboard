@@ -29,5 +29,18 @@ object CalendarPermission {
         PermissionStatus.BLOCKED -> "Serve il permesso di scrittura del calendario: attivalo in Info app › Autorizzazioni"
     }
 
+    /**
+     * Cosa mostra "Nuovo evento" (1.402): senza permesso sempre il messaggio con "Consenti", anche mentre il
+     * dialog di Android è aperto o se non è mai comparso. Prima restava una pagina vuota con "Salva" grigio.
+     */
+    fun editPage(granted: Boolean, loaded: Boolean, hasDraft: Boolean): EditPage = when {
+        !granted -> EditPage.ASK
+        hasDraft -> EditPage.FORM
+        !loaded -> EditPage.LOADING
+        else -> EditPage.MISSING
+    }
+
     const val DELETE_FAILED = "Non è stato possibile eliminare l'evento"
 }
+
+enum class EditPage { ASK, LOADING, MISSING, FORM }

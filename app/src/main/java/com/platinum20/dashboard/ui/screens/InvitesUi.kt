@@ -92,7 +92,7 @@ fun InvitesRow(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Chiudi") } },
+            confirmButton = { DismissButton(onClick = { open = false }) { Text("Chiudi") } },
         )
     }
 }
@@ -101,12 +101,12 @@ fun InvitesRow(
 private fun InviteItem(icon: ImageVector, text: String, action: String, onAction: () -> Unit, onLater: () -> Unit) {
     Column {
         Row(verticalAlignment = Alignment.Top) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(12.dp))
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onLater) { Text("Non ora") }
+            DismissButton(onClick = onLater) { Text("Non ora") }
             FilledTonalButton(onClick = onAction) { Text(action) }
         }
     }

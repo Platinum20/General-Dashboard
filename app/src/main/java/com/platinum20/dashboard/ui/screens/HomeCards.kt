@@ -146,7 +146,7 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
     Text(
         (if (overdue) "Scaduto · " else "") + dueLabel(dueAt) + (repeat?.let { " · ${it.label}" } ?: ""),
         style = MaterialTheme.typography.labelMedium,
-        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        color = if (overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -307,7 +307,7 @@ fun TimelineCard(
                 Text(
                     "$text ›",
                     style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     modifier = Modifier
                         .fillMaxWidth()

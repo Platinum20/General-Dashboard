@@ -77,6 +77,7 @@ import com.platinum20.dashboard.calendar.CalendarDays
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarInfo
 import com.platinum20.dashboard.calendar.CalendarPermission
+import com.platinum20.dashboard.calendar.EditPage
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.calendar.EventDetail
 import com.platinum20.dashboard.calendar.EventDraft
@@ -338,12 +339,10 @@ fun EventEditScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     var granted by remember { mutableStateOf(CalendarRepository.hasPermission(context) && CalendarRepository.canWrite(context)) }
-    var asked by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf(PermissionStatus.DENIED) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         granted = result.values.all { it } || (CalendarRepository.hasPermission(context) && CalendarRepository.canWrite(context))
         status = statusAfter(context, granted, Manifest.permission.WRITE_CALENDAR)
-        asked = true
     }
     // Tornando da Info app con il permesso acceso, il modulo si apre da solo.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -394,14 +393,14 @@ fun EventEditScreen(
                     IconButton(onClick = onDone) { Icon(Icons.Outlined.Close, contentDescription = "Chiudi") }
                 },
                 actions = {
-                    TextButton(onClick = ::save, enabled = draft != null && !saving) { Text("Salva") }
+                    if (draft != null) TextButton(onClick = ::save, enabled = !saving) { Text("Salva") }
                 },
             )
         },
     ) { inner ->
         val current = draft
-        when {
-            !granted && asked -> CalendarMessage(
+        when (CalendarPermission.editPage(granted, loaded, current != null)) {
+            EditPage.ASK -> CalendarMessage(
                 modifier = Modifier.padding(inner),
                 text = "Per salvare gli eventi Canvas deve poter scrivere nel calendario del telefono.",
                 action = CalendarPermission.actionLabel(status),
@@ -410,15 +409,16 @@ fun EventEditScreen(
                     else launcher.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR))
                 },
             )
-            loaded && current == null -> Text(
+            EditPage.LOADING -> Box(Modifier.padding(inner).fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+            EditPage.MISSING -> Text(
                 if (eventId != null) "Questo evento non c'è più."
                 else "Sul telefono non c'è un calendario in cui scrivere: aggiungi un account (per esempio Google) nelle impostazioni.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(inner).padding(24.dp),
             )
-            current != null -> EventForm(
-                draft = current,
+            EditPage.FORM -> EventForm(
+                draft = current!!,
                 calendars = calendars,
                 error = error,
                 isNew = eventId == null,

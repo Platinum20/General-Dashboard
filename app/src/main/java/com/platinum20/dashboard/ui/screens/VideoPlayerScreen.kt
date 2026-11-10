@@ -378,12 +378,12 @@ private fun LinkDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
             )
         },
         confirmButton = {
-            TextButton(
+            ConfirmButton(
                 onClick = { onConfirm(text) },
                 enabled = text.trim().startsWith("http"),
             ) { Text("Riproduci") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { DismissButton(onClick = onDismiss) { Text("Annulla") } },
     )
 }
 

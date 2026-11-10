@@ -13,15 +13,19 @@ data class RainNotice(
     /** True se la pioggia continua oltre l'orizzonte del nowcast. */
     val longer: Boolean,
 ) {
-    fun text(place: String): String {
-        val start = if (inMinutes <= 5) "Pioggia tra pochi minuti" else "Pioggia tra $inMinutes minuti"
-        val length = when {
-            longer && durationMinutes >= 60 -> "per più di un'ora"
-            longer -> "per almeno $durationMinutes minuti"
-            durationMinutes >= 60 -> "per circa " + hours(durationMinutes)
-            else -> "per circa $durationMinutes minuti"
-        }
-        return "$start a $place, $intensity $length"
+    fun text(place: String): String = "${title()} a $place, $intensity ${length()}"
+
+    /** Il titolo della notifica (1.402): la cosa, senza emoji. */
+    fun title(): String = if (inMinutes <= 5) "Pioggia tra pochi minuti" else "Pioggia tra $inMinutes minuti"
+
+    /** Il testo sotto il titolo: quanto e quanto dura, poi dove. */
+    fun detail(place: String): String = "${intensity.replaceFirstChar { it.uppercase() }} ${length()} · $place"
+
+    private fun length(): String = when {
+        longer && durationMinutes >= 60 -> "per più di un'ora"
+        longer -> "per almeno $durationMinutes minuti"
+        durationMinutes >= 60 -> "per circa " + hours(durationMinutes)
+        else -> "per circa $durationMinutes minuti"
     }
 
     private fun hours(minutes: Int): String {

@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -56,7 +59,7 @@ import java.time.Instant
 /** La riga del saldo per la pagina Spese: null se Revolut non è collegato. */
 internal fun revolutLine(linked: Boolean, expired: Boolean, balance: Long?): String? = when {
     !linked -> null
-    expired -> "Revolut: rifai l'accesso in Impostazioni › Account"
+    expired -> "Revolut: accesso scaduto"
     balance != null -> "Saldo Revolut " + Expenses.format(balance)
     else -> "Revolut collegato"
 }
@@ -87,7 +90,7 @@ internal fun RevolutAccountRows() {
             when {
                 !linked -> FilledTonalButton(onClick = { open() }) { Text("Accedi") }
                 expired -> FilledTonalButton(onClick = { open() }) { Text("Rientra") }
-                else -> TextButton(onClick = { RevolutLink.forget(context) }) { Text("Esci") }
+                else -> DangerButton(onClick = { RevolutLink.forget(context) }) { Text("Esci") }
             }
         },
     )
