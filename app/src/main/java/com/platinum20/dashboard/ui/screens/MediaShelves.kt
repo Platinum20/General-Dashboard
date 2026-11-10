@@ -29,8 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
@@ -70,7 +68,6 @@ internal object MediaShelves {
 private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, first: Boolean, onClick: () -> Unit) {
     Column(
         Modifier
-            .tileDivider(first)
             .width(width)
             .bouncyPress(0.96f)
             .clip(MaterialTheme.shapes.medium)
@@ -89,8 +86,8 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
 /**
  * Copertina con le sue scritte (1.437, Antonio): il titolo SOPRA l'immagine e chi lo pubblica SOTTO. Tutte e due
  * partono dal bordo dell'immagine: il titolo è appoggiato in basso e se è lungo va a capo verso l'alto, l'autore
- * parte subito sotto e va a capo verso il basso. Lo spazio del titolo è sempre di [titleLines] righe, così le
- * immagini di una fila stanno alla stessa altezza. Va chiamata dentro la Column della tessera.
+ * sta subito sotto. Altezze fisse (1.439): il titolo occupa sempre [titleLines] righe e l'autore una, con i puntini
+ * se non ci stanno, così nessuna tessera cambia altezza. Va chiamata dentro la Column della tessera.
  */
 @Composable
 internal fun CaptionedCover(
@@ -125,36 +122,13 @@ internal fun CaptionedCover(
             subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
+            // Altezza fissa (1.439, Antonio: la pagina non deve muoversi): sempre una riga, anche se vuota.
+            minLines = 1,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = align,
             modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
         )
-    }
-}
-
-/**
- * Il divisorio leggero fra una tessera e la successiva in una fila (1.437, Antonio: "altrimenti si confonde"):
- * una linea sottile verticale a metà dello spazio [gap], prima di ogni tessera tranne la prima.
- */
-@Composable
-internal fun Modifier.tileDivider(first: Boolean, gap: Dp = 12.dp): Modifier {
-    if (first) return this
-    val color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-    return drawBehind {
-        val x = -gap.toPx() / 2f
-        drawLine(color, Offset(x, size.height * 0.08f), Offset(x, size.height * 0.92f), strokeWidth = 1.dp.toPx())
-    }
-}
-
-/** Lo stesso divisorio per i contenuti uno sotto l'altro (i video di YouTube): orizzontale, a metà dello spazio [gap]. */
-@Composable
-internal fun Modifier.stackDivider(first: Boolean, gap: Dp = 16.dp): Modifier {
-    if (first) return this
-    val color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-    return drawBehind {
-        val y = -gap.toPx() / 2f
-        drawLine(color, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
     }
 }
 
