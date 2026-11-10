@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.451.0
+**Home più compatta**
+- Calendario: turni, treni ed eventi con inizio e fine sono una riga sola come le altre, tutte alte uguali (ora a sinistra, sotto "fino alle 13:00 · 6 h"); il disegno lungo resta nel calendario intero
+- Calendario: niente più titolo né mese in cima, la card comincia da OGGI
+- News: "25 nuove dalle…" sta sulla riga del titolo, a destra
+
 ## 1.450.0
 **La card SIM in Home mostra tutto**
 - Giga, minuti e SMS, ognuno con la sua linea di quanto resta
