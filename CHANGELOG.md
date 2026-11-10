@@ -1,15 +1,39 @@
 # Changelog
 
-## 1.418.0
+## 1.422.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
-- Icone tutte color inchiostro, anche nei quadratini di Impostazioni e Card della Home; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
+- Icone tutte color inchiostro, anche nei quadratini di Impostazioni; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
 - Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
 - Il fumetto delle azioni è un solo blocco di vetro con le icone in inchiostro; "Portalo di lato per chiuderlo" compare solo le prime 3 volte
-- Grigi dei segnaposto più leggibili; sottotitoli riscritti per stare in una riga senza puntini; in Cerca il chip è "Radio"; Card della Home senza descrizione
-- SIM, Revolut, Gmail e turni dicono quando il dato è vecchio o l'accesso è scaduto, con "Rientra" o "Aggiorna" lì nella card; il dato vecchio resta, sbiadito
+- Grigi dei segnaposto più leggibili; sottotitoli riscritti per stare in una riga senza puntini
+- SIM, Revolut, Gmail e turni dicono quando il dato è vecchio o l'accesso è scaduto, con l'azione lì; il dato vecchio resta, sbiadito
 - Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
 - Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
 - Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
+## 1.421.0
+**Impostazioni più corte: Strumenti in fondo, Aggiornamenti che dicono la verità**
+- Card della Home, località del meteo, backup e Wi-Fi stanno direttamente nella pagina principale: tre pagine in meno
+- In fondo ci sono Informazioni e la nuova pagina Strumenti: le letture di SIM, Revolut e turni da mandarmi, la chiave di Spotify e le liste dei filtri. Non stanno più in mezzo agli account
+- Nelle fonti delle News, sotto ogni fonte, quante storie ha dato oggi
+- Aggiornamenti: "Canvas 1.421 · aggiornata", quando ha controllato l'ultima volta (lo fa da sola ogni 15 minuti) e un pulsante piccolo "Controlla adesso". Le versioni sono righe che si aprono a richiesta
+- Card della Home in due gruppi: sopra quelle in Home, nell'ordine esatto della pagina; sotto le nascoste, da rimettere con un tocco
+- Nella ricerca le radio mostrano il genere in italiano
+
+## 1.419.0
+**Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**
+- Niente più etichette maiuscole sopra le card: ogni card ha il suo nome dentro, in alto
+- La card Calendario scrive accanto al titolo quanto hai speso questo mese ("novembre 486,30 €"): toccalo e si apre il mese. In cima alla card resta solo OGGI con la spesa di oggi
+- SIM e Revolut stanno in una card sola, "Conti": a sinistra i giga rimasti, a destra il saldo con quanto hai da spendere sul conto principale. Ogni metà apre la sua pagina come prima
+
+## 1.417.0
+**Media: prima quello che va, radio col genere, "Riprendi" nel player vuoto**
+- In Media le file che funzionano subito stanno in cima; quelle da collegare vanno in fondo, una riga con il pulsante "Accedi"
+- Senza radio preferite, la fila Radio si riempie con le più ascoltate: si può ascoltare subito, senza account
+- Per collegare YouTube o Spotify c'è un pulsante solo; il collegamento ufficiale resta in Impostazioni › Account. "Video del telefono" è una riga
+- Sotto ogni radio c'è il genere in italiano ("Notizie e parlato", "Classica e cultura") e non più tag in inglese e kbps; senza logo, le iniziali
+- Il player vuoto propone "Riprendi" con le ultime cose ascoltate o viste
+- La prima volta che suona qualcosa, una riga spiega i gesti: giù per il mini player, di lato per chiudere
 
 ## 1.415.0
 **News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**

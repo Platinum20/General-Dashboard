@@ -61,6 +61,7 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalView
@@ -697,6 +698,46 @@ fun Section(
         SectionHeader(title, action = action, onAction = onAction, trailing = trailing)
         Spacer(Modifier.height(4.dp))
         CanvasCard(Modifier.fillMaxWidth(), content = content)
+    }
+}
+
+/**
+ * Il titolo dentro una card della Home (1.404, punto 7 B): niente etichetta maiuscola fuori, la card è un
+ * oggetto a sé col suo nome in alto. A destra un valore, se c'è (il totale del mese nel Calendario).
+ */
+@Composable
+fun CardTitle(
+    title: String,
+    modifier: Modifier = Modifier,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 16.dp, end = 12.dp, top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).semantics { heading() },
+        )
+        trailing()
+    }
+}
+
+/** Una card della Home col titolo dentro ([CardTitle]) invece dell'etichetta fuori (1.404). */
+@Composable
+fun CardSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    CanvasCard(modifier.fillMaxWidth(), onClick = onClick) {
+        CardTitle(title, trailing = trailing)
+        content()
     }
 }
 

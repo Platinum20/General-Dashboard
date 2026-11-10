@@ -416,14 +416,8 @@ private fun ConnectSpotify(onLogin: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onLogin) { Text("Accedi a Spotify") }
-        Spacer(Modifier.height(8.dp))
-        // Come in YouTube: il collegamento ufficiale è un'alternativa discreta, senza codici da incollare.
-        var authUrl by remember { mutableStateOf<String?>(null) }
-        TextButton(onClick = { authUrl = SpotifyAuth.loginUrl().toString() }) {
-            Text("Oppure usa il collegamento ufficiale di Spotify")
-        }
-        authUrl?.let { url -> SpotifyAuthDialog(url, onDone = { authUrl = null }) }
+        // Un pulsante solo: il collegamento ufficiale di Spotify sta in Impostazioni › Account.
+        CanvasButton("Accedi a Spotify", onClick = onLogin, primary = true)
         error?.let {
             Spacer(Modifier.height(12.dp))
             Text(it, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)

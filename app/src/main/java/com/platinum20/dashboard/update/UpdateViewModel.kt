@@ -30,6 +30,8 @@ data class UpdateUiState(
     val loadingReleases: Boolean = false,
     val releasesError: String? = null,
     val status: UpdateStatus = UpdateStatus.Idle,
+    /** L'ultimo controllo riuscito, da qui o in background (0 = mai). */
+    val checkedAt: Long = 0,
 ) {
     /** La release più recente, se è più nuova di quella installata. */
     val available: GitHubRelease?
@@ -47,6 +49,7 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
 
     init {
+        _state.update { it.copy(checkedAt = UpdateText.lastChecked(app)) }
         refreshReleases()
         // L'esito dell'installazione arriva dopo, da UpdateInstallReceiver.
         viewModelScope.launch {
@@ -62,7 +65,10 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(loadingReleases = true, releasesError = null) }
             runCatching { repository.fetchReleases() }
-                .onSuccess { list -> _state.update { it.copy(releases = list, loadingReleases = false) } }
+                .onSuccess { list ->
+                    UpdateText.markChecked(getApplication())
+                    _state.update { it.copy(releases = list, loadingReleases = false, checkedAt = System.currentTimeMillis()) }
+                }
                 .onFailure { e ->
                     _state.update { it.copy(loadingReleases = false, releasesError = e.userMessage("Errore di rete.")) }
                 }
@@ -78,7 +84,8 @@ class UpdateViewModel(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(status = UpdateStatus.Error(e.userMessage("Errore di rete."))) }
                 return@launch
             }
-            _state.update { it.copy(releases = releases, releasesError = null) }
+            UpdateText.markChecked(getApplication())
+            _state.update { it.copy(releases = releases, releasesError = null, checkedAt = System.currentTimeMillis()) }
 
             val target = _state.value.available
             if (target == null) {

@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.radio.RadioGenre
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +58,17 @@ internal object MediaShelves {
     /** Che cosa mostra la fila Musica: prima i mix, poi gli ascoltati di recente, senza doppioni. */
     fun <T> mix(first: List<T>, then: List<T>, key: (T) -> String, max: Int = MAX): List<T> =
         (first + then).distinctBy(key).take(max)
+
+    enum class Kind { MUSIC, VIDEO, LISTEN }
+
+    /**
+     * Prima quello che va subito (punto 39): le file piene nell'ordine di sempre, sotto gli inviti a collegare.
+     * Radio e podcast vanno sempre, anche senza account.
+     */
+    fun order(spotifyOn: Boolean, youTubeOn: Boolean): List<Kind> {
+        val ready = mapOf(Kind.MUSIC to spotifyOn, Kind.VIDEO to youTubeOn, Kind.LISTEN to true)
+        return Kind.entries.sortedBy { if (ready.getValue(it)) 0 else 1 }
+    }
 }
 
 /** Una copertina della fila: immagine, titolo su due righe, una riga piccola. */
@@ -134,11 +146,17 @@ private fun Shelf(title: String, onOpen: () -> Unit, content: @Composable () -> 
     }
 }
 
-/** Una riga sola al posto della fila: il servizio non è collegato. */
+/** Una riga sola al posto della fila: il servizio non è collegato. Con [action] il pulsante per farlo, lì. */
 @Composable
-private fun ShelfInvite(text: String, onClick: () -> Unit) {
+private fun ShelfInvite(text: String, onClick: () -> Unit, action: String? = null) {
     CanvasCard(onClick = onClick, modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().bouncyPress(0.98f)) {
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp))
+        Row(Modifier.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(vertical = 4.dp))
+            if (action != null) {
+                Spacer(Modifier.width(12.dp))
+                CanvasButton(action, onClick = onClick)
+            }
+        }
     }
 }
 
@@ -148,7 +166,7 @@ internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
     val context = LocalContext.current
     Shelf("Musica", onOpenAll) {
         if (!connected) {
-            ShelfInvite("Collega Spotify per vedere qui i tuoi mix", onOpenAll)
+            ShelfInvite("Collega Spotify", onOpenAll, action = "Accedi")
             return@Shelf
         }
         val homeState by SpotifyStore.home.collectAsState()
@@ -208,7 +226,7 @@ internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll:
         val width = 200.dp
         val height = 112.dp
         when {
-            !connected -> ShelfInvite("Collega YouTube per vedere qui i video nuovi", onOpenAll)
+            !connected -> ShelfInvite("Collega YouTube", onOpenAll, action = "Accedi")
             videos.isEmpty() && state.loading -> ShelfPlaceholder(width, height, MaterialTheme.shapes.medium)
             videos.isEmpty() -> ShelfInvite("Niente di nuovo dai canali che segui", onOpenAll)
             else -> LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -228,19 +246,23 @@ internal fun ListenShelf(onOpenAll: () -> Unit) {
     val favorites by RadioStore.favorites.collectAsState()
     val recentRadios by RadioStore.recent.collectAsState()
     val latest by PodcastStore.latest.collectAsState()
+    val popular by RadioStore.popular.collectAsState()
     LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-    val radios = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
+    // Le radio vanno senza account: senza preferite né recenti la fila si riempie con le più ascoltate.
+    val own = MediaShelves.mix(favorites, recentRadios, { it.id }, 6)
+    LaunchedEffect(own.isEmpty()) { if (own.isEmpty()) RadioStore.loadPopular() }
+    val radios = own.ifEmpty { popular.data.orEmpty().take(6) }
     val episodes = latest.data.orEmpty().take(MediaShelves.MAX - radios.size)
     Shelf("Radio e podcast", onOpenAll) {
         val size = 120.dp
         if (radios.isEmpty() && episodes.isEmpty()) {
-            if (latest.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
+            if (latest.loading || popular.loading) ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             else ShelfInvite("Scegli una radio o segui un podcast", onOpenAll)
             return@Shelf
         }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(radios, key = { "radio-${it.id}" }) { station ->
-                ShelfTile(station.logo, station.name, "Radio", size, size, CircleShape) { RadioStore.play(station) }
+                ShelfTile(station.logo, station.name, RadioGenre.of(station.tags) ?: "Radio", size, size, CircleShape) { RadioStore.play(station) }
             }
             items(episodes, key = { "ep-${it.id}" }) { episode ->
                 ShelfTile(episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium) { PodcastStore.play(episode) }

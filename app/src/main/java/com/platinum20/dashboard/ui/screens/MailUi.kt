@@ -130,7 +130,7 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
     }
     if (mail.isEmpty() && !consent) return
 
-    Section(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
+    CardSection(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
             // La stessa riga di stato di WindTre e Revolut (1.402), con "Rientra" lì.
             StatusLine(

@@ -256,6 +256,10 @@ fun HomeScreen(
     val gmailImap by GmailImap.linked.collectAsStateWithLifecycle()
     val gmailConnected = gmailOAuth || gmailImap
     // Una card compare solo se ha qualcosa da dire.
+    // SIM e Revolut stanno in una card sola, "Conti" (1.404), nel posto della prima delle due.
+    val showSim = HomeCard.SIM in layout.visible
+    val showBank = HomeCard.BANK in layout.visible
+    val contiAt = layout.visible.firstOrNull { it == HomeCard.SIM || it == HomeCard.BANK }
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
@@ -263,6 +267,7 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
             HomeCard.DOCS -> docs.isNotEmpty()
+            HomeCard.SIM, HomeCard.BANK -> card == contiAt
             else -> true
         }
     }
@@ -333,14 +338,12 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.SIM -> SimCard(onOpen = {
-                haptic(Haptic.TICK)
-                inApp?.openRoute?.invoke(Routes.SIM)
-            })
-            HomeCard.BANK -> RevolutCard(onOpen = {
-                haptic(Haptic.TICK)
-                inApp?.openRoute?.invoke(Routes.expenses())
-            })
+            HomeCard.SIM, HomeCard.BANK -> ContiCard(
+                showSim = showSim,
+                showBank = showBank,
+                onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) },
+                onOpenBank = { inApp?.openRoute?.invoke(Routes.expenses()) },
+            )
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.document(id))
@@ -607,12 +610,10 @@ private fun NewsCard(
     onOpenNews: () -> Unit,
 ) {
     val context = LocalContext.current
-    Column(Modifier.fillMaxWidth()) {
-        SectionHeader("News")
-        Spacer(Modifier.height(4.dp))
-        CanvasCard(Modifier.fillMaxWidth(), onClick = onOpenNews) {
+    run {
+        CardSection("News", onClick = onOpenNews) {
             val feed = state.feed
-            Column(Modifier.padding(vertical = 4.dp)) {
+            Column(Modifier.padding(bottom = 4.dp)) {
                 when {
                     !feed.isEmpty -> {
                         val shown = feed.fresh.take(3)

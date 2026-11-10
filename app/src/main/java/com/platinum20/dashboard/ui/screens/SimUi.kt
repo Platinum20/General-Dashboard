@@ -119,64 +119,6 @@ internal fun renewalLine(day: LocalDate, today: LocalDate = LocalDate.now()): St
     "Rinnovo " + day.format(WindTreParse.shortDate) + " · " + renewalLabel(day, today)
 
 /**
- * La card della Home: tutto quello che c'è da sapere della SIM in un blocco solo, uguale (più grande)
- * nella pagina. Prima del collegamento dice solo come collegarsi.
- */
-@Composable
-internal fun SimCard(onOpen: () -> Unit) {
-    val context = LocalContext.current
-    SimStore.init(context)
-    val status by SimStore.status.collectAsStateWithLifecycle()
-    val linked by SimStore.linked.collectAsStateWithLifecycle()
-    // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
-    AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
-    val scope = rememberCoroutineScope()
-    // Vecchio dopo tre ore: la rilettura è ogni ora, una saltata non accende niente.
-    val link = LinkStatus.of(linked, expired = false, readAt = status?.at ?: 0, now = System.currentTimeMillis(), staleAfter = 3 * SimStore.STALE_MS)
-    Section(title = "SIM", modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true)) {
-        StatusLine(link, action = "Aggiorna", onAction = { scope.launch { WindTreLink.refresh(context) } }, modifier = Modifier.padding(top = 8.dp))
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onOpen)
-                .padding(16.dp),
-        ) {
-            val s = status
-            // Mentre legge: le barre in grigio, già alla loro altezza (1.357), invece di una frase che poi si allunga.
-            if (s == null && linked) {
-                Column(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Sto leggendo i dati di WindTre" },
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Placeholder(96.dp, 10.dp)
-                    repeat(3) {
-                        PlaceholderLine(1f, 14.dp)
-                        PlaceholderLine(1f, 4.dp)
-                    }
-                }
-                return@Column
-            }
-            if (s == null || !linked) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconTile(Icons.Outlined.SimCard, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        if (linked) "Sto leggendo i dati di WindTre…" else "Collega WindTre: giga, minuti e credito qui",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                }
-                return@Column
-            }
-            Column(Modifier.alpha(if (link.faded) FADED_ALPHA else 1f)) { SimPanel(s) }
-        }
-    }
-}
-
-/**
  * Il blocco della SIM: in alto l'offerta e quando è stato letto, poi un dato per riga.
  * Il roaming UE solo nella pagina (big).
  * Il colore del testo viene da fuori: nella card normale e nel blocco colorato della pagina.
@@ -410,28 +352,6 @@ internal fun WindTreAccountRows() {
             else FilledTonalButton(onClick = { inApp?.openRoute?.invoke(Routes.SIM) }) { Text("Accedi") }
         },
     )
-    if (linked) {
-        RowDivider()
-        // Se un numero esce sbagliato, quello che WindTre ha mandato serve a correggere la lettura.
-        SettingsItem(
-            icon = Icons.Outlined.Share,
-            title = "Salva i dati letti di WindTre",
-            subtitle = "Un file da mandarmi se non torna",
-            onClick = {
-                val where = saveTextToDownloads(context, stampedName("windtre-dati-letti"), SimStore.capturesText())
-                com.platinum20.dashboard.capture.CaptureFeedback.show(
-                    com.platinum20.dashboard.capture.CaptureNotice(
-                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
-                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
-                        undo = null,
-                        icon = Icons.Outlined.Share,
-                        fly = false,
-                    ),
-                )
-            },
-            trailing = { FilledTonalButton(onClick = { shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText()) }) { Text("Condividi") } },
-        )
-    }
 }
 
 

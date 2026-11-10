@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.height
@@ -155,6 +156,8 @@ enum class SettingsPage(val title: String) {
     ACCOUNTS("Account"),
     DATA("Dati"),
     INFO("Informazioni"),
+    /** In fondo al menu: quello che serve a sistemare l'app (letture da mandare, chiavi, filtri), mai in mezzo. */
+    TOOLS("Strumenti"),
     /** Non sta nel menu: si apre dalla riga SponsorBlock di Media, i tipi di segmento sono tanti. */
     SPONSORBLOCK("SponsorBlock"),
 }
@@ -212,6 +215,8 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenPage: (SettingsPage) -> Unit,
     onOpenAutoFill: () -> Unit,
+    onOpenCustomize: () -> Unit = {},
+    onPickPlace: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val theme by AppSettings.theme.collectAsState()
@@ -265,11 +270,10 @@ fun SettingsScreen(
                     }
                 }
             }
+            // Home e Dati sono gruppi di questa pagina, non pagine con due righe (punto 50).
+            item(key = "home") { HomePage(onOpenCustomize, onPickPlace) }
             item(key = "sections") {
                 SettingsBlock("Le sezioni") {
-                    MenuRow(Icons.Outlined.Dashboard, TileAccent.BLUE, "Home",
-                        SettingsSummary.home(layout.visible.size, HomeCard.entries.size, place?.name)) { onOpenPage(SettingsPage.HOME) }
-                    RowDivider()
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
                     MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
                         if (autoFillOn) "Spese e pacchi da soli" else "Compilazione automatica spenta",
@@ -310,12 +314,23 @@ fun SettingsScreen(
                             "Revolut".takeIf { bankLinked },
                             "Creators Pro".takeIf { shiftsLinked },
                         ))) { onOpenPage(SettingsPage.ACCOUNTS) }
+                }
+            }
+            item(key = "data") {
+                SettingsBlock("I tuoi dati") {
+                    WifiOnlySetting()
                     RowDivider()
-                    MenuRow(Icons.Outlined.Storage, TileAccent.BLUE, "Dati",
-                        if (wifiOnly) "Backup · download solo col Wi-Fi" else "Backup e download") { onOpenPage(SettingsPage.DATA) }
-                    RowDivider()
+                    BackupSettings()
+                }
+            }
+            // In fondo: la versione e gli strumenti per sistemare l'app, sempre raggiungibili ma mai in mezzo.
+            item(key = "about") {
+                SettingsBlock("Canvas") {
                     MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni",
-                        "Versione ${BuildConfig.VERSION_NAME} · licenze") { onOpenPage(SettingsPage.INFO) }
+                        "Versione ${BuildConfig.VERSION_NAME} · novità e licenze") { onOpenPage(SettingsPage.INFO) }
+                    RowDivider()
+                    MenuRow(Icons.Outlined.Build, TileAccent.NEUTRAL, "Strumenti",
+                        "Letture di SIM, Revolut e turni da inviarmi") { onOpenPage(SettingsPage.TOOLS) }
                 }
             }
         }
@@ -357,7 +372,7 @@ fun SettingsPageScreen(
                 SettingsPage.HOME -> item { HomePage(onCustomize, onPickPlace) }
                 SettingsPage.NEWS -> {
                     item { SettingsBlock("Voce di lettura") { VoicePicker() } }
-                    item { SettingsBlock("Fonti") { NewsSourcesSettings() } }
+                    item { SettingsBlock("Fonti · nelle News e nella Home") { NewsSourcesSettings() } }
                 }
                 SettingsPage.MEDIA -> {
                     item {
@@ -405,6 +420,11 @@ fun SettingsPageScreen(
                     }
                 }
                 SettingsPage.SPONSORBLOCK -> item { SettingsBlock("Salta i pezzi") { SponsorBlockSettings() } }
+                SettingsPage.TOOLS -> {
+                    item { SettingsBlock("Letture da inviarmi") { CaptureFileRows() } }
+                    item { SettingsBlock("Spotify") { SpotifyKeyRow() } }
+                    item { SettingsBlock("Pubblicità") { AdBlockListsRow() } }
+                }
                 SettingsPage.INFO -> {
                     item { AppHero(onClick = onOpenUpdates) }
                     item { InfoBlock() }
@@ -420,7 +440,7 @@ private fun HomePage(onCustomize: () -> Unit, onPickPlace: () -> Unit) {
     val layout by AppSettings.homeLayout.collectAsState()
     var place by remember { mutableStateOf(WeatherStore.manualPlace(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { place = WeatherStore.manualPlace(context) }
-    SettingsBlock("La pagina Home") {
+    SettingsBlock("Home") {
         SettingsItem(
             icon = Icons.Outlined.Dashboard,
             accent = TileAccent.BLUE,
@@ -452,9 +472,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
     remember { YouTubeAuth.init(context); SpotifyAuth.init(context) }
     val youTubeOfficial by YouTubeAuth.connected.collectAsState()
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
-    val spotifyClientId by SpotifyAuth.clientId.collectAsState()
     val youTubeSync by com.platinum20.dashboard.media.youtube.YtSync.status.collectAsState()
-    var editSpotifyKey by remember { mutableStateOf(false) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
     SettingsBlock("Musica e video") {
         // Un solo accesso per servizio: serve sia al player sia al feed nell'app.
@@ -507,18 +525,24 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                 },
             )
         }
-        RowDivider()
-        SettingsItem(
-            icon = Icons.Outlined.Key,
-            accent = TileAccent.GREEN,
-            title = "Chiave di Spotify",
-            subtitle = "Client ID della tua app Spotify",
-            value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
-            showChevron = true,
-            onClick = { editSpotifyKey = true },
-        )
     }
 
+}
+
+/** La chiave di Spotify: serve solo per sistemare l'app, quindi sta in Strumenti (punto 49). */
+@Composable
+private fun SpotifyKeyRow() {
+    val spotifyClientId by SpotifyAuth.clientId.collectAsState()
+    var editSpotifyKey by remember { mutableStateOf(false) }
+    SettingsItem(
+        icon = Icons.Outlined.Key,
+        accent = TileAccent.GREEN,
+        title = "Chiave di Spotify",
+        subtitle = "Client ID su developer.spotify.com",
+        value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
+        showChevron = true,
+        onClick = { editSpotifyKey = true },
+    )
     if (editSpotifyKey) {
         var value by remember { mutableStateOf(spotifyClientId) }
         val valid = SpotifyAuth.normalizeClientId(value)
@@ -1237,14 +1261,18 @@ private fun UpdateNotifySetting() {
 @Composable
 private fun NewsSourcesSettings() {
     val hidden by AppSettings.hiddenNewsSources.collectAsState()
+    // Quante storie dà oggi ogni fonte: l'unico motivo per guardare questa lista (punto 51).
+    val news by com.platinum20.dashboard.news.NewsStore.result.collectAsState()
+    LaunchedEffect(Unit) { if (news == null) com.platinum20.dashboard.news.NewsStore.restore() }
+    val counts = remember(news) { com.platinum20.dashboard.news.NewsStories.todayBySource(news?.items.orEmpty(), java.time.LocalDate.now()) }
     com.platinum20.dashboard.news.NewsSources.all.forEachIndexed { index, source ->
         if (index > 0) RowDivider()
         val on = source.id !in hidden
         SettingsItem(
             icon = Icons.Outlined.Newspaper,
-            accent = TileAccent.GREEN,
+            accent = TileAccent.NEUTRAL,
             title = source.name,
-            subtitle = if (on) "Nelle News e nella Home" else "Nascosta",
+            subtitle = if (on) com.platinum20.dashboard.news.NewsStories.todayLabel(counts[source.id] ?: 0) else "Nascosta",
             onClick = { AppSettings.setNewsSourceHidden(source.id, on) },
             trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> AppSettings.setNewsSourceHidden(source.id, !v) }) },
         )
@@ -1419,7 +1447,6 @@ private fun DislikeSettings() {
 private fun AdBlockSettings() {
     val enabled by AppSettings.adBlock.collectAsState()
     val blocked by AdBlocker.blocked.collectAsState()
-    val status by AdBlocker.status.collectAsState()
     val toggle = { on: Boolean -> AppSettings.setAdBlock(on) }
     SettingsItem(
         icon = Icons.Outlined.Shield,
@@ -1429,22 +1456,21 @@ private fun AdBlockSettings() {
         onClick = { toggle(!enabled) },
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle(toggle)) },
     )
-    AnimatedVisibility(
-        visible = enabled,
-        enter = expandVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) + fadeIn(tween(Motion.ENTER_MS)),
-        exit = shrinkVertically(tween(Motion.ENTER_MS - 80, easing = Motion.Accelerate)) + fadeOut(tween(Motion.EXIT_MS)),
-    ) { Column {
-        RowDivider()
-        SettingsItem(
-            icon = Icons.Outlined.FilterList,
-            accent = TileAccent.NEUTRAL,
-            title = "Liste dei filtri",
-            subtitle = adBlockStatusText(status),
-            trailing = {
-                FilledTonalButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
-            },
-        )
-    } }
+}
+
+/** Le liste dei filtri del blocco pubblicità: si aggiornano da sole, il tasto serve solo a sistemare (Strumenti). */
+@Composable
+private fun AdBlockListsRow() {
+    val status by AdBlocker.status.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.FilterList,
+        accent = TileAccent.NEUTRAL,
+        title = "Liste dei filtri",
+        subtitle = adBlockStatusText(status),
+        trailing = {
+            TextButton(onClick = { AdBlocker.updateNow() }, enabled = !status.updating) { Text("Aggiorna") }
+        },
+    )
 }
 
 /** "EasyList, EasyPrivacy e uBlock Origin · 163.784 regole · aggiornate il 22 ott". */

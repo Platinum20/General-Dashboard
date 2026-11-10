@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 
 import androidx.compose.foundation.clickable
@@ -71,7 +74,7 @@ fun CustomizeScreen(onBack: () -> Unit) {
     ) { inner ->
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         val reorderHaptic = rememberHaptic()
-        val reorder = rememberReorderState(listState, canMove = { it is String }) { from, to ->
+        val reorder = rememberReorderState(listState, canMove = { key -> key is String && HomeCard.entries.any { it.name == key && it !in AppSettings.homeLayout.value.hidden } }) { from, to ->
             val card = HomeCard.entries.firstOrNull { it.name == from }
             val target = HomeCard.entries.firstOrNull { it.name == to }
             if (card != null && target != null) {
@@ -88,57 +91,92 @@ fun CustomizeScreen(onBack: () -> Unit) {
                 bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
             ),
         ) {
-            item(key = 0) {
-                Text(
-                    "Trascina la maniglia per cambiare l'ordine delle card nella Home; l'interruttore le mostra o le nasconde.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 12.dp),
-                )
-            }
-            itemsIndexed(layout.order, key = { _, card -> card.name }) { _, card ->
-                val visible = card !in layout.hidden
+            // Due gruppi (punto 53): sopra esattamente la Home dall'alto in basso, sotto quelle nascoste.
+            val shown = layout.order.filter { it !in layout.hidden }
+            val hidden = layout.order.filter { it in layout.hidden }
+            item(key = "h-shown") { SectionHeader("In Home", Modifier.padding(bottom = 8.dp)) }
+            itemsIndexed(shown, key = { _, card -> card.name }) { i, card ->
                 val haptic = rememberHaptic()
-                val toggle = hapticToggle { AppSettings.setCardVisible(card, it) }
-                // Come le righe delle Impostazioni: icona, testo, maniglia per l'ordine e interruttore a destra.
-                Row(
+                CardRow(
+                    card, first = i == 0, last = i == shown.lastIndex,
                     modifier = Modifier
                         .then(if (reorder.isDragging(card.name)) Modifier else Modifier.animateItem())
-                        .reorderItem(reorder, card.name)
-                        .padding(vertical = 4.dp)
-                        .fillMaxWidth()
-                        .bouncyPress(0.98f)
-                        .clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.card)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large)
-                        .clickable { toggle(!visible) }
-                        .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(Modifier.alpha(if (visible) 1f else 0.45f)) { IconTile(card.icon(), card.accent()) }
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f).alpha(if (visible) 1f else 0.6f)) {
-                        // Solo il nome (1.402): dice già tutto, e la descrizione si tagliava coi puntini.
-                        Text(card.label, style = MaterialTheme.typography.titleMedium)
-                    }
-                    Icon(
-                        Icons.Outlined.DragHandle,
-                        contentDescription = "Trascina per spostare",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .reorderHandle(reorder, card.name) { haptic(Haptic.GRAB) }
-                            .padding(8.dp)
-                            .size(24.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Switch(checked = visible, onCheckedChange = toggle)
+                        .reorderItem(reorder, card.name),
+                    handle = {
+                        Icon(
+                            Icons.Outlined.DragHandle,
+                            contentDescription = "Trascina per spostare",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .reorderHandle(reorder, card.name) { haptic(Haptic.GRAB) }
+                                .padding(8.dp)
+                                .size(24.dp),
+                        )
+                    },
+                    action = Icons.Outlined.RemoveCircleOutline,
+                    actionLabel = "Togli dalla Home",
+                ) { haptic(Haptic.TICK); AppSettings.setCardVisible(card, false) }
+            }
+            if (hidden.isNotEmpty()) {
+                item(key = "h-hidden") { SectionHeader("Nascoste", Modifier.padding(top = 20.dp, bottom = 8.dp)) }
+                itemsIndexed(hidden, key = { _, card -> card.name }) { i, card ->
+                    val haptic = rememberHaptic()
+                    CardRow(
+                        card, first = i == 0, last = i == hidden.lastIndex,
+                        modifier = Modifier.animateItem(),
+                        dim = true,
+                        action = Icons.Outlined.AddCircleOutline,
+                        actionLabel = "Rimetti in Home",
+                    ) { haptic(Haptic.CONFIRM); AppSettings.setCardVisible(card, true) }
                 }
             }
-            // Solo quando c'è qualcosa da ripristinare (1.402): spento era grigio chiaro e non si leggeva.
-            if (layout != HomeLayout.DEFAULT) item(key = 1) {
-                Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+            if (layout != HomeLayout.DEFAULT) item(key = "reset") {
+                Box(Modifier.fillMaxWidth().padding(top = 20.dp), contentAlignment = Alignment.Center) {
                     CanvasButton("Ripristina l'ordine iniziale", onClick = AppSettings::resetLayout)
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Una card della Home nella lista: solo il nome (lo dice già tutto), la maniglia se è in Home, a destra il
+ * tocco per toglierla o rimetterla. Le righe di un gruppo stanno in un'unica card.
+ */
+@Composable
+private fun CardRow(
+    card: HomeCard,
+    first: Boolean,
+    last: Boolean,
+    modifier: Modifier = Modifier,
+    dim: Boolean = false,
+    handle: (@Composable () -> Unit)? = null,
+    action: ImageVector,
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    val corner = 16.dp
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        topStart = if (first) corner else 0.dp, topEnd = if (first) corner else 0.dp,
+        bottomStart = if (last) corner else 0.dp, bottomEnd = if (last) corner else 0.dp,
+    )
+    Column(modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.card)) {
+        if (!first) RowDivider()
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 14.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.alpha(if (dim) 0.5f else 1f)) { IconTile(card.icon(), TileAccent.NEUTRAL) }
+            Spacer(Modifier.width(14.dp))
+            Text(
+                card.label,
+                style = MaterialTheme.typography.titleMedium,
+                color = if (dim) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            handle?.invoke()
+            IconButton(onClick = onAction) {
+                Icon(action, contentDescription = actionLabel, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

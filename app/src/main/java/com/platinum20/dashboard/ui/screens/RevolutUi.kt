@@ -64,99 +64,6 @@ internal fun revolutLine(linked: Boolean, expired: Boolean, balance: Long?): Str
     else -> "Revolut collegato"
 }
 
-/**
- * La card Revolut della Home, come quella della SIM (Antonio): in alto il saldo totale, sotto una
- * riga per tasca (conto e salvadanai). Solo lettura. Tocco = le spese del mese; prima del
- * collegamento, o a sessione scaduta, porta all'accesso.
- */
-@Composable
-internal fun RevolutCard(onOpen: () -> Unit) {
-    val context = LocalContext.current
-    RevolutStore.init(context)
-    val linked by RevolutStore.linked.collectAsStateWithLifecycle()
-    val expired by RevolutStore.expired.collectAsStateWithLifecycle()
-    val pockets by RevolutStore.pockets.collectAsStateWithLifecycle()
-    val balance by RevolutStore.balance.collectAsStateWithLifecycle()
-    val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
-    val inApp = LocalInAppNav.current
-    val scope = rememberCoroutineScope()
-    // Vecchio dopo un'ora: la rilettura è ogni 14 minuti, quindi ne sono saltate almeno tre.
-    val link = LinkStatus.of(linked, expired, readAt, System.currentTimeMillis(), staleAfter = 4 * RevolutStore.STALE_MS)
-    // La rilettura ogni mezz'ora la fa già la Home (spese nel calendario): qui solo si mostra.
-    Section(title = "Revolut", modifier = Modifier.sharedItem(SharedKeys.BANK, rounded = true)) {
-        // Lo stato vero sopra il dato, con l'azione lì (1.402): "Rientra" apre subito l'accesso.
-        StatusLine(
-            link,
-            action = if (expired) "Rientra" else "Aggiorna",
-            onAction = {
-                if (expired) inApp?.openRoute?.invoke(Routes.REVOLUT)
-                else scope.launch { RevolutLink.refresh(context) }
-            },
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = { if (!linked || expired) inApp?.openRoute?.invoke(Routes.REVOLUT) else onOpen() })
-                .padding(16.dp),
-        ) {
-            // Prima che arrivi il wallet c'è almeno il saldo del conto (lettura delle versioni prima).
-            val shown = pockets.ifEmpty { balance?.let { listOf(Pocket("main", "Conto", it, main = true)) } ?: emptyList() }
-            // Mentre legge: la forma del saldo in grigio, già alla sua altezza (1.357), invece di una frase che poi si allunga.
-            if (linked && !expired && shown.isEmpty()) {
-                Column(
-                    Modifier.semantics(mergeDescendants = true) { contentDescription = "Sto leggendo il conto Revolut" },
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Placeholder(84.dp, 10.dp)
-                    Placeholder(150.dp, 30.dp)
-                    PlaceholderLine(1f, 14.dp)
-                    PlaceholderLine(1f, 14.dp)
-                }
-                return@Column
-            }
-            if (expired && shown.isEmpty()) return@Column
-            if (!linked || shown.isEmpty()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconTile(Icons.Outlined.AccountBalanceWallet, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        when {
-                            !linked -> "Collega Revolut: saldo e tasche qui"
-                            else -> "Sto leggendo il conto Revolut…"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
-                }
-                return@Column
-            }
-            Column(Modifier.alpha(if (link.faded) FADED_ALPHA else 1f)) { RevolutPanel(shown) }
-        }
-    }
-}
-
-/** Saldo totale grande in alto, poi una tasca per riga: nome a sinistra, importo a destra. */
-@Composable
-private fun RevolutPanel(pockets: List<Pocket>) {
-    val soft = LocalContentColor.current.copy(alpha = 0.7f)
-    // Quando è stato letto lo dice la riga di stato, solo se il dato è vecchio (1.402).
-    Text("SALDO TOTALE", style = MaterialTheme.typography.labelMedium, color = soft)
-    Spacer(Modifier.height(4.dp))
-    RollingText(Expenses.format(RevolutPockets.total(pockets)), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-    // Con una tasca sola il totale è già lei: niente riga doppia.
-    if (pockets.size > 1) pockets.forEach { p ->
-        Spacer(Modifier.height(10.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(p.name, style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            RollingText(Expenses.format(p.cents), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
 /** Il collegamento in Impostazioni › Account, come WindTre: qui si entra, si esce e si condividono i dati letti. */
 @Composable
 internal fun RevolutAccountRows() {
@@ -187,27 +94,6 @@ internal fun RevolutAccountRows() {
             }
         },
     )
-    if (linked) {
-        RowDivider()
-        SettingsItem(
-            icon = Icons.Outlined.Share,
-            title = "Salva i dati letti di Revolut",
-            subtitle = "Un file da mandarmi se non torna",
-            onClick = {
-                val where = saveTextToDownloads(context, stampedName("revolut-dati-letti"), RevolutStore.capturesText())
-                com.platinum20.dashboard.capture.CaptureFeedback.show(
-                    com.platinum20.dashboard.capture.CaptureNotice(
-                        com.platinum20.dashboard.capture.CaptureMode.NOTE,
-                        if (where != null) "Salvato in " + where.substringAfterLast('/') else "Non sono riuscito a salvarlo",
-                        undo = null,
-                        icon = Icons.Outlined.Share,
-                        fly = false,
-                    ),
-                )
-            },
-            trailing = { FilledTonalButton(onClick = { shareTextFile(context, "revolut-dati-letti.txt", RevolutStore.capturesText()) }) { Text("Condividi") } },
-        )
-    }
 }
 
 /**
