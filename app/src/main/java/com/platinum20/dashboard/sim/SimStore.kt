@@ -19,6 +19,7 @@ object SimStore {
     private const val KEY_STATUS = "status"
     private const val KEY_LINKED = "linked"
     private const val KEY_FORMAT = "format"
+    private const val KEY_HISTORY = "history"
     private const val FORMAT = 2
     private const val CAPTURES = "windtre-captures.json"
     private const val MAX_CAPTURES = 40
@@ -34,6 +35,9 @@ object SimStore {
     val linked: StateFlow<Boolean> = _linked.asStateFlow()
     private val _refreshing = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+    /** Una lettura dei giga al giorno per qualche settimana: serve a dire se bastano fino al rinnovo. */
+    private val _history = MutableStateFlow<List<SimReading>>(emptyList())
+    val history: StateFlow<List<SimReading>> = _history.asStateFlow()
 
     /** Quello letto nel giro in corso (accesso o aggiornamento), non ancora confermato. */
     @Volatile
@@ -54,6 +58,7 @@ object SimStore {
             File(app.filesDir, CAPTURES).delete()
         }
         _status.value = prefs.getString(KEY_STATUS, null)?.let { runCatching { SimStatus.fromJson(JSONObject(it)) }.getOrNull() }
+        _history.value = SimUsage.fromJson(prefs.getString(KEY_HISTORY, null))
         runCatching {
             val arr = JSONArray(File(app.filesDir, CAPTURES).readText())
             for (i in 0 until arr.length()) captures.addLast(arr.getJSONObject(i))
@@ -107,7 +112,12 @@ object SimStore {
         _status.value = merged
         if (!_linked.value) setLinked(true)
         val app = appContext ?: return
-        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_STATUS, merged.toJson().toString()).apply()
+        val edit = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_STATUS, merged.toJson().toString())
+        merged.data?.takeIf { !it.unlimited }?.let {
+            _history.value = SimUsage.record(_history.value, SimReading(merged.at, it.left))
+            edit.putString(KEY_HISTORY, SimUsage.toJson(_history.value))
+        }
+        edit.apply()
         // Lettura riuscita = sessione buona: se ne tiene la copia per la prossima WebView.
         WindTreSession.save(app)
         saveCaptures()
@@ -136,6 +146,7 @@ object SimStore {
     fun unlink() {
         setLinked(false)
         _status.value = null
+        _history.value = emptyList()
         session = null
         synchronized(this) { captures.clear() }
         val app = appContext ?: return
