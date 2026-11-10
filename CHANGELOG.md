@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.412.0
+## 1.418.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
 - Icone tutte color inchiostro, anche nei quadratini di Impostazioni e Card della Home; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
 - Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
@@ -10,6 +10,20 @@
 - Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
 - Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
 - Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
+## 1.415.0
+**News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
+- Senza novità, il segno dell'ultima visita dice da solo "niente di nuovo": una riga in meno
+- I telegiornali interi ("World24 del 09/11", "Tg1 delle 20") non compaiono più tra le storie
+- Una foto grande sulla prima storia delle nuove e sulla prima delle già viste; le altre sono titoli puliti
+- Al posto della freccina accanto alla fonte c'è "· 2 fonti": il tocco apre le versioni come prima
+- L'icona di News nella barra è un foglio di testo, non sembra più un calendario
+
+## 1.413.0
+**Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
+- In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
+- Il meteo in cima è un blocco basso: icona, temperatura e condizioni su una riga, sotto l'avviso di pioggia. Niente più "Adesso · Roma": la città la trovi in Meteo
+- Scorrendo una pagina il titolo grande diventa una riga sottile, così resta più spazio alla lista (Home, Calendario, News, Media, Meteo, Impostazioni e le altre)
 
 ## 1.411.0
 **Schede più chiare, Spese con le frecce, Meteo e SIM più puliti**

@@ -275,15 +275,17 @@ fun NotesScreen(
     }
     val calendarOff by CalendarAsk.off.collectAsStateWithLifecycle()
 
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // La stessa card Calendario della Home, allargata: si apre da lì e lì si richiude.
-        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true),
+        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.
         topBar = {
             TopLevelBar(
                 title = "Calendario",
+                scrollBehavior = barScroll,
                 // Con un filtro acceso il sottotitolo lo dice ("SOLO SPESE"): toccandolo di nuovo si torna a tutto.
                 subtitle = filter?.let { "Solo " + it.label.lowercase() } ?: listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },

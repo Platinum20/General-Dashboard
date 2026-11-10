@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
@@ -132,11 +133,14 @@ fun YouTubeFeedScreen(
     val subs by YouTubeStore.subscriptions.collectAsState()
     val fresh = subs.data.orEmpty().count { v -> v.published?.let { Duration.between(it, Instant.now()).toHours() < 24 } == true }
 
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopLevelBar(
                 title = "Video",
+                scrollBehavior = barScroll,
                 subtitle = when {
                     fresh > 0 -> "$fresh video nuovi oggi"
                     else -> "YouTube e i video del telefono"

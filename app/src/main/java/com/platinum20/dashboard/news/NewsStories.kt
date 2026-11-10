@@ -47,7 +47,7 @@ object NewsStories {
      * [hidden] = id delle fonti nascoste in Impostazioni.
      */
     fun group(items: List<NewsItem>, readable: Set<String>? = null, hidden: Set<String> = emptySet()): List<NewsStory> {
-        val usable = items.filter { it.source.id !in hidden && (readable == null || it.link in readable) }
+        val usable = items.filter { it.source.id !in hidden && (readable == null || it.link in readable) && !isBulletin(it.title) }
         return NewsRecap.cluster(usable)
     }
 
@@ -118,13 +118,57 @@ object NewsStories {
         }
     }
 
-    /** Il segno nella lista: "Ultima visita · 09:12", "· ieri", "· 3 giorni fa". */
-    fun markerLabel(since: Instant, now: Instant, clock: (Instant) -> String): String {
+    /**
+     * Il segno nella lista: "Ultima visita · 09:12", "· ieri", "· 3 giorni fa". Senza novità lo dice il
+     * segno stesso ("· niente di nuovo"): una riga sola invece di due che dicono la stessa cosa.
+     */
+    fun markerLabel(since: Instant, now: Instant, clock: (Instant) -> String, nothingNew: Boolean = false): String {
         val hours = Duration.between(since, now).toHours()
         return "Ultima visita · " + when {
             hours < 20 -> clock(since)
             hours < 48 -> "ieri"
             else -> "${hours / 24} giorni fa"
+        } + if (nothingNew) " · niente di nuovo" else ""
+    }
+
+    // Un telegiornale intero non è una notizia: "World24 del 09/11/2026", "Tg1 delle 20", "GR1 ore 8".
+    private val bulletinName = Regex(
+        "^(?:tg\\d*|tg\\s?la7|tgr|tg24|gr\\s?\\d|giornale radio|telegiornale|rainews24|world24)\\b",
+        RegexOption.IGNORE_CASE,
+    )
+    private val bulletinWhen = Regex(
+        "\\d{1,2}[/.]\\d{1,2}[/.]\\d{2,4}|\\bedizione\\b|\\b(?:ore|delle)\\s+\\d{1,2}(?:[:.]\\d{2})?\\s*$",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Pura: il titolo è un tg o un giornale radio (nome del notiziario e data o ora), non una storia. */
+    fun isBulletin(title: String): Boolean {
+        val t = title.trim()
+        return t.length <= 60 && bulletinName.containsMatchIn(t) && bulletinWhen.containsMatchIn(t)
+    }
+
+    /**
+     * La riga sotto il titolo: "Open · 23 min fa"; con più versioni della storia "RaiNews · 2 fonti · 23 min fa"
+     * (al posto della freccina, che sembrava un menu). Il tocco sulla storia le apre come prima.
+     */
+    fun metaLine(story: NewsStory, time: String?): String {
+        val names = story.items.map { it.source.name }.distinct()
+        val versions = when {
+            story.items.size <= 1 -> null
+            names.size > 1 -> "${names.size} fonti"
+            else -> "${story.items.size} articoli"
         }
+        return listOfNotNull(story.headline.source.name, versions, time).joinToString(" · ")
+    }
+
+    /** Pura: quanti articoli ha dato oggi ogni fonte (id → numero), per Impostazioni › News › Fonti. */
+    fun todayBySource(items: List<NewsItem>, today: java.time.LocalDate, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): Map<String, Int> =
+        items.filter { it.publishedAt?.atZone(zone)?.toLocalDate() == today }.groupingBy { it.source.id }.eachCount()
+
+    /** "31 storie oggi", "1 storia oggi", "Niente oggi". */
+    fun todayLabel(count: Int): String = when (count) {
+        0 -> "Niente oggi"
+        1 -> "1 storia oggi"
+        else -> "$count storie oggi"
     }
 }

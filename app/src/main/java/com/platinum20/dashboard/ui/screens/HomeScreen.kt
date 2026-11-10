@@ -181,11 +181,8 @@ fun HomeScreen(
         }
     }
     // Saluto e data seguono l'orologio: lasciando l'app aperta la notte, la mattina dice "Buongiorno".
-    val greeting = Greeting.forHour(minute.hour)
-    val today = remember(minute.toLocalDate()) {
-        minute.toLocalDate().format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
-            .replaceFirstChar { it.uppercase() }
-    }
+    // La data è il titolo, il saluto la riga piccola sopra (1.402): la data serve, il saluto no.
+    val today = remember(minute.toLocalDate()) { Greeting.dateTitle(minute.toLocalDate()) }
     MediaHistory.init(context)
     VideoLibrary.init(context)
     val mediaHistory by MediaHistory.items.collectAsStateWithLifecycle()
@@ -365,11 +362,17 @@ fun HomeScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         topBar = {
-            // Il saluto e la data fanno da titolo: niente card in più che ripete il meteo.
+            // La data fa da titolo, il saluto sta piccolo sopra; scorrendo resta solo "Martedì 10".
+            val scrolled by remember {
+                androidx.compose.runtime.derivedStateOf {
+                    listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120
+                }
+            }
             TopLevelBar(
-                title = greeting,
-                subtitle = today,
+                title = today,
+                subtitle = Greeting.subtitle(minute.hour, minute.toLocalDate()),
                 scrollBehavior = scrollBehavior,
+                collapsed = scrolled,
             )
         },
     ) { inner ->
@@ -561,7 +564,7 @@ private fun WeatherSummary(
 ) {
     val forecast = state.forecast
     when {
-        forecast != null -> WeatherNowHeader(forecast, state.loading)
+        forecast != null -> WeatherNowCompact(forecast, state.loading)
         !hasPermission -> CardMessage(
             icon = Icons.Outlined.LocationOn,
             title = "Meteo",
@@ -572,16 +575,16 @@ private fun WeatherSummary(
         // Mentre cerca: la forma del meteo in grigio, già alla sua altezza, invece della rotella.
         state.loading || state.error == null -> Row(
             modifier = Modifier
-                .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 10.dp)
+                .padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)
                 .semantics(mergeDescendants = true) { contentDescription = "Cerco il meteo della tua zona" },
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Placeholder(110.dp, 10.dp)
-                Placeholder(84.dp, 34.dp)
-                Placeholder(150.dp, 12.dp)
-            }
-            Placeholder(44.dp, 44.dp, shape = CircleShape)
+            // La stessa forma dell'eroe compatto: icona, temperatura, una riga.
+            Placeholder(30.dp, 30.dp, shape = CircleShape)
+            Spacer(Modifier.size(10.dp))
+            Placeholder(56.dp, 32.dp)
+            Spacer(Modifier.size(12.dp))
+            Placeholder(130.dp, 12.dp)
         }
         else -> CardMessage(
             icon = Icons.Outlined.WbSunny,
