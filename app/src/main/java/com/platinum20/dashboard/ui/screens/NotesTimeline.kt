@@ -374,12 +374,11 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         begin = event.begin,
         end = event.end,
     ) else {
-    // Il nome su una riga sua sopra inizio e fine (Antonio); un turno "Turno su A, B e C" accanto all'inizio.
+    // Il nome accanto all'ora d'inizio, come "Treno per …" e "Turno su A, B e C": niente riga in più (Antonio, 1.401).
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else "",
-        title = if (labels || creators.isNotEmpty()) null else event.title.ifBlank { "Evento" },
+        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else event.title.ifBlank { "Evento" },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.

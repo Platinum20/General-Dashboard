@@ -80,9 +80,9 @@ class TripsTest {
         val shift = CalendarEvent(-3, "Turno Morning", start, stop, false, "Ufficio", 0)
         val row = tripStops(shift, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("07:00", row.departAt)
-        // Il nome sta sulla riga sopra, gli orari da soli sotto.
-        assertEquals("Turno Morning", row.title)
-        assertEquals("", row.from)
+        // Il nome accanto all'ora d'inizio, nessuna riga sopra.
+        assertEquals(null, row.title)
+        assertEquals("Turno Morning", row.from)
         assertEquals("12:00", row.arriveAt)
         assertEquals("", row.to)
         assertEquals("5 h · Ufficio", row.middle)
