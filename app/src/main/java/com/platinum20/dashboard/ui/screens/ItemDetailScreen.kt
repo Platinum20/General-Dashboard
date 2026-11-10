@@ -29,6 +29,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.Routes
@@ -76,7 +83,37 @@ data class ItemDetail(
     val amount: String? = null,
     /** Spese: la categoria, un chip con › sotto il titolo. */
     val category: com.platinum20.dashboard.notes.ExpenseCategory? = null,
+    /** Abitudini: la serie grande in alto e la settimana a pallini (punto 30 B). */
+    val habit: HabitView? = null,
 )
+
+/** Un giorno della settimana dell'abitudine: la lettera, se fatta, se è oggi, se deve ancora venire. */
+data class HabitDay(val date: LocalDate, val letter: String, val done: Boolean, val today: Boolean, val future: Boolean)
+
+/** La testa della scheda abitudine: "5 giorni di fila", sotto come va, e la settimana da lunedì. */
+data class HabitView(val streak: String, val sub: String, val week: List<HabitDay>)
+
+/** La serie e la settimana di un'abitudine (punto 30 B): solo questa settimana, niente mese. Pura, per i test. */
+internal fun habitView(h: com.platinum20.dashboard.notes.Habit, now: LocalDateTime): HabitView {
+    val today = now.toLocalDate()
+    val monday = today.with(java.time.DayOfWeek.MONDAY)
+    val letters = listOf("L", "M", "M", "G", "V", "S", "D")
+    val week = (0..6).map { i ->
+        val d = monday.plusDays(i.toLong())
+        HabitDay(d, letters[i], h.isDone(d), d == today, d.isAfter(today))
+    }
+    val streak = if (h.weekly) h.weekStreak(today).let { n ->
+        when (n) { 0 -> "${h.weekCount(today)} su ${h.perWeek} questa settimana"; 1 -> "1 settimana di fila"; else -> "$n settimane di fila" }
+    } else h.streak(today).let { n ->
+        when (n) { 0 -> "Nessun giorno di fila"; 1 -> "1 giorno di fila"; else -> "$n giorni di fila" }
+    }
+    val sub = when {
+        h.weekly && h.weekStreak(today) > 0 -> "${h.weekCount(today)} su ${h.perWeek} questa settimana"
+        h.isDone(today) -> "Fatta oggi"
+        else -> "Da fare oggi"
+    }
+    return HabitView(streak, sub + HabitReminder.suffix(h), week)
+}
 
 private val shortDate = DateTimeFormatter.ofPattern("d MMMM", Locale.ITALIAN)
 
@@ -163,8 +200,8 @@ fun itemDetail(data: NotesData, kind: ItemKind, id: Long, now: LocalDateTime = L
                 listOf(
                     DetailLine(LineKind.REPEAT, if (h.weekly) "${h.perWeek} volte a settimana" else "Ogni giorno"),
                     DetailLine(LineKind.WHEN, h.remindAt?.let { "Avviso alle " + it.format(DateTimeFormatter.ofPattern("HH:mm")) } ?: "Nessun avviso"),
-                    DetailLine(LineKind.STATUS, h.statusLine(now).text + HabitReminder.suffix(h)),
                 ),
+                habit = habitView(h, now),
             )
         }
         ItemKind.EXPENSE -> data.expenses.firstOrNull { it.id == id }?.let { e ->
@@ -318,6 +355,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
             val edit = lineEdit(kind, id, data, LineKind.CATEGORY) as? LineEdit.Tap
             DetailChip(c.icon(), c.label, onClick = { edit?.onClick?.invoke() })
         }
+        detail.habit?.let { v -> HabitHead(v) { day -> haptic(Haptic.TICK); NotesStore.toggleHabit(id, day) } }
         detail.whenLine?.let { w ->
             DetailWhen(w.main, w.sub, onClick = whenEdit?.let { edit -> { picker = edit.picker ?: run { edit.onClick(); null } } })
         }
@@ -462,4 +500,47 @@ private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind):
 fun rememberOpenItem(): (ItemKind, Long) -> Unit {
     val inApp = LocalInAppNav.current
     return remember(inApp) { { kind, id -> inApp?.openRoute?.invoke(Routes.noteItem(kind, id)) } }
+}
+
+/** La serie grande e la settimana a pallini: un pallino passato si tocca per segnare un giorno dimenticato. */
+@Composable
+private fun HabitHead(v: HabitView, onToggle: (LocalDate) -> Unit) {
+    androidx.compose.foundation.layout.Column(Modifier.padding(start = 26.dp, end = 4.dp)) {
+        androidx.compose.material3.Text(v.streak, style = MaterialTheme.typography.headlineMedium)
+        androidx.compose.material3.Text(v.sub, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+    ) {
+        v.week.forEach { d ->
+            val blue = MaterialTheme.colorScheme.primary
+            androidx.compose.foundation.layout.Column(
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .then(if (d.future) Modifier else Modifier.clickable { onToggle(d.date) })
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+            ) {
+                androidx.compose.material3.Text(
+                    d.letter,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (d.today) blue else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .size(22.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .then(
+                            when {
+                                d.done -> Modifier.background(blue)
+                                d.future -> Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                else -> Modifier.border(1.5.dp, if (d.today) blue else MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape)
+                            },
+                        ),
+                )
+            }
+        }
+    }
 }
