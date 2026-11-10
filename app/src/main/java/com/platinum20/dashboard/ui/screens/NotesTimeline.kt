@@ -258,7 +258,7 @@ internal fun DueBadge(big: String, small: String?, error: Boolean = false, muted
             color = when {
                 error -> MaterialTheme.colorScheme.error
                 muted -> MaterialTheme.colorScheme.onSurfaceVariant
-                else -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurface
             },
         )
         if (small != null) {

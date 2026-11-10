@@ -502,12 +502,12 @@ private val MONTH_RULE = 3.dp
  */
 private val LINE_END = 19.dp
 
-/** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti quello dell'app. */
+/** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
 private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
     late -> MaterialTheme.colorScheme.error
     past -> MaterialTheme.colorScheme.onSurfaceVariant
-    else -> MaterialTheme.colorScheme.primary
+    else -> MaterialTheme.colorScheme.onSurface
 }
 
 /**
@@ -520,7 +520,7 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
     val dot = when {
         past -> MaterialTheme.colorScheme.outline
         late -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
     }
     Row(
         Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },
@@ -630,7 +630,7 @@ fun TimelineMonthMarker(
     onClick: (() -> Unit)? = null,
     /** Il giorno della prima riga sotto il segno, a destra prima del pallino (Antonio). */
     day: String? = null,
-    dayColor: Color = MaterialTheme.colorScheme.primary,
+    dayColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant

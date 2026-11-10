@@ -72,6 +72,7 @@ internal fun BoxScope.ActionBubbleLayer() {
                 kotlinx.coroutines.delay((last.size - 1 - index) * 30L)
                 appear.animateTo(1f, Motion.lively())
             }
+            if (index > 0) RowDivider()
             androidx.compose.foundation.layout.Box(
                 androidx.compose.ui.Modifier.graphicsLayer {
                     alpha = appear.value

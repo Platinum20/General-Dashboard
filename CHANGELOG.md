@@ -1,10 +1,20 @@
 # Changelog
 
-## 1.427.0
+## 1.429.0
 **Le date dicono quanti anni compie e quanto manca, chip "Tutto" nel Calendario**
 - Sotto compleanni e date una riga piccola: "compie 34 anni · tra 12 giorni". Compare quando si sa l'età o quando manca più di 3 giorni, anche per le scadenze dei documenti
 - Nel Calendario i filtri cominciano con "Tutto", acceso di partenza: si vede subito che Spese, Note ed Eventi sono scelte
 - Toccando "Tutto" torni a vedere ogni cosa
+## 1.428.0
+**Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
+- Icone tutte color inchiostro, anche nei quadratini di Impostazioni; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
+- Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
+- Il fumetto delle azioni è un solo blocco di vetro con le icone in inchiostro; "Portalo di lato per chiuderlo" compare solo le prime 3 volte
+- Grigi dei segnaposto più leggibili; sottotitoli riscritti per stare in una riga senza puntini
+- SIM, Revolut, Gmail e turni dicono quando il dato è vecchio o l'accesso è scaduto, con l'azione lì; il dato vecchio resta, sbiadito
+- Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
+- Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
+- Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
 
 ## 1.426.0
 **Abitudini nel Calendario della Home, da segnare con un tocco**

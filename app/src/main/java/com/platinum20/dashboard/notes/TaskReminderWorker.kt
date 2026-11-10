@@ -49,9 +49,8 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(when { task.alert == Alert.DAY_BEFORE -> "Domani"; task.allDay -> "Oggi"; else -> "Promemoria" })
-            .setContentText(task.titleWithYears())
-            .setStyle(NotificationCompat.BigTextStyle().bigText(task.titleWithYears()))
+            .setContentTitle(ReminderText.title(task))
+            .setContentText(ReminderText.detail(task))
             .setContentIntent(
                 PendingIntent.getActivity(context, notificationId(id), open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
             )

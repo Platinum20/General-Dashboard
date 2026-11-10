@@ -45,7 +45,7 @@ internal fun CaptureFileRows() {
                     ),
                 )
             },
-            trailing = { TextButton(onClick = { shareTextFile(context, "$file.txt", text()) }) { Text("Condividi") } },
+            trailing = { androidx.compose.material3.FilledTonalButton(onClick = { shareTextFile(context, "$file.txt", text()) }) { Text("Condividi") } },
         )
     }
 }

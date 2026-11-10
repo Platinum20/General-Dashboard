@@ -9,6 +9,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.LaunchedEffect
+import com.platinum20.dashboard.bank.RevolutStore
+import com.platinum20.dashboard.mail.GmailAuth
+import com.platinum20.dashboard.mail.GmailImap
+import com.platinum20.dashboard.shifts.ShiftStore
+import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.media.songid.SongId
 import android.Manifest
 import androidx.compose.material.icons.outlined.Wifi
@@ -169,8 +174,11 @@ internal object SettingsLines {
 
 /** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
 internal object SettingsSummary {
+    /** Quanto ci sta in una riga senza puntini (1.402): le righe si riscrivono per starci, non si tagliano. */
+    const val MAX = 32
+
     fun home(visible: Int, total: Int, place: String?): String =
-        "$visible card su $total · meteo " + (place?.let { "di $it" } ?: "dalla posizione")
+        "$visible card su $total · " + (place?.takeIf { it.length <= 16 }?.let { "meteo di $it" } ?: "meteo qui")
 
     fun alerts(morning: String?, rain: Boolean, radio: String?, updates: Boolean): String {
         val on = listOfNotNull(
@@ -179,13 +187,20 @@ internal object SettingsSummary {
             radio?.let { "sveglia alle $it" },
             "nuove versioni".takeIf { updates },
         )
-        return if (on.isEmpty()) "Tutte spente" else on.joinToString(" · ").replaceFirstChar { it.uppercase() }
+        val line = when {
+            on.isEmpty() -> return "Tutte spente"
+            on.joinToString(" · ").length <= MAX -> on.joinToString(" · ")
+            else -> on.first() + " e altre ${on.size - 1}"
+        }
+        return line.replaceFirstChar { it.uppercase() }
     }
 
+    /** Tutti gli account (1.402): non solo YouTube e Spotify. Oltre due nomi il conto, così la riga non si taglia. */
     fun accounts(connected: List<String>): String = when (connected.size) {
         0 -> "Nessun account collegato"
         1 -> "${connected[0]} collegato"
-        else -> connected.dropLast(1).joinToString(", ") + " e ${connected.last()} collegati"
+        2 -> "${connected[0]} e ${connected[1]} collegati"
+        else -> "${connected.size} account collegati"
     }
 }
 
@@ -211,6 +226,12 @@ fun SettingsScreen(
     remember { YouTubeAuth.init(context); SpotifyAuth.init(context); RadioAlarm.init(context); VoiceStore.init(context) }
     val youTubeOfficial by YouTubeAuth.connected.collectAsState()
     val spotifyOfficial by SpotifyAuth.connected.collectAsState()
+    remember { SimStore.init(context); RevolutStore.init(context); ShiftStore.init(context); GmailImap.init(context); GmailAuth.init(context) }
+    val simLinked by SimStore.linked.collectAsState()
+    val bankLinked by RevolutStore.linked.collectAsState()
+    val shiftsLinked by ShiftStore.linked.collectAsState()
+    val gmailImap by GmailImap.linked.collectAsState()
+    val gmailApi by GmailAuth.connected.collectAsState()
     AutoFill.init(context)
     val autoFillOn by AutoFill.enabled.collectAsState()
     val morning by AppSettings.morning.collectAsState()
@@ -255,7 +276,7 @@ fun SettingsScreen(
                 SettingsBlock("Le sezioni") {
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
                     MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
-                        if (autoFillOn) "Pacchi, spese e scadenze si compilano da soli" else "Compilazione automatica spenta",
+                        if (autoFillOn) "Spese e pacchi da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()
                     val hiddenNews = AppSettings.hiddenNewsSources.collectAsState().value.size
@@ -266,7 +287,7 @@ fun SettingsScreen(
                         onOpenPage(SettingsPage.NEWS)
                     }
                     RowDivider()
-                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video, SponsorBlock e pubblicità") {
+                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video e pubblicità") {
                         onOpenPage(SettingsPage.MEDIA)
                     }
                 }
@@ -287,7 +308,12 @@ fun SettingsScreen(
                                 MediaService.YOUTUBE -> youTubeOfficial
                                 MediaService.SPOTIFY -> spotifyOfficial
                             }
-                        }.map { it.label })) { onOpenPage(SettingsPage.ACCOUNTS) }
+                        }.map { it.label } + listOfNotNull(
+                            "Gmail".takeIf { gmailImap || gmailApi },
+                            "WindTre".takeIf { simLinked },
+                            "Revolut".takeIf { bankLinked },
+                            "Creators Pro".takeIf { shiftsLinked },
+                        ))) { onOpenPage(SettingsPage.ACCOUNTS) }
                 }
             }
             item(key = "data") {
@@ -478,7 +504,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
                 onClick = if (!official) connectOfficial else null,
                 trailing = {
                     if (connected) {
-                        TextButton(onClick = {
+                        DangerButton(onClick = {
                             haptic(Haptic.TICK)
                             Accounts.logout(service)
                             when (service) {
@@ -512,7 +538,7 @@ private fun SpotifyKeyRow() {
         icon = Icons.Outlined.Key,
         accent = TileAccent.GREEN,
         title = "Chiave di Spotify",
-        subtitle = "Client ID su developer.spotify.com",
+        subtitle = "Client ID della tua app Spotify",
         value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
         showChevron = true,
         onClick = { editSpotifyKey = true },
@@ -542,13 +568,13 @@ private fun SpotifyKeyRow() {
                 }
             },
             confirmButton = {
-                TextButton(
+                ConfirmButton(
                     enabled = valid != null,
                     onClick = { valid?.let(SpotifyAuth::setClientId); editSpotifyKey = false },
                 ) { Text("Salva") }
             },
             dismissButton = {
-                TextButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
+                DismissButton(onClick = { SpotifyAuth.setClientId(SpotifyAuth.DEFAULT_CLIENT_ID); editSpotifyKey = false }) {
                     Text("Ripristina")
                 }
             },
@@ -595,9 +621,9 @@ private fun SongIdSetting() {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { SongId.setToken(value); editing = false }) { Text("Salva") }
+                ConfirmButton(onClick = { SongId.setToken(value); editing = false }) { Text("Salva") }
             },
-            dismissButton = { TextButton(onClick = { editing = false }) { Text("Annulla") } },
+            dismissButton = { DismissButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
 }
@@ -632,7 +658,7 @@ private fun QueueFillSetting() {
         icon = Icons.AutoMirrored.Outlined.QueueMusic,
         accent = TileAccent.GREEN,
         title = "Riempi la coda in automatico",
-        subtitle = "Altri tuoi brani di Spotify a fine coda",
+        subtitle = "Tuoi brani Spotify a fine coda",
         onClick = { CanvasPlayer.setAutoFill(!on) },
         trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> CanvasPlayer.setAutoFill(v) }) },
     )
@@ -656,7 +682,7 @@ private fun InfoBlock() {
             icon = Icons.Outlined.Info,
             accent = TileAccent.NEUTRAL,
             title = "Licenze",
-            subtitle = "Inter, liste del blocco pubblicità, Open-Meteo, Piper",
+            subtitle = "Font, liste, meteo e voci",
             showChevron = true,
             onClick = { showLicenses = true },
         )
@@ -675,7 +701,7 @@ private fun InfoBlock() {
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
-            confirmButton = { TextButton(onClick = { showLicenses = false }) { Text("OK") } },
+            confirmButton = { DismissButton(onClick = { showLicenses = false }) { Text("OK") } },
         )
     }
 }
@@ -975,7 +1001,7 @@ private fun MorningSettings() {
                 icon = Icons.Outlined.Send,
                 accent = TileAccent.NEUTRAL,
                 title = "Invia una prova",
-                subtitle = "Ricevi subito la notifica di oggi",
+                subtitle = "Arriva subito quella di oggi",
                 onClick = {
                     if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
                         testPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -994,14 +1020,14 @@ private fun MorningSettings() {
             title = { Text("Orario della notifica") },
             text = { TimePicker(state = state) },
             confirmButton = {
-                TextButton(onClick = {
+                ConfirmButton(onClick = {
                     AppSettings.setMorning(morning.copy(hour = state.hour, minute = state.minute))
                     MorningWorker.schedule(context)
                     pickTime = false
                 }) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { pickTime = false }) { Text("Annulla") }
+                DismissButton(onClick = { pickTime = false }) { Text("Annulla") }
             },
         )
     }
@@ -1271,7 +1297,7 @@ private fun VideoFilterSettings() {
         icon = Icons.Outlined.LiveTv,
         accent = TileAccent.ORANGE,
         title = "Escludi live",
-        subtitle = "Niente live in corso o in arrivo in Video",
+        subtitle = "Niente dirette in Video",
         onClick = { AppSettings.setHideLive(!live) },
         trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
     )
@@ -1294,7 +1320,7 @@ private fun AutoplaySetting() {
         icon = Icons.Outlined.SkipNext,
         accent = TileAccent.ORANGE,
         title = "Riproduci il video successivo",
-        subtitle = "Finito un video, ne parte uno proposto",
+        subtitle = "Dopo un video, parte un proposto",
         onClick = { AppSettings.setAutoplayNext(!autoplay) },
         trailing = { Switch(checked = autoplay, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setAutoplayNext(on) }) },
     )

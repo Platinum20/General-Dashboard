@@ -96,12 +96,12 @@ fun DatePickDialog(initial: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalD
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(
+            ConfirmButton(
                 onClick = { state.selectedDateMillis?.let { onConfirm(it.fromPickerMillis()) } },
                 enabled = state.selectedDateMillis != null,
             ) { Text("OK") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { DismissButton(onClick = onDismiss) { Text("Annulla") } },
         // Di vetro come le altre finestre.
         modifier = Modifier.glassDialog(MaterialTheme.shapes.extraLarge),
         shape = MaterialTheme.shapes.extraLarge,
@@ -133,11 +133,11 @@ fun DateTimePickDialog(initial: Long?, onDismiss: () -> Unit, onConfirm: (Long) 
             title = { Text(longDate(picked)) },
             text = { TimePicker(state = timeState) },
             confirmButton = {
-                TextButton(onClick = {
+                ConfirmButton(onClick = {
                     onConfirm(picked.atTime(timeState.hour, timeState.minute).atZone(zone).toInstant().toEpochMilli())
                 }) { Text("OK") }
             },
-            dismissButton = { TextButton(onClick = { date = null }) { Text("Indietro") } },
+            dismissButton = { DismissButton(onClick = { date = null }) { Text("Indietro") } },
         )
     }
 }
@@ -151,8 +151,8 @@ fun TimePickDialog(initial: LocalTime, onDismiss: () -> Unit, onConfirm: (LocalT
         onDismissRequest = onDismiss,
         title = { Text("Avviso alle") },
         text = { TimePicker(state = timeState) },
-        confirmButton = { TextButton(onClick = { onConfirm(LocalTime.of(timeState.hour, timeState.minute)) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        confirmButton = { ConfirmButton(onClick = { onConfirm(LocalTime.of(timeState.hour, timeState.minute)) }) { Text("OK") } },
+        dismissButton = { DismissButton(onClick = onDismiss) { Text("Annulla") } },
     )
 }
 
@@ -166,7 +166,7 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
     val due = entry?.due ?: return
     val ms = due.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Spacer(Modifier.size(6.dp))
         Text(
             dueLabel(ms) + (entry.repeat?.let { " · ${it.label}" } ?: "") + " · \"${entry.text}\"",

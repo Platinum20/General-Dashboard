@@ -260,6 +260,7 @@ fun NotesScreen(
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
     // Il filtro acceso (Spese, Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
     var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
+    val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
     var habitsOpen by rememberSaveable { mutableStateOf(false) }
     // Quanto c'è sotto "OGGI" nella linea del tempo: sotto serve spazio perché oggi stia in cima allo schermo.
@@ -406,6 +407,17 @@ fun NotesScreen(
                             "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono nel loro giorno; " +
                             "un'idea senza data resta in Oggi finché non la togli."
                     ) }
+                }
+            }
+            // I turni vengono da Creators Pro: se l'accesso è scaduto lo dice qui, dove si guardano (1.402).
+            if (shiftsExpired) {
+                item(key = "shifts-status") {
+                    StatusLine(
+                        LinkStatus(LinkStatus.Kind.EXPIRED, "Turni: accesso a Creators Pro scaduto"),
+                        action = "Rientra",
+                        onAction = { inApp?.openRoute?.invoke(Routes.SHIFTS) },
+                        start = 4.dp,
+                    )
                 }
             }
             if (invite) {
@@ -806,7 +818,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                         Icon(
                             savedIcon(it),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(end = 8.dp).size(20.dp),
                         )
                     }
@@ -821,7 +833,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                         Icon(
                             Icons.Outlined.PushPin,
                             contentDescription = "Fissata",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -830,7 +842,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                     Text(
                         progress,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (note.body.isNotBlank()) {

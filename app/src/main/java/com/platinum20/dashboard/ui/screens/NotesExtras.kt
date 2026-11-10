@@ -275,7 +275,7 @@ fun ExpensesTab(
                                     Modifier.fillMaxWidth().bouncyPress(0.98f).clickable { openItem(ItemKind.FIXED, f.id) }.padding(horizontal = 16.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Outlined.Repeat, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(10.dp))
                                     Column(Modifier.weight(1f)) {
                                         Text(f.text.ifEmpty { f.category.label }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -400,17 +400,17 @@ internal fun ExpenseDialog(expense: Expense, onDismiss: () -> Unit, onDeleted: (
                     Modifier.fillMaxWidth().clickable { picking = true }.padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Event, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Outlined.Event, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.size(12.dp))
                     Text(longDate(date), style = MaterialTheme.typography.bodyLarge)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = save, enabled = cents != null) { Text("Salva") }
+            ConfirmButton(onClick = save, enabled = cents != null) { Text("Salva") }
         },
         dismissButton = {
-            TextButton(onClick = {
+            DismissButton(danger = true, onClick = {
                 NotesStore.deleteExpense(expense.id)
                 onDismiss()
                 onDeleted(expense)
@@ -511,7 +511,7 @@ fun ParcelCard(parcel: Parcel, onClick: () -> Unit) {
                     color = when {
                         late -> MaterialTheme.colorScheme.error
                         parcel.delivered || days == null -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurface
                     },
                 )
                 if (!parcel.delivered && days != null && days > 1) {
@@ -568,7 +568,7 @@ fun ParcelDialog(
                     Modifier.fillMaxWidth().clickable { picking = true }.padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Event, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Outlined.Event, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.size(12.dp))
                     Text(
                         expected?.let { "Arriva " + longDate(it) } ?: "Quando arriva?",
@@ -582,13 +582,13 @@ fun ParcelDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            ConfirmButton(onClick = {
                 NotesStore.saveParcel(parcel?.id, title, code, expected)
                 onDismiss()
             }, enabled = title.isNotBlank() || code.isNotBlank()) { Text("Salva") }
         },
         dismissButton = {
-            TextButton(onClick = {
+            DismissButton(danger = parcel != null, onClick = {
                 onDismiss()
                 parcel?.let {
                     NotesStore.deleteParcel(it.id)

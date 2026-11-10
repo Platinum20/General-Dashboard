@@ -74,7 +74,7 @@ internal fun ShiftAccountRows() {
             when {
                 !linked -> FilledTonalButton(onClick = { open() }) { Text("Accedi") }
                 expired -> FilledTonalButton(onClick = { open() }) { Text("Rientra") }
-                else -> TextButton(onClick = { CreatorsLink.forget() }) { Text("Esci") }
+                else -> DangerButton(onClick = { CreatorsLink.forget() }) { Text("Esci") }
             }
         },
     )

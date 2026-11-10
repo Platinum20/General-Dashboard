@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.capture
 
+import com.platinum20.dashboard.ui.screens.ConfirmButton
+import com.platinum20.dashboard.ui.screens.DismissButton
 import com.platinum20.dashboard.ui.screens.CanvasDialog
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
@@ -227,8 +229,8 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
                 CapturePreview(mode, text)
             }
         },
-        confirmButton = { TextButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
-        dismissButton = { TextButton(onClick = onClose) { Text("Annulla") } },
+        confirmButton = { ConfirmButton(onClick = save, enabled = text.isNotBlank()) { Text("Salva") } },
+        dismissButton = { DismissButton(onClick = onClose) { Text("Annulla") } },
     )
 }
 
@@ -268,7 +270,7 @@ internal fun CapturePreview(mode: CaptureMode, text: String) {
 @Composable
 internal fun CaptureKindTag(mode: CaptureMode) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         Text(
             "Diventa: " + mode.label.lowercase().let { if (mode == CaptureMode.EVENT) "evento in calendario" else it },

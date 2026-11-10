@@ -24,7 +24,7 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/Common.kt`: `TopLevelBar(title, subtitle, onBack=, collapsed=)` (shrinks to a thin row after ~1 cm of scroll, 1.413), `CanvasCard`, `CardSection`/`CardTitle` (Home cards: title INSIDE the card, no label outside, 1.419), `SectionHeader`,
   `Section`, `RowDivider`, `CanvasChip`, `RoundIconButton`, `IconTile`/`TileAccent`,
   `canvasFieldColors()`, `cardBorder()`, `Modifier.glass()/glassSource()`, `bouncyPress()`,
-  `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Springs`, `AutoRefresh`,
+  `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button; `ButtonLevel` PRIMARY/TONAL/DANGER since 1.402; dialogs use `ConfirmButton`/`DismissButton`, row "Esci" = `DangerButton`), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Springs`, `AutoRefresh`,
   `TabReselect`/`rememberReselectListState`, `PlusAction`/`ProvidePlusAction`, `relativeTime`,
   `weatherIcon`.
 - `ui/screens/Motion.kt`: motion tokens (`Motion.*`, tab/push transitions, `Modifier.entrance()`
@@ -36,6 +36,7 @@ create something it lists, so the next thread doesn't have to explore.
   `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page). `Timeline.kt` `RowFlash`
   (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
   `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.
+- `ui/screens/StatusLine.kt` (1.402): pure `LinkStatus.of(linked, expired, readAt, now, staleAfter)` + `StatusLine` row with "Rientra"/"Aggiorna" inside a card (Gmail card, Creators Pro on the Calendar page); `ContiCard` halves use the same `LinkStatus` (line + faded value); faded data = `FADED_ALPHA`. `net/Online.kt` = one connectivity flow; `TopLevelBar` puts "Senza rete" in the line above the title, `PlaceholderList` says it instead of loading forever.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
@@ -53,7 +54,7 @@ month spend, then ALL of today, then `Upcoming.MAX` next rows; full page = `Note
 Both use `dueDays(withToday = true, notes, expenses)` (today group always first: "Spesa di oggi" row (`DueRow.spend`, 0 too),
 today's expenses, overdue items (`overdueFrom`), today's items, undated tasks, notes pinned-first) + `pastDays(expenses=)` +
 `timelineEntries(months = true, expenses)` (every month marker gets `monthSpend`/`monthOf`; tap → `Routes.expenses(month)` =
-ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Habits = one "Abitudini · N su M" row inside OGGI (`habitsIndex`, 1.357; tap = `habitsBubble` in BriefActions.kt, also in the Home CalendarCard, 1.426), no Completati section (long press OGGI = Elimina i completati); Home card = today + rest of week (min `Upcoming.MAX`) + "Altre N a <mese>" (`calendarCardCut`). Home cards Adesso/SIM/Revolut/Documenti grow into their page via `sharedItem` (`SharedKeys`). Full page has fixed "Tutto" + `CalendarFilter` chips (Spese/Note/Eventi, 1.427 "Tutto" = null; pure `DueRow.filter()` + `List<DueDay>.only()`); long press on the Home card opens the full page; done tasks sit on the day they were checked (today's under OGGI). Adesso keeps only RAIN/WEATHER/HABIT lines.
+ExpensesScreen month overview). Row taps: `rememberDueOpen()` (HomeCards.kt). Habits = one "Abitudini · N su M" row inside OGGI (`habitsIndex`, 1.357; tap = `habitsBubble` in BriefActions.kt, also in the Home CalendarCard, 1.426), no Completati section (long press OGGI = Elimina i completati); Home card = today + rest of week (min `Upcoming.MAX`) + "Altre N a <mese>" (`calendarCardCut`). Home cards Adesso/SIM/Revolut/Documenti grow into their page via `sharedItem` (`SharedKeys`). Full page has fixed "Tutto" + `CalendarFilter` chips (Spese/Note/Eventi, 1.429 "Tutto" = null; pure `DueRow.filter()` + `List<DueDay>.only()`); long press on the Home card opens the full page; done tasks sit on the day they were checked (today's under OGGI). Adesso keeps only RAIN/WEATHER/HABIT lines.
 **Home ("Oggi")**: `HomeScreen.kt`, `HomeCards.kt` (`CalendarCard`, `TimelineCard`),
 `CustomizeScreen.kt`, `WeatherScreen.kt`, `RecapScreen.kt`, `ExpensesScreen.kt` (route
 `home/expenses?month=`, `Routes.expenses(YearMonth?)`: month overview opened from a calendar month marker). Logic in `today/`: `Briefing.kt`
@@ -70,14 +71,14 @@ expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Scre
 `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
 Detail pages: `DetailPage.kt` = THE full-screen detail scaffold, shaped like the note editor since 1.315 (top: back + `meta` line; bottom: left `primary: DetailAction` (or Modifica), right "Altro" → ActionBubble with `more` + Modifica + Elimina; `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
-Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
+Reminders: `TaskReminderWorker`, `HabitReminderWorker`; notification wording `notes/ReminderText.kt` (title = the thing, text = when), rain `RainNotice.title()/detail()`.
 **Promemoria = date (1.361, Antonio)**: no `Countdown` type any more. A "data da ricordare" is a `TaskItem` with `allDay`
 (dueAt = midnight; `TaskItem.date(...)`, `NotesStore.saveDate`; old `countdowns` JSON migrated in `parse`). Every task has the
 event's fields: `alert` (`Alert` ON_TIME/DAY_BEFORE/NONE, `alertAt()`; all-day at 9:00), `notes`, `place`, `firstYear` (age).
 Since 1.365 (Antonio) NOTHING dated has a tick or goes late: only undated tasks are `tickable`; dated ones pass like events
 (past = `pastDays`), repeating ones roll by themselves (`nextAt`/`nextDay`, `withDatesRolled` at start). No "Fatto" in the notification.
 `openTasks` = to-dos only (widgets, counters), `openItems` = with dates (Briefing). Shared wording for event + task pages in
-`notes/WhenText.kt` (+ `dateLine` = "compie 34 anni · tra 12 giorni" under dates via `TimelineEntry.detail`, 1.427); task page rows `taskLines` (ItemDetailScreen) in the same order as the event page: Quando, Tutto il giorno,
+`notes/WhenText.kt` (+ `dateLine` = "compie 34 anni · tra 12 giorni" under dates via `TimelineEntry.detail`, 1.429); task page rows `taskLines` (ItemDetailScreen) in the same order as the event page: Quando, Tutto il giorno,
 Si ripete, Avviso, Luogo, Note. Dated tasks sit under the Eventi calendar chip.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
@@ -169,6 +170,15 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - No serif fonts (tried and rejected). UI polish has priority over new features.
 - Player: one source at a time, no sleep timer, no close button (gestures), mini player free
   2D drag without tilt.
+- Four rules from the 1.402 review (Antonio, approved 2026-11-10; follow them in every new screen):
+  1. The Canvas row: left = time or icon (one column), middle = name with at most one line below, right = a value or an action
+     (calendar expense rows keep the amount before the name, in a fixed aligned column: review point 9 B).
+  2. One color, one meaning: blue = "now" (OGGI, hero, playing) and actions (buttons, toggles, +); orange = attention;
+     red = delete. Everything else is ink (icons in `IconTile` too, dates, titles that open a page = ink + chevron).
+     Category colors only in Spese, where they are the legend.
+  3. Every page answers one question; what doesn't serve it isn't there.
+  4. State tells the truth: old data says so, with the action to refresh/re-login right next to it.
+- Motion: only the three springs (`Motion.settle/lively/gesture` + `fling`); a new element picks one of them, never a new spring.
 
 ## Build and release (CI only)
 

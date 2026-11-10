@@ -89,7 +89,7 @@ internal fun SuggestionRow(s: Suggestion, onAccept: () -> Unit, onDismiss: () ->
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(s.found.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Icon(s.found.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(SuggestionText.title(s.found), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -109,7 +109,7 @@ internal fun SuggestionRow(s: Suggestion, onAccept: () -> Unit, onDismiss: () ->
                 Icon(Icons.Outlined.Check, contentDescription = "Aggiungi", tint = MaterialTheme.colorScheme.primary)
             }
         } else {
-            TextButton(onClick = onUndo) { Text("Annulla") }
+            DismissButton(onClick = onUndo) { Text("Annulla") }
         }
     }
 }
@@ -231,17 +231,17 @@ fun AutoFillScreen(onBack: () -> Unit) {
                         SettingsItem(
                             icon = Icons.Outlined.NotificationsActive,
                             title = "Consenti l'accesso alle notifiche",
-                            subtitle = "Attiva Canvas nell'elenco che si apre",
+                            subtitle = "Attiva Canvas nell'elenco",
                             onClick = { openListenerSettings(context) },
                             trailing = { FilledTonalButton(onClick = { openListenerSettings(context) }) { Text("Apri") } },
                         )
                         RowDivider()
                         SettingsItem(
                             icon = Icons.Outlined.Info,
-                            title = "Android dice \"impostazione con limitazioni\"?",
-                            subtitle = "Succede alle app installate dall'APK: apri Info app, tocca ⋮ in alto e scegli \"Consenti impostazioni con limitazioni\", poi riprova",
+                            title = "\"Impostazione con limitazioni\"?",
+                            subtitle = "Info app › ⋮ › Consenti",
                             onClick = { openAppInfo(context) },
-                            trailing = { TextButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
+                            trailing = { FilledTonalButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
                         )
                     }
                 }
@@ -279,7 +279,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                                 title = SuggestionText.title(s.found),
                                 subtitle = (if (s.state == SuggestionState.ADDED) "Aggiunto · " else "Ignorato · ") + SuggestionText.detail(s),
                                 trailing = if (s.state == SuggestionState.ADDED && s.ref != null) {
-                                    { TextButton(onClick = { AutoFill.undo(s.id) }) { Text("Togli") } }
+                                    { DangerButton(onClick = { AutoFill.undo(s.id) }) { Text("Togli") } }
                                 } else null,
                             )
                         }
@@ -287,7 +287,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                         SettingsItem(
                             icon = Icons.Outlined.DeleteSweep,
                             title = "Dimentica la cronologia",
-                            subtitle = "Le cose già salvate restano in Note",
+                            subtitle = "Quello già salvato resta",
                             onClick = { AutoFill.forgetAll() },
                         )
                     }

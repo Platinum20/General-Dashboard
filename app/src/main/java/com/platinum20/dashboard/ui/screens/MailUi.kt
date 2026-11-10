@@ -132,26 +132,16 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
 
     CardSection(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
-            if (consent) {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Outlined.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(enabled = !connect.busy, onClick = {
-                        haptic(Haptic.TICK)
-                        if (imap) askPassword = true else connect.start()
-                    }) { Text("Ricollega") }
-                }
-            }
+            // La stessa riga di stato di WindTre e Revolut (1.402), con "Rientra" lì.
+            StatusLine(
+                LinkStatus(LinkStatus.Kind.EXPIRED, if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail").takeIf { consent }
+                    ?: LinkStatus(LinkStatus.Kind.OK, null),
+                action = "Rientra",
+                onAction = {
+                    haptic(Haptic.TICK)
+                    if (imap) askPassword = true else connect.start()
+                },
+            )
             mail.forEachIndexed { index, m ->
                 if (index > 0 || consent) RowDivider()
                 MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })
@@ -260,10 +250,10 @@ internal fun GmailPasswordDialog(onDismiss: () -> Unit, onLinked: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(enabled = ready, onClick = { link() }) { Text(if (busy) "Provo…" else "Collega") }
+            ConfirmButton(enabled = ready, onClick = { link() }) { Text(if (busy) "Provo…" else "Collega") }
         },
         dismissButton = {
-            TextButton(enabled = !busy, onClick = onDismiss) { Text("Annulla") }
+            DismissButton(enabled = !busy, onClick = onDismiss) { Text("Annulla") }
         },
     )
 }
@@ -352,7 +342,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.Key,
                 title = "Usa la password per app",
-                subtitle = "Così Google non chiede più di ricollegare ogni settimana",
+                subtitle = "Mai più da ricollegare",
                 onClick = { askPassword = true },
             )
         }
@@ -361,7 +351,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.Refresh,
                 title = "Leggi adesso",
-                subtitle = "Spese, pacchi, scadenze, prenotazioni e rinnovi dalle mail nuove",
+                subtitle = "Spese, pacchi e prenotazioni",
                 onClick = { if (!syncing) syncNow() },
             )
         }
@@ -370,7 +360,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.LinkOff,
                 title = "Scollega Gmail",
-                subtitle = "Canvas smette di leggere le mail; le cose già salvate restano",
+                subtitle = "Smette di leggere le mail",
                 onClick = {
                     scope.launch {
                         MailWorker.cancel(context)

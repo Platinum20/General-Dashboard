@@ -222,7 +222,7 @@ fun EditableDetailTitle(
             // Aprendo dalla riga del calendario, il titolo arriva volando da lì.
             modifier = Modifier.weight(1f).sharedItem(sharedKey?.let { SharedRows.key(origin, it) }),
             decorationBox = { inner ->
-                if (text.isEmpty()) Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.outline)
+                if (text.isEmpty()) Text("Titolo", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 inner()
             },
         )
@@ -336,7 +336,7 @@ fun DetailFieldRow(
             ),
             modifier = Modifier.weight(1f).autoFocus(focus),
             decorationBox = { inner ->
-                if (text.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
+                if (text.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 inner()
             },
         )

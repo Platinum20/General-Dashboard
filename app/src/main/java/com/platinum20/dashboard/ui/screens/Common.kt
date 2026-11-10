@@ -98,6 +98,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -410,6 +411,11 @@ fun TopLevelBar(
             // Niente pulsanti, ma chi usa TalkBack trova ricerca e impostazioni tra le azioni del titolo.
             val openSearch = LocalOpenSearch.current.takeIf { onBack == null }
             val openSettings = LocalOpenSettings.current.takeIf { onBack == null }
+            // Senza rete lo dice la riga sopra il titolo (1.402), e sparisce da sola quando la rete torna.
+            val context = androidx.compose.ui.platform.LocalContext.current
+            remember { com.platinum20.dashboard.net.Online.init(context) }
+            val online by com.platinum20.dashboard.net.Online.online.collectAsState()
+            val line = com.platinum20.dashboard.net.Online.subtitle(online, subtitle)
             Column(
                 Modifier.semantics {
                     customActions = listOfNotNull(
@@ -418,10 +424,10 @@ fun TopLevelBar(
                     )
                 },
             ) {
-                if (subtitle != null && !small) {
+                if (line != null && !small) {
                     // Quando cambia ("3 nuove" → "5 nuove") la riga nuova sale e la vecchia svanisce.
                     AnimatedContent(
-                        subtitle.uppercase(),
+                        line.uppercase(),
                         transitionSpec = {
                             (slideInVertically(tween(Motion.ENTER_MS, easing = Motion.Decelerate)) { it / 2 } +
                                 fadeIn(tween(Motion.ENTER_MS, easing = Motion.Decelerate)))
@@ -540,18 +546,22 @@ enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val da
     NEUTRAL(0xFF5E5A52, 0xFFECE8DF, 0xFFC9C4BA, 0xFF2E2C28),
 }
 
-/** Icona dentro un quadratino colorato. */
+/**
+ * Icona dentro un quadratino (1.402, Antonio): sempre inchiostro sul beige, qualunque [accent]. I colori
+ * diversi per riga non volevano dire niente ed erano rumore; il colore resta solo per gli stati.
+ */
 @Composable
-fun IconTile(icon: ImageVector, accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
+fun IconTile(icon: ImageVector, @Suppress("UNUSED_PARAMETER") accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val neutral = TileAccent.NEUTRAL
     Box(
         Modifier
             .size(size)
             .clip(MaterialTheme.shapes.medium)
-            .background(Color(if (dark) accent.darkBg else accent.lightBg)),
+            .background(Color(if (dark) neutral.darkBg else neutral.lightBg)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = Color(if (dark) accent.dark else accent.light), modifier = Modifier.size(iconSize))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(iconSize))
     }
 }
 
@@ -642,13 +652,13 @@ fun SectionHeader(
 }
 
 /**
- * Un'etichetta che apre una pagina (1.361): colore primario e freccia accanto, così si distingue a colpo
- * d'occhio da un'etichetta semplice come "Continua", che resta grigia e non si tocca.
+ * Un'etichetta che apre una pagina (1.361): inchiostro e freccia accanto (1.402: il blu è solo per "adesso"
+ * e le azioni, la freccia dice già "si apre"), così si distingue da un'etichetta grigia come "Continua".
  */
 @Composable
 fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
-    val color = MaterialTheme.colorScheme.primary
+    val color = MaterialTheme.colorScheme.onSurface
     Row(
         modifier = modifier
             .entrance()
@@ -739,6 +749,9 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = MaterialTheme.colorScheme.card,
     focusedContainerColor = MaterialTheme.colorScheme.card,
     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    // I segnaposto nel grigio del testo (1.402): quello dei bordi era sotto il contrasto minimo, al sole non si leggeva.
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
 )
 
 /**
@@ -928,6 +941,17 @@ fun PlaceholderLine(fraction: Float, height: Dp = 12.dp, modifier: Modifier = Mo
 @Composable
 fun PlaceholderList(modifier: Modifier = Modifier, rows: Int = 6, thumb: Boolean = true, label: String = "Carico…") {
     val widths = listOf(0.86f, 0.7f, 0.78f, 0.62f, 0.82f, 0.68f)
+    // Senza rete le righe grigie resterebbero lì per sempre: lo dice una riga sopra (1.402).
+    val online by com.platinum20.dashboard.net.Online.online.collectAsState()
+    if (!online) {
+        Text(
+            "Senza rete: riprovo quando torna",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        return
+    }
     Column(
         modifier
             .fillMaxWidth()
@@ -1008,8 +1032,15 @@ fun LoadingPulse(modifier: Modifier = Modifier, color: Color = MaterialTheme.col
 }
 
 /**
+ * I tre livelli di pulsante (1.402, Antonio): [PRIMARY] pieno blu = l'azione principale, una per pagina o
+ * dialogo ("Salva", "Collega Spotify"); [TONAL] = azioni di riga ("Accedi", "Condividi"); [DANGER] = testo
+ * rosso, per quello che toglie qualcosa ("Esci", "Elimina"). Niente link blu nelle righe.
+ */
+enum class ButtonLevel { PRIMARY, TONAL, DANGER }
+
+/**
  * Il bottone di Canvas (1.357): una pillola tonale per le azioni dentro card e pagine ("Riprova", "Accedi",
- * "Guarda il video"). [primary] = pieno, solo per l'unica azione di una pagina vuota ("Collega Spotify").
+ * "Guarda il video"). [primary] = pieno, solo per l'unica azione della pagina; [level] per i tre livelli.
  * Prima c'erano quattro tipi di bottone diversi per la stessa cosa.
  */
 @Composable
@@ -1019,6 +1050,8 @@ fun CanvasButton(
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     primary: Boolean = false,
+    level: ButtonLevel = if (primary) ButtonLevel.PRIMARY else ButtonLevel.TONAL,
+    enabled: Boolean = true,
 ) {
     val content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
         icon?.let {
@@ -1027,9 +1060,70 @@ fun CanvasButton(
         }
         Text(text, maxLines = 1)
     }
-    if (primary) {
-        androidx.compose.material3.Button(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
-    } else {
-        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+    when (level) {
+        ButtonLevel.PRIMARY ->
+            androidx.compose.material3.Button(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.TONAL ->
+            androidx.compose.material3.FilledTonalButton(onClick = onClick, enabled = enabled, modifier = modifier.bouncyPress(), shape = CircleShape, content = content)
+        ButtonLevel.DANGER ->
+            androidx.compose.material3.TextButton(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = modifier.bouncyPress(),
+                shape = CircleShape,
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                content = content,
+            )
     }
 }
+
+/** La conferma di un dialogo ("Salva", "Collega"): piena, è l'azione principale; [danger] rossa ("Cancella"). */
+@Composable
+fun ConfirmButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.Button(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier.bouncyPress(),
+    shape = CircleShape,
+    colors = if (danger) {
+        androidx.compose.material3.ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.error,
+            contentColor = MaterialTheme.colorScheme.onError,
+        )
+    } else {
+        androidx.compose.material3.ButtonDefaults.buttonColors()
+    },
+    content = content,
+)
+
+/** L'alternativa di un dialogo ("Annulla", "OK" dei dialoghi che informano): solo testo, in inchiostro. */
+@Composable
+fun DismissButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    danger: Boolean = false,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = androidx.compose.material3.TextButton(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier,
+    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+        contentColor = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+    ),
+    content = content,
+)
+
+/** Un'azione di riga che toglie qualcosa ("Esci"): testo rosso, il livello più basso dei tre. */
+@Composable
+fun DangerButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) = DismissButton(onClick = onClick, modifier = modifier, enabled = enabled, danger = true, content = content)
