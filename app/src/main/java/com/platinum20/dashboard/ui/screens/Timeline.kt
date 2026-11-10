@@ -508,6 +508,9 @@ private val MONTH_RULE = 3.dp
  */
 private val LINE_END = 19.dp
 
+/** Dal bordo destro della riga al centro della linea: lì si disegna il cursore dello scorrimento rapido ([DayScrubThumb]). */
+val TimelineLineInset: Dp get() = LINE_END + GUTTER / 2
+
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
 private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
