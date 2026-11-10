@@ -277,7 +277,7 @@ fun NotesScreen(
     val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // La stessa card Calendario della Home, allargata: si apre da lì e lì si richiude.
-        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         contentWindowInsets = topLevelInsets,
         // Come le altre sezioni: solo il titolo in alto, tutto il resto scorre. Dentro un tipo, il titolo
         // è il tipo con la freccia per tornare ai tre.

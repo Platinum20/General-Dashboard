@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,7 +92,7 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
     val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         // Il blocco Adesso della Home si allarga fino a diventare questa pagina (1.357).
-        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
+        modifier = Modifier.sharedItem(SharedKeys.WEATHER, rounded = true).nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = "Meteo",

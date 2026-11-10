@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.ResumeKind
@@ -162,7 +163,7 @@ fun MusicScreen(
 
     val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
+        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = opened?.title ?: "Musica",

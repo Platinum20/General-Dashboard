@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.capture.SavedLinks
 import androidx.activity.compose.BackHandler
@@ -134,7 +135,7 @@ fun YouTubeFeedScreen(
 
     val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
-        modifier = Modifier.androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
+        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopLevelBar(
