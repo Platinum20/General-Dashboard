@@ -87,7 +87,7 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
     val context = LocalContext.current
     DocumentsStore.init(context)
     val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
-    Section(title = "Documenti") {
+    CardSection(title = "Documenti") {
         // Prima quelli che scadono prima; senza scadenza in fondo.
         docs.sortedBy { it.expiry ?: LocalDate.MAX }.forEachIndexed { i, doc ->
             if (i > 0) RowDivider()
