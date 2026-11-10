@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.405.0
+## 1.409.0
 **Cerca ricorda le ultime ricerche**
 - Col campo vuoto, sotto i filtri ci sono le ultime cinque ricerche: un tocco e la rifai, tieni premuto per toglierne una
 - Sotto, due scorciatoie: le spese del mese e i turni
