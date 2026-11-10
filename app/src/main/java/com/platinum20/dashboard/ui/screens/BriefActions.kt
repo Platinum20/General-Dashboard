@@ -114,3 +114,22 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
         confirmButton = { TextButton(onClick = onDismiss) { Text("Fatto") } },
     )
 }
+
+/**
+ * Le abitudini di oggi nel fumetto in basso (1.421, punto 19): toccando la riga "Abitudini · 0 su 2" in Home o
+ * nel calendario si apre questo, una riga per abitudine; toccandone una si segna (o si toglie) per oggi.
+ */
+internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate): Array<BubbleAction> =
+    habits.map { h ->
+        val done = h.isDone(today)
+        BubbleAction(
+            icon = if (done) androidx.compose.material.icons.Icons.Filled.CheckCircle else androidx.compose.material.icons.Icons.Outlined.RadioButtonUnchecked,
+            title = h.title,
+            detail = if (done) "Fatta oggi · tocca per toglierla" else "Tocca per segnarla fatta",
+            onClick = { NotesStore.toggleHabit(h.id, today) },
+        )
+    }.toTypedArray()
+
+/** Il testo della riga delle abitudini, uguale in Home e nel calendario. */
+internal fun habitsLine(habits: List<Habit>, today: java.time.LocalDate): String =
+    "Abitudini · ${habits.count { it.isDone(today) }} su ${habits.size}"

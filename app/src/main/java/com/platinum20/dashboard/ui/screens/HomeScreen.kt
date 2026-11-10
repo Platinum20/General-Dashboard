@@ -321,6 +321,7 @@ fun HomeScreen(
                 groups = calendar,
                 expenses = notes.expenses,
                 today = minute.toLocalDate(),
+                habits = notes.habits,
                 onOpenAll = {
                     haptic(Haptic.TICK)
                     onOpenNotes()
@@ -689,4 +690,5 @@ private fun CardMessage(
  * Che cosa resta in "Adesso" dalla 1.314: il meteo, la pioggia, le abitudini. Impegni, promemoria, date, pacchi
  * e spese di oggi stanno in cima al calendario, un posto solo per ogni cosa (Antonio).
  */
-private val ADESSO_KINDS = setOf(BriefKind.RAIN, BriefKind.WEATHER, BriefKind.HABIT)
+// Le abitudini stanno nel Calendario, sotto OGGI (punto 19): in Adesso solo pioggia e meteo.
+private val ADESSO_KINDS = setOf(BriefKind.RAIN, BriefKind.WEATHER)

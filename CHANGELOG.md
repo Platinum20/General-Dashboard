@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.424.0
+**Abitudini nel Calendario della Home, da segnare con un tocco**
+- Nella card Calendario, in fondo a OGGI, c'è la riga "Abitudini · 1 su 3": toccala e dal basso sale il fumetto con le abitudini da segnare fatte
+- Nella pagina Calendario la stessa riga apre lo stesso fumetto, invece di allungare la lista con la freccia
+- Le abitudini non stanno più in Adesso: una cosa, un posto solo
+
 ## 1.423.0
 **Spese in colonna nel calendario, l'ora al posto dell'icona, radio e podcast in una card sola**
 - Nel calendario l'importo delle spese sta prima del nome in una colonna allineata: le cifre si confrontano a colpo d'occhio, coi colori delle categorie di sempre
