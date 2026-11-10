@@ -5,8 +5,11 @@ package com.platinum20.dashboard.calendar
  * ("Train to Pescara Centrale" e "Viaggio Taranto-Pescara Centrale, Treno Intercity 612, …"). Qui diventano
  * uno solo, e sulla linea del tempo due punti: la partenza e l'arrivo. Logica pura, per i test.
  */
-/** Un viaggio in treno letto dagli eventi: [from] null se non si sa da dove parte. */
-data class Trip(val from: String?, val to: String, val train: String?)
+/**
+ * Un viaggio in treno letto dagli eventi: [from] null se non si sa da dove parte. [coach] e [seat] dal biglietto
+ * ("Carr 8, Posti, 11D"), null se non ci sono.
+ */
+data class Trip(val from: String?, val to: String, val train: String?, val coach: String? = null, val seat: String? = null)
 
 object Trips {
     private val trainTo = Regex("""^\s*Train to (.+?)\s*$""", RegexOption.IGNORE_CASE)
@@ -36,8 +39,9 @@ object Trips {
             val from = same.firstNotNullOfOrNull { viaggio.find(it.title)?.groupValues?.get(1) }
                 // "Train to X" di Google ha come luogo la stazione di partenza.
                 ?: same.map { it.location.trim() }.firstOrNull { it.isNotEmpty() && !it.equals(to, ignoreCase = true) }
-            val train = same.firstNotNullOfOrNull { trainName(it.title) }
-            main.copy(title = "Treno per $to", trip = Trip(from, to, train))
+            val texts = same.flatMap { listOf(it.title, it.description) }
+            val train = texts.firstNotNullOfOrNull { trainName(it) }
+            main.copy(title = "Treno per $to", trip = Trip(from, to, train, texts.firstNotNullOfOrNull(::coach), texts.firstNotNullOfOrNull(::seat)))
         }
         return (events.filter { it !in trains } + kept).sortedBy { it.begin }
     }
@@ -51,8 +55,24 @@ object Trips {
         val from = viaggio.find(title)?.groupValues?.get(1)
             ?: departure.find(description)?.groupValues?.get(1)?.trim()
             ?: location.trim().takeIf { it.isNotEmpty() && !it.equals(to, ignoreCase = true) }
-        return Trip(from, to, trainName(title) ?: trainName(description))
+        return Trip(from, to, trainName(title) ?: trainName(description), coach(title) ?: coach(description), seat(title) ?: seat(description))
     }
+
+    /** La carrozza scritta nel biglietto: "Carr 8", "Carrozza 5" → "8". */
+    fun coach(text: String): String? = coachRegex.find(text)?.groupValues?.get(1)
+
+    /** Il posto (o i posti) scritto nel biglietto: "Posti, 11D", "Posto 42d" → "11D", "42D". */
+    fun seat(text: String): String? = seatRegex.find(text)?.groupValues?.get(1)?.uppercase()?.replace(Regex("""\s+"""), "")
+
+    /**
+     * La riga sotto la durata (Antonio): "Intercity 612 · Carrozza 5 · Posto 42D", con quello che c'è.
+     * Null se del biglietto non si sa niente.
+     */
+    fun ticketLine(trip: Trip): String? = listOfNotNull(
+        trip.train,
+        trip.coach?.let { "Carrozza $it" },
+        trip.seat?.let { (if ('-' in it) "Posti " else "Posto ") + it },
+    ).joinToString(" · ").takeIf { it.isNotEmpty() }
 
     /** Il treno scritto nel titolo o nelle note: "Intercity 612", "Frecciarossa 9542". */
     fun trainName(text: String): String? = trainRegex.find(text)?.groupValues?.get(1)?.replace(Regex("""\s+"""), " ")
@@ -77,8 +97,8 @@ object Trips {
         val text = "$title\n$description"
         return listOfNotNull(
             trainName(text)?.let { "Treno" to it },
-            Regex("""Carr(?:ozza|\.)?\s*(\d+)""", RegexOption.IGNORE_CASE).find(text)?.let { "Carrozza" to it.groupValues[1] },
-            Regex("""Post[oi]\s*,?\s*(\d+[A-Z]?(?:\s*-\s*\d+[A-Z]?)*)""", RegexOption.IGNORE_CASE).find(text)?.let { "Posto" to it.groupValues[1] },
+            coach(text)?.let { "Carrozza" to it },
+            seat(text)?.let { "Posto" to it },
             Regex("""PNR\s*:?\s*([A-Z0-9]{5,8})""", RegexOption.IGNORE_CASE).find(text)?.let { "PNR" to it.groupValues[1].uppercase() },
         )
     }
@@ -100,6 +120,8 @@ object Trips {
             .trim()
 
     private val trainRegex = Regex("""Treno:?\s*((?:Intercity|Frecciarossa|Frecciargento|Frecciabianca|Regionale(?: Veloce)?|Italo|IC|FR|RV|R)\s*\d+)""", RegexOption.IGNORE_CASE)
+    private val coachRegex = Regex("""\bCarr(?:ozza|\.)?\s*(\d+)""", RegexOption.IGNORE_CASE)
+    private val seatRegex = Regex("""\bPost[oi]\s*,?\s*(\d+[A-Z]?(?:\s*-\s*\d+[A-Z]?)*)""", RegexOption.IGNORE_CASE)
     private val departure = Regex("""partenza da\s+(.+?)\s+Ore\b""", RegexOption.IGNORE_CASE)
     private val merchant = Regex("""\b(trenitalia|italo|trenord|frecciarossa|tren[io])\b""", RegexOption.IGNORE_CASE)
     private const val MINUTE = 60_000L

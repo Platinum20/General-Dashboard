@@ -370,7 +370,9 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         from = if (labels) trip.from ?: "Partenza" else RowText.event(event),
         arriveAt = to.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
-        middle = listOfNotNull(duration, trip.train).joinToString(" · "),
+        // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
+        middle = duration,
+        below = com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
         begin = event.begin,
         end = event.end,
     ) else {
