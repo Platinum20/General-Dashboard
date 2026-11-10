@@ -85,11 +85,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.automirrored.filled.Article as ArticleFilled
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.Newspaper
+import androidx.compose.material.icons.automirrored.outlined.Article as ArticleOutlined
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
@@ -476,7 +476,7 @@ private data class TopDestination(
 
 private val topDestinations = listOf(
     TopDestination(Routes.HOME, "Home", Icons.Filled.Dashboard, Icons.Outlined.Dashboard),
-    TopDestination(Routes.NEWS, "News", Icons.Filled.Newspaper, Icons.Outlined.Newspaper),
+    TopDestination(Routes.NEWS, "News", Icons.AutoMirrored.Filled.ArticleFilled, Icons.AutoMirrored.Outlined.ArticleOutlined),
     TopDestination(Routes.MEDIA, "Media", Icons.Filled.PlayCircle, Icons.Outlined.PlayCircle),
 )
 // Le Impostazioni non stanno nella barra: si aprono tenendo premuta una sezione, alla sua parte.
