@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 
 /** Una scelta del fumetto delle azioni. */
 internal data class BubbleAction(
@@ -17,8 +19,13 @@ internal data class BubbleAction(
     val title: String,
     val detail: String = "",
     val danger: Boolean = false,
-    val onClick: () -> Unit,
+    /** Scelte rapide in fila (le categorie di una spesa, punto 32): la riga diventa una fila di chip, [title] sopra. */
+    val chips: List<BubbleChip> = emptyList(),
+    val onClick: () -> Unit = {},
 )
+
+/** Un chip dentro una riga del fumetto: [selected] = quello di adesso. */
+internal data class BubbleChip(val label: String, val selected: Boolean = false, val onClick: () -> Unit)
 
 /**
  * I menu di Canvas (tieni premuto su una nota, conferme): invece del menu a tendina sale lo stesso
@@ -71,11 +78,47 @@ internal fun BoxScope.ActionBubbleLayer() {
                     translationY = (1f - appear.value) * 12.dp.toPx()
                 },
             ) {
-                BubbleRow(a.icon, a.title, a.detail, a.danger) {
+                if (a.chips.isNotEmpty()) {
+                    BubbleChips(a.title, a.chips) { chip ->
+                        haptic(Haptic.CONFIRM)
+                        ActionBubble.dismiss()
+                        chip.onClick()
+                    }
+                } else BubbleRow(a.icon, a.title, a.detail, a.danger) {
                     haptic(Haptic.CONFIRM)
                     ActionBubble.dismiss()
                     a.onClick()
                 }
+            }
+        }
+    }
+}
+
+/** Una riga del fumetto fatta di chip: un titolo piccolo e le scelte in fila, che vanno a capo. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun BubbleChips(title: String, chips: List<BubbleChip>, onPick: (BubbleChip) -> Unit) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+    androidx.compose.material3.Surface(
+        shape = shape,
+        color = androidx.compose.ui.graphics.Color.Transparent,
+        contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+        border = cardBorder(),
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth().glass(shape),
+    ) {
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+            if (title.isNotBlank()) {
+                androidx.compose.material3.Text(
+                    title,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+            ) {
+                chips.forEach { c -> CanvasChip(selected = c.selected, onClick = { onPick(c) }, label = c.label) }
             }
         }
     }
