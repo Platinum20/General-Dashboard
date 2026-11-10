@@ -149,7 +149,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val openItem = rememberOpenItem()
     val inApp = LocalInAppNav.current
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     WeatherStore.init(context)
     val weather by WeatherStore.state.collectAsStateWithLifecycle()
@@ -374,16 +374,10 @@ fun HomeScreen(
         contentWindowInsets = topLevelInsets,
         topBar = {
             // La data fa da titolo, il saluto sta piccolo sopra; scorrendo resta solo "Martedì 10".
-            val scrolled by remember {
-                androidx.compose.runtime.derivedStateOf {
-                    listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 120
-                }
-            }
             TopLevelBar(
                 title = today,
                 subtitle = Greeting.subtitle(minute.hour, minute.toLocalDate()),
                 scrollBehavior = scrollBehavior,
-                collapsed = scrolled,
             )
         },
     ) { inner ->

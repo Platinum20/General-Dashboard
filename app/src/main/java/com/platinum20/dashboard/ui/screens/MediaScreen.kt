@@ -122,7 +122,7 @@ fun MediaScreen(
     /** Un video della fila Video: si apre nel player. */
     onPlayVideo: (String) -> Unit = {},
 ) {
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
     YouTubeAuth.init(context)
     SpotifyAuth.init(context)

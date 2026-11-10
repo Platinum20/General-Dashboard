@@ -158,7 +158,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
         allowed = AutoFill.listenerAllowed(context)
         smsAllowed = SmsScanner.canRead(context)
     }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     fun scanSms() {
         scanning = true

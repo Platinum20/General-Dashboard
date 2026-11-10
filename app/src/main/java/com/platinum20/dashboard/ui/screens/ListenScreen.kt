@@ -58,7 +58,7 @@ fun ListenScreen(start: ListenTab, onBack: () -> Unit) {
         RadioStore.loadPopular()
         PodcastStore.loadLatest()
     }
-    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
