@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.425.0
+## 1.428.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
 - Icone tutte color inchiostro, anche nei quadratini di Impostazioni; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
 - Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
@@ -10,6 +10,12 @@
 - Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
 - Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
 - Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
+## 1.426.0
+**Abitudini nel Calendario della Home, da segnare con un tocco**
+- Nella card Calendario, in fondo a OGGI, c'è la riga "Abitudini · 1 su 3": toccala e dal basso sale il fumetto con le abitudini da segnare fatte
+- Nella pagina Calendario la stessa riga apre lo stesso fumetto, invece di allungare la lista con la freccia
+- Le abitudini non stanno più in Adesso: una cosa, un posto solo
 
 ## 1.423.0
 **Spese in colonna nel calendario, l'ora al posto dell'icona, radio e podcast in una card sola**

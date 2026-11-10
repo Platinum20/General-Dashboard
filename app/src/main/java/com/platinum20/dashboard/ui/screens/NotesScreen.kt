@@ -327,7 +327,7 @@ fun NotesScreen(
         // arrivava mai, perché scorrendo il calendario carica un anno dopo l'altro.
         val showHabits = filter == null && data.habits.isNotEmpty() && nowAt >= 0
         val habitsAt = if (showHabits) habitsIndex(entries.map { it.second.day to it.first.past }, nowAt, today) else entries.size
-        val habitCount = if (showHabits) 1 + (if (habitsOpen) data.habits.size else 0) else 0
+        val habitCount = if (showHabits) 1 else 0
         val lastItem = timelineIndex + entries.lastIndex + habitCount
         // La lista nasce già su OGGI (1.357): niente salto né dissolvenza dopo. Sotto c'è spazio quanto lo schermo
         // finché non si misura quanto c'è davvero dopo OGGI, così il primo fotogramma è già quello giusto.
@@ -493,14 +493,14 @@ fun NotesScreen(
                         HabitsTodayRow(
                             done = data.habits.count { it.isDone(today) },
                             total = data.habits.size,
-                            open = habitsOpen,
+                            open = false,
                             modifier = Modifier.animateItem().captureTarget(CaptureMode.HABIT),
                         ) {
+                            // Le abitudini si segnano dal fumetto in basso, non aprendo la lista sul posto (1.421).
                             haptic(Haptic.TICK)
-                            habitsOpen = !habitsOpen
+                            ActionBubble.show(*habitsBubble(data.habits, today))
                         }
                     }
-                    if (habitsOpen) habitRows()
                 }
                 items(entries.size - habitsAt, key = { entryKeys[it + habitsAt] }, contentType = { "timeline" }) { drawEntry(it + habitsAt) }
             }
@@ -657,16 +657,11 @@ private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modif
         Spacer(Modifier.width(12.dp))
         Text(
             "Abitudini · $done su $total",
+            // TalkBack: dice cosa fa il tocco, ora che non c'è più la freccia.
+            modifier = Modifier.weight(1f).semantics { contentDescription = "Abitudini, $done su $total: tocca per segnarle" },
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-        Icon(
-            Icons.Outlined.ExpandMore,
-            contentDescription = if (open) "Chiudi le abitudini" else "Apri le abitudini",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.graphicsLayer { rotationZ = turn },
         )
     }
 }

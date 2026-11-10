@@ -22,6 +22,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Checkbox
@@ -65,6 +66,7 @@ import com.platinum20.dashboard.today.Briefing
 import com.platinum20.dashboard.today.Upcoming
 import com.platinum20.dashboard.today.UpcomingItem
 import com.platinum20.dashboard.notes.Expenses
+import com.platinum20.dashboard.today.BriefKind
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.captureTarget
 import java.time.YearMonth
@@ -154,7 +156,13 @@ fun DueText(dueAt: Long, repeat: Repeat? = null) {
  * prossime [Upcoming.MAX] cose. Oggi si mostra tutto, anche se è tanto. Toccando la card si apre il calendario intero.
  */
 @Composable
-internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.dashboard.notes.Expense>, today: LocalDate, onOpenAll: () -> Unit) {
+internal fun CalendarCard(
+    groups: List<DueDay>,
+    expenses: List<com.platinum20.dashboard.notes.Expense>,
+    today: LocalDate,
+    onOpenAll: () -> Unit,
+    habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
+) {
     val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
     val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
@@ -172,10 +180,18 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
     // Dopo oggi il resto della settimana (almeno [Upcoming.MAX]); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today, Upcoming.MAX)
     val shown = all.take(todayCount + later)
+    // Le abitudini sono una riga sola in fondo a OGGI, come nella pagina (punto 19): il tocco apre il fumetto per segnarle.
+    val habitAt = if (habits.isNotEmpty()) todayCount else -1
+    val habitRow = TimelineEntry(
+        key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null,
+        icon = Icons.Outlined.Autorenew,
+    )
+    fun <T> withHabit(list: List<T>, item: T): List<T> =
+        if (habitAt < 0) list else list.toMutableList().apply { add(habitAt.coerceAtMost(size), item) }
     val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
         "Calendario",
-        shown.map { it.first },
+        withHabit(shown.map { it.first }, habitRow),
         onOpenAll,
         empty = "Niente in programma.",
         // La card si allarga fino a diventare la pagina Calendario (e ci torna chiudendola).
@@ -183,11 +199,11 @@ internal fun CalendarCard(groups: List<DueDay>, expenses: List<com.platinum20.da
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE).captureTarget(CaptureMode.EXPENSE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
         // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.376).
-        ticks = shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } },
+        ticks = withHabit(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, null),
         // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
-        rows = shown.map { (_, row) -> { open(row) } },
+        rows = withHabit(shown.map { (_, row) -> { open(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
         // Tenendo premuta una riga: le sue azioni, come nella pagina intera.
-        rowLongs = shown.map { (_, row) -> { actions(row) } },
+        rowLongs = withHabit(shown.map { (_, row) -> { actions(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
         onMonth = { inApp?.openRoute?.invoke(Routes.expenses(it)) },
         onLongOpen = onOpenAll,
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
