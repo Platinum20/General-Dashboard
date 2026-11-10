@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.Trip
 import com.platinum20.dashboard.calendar.Trips
+import com.platinum20.dashboard.ui.screens.TripStops
 import com.platinum20.dashboard.ui.screens.tripStops
 import com.platinum20.dashboard.ui.screens.peopleLabel
 import java.time.LocalDate
@@ -90,11 +91,10 @@ class TripsTest {
         assertEquals("12:00", row.arriveAt)
         assertEquals("", row.to)
         assertEquals("5 h · Ufficio", row.middle)
-        // Lo spazio fra inizio e fine cresce con la durata, con un minimo e un massimo.
-        assertEquals(18f + 12f * (Math.log(6.0) / Math.log(2.0)).toFloat(), row.midDp(), 0.01f)
-        assertEquals(30f, row.copy(end = row.begin + 3_600_000L).midDp(), 0.01f)
-        assertEquals(true, row.copy(end = row.begin + 15 * 60_000L).midDp() < row.midDp())
-        assertEquals(56f, row.copy(end = row.begin + 12 * 3_600_000L).midDp(), 0.01f)
+        // Lo spazio fra inizio e fine è uguale per tutti, corto o lungo.
+        assertEquals(TripStops.MID_DP, row.midDp(), 0.01f)
+        assertEquals(row.midDp(), row.copy(end = row.begin + 15 * 60_000L).midDp(), 0.01f)
+        assertEquals(row.midDp(), row.copy(end = row.begin + 12 * 3_600_000L).midDp(), 0.01f)
         // Con le creator in mezzo l'altezza la decide il testo.
         assertEquals(row.midDp(), row.middleMinDp(), 0.01f)
         assertEquals(0f, row.copy(names = "Chiara").middleMinDp(), 0.01f)
