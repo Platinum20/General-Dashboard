@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.408.0
+**Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
+- Icone tutte color inchiostro, anche nei quadratini di Impostazioni e Card della Home; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
+- Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
+- Il fumetto delle azioni è un solo blocco di vetro con le icone in inchiostro; "Portalo di lato per chiuderlo" compare solo le prime 3 volte
+- Grigi dei segnaposto più leggibili; sottotitoli riscritti per stare in una riga senza puntini; in Cerca il chip è "Radio"; Card della Home senza descrizione
+- SIM, Revolut, Gmail e turni dicono quando il dato è vecchio o l'accesso è scaduto, con "Rientra" o "Aggiorna" lì nella card; il dato vecchio resta, sbiadito
+- Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
+- Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
+- Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
 ## 1.404.0
 **Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
 - Il campo dice solo "Scrivi qualcosa…" e il velo dietro è più leggero
