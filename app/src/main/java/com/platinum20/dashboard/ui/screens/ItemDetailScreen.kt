@@ -309,11 +309,7 @@ private fun rename(kind: ItemKind, id: Long, data: NotesData, title: String) {
 /** Per ogni riga della scheda, come si modifica; null = si legge e basta (lo stato, i giorni che mancano). */
 private fun lineEdit(kind: ItemKind, id: Long, data: NotesData, line: LineKind): LineEdit? {
     fun categories(current: com.platinum20.dashboard.notes.ExpenseCategory, pick: (com.platinum20.dashboard.notes.ExpenseCategory) -> Unit) =
-        LineEdit.Tap(onClick = {
-            ActionBubble.show(*com.platinum20.dashboard.notes.ExpenseCategory.entries.map { c ->
-                BubbleAction(c.icon(), c.label, detail = if (c == current) "adesso" else "") { pick(c) }
-            }.toTypedArray())
-        })
+        LineEdit.Tap(onClick = { ActionBubble.show(*categoryChoices(current, pick).toTypedArray()) })
     return when (kind) {
         ItemKind.TASK -> data.tasks.firstOrNull { it.id == id }?.let { t ->
             when (line) {

@@ -310,8 +310,9 @@ fun ExpensesTab(
                                 onClick = { openItem(ItemKind.EXPENSE, expense.id) },
                                 sharedScope = SharedRows.EXPENSES,
                                 onLongClick = {
+                                    // Come nel calendario (punto 32): subito le categorie, poi Elimina.
                                     ActionBubble.show(
-                                        BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
+                                        *categoryChoices(expense.category) { NotesStore.saveExpense(expense.copy(category = it)) }.toTypedArray(),
                                         BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
                                             NotesStore.deleteExpense(expense.id)
                                             onDeleted(expense)
