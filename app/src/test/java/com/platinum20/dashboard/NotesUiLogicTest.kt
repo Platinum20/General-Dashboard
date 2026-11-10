@@ -309,8 +309,9 @@ class NotesUiLogicTest {
         ).map { it.first }
         // Le più recenti in fondo.
         assertEquals(listOf("Ven 23", "Oggi", null), entries.map { it.dayLabel })
-        // L'importo per primo, il nome dopo.
-        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000) + "  Benzina", entries[1].text)
+        // L'importo per primo nella sua colonna, il nome dopo (9 B).
+        assertEquals("Benzina", entries[1].text)
+        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000), entries[1].amount)
         val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
         assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.422.0
+## 1.425.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
 - Icone tutte color inchiostro, anche nei quadratini di Impostazioni; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
 - Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
@@ -10,6 +10,12 @@
 - Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
 - Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
 - Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
+## 1.423.0
+**Spese in colonna nel calendario, l'ora al posto dell'icona, radio e podcast in una card sola**
+- Nel calendario l'importo delle spese sta prima del nome in una colonna allineata: le cifre si confrontano a colpo d'occhio, coi colori delle categorie di sempre
+- Le cose con un orario mostrano l'ora nella colonna dell'icona, a sinistra del nome: una riga in meno per ognuna
+- Le radio, i podcast e la lista delle Card della Home sono righe di un'unica card, come le Impostazioni: ne vedi di più nello stesso schermo
 
 ## 1.421.0
 **Impostazioni più corte: Strumenti in fondo, Aggiornamenti che dicono la verità**
