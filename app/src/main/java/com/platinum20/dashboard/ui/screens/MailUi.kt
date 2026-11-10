@@ -352,7 +352,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.Key,
                 title = "Usa la password per app",
-                subtitle = "Così Google non chiede più di ricollegare ogni settimana",
+                subtitle = "Mai più da ricollegare",
                 onClick = { askPassword = true },
             )
         }
@@ -361,7 +361,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.Refresh,
                 title = "Leggi adesso",
-                subtitle = "Spese, pacchi, scadenze, prenotazioni e rinnovi dalle mail nuove",
+                subtitle = "Spese, pacchi e prenotazioni",
                 onClick = { if (!syncing) syncNow() },
             )
         }
@@ -370,7 +370,7 @@ internal fun GmailAccountRows() {
             SettingsItem(
                 icon = Icons.Outlined.LinkOff,
                 title = "Scollega Gmail",
-                subtitle = "Canvas smette di leggere le mail; le cose già salvate restano",
+                subtitle = "Smette di leggere le mail",
                 onClick = {
                     scope.launch {
                         MailWorker.cancel(context)

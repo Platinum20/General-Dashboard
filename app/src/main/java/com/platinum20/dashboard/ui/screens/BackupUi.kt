@@ -58,7 +58,7 @@ internal fun BackupSettings() {
         icon = Icons.Outlined.SaveAlt,
         accent = TileAccent.GREEN,
         title = "Esporta backup",
-        subtitle = "Promemoria, abitudini, spese, note, pacchi, date e impostazioni in un file",
+        subtitle = "Tutti i dati in un file",
         value = last?.let { relativeTime(Instant.ofEpochMilli(it)) } ?: "Mai",
         onClick = { exportLauncher.launch(Backup.fileName(LocalDate.now())) },
     )
@@ -67,7 +67,7 @@ internal fun BackupSettings() {
         icon = Icons.Outlined.Restore,
         accent = TileAccent.NEUTRAL,
         title = "Ripristina da backup",
-        subtitle = "Sostituisce i dati di adesso con quelli del file",
+        subtitle = "Sostituisce i dati di adesso",
         showChevron = true,
         onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
     )

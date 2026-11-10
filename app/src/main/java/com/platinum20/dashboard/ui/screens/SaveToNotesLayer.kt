@@ -97,7 +97,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 CanvasPlayer.add(media)
                 CaptureFeedback.tell(context, "In coda: ${media.title}", Icons.Rounded.QueueMusic)
             }
-            RowDivider(Modifier.padding(horizontal = 16.dp))
+            RowDivider()
         }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }

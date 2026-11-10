@@ -67,7 +67,8 @@ enum class SearchFilter(val label: String) {
     // ricerche salvate nelle rotte, ma non ha più il suo chip.
     ALL("Tutto"), NOTES("Calendario"), AGENDA("Calendario"), NEWS("News"),
     // Radio e podcast insieme, come la loro pagina in Media.
-    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio e podcast");
+    // "Radio" e non "Radio e podcast" (1.402): il sesto chip si tagliava; cerca comunque anche i podcast.
+    MUSIC("Musica"), VIDEO("Video"), RADIO("Radio");
 
     companion object {
         /** Il filtro già scelto quando si tira giù dentro una pagina di Media (es. "media/spotify" → Musica). */

@@ -182,7 +182,7 @@ internal fun RevolutAccountRows() {
         SettingsItem(
             icon = Icons.Outlined.Share,
             title = "Salva i dati letti di Revolut",
-            subtitle = "Un file in Download, da allegare se qualcosa non torna",
+            subtitle = "Un file da mandarmi se non torna",
             onClick = {
                 val where = saveTextToDownloads(context, stampedName("revolut-dati-letti"), RevolutStore.capturesText())
                 com.platinum20.dashboard.capture.CaptureFeedback.show(

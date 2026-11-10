@@ -666,6 +666,9 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = MaterialTheme.colorScheme.card,
     focusedContainerColor = MaterialTheme.colorScheme.card,
     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    // I segnaposto nel grigio del testo (1.402): quello dei bordi era sotto il contrasto minimo, al sole non si leggeva.
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
 )
 
 /** Separatore tra le righe di una card. */

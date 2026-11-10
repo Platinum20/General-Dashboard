@@ -355,7 +355,7 @@ internal fun WindTreAccountRows() {
         SettingsItem(
             icon = Icons.Outlined.Share,
             title = "Salva i dati letti di WindTre",
-            subtitle = "Un file in Download, da allegare se qualcosa non torna",
+            subtitle = "Un file da mandarmi se non torna",
             onClick = {
                 val where = saveTextToDownloads(context, stampedName("windtre-dati-letti"), SimStore.capturesText())
                 com.platinum20.dashboard.capture.CaptureFeedback.show(

@@ -231,15 +231,15 @@ fun AutoFillScreen(onBack: () -> Unit) {
                         SettingsItem(
                             icon = Icons.Outlined.NotificationsActive,
                             title = "Consenti l'accesso alle notifiche",
-                            subtitle = "Attiva Canvas nell'elenco che si apre",
+                            subtitle = "Attiva Canvas nell'elenco",
                             onClick = { openListenerSettings(context) },
                             trailing = { FilledTonalButton(onClick = { openListenerSettings(context) }) { Text("Apri") } },
                         )
                         RowDivider()
                         SettingsItem(
                             icon = Icons.Outlined.Info,
-                            title = "Android dice \"impostazione con limitazioni\"?",
-                            subtitle = "Succede alle app installate dall'APK: apri Info app, tocca ⋮ in alto e scegli \"Consenti impostazioni con limitazioni\", poi riprova",
+                            title = "\"Impostazione con limitazioni\"?",
+                            subtitle = "Info app › ⋮ › Consenti",
                             onClick = { openAppInfo(context) },
                             trailing = { FilledTonalButton(onClick = { openAppInfo(context) }) { Text("Info app") } },
                         )
@@ -287,7 +287,7 @@ fun AutoFillScreen(onBack: () -> Unit) {
                         SettingsItem(
                             icon = Icons.Outlined.DeleteSweep,
                             title = "Dimentica la cronologia",
-                            subtitle = "Le cose già salvate restano in Note",
+                            subtitle = "Quello già salvato resta",
                             onClick = { AutoFill.forgetAll() },
                         )
                     }

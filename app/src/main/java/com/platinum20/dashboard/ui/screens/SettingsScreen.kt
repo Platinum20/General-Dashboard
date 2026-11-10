@@ -171,8 +171,11 @@ internal object SettingsLines {
 
 /** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
 internal object SettingsSummary {
+    /** Quanto ci sta in una riga senza puntini (1.402): le righe si riscrivono per starci, non si tagliano. */
+    const val MAX = 32
+
     fun home(visible: Int, total: Int, place: String?): String =
-        "$visible card su $total · meteo " + (place?.let { "di $it" } ?: "dalla posizione")
+        "$visible card su $total · " + (place?.takeIf { it.length <= 16 }?.let { "meteo di $it" } ?: "meteo qui")
 
     fun alerts(morning: String?, rain: Boolean, radio: String?, updates: Boolean): String {
         val on = listOfNotNull(
@@ -181,7 +184,12 @@ internal object SettingsSummary {
             radio?.let { "sveglia alle $it" },
             "nuove versioni".takeIf { updates },
         )
-        return if (on.isEmpty()) "Tutte spente" else on.joinToString(" · ").replaceFirstChar { it.uppercase() }
+        val line = when {
+            on.isEmpty() -> return "Tutte spente"
+            on.joinToString(" · ").length <= MAX -> on.joinToString(" · ")
+            else -> on.first() + " e altre ${on.size - 1}"
+        }
+        return line.replaceFirstChar { it.uppercase() }
     }
 
     /** Tutti gli account (1.402): non solo YouTube e Spotify. Oltre due nomi il conto, così la riga non si taglia. */
@@ -264,7 +272,7 @@ fun SettingsScreen(
                     RowDivider()
                     // La sezione Note non c'è più dalla 1.314: la riga porta il nome del calendario unico (1.357).
                     MenuRow(Icons.Outlined.AutoAwesome, TileAccent.GREEN, "Calendario",
-                        if (autoFillOn) "Pacchi, spese e scadenze si compilano da soli" else "Compilazione automatica spenta",
+                        if (autoFillOn) "Spese e pacchi da soli" else "Compilazione automatica spenta",
                         onClick = onOpenAutoFill)
                     RowDivider()
                     val hiddenNews = AppSettings.hiddenNewsSources.collectAsState().value.size
@@ -275,7 +283,7 @@ fun SettingsScreen(
                         onOpenPage(SettingsPage.NEWS)
                     }
                     RowDivider()
-                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video, SponsorBlock e pubblicità") {
+                    MenuRow(Icons.Outlined.PlayCircle, TileAccent.ORANGE, "Media", "Coda, video e pubblicità") {
                         onOpenPage(SettingsPage.MEDIA)
                     }
                 }
@@ -307,7 +315,7 @@ fun SettingsScreen(
                         if (wifiOnly) "Backup · download solo col Wi-Fi" else "Backup e download") { onOpenPage(SettingsPage.DATA) }
                     RowDivider()
                     MenuRow(Icons.Outlined.Info, TileAccent.NEUTRAL, "Informazioni",
-                        "Versione ${BuildConfig.VERSION_NAME} · novità e licenze") { onOpenPage(SettingsPage.INFO) }
+                        "Versione ${BuildConfig.VERSION_NAME} · licenze") { onOpenPage(SettingsPage.INFO) }
                 }
             }
         }
@@ -504,7 +512,7 @@ private fun AccountsPage(onLogin: (MediaService) -> Unit) {
             icon = Icons.Outlined.Key,
             accent = TileAccent.GREEN,
             title = "Chiave di Spotify",
-            subtitle = "Client ID dell'app su developer.spotify.com",
+            subtitle = "Client ID della tua app Spotify",
             value = if (spotifyClientId == SpotifyAuth.DEFAULT_CLIENT_ID) "Predefinita" else "Tua",
             showChevron = true,
             onClick = { editSpotifyKey = true },
@@ -626,7 +634,7 @@ private fun QueueFillSetting() {
         icon = Icons.AutoMirrored.Outlined.QueueMusic,
         accent = TileAccent.GREEN,
         title = "Riempi la coda in automatico",
-        subtitle = "Altri tuoi brani di Spotify a fine coda",
+        subtitle = "Tuoi brani Spotify a fine coda",
         onClick = { CanvasPlayer.setAutoFill(!on) },
         trailing = { Switch(checked = on, onCheckedChange = hapticToggle { v: Boolean -> CanvasPlayer.setAutoFill(v) }) },
     )
@@ -650,7 +658,7 @@ private fun InfoBlock() {
             icon = Icons.Outlined.Info,
             accent = TileAccent.NEUTRAL,
             title = "Licenze",
-            subtitle = "Inter, liste del blocco pubblicità, Open-Meteo, Piper",
+            subtitle = "Font, liste, meteo e voci",
             showChevron = true,
             onClick = { showLicenses = true },
         )
@@ -969,7 +977,7 @@ private fun MorningSettings() {
                 icon = Icons.Outlined.Send,
                 accent = TileAccent.NEUTRAL,
                 title = "Invia una prova",
-                subtitle = "Ricevi subito la notifica di oggi",
+                subtitle = "Arriva subito quella di oggi",
                 onClick = {
                     if (!MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33) {
                         testPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -1261,7 +1269,7 @@ private fun VideoFilterSettings() {
         icon = Icons.Outlined.LiveTv,
         accent = TileAccent.ORANGE,
         title = "Escludi live",
-        subtitle = "Niente live in corso o in arrivo in Video",
+        subtitle = "Niente dirette in Video",
         onClick = { AppSettings.setHideLive(!live) },
         trailing = { Switch(checked = live, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setHideLive(on) }) },
     )
@@ -1284,7 +1292,7 @@ private fun AutoplaySetting() {
         icon = Icons.Outlined.SkipNext,
         accent = TileAccent.ORANGE,
         title = "Riproduci il video successivo",
-        subtitle = "Finito un video, ne parte uno proposto",
+        subtitle = "Dopo un video, parte un proposto",
         onClick = { AppSettings.setAutoplayNext(!autoplay) },
         trailing = { Switch(checked = autoplay, onCheckedChange = hapticToggle { on: Boolean -> AppSettings.setAutoplayNext(on) }) },
     )

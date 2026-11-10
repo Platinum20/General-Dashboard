@@ -84,7 +84,7 @@ internal fun ShiftAccountRows() {
         SettingsItem(
             icon = Icons.Outlined.Share,
             title = "Salva i dati letti dei turni",
-            subtitle = "Un file in Download, da allegare se un turno non torna",
+            subtitle = "Un file da mandarmi se non torna",
             onClick = {
                 val where = saveTextToDownloads(context, stampedName("turni-dati-letti"), ShiftStore.capturesText())
                 com.platinum20.dashboard.capture.CaptureFeedback.show(

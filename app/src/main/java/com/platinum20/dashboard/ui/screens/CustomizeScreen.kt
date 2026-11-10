@@ -118,8 +118,8 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     Box(Modifier.alpha(if (visible) 1f else 0.45f)) { IconTile(card.icon(), card.accent()) }
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f).alpha(if (visible) 1f else 0.6f)) {
+                        // Solo il nome (1.402): dice già tutto, e la descrizione si tagliava coi puntini.
                         Text(card.label, style = MaterialTheme.typography.titleMedium)
-                        Text(card.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Icon(
                         Icons.Outlined.DragHandle,
@@ -134,12 +134,11 @@ fun CustomizeScreen(onBack: () -> Unit) {
                     Switch(checked = visible, onCheckedChange = toggle)
                 }
             }
-            item(key = 1) {
-                TextButton(
-                    onClick = AppSettings::resetLayout,
-                    enabled = layout != HomeLayout.DEFAULT,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) { Text("Ripristina l'ordine iniziale") }
+            // Solo quando c'è qualcosa da ripristinare (1.402): spento era grigio chiaro e non si leggeva.
+            if (layout != HomeLayout.DEFAULT) item(key = 1) {
+                Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
+                    CanvasButton("Ripristina l'ordine iniziale", onClick = AppSettings::resetLayout)
+                }
             }
         }
     }
