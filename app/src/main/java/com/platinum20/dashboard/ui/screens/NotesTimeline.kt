@@ -682,9 +682,14 @@ internal fun DueRow.filter(): CalendarFilter = when {
     else -> CalendarFilter.NOTES
 }
 
-/** Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. */
+/**
+ * Solo le righe del filtro scelto; i giorni rimasti vuoti spariscono. null = tutto. La riga di OGGI ([DueRow.spend])
+ * resta con ogni filtro: senza, oggi diventava un giorno qualsiasi col vecchio titolo "Oggi" o spariva (Antonio, 2026-11-10).
+ */
 internal fun List<DueDay>.only(filter: CalendarFilter?): List<DueDay> =
-    if (filter == null) this else mapNotNull { d -> d.rows.filter { it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) } }
+    if (filter == null) this else mapNotNull { d ->
+        d.rows.filter { it.spend != null || it.filter() == filter }.takeIf { it.isNotEmpty() }?.let { d.copy(rows = it) }
+    }
 
 
 /**

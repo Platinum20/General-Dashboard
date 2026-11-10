@@ -125,9 +125,11 @@ class CalendarUnicoTest {
             expenses = listOf(Expense(4, 500, "bar", ExpenseCategory.EATING_OUT, oggi)),
         )
         assertEquals(listOf("spend-today", "expense-4"), groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.map { it.key })
-        assertEquals(listOf("task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
+        // OGGI resta con ogni filtro (la sua riga), così oggi non torna al vecchio titolo "Oggi" né sparisce.
+        assertEquals(listOf("spend-today", "task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
         // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
-        assertEquals(listOf("task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertEquals(listOf("spend-today", "task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertTrue(timelineEntries(groups.only(CalendarFilter.EVENTS), oggi, zone).first().first.todayHeader)
         assertEquals(groups, groups.only(null))
     }
 
@@ -136,7 +138,7 @@ class CalendarUnicoTest {
             emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
             now = adesso, zone = zone, simRenewal = oggi.plusDays(3), withToday = true,
         )
-        assertEquals(listOf("parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertEquals(listOf("spend-today", "parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
         assertTrue(groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.none { it.simRenewal })
         val entries = timelineEntries(groups, oggi, zone).map { it.first }
         assertEquals(BriefKind.EVENT, entries.first { it.key == "parcel-5" }.kind)

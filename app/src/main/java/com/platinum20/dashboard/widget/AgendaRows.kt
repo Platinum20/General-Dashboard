@@ -1,43 +1,44 @@
 package com.platinum20.dashboard.widget
 
-import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.ui.screens.RowText
+import com.platinum20.dashboard.ui.screens.timelineEntries
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** Una riga del widget Calendario. */
 sealed interface AgendaRow {
-    /** L'intestazione di un giorno: "DOMANI", "MER 11 NOV". */
+    /** L'intestazione di un giorno: "Oggi", "Domani", "Mer 11". */
     data class Day(val label: String) : AgendaRow
 
-    /** Una cosa: promemoria (si spunta), data di tutto il giorno o evento del calendario. */
+    /** Una cosa del giorno, la stessa riga del calendario dell'app: evento, turno, treno, promemoria, spesa, nota. */
     data class Item(
         val kind: Kind,
         val id: Long,
         val title: String,
+        /** L'ora (la colonna a sinistra, come nell'app). */
         val time: String?,
         val late: Boolean = false,
         val color: Int? = null,
         val begin: Long = 0,
         val end: Long = 0,
+        /** Spuntata oggi: resta sotto Oggi, segnata fatta (come nell'app). */
+        val done: Boolean = false,
     ) : AgendaRow {
         val key: String get() = "${kind.name}:$id:$begin"
     }
 
-    /** Testo grigio: "Giornata libera", "+ altre 2 oggi". */
+    /** Testo grigio: "Niente in programma oggi", "+ altre 2 oggi". */
     data class Note(val text: String) : AgendaRow
 
-    enum class Kind { TASK, DATE, EVENT }
+    enum class Kind { TASK, DATE, EVENT, PARCEL, NOTE, SIM }
 }
 
 /**
- * Le parole delle righe vengono da [RowText], le stesse del calendario dell'app.
- * Cosa mostra il widget Calendario: come la card della Home, prima tutto oggi (scaduti, eventi, promemoria,
- * date, da fare senza data) e poi i prossimi giorni finché c'è posto.
+ * Cosa mostra il widget Calendario: lo stesso Oggi del calendario dell'app ([dueDays] con `withToday`): tutte
+ * le cose di oggi (turni, treni, eventi anche finiti, promemoria, note, cose spuntate) in ordine d'orario, niente
+ * nascosto; spese escluse (vanno nella sezione dei soldi); poi i prossimi giorni finché c'è posto. Le parole vengono da [timelineEntries].
  */
 object AgendaRows {
     const val DAYS = 7
@@ -47,12 +48,9 @@ object AgendaRows {
     /** Intestazione (etichetta + giorno + tasto) e margini del widget. */
     const val HEADER_DP = 76
 
-    private val HOUR = DateTimeFormatter.ofPattern("HH:mm")
-    private val SHORT = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
-
-    fun build(
-        open: List<TaskItem>,
-        events: Map<LocalDate, List<CalendarEvent>>,
+    /** [days] = [dueDays] con `withToday = true`: il primo giorno è oggi. */
+    internal fun build(
+        days: List<DueDay>,
         now: Long,
         zone: ZoneId,
         heightDp: Int,
@@ -61,9 +59,12 @@ object AgendaRows {
         var budget = heightDp - HEADER_DP
         val rows = mutableListOf<AgendaRow>()
 
-        val todayItems = itemsOf(today, open, events, now, zone, isToday = true)
+        rows += AgendaRow.Day(TODAY)
+        budget -= DAY_DP
+        val todayItems = todayItems(days, today, zone)
+        val later = days.filter { d -> !d.past && !d.late && d.day != null && d.day.isAfter(today) && d.day.isBefore(today.plusDays(DAYS.toLong())) }
         if (todayItems.isEmpty()) {
-            rows += AgendaRow.Note(freeText(open, events, today, zone))
+            rows += AgendaRow.Note(if (later.isNotEmpty()) "Niente in programma oggi" else "Settimana libera")
             budget -= NOTE_DP
         } else {
             val fit = (budget / ITEM_DP).coerceAtLeast(1)
@@ -79,12 +80,11 @@ object AgendaRows {
             }
         }
 
-        for (offset in 1 until DAYS) {
-            val day = today.plusDays(offset.toLong())
-            val items = itemsOf(day, open, events, now, zone, isToday = false)
+        for (group in later) {
+            val items = items(group, today, zone)
             if (items.isEmpty()) continue
             if (budget < DAY_DP + ITEM_DP) break
-            rows += AgendaRow.Day(dayLabel(day, today))
+            rows += AgendaRow.Day(dayLabel(group.day!!, today))
             budget -= DAY_DP
             for (item in items) {
                 if (budget < ITEM_DP) break
@@ -95,58 +95,38 @@ object AgendaRows {
         return rows
     }
 
-    private fun itemsOf(
-        day: LocalDate,
-        open: List<TaskItem>,
-        events: Map<LocalDate, List<CalendarEvent>>,
-        now: Long,
-        zone: ZoneId,
-        isToday: Boolean,
-    ): List<AgendaRow.Item> {
-        // Ordine dentro il giorno: prima quello di tutto il giorno, poi per orario (come nel calendario).
-        val timed = mutableListOf<Pair<Long, AgendaRow.Item>>()
-        events[day].orEmpty().forEach { e ->
-            val time = if (e.allDay) null else Instant.ofEpochMilli(e.begin).atZone(zone).let { t ->
-                // Un evento iniziato ieri che continua oggi: si legge "fino alle 10".
-                if (t.toLocalDate() == day) t.format(HOUR) else null
-            }
-            timed += (if (e.allDay) Long.MIN_VALUE else e.begin) to
-                AgendaRow.Item(AgendaRow.Kind.EVENT, e.eventId, RowText.event(e), time, color = e.color, begin = e.begin, end = e.end)
-        }
-        open.forEach { t ->
-            val next = t.nextDay(day, zone) ?: return@forEach
-            if (next != day) return@forEach
-            if (t.allDay) {
-                timed += Long.MIN_VALUE to AgendaRow.Item(AgendaRow.Kind.DATE, t.id, RowText.dateOneLine(t, day, zone), null)
-            } else {
-                val at = t.nextAt(day, zone)?.atZone(zone) ?: return@forEach
-                // Passa da solo come un evento: mai "in ritardo" (1.376).
-                timed += at.toInstant().toEpochMilli() to AgendaRow.Item(AgendaRow.Kind.TASK, t.id, t.text, at.format(HOUR))
-            }
-        }
-        val sorted = timed.sortedBy { it.first }.map { it.second }
-        if (!isToday) return sorted
-        // Oggi chiude con le cose da fare senza data; niente scaduti (1.374: promemoria passati passano da soli).
-        val undated = open.filter { !it.allDay && it.dueAt == null }
-            .map { AgendaRow.Item(AgendaRow.Kind.TASK, it.id, it.text, null) }
-        return sorted + undated
-    }
+    /** Tutte le cose di oggi, come sotto OGGI nell'app. */
+    internal fun todayItems(days: List<DueDay>, today: LocalDate, zone: ZoneId): List<AgendaRow.Item> =
+        days.firstOrNull { it.day == today && !it.past && !it.late }?.let { items(it, today, zone) }.orEmpty()
 
-    /** "ieri" o "lun 2 nov" per uno scaduto. */
-    private fun lateLabel(due: LocalDate, today: LocalDate): String =
-        if (due == today.minusDays(1)) "ieri" else due.format(SHORT)
+    /** Il segno OGGI del calendario. I soldi non stanno nel widget: vanno nella loro sezione (Antonio, 2026-11-10). */
+    const val TODAY = "Oggi"
+
+    private fun items(group: DueDay, today: LocalDate, zone: ZoneId): List<AgendaRow.Item> =
+        timelineEntries(listOf(group), today, zone).mapNotNull { (entry, row) ->
+            // Spese e addebiti restano fuori: i soldi vanno nella loro sezione (Antonio, 2026-11-10).
+            if (row.spend != null || row.expense != null || row.charge != null) return@mapNotNull null
+            val (kind, id) = when {
+                row.event != null -> AgendaRow.Kind.EVENT to row.event.eventId
+                row.task != null -> (if (row.task.allDay) AgendaRow.Kind.DATE else AgendaRow.Kind.TASK) to row.task.id
+                row.parcel != null -> AgendaRow.Kind.PARCEL to row.parcel.id
+                row.note != null -> AgendaRow.Kind.NOTE to row.note.id
+                row.simRenewal -> AgendaRow.Kind.SIM to 0L
+                else -> return@mapNotNull null
+            }
+            AgendaRow.Item(
+                kind, id, entry.text,
+                time = entry.time,
+                late = entry.late,
+                color = entry.color.takeIf { it != 0 },
+                begin = row.event?.begin ?: 0,
+                end = row.event?.end ?: 0,
+                done = entry.done,
+            )
+        }
 
     /** "Domani" o "Gio 12": le stesse parole del calendario dell'app (punto 15). */
     fun dayLabel(day: LocalDate, today: LocalDate): String = RowText.day(day, today)
 
     fun moreText(n: Int): String = if (n == 1) "+ un'altra cosa oggi" else "+ altre $n cose oggi"
-
-    /** Oggi è vuoto: lo dice e, se c'è, nomina la prossima cosa. */
-    private fun freeText(open: List<TaskItem>, events: Map<LocalDate, List<CalendarEvent>>, today: LocalDate, zone: ZoneId): String {
-        val anyLater = (1 until DAYS).any { o ->
-            val d = today.plusDays(o.toLong())
-            events[d].orEmpty().isNotEmpty() || open.any { it.nextDay(d, zone) == d }
-        }
-        return if (anyLater) "Niente in programma oggi" else "Settimana libera"
-    }
 }
