@@ -82,7 +82,7 @@ Since 1.365 (Antonio) NOTHING dated has a tick or goes late: only undated tasks 
 Si ripete, Avviso, Luogo, Note. Dated tasks sit under the Eventi calendar chip.
 
 **Capture ("+")**: `capture/CaptureComposer.kt` (open state + text; the nav bar itself morphs into the input, `CanvasNavBar` BAR_TABS/VOICE/WRITE), `CaptureGuess.kt` (picks the
-type from text: never ask the user the type), `CaptureHints.kt` (placeholder, rotating examples for the first 5 saves = `AppSettings.captureSaves`, one-line summary above the bar), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → `decide` (lines from `notes/OcrRows.kt`): date/parcel code = text in the bar, else note with the photo (`Note.photo` = file in filesDir/note-photos, shown by `NotePhoto` in NotesScreen)),
+type from text: never ask the user the type), `CaptureHints.kt` (1.449: bar fixed at `BAR_DP` = the + height, rotating examples ARE the placeholder, type icon at the far right while typing (summary = its TalkBack text), X clears text then closes), `CaptureSave.kt` (single save path + undo), `PhotoAttach.kt` (paperclip at the left of the WRITE bar: any photo → on-device OCR → `decide` (lines from `notes/OcrRows.kt`): date/parcel code = text in the bar, else note with the photo (`Note.photo` = file in filesDir/note-photos, shown by `NotePhoto` in NotesScreen)),
 `Dictation.kt`/`VoiceCapture.kt` (in-app speech, no Google dialog), `SavedLink.kt`,
 `QuickCaptureActivity.kt` (QS tile, share target). UI: `CaptureComposerLayer.kt` (`CaptureComposerInput` shown inside the bar, `CaptureComposerVeil`, `rememberComposerSend`),
 `CaptureFeedbackLayer.kt` (dot flies to the target tab).
