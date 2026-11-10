@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.460.0
+**Card SIM: "Letto alle…" sulla riga del titolo**
+- Quando i dati della SIM sono vecchi, "Letto …" con l'orario ora sta a destra del titolo "SIM", non più in una riga sua
+
 ## 1.459.0
 **Eventi con inizio e fine più compatti**
 - Torna la linea verticale con inizio e fine, nella card in Home e nel calendario, ma più stretta

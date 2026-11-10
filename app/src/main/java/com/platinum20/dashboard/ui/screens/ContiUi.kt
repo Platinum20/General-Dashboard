@@ -2,8 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,6 +39,8 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
         title = "SIM",
         modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true),
         onClick = { haptic(Haptic.TICK); onOpenSim() },
+        // "Letto alle …" sulla riga del titolo, tutto a destra (1.460, Antonio): una riga in meno nella card.
+        trailing = { link.line?.takeIf { s != null }?.let { SoftLine(it) } },
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp)) {
             when {
@@ -50,7 +50,6 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
                     SoftLine("giga, minuti, SMS e credito WindTre")
                 }
                 else -> {
-                    link.line?.let { SoftLine(it); Spacer(Modifier.height(6.dp)) }
                     SimPanel(s, faded = link.faded)
                 }
             }
