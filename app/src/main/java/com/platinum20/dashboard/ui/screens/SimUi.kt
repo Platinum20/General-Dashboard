@@ -309,7 +309,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val s = status
-            // Il blocco colorato della pagina: tutto qui dentro.
+            // Il blocco colorato della pagina: solo i giga (punto 46). Quando è stato letto sta una volta sola, sotto il titolo.
             CanvasCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -320,13 +320,68 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                     if (s == null) {
                         Text(if (refreshing) "Sto leggendo i dati…" else "Ancora nessun dato da WindTre", style = MaterialTheme.typography.titleMedium)
                     } else {
-                        SimPanel(s, big = true)
+                        SimGigaHero(s)
+                    }
+                }
+            }
+            // Il resto in righe, come Impostazioni: niente barre per ciò che è illimitato.
+            if (s != null) {
+                val rows = simPageRows(s)
+                if (rows.isNotEmpty()) CanvasCard {
+                    Column {
+                        rows.forEachIndexed { i, (name, value) ->
+                            if (i > 0) RowDivider()
+                            Row(
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                RollingText(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
             }
         }
         }
     }
+}
+
+/** L'eroe della pagina SIM: l'offerta, i giga grandi e la barra di quanto resta. */
+@Composable
+private fun SimGigaHero(s: SimStatus) {
+    val soft = LocalContentColor.current.copy(alpha = 0.7f)
+    val barColor = MaterialTheme.colorScheme.onPrimaryContainer
+    Text(
+        (s.offer ?: "WindTre").uppercase(Locale.ITALIAN),
+        style = MaterialTheme.typography.labelMedium,
+        color = soft,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
+    Spacer(Modifier.height(6.dp))
+    val data = s.data
+    RollingText(
+        data?.let { if (it.unlimited) "Giga illimitati" else gbLabel(it.left) } ?: "–",
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.SemiBold,
+    )
+    data?.total?.takeIf { !data.unlimited }?.let {
+        Text("rimasti di " + gbLabel(it), style = MaterialTheme.typography.bodyMedium, color = soft)
+    }
+    if (data != null && !data.unlimited) {
+        Spacer(Modifier.height(12.dp))
+        SimBar(data.fraction ?: 0f, barColor, barColor.copy(alpha = 0.18f), height = 6.dp)
+    }
+}
+
+/** Le righe sotto l'eroe della pagina SIM: minuti, SMS, roaming, credito, rinnovo (solo quelle note). */
+internal fun simPageRows(s: SimStatus, today: LocalDate = LocalDate.now()): List<Pair<String, String>> = buildList {
+    s.minutes?.let { add("Minuti" to meterText(it, "")) }
+    s.sms?.let { add("SMS" to meterText(it, "")) }
+    s.roaming?.let { add("Roaming UE" to meterText(it, "GB")) }
+    s.credit?.let { add("Credito" to euroLabel(it)) }
+    s.renewal?.let { add("Rinnovo" to it.format(WindTreParse.shortDate) + " · " + renewalLabel(it, today)) }
 }
 
 /**

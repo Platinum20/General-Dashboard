@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.408.0
+## 1.412.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
 - Icone tutte color inchiostro, anche nei quadratini di Impostazioni e Card della Home; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
 - Tre livelli di pulsante ovunque: pieno per la conferma ("Salva", "Collega"), tonale per le righe ("Accedi", "Condividi"), rosso per togliere ("Esci", "Elimina")
@@ -10,6 +10,26 @@
 - Senza rete lo dice la riga sopra il titolo della pagina, e sparisce da sola quando torna
 - Notifiche: il titolo è la cosa ("Chiamare il commercialista"), il testo è il quando ("Domani alle 9:00"); la pioggia senza emoji
 - Impostazioni conta tutti gli account collegati (anche WindTre, Revolut, Gmail, Creators Pro); Nuovo evento senza permesso mostra "Consenti" invece di una pagina vuota
+
+## 1.411.0
+**Schede più chiare, Spese con le frecce, Meteo e SIM più puliti**
+- Promemoria, date e pacchi: il "quando" sta sotto il titolo e si legge come una frase ("Domani alle 9:00", sotto la data); si tocca per cambiarlo, "Togli la data" è in Altro
+- Le righe vuote non ci sono più: in fondo "+ Luogo", "+ Note", "+ Codice" per aggiungerle
+- Il pulsante in basso dice cosa fa: "Segna fatta oggi" pieno, "Fatta oggi" tenue quando è fatta
+- Scheda spesa: l'importo accanto al nome, la categoria è un chip con › che apre le categorie
+- Tieni premuta una spesa nel calendario o in Spese: le categorie subito nel fumetto, un tocco e cambia
+- Abitudine: la serie grande in alto ("5 giorni di fila") e la settimana a pallini; tocchi un giorno passato per segnarlo
+- Turno: lo stesso nome del calendario ("Turno su Debora"), orari in una riga ("Domani · 07:00 – 12:00 · 5 h"), la card del mese c'è sempre
+- Spese del mese: frecce accanto al mese per cambiarlo, niente saldo, categorie con nome a sinistra e importo a destra
+- Meteo: la pioggia dentro il blocco colorato, i dettagli in una card sola; via pressione e "pioggia oggi", l'UV solo da 3 in su
+- SIM: i giga in grande nel blocco colorato, il resto in righe senza barre; "letto" una volta sola, sotto il titolo
+
+## 1.409.0
+**Cerca ricorda le ultime ricerche**
+- Col campo vuoto, sotto i filtri ci sono le ultime cinque ricerche: un tocco e la rifai, tieni premuto per toglierne una
+- Sotto, due scorciatoie: le spese del mese e i turni
+- Il chip "Radio e podcast" ora è "Radio", così si legge intero
+- Il campo di Cerca è uguale a quello della località del meteo: bianco, senza il bordo blu spesso
 
 ## 1.404.0
 **Il + più leggero: esempi le prime volte e in una riga cosa diventerà**

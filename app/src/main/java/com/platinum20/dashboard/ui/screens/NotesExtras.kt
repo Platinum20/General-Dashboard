@@ -98,8 +98,6 @@ fun ExpensesTab(
     padding: PaddingValues,
     onDeleted: (Expense) -> Unit = {},
     initialMonth: YearMonth = YearMonth.now(),
-    /** "Saldo Revolut adesso · 1.240 €": solo nel riepilogo del mese in corso, sotto il totale (1.357). */
-    bankLine: String? = null,
 ) {
     var month by remember { mutableStateOf(initialMonth) }
     // Ogni spesa si apre a schermo intero, come gli eventi del calendario.
@@ -231,28 +229,28 @@ fun ExpensesTab(
                             Modifier
                                 .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
                         ) {
+                            // Il mese con le frecce (punto 48): si cambia anche senza trascinare, e mai un totale di altri mesi.
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                MonthArrow(back = true, enabled = true) {
+                                    carry = -fling
+                                    month = month.minusMonths(1)
+                                }
                                 Text(
                                     month.format(monthFormat).replaceFirstChar { it.uppercase() },
                                     style = MaterialTheme.typography.titleSmall,
                                 )
+                                MonthArrow(back = false, enabled = month < YearMonth.now()) {
+                                    carry = fling
+                                    month = month.plusMonths(1)
+                                }
                                 Spacer(Modifier.weight(1f))
                                 RollingText(Expenses.format(total), style = MaterialTheme.typography.headlineSmall)
                             }
                             // Sotto il totale solo fisse e variabili di questo mese: niente mese prima, né confronti
-                            // (Antonio, più volte). Il mese prima si vede trascinando il riepilogo.
+                            // (Antonio, più volte). Il mese prima si vede trascinando il riepilogo o con le frecce.
                             monthSubline(data.expenses, month)?.let {
                                 Text(
                                     it,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            if (bankLine != null && month == YearMonth.now()) {
-                                Text(
-                                    bankLine,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -312,13 +310,11 @@ fun ExpensesTab(
                                 onClick = { openItem(ItemKind.EXPENSE, expense.id) },
                                 sharedScope = SharedRows.EXPENSES,
                                 onLongClick = {
-                                    ActionBubble.show(
-                                        BubbleAction(Icons.Outlined.Event, "Apri", detail = entry.text) { openItem(ItemKind.EXPENSE, expense.id) },
-                                        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
-                                            NotesStore.deleteExpense(expense.id)
-                                            onDeleted(expense)
-                                        },
-                                    )
+                                    // Come nel calendario (punto 32): subito le categorie, poi Apri ed Elimina.
+                                    ActionBubble.show(*expenseBubble(expense, onOpen = { openItem(ItemKind.EXPENSE, expense.id) }) {
+                                        NotesStore.deleteExpense(expense.id)
+                                        onDeleted(expense)
+                                    }.toTypedArray())
                                 },
                             )
                         }
@@ -625,15 +621,32 @@ private fun CategoryBar(split: List<Pair<com.platinum20.dashboard.notes.ExpenseC
                 )
             }
         }
-        // Una riga per categoria, l'importo per primo.
+        // Una riga per categoria: nome a sinistra, importo a destra (punto 48).
         split.sortedByDescending { it.second }.forEach { (category, cents) ->
-            Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(8.dp).clip(CircleShape).background(androidx.compose.ui.graphics.Color(category.color())))
                 Spacer(Modifier.width(10.dp))
-                Text(Expenses.format(cents), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(84.dp))
-                Text(category.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(category.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(Expenses.format(cents), style = MaterialTheme.typography.bodyMedium)
             }
         }
+    }
+}
+
+/** Freccia accanto al nome del mese: indietro sempre, avanti solo fino al mese di oggi (spenta, non nascosta). */
+@Composable
+private fun MonthArrow(back: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    val haptic = rememberHaptic()
+    androidx.compose.material3.IconButton(
+        onClick = { haptic(Haptic.TICK); onClick() },
+        enabled = enabled,
+        modifier = Modifier.size(32.dp),
+    ) {
+        Icon(
+            if (back) Icons.AutoMirrored.Filled.KeyboardArrowLeft else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = if (back) "Mese prima" else "Mese dopo",
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

@@ -89,12 +89,11 @@ fun PlacePickerScreen(onBack: () -> Unit) {
             ),
         ) {
             item {
-                OutlinedTextField(
+                CanvasSearchField(
                     value = query,
                     onValueChange = { query = it },
-                    placeholder = { Text("Cerca una città") },
-                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                    trailingIcon = {
+                    placeholder = "Cerca una città",
+                    trailing = {
                         when {
                             searching -> LoadingPulse(Modifier.padding(16.dp))
                             query.isNotEmpty() -> IconButton(onClick = { query = "" }) {
@@ -102,11 +101,8 @@ fun PlacePickerScreen(onBack: () -> Unit) {
                             }
                         }
                     },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     // Cerca sulla tastiera sceglie il primo risultato, come toccarlo.
-                    keyboardActions = KeyboardActions(onSearch = { results.firstOrNull()?.let(::choose) }),
-                    shape = MaterialTheme.shapes.large,
+                    onSearch = { results.firstOrNull()?.let(::choose) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
