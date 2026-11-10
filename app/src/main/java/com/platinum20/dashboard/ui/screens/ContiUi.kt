@@ -39,7 +39,7 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
         title = "SIM",
         modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true),
         onClick = { haptic(Haptic.TICK); onOpenSim() },
-        // "Letto alle …" sulla riga del titolo, tutto a destra (1.457, Antonio): una riga in meno nella card.
+        // "Letto alle …" sulla riga del titolo, tutto a destra (1.460, Antonio): una riga in meno nella card.
         trailing = { link.line?.takeIf { s != null }?.let { SoftLine(it) } },
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp)) {
