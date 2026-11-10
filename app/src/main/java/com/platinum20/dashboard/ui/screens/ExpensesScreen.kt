@@ -45,9 +45,8 @@ fun ExpensesScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingVal
                 top = inner.calculateTopPadding() + 12.dp,
                 bottom = maxOf(inner.calculateBottomPadding(), bottomPadding.calculateBottomPadding()) + 24.dp,
             ),
+            // Niente saldo qui (punto 48): la pagina parla solo delle spese del mese; il saldo sta nella card Revolut.
             initialMonth = month,
-            // Il saldo di adesso sta nel riepilogo del mese, sotto il totale, non più piccolo nel sottotitolo (1.357).
-            bankLine = balance?.takeIf { linked && !expired }?.let { "Saldo Revolut adesso · " + com.platinum20.dashboard.notes.Expenses.format(it) },
             onDeleted = { e ->
                 // Eliminare è immediato, ma per qualche secondo si può tornare indietro.
                 CaptureFeedback.show(
