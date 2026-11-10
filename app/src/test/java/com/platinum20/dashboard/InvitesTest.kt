@@ -28,8 +28,16 @@ class InvitesTest {
     }
 
     @Test fun riga() {
-        assertEquals("2 cose da attivare: agenda, compila da solo", Invites.line(listOf(Invite.AGENDA, Invite.AUTOFILL)))
-        assertEquals("1 cosa da attivare: agenda", Invites.line(listOf(Invite.AGENDA)))
+        assertEquals("2 cose da sistemare: agenda, compila da solo", Invites.line(listOf(Invite.AGENDA, Invite.AUTOFILL)))
+        assertEquals("1 cosa da sistemare: agenda", Invites.line(listOf(Invite.AGENDA)))
         assertNull(Invites.line(emptyList()))
+    }
+
+    @Test
+    fun accessiScadutiPerPrimi() {
+        assertEquals(
+            listOf(Invite.REVOLUT, Invite.SHIFTS, Invite.AGENDA),
+            Invites.pending(true, false, autoFillEnabled = true, autoFillDismissed = false, revolutExpired = true, shiftsExpired = true),
+        )
     }
 }
