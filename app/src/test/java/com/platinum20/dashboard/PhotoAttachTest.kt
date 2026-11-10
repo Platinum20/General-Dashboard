@@ -10,10 +10,10 @@ import java.time.LocalDateTime
 class PhotoAttachTest {
     private val now = LocalDateTime.of(2026, 10, 27, 10, 0)
 
-    @Test fun receiptBecomesExpense() {
+    @Test fun receiptIsJustAPhotoNote() {
+        // Dalla 1.443 uno scontrino non diventa più una spesa.
         val rows = listOf("CONAD", "Via Roma 1", "PANE 2,40", "LATTE 1,10", "TOTALE COMPLESSIVO 3,50")
-        val found = PhotoAttach.decide(rows, now)
-        assertTrue(found is Found.Text && found.text.startsWith("3,50 "))
+        assertTrue(PhotoAttach.decide(rows, now) is Found.Photo)
     }
 
     @Test fun ticketWithDateGoesToTheBarOnOneLine() {
