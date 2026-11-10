@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Done
 import androidx.compose.material3.Checkbox
@@ -123,7 +125,7 @@ internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate): Arra
     habits.map { h ->
         val done = h.isDone(today)
         BubbleAction(
-            icon = if (done) androidx.compose.material.icons.Icons.Filled.CheckCircle else androidx.compose.material.icons.Icons.Outlined.RadioButtonUnchecked,
+            icon = if (done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
             title = h.title,
             detail = if (done) "Fatta oggi · tocca per toglierla" else "Tocca per segnarla fatta",
             onClick = { NotesStore.toggleHabit(h.id, today) },
