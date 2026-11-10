@@ -333,9 +333,6 @@ fun NotesScreen(
         // La lista nasce già su OGGI (1.357): niente salto né dissolvenza dopo. Sotto c'è spazio quanto lo schermo
         // finché non si misura quanto c'è davvero dopo OGGI, così il primo fotogramma è già quello giusto.
         val listState = rememberReselectListState(Routes.NOTES, initialIndex = nowItem ?: 0)
-        // La linea a destra è una barra di scorrimento (Antonio, 1.446): dito in cima = primo giorno, in fondo = ultimo; lasciandola non si apre niente.
-        val scrubDays = remember(entries, timelineIndex, habitsAt, habitCount) { DayScrub.days(entries.map { it.first }, timelineIndex, habitsAt, habitCount) }
-        val scrub = rememberDayScrub(listState, scrubDays)
         LaunchedEffect(Unit) {
             androidx.compose.runtime.withFrameNanos { }
             startedAtNow = true
@@ -365,8 +362,8 @@ fun NotesScreen(
             }
         }
         var grown by remember { mutableStateOf(0) }
-        LaunchedEffect(nearEnd, grown, calendarGranted, scrub.active) {
-            if (nearEnd && calendarGranted && !scrub.active && NotesEvents.grow()) {
+        LaunchedEffect(nearEnd, grown, calendarGranted) {
+            if (nearEnd && calendarGranted && NotesEvents.grow()) {
                 val before = events.size
                 events = NotesEvents.load(context)
                 // Un anno intero senza niente di nuovo: il calendario è finito, ci si ferma qui.
@@ -381,8 +378,8 @@ fun NotesScreen(
             derivedStateOf { startedAtNow && entries.isNotEmpty() && listState.firstVisibleItemIndex <= timelineIndex + NEAR_ROWS }
         }
         var grownPast by remember { mutableStateOf(0) }
-        LaunchedEffect(nearStart, grownPast, calendarGranted, scrub.active) {
-            if (nearStart && calendarGranted && !scrub.active && NotesEvents.growPast()) {
+        LaunchedEffect(nearStart, grownPast, calendarGranted) {
+            if (nearStart && calendarGranted && NotesEvents.growPast()) {
                 val before = events.size
                 // Le righe hanno chiavi stabili: la lista tiene ferma quella che stai guardando da sola.
                 events = NotesEvents.load(context)
@@ -393,8 +390,6 @@ fun NotesScreen(
         }
         val barrier = rememberPastBarrier(listState, nowItem ?: -1, nowItem?.let { 0 })
         Box(Modifier.fillMaxSize()) {
-        // Trascinando la linea a destra si accende la riga del giorno sotto il dito (niente fumetti).
-        androidx.compose.runtime.CompositionLocalProvider(LocalScrubbedRow provides scrub.hot) {
         // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
             state = listState,
@@ -404,7 +399,7 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).dayScrub(scrub).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -518,7 +513,6 @@ fun NotesScreen(
                 val room = if (below == null && nowItem != null) screen else with(density) { nowRoom(viewport, 0, below).toDp() }
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
-        }
         }
         // I filtri stanno fermi sotto il titolo, fuori dalla lista: la pagina si apre su OGGI e restano a portata.
         Row(

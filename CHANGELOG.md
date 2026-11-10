@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.462.0
+**Tolto lo scorrimento trascinando la linea a destra del Calendario**
+- La linea a destra torna solo da guardare: il calendario si scorre come prima, con il dito sulla pagina
+
 ## 1.461.0
 **In Media i titoli tornano sotto le copertine**
 - In Media, Musica, Video, Radio e Continua prima la copertina, poi il titolo e sotto chi l'ha pubblicato

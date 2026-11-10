@@ -205,7 +205,6 @@ fun TimelineRow(
         entry.dayLabel!!, start, line, top,
         rule = true,
         late = entry.late, past = entry.past,
-        hot = LocalScrubbedRow.current == entry.key,
     )
     if (entry.todayHeader) {
         TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
@@ -453,8 +452,6 @@ private val MONTH_RULE = 3.dp
  */
 private val LINE_END = 19.dp
 
-/** La riga del giorno che si sta raggiungendo trascinando la linea a destra ([DayScrub]): si accende lei, niente fumetti. */
-val LocalScrubbedRow = androidx.compose.runtime.compositionLocalOf<String?> { null }
 
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
@@ -469,43 +466,35 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
  * del tempo, come OGGI e i mesi: separa dal giorno prima.
  */
 @Composable
-private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean, hot: Boolean = false) {
-    // Mentre si trascina la linea a destra ([DayScrub]) il giorno sotto il dito si accende: nome, filo e pallino blu.
-    val primary = MaterialTheme.colorScheme.primary
-    // Si accende e si spegne di colpo: con una dissolvenza i giorni appena passati lasciavano una scia che lampeggiava.
-    val color by androidx.compose.animation.animateColorAsState(if (hot) primary else dayLabelColor(late, past), androidx.compose.animation.core.snap(), label = "giorno")
-    val dotColor = when {
+private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
+    val color = dayLabelColor(late, past)
+    val dot = when {
         past -> MaterialTheme.colorScheme.outline
         late -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurface
     }
-    val dotTint by androidx.compose.animation.animateColorAsState(if (hot) primary else dotColor, androidx.compose.animation.core.snap(), label = "pallino")
-    val dotSize by androidx.compose.animation.core.animateDpAsState(if (hot) 12.dp else 7.dp, androidx.compose.animation.core.snap(), label = "pallino")
-    val ruleTint by androidx.compose.animation.animateColorAsState(if (hot) primary else line, androidx.compose.animation.core.snap(), label = "filo")
-    val dot = dotTint
     Row(
         Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Il nome tutto a sinistra e la linea che arriva fino al pallino: "Domani ——————— ●" (Antonio).
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1,
-            fontWeight = if (hot) androidx.compose.ui.text.font.FontWeight.SemiBold else null)
+        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
-        Box(Modifier.weight(1f).height(if (hot) 2.dp else 1.dp).drawBehind { if (rule) drawRect(ruleTint) })
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to dotSize, top = top, bottom = true, joinLeft = rule, join = ruleTint)
+        Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true, joinLeft = rule)
     }
 }
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null, joinLeft: Boolean = false, join: Color = line) {
+private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null, joinLeft: Boolean = false) {
     Box(
         modifier.width(GUTTER).drawBehind {
             val x = size.width / 2
             val mid = dotY?.toPx() ?: (size.height / 2)
             val stroke = 2.dp.toPx()
             // La linea del giorno entra fino al pallino.
-            if (joinLeft) drawLine(join, Offset(0f, mid), Offset(x, mid), (if (join == line) 1.dp else 2.dp).toPx())
+            if (joinLeft) drawLine(line, Offset(0f, mid), Offset(x, mid), 1.dp.toPx())
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
             dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
