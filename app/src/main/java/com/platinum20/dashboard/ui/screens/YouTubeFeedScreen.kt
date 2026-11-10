@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+
+import androidx.compose.ui.draw.alpha
+
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import com.platinum20.dashboard.settings.AppSettings
@@ -311,7 +315,6 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
             itemsIndexed(shorts.take(20), key = { _, v -> v.id }) { i, short ->
                 Column(
                     Modifier
-                        .tileDivider(i == 0, gap = 8.dp)
                         .width(120.dp)
                         .bouncyPress(0.96f)
                         .clickable { onPlay(short.watchUrl) }
@@ -529,25 +532,23 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
 
 /**
  * Video in grande (1.437, Antonio): il titolo SOPRA l'anteprima, appoggiato a lei; sotto foto del canale, canale e
- * dettagli, che vanno a capo verso il basso. Fra un video e l'altro un divisorio leggero ([first] = niente linea).
+ * dettagli su una riga. Altezze fisse (1.442), niente divisori.
  */
 @Composable
 fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
     Column(
         Modifier
-            .stackDivider(first)
             .fillMaxWidth()
             .bouncyPress(0.97f)
             .clip(MaterialTheme.shapes.large)
             .tapOrSave({ SavedLinks.youtube(video) }, onClick)
     ) {
-        Text(
-            video.title,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 2.dp, end = 2.dp, bottom = 8.dp),
-        )
+        // Altezza fissa (1.442): sempre due righe, appoggiate all'anteprima; la lista non salta da un video all'altro.
+        val titleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+        Box(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 8.dp), contentAlignment = Alignment.BottomStart) {
+            Text(" ", style = titleStyle, minLines = 2, maxLines = 2, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
+            Text(video.title, style = titleStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
@@ -560,7 +561,8 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
                 videoMeta(video),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
+                minLines = 1,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(top = 3.dp),
             )

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.442.0
+**Media: Video prima di Musica, niente più divisori, e le scritte delle copertine hanno un'altezza fissa**
+- In Media la fila Video viene prima di Musica e mostra i video delle tue iscrizioni dal più recente
+- Tolti i divisori fra una copertina e l'altra e fra i video di YouTube
+- Titolo sempre nello stesso spazio sopra l'immagine e autore su una riga sotto, con i puntini se il testo è lungo: le tessere sono tutte alte uguali e la pagina non si muove
+
 ## 1.440.0
 **Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
 - Appoggia il dito sulla linea a destra e trascina su o giù: il calendario scorre un giorno alla volta, con un tic per ogni giorno e un colpo più netto quando cambia il mese
