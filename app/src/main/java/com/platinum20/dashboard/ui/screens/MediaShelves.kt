@@ -44,6 +44,7 @@ import com.platinum20.dashboard.media.spotify.SpKind
 import com.platinum20.dashboard.media.spotify.SpotifyMixes
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.youtube.YouTubeStore
+import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.settings.AppSettings
 import java.time.LocalDate
 
@@ -57,6 +58,10 @@ internal object MediaShelves {
 
     /** Righe del titolo nelle file di Media e in Continua: tutte uguali, così le tessere di una fila sono alte uguali. */
     const val TITLE_LINES = 3
+
+    /** Fila Video (1.439, Antonio): i video dei canali a cui sei iscritto, dal più nuovo; senza data in fondo. */
+    fun newestFirst(videos: List<YtVideo>): List<YtVideo> =
+        videos.sortedWith(compareByDescending<YtVideo, java.time.Instant?>(nullsFirst()) { it.published })
 
     /** Che cosa mostra la fila Musica: prima i mix, poi gli ascoltati di recente, senza doppioni. */
     fun <T> mix(first: List<T>, then: List<T>, key: (T) -> String, max: Int = MAX): List<T> =
@@ -242,7 +247,7 @@ internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
     }
 }
 
-/** Video: i nuovi dai canali che segui, con gli stessi filtri del feed (Shorts, live, membri). */
+/** Video: i nuovi dai canali a cui sei iscritto, in ordine dal più recente, con gli stessi filtri del feed (Shorts, live, membri). */
 @Composable
 internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll: () -> Unit) {
     val context = LocalContext.current
@@ -252,7 +257,7 @@ internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll:
     val hideMembers by AppSettings.hideMembers.collectAsState()
     LaunchedEffect(connected) { if (connected) YouTubeStore.refreshSubscriptions(context) }
     val videos = remember(state.data, hideShorts, hideLive, hideMembers) {
-        pickFeed(state.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos.take(MediaShelves.MAX)
+        MediaShelves.newestFirst(pickFeed(state.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos).take(MediaShelves.MAX)
     }
     Shelf("Video", onOpenAll) {
         val width = 200.dp
