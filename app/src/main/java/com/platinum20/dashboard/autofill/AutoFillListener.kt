@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
- * Legge le notifiche delle altre app (banche, Revolut, corrieri, Gmail, SMS) e passa il testo
+ * Legge le notifiche delle altre app (corrieri, negozi, Gmail, SMS; non banche né pagamenti) e passa il testo
  * ad [AutoFill]. Non manda niente da nessuna parte: il testo resta sul telefono e viene scartato.
  */
 class AutoFillListener : NotificationListenerService() {

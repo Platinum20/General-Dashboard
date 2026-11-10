@@ -205,29 +205,23 @@ fun HomeScreen(
         val work = com.platinum20.dashboard.shifts.ShiftStore
         if (work.linked.value && !work.expired.value && work.isStale()) com.platinum20.dashboard.shifts.CreatorsLink.refresh(context)
     }
-    // Le spese Revolut entrano nel calendario da sole: con la Home aperta si rileggono ogni mezz'ora.
-    remember { com.platinum20.dashboard.bank.RevolutStore.init(context) }
-    AutoRefresh(everyMs = com.platinum20.dashboard.bank.RevolutStore.STALE_MS) {
-        val bank = com.platinum20.dashboard.bank.RevolutStore
-        if (bank.linked.value && !bank.expired.value && bank.isStale()) com.platinum20.dashboard.bank.RevolutLink.refresh(context)
-    }
-    // Il rinnovo dell'offerta SIM va fra i prossimi giorni, come un addebito (Antonio).
+    // Il rinnovo dell'offerta SIM va fra i prossimi giorni (Antonio).
     remember { com.platinum20.dashboard.sim.SimStore.init(context) }
     val sim by com.platinum20.dashboard.sim.SimStore.status.collectAsStateWithLifecycle()
     val simLinked by com.platinum20.dashboard.sim.SimStore.linked.collectAsStateWithLifecycle()
     val simRenewal = sim?.renewal?.takeIf { simLinked }
-    // Il calendario unico (1.314): oggi in cima con la spesa e le note senza data, poi i prossimi giorni.
+    // Il calendario unico (1.314): oggi in cima con le note senza data, poi i prossimi giorni.
     val calendar = remember(minute, agenda.today, weekAhead, notes, simRenewal) {
         dueDays(
-            notes.tasks, notes.parcels, agenda.today.orEmpty() + weekAhead.values.flatten(), notes.fixedExpenses,
-            simRenewal = simRenewal, withToday = true, notes = notes.notes, expenses = notes.expenses,
+            notes.tasks, notes.parcels, agenda.today.orEmpty() + weekAhead.values.flatten(),
+            simRenewal = simRenewal, withToday = true, notes = notes.notes,
         )
     }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openItems,
-            habits = notes.habits, parcels = notes.parcels, expenses = notes.expenses, budgetCents = null,
-            fixedExpenses = notes.fixedExpenses, withTomorrow = false, wholeDay = true, max = Int.MAX_VALUE,
+            habits = notes.habits, parcels = notes.parcels,
+            withTomorrow = false, wholeDay = true, max = Int.MAX_VALUE,
         ).filter { it.kind in ADESSO_KINDS }.take(Briefing.CARD_MAX)
     }
     // Azioni rapide di "Adesso": per qualche secondo si può annullare, come in Note.
@@ -250,9 +244,7 @@ fun HomeScreen(
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
     // Gli accessi scaduti finiscono nella riga Impostazioni in fondo (punto 21 D).
-    com.platinum20.dashboard.bank.RevolutStore.init(context)
     com.platinum20.dashboard.shifts.ShiftStore.init(context)
-    val revolutExpired by com.platinum20.dashboard.bank.RevolutStore.expired.collectAsStateWithLifecycle()
     val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     MailStore.init(context)
     com.platinum20.dashboard.docs.DocumentsStore.init(context)
@@ -261,10 +253,6 @@ fun HomeScreen(
     val gmailImap by GmailImap.linked.collectAsStateWithLifecycle()
     val gmailConnected = gmailOAuth || gmailImap
     // Una card compare solo se ha qualcosa da dire.
-    // SIM e Revolut stanno in una card sola, "Conti" (1.404), nel posto della prima delle due.
-    val showSim = HomeCard.SIM in layout.visible
-    val showBank = HomeCard.BANK in layout.visible
-    val contiAt = layout.visible.firstOrNull { it == HomeCard.SIM || it == HomeCard.BANK }
     val cards = layout.visible.filter { card ->
         when (card) {
             // Senza permesso l'agenda non occupa la cima: l'invito sta in fondo (InvitesRow).
@@ -274,7 +262,6 @@ fun HomeScreen(
             HomeCard.DOCS -> docs.isNotEmpty()
             // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
             HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
-            HomeCard.SIM, HomeCard.BANK -> card == contiAt
             else -> true
         }
     }
@@ -316,7 +303,7 @@ fun HomeScreen(
                         id != null && line.kind == BriefKind.PARCEL -> openItem(ItemKind.PARCEL, id)
                         else -> when (line.kind) {
                             BriefKind.EVENT -> inApp?.openCalendar?.invoke()
-                            BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.expenses())
+                            BriefKind.MONEY -> inApp?.openRoute?.invoke(Routes.SIM)
                             BriefKind.TASK, BriefKind.DATE, BriefKind.HABIT, BriefKind.PARCEL -> onOpenNotes()
                             BriefKind.RAIN, BriefKind.WEATHER -> onOpenWeather()
                             BriefKind.FREE -> Unit
@@ -326,7 +313,6 @@ fun HomeScreen(
             )
             HomeCard.DAY -> CalendarCard(
                 groups = calendar,
-                expenses = notes.expenses,
                 today = minute.toLocalDate(),
                 habits = notes.habits,
                 onOpenAll = {
@@ -346,12 +332,7 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.SIM, HomeCard.BANK -> ContiCard(
-                showSim = showSim,
-                showBank = showBank,
-                onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) },
-                onOpenBank = { inApp?.openRoute?.invoke(Routes.expenses()) },
-            )
+            HomeCard.SIM -> ContiCard(onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) })
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.document(id))
@@ -413,7 +394,6 @@ fun HomeScreen(
                         calendarGranted = agenda.granted,
                         autoFillEnabled = autoFillEnabled,
                         autoFillDismissed = autoFillDismissed,
-                        revolutExpired = revolutExpired,
                         shiftsExpired = shiftsExpired,
                     ),
                     onAllowCalendar = agenda.requestPermission,
@@ -692,8 +672,8 @@ private fun CardMessage(
 }
 
 /**
- * Che cosa resta in "Adesso" dalla 1.314: il meteo, la pioggia, le abitudini. Impegni, promemoria, date, pacchi
- * e spese di oggi stanno in cima al calendario, un posto solo per ogni cosa (Antonio).
+ * Che cosa resta in "Adesso" dalla 1.314: il meteo, la pioggia, le abitudini. Impegni, promemoria, date e pacchi
+ * di oggi stanno in cima al calendario, un posto solo per ogni cosa (Antonio).
  */
 // Le abitudini stanno nel Calendario, sotto OGGI (punto 19): in Adesso solo pioggia e meteo.
 private val ADESSO_KINDS = setOf(BriefKind.RAIN, BriefKind.WEATHER)

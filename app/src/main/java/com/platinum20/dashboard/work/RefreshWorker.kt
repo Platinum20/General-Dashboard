@@ -25,11 +25,7 @@ class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     override suspend fun doWork(): Result {
         DiskCache.init(applicationContext)
-        // Anche con l'app chiusa da giorni l'affitto del 5 compare il 5 (e nel widget).
-        runCatching {
-            NotesStore.init(applicationContext)
-            NotesStore.applyFixedExpenses()
-        }
+        runCatching { NotesStore.init(applicationContext) }
         val weather = runCatching { WeatherStore.fetch(applicationContext, freshLocation = false) }
         val news = runCatching {
             val result = NewsStore.load(force = true)

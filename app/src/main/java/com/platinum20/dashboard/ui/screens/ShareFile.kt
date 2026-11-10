@@ -8,7 +8,7 @@ import java.io.File
 
 /**
  * Condivide un testo lungo come file .txt: messo dentro l'Intent (fino a qualche MB di risposte
- * catturate) supera il limite di Android e fa chiudere l'app che lo riceve (successo con Revolut).
+ * catturate) supera il limite di Android e fa chiudere l'app che lo riceve.
  */
 internal fun shareTextFile(context: Context, name: String, text: String) {
     val dir = File(context.cacheDir, "shared").apply { mkdirs() }

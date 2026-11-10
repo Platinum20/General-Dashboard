@@ -26,7 +26,7 @@ data class BackupContent(
 )
 
 /**
- * Backup ed esportazione: promemoria, abitudini, spese, note, pacchi e date in un solo file JSON,
+ * Backup ed esportazione: promemoria, abitudini, note, pacchi e date in un solo file JSON,
  * con le impostazioni utili. Le funzioni di [encode]/[decode] sono pure, così si provano senza telefono.
  */
 object Backup {
@@ -71,13 +71,12 @@ object Backup {
         )
     }.getOrNull()
 
-    /** "42 promemoria, 3 abitudini, 18 spese": cosa c'è nel backup, prima di sostituire. */
+    /** "42 promemoria, 3 abitudini, 18 note": cosa c'è nel backup, prima di sostituire. */
     fun summary(d: NotesData): String {
         fun count(n: Int, one: String, many: String) = if (n == 0) null else "$n ${if (n == 1) one else many}"
         return listOfNotNull(
             count(d.tasks.count { !it.allDay }, "promemoria", "promemoria"),
             count(d.habits.size, "abitudine", "abitudini"),
-            count(d.expenses.size, "spesa", "spese"),
             count(d.notes.size, "nota", "note"),
             count(d.parcels.size, "pacco", "pacchi"),
             count(d.dates.size, "data", "date"),

@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.widget.RemoteViews
 import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.work.RefreshWorker
@@ -69,7 +68,7 @@ object Widgets {
 
     /** Ogni widget con il suo disegno: il nome della classe resta quello di sempre, se no spariscono dalla Home. */
     internal val all: List<Pair<Class<out CanvasWidget>, CanvasWidget>> by lazy {
-        listOf(DashboardWidget(), TasksWidget(), NewsWidget(), SpendWidget(), SimWidget(), WeatherWidget(), CaptureWidget())
+        listOf(DashboardWidget(), TasksWidget(), NewsWidget(), SimWidget(), WeatherWidget(), CaptureWidget())
             .map { it::class.java to it }
     }
 
@@ -92,7 +91,6 @@ object Widgets {
         // I dati si caricano qui, sul thread di chi chiama, come fa il resto dell'app.
         runCatching { NotesStore.init(app) }
         runCatching { SimStore.init(app) }
-        runCatching { RevolutStore.init(app) }
         scope.launch {
             try {
                 lock.withLock {

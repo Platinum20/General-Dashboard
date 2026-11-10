@@ -15,7 +15,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.R
-import com.platinum20.dashboard.notes.Expenses
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -28,7 +27,6 @@ object SuggestionText {
 
     fun title(found: Found): String = when (found) {
         is Found.NewParcel -> found.title
-        is Found.Spent -> "${Expenses.format(found.cents)} · ${found.merchant}"
         is Found.Deadline -> found.title
         is Found.Delivered -> "Consegnato ${found.code}"
     }
@@ -36,7 +34,6 @@ object SuggestionText {
     fun detail(s: Suggestion): String {
         val what = when (val f = s.found) {
             is Found.NewParcel -> listOfNotNull("Pacco", f.code.ifEmpty { null }, f.expected?.let { "atteso " + day.format(it) }).joinToString(" · ")
-            is Found.Spent -> "Spesa · ${f.category.label}"
             is Found.Deadline -> "Data · " + day.format(f.due)
             is Found.Delivered -> "Pacco"
         }
@@ -61,7 +58,7 @@ object AutoFillNotifier {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL, "Trovati da soli", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Pacchi, spese e scadenze che Canvas ha letto nelle notifiche"
+                description = "Pacchi e scadenze che Canvas ha letto nelle notifiche"
             }
         )
         items.forEach { s ->

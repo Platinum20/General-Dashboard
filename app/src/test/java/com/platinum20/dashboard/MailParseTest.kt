@@ -93,7 +93,7 @@ class MailParseTest {
     @Test
     fun rinnovoNonEUnaSpesa() {
         val found = Extractor.extract(Incoming("Netflix", SourceKind.OTHER, "Netflix", "Il tuo abbonamento si rinnoverà il 3/11, addebito di 12,99 €", now))
-        assertTrue(found.toString(), found.none { it is Found.Spent })
+        assertTrue(found.toString(), found.all { it is Found.Deadline })
     }
 
     @Test

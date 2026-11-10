@@ -224,7 +224,6 @@ import com.platinum20.dashboard.ui.screens.UpdatesScreen
 import com.platinum20.dashboard.ui.screens.AutoFillScreen
 import com.platinum20.dashboard.ui.screens.MailScreen
 import com.platinum20.dashboard.ui.screens.WeatherScreen
-import com.platinum20.dashboard.ui.screens.ExpensesScreen
 import com.platinum20.dashboard.ui.screens.SimScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import com.platinum20.dashboard.ui.theme.isAppInDarkTheme
@@ -266,7 +265,6 @@ data class OpenRequest(
         /** Dai widget: scheda di un promemoria (url = id, source = ItemKind), di un evento (url = "id/inizio/fine"). */
         const val ITEM = "item"
         const val EVENT = "event"
-        const val EXPENSES = "expenses"
         const val SIM = "sim"
         /** Widget Scrivi e "+" del Calendario: la barra si apre già pronta per scrivere, o in ascolto. */
         const val WRITE = "write"
@@ -329,7 +327,8 @@ class MainActivity : ComponentActivity() {
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
-                // Revolut e WindTre: il giro che tiene vivo l'accesso (si accende solo se collegati).
+                // WindTre: il giro che tiene vivo l'accesso (si accende solo se collegato).
+                com.platinum20.dashboard.settings.Leftovers.clean(app)
                 com.platinum20.dashboard.work.KeepAliveWorker.update(app)
                 com.platinum20.dashboard.shifts.ShiftStore.init(app)
                 if (com.platinum20.dashboard.shifts.ShiftStore.linked.value) com.platinum20.dashboard.work.ShiftWorker.schedule(app)
@@ -384,23 +383,16 @@ object Routes {
     const val WEATHER = "home/weather"
     const val WEATHER_PLACE = "home/weather/place"
     const val CUSTOMIZE = "home/customize"
-    /** Il riepilogo delle spese di un mese (dal segno del mese nel calendario); senza mese, quello di adesso. */
-    const val EXPENSES = "home/expenses?month={month}"
-    fun expenses(month: java.time.YearMonth? = null) = "home/expenses" + (month?.let { "?month=$it" } ?: "")
     const val SIM = "home/sim"
     /** Un documento fotografato con la graffetta (dalla card Documenti della Home). */
     const val DOCUMENT = "home/document/{id}"
     fun document(id: Long) = "home/document/$id"
-    /** L'accesso a Revolut (una volta, poi la lettura è nascosta): da Impostazioni › Account. */
-    const val REVOLUT = "settings/revolut"
     /** L'accesso a Creators Pro per i turni di lavoro (una volta, poi la lettura è nascosta). */
     const val SHIFTS = "settings/shifts"
-    /** Stessa pagina Spese aperta dalla card di Note: resta dentro Note (barra su Note, indietro torna lì). */
-
-    /** La scheda della barra da accendere: Spese accende la sezione da cui la si è aperta. */
+    /** La scheda della barra da accendere: una pagina aperta dalla Home tiene accesa la Home. */
     fun barTab(route: String?): String? = when (route) {
-        // Il calendario (rotta "notes") e le spese si aprono dalla Home: lì resta accesa la sua scheda.
-        EXPENSES, NOTES -> HOME
+        // Il calendario (rotta "notes") si apre dalla Home: lì resta accesa la sua scheda.
+        NOTES -> HOME
         else -> route
     }
     const val SEARCH = "home/search"
@@ -446,7 +438,7 @@ object Routes {
 
     fun noteEdit(id: Long?) = "notes/edit?id=${id ?: -1L}"
 
-    /** La pagina a schermo intero di un promemoria, una data, un pacco, un'abitudine o una spesa. */
+    /** La pagina a schermo intero di un promemoria, una data, un pacco, o un'abitudine. */
     const val NOTE_ITEM = "notes/item/{kind}/{id}"
 
     fun noteItem(kind: ItemKind, id: Long) = "notes/item/${kind.name}/$id"
@@ -1010,7 +1002,7 @@ private fun AppRoot(openRequest: OpenRequest?, onOpenHandled: () -> Unit) {
                     LinkTarget.None -> Unit
                 }
             },
-            // Il calendario unico (con note e spese) si apre dalla Home: sopra la Home, "indietro" ci torna.
+            // Il calendario unico (con le note) si apre dalla Home: sopra la Home, "indietro" ci torna.
             openCalendar = { navController.openCalendar() },
             openEvent = { navController.navigate(Routes.calendarEvent(it.eventId, it.begin, it.end)) },
             newEvent = { navController.navigate(Routes.calendarEdit(null, it)) },
@@ -1063,7 +1055,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 OpenRequest.EVENT -> request.url.split("/").mapNotNull { it.toLongOrNull() }.takeIf { it.size == 3 }?.let { (id, begin, end) ->
                     navController.navigate(Routes.calendarEvent(id, begin, end))
                 }
-                OpenRequest.EXPENSES -> navController.navigate(Routes.expenses())
                 OpenRequest.SIM -> navController.navigate(Routes.SIM)
                 OpenRequest.WRITE -> CaptureComposer.open()
                 OpenRequest.VOICE -> voiceRequested = true
@@ -1094,8 +1085,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    // Anche Spese ha la barra e il + (Antonio): ci si arriva da Oggi e da Note, ma si usa come una sezione.
-    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.EXPENSES || currentRoute == Routes.NOTES
+    // Anche il calendario ha la barra e il + (Antonio): ci si arriva da Oggi, ma si usa come una sezione.
+    val showBottomBar = topDestinations.any { it.route == currentRoute } || currentRoute == Routes.NOTES
     val composing = CaptureComposer.isOpen
     val imeOpen = WindowInsets.isImeVisible
     // Uscendo dalle sezioni della barra (es. da una notifica) quello che si scriveva si chiude.
@@ -1103,8 +1094,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Pallino sulla scheda Note: promemoria scaduti o in scadenza oggi.
     NotesStore.init(context)
     val notes by NotesStore.data.collectAsState()
-    // L'app può restare in memoria per giorni: le spese fisse del giorno vanno aggiunte a ogni ritorno.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { NotesStore.applyFixedExpenses() }
     val notesProblem by NotesStore.readProblem.collectAsState()
     LaunchedEffect(notesProblem) {
         if (notesProblem != null) {
@@ -1500,20 +1489,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.DocumentScreen(id = entry.arguments?.getLong("id") ?: -1L, onBack = { navController.popBackStack() })
                 }
             }
-            composable(Routes.REVOLUT) {
-                com.platinum20.dashboard.ui.screens.RevolutLoginScreen(onClose = { navController.popBackStack() })
-            }
             composable(Routes.SHIFTS) {
                 com.platinum20.dashboard.ui.screens.ShiftsLoginScreen(onClose = { navController.popBackStack() })
-            }
-            composable(
-                Routes.EXPENSES,
-                arguments = listOf(navArgument("month") { type = NavType.StringType; nullable = true; defaultValue = null }),
-            ) { entry ->
-                val month = entry.arguments?.getString("month")?.let { runCatching { java.time.YearMonth.parse(it) }.getOrNull() }
-                CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
-                ExpensesScreen(onBack = { navController.popBackStack() }, bottomPadding = padding, month = month ?: java.time.YearMonth.now())
-                }
             }
             composable(Routes.WEATHER_PLACE) {
                 PlacePickerScreen(onBack = { navController.popBackStack() })

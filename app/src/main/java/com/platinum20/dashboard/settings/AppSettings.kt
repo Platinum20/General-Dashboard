@@ -24,10 +24,9 @@ enum class HomeCard(val label: String, val description: String) {
     // Il nome resta WEATHER per le preferenze salvate.
     WEATHER("Adesso", "Meteo e cose da sapere ora"),
     RESUME("Media", "Quello che suona o da riprendere"),
-    // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con note e spese dentro.
-    DAY("Calendario", "Oggi, spese, note e prossimi giorni"),
-    SIM("SIM", "I giga nella card Conti"),
-    BANK("Revolut", "Il saldo nella card Conti"),
+    // Il nome resta DAY per le preferenze salvate: dalla 1.314 è il calendario unico, con le note dentro.
+    DAY("Calendario", "Oggi, note e prossimi giorni"),
+    SIM("SIM", "Giga, minuti e rinnovo"),
     DOCS("Documenti", "Carta d'identità, patente e scadenze"),
     // Il nome resta MAIL per le preferenze salvate. Dalla 1.191 solo le mail importanti: le cose trovate si salvano da sole.
     MAIL("Dalla posta", "Le mail importanti non lette"),
@@ -44,7 +43,7 @@ data class HomeLayout(val order: List<HomeCard>, val hidden: Set<HomeCard>) {
         /**
          * 2 = 1.182: via "Domani" (sta in Adesso), "Trovati per te" dentro "Dalla posta", ordine nuovo.
          * 3 = 1.186: "La giornata" diventa "Prossimi giorni" e torna visibile anche se era nascosta.
-         * 4 = 1.314: diventa il Calendario unico (con note e spese) e torna visibile; via le card Spese e Note.
+         * 4 = 1.314: diventa il Calendario unico (con le note) e torna visibile; via le card Spese e Note.
          */
         const val VERSION = 4
 

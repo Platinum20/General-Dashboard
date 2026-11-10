@@ -80,9 +80,6 @@ class GmailImapTest {
         assertEquals("Trenitalia", m!!.from)
         assertEquals("noreply@trenitalia.it", m.fromAddress)
         assertTrue(m.unread)
-        // E la ricevuta diventa una spesa.
-        val spent = Extractor.extract(MailParse.incoming(m, ZoneOffset.UTC)).filterIsInstance<Found.Spent>()
-        assertEquals(listOf(2390L), spent.map { it.cents })
     }
 
     @Test fun letteNonSonoUnread() {

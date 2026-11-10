@@ -10,11 +10,10 @@ class CaptureGuessTest {
     private val now = LocalDateTime.of(2026, 10, 23, 10, 0)
     private fun guess(t: String) = CaptureGuess.guess(t, now)
 
-    @Test fun spese() {
-        assertEquals(CaptureMode.EXPENSE, guess("12,50 pizza"))
-        assertEquals(CaptureMode.EXPENSE, guess("benzina 40 euro"))
-        assertEquals(CaptureMode.EXPENSE, guess("€ 8 cinema"))
-        assertEquals(CaptureMode.EXPENSE, guess("pizza 12€"))
+    @Test fun importiNonSonoSpese() {
+        // Dalla 1.447 l'app non tiene spese: un importo resta un promemoria.
+        assertEquals(CaptureMode.TASK, guess("12,50 pizza"))
+        assertEquals(CaptureMode.TASK, guess("benzina 40 euro"))
     }
 
     @Test fun orariNonSonoSpese() {

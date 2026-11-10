@@ -6,7 +6,7 @@ import com.platinum20.dashboard.security.Vault
 import org.json.JSONObject
 
 /**
- * L'accesso a un sito (Revolut, WindTre) che resta acceso come in un browser con "resta collegato".
+ * L'accesso a un sito (WindTre, Creators Pro) che resta acceso come in un browser con "resta collegato".
  * Due cose si perdevano: i cookie "di sessione" (la WebView li tiene solo in memoria, persi a ogni
  * riavvio del processo) e il sessionStorage della pagina, che vive solo nella singola WebView: ogni
  * aggiornamento nascosto apre una WebView nuova, quindi se il sito tiene lì il suo token la sessione

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.447.0
+**Niente più soldi nell'app: tolti Revolut e le spese**
+- Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo
+- L'app non legge più i soldi che spendi da notifiche, SMS, mail o scontrini
+- Tolte anche le spese scritte a mano e quelle fisse, la pagina Spese, i totali del mese e il budget
+- Il calendario non mostra più spese né totali: OGGI resta in cima come sempre
+- Tolti il filtro Spese, il widget Spese e la scorciatoia "Nuova spesa"; la card in Home ora è solo la SIM
+- Le spese salvate e i dati di Revolut vengono cancellati dal telefono al primo avvio
+- I guadagni dei turni restano dove sono
+
 ## 1.446.0
 **La linea a destra del Calendario è una vera barra di scorrimento**
 - La linea è tutto il calendario: dito in cima = il primo giorno, in fondo = l'ultimo, a metà = a metà. Dove lo metti, lì sei, subito

@@ -1,6 +1,5 @@
 package com.platinum20.dashboard.notes
 
-import com.platinum20.dashboard.bank.BankTx
 import com.platinum20.dashboard.capture.SavedLinks
 import android.content.Context
 import com.platinum20.dashboard.today.Briefing
@@ -16,7 +15,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -250,13 +248,7 @@ data class NotesData(
     val tasks: List<TaskItem> = emptyList(),
     val notes: List<Note> = emptyList(),
     val habits: List<Habit> = emptyList(),
-    val expenses: List<Expense> = emptyList(),
-    /** Tetto di spesa del mese in centesimi, null se non impostato. */
-    val budgetCents: Long? = null,
     val parcels: List<Parcel> = emptyList(),
-    val fixedExpenses: List<FixedExpense> = emptyList(),
-    /** I movimenti del conto che Antonio ha eliminato: la lettura successiva non li rimette. */
-    val bankIgnored: Set<String> = emptySet(),
 ) {
     /** Pacchi ancora in viaggio, prima quelli attesi prima; quelli senza data in fondo. */
     val incoming: List<Parcel>
@@ -303,15 +295,12 @@ object NotesStore {
         val (loaded, copy) = load(file, LocalDate.now())
         _data.value = loaded
         _readProblem.value = copy?.name
-        applyFixedExpenses()
         rollDates()
-        // Le categorie imparano parole nuove: quelle rimaste in "Altro" si risistemano da sole.
-        update { d -> Expenses.recategorized(d.expenses).let { if (it == d.expenses) d else d.copy(expenses = it) } }
-        val prefs = appContext.getSharedPreferences("notes_upgrades", Context.MODE_PRIVATE)
-        if (prefs.getInt("categories", 0) < CATEGORIES_VERSION) {
-            update(::withUpgradedCategories)
-            prefs.edit().putInt("categories", CATEGORIES_VERSION).apply()
+        // Dalla 1.447 l'app non tiene più spese (Antonio): se il file ne ha ancora, si riscrive subito senza.
+        if (copy == null && runCatching { file.readText().let { "\"expenses\"" in it || "\"fixedExpenses\"" in it || "\"budgetCents\"" in it } }.getOrDefault(false)) {
+            runCatching { file.writeText(serialize(_data.value)) }
         }
+        appContext.deleteSharedPreferences("notes_upgrades")
     }
 
     /** Porta alla volta dopo compleanni e date ricorrenti già passati, con il loro avviso. */
@@ -319,16 +308,6 @@ object NotesStore {
         val before = _data.value.tasks
         update { withDatesRolled(it, today) }
         _data.value.tasks.filter { t -> before.none { it == t } }.forEach { syncReminder(it.id) }
-    }
-
-    /** Sale quando le categorie cambiano forma (1.289: Bollette e Acquisti): le spese vecchie si spostano una volta. */
-    private const val CATEGORIES_VERSION = 1
-
-    /** Le spese (e le fisse) che con le categorie nuove stanno meglio altrove; vedi [Expenses.upgradeCategory]. */
-    fun withUpgradedCategories(d: NotesData): NotesData {
-        val expenses = d.expenses.map { e -> Expenses.upgradeCategory(e.category, e.text).let { if (it == e.category) e else e.copy(category = it) } }
-        val fixed = d.fixedExpenses.map { f -> Expenses.upgradeCategory(f.category, f.text).let { if (it == f.category) f else f.copy(category = it) } }
-        return if (expenses == d.expenses && fixed == d.fixedExpenses) d else d.copy(expenses = expenses, fixedExpenses = fixed)
     }
 
     fun readProblemShown() {
@@ -348,45 +327,6 @@ object NotesStore {
         var n = 2
         while (copy.exists()) copy = File(file.parentFile, "${file.name}.bad-$today-${n++}")
         return NotesData() to runCatching { file.copyTo(copy) }.getOrNull()
-    }
-
-    /** Aggiunge le spese fisse arrivate a scadenza (anche più mesi, se l'app non si apriva da tempo). */
-    fun applyFixedExpenses(today: LocalDate = LocalDate.now()) = update { d -> withFixedApplied(d, today, ::newId) }
-
-    internal fun withFixedApplied(d: NotesData, today: LocalDate, id: () -> Long): NotesData {
-        var expenses = d.expenses
-        val fixed = d.fixedExpenses.map { f ->
-            val months = f.dueMonths(today)
-            if (months.isEmpty()) return@map f
-            expenses = months.reversed().map { Expense(id(), f.cents, f.text, f.category, f.dateIn(it), fixedId = f.id) } + expenses
-            f.copy(lastMonth = months.last())
-        }
-        return if (fixed == d.fixedExpenses) d else d.copy(expenses = expenses, fixedExpenses = fixed)
-    }
-
-    /** "ogni mese il 5 affitto 650": salva la spesa fissa (e la aggiunge se oggi è il giorno). */
-    fun addFixedExpense(text: String, today: LocalDate = LocalDate.now()): FixedExpense? {
-        val parsed = Expenses.parseFixed(text, today) ?: return null
-        val item = parsed.copy(id = newId())
-        update { d -> withFixedApplied(d.copy(fixedExpenses = d.fixedExpenses + item), today, ::newId) }
-        return item
-    }
-
-    /** Smette di aggiungerla; quelle già aggiunte restano nei mesi passati. */
-    fun deleteFixedExpense(id: Long) = update { d -> d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }) }
-
-    /** "Annulla" subito dopo averla scritta: via la spesa fissa e anche quelle che ha già aggiunto. */
-    fun undoFixedExpense(id: Long) = update { d ->
-        d.copy(fixedExpenses = d.fixedExpenses.filter { it.id != id }, expenses = d.expenses.filter { it.fixedId != id })
-    }
-
-    /** Una spesa fissa cambiata dalla sua pagina (nome, importo, giorno, categoria). */
-    fun saveFixedExpense(item: FixedExpense) = update { d ->
-        d.copy(fixedExpenses = d.fixedExpenses.map { if (it.id == item.id) item else it })
-    }
-
-    fun restoreFixedExpense(item: FixedExpense) = update { d ->
-        if (d.fixedExpenses.any { it.id == item.id }) d else d.copy(fixedExpenses = d.fixedExpenses + item)
     }
 
     private fun newId(): Long = System.nanoTime()
@@ -598,34 +538,6 @@ object NotesStore {
         else HabitReminderWorker.cancel(appContext, id)
     }
 
-    /** "12,50 pizza": salva la spesa e la restituisce, null se manca l'importo. */
-    fun addExpense(text: String, date: LocalDate = LocalDate.now()): Expense? {
-        val parsed = Expenses.parse(text, date) ?: return null
-        // Scritta adesso: l'ora è questa, per l'ordine nel giorno.
-        val item = parsed.copy(id = newId(), at = parsed.at ?: if (parsed.date == LocalDate.now()) LocalTime.now().withSecond(0).withNano(0) else null)
-        update { d -> d.copy(expenses = listOf(item) + d.expenses) }
-        return item
-    }
-
-    fun saveExpense(item: Expense) = update { d ->
-        d.copy(expenses = d.expenses.map { if (it.id == item.id) item else it })
-    }
-
-    fun deleteExpense(id: Long) = update { d ->
-        val bankId = d.expenses.firstOrNull { it.id == id }?.bankId
-        d.copy(expenses = d.expenses.filter { it.id != id }, bankIgnored = bankId?.let { d.bankIgnored + it } ?: d.bankIgnored)
-    }
-
-    /** I movimenti letti dal conto Revolut: aggiunge, aggiorna o toglie le spese collegate. */
-    fun syncBank(txs: List<BankTx>, since: LocalDate) = update { d -> BankSync.apply(d, txs, since, newId()) }
-
-    fun restoreExpense(item: Expense) = update { d ->
-        if (d.expenses.any { it.id == item.id }) d
-        else d.copy(expenses = listOf(item) + d.expenses, bankIgnored = item.bankId?.let { d.bankIgnored - it } ?: d.bankIgnored)
-    }
-
-    fun setBudget(cents: Long?) = update { it.copy(budgetCents = cents?.takeIf { c -> c > 0 }) }
-
     fun saveParcel(id: Long?, title: String, code: String, expected: LocalDate?) {
         val clean = title.trim().ifEmpty { code.trim() }.ifEmpty { return }
         update { d ->
@@ -647,13 +559,6 @@ object NotesStore {
         val target = _data.value.parcels.firstOrNull { !it.delivered && it.code.equals(code, ignoreCase = true) } ?: return false
         update { d -> d.copy(parcels = d.parcels.map { if (it.id == target.id) it.copy(deliveredOn = LocalDate.now()) else it }) }
         return true
-    }
-
-    /** Una spesa già pronta (es. letta da una notifica della banca): restituisce quella salvata. */
-    fun addExpense(item: Expense): Expense {
-        val saved = item.copy(id = newId())
-        update { d -> d.copy(expenses = listOf(saved) + d.expenses) }
-        return saved
     }
 
     /** Un promemoria con scadenza già nota, senza interpretare il testo. */
@@ -738,8 +643,7 @@ object NotesStore {
     /** Ripristino da backup: sostituisce tutto e rimette i promemoria con la loro notifica. */
     fun replaceAll(next: NotesData) {
         val before = _data.value.tasks.map { it.id }
-        // Le spese fisse scadute da quando è stato fatto il backup vanno aggiunte subito.
-        update { withFixedApplied(next, LocalDate.now(), ::newId) }
+        update { next }
         before.forEach(::syncReminder)
         next.tasks.forEach { syncReminder(it.id) }
     }
@@ -796,28 +700,6 @@ object NotesStore {
                 )
             }
         })
-        .put("expenses", JSONArray().apply {
-            d.expenses.forEach {
-                put(
-                    JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
-                        .put("category", it.category.name).put("date", it.date.toString())
-                        .apply { it.fixedId?.let { f -> put("fixedId", f) } }
-                        .apply { it.bankId?.let { b -> put("bankId", b) } }
-                        .apply { it.at?.let { t -> put("at", "%02d:%02d".format(t.hour, t.minute)) } }
-                )
-            }
-        })
-        .put("fixedExpenses", JSONArray().apply {
-            d.fixedExpenses.forEach {
-                put(
-                    JSONObject().put("id", it.id).put("cents", it.cents).put("text", it.text)
-                        .put("category", it.category.name).put("day", it.day).put("from", it.from.toString())
-                        .apply { it.lastMonth?.let { m -> put("lastMonth", m.toString()) } }
-                )
-            }
-        })
-        .apply { d.budgetCents?.let { put("budgetCents", it) } }
-        .apply { if (d.bankIgnored.isNotEmpty()) put("bankIgnored", JSONArray(d.bankIgnored.toList())) }
         .put("parcels", JSONArray().apply {
             // I pacchi consegnati da più di un mese non servono più.
             val since = LocalDate.now().minusDays(30)
@@ -837,11 +719,7 @@ object NotesStore {
         val notes = json.optJSONArray("notes") ?: JSONArray()
         val countdowns = json.optJSONArray("countdowns") ?: JSONArray()
         val habits = json.optJSONArray("habits") ?: JSONArray()
-        val expenses = json.optJSONArray("expenses") ?: JSONArray()
         val parcels = json.optJSONArray("parcels") ?: JSONArray()
-        val fixedExpenses = json.optJSONArray("fixedExpenses") ?: JSONArray()
-        fun JSONObject.month(key: String): YearMonth? =
-            if (has(key)) runCatching { YearMonth.parse(optString(key)) }.getOrNull() else null
         fun JSONObject.date(key: String): LocalDate? =
             if (has(key)) runCatching { LocalDate.parse(optString(key)) }.getOrNull() else null
         val parsedTasks = (0 until tasks.length()).map { i ->
@@ -890,34 +768,6 @@ object NotesStore {
                     remindAt = o.optString("remindAt").takeIf { it.isNotEmpty() }?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
                 )
             },
-            expenses = (0 until expenses.length()).mapNotNull { i ->
-                val o = expenses.getJSONObject(i)
-                Expense(
-                    o.getLong("id"),
-                    o.optLong("cents"),
-                    o.optString("text"),
-                    runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
-                    o.date("date") ?: return@mapNotNull null,
-                    fixedId = if (o.has("fixedId")) o.optLong("fixedId") else null,
-                    bankId = o.optString("bankId").takeIf { it.isNotEmpty() },
-                    // Prima della 1.349 le spese non avevano l'ora.
-                    at = o.optString("at").takeIf { it.isNotEmpty() }?.let { runCatching { LocalTime.parse(it) }.getOrNull() },
-                )
-            },
-            fixedExpenses = (0 until fixedExpenses.length()).mapNotNull { i ->
-                val o = fixedExpenses.getJSONObject(i)
-                FixedExpense(
-                    o.getLong("id"),
-                    o.optLong("cents"),
-                    o.optString("text"),
-                    runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
-                    o.optInt("day", 1).coerceIn(1, 31),
-                    o.month("from") ?: return@mapNotNull null,
-                    o.month("lastMonth"),
-                )
-            },
-            budgetCents = if (json.has("budgetCents")) json.optLong("budgetCents") else null,
-            bankIgnored = json.optJSONArray("bankIgnored")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: emptySet(),
             parcels = (0 until parcels.length()).map { i ->
                 val o = parcels.getJSONObject(i)
                 Parcel(o.getLong("id"), o.optString("title"), o.optString("code"), o.date("expected"), o.date("deliveredOn"))

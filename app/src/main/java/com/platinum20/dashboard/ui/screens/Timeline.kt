@@ -40,7 +40,6 @@ import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import com.platinum20.dashboard.notes.ExpenseCategory
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -85,19 +84,15 @@ data class TimelineEntry(
     val past: Boolean = false,
     /** L'icona a sinistra, se non è quella del tipo (le note). */
     val icon: ImageVector? = null,
-    /** Sempre visibile dopo il nome, che si accorcia lui (l'importo delle spese). */
+    /** Sempre visibile dopo il nome, che si accorcia lui (le righe di una nota). */
     val trailing: String? = null,
     /** Il mese che comincia con questa riga ("NOVEMBRE"): sopra si disegna il segno del mese. */
     val month: String? = null,
     /** Un promemoria fatto: spunta piena e nome barrato. */
     val done: Boolean = false,
-    /** Quanto hai speso nel mese del segno ([month]), scritto a destra del nome (Antonio). */
-    val monthSpend: String? = null,
-    /** Il mese del segno: toccandolo si apre il riepilogo delle spese di quel mese. */
-    val monthOf: java.time.YearMonth? = null,
     /** La miniatura al posto dell'icona: il video da guardare più tardi, la foto della nota. */
     val image: String? = null,
-    /** La riga di Oggi: si disegna come il segno "OGGI" con accanto [trailing] (la spesa di oggi), non come una voce (Antonio). */
+    /** La riga di Oggi: si disegna come il segno "OGGI", non come una voce (Antonio). */
     val todayHeader: Boolean = false,
     /** La prima cosa dopo oggi nel mese in corso: sopra c'è il segno "PIÙ AVANTI" (Antonio). */
     val later: Boolean = false,
@@ -107,8 +102,6 @@ data class TimelineEntry(
     val divider: Boolean = false,
     /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". Dal 1.423 sta nella colonna dell'icona. */
     val time: String? = null,
-    /** L'importo delle spese, prima del nome in una colonna fissa allineata a destra (1.423, punto 9 B). */
-    val amount: String? = null,
     /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
     val detail: String? = null,
 )
@@ -162,33 +155,7 @@ data class TripStops(
     }
 }
 
-/** L'icona di una categoria di spesa: la spesa si riconosce a colpo d'occhio sulla linea. */
-fun ExpenseCategory.icon(): ImageVector = when (this) {
-    ExpenseCategory.FOOD -> Icons.Outlined.ShoppingCart
-    ExpenseCategory.EATING_OUT -> Icons.Outlined.Restaurant
-    ExpenseCategory.TRANSPORT -> Icons.Outlined.DirectionsCar
-    ExpenseCategory.HOME -> Icons.Outlined.Home
-    ExpenseCategory.BILLS -> Icons.Outlined.Bolt
-    ExpenseCategory.SHOPPING -> Icons.Outlined.ShoppingBag
-    ExpenseCategory.HEALTH -> Icons.Outlined.LocalHospital
-    ExpenseCategory.FUN -> Icons.Outlined.SportsEsports
-    ExpenseCategory.OTHER -> Icons.AutoMirrored.Outlined.ReceiptLong
-}
-
-/** Il colore di una categoria (ARGB), lo stesso per l'icona sulla linea e per la barra del riepilogo. */
-fun ExpenseCategory.color(): Int = when (this) {
-    ExpenseCategory.FOOD -> 0xFF43A047.toInt()
-    ExpenseCategory.EATING_OUT -> 0xFFFB8C00.toInt()
-    ExpenseCategory.TRANSPORT -> 0xFF1E88E5.toInt()
-    ExpenseCategory.HOME -> 0xFF8E24AA.toInt()
-    ExpenseCategory.BILLS -> 0xFFFDD835.toInt()
-    ExpenseCategory.SHOPPING -> 0xFFD81B60.toInt()
-    ExpenseCategory.HEALTH -> 0xFFE53935.toInt()
-    ExpenseCategory.FUN -> 0xFF00ACC1.toInt()
-    ExpenseCategory.OTHER -> 0xFF8D8D8D.toInt()
-}
-
-/** L'icona piccola di una riga: evento, promemoria, data, pacco o addebito. */
+/** L'icona piccola di una riga: evento, promemoria, data, pacco o rinnovo. */
 fun BriefKind.timelineIcon(): ImageVector = when (this) {
     BriefKind.EVENT -> Icons.Outlined.Event
     BriefKind.TASK -> Icons.Outlined.Checklist
@@ -217,8 +184,6 @@ fun TimelineRow(
     onLongClick: (() -> Unit)? = null,
     /** Vibrare al cambio di mese: solo nelle pagine aperte, non nelle card di anteprima (Antonio). */
     monthTick: Boolean = true,
-    /** Toccando il segno del mese: il riepilogo delle spese di quel mese. */
-    onMonth: ((java.time.YearMonth) -> Unit)? = null,
     /** Il segno del mese è già stato disegnato sopra (sopra "OGGI"): qui non si ripete. */
     showMonth: Boolean = true,
     /** La lista in cui sta la riga ([SharedRows]): il titolo vola solo verso la scheda aperta da qui. */
@@ -234,8 +199,7 @@ fun TimelineRow(
     val dayOnMarker = false
     val dayColor = dayLabelColor(entry.late, entry.past)
     if (monthShown) entry.month?.let {
-        TimelineMonthMarker(it, start = start, top = top, tick = monthTick, total = entry.monthSpend,
-            onClick = entry.monthOf?.let { m -> onMonth?.let { open -> { haptic(Haptic.TICK); open(m) } } },
+        TimelineMonthMarker(it, start = start, top = top, tick = monthTick,
             day = entry.dayLabel.takeIf { dayOnMarker }, dayColor = dayColor)
     }
     if (laterShown) TimelineMonthMarker("PIÙ AVANTI", start = start, top = top, tick = monthTick,
@@ -347,20 +311,6 @@ fun TimelineRow(
             Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(10.dp))
         }
-        entry.amount?.let {
-            // Importo prima del nome, in colonna: le cifre si confrontano a colpo d'occhio (Antonio, 9 B).
-            Text(
-                it,
-                style = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum"),
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
-                color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.End,
-                maxLines = 1,
-                softWrap = false,
-                modifier = Modifier.widthIn(min = AMOUNT_COLUMN),
-            )
-            Spacer(Modifier.width(10.dp))
-        }
         Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
             Text(
                 entry.text,
@@ -397,7 +347,6 @@ fun TimelineRow(
 private val TRIP_LINE = 26.dp
 
 /** Larga quanto "123,45 €": gli importi fino a mille stanno tutti nella stessa colonna. */
-private val AMOUNT_COLUMN = 64.dp
 private val TRIP_PAD = 4.dp
 
 /**
@@ -575,7 +524,7 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
 @Composable
 fun TimelineNowMarker(
     modifier: Modifier = Modifier,
-    /** La spesa di oggi, a destra prima della linea, come il totale accanto al mese (Antonio). */
+    /** Un valore a destra prima della linea, come accanto al mese. */
     total: String? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -642,7 +591,7 @@ fun TimelineMonthMarker(
     start: Dp = 16.dp,
     top: Boolean = true,
     tick: Boolean = true,
-    /** La spesa del mese, a destra prima della linea (Antonio). */
+    /** Un valore a destra prima della linea. */
     total: String? = null,
     onClick: (() -> Unit)? = null,
     /** Il giorno della prima riga sotto il segno, a destra prima del pallino (Antonio). */
@@ -823,7 +772,7 @@ object RowFlash {
 
 /** Le righe che hanno una scheda con il titolo condiviso (vedi [SharedKeys.item]). */
 internal fun String.isSharedRow(): Boolean =
-    startsWith("task-") || startsWith("date-") || startsWith("parcel-") || startsWith("expense-")
+    startsWith("task-") || startsWith("date-") || startsWith("parcel-")
 
 /** Accende le righe che compaiono in [keys] dopo la prima volta (vedi [RowFlash.newKeys]). */
 @Composable

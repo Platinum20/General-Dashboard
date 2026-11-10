@@ -29,7 +29,6 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.NotificationsActive
-import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Sms
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -74,7 +73,6 @@ import kotlinx.coroutines.withContext
 
 private fun Found.icon(): ImageVector = when (this) {
     is Found.NewParcel, is Found.Delivered -> Icons.Outlined.Inventory2
-    is Found.Spent -> Icons.Outlined.Payments
     is Found.Deadline -> Icons.Outlined.Event
 }
 
@@ -199,8 +197,8 @@ fun AutoFillScreen(onBack: () -> Unit) {
             item {
                 Text(
                     "Canvas legge le notifiche che arrivano sul telefono e ci trova pacchi in arrivo (Amazon, Poste, BRT, GLS, DHL), " +
-                        "spese (Revolut, banche, Satispay, PayPal), scadenze, prenotazioni e rinnovi. Con Gmail collegato (Impostazioni › Account) legge le mail intere. " +
-                        "Le chat non vengono lette. Niente lascia il telefono.",
+                        "scadenze, prenotazioni e rinnovi. Con Gmail collegato (Impostazioni › Account) legge le mail intere. " +
+                        "Chat, banche e app di pagamento non vengono lette. Niente lascia il telefono.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),

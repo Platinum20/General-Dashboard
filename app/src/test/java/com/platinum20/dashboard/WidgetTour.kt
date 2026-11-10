@@ -40,7 +40,6 @@ class WidgetTour {
         "DashboardWidget" to WidgetSize(360, 200),
         "TasksWidget" to WidgetSize(360, 300),
         "NewsWidget" to WidgetSize(360, 240),
-        "SpendWidget" to WidgetSize(170, 170),
         "SimWidget" to WidgetSize(170, 170),
         "WeatherWidget" to WidgetSize(360, 200),
         "CaptureWidget" to WidgetSize(360, 72),
@@ -62,8 +61,6 @@ class WidgetTour {
             NotesStore.addTask("domani alle 9 dentista")
             NotesStore.saveDate(null, "Compleanno di Marco", LocalDate.now().plusDays(2), yearly = true)
             NotesStore.saveParcel(null, "Cuffie", "TBA123456789012", LocalDate.now())
-            NotesStore.addExpense("spesa conad 63,40")
-            NotesStore.addExpense("12,50 pizza")
         }
         context.getSharedPreferences("widget", Context.MODE_PRIVATE).edit()
             .putString(

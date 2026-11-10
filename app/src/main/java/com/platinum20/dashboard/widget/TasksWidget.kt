@@ -54,10 +54,10 @@ class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
             val today = LocalDate.now(zone)
             val events = runCatching { CalendarRepository.eventsFrom(context, today, AgendaRows.DAYS) }.getOrDefault(emptyMap())
             return com.platinum20.dashboard.ui.screens.dueDays(
-                data.tasks, data.parcels, events.values.flatten(), data.fixedExpenses,
+                data.tasks, data.parcels, events.values.flatten(),
                 now = LocalDateTime.now(zone), zone = zone,
                 simRenewal = SimStore.status.value?.renewal?.takeIf { SimStore.linked.value },
-                withToday = true, notes = data.notes, expenses = data.expenses,
+                withToday = true, notes = data.notes,
             )
         }
 

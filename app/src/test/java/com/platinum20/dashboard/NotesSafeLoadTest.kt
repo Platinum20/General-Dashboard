@@ -3,8 +3,6 @@ package com.platinum20.dashboard
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.backup.Backup
-import com.platinum20.dashboard.notes.ExpenseCategory
-import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
@@ -65,22 +63,6 @@ class NotesSafeLoadTest {
         val (loaded, copy) = NotesStore.load(notesFile(NotesStore.serialize(data)), today)
         assertEquals(data, loaded)
         assertNull(copy)
-    }
-
-    @Test fun ripristinoAggiungeLeFisseScaduteDopoIlBackup() {
-        val now = LocalDate.now()
-        val lastMonth = YearMonth.from(now).minusMonths(1)
-        // Backup fatto il mese scorso: l'affitto del 1° di questo mese non c'era ancora.
-        val f = FixedExpense(7, 650_00, "Affitto", ExpenseCategory.HOME, 1, lastMonth, lastMonth = lastMonth)
-        NotesStore.replaceAll(NotesData(fixedExpenses = listOf(f)))
-        val after = NotesStore.data.value
-        assertEquals(1, after.expenses.size)
-        assertEquals(now.withDayOfMonth(1), after.expenses.single().date)
-        assertEquals(YearMonth.from(now), after.fixedExpenses.single().lastMonth)
-        // Richiamata lo stesso giorno non la raddoppia.
-        NotesStore.applyFixedExpenses(now)
-        assertEquals(1, NotesStore.data.value.expenses.size)
-        NotesStore.replaceAll(NotesData())
     }
 
     @Test fun esportazioneRipiegaSuWSeIlFornitoreRifiutaWt() {

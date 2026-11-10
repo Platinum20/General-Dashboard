@@ -14,12 +14,9 @@ import com.platinum20.dashboard.ui.screens.DayMark
 import com.platinum20.dashboard.ui.screens.DayScroll
 import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.today.Upcoming
-import com.platinum20.dashboard.ui.screens.color
 import com.platinum20.dashboard.ui.screens.timelineEntries
 import com.platinum20.dashboard.ui.screens.pastDays
 import com.platinum20.dashboard.ui.screens.undatedEntries
-import com.platinum20.dashboard.ui.screens.expenseEntries
-import com.platinum20.dashboard.ui.screens.monthExpenseEntries
 import com.platinum20.dashboard.ui.screens.noteMarks
 import com.platinum20.dashboard.ui.screens.noteTitleEnd
 import com.platinum20.dashboard.ui.screens.nowRoom
@@ -83,15 +80,6 @@ class NotesUiLogicTest {
         assertEquals("Domani" to null, dueBadge(oggi.plusDays(1), oggi))
         assertEquals("5" to "giorni", dueBadge(oggi.plusDays(5), oggi))
         assertEquals("Scaduto" to null, dueBadge(oggi.minusDays(1), oggi, late = true))
-    }
-
-    @Test fun addebitiNelGiornoDelProssimoAddebito() {
-        val affitto = com.platinum20.dashboard.notes.FixedExpense(
-            1, 65000, "affitto", com.platinum20.dashboard.notes.ExpenseCategory.entries.first(), day = 5, from = java.time.YearMonth.of(2026, 1),
-        )
-        val groups = dueDays(emptyList(), emptyList(), emptyList(), listOf(affitto), now = adesso, zone = zone)
-        assertEquals(listOf(LocalDate.of(2026, 11, 5)), groups.map { it.day })
-        assertEquals("charge-1", groups.single().rows.single().key)
     }
 
     @Test fun rinnovoSimFraIProssimiGiorni() {
@@ -243,87 +231,6 @@ class NotesUiLogicTest {
         ).map { it.first }
         assertEquals(listOf("Prova", "Sessi"), entries.map { it.text })
         assertEquals(listOf(false, true), entries.map { it.done })
-    }
-
-    @Test fun meseTrascinando() {
-        val now = java.time.YearMonth.of(2026, 10)
-        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
-        assertEquals(java.time.YearMonth.of(2026, 9), swipe.target(now, 60f, 56f, now))
-        assertEquals(null, swipe.target(now, -60f, 56f, now))
-        assertEquals(now, swipe.target(java.time.YearMonth.of(2026, 9), -60f, 56f, now))
-        assertEquals(null, swipe.target(now, 20f, 56f, now))
-    }
-
-    @Test fun meseColpoVeloce() {
-        val now = java.time.YearMonth.of(2026, 10)
-        val sept = java.time.YearMonth.of(2026, 9)
-        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
-        // Corto ma veloce: cambia mese, come le pagine.
-        assertEquals(java.time.YearMonth.of(2026, 8), swipe.target(sept, 20f, 56f, now, velocity = 900f, fling = 400f))
-        assertEquals(now, swipe.target(sept, -20f, 56f, now, velocity = -900f, fling = 400f))
-        // Lungo ma lanciato all'indietro: si annulla.
-        assertEquals(null, swipe.target(sept, 80f, 56f, now, velocity = -900f, fling = 400f))
-        // Lento: conta solo la distanza.
-        assertEquals(null, swipe.target(sept, 20f, 56f, now, velocity = 100f, fling = 400f))
-        // Mai oltre il mese in corso.
-        assertEquals(null, swipe.target(now, -20f, 56f, now, velocity = -900f, fling = 400f))
-    }
-
-    @Test fun meseSegueIlDito() {
-        val swipe = com.platinum20.dashboard.ui.screens.MonthSwipe
-        // Segue il dito quasi 1:1 all'inizio, poi l'elastico frena.
-        assertEquals(10f, swipe.follow(10f, 56f), 0.5f)
-        assertTrue(swipe.follow(400f, 56f) < 56f * 2.2f)
-        assertEquals(-swipe.follow(80f, 56f), swipe.follow(-80f, 56f), 0.001f)
-        // Verso un mese che non c'è ancora resiste di più.
-        assertTrue(kotlin.math.abs(swipe.follow(-80f, 56f, blocked = true)) < kotlin.math.abs(swipe.follow(-80f, 56f)))
-    }
-
-    @Test fun cardSpeseSoloMeseCorrente() {
-        val today = LocalDate.of(2026, 11, 3)
-        val cat = com.platinum20.dashboard.notes.ExpenseCategory.values().first()
-        val rows = monthExpenseEntries(
-            listOf(
-                com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30)),
-                com.platinum20.dashboard.notes.Expense(2, 350, "Caffè", cat, LocalDate.of(2026, 11, 2)),
-            ),
-            today,
-            limit = 5,
-        )
-        // Ottobre resta fuori, in cima il nome del mese corrente.
-        assertEquals(1, rows.size)
-        assertEquals("NOVEMBRE", rows.first().first.month)
-        assertEquals(2L, rows.first().second.id)
-        assertTrue(monthExpenseEntries(listOf(com.platinum20.dashboard.notes.Expense(1, 1020, "DropPOS", cat, LocalDate.of(2026, 10, 30))), today, 5).isEmpty())
-    }
-
-    @Test fun speseSullaLineaDelTempo() {
-        val today = LocalDate.of(2026, 10, 26)
-        val entries = expenseEntries(
-            listOf(
-                com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),
-                com.platinum20.dashboard.notes.Expense(2, 4000, "Benzina", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
-                com.platinum20.dashboard.notes.Expense(3, 300, "Caffè", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
-            ),
-            today,
-        ).map { it.first }
-        // Le più recenti in fondo.
-        assertEquals(listOf("Ven 23", "Oggi", null), entries.map { it.dayLabel })
-        // L'importo per primo nella sua colonna, il nome dopo (9 B).
-        assertEquals("Benzina", entries[1].text)
-        assertEquals(com.platinum20.dashboard.notes.Expenses.format(4000), entries[1].amount)
-        val other = com.platinum20.dashboard.notes.ExpenseCategory.OTHER
-        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
-        assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
-        assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
-        // Nella card in Oggi solo le ultime, sempre in fondo la più recente.
-        assertEquals(listOf("Benzina", "Caffè"), expenseEntries(listOf(
-            com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),
-            com.platinum20.dashboard.notes.Expense(2, 4000, "Benzina", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
-            com.platinum20.dashboard.notes.Expense(3, 300, "Caffè", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today),
-        ), today, limit = 2).map { it.second.text })
-        // Icona e colore della categoria.
-        assertEquals(com.platinum20.dashboard.notes.ExpenseCategory.values().first().color(), entries[0].color)
     }
 
     private object DueRowFor {

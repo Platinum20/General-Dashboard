@@ -22,14 +22,12 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.platinum20.dashboard.bank.RevolutLink
-import com.platinum20.dashboard.bank.RevolutStore
 import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.sim.WindTreLink
 import java.util.concurrent.TimeUnit
 
 /**
- * Tiene vivi gli accessi web di Revolut e WindTre anche con l'app chiusa: i siti chiudono la
+ * Tiene vivo l'accesso web di WindTre anche con l'app chiusa: il sito chiude la
  * sessione dopo un po' che nessuno la usa. Due giri insieme: il lavoro periodico di Android (ogni
  * 15 minuti, ma di notte Doze lo rimanda di ore, ed era lì che la sessione scadeva) e una sveglia
  * "anche a riposo" ([KeepAliveAlarm]) che lo fa partire subito. Con Canvas fuori dall'ottimizzazione
@@ -39,15 +37,10 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
 
     override suspend fun doWork(): Result {
         val app = applicationContext
-        RevolutStore.init(app)
         SimStore.init(app)
         if (!anyLinked()) {
             update(app)
             return Result.success()
-        }
-        // Scaduta: senza un nuovo accesso non si può fare niente; appena letta: non serve.
-        if (RevolutStore.linked.value && !RevolutStore.expired.value && RevolutStore.isStale()) {
-            runCatching { RevolutLink.refresh(app) }
         }
         if (SimStore.linked.value && SimStore.isStale(within = SimStore.KEEP_MS)) {
             runCatching { WindTreLink.refresh(app) }
@@ -58,19 +51,18 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
     companion object {
         private const val PERIODIC = "web_keepalive"
         private const val NOW = "web_keepalive_now"
-        /** Il nome del lavoro fino alla 1.361 (solo Revolut): si toglie per non farne due. */
+        /** Il nome di un lavoro vecchio (fino alla 1.361): si toglie se è rimasto. */
         private const val OLD = "revolut_keepalive"
         private const val PREFS = "keepalive"
         private const val KEY_ASKED = "batteryAsked"
         /** La sveglia: sotto i 15 minuti Android la allunga comunque a riposo. */
         const val ALARM_MS = 15 * 60 * 1000L
 
-        private fun anyLinked() = RevolutStore.linked.value || SimStore.linked.value
+        private fun anyLinked() = SimStore.linked.value
 
         /** Accende o spegne il giro secondo cosa è collegato. */
         fun update(context: Context) {
             val app = context.applicationContext
-            RevolutStore.init(app)
             SimStore.init(app)
             val wm = WorkManager.getInstance(app)
             wm.cancelUniqueWork(OLD)
@@ -121,9 +113,8 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
 class KeepAliveAlarm : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext
-        RevolutStore.init(app)
         SimStore.init(app)
-        if (!RevolutStore.linked.value && !SimStore.linked.value) return
+        if (!SimStore.linked.value) return
         if (intent.action == ACTION) KeepAliveWorker.runNow(app)
         arm(app)
     }

@@ -35,9 +35,10 @@ class CaptureHintsTest {
         assertNull(CaptureHints.summary(CaptureMode.TASK, "  ", now))
     }
 
-    @Test fun spesaInUnaRiga() {
-        val s = line("pizza 12,50")!!
-        assertTrue(s, s.startsWith("Spesa · 12,50"))
+    @Test fun unImportoNonEUnaSpesa() {
+        // Dalla 1.447 l'app non tiene spese.
+        val s = line("pizza 12,50")
+        assertTrue(s.toString(), s == null || !s.startsWith("Spesa"))
     }
 
     @Test fun promemoriaConIlQuando() {

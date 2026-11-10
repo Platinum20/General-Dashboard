@@ -4,7 +4,6 @@ import com.platinum20.dashboard.autofill.Extractor
 import com.platinum20.dashboard.autofill.Found
 import com.platinum20.dashboard.autofill.Incoming
 import com.platinum20.dashboard.autofill.SourceKind
-import com.platinum20.dashboard.notes.ExpenseCategory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,69 +17,24 @@ class AutoFillExtractorTest {
     private fun find(app: String, kind: SourceKind, title: String, text: String) =
         Extractor.extract(Incoming(app, kind, title, text, now))
 
-    private fun spent(app: String, kind: SourceKind, title: String, text: String): Found.Spent {
-        val found = find(app, kind, title, text)
-        assertEquals("$title / $text -> $found", 1, found.size)
-        return found.single() as Found.Spent
-    }
-
     private fun nothing(app: String, kind: SourceKind, title: String, text: String) {
         val found = find(app, kind, title, text)
         assertTrue("$title / $text -> $found", found.isEmpty())
     }
 
-    // --- Spese ---
+    // --- Soldi: dalla 1.438 non si leggono più (Antonio) ---
 
-    @Test fun revolutItaliano() {
-        val e = spent("Revolut", SourceKind.PAYMENT, "Revolut", "Hai pagato 12,50 € a Lidl")
-        assertEquals(1250, e.cents)
-        assertEquals("Lidl", e.merchant)
-        assertEquals(ExpenseCategory.FOOD, e.category)
-        assertEquals(LocalDate.of(2026, 10, 22), e.date)
-    }
-
-    @Test fun revolutInglese() {
-        val e = spent("Revolut", SourceKind.PAYMENT, "Revolut", "Paid €4.80 at Starbucks")
-        assertEquals(480, e.cents)
-        assertEquals("Starbucks", e.merchant)
-    }
-
-    @Test fun esercenteNelTitolo() {
-        val e = spent("Revolut", SourceKind.PAYMENT, "Esselunga", "Pagamento di €63,20")
-        assertEquals(6320, e.cents)
-        assertEquals("Esselunga", e.merchant)
-        assertEquals(ExpenseCategory.FOOD, e.category)
-    }
-
-    @Test fun smsBancaMaiuscolo() {
-        val e = spent(
-            "SMS", SourceKind.SMS, "IntesaSP",
-            "Pagamento con carta *1234 di EUR 1.234,56 presso MEDIAWORLD SPA il 22/10/26 ore 10:12",
-        )
-        assertEquals(123456, e.cents)
-        assertEquals("Mediaworld", e.merchant)
-    }
-
-    @Test fun satispay() {
-        val e = spent("Satispay", SourceKind.PAYMENT, "Satispay", "Hai pagato 1,20 € da Bar Centrale")
-        assertEquals(120, e.cents)
-        assertEquals("Bar Centrale", e.merchant)
-        assertEquals(ExpenseCategory.EATING_OUT, e.category)
-    }
-
-    @Test fun ricevutaMail() {
-        val e = spent("Gmail", SourceKind.MAIL, "Netflix", "La tua ricevuta\nAbbonamento mensile: 13,99 €")
-        assertEquals(1399, e.cents)
-        assertEquals("Netflix", e.merchant)
-    }
-
-    @Test fun soldiInEntrataNo() = nothing("Revolut", SourceKind.PAYMENT, "Revolut", "Hai ricevuto 20,00 € da Mario Rossi")
-    @Test fun rimborsoNo() = nothing("Revolut", SourceKind.PAYMENT, "Revolut", "Rimborso di 9,99 € da Amazon")
-    @Test fun rifiutatoNo() = nothing("Revolut", SourceKind.PAYMENT, "Revolut", "Pagamento di 50 € rifiutato: fondi insufficienti")
-    @Test fun daAutorizzareNo() = nothing("Intesa", SourceKind.PAYMENT, "Intesa Sanpaolo", "Autorizza il pagamento di 30,00 € su Zalando")
+    @Test fun pagamentoConLaCartaNo() = nothing("Revolut", SourceKind.PAYMENT, "Revolut", "Hai pagato 12,50 € a Lidl")
+    @Test fun pagamentoInIngleseNo() = nothing("Revolut", SourceKind.PAYMENT, "Revolut", "Paid €4.80 at Starbucks")
+    @Test fun satispayNo() = nothing("Satispay", SourceKind.PAYMENT, "Satispay", "Hai pagato 1,20 € da Bar Centrale")
+    @Test fun smsDellaBancaNo() = nothing(
+        "SMS", SourceKind.SMS, "IntesaSP",
+        "Pagamento con carta *1234 di EUR 1.234,56 presso MEDIAWORLD SPA il 22/10/26 ore 10:12",
+    )
+    @Test fun ricevutaMailNo() = nothing("Gmail", SourceKind.MAIL, "Netflix", "La tua ricevuta\nAbbonamento mensile: 13,99 €")
+    @Test fun scadenzaDallaBancaNo() = nothing("Intesa", SourceKind.PAYMENT, "Intesa Sanpaolo", "Bolletta da pagare entro il 30/10")
     @Test fun codiceNo() = nothing("SMS", SourceKind.SMS, "Poste", "Il codice OTP per il pagamento di 12,00 € è 123456")
     @Test fun chatIgnorate() = nothing("WhatsApp", SourceKind.CHAT, "Luca", "Ho pagato 30€ la pizza, mi dai 15 €?")
-    @Test fun newsletterSenzaRicevutaNo() = nothing("Gmail", SourceKind.MAIL, "Zalando", "Saldi! Tutto a 19,99 €")
 
     // --- Pacchi ---
 
@@ -159,15 +113,6 @@ class AutoFillExtractorTest {
     }
 
     // --- Utilità ---
-
-    @Test fun importi() {
-        assertEquals(1250L, Extractor.parseAmount("12,50"))
-        assertEquals(1250L, Extractor.parseAmount("12.50"))
-        assertEquals(123456L, Extractor.parseAmount("1.234,56"))
-        assertEquals(123456L, Extractor.parseAmount("1,234.56"))
-        assertEquals(120000L, Extractor.parseAmount("1.200"))
-        assertEquals(500L, Extractor.parseAmount("5"))
-    }
 
     @Test fun tipiDiApp() {
         assertEquals(SourceKind.PAYMENT, Extractor.kindOf("com.revolut.revolut"))

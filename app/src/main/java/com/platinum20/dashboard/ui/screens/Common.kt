@@ -1018,7 +1018,7 @@ fun PlaceholderList(modifier: Modifier = Modifier, rows: Int = 6, thumb: Boolean
 }
 
 /**
- * Un numero che cambia (saldo, giga, spesa del mese): scorrono in verticale solo le cifre cambiate, le altre
+ * Un numero che cambia (giga, minuti): scorrono in verticale solo le cifre cambiate, le altre
  * restano ferme (1.357). Le cifre si contano da destra, così "9,90 €" → "10,40 €" non fa scorrere tutto.
  */
 @Composable

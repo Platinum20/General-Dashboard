@@ -4,8 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.app.NotificationManagerCompat
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +26,7 @@ data class Suggestion(
     val app: String,
     val seenAt: Long,
     val state: SuggestionState = SuggestionState.PENDING,
-    /** L'id del pacco, della spesa o del promemoria creato: serve ad "Annulla". */
+    /** L'id del pacco o del promemoria creato: serve ad "Annulla". */
     val ref: Long? = null,
     /** Salvata senza chiedere (dalla 1.191 sempre). */
     val auto: Boolean = false,
@@ -46,12 +44,6 @@ object AutoFillRules {
                 (found.code.isNotEmpty() && p.code.equals(found.code, true)) ||
                     (found.code.isEmpty() && p.title.equals(found.title, true))
             }
-            // Una spesa uguale scritta a mano lo stesso giorno è la stessa; quella letta dal conto
-            // (Revolut) anche il giorno prima o dopo: la ricevuta via mail spesso arriva il giorno dopo.
-            is Found.Spent -> notes.expenses.none {
-                it.cents == found.cents && (it.date == found.date ||
-                    (it.bankId != null && kotlin.math.abs(it.date.toEpochDay() - found.date.toEpochDay()) <= 1))
-            }
             is Found.Deadline -> notes.tasks.none { it.text.equals(found.title, true) }
             is Found.Delivered -> true
         }
@@ -61,7 +53,6 @@ object AutoFillRules {
     fun isFresh(found: Found, msgAt: LocalDateTime, now: LocalDateTime): Boolean = when (found) {
         is Found.Deadline -> found.due.isAfter(now)
         is Found.NewParcel -> msgAt.isAfter(now.minusDays(10)) && found.expected?.isBefore(now.toLocalDate()) != true
-        is Found.Spent -> msgAt.isAfter(now.minusDays(45))
         is Found.Delivered -> true
     }
 
@@ -222,7 +213,6 @@ object AutoFill {
         item.ref?.let { ref ->
             when (item.found) {
                 is Found.NewParcel -> NotesStore.deleteParcel(ref)
-                is Found.Spent -> NotesStore.deleteExpense(ref)
                 // Una data di tutto il giorno: dalla 1.361 è un promemoria come gli altri.
                 is Found.Deadline -> NotesStore.deleteTask(ref)
                 is Found.Delivered -> Unit
@@ -239,7 +229,6 @@ object AutoFill {
 
     private fun apply(found: Found): Long? = when (found) {
         is Found.NewParcel -> NotesStore.addParcel(found.title, found.code, found.expected)
-        is Found.Spent -> NotesStore.addExpense(Expense(0, found.cents, found.merchant, found.category, found.date, at = found.at.toLocalTime().withSecond(0).withNano(0))).id
         // Una data da aspettare, non un promemoria da spuntare: la scadenza di un abbonamento non si "fa".
         is Found.Deadline -> NotesStore.saveDate(null, found.title, found.due.toLocalDate(), false)
         is Found.Delivered -> null
@@ -269,8 +258,6 @@ object AutoFill {
             when (val f = s.found) {
                 is Found.NewParcel -> o.put("type", "parcel").put("title", f.title).put("code", f.code)
                     .apply { f.expected?.let { put("expected", it.toString()) } }
-                is Found.Spent -> o.put("type", "expense").put("cents", f.cents).put("merchant", f.merchant)
-                    .put("category", f.category.name).put("date", f.date.toString()).put("at", f.at.toString())
                 is Found.Deadline -> o.put("type", "deadline").put("title", f.title).put("due", f.due.toString())
                 is Found.Delivered -> o.put("type", "delivered").put("code", f.code)
             }
@@ -283,18 +270,15 @@ object AutoFill {
         return (0 until arr.length()).mapNotNull { i ->
             runCatching {
                 val o = arr.getJSONObject(i)
+                // Le spese lette dalle notifiche non ci sono più (1.447): quelle vecchie nel file si scartano.
                 val found: Found = when (o.getString("type")) {
                     "parcel" -> Found.NewParcel(
                         o.optString("title"), o.optString("code"),
                         if (o.has("expected")) LocalDate.parse(o.getString("expected")) else null,
                     )
-                    "expense" -> Found.Spent(
-                        o.getLong("cents"), o.optString("merchant"),
-                        runCatching { ExpenseCategory.valueOf(o.optString("category")) }.getOrDefault(ExpenseCategory.OTHER),
-                        LocalDate.parse(o.getString("date")), LocalDateTime.parse(o.getString("at")),
-                    )
                     "deadline" -> Found.Deadline(o.optString("title"), LocalDateTime.parse(o.getString("due")))
-                    else -> Found.Delivered(o.optString("code"))
+                    "delivered" -> Found.Delivered(o.optString("code"))
+                    else -> return@mapNotNull null
                 }
                 Suggestion(
                     o.getLong("id"), found, o.optString("app"), o.optLong("seenAt"),

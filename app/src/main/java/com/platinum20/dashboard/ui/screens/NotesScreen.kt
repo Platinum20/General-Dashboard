@@ -179,8 +179,8 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.foundation.border
 
 /**
- * Il calendario unico (1.314, Antonio): tutto in una pagina sola. Sopra il passato (cose fatte, spese, eventi
- * finiti), poi OGGI con la spesa di oggi, le cose in ritardo, i promemoria e le note senza data, sotto i giorni
+ * Il calendario unico (1.314, Antonio): tutto in una pagina sola. Sopra il passato (cose fatte, eventi
+ * finiti), poi OGGI con le cose in ritardo, i promemoria e le note senza data, sotto i giorni
  * che arrivano. Ogni mese ha il suo segno con quanto hai speso; toccandolo si apre il riepilogo del mese.
  * Si apre dalla card Calendario della Home. Si scrive con il + della barra e il tipo lo sceglie Canvas da solo.
  */
@@ -251,14 +251,14 @@ fun NotesScreen(
     val day = LocalDate.now()
     val timeline = remember(data, events, sim, simLinked, day) {
         dueDays(
-            data.tasks, data.parcels, events, data.fixedExpenses, simRenewal = sim?.renewal?.takeIf { simLinked },
-            withToday = true, notes = data.notes, expenses = data.expenses,
+            data.tasks, data.parcels, events, simRenewal = sim?.renewal?.takeIf { simLinked },
+            withToday = true, notes = data.notes,
         )
     }
-    // Sopra, scorrendo in su, il passato: cose fatte, spese, pacchi arrivati, eventi finiti.
-    val past = remember(data, events, day) { pastDays(data.tasks, data.parcels, events, expenses = data.expenses, withToday = true) }
+    // Sopra, scorrendo in su, il passato: cose fatte, pacchi arrivati, eventi finiti.
+    val past = remember(data, events, day) { pastDays(data.tasks, data.parcels, events, withToday = true) }
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
-    // Il filtro acceso (Spese, Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
+    // Il filtro acceso (Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
     var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
     val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
@@ -286,7 +286,7 @@ fun NotesScreen(
             TopLevelBar(
                 title = "Calendario",
                 scrollBehavior = barScroll,
-                // Con un filtro acceso il sottotitolo lo dice ("SOLO SPESE"): toccandolo di nuovo si torna a tutto.
+                // Con un filtro acceso il sottotitolo lo dice ("SOLO NOTE"): toccandolo di nuovo si torna a tutto.
                 subtitle = filter?.let { "Solo " + it.label.lowercase() } ?: listOfNotNull(
                     dueToday.takeIf { it > 0 }?.let { "$it oggi" },
                     overdue.takeIf { it > 0 }?.let { if (it == 1) "1 scaduta" else "$it scadute" },
@@ -304,13 +304,13 @@ fun NotesScreen(
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         val done = data.tasks.filter { it.done }
         val today = LocalDate.now()
-        // Oggi c'è sempre (almeno la spesa di oggi): vuoto = solo quella riga e niente altro.
+        // Oggi c'è sempre (almeno la sua riga): vuoto = solo quella riga e niente altro.
         val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty()
         val groups = remember(past, timeline, filter) { (past + timeline).only(filter) }
         // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
-        // (mesi di spese ed eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
-        val entries = remember(groups, data.expenses, today) {
-            timelineEntries(groups, today, months = true, expenses = data.expenses)
+        // (mesi di eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
+        val entries = remember(groups, today) {
+            timelineEntries(groups, today, months = true)
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
         // Quello che compare di nuovo (salvato col +, arrivato dalla banca) si accende un attimo.
@@ -438,7 +438,6 @@ fun NotesScreen(
             }
             // Prossimi giorni: la stessa linea del tempo della card di Oggi, ma con tutto.
             if (entries.isNotEmpty()) {
-                val openMonth: (java.time.YearMonth) -> Unit = { inApp?.openRoute?.invoke(Routes.expenses(it)) }
                 // Sullo sfondo, senza card: la linea è la pagina.
                 val drawEntry: @Composable androidx.compose.foundation.lazy.LazyItemScope.(Int) -> Unit = { index ->
                     val (entry, row) = entries[index]
@@ -453,12 +452,12 @@ fun NotesScreen(
                     ) {
                         // Il confine fra passato e adesso: la pagina si apre qui, e qui la lista fa resistenza.
                         // Il segno del mese di oggi sta sopra "OGGI", non sotto.
-                        // La pagina si apre col mese (e quanto hai speso) in cima, subito sopra "OGGI".
+                        // La pagina si apre col mese in cima, subito sopra "OGGI".
                         val monthAbove = index == nowAt && index > 0 && entry.month != null && !entry.todayHeader
-                        // La riga di Oggi è già il segno "OGGI" con la spesa.
+                        // La riga di Oggi è già il segno "OGGI".
                         if (entry.todayHeader) {
                             // Tenendo premuto OGGI: il fumetto per eliminare i promemoria già fatti (prima stava in fondo, in Completati).
-                            TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) }, onMonth = openMonth,
+                            TimelineRow(entry, top = index > 0, bottom = true, onClick = { openRow(row) },
                                 onLongClick = done.takeIf { it.isNotEmpty() }?.let { finished -> {
                                     haptic(Haptic.LONG_PRESS)
                                     ActionBubble.show(
@@ -476,7 +475,7 @@ fun NotesScreen(
                         } else {
                         if (index == nowAt && index > 0) {
                             if (monthAbove) {
-                                TimelineMonthMarker(entry.month!!, total = entry.monthSpend, onClick = entry.monthOf?.let { m -> { haptic(Haptic.TICK); openMonth(m) } })
+                                TimelineMonthMarker(entry.month!!)
                             }
                             TimelineNowMarker(Modifier.padding(start = 16.dp))
                         }
@@ -486,7 +485,6 @@ fun NotesScreen(
                             bottom = index < entries.lastIndex,
                             onClick = { openRow(row) },
                             onLongClick = { rowActions(row) },
-                            onMonth = openMonth,
                             showMonth = !monthAbove,
                             onIcon = row.task?.takeIf { it.tickable }?.let { task -> { NotesStore.toggleTask(task.id) } },
                         )

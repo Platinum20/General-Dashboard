@@ -1,9 +1,6 @@
 package com.platinum20.dashboard
 
 import com.platinum20.dashboard.calendar.CalendarEvent
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.Parcel
 import com.platinum20.dashboard.today.BriefKind
@@ -22,7 +19,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.314: il calendario unico, con note senza data e spese dentro (Antonio). */
+/** 1.314: il calendario unico, con le note senza data dentro (Antonio). Dalla 1.447 senza spese. */
 class CalendarUnicoTest {
     private val oggi = LocalDate.of(2026, 11, 3)
     private val adesso = oggi.atTime(12, 0)
@@ -32,17 +29,16 @@ class CalendarUnicoTest {
     private fun calendario(
         tasks: List<TaskItem> = emptyList(),
         notes: List<Note> = emptyList(),
-        expenses: List<Expense> = emptyList(),
-    ) = dueDays(tasks, emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, notes = notes, expenses = expenses)
+    ) = dueDays(tasks, emptyList(), emptyList(), now = adesso, zone = zone, withToday = true, notes = notes)
 
-    @Test fun oggiCeSempreConLaSpesaAZero() {
+    @Test fun oggiCeSempreSenzaSoldi() {
         val groups = calendario()
         assertEquals(1, groups.size)
         assertEquals(oggi, groups.single().day)
-        assertEquals(0L, groups.single().rows.single().spend)
+        assertTrue(groups.single().rows.single().today)
         val entry = timelineEntries(groups, oggi, zone, months = true).single().first
-        assertEquals("Spesa di oggi", entry.text)
-        assertEquals(Expenses.format(0), entry.trailing)
+        assertTrue(entry.todayHeader)
+        assertNull(entry.trailing)
         assertEquals("Oggi", entry.dayLabel)
     }
 
@@ -58,40 +54,16 @@ class CalendarUnicoTest {
         )
         val today = groups.first().rows.map { it.key }
         // Il promemoria di ieri non è "in ritardo": è passato, come un evento (1.376).
-        assertEquals(listOf("spend-today", "task-1", "note-7", "note-6", "note-5"), today)
+        assertEquals(listOf("today", "task-1", "note-7", "note-6", "note-5"), today)
         // Domani resta nel suo giorno, niente "Scaduti" né "Senza data".
         assertEquals(listOf(oggi, oggi.plusDays(1)), groups.map { it.day })
-    }
-
-    @Test fun speseNelLoroGiornoETotaleDelMeseSulSegno() {
-        val pizza = Expense(1, 1250, "pizza", ExpenseCategory.EATING_OUT, oggi)
-        val bar = Expense(2, 300, "bar", ExpenseCategory.EATING_OUT, oggi.minusDays(1))
-        val ottobre = Expense(3, 2000, "benzina", ExpenseCategory.TRANSPORT, LocalDate.of(2026, 10, 20))
-        val all = listOf(pizza, bar, ottobre)
-        val groups = calendario(expenses = all)
-        assertEquals(1250L, groups.first().rows.first().spend)
-        assertEquals("expense-1", groups.first().rows[1].key)
-        // Le spese passate stanno nel passato, nel loro giorno; quelle di oggi no.
-        val past = pastDays(emptyList(), emptyList(), emptyList(), now = adesso, zone = zone, expenses = all)
-        assertEquals(listOf(LocalDate.of(2026, 10, 20), oggi.minusDays(1)), past.map { it.day })
-        val entries = timelineEntries(past + groups, oggi, zone, months = true, expenses = all).map { it.first }
-        // Ogni mese ha il suo segno, anche il primo, con quanto hai speso; oggi il mese di oggi.
-        assertEquals("OTTOBRE", entries[0].month)
-        assertEquals(Expenses.format(2000), entries[0].monthSpend)
-        assertEquals(YearMonth.of(2026, 10), entries[0].monthOf)
-        assertEquals("NOVEMBRE", entries[1].month)
-        assertEquals(Expenses.format(1550), entries[1].monthSpend)
-        assertNull(entries[2].month)
     }
 
     @Test fun ilMeseDiOggiHaIlSegnoAncheSenzaPassato() {
         val groups = calendario(tasks = listOf(TaskItem(1, "Dicembre", dueAt = ms(LocalDate.of(2026, 12, 2).atTime(9, 0)))))
         val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
         assertEquals("NOVEMBRE", entries[0].month)
-        // Il mese di oggi mostra la spesa anche a zero; un mese futuro senza spese no.
-        assertEquals(Expenses.format(0), entries[0].monthSpend)
         assertEquals("DICEMBRE", entries[1].month)
-        assertNull(entries[1].monthSpend)
         // Fra un giorno e l'altro il divisore; non sulla riga di oggi.
         assertEquals(listOf(false, true), entries.take(2).map { it.divider })
     }
@@ -100,7 +72,7 @@ class CalendarUnicoTest {
         val oggiFatto = TaskItem(1, "Latte", done = true, createdAt = 1, doneAt = ms(oggi.atTime(9, 0)))
         val ieriFatto = TaskItem(2, "Bollette", done = true, createdAt = 1, doneAt = ms(oggi.minusDays(1).atTime(20, 0)))
         val groups = calendario(tasks = listOf(oggiFatto, ieriFatto))
-        assertEquals(listOf("spend-today", "task-1"), groups.first().rows.map { it.key })
+        assertEquals(listOf("today", "task-1"), groups.first().rows.map { it.key })
         val entries = timelineEntries(groups, oggi, zone, months = true).map { it.first }
         assertTrue(entries[1].done)
         val past = pastDays(listOf(oggiFatto, ieriFatto), emptyList(), emptyList(), now = adesso, zone = zone, withToday = true)
@@ -113,22 +85,20 @@ class CalendarUnicoTest {
         val turno = CalendarEvent(-5, "Turno", ms(oggi.atTime(7, 0)), ms(oggi.atTime(11, 0)), false, "", 0)
         val ieri = CalendarEvent(-6, "Turno", ms(oggi.minusDays(1).atTime(17, 0)), ms(oggi.minusDays(1).atTime(22, 0)), false, "", 0)
         val groups = dueDays(emptyList(), emptyList(), listOf(turno, ieri), now = adesso, zone = zone, withToday = true)
-        assertEquals(listOf("spend-today", "event--5-${turno.begin}"), groups.first().rows.map { it.key })
+        assertEquals(listOf("today", "event--5-${turno.begin}"), groups.first().rows.map { it.key })
         val past = pastDays(emptyList(), emptyList(), listOf(turno, ieri), now = adesso, zone = zone, withToday = true)
         assertEquals(listOf(oggi.minusDays(1)), past.map { it.day })
     }
 
-    @Test fun filtriSpeseNoteEventi() {
+    @Test fun filtriNoteEventi() {
         val groups = calendario(
             tasks = listOf(TaskItem(1, "Latte", createdAt = 1), TaskItem(2, "Palestra", createdAt = 1, dueAt = ms(oggi.plusDays(2).atTime(18, 0)))),
             notes = listOf(Note(3, "Idea", createdAt = 1)),
-            expenses = listOf(Expense(4, 500, "bar", ExpenseCategory.EATING_OUT, oggi)),
         )
-        assertEquals(listOf("spend-today", "expense-4"), groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.map { it.key })
-        // OGGI resta con ogni filtro (la sua riga), così oggi non torna al vecchio titolo "Oggi" né sparisce.
-        assertEquals(listOf("spend-today", "task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
+        // OGGI resta con ogni filtro.
+        assertEquals(listOf("today", "task-1", "note-3"), groups.only(CalendarFilter.NOTES).flatMap { it.rows }.map { it.key })
         // Un promemoria con la data sta con gli eventi (1.361: sono la stessa cosa).
-        assertEquals(listOf("spend-today", "task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
+        assertEquals(listOf("today", "task-2"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
         assertTrue(timelineEntries(groups.only(CalendarFilter.EVENTS), oggi, zone).first().first.todayHeader)
         assertEquals(groups, groups.only(null))
     }
@@ -138,8 +108,7 @@ class CalendarUnicoTest {
             emptyList(), listOf(Parcel(5, "Cuffie", expected = oggi.plusDays(1))), emptyList(),
             now = adesso, zone = zone, simRenewal = oggi.plusDays(3), withToday = true,
         )
-        assertEquals(listOf("spend-today", "parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
-        assertTrue(groups.only(CalendarFilter.EXPENSES).flatMap { it.rows }.none { it.simRenewal })
+        assertEquals(listOf("today", "parcel-5", "sim-renewal"), groups.only(CalendarFilter.EVENTS).flatMap { it.rows }.map { it.key })
         val entries = timelineEntries(groups, oggi, zone).map { it.first }
         assertEquals(BriefKind.EVENT, entries.first { it.key == "parcel-5" }.kind)
         assertEquals(BriefKind.EVENT, entries.first { it.key == "sim-renewal" }.kind)

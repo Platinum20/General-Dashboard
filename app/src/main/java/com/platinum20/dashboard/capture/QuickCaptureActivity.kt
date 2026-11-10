@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
-import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.Cake
 import androidx.compose.material.icons.outlined.LocalShipping
@@ -61,7 +60,6 @@ import com.platinum20.dashboard.notes.Carrier
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.ui.screens.QuickPreview
@@ -84,7 +82,6 @@ class QuickCaptureActivity : ComponentActivity() {
         val shared = sharedText(intent)
         val mode = when {
             intent.action == ACTION_NEW_NOTE -> CaptureMode.NOTE
-            intent.action == ACTION_NEW_EXPENSE -> CaptureMode.EXPENSE
             // Una mail di spedizione condivisa: c'è un codice di tracciamento.
             shared != null && Carrier.findCode(shared) != null -> CaptureMode.PARCEL
             // Un testo lungo o su più righe è più una nota che un promemoria.
@@ -111,7 +108,6 @@ class QuickCaptureActivity : ComponentActivity() {
     companion object {
         const val ACTION_NEW_TASK = "com.platinum20.dashboard.NEW_TASK"
         const val ACTION_NEW_NOTE = "com.platinum20.dashboard.NEW_NOTE"
-        const val ACTION_NEW_EXPENSE = "com.platinum20.dashboard.NEW_EXPENSE"
 
         fun intent(context: Context, note: Boolean = false): Intent =
             Intent(context, QuickCaptureActivity::class.java)
@@ -123,7 +119,6 @@ class QuickCaptureActivity : ComponentActivity() {
 internal enum class CaptureMode(val label: String, val title: String, val hint: String) {
     TASK("Promemoria", "Promemoria al volo", "Es. domani alle 9 chiamare il dentista"),
     NOTE("Nota", "Nuova nota", "Scrivi… la prima riga fa da titolo"),
-    EXPENSE("Spesa", "Nuova spesa", "Es. 12,50 pizza"),
     HABIT("Abitudine", "Nuova abitudine", "Es. ogni giorno leggere 20 pagine"),
     DATE("Data", "Data da ricordare", "Es. compleanno di Marta 12 marzo"),
     PARCEL("Pacco", "Pacco in arrivo", "Cosa arriva e il codice di tracciamento"),
@@ -135,7 +130,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
     val context = LocalContext.current
     var text by rememberSaveable { mutableStateOf(initial) }
     // Niente da scegliere: partendo da "Promemoria" il tipo lo decide Canvas da quello che si scrive
-    // (o si detta). Solo le scorciatoie dirette (nuova nota, nuova spesa, evento dalle Note) lo fissano.
+    // (o si detta). Solo le scorciatoie dirette (nuova nota, evento dalle Note) lo fissano.
     val auto = initialMode == CaptureMode.TASK
     val mode = remember(text) { if (auto) CaptureGuess.guess(text) else initialMode }
     val focus = remember { FocusRequester() }
@@ -178,7 +173,7 @@ internal fun CaptureDialog(initial: String, initialMode: CaptureMode, onClose: (
     val save = save@{
         if (text.isBlank()) return@save onClose()
         when (mode) {
-            CaptureMode.NOTE, CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> {
+            CaptureMode.NOTE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> {
                 val result = CaptureSave.save(mode, text)
                 if (!result.ok) return@save toast(result.message)
                 saved(mode, result.message, result.undo)
@@ -239,19 +234,18 @@ internal val CaptureMode.icon: ImageVector
     get() = when (this) {
         CaptureMode.TASK -> Icons.Outlined.TaskAlt
         CaptureMode.NOTE -> Icons.AutoMirrored.Outlined.StickyNote2
-        CaptureMode.EXPENSE -> Icons.Outlined.Payments
         CaptureMode.HABIT -> Icons.Outlined.Autorenew
         CaptureMode.DATE -> Icons.Outlined.Cake
         CaptureMode.PARCEL -> Icons.Outlined.LocalShipping
         CaptureMode.EVENT -> Icons.Outlined.Event
     }
 
-/** Che cosa ha capito Canvas: la scadenza, l'importo, il giorno dell'evento. */
+/** Che cosa ha capito Canvas: la scadenza, il giorno dell'evento. */
 @Composable
 internal fun CapturePreview(mode: CaptureMode, text: String) {
     when (mode) {
         CaptureMode.TASK -> QuickPreview(text)
-        CaptureMode.EXPENSE, CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
+        CaptureMode.PARCEL, CaptureMode.HABIT, CaptureMode.DATE -> CaptureSave.preview(mode, text)?.let {
             Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
         }
         CaptureMode.EVENT -> if (text.isNotBlank()) {
@@ -266,7 +260,7 @@ internal fun CapturePreview(mode: CaptureMode, text: String) {
     }
 }
 
-/** "Diventa: Spesa", con l'icona: cambia da solo mentre si scrive. */
+/** "Diventa: Nota", con l'icona: cambia da solo mentre si scrive. */
 @Composable
 internal fun CaptureKindTag(mode: CaptureMode) {
     Row(verticalAlignment = Alignment.CenterVertically) {

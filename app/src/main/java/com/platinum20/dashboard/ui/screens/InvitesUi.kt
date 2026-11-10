@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Close
@@ -35,7 +34,7 @@ import com.platinum20.dashboard.today.Invites
 
 /**
  * In fondo a Oggi, solo quando c'è qualcosa da sistemare (punto 21 D): "Impostazioni" col pallino arancione e
- * "2 cose da sistemare: Revolut scaduto, agenda". Il tocco apre il fumetto con le scelte; sistemato tutto, sparisce.
+ * "2 cose da sistemare: turni scaduti, agenda". Il tocco apre il fumetto con le scelte; sistemato tutto, sparisce.
  */
 @Composable
 fun InvitesRow(
@@ -58,14 +57,11 @@ fun InvitesRow(
                     haptic(Haptic.TICK)
                     val choices = invites.map { invite ->
                         when (invite) {
-                            Invite.REVOLUT -> BubbleAction(Icons.Outlined.AccountBalance, "Rientra in Revolut", "L'accesso è scaduto: saldo e spese sono fermi") {
-                                inApp?.openRoute?.invoke(Routes.REVOLUT)
-                            }
                             Invite.SHIFTS -> BubbleAction(Icons.Outlined.Work, "Rientra nei turni", "L'accesso a Creators Pro è scaduto") {
                                 inApp?.openRoute?.invoke(Routes.SHIFTS)
                             }
                             Invite.AGENDA -> BubbleAction(Icons.Outlined.CalendarMonth, "Consenti l'agenda", "Gli impegni del telefono nel Calendario", onClick = onAllowCalendar)
-                            Invite.AUTOFILL -> BubbleAction(Icons.Outlined.AutoAwesome, "Attiva Compila da solo", "Pacchi, spese e scadenze dalle notifiche", onClick = onOpenAutoFill)
+                            Invite.AUTOFILL -> BubbleAction(Icons.Outlined.AutoAwesome, "Attiva Compila da solo", "Pacchi e scadenze dalle notifiche", onClick = onOpenAutoFill)
                         }
                     }
                     // "Non ora" toglie solo gli inviti: un accesso scaduto resta finché non rientri.

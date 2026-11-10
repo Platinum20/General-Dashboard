@@ -5,9 +5,6 @@ import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.CalendarRepository
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.weather.WeatherStore
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.Expenses
-import com.platinum20.dashboard.notes.FixedExpense
 import com.platinum20.dashboard.notes.Habit
 import com.platinum20.dashboard.notes.Parcel
 import java.time.YearMonth
@@ -85,14 +82,11 @@ object Briefing {
         relative: Boolean = true,
         habits: List<Habit> = emptyList(),
         parcels: List<Parcel> = emptyList(),
-        expenses: List<Expense> = emptyList(),
-        budgetCents: Long? = null,
-        fixedExpenses: List<FixedExpense> = emptyList(),
         /** false nella card di Oggi: domani sta in "Prossimi giorni", qui solo oggi. */
         withTomorrow: Boolean = true,
         /**
          * true nella card di Oggi: tutta la giornata, una riga per impegno e per promemoria (non solo il
-         * prossimo o "3 scaduti"), compresi gli eventi di tutto il giorno. Il budget no: c'è la card Spese.
+         * prossimo o "3 scaduti"), compresi gli eventi di tutto il giorno.
          */
         wholeDay: Boolean = false,
     ): List<BriefLine> {
@@ -164,27 +158,6 @@ object Briefing {
         }
         if (aboutTomorrow) waiting.filter { it.expected == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
             lines += BriefLine(BriefKind.PARCEL, "Domani arriva: " + list.joinToString(", ") { it.title }, openId = list.singleOrNull()?.id)
-        }
-
-        // Spese fisse: il giorno prima, a ogni ora (nella card le dice "Prossimi giorni").
-        if (withTomorrow) fixedExpenses.filter { it.nextDate(date) == date.plusDays(1) }.takeIf { it.isNotEmpty() }?.let { list ->
-            lines += BriefLine(
-                BriefKind.MONEY,
-                "Domani addebito: " + list.joinToString(", ") { "${it.text.ifEmpty { it.category.label }} ${Expenses.format(it.cents)}" },
-            )
-        }
-
-        // Spese: se ne parla solo quando il tetto del mese è vicino.
-        if (!wholeDay && budgetCents != null && budgetCents > 0) {
-            val spent = Expenses.total(expenses, YearMonth.from(date))
-            if (spent >= budgetCents * 8 / 10) {
-                lines += BriefLine(
-                    BriefKind.MONEY,
-                    if (spent > budgetCents) "Budget del mese superato: ${Expenses.format(spent)} su ${Expenses.format(budgetCents)}"
-                    else "Spese del mese: ${Expenses.format(spent)} su ${Expenses.format(budgetCents)}",
-                    urgent = spent > budgetCents,
-                )
-            }
         }
 
         // Abitudini: dal tardo pomeriggio, quelle non ancora fatte oggi (prima c'è tempo).
@@ -282,9 +255,6 @@ object Briefing {
             tasks = notes.openItems,
             habits = notes.habits,
             parcels = notes.parcels,
-            expenses = notes.expenses,
-            budgetCents = null,
-            fixedExpenses = notes.fixedExpenses,
             max = max,
             relative = relative,
         )

@@ -89,9 +89,6 @@ object Trips {
         }
     }
 
-    /** Una spesa fatta per un treno (Trenitalia, Italo, Trenord…): sulla linea ha l'icona del treno. */
-    fun isTrainMerchant(name: String): Boolean = merchant.containsMatchIn(name)
-
     /** Le righe utili di un biglietto, lette dal titolo e dalle note: treno, carrozza, posto, PNR. */
     fun details(title: String, description: String): List<Pair<String, String>> {
         val text = "$title\n$description"
@@ -123,6 +120,5 @@ object Trips {
     private val coachRegex = Regex("""\bCarr(?:ozza|\.)?\s*(\d+)""", RegexOption.IGNORE_CASE)
     private val seatRegex = Regex("""\bPost[oi]\s*,?\s*(\d+[A-Z]?(?:\s*-\s*\d+[A-Z]?)*)""", RegexOption.IGNORE_CASE)
     private val departure = Regex("""partenza da\s+(.+?)\s+Ore\b""", RegexOption.IGNORE_CASE)
-    private val merchant = Regex("""\b(trenitalia|italo|trenord|frecciarossa|tren[io])\b""", RegexOption.IGNORE_CASE)
     private const val MINUTE = 60_000L
 }

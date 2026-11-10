@@ -99,13 +99,13 @@ object AgendaRows {
     internal fun todayItems(days: List<DueDay>, today: LocalDate, zone: ZoneId): List<AgendaRow.Item> =
         days.firstOrNull { it.day == today && !it.past && !it.late }?.let { items(it, today, zone) }.orEmpty()
 
-    /** Il segno OGGI del calendario. I soldi non stanno nel widget: vanno nella loro sezione (Antonio, 2026-11-10). */
+    /** Il segno OGGI del calendario. */
     const val TODAY = "Oggi"
 
     private fun items(group: DueDay, today: LocalDate, zone: ZoneId): List<AgendaRow.Item> =
         timelineEntries(listOf(group), today, zone).mapNotNull { (entry, row) ->
-            // Spese e addebiti restano fuori: i soldi vanno nella loro sezione (Antonio, 2026-11-10).
-            if (row.spend != null || row.expense != null || row.charge != null) return@mapNotNull null
+            // La riga di OGGI è il titolo del widget, non una voce.
+            if (row.today) return@mapNotNull null
             val (kind, id) = when {
                 row.event != null -> AgendaRow.Kind.EVENT to row.event.eventId
                 row.task != null -> (if (row.task.allDay) AgendaRow.Kind.DATE else AgendaRow.Kind.TASK) to row.task.id

@@ -17,8 +17,6 @@ import com.platinum20.dashboard.widget.WidgetBrief
 import com.platinum20.dashboard.widget.WidgetRows
 import com.platinum20.dashboard.work.MorningGroup
 import com.platinum20.dashboard.work.MorningText
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.ui.screens.dueDays
 import org.junit.Assert.assertEquals
@@ -44,8 +42,7 @@ class AgendaRowsTest {
         tasks: List<TaskItem> = emptyList(),
         events: List<CalendarEvent> = emptyList(),
         notes: List<Note> = emptyList(),
-        expenses: List<Expense> = emptyList(),
-    ) = dueDays(tasks, emptyList(), events, now = LocalDateTime.of(2026, 11, 9, 12, 0), zone = zone, withToday = true, notes = notes, expenses = expenses)
+    ) = dueDays(tasks, emptyList(), events, now = LocalDateTime.of(2026, 11, 9, 12, 0), zone = zone, withToday = true, notes = notes)
 
     @Test fun oggiComeNelCalendario() {
         val riunione = CalendarEvent(9, "Riunione", ms(10), ms(11), false, "", 0xFF3550E8.toInt())
@@ -60,17 +57,15 @@ class AgendaRowsTest {
                 ),
                 events = listOf(riunione, turno),
                 notes = listOf(Note(7, "Idea regalo", createdAt = 1)),
-                expenses = listOf(Expense(8, 500, "bar", ExpenseCategory.EATING_OUT, today)),
             ),
             now, zone, heightDp = 800,
         )
         assertEquals(AgendaRow.Day("Oggi"), rows.first())
         val titles = items(rows).map { it.title }
-        // Il turno finito stamattina, la cosa spuntata e la nota restano; le spese no (vanno nella sezione dei soldi).
+        // Il turno finito stamattina, la cosa spuntata e la nota restano.
         assertTrue(titles.any { it.contains("Turno") })
         assertTrue(titles.contains("Latte") && titles.contains("Idea regalo") && titles.contains("Comprare il pane"))
         assertTrue(items(rows).first { it.title == "Latte" }.done)
-        assertTrue(items(rows).none { it.title.contains("bar") })
         assertEquals("10:00", items(rows).first { it.title.contains("Riunione") }.time)
     }
 

@@ -147,7 +147,7 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
 
 /**
  * La graffetta: scatta o scegli una foto, Canvas la legge e la scrive nella barra. Si controlla e
- * si invia come sempre (uno scontrino diventa una spesa). Prima stava dentro Spese.
+ * si invia come sempre.
  */
 @Composable
 private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {

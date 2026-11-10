@@ -86,7 +86,6 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             relative = false,
             habits = notes.habits,
             parcels = notes.parcels,
-            fixedExpenses = notes.fixedExpenses,
             withTomorrow = false,
             wholeDay = true,
         )

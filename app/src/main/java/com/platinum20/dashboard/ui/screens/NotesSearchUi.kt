@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesSearch
 import com.platinum20.dashboard.notes.SearchHit
@@ -41,7 +40,7 @@ import java.time.Instant
 
 /**
  * Cerca in tutte le Note: un campo e i risultati divisi per tipo. Promemoria, abitudini e date
- * si modificano qui; una nota si apre nell'editor; spese e pacchi portano alla loro scheda.
+ * si modificano qui; una nota si apre nell'editor; i pacchi portano alla loro scheda.
  */
 @Composable
 fun NotesSearchPanel(
@@ -49,10 +48,9 @@ fun NotesSearchPanel(
     padding: PaddingValues,
     onClose: () -> Unit,
     onOpenNote: (Long) -> Unit,
-    onOpenExpenses: () -> Unit,
     /** Un pacco si vede nelle Note, in "In arrivo": dentro le Note basta chiudere la ricerca. */
     onOpenParcels: () -> Unit = onClose,
-    placeholder: String = "Cerca in promemoria, note, spese, pacchi…",
+    placeholder: String = "Cerca in promemoria, note, pacchi…",
     /** Gruppi in più (la ricerca ovunque di Oggi): restituisce quanti risultati ha aggiunto. */
     extra: LazyListScope.(query: String) -> Int = { 0 },
     /** Sotto il campo (i filtri di Cerca ovunque). */
@@ -101,7 +99,6 @@ fun NotesSearchPanel(
                         HitRow(hit, data) {
                             when (hit.kind) {
                                 SearchKind.NOTE -> onOpenNote(hit.id)
-                                SearchKind.EXPENSE -> openItem(ItemKind.EXPENSE, hit.id)
                                 SearchKind.PARCEL -> openItem(ItemKind.PARCEL, hit.id)
                                 SearchKind.TASK -> openItem(ItemKind.TASK, hit.id)
                                 SearchKind.DATE -> openItem(ItemKind.TASK, hit.id)
@@ -137,7 +134,6 @@ private fun HitRow(hit: SearchHit, data: NotesData, onClick: () -> Unit) {
     val detail = when (hit.kind) {
         SearchKind.TASK -> data.tasks.firstOrNull { it.id == hit.id }?.let { if (it.done) "Completato" else "Da fare" }
         SearchKind.NOTE -> data.notes.firstOrNull { it.id == hit.id }?.let { "Modificata " + relativeTime(Instant.ofEpochMilli(it.updatedAt)) }
-        SearchKind.EXPENSE -> data.expenses.firstOrNull { it.id == hit.id }?.let { "${Expenses.format(it.cents)} · ${it.category.label} · ${longDate(it.date)}" }
         SearchKind.PARCEL -> data.parcels.firstOrNull { it.id == hit.id }?.let { if (it.delivered) "Arrivato" else it.code.ifEmpty { "In arrivo" } }
         SearchKind.DATE -> data.tasks.firstOrNull { it.id == hit.id }?.dateLine()
         SearchKind.HABIT -> null

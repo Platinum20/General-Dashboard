@@ -1,9 +1,7 @@
 package com.platinum20.dashboard.autofill
 
 import com.platinum20.dashboard.notes.Carrier
-import com.platinum20.dashboard.notes.ExpenseCategory
 import com.platinum20.dashboard.notes.QuickParse
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -19,9 +17,9 @@ data class Incoming(
     val at: LocalDateTime,
 )
 
-/** Qualcosa che Canvas ha trovato da solo e che può diventare un pacco, una spesa o un promemoria. */
+/** Qualcosa che Canvas ha trovato da solo e che può diventare un pacco o un promemoria. */
 sealed interface Found {
-    /** Lo stesso pacco o la stessa spesa visti due volte hanno la stessa chiave. */
+    /** Lo stesso pacco visto due volte ha la stessa chiave. */
     val key: String
 
     data class NewParcel(val title: String, val code: String, val expected: LocalDate?) : Found {
@@ -32,49 +30,20 @@ sealed interface Found {
         override val key get() = "c:$code"
     }
 
-    data class Spent(val cents: Long, val merchant: String, val category: ExpenseCategory, val date: LocalDate, val at: LocalDateTime) : Found {
-        // L'ora al minuto distingue due caffè uguali nello stesso giorno, non la stessa notifica ripetuta.
-        override val key get() = "e:$cents:${merchant.lowercase()}:${at.withSecond(0).withNano(0)}"
-    }
-
     data class Deadline(val title: String, val due: LocalDateTime) : Found {
         override val key get() = "d:${title.lowercase()}:${due.toLocalDate()}"
     }
 }
 
 /**
- * Legge notifiche e SMS e ci trova pacchi in arrivo, spese e scadenze.
+ * Legge notifiche e SMS e ci trova pacchi in arrivo e scadenze.
  * Funzione pura, niente rete: tutto quello che legge resta sul telefono.
+ * I soldi non si leggono più (1.447, Antonio): niente spese dalle notifiche e le app di banche e pagamenti si ignorano.
  */
 object Extractor {
     private const val B0 = "(?<![\\p{L}\\d])"
     private const val B1 = "(?![\\p{L}\\d])"
     private fun rx(p: String) = Regex("$B0(?:$p)$B1", RegexOption.IGNORE_CASE)
-
-    // --- Spese ---
-
-    private val number = "\\d{1,3}(?:[.  ]\\d{3})+(?:[.,]\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?"
-    private val amount = Regex(
-        "(?:€|EUR|euro)\\s?-?($number)|($number)\\s?(?:€|EUR|euro)$B1",
-        RegexOption.IGNORE_CASE,
-    )
-    private val paid = rx(
-        "hai pagato|pagat[oa]|pagamento|paid|spent|spesa di|spesa con|addebit[oa]t?[oa]?|addebito|acquisto|purchase|payment|" +
-            "transazione|operazione con carta|utilizzo carta|prelievo|withdrawal|hai speso|you spent|card used|carta utilizzata"
-    )
-    // Soldi che entrano, pagamenti falliti o ancora da approvare, codici: niente spesa.
-    private val notSpent = rx(
-        "hai ricevuto|ricevut[oi] da|received|you got|accredit[a-z]*|rimbors[a-z]*|refund[a-z]*|rifiutat[oa]|declined|" +
-            "non (?:è )?riuscit[oa]|failed|non andat[oa] a buon fine|annullat[oa]|top.?up|ricaric[a-z]* (?:il |del )?(?:tuo )?conto|" +
-            "aggiunt[oi] (?:al conto|denaro)|added money|bonifico in (?:entrata|arrivo)|autorizz[a-z]*|approva|conferma il pagamento|" +
-            "otp|codice (?:di )?(?:sicurezza|verifica|conferma)|password|cashback|stipendio|salary|richiesta di pagamento|payment request|" +
-            "ti ha inviato|sent you|hai inviato|you sent|da pagare|scad[a-z]*|si rinnover[àa]|verr[àa] (?:rinnovat|addebitat)[oa]|prova gratuita|will renew|renews on"
-    )
-    private val receipt = rx("ricevuta|scontrino|conferma (?:d(?:ell)?'|del )?(?:ordine|acquisto|pagamento)|il tuo ordine|order confirmation|receipt|grazie per il (?:tuo )?acquisto")
-    private val merchantAfter = Regex(
-        "$B0(?:presso|at|a|da|c/o|from|su|in)\\s+([\\p{L}\\d][\\p{L}\\d&'.*\\-/ ]{1,40}?)(?=\\s*(?:[,;!\\n(]|\\.(?:\\s|$)|$| il | in data | on | con | with | per | alle | -|\\d{1,2}[/:.]\\d{2}))",
-        RegexOption.IGNORE_CASE,
-    )
 
     // --- Pacchi ---
 
@@ -110,52 +79,15 @@ object Extractor {
     )
 
     fun extract(msg: Incoming): List<Found> {
-        if (msg.kind == SourceKind.CHAT) return emptyList()
+        // Chat e app di banche o pagamenti non si leggono affatto.
+        if (msg.kind == SourceKind.CHAT || msg.kind == SourceKind.PAYMENT) return emptyList()
         val full = clean("${msg.title}\n${msg.text}")
         if (full.isBlank()) return emptyList()
         val out = mutableListOf<Found>()
 
         parcel(msg, full)?.let { out += it }
-        if (out.isEmpty()) expense(msg, full)?.let { out += it }
         if (out.isEmpty()) deadline(msg, full)?.let { out += it }
         return out
-    }
-
-    /** Un importo in euro scritto come capita: "12,50", "1.234,56", "1,234.56", "12.50". */
-    fun parseAmount(raw: String): Long? {
-        val s = raw.replace(" ", "").replace(" ", "")
-        val lastDot = s.lastIndexOf('.')
-        val lastComma = s.lastIndexOf(',')
-        val decimalAt = when {
-            lastDot >= 0 && lastComma >= 0 -> maxOf(lastDot, lastComma)
-            lastDot >= 0 || lastComma >= 0 -> {
-                val at = maxOf(lastDot, lastComma)
-                // Tre cifre dopo il separatore: sono le migliaia ("1.200").
-                if (s.length - at - 1 in 1..2) at else -1
-            }
-            else -> -1
-        }
-        val digits = if (decimalAt < 0) s.filter { it.isDigit() }
-        else s.substring(0, decimalAt).filter { it.isDigit() } + "." + s.substring(decimalAt + 1)
-        return runCatching { BigDecimal(digits).movePointRight(2).toLong() }.getOrNull()?.takeIf { it > 0 }
-    }
-
-    private fun expense(msg: Incoming, text: String): Found.Spent? {
-        if (notSpent.containsMatchIn(text)) return null
-        if (!paid.containsMatchIn(text)) {
-            // Nelle mail basta una ricevuta; altrove ci vuole la parola del pagamento.
-            if (!(msg.kind == SourceKind.MAIL && receipt.containsMatchIn(text))) return null
-        }
-        if (msg.kind == SourceKind.MAIL && !receipt.containsMatchIn(text) && !paid.containsMatchIn(msg.title)) return null
-        val m = amount.find(text) ?: return null
-        val cents = parseAmount(m.groupValues[1].ifEmpty { m.groupValues[2] }) ?: return null
-        if (cents > 5_000_000) return null
-        val merchant = merchantAfter.findAll(text)
-            .map { tidyName(it.groupValues[1]) }
-            .firstOrNull { it.length >= 2 && !paid.matches(it) && amount.find(it) == null && it.any { c -> c.isLetter() } }
-            ?: tidyName(msg.title).takeIf { it.isNotEmpty() && it.length <= 40 && !paid.containsMatchIn(it) && !it.equals(msg.app, true) && amount.find(it) == null }
-            ?: msg.app
-        return Found.Spent(cents, merchant, ExpenseCategory.guess(merchant), msg.at.toLocalDate(), msg.at)
     }
 
     private fun parcel(msg: Incoming, text: String): Found? {
@@ -298,7 +230,7 @@ object Extractor {
 
     private fun clean(s: String) = s.replace(emoji, " ").replace(Regex("[ \\t ]+"), " ").trim()
 
-    /** "LIDL ITALIA S.R.L." diventa "Lidl Italia", "Amazon.it*AB12CD" diventa "Amazon.it". */
+    /** Nome pulito di un mittente: "AMAZON ITALIA S.R.L." diventa "Amazon Italia". */
     fun tidyName(raw: String): String {
         var s = clean(raw).substringBefore('*').trim(' ', '.', '-', ',', ':')
         s = s.replace(Regex("\\s+(?:s\\.?r\\.?l\\.?s?|s\\.?p\\.?a\\.?|s\\.?n\\.?c\\.?|s\\.?a\\.?s\\.?|ltd|gmbh|inc)\\.?$", RegexOption.IGNORE_CASE), "")
@@ -329,7 +261,7 @@ object Extractor {
         "transferwise", "curve", "lydia", "monzo", "vivid", "trade.republic", "traderepublic", "tinaba", "flowe", "paysafe", "klarna", "scalapay",
     )
 
-    /** Il tipo di app dal nome del pacchetto: le chat si ignorano, banche e negozi si leggono. */
+    /** Il tipo di app dal nome del pacchetto: chat, banche e pagamenti si ignorano, negozi e corrieri si leggono. */
     fun kindOf(packageName: String): SourceKind {
         val p = packageName.lowercase()
         return when {

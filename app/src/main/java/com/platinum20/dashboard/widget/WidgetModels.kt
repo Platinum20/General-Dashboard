@@ -1,7 +1,5 @@
 package com.platinum20.dashboard.widget
 
-import com.platinum20.dashboard.notes.Expense
-import com.platinum20.dashboard.notes.Expenses
 import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.ui.screens.euroLabel
 import com.platinum20.dashboard.ui.screens.gbLabel
@@ -64,21 +62,6 @@ object NewsWidgetRows {
             }.filter { it.title.isNotBlank() }
         }.getOrDefault(emptyList())
     }
-}
-
-/** Cosa mostra il widget Spese. */
-data class SpendModel(val month: String, val total: String, val today: String, val balance: String?)
-
-object SpendWidgetRows {
-    private val MONTH = DateTimeFormatter.ofPattern("MMMM", Locale.ITALIAN)
-
-    /** Solo il mese in corso (regola di Antonio: mai il totale o il confronto con i mesi prima). */
-    fun model(expenses: List<Expense>, today: LocalDate, balanceCents: Long?): SpendModel = SpendModel(
-        month = today.format(MONTH).uppercase(Locale.ITALIAN),
-        total = Expenses.format(Expenses.total(expenses, YearMonth.from(today))),
-        today = Expenses.format(expenses.filter { it.date == today }.sumOf { it.cents }),
-        balance = balanceCents?.let { Expenses.format(it) },
-    )
 }
 
 /** Cosa mostra il widget SIM: [progress] da 0 a 1000, null se non si sa il totale. */

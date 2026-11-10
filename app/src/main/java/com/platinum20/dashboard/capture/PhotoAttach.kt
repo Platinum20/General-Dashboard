@@ -11,7 +11,7 @@ import com.platinum20.dashboard.docs.DocSide
 import com.platinum20.dashboard.notes.Carrier
 import com.platinum20.dashboard.notes.OcrLine
 import com.platinum20.dashboard.notes.QuickParse
-import com.platinum20.dashboard.notes.Receipt
+import com.platinum20.dashboard.notes.OcrRows
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 
 /**
  * La graffetta della barra: una foto qualsiasi viene letta sul telefono (senza rete) e Canvas
- * capisce cosa farne. Uno scontrino diventa una spesa, un biglietto con la data o un codice di
+ * capisce cosa farne. Un biglietto con la data o un codice di
  * spedizione finiscono nella barra come testo, un documento (fronte e poi retro) va in Documenti;
  * tutto il resto si salva come nota con la foto.
  */
@@ -49,7 +49,7 @@ object PhotoAttach {
             val lines = text.textBlocks.flatMap { it.lines }.mapNotNull { line ->
                 line.boundingBox?.let { OcrLine(line.text, it.left, it.top, it.bottom) }
             }
-            Receipt.rows(lines)
+            OcrRows.rows(lines)
         } finally {
             recognizer.close()
         }
@@ -65,7 +65,6 @@ object PhotoAttach {
         if (doc?.side == DocSide.FRONT) return Found.Document(doc)
         if (waitingBack) return Found.Back(doc)
         if (doc != null) return Found.Document(doc)
-        Receipt.parse(rows)?.let { return Found.Text(it.captureText) }
         val clean = rows.map { it.replace(Regex("""\s+"""), " ").trim() }.filter { it.isNotEmpty() }
         val line = clean.joinToString(" ")
         if (Carrier.findCode(line) != null || QuickParse.parse(line, now).due != null) return Found.Text(cut(line, LINE_CHARS))
