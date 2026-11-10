@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.431.0
+**Il widget Calendario parla come l'app**
+- Le righe del widget usano le stesse parole del calendario: "Treno per Pescara", "Turno su Debora e Chiara", "Domani", "Gio 12"
+- I compleanni nel widget dicono gli anni su una riga sola: "Compleanno di Marta · 34 anni"
+
 ## 1.430.0
 **Home più pulita: la card News sparisce quando non c'è niente di nuovo, Impostazioni in fondo solo se serve**
 - Se hai già letto tutto, la card News non c'è: torna quando arrivano storie nuove

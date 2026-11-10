@@ -57,8 +57,8 @@ class AgendaRowsTest {
             emptyMap(), now, zone, heightDp = 600,
         )
         assertEquals(AgendaRow.Note("Niente in programma oggi"), rows.first())
-        assertEquals(AgendaRow.Day("DOMANI"), rows[1])
-        assertTrue(rows.contains(AgendaRow.Day("GIO 12 NOV")))
+        assertEquals(AgendaRow.Day("Domani"), rows[1])
+        assertTrue(rows.contains(AgendaRow.Day("Gio 12")))
         assertEquals(AgendaRow.Note("Settimana libera"), AgendaRows.build(emptyList(), emptyMap(), now, zone, 300).single())
     }
 
