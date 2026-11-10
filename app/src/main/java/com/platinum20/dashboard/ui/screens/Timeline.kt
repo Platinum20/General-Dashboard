@@ -207,7 +207,7 @@ fun TimelineRow(
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
-        TimelineNowMarker(modifier.padding(start = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
+        TimelineNowMarker(modifier.padding(start = start, end = start), total = entry.trailing, onClick = { haptic(Haptic.TICK); onClick() })
         return
     }
     // La riga appena cambiata (spuntata, salvata, spostata) si accende un attimo nel suo nuovo posto.
@@ -264,12 +264,31 @@ fun TimelineRow(
                     }
                 },
             )
-            .padding(start = start, end = LINE_END),
+            .padding(start = start, end = start),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
-        if (entry.trip != null) {
-            TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)))
+        // La linea del tempo a sinistra (1.465, Antonio, variante H): un turno o un evento con orario colora
+        // il suo pezzo di linea, dall'inizio alla fine, invece di avere una lineetta sua.
+        val trip = entry.trip
+        TimelineGutter(
+            Modifier.fillMaxHeight(),
+            line,
+            dot = if (trip != null) null else MaterialTheme.colorScheme.outline to 4.dp,
+            top = top || headed,
+            bottom = bottom,
+            segment = trip?.let {
+                TripSegment(
+                    color = tint.copy(alpha = if (entry.past) 0.55f else 1f),
+                    from = TRIP_PAD + (if (it.title != null) TRIP_LINE else 0.dp) + TRIP_LINE / 2,
+                    toBottom = TRIP_PAD + TRIP_LINE / 2,
+                    progress = it.progress(System.currentTimeMillis()),
+                )
+            },
+        )
+        Spacer(Modifier.width(6.dp))
+        if (trip != null) {
+            TripBlock(trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)), rail = false)
         } else {
         if (onIcon != null || entry.done) {
             Icon(
@@ -323,19 +342,11 @@ fun TimelineRow(
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
         }
         }
-        Spacer(Modifier.width(8.dp))
-        // Il giorno e il suo pallino grande stanno nella riga sopra ([TimelineDayHeader]).
-        Spacer(Modifier.width(4.dp))
-        TimelineGutter(
-            Modifier.fillMaxHeight(),
-            line,
-            dot = MaterialTheme.colorScheme.outline to 4.dp,
-            top = top || headed,
-            bottom = bottom,
-            dotY = if (entry.trip != null) TRIP_PAD + TRIP_LINE / 2 else null,
-        )
     }
 }
+
+/** Il pezzo colorato della linea per un evento con orario: da [from] dall'alto a [toBottom] dal fondo. */
+private class TripSegment(val color: Color, val from: Dp, val toBottom: Dp, val progress: Float?)
 
 /** L'altezza delle righe di inizio e fine: stretta, come una riga di testo (Antonio, 2026-11-10). */
 private val TRIP_LINE = 20.dp
@@ -349,7 +360,15 @@ private val TRIP_PAD = 2.dp
  * Gli altri eventi hanno il nome su una riga sua sopra ([TripStops.title]), poi solo gli orari (Antonio).
  */
 @Composable
-internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Modifier, title: Modifier = Modifier) {
+internal fun TripBlock(
+    trip: TripStops,
+    tint: Color,
+    past: Boolean,
+    modifier: Modifier,
+    title: Modifier = Modifier,
+    /** La lineetta sua; nel calendario no: lì il pezzo colorato sta sulla linea del tempo. */
+    rail: Boolean = true,
+) {
     val text = if (past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
@@ -364,7 +383,8 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
         Row(Modifier.height(IntrinsicSize.Min)) {
             // La linea va dall'inizio alla fine anche quando in mezzo ci sono più righe (le creator).
             Box(
-                Modifier.width(16.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.middleMinDp().dp).drawBehind {
+                Modifier.width(if (rail) 16.dp else 0.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.middleMinDp().dp).drawBehind {
+                    if (!rail) return@drawBehind
                     val x = size.width / 2
                     val top = TRIP_LINE.toPx() / 2
                     val bottom = size.height - TRIP_LINE.toPx() / 2
@@ -376,7 +396,7 @@ internal fun TripBlock(trip: TripStops, tint: Color, past: Boolean, modifier: Mo
                     progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, top + (bottom - top) * it)) }
                 },
             )
-            Spacer(Modifier.width(10.dp))
+            if (rail) Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 TripStop(trip.departAt, trip.from, text, if (trip.title == null) title else Modifier)
                 // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
@@ -446,11 +466,6 @@ private val GUTTER = 22.dp
 /** La linea del mese: più spessa di quella dei giorni (1 dp). */
 private val MONTH_RULE = 3.dp
 
-/**
- * Il margine destro dopo la linea: con la card a 16 dp dal bordo, il centro della linea cade a 46 dp
- * dal bordo dello schermo, cioè sul centro del + rotondo in basso a destra (60 dp, a 16 dp dal bordo).
- */
-private val LINE_END = 19.dp
 
 
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
@@ -474,30 +489,37 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         else -> MaterialTheme.colorScheme.onSurface
     }
     Row(
-        Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = LINE_END).semantics(mergeDescendants = true) { heading() },
+        Modifier.fillMaxWidth().height(26.dp).padding(start = start, end = start).semantics(mergeDescendants = true) { heading() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Il nome tutto a sinistra e la linea che arriva fino al pallino: "Domani ——————— ●" (Antonio).
+        // Il pallino sulla linea a sinistra, il nome e poi il filo fino in fondo: "● Domani ———" (1.465).
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true)
+        Spacer(Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true, joinLeft = rule)
     }
 }
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, dotY: Dp? = null, joinLeft: Boolean = false) {
+private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, segment: TripSegment? = null) {
+    val here = MaterialTheme.colorScheme.primary
     Box(
         modifier.width(GUTTER).drawBehind {
             val x = size.width / 2
-            val mid = dotY?.toPx() ?: (size.height / 2)
+            val mid = size.height / 2
             val stroke = 2.dp.toPx()
-            // La linea del giorno entra fino al pallino.
-            if (joinLeft) drawLine(line, Offset(0f, mid), Offset(x, mid), 1.dp.toPx())
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
             dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
+            segment?.let { s ->
+                val a = s.from.toPx()
+                val b = maxOf(a, size.height - s.toBottom.toPx())
+                drawLine(s.color, Offset(x, a), Offset(x, b), 4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                // Mentre è in corso, il pallino "sei qui" scende lungo il pezzo colorato.
+                s.progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, a + (b - a) * it)) }
+            }
         },
     )
 }
@@ -523,9 +545,17 @@ fun TimelineNowMarker(
         pulse.animateTo(0f, androidx.compose.animation.core.tween(Motion.ENTER_MS * 2, easing = Motion.Standard))
     }
     Row(
-        (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).then(modifier).fillMaxWidth().height(32.dp).padding(end = LINE_END),
+        (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier).then(modifier).fillMaxWidth().height(32.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Il pallino grande sulla linea a sinistra, con il filo blu che parte da lì (1.465).
+        Box(
+            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
+                drawLine(primary, Offset(size.width / 2, size.height / 2), Offset(size.width + 6.dp.toPx(), size.height / 2), 2.dp.toPx())
+                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
+            },
+        )
+        Spacer(Modifier.width(6.dp))
         Text(
             "OGGI",
             style = MaterialTheme.typography.labelMedium,
@@ -555,14 +585,7 @@ fun TimelineNowMarker(
         total?.let {
             Spacer(Modifier.width(10.dp))
             Text(it, style = MaterialTheme.typography.labelLarge, color = primary, maxLines = 1)
-            Spacer(Modifier.width(4.dp))
         }
-        Box(
-            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
-                drawLine(primary, Offset(0f, size.height / 2), Offset(size.width / 2, size.height / 2), 2.dp.toPx())
-                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
-            },
-        )
     }
 }
 
@@ -589,9 +612,19 @@ fun TimelineMonthMarker(
     Row(
         Modifier.fillMaxWidth().height(30.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(start = start, end = LINE_END).then(if (tick) Modifier.monthTick() else Modifier),
+            .padding(start = start, end = start).then(if (tick) Modifier.monthTick() else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
+                val x = size.width / 2
+                val mid = size.height / 2
+                if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
+                drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
+                drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
+            },
+        )
+        Spacer(Modifier.width(6.dp))
         // Il mese pesa più dei giorni: scritta in grassetto e linea più spessa (Antonio).
         Text(label, style = MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.width(10.dp))
@@ -610,18 +643,7 @@ fun TimelineMonthMarker(
             if (total != null) Text("·", style = MaterialTheme.typography.labelLarge, color = color)
             if (total != null) Spacer(Modifier.width(6.dp))
             Text(it, style = MaterialTheme.typography.labelLarge, color = dayColor, maxLines = 1)
-            Spacer(Modifier.width(4.dp))
         }
-        Box(
-            Modifier.width(GUTTER).fillMaxHeight().drawBehind {
-                val x = size.width / 2
-                val mid = size.height / 2
-                if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
-                drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawLine(month, Offset(0f, mid), Offset(x, mid), MONTH_RULE.toPx())
-                drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
-            },
-        )
     }
 }
 

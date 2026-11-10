@@ -14,6 +14,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.FilterChip
@@ -258,8 +259,8 @@ fun NotesScreen(
     // Sopra, scorrendo in su, il passato: cose fatte, pacchi arrivati, eventi finiti.
     val past = remember(data, events, day) { pastDays(data.tasks, data.parcels, events, withToday = true) }
     // Dove comincia "adesso" dentro la card della linea del tempo: la pagina si apre lì, non dal passato.
-    // Il filtro acceso (Note, Eventi); toccandolo di nuovo si torna a tutto. Cambiandolo si riparte da OGGI.
-    var filter by rememberSaveable { mutableStateOf<CalendarFilter?>(null) }
+    // Niente filtri in alto (1.465, Antonio): la pagina mostra sempre tutto.
+    val filter: CalendarFilter? = null
     val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
     var habitsOpen by rememberSaveable { mutableStateOf(false) }
@@ -399,7 +400,7 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding()).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -472,7 +473,7 @@ fun NotesScreen(
                             if (monthAbove) {
                                 TimelineMonthMarker(entry.month!!)
                             }
-                            TimelineNowMarker(Modifier.padding(start = 16.dp))
+                            TimelineNowMarker(Modifier.padding(horizontal = 16.dp))
                         }
                         TimelineRow(
                             entry,
@@ -514,29 +515,6 @@ fun NotesScreen(
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
-        // I filtri stanno fermi sotto il titolo, fuori dalla lista: la pagina si apre su OGGI e restano a portata.
-        Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // "Tutto" per primo e acceso di partenza (punto 24): si vede che i filtri sono scelte, non tre sezioni.
-            CanvasTabChip(
-                selected = filter == null,
-                onClick = { haptic(Haptic.TICK); filter = null },
-                label = "Tutto",
-                modifier = Modifier.weight(1f),
-                tonal = true,
-            )
-            CalendarFilter.entries.forEach { f ->
-                CanvasTabChip(
-                    selected = filter == f,
-                    onClick = { haptic(Haptic.TICK); filter = if (filter == f) null else f },
-                    label = f.label,
-                    modifier = Modifier.weight(1f),
-                    tonal = true,
-                )
-            }
-        }
         }
     }
 }
@@ -544,8 +522,6 @@ fun NotesScreen(
 /** Quante righe prima dell'inizio o della fine della linea si legge un altro pezzo di calendario. */
 private const val NEAR_ROWS = 20
 
-/** Lo spazio sopra la lista per la riga dei filtri. */
-private val CHIPS_ROOM = 48.dp
 
 
 /**
@@ -646,13 +622,19 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
 @Composable
 private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val turn by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, Motion.settle(), label = "habitsTurn")
+    val line = MaterialTheme.colorScheme.outlineVariant
     Row(
         modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .bouncyPress(0.98f)
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+            // La linea del tempo a sinistra passa anche qui, senza buchi dentro OGGI (1.465).
+            .drawBehind {
+                val x = (16 + 11).dp.toPx()
+                drawLine(line, androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Offset(x, size.height), 2.dp.toPx())
+            }
+            .padding(start = 44.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
