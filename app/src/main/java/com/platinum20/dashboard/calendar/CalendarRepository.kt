@@ -35,7 +35,7 @@ data class CalendarEvent(
 /** Il colore dei turni nel calendario. */
 private const val SHIFT_COLOR = 0xFF7A5AF8.toInt()
 
-/** Il turno nel calendario: sotto durata e compagnia, venduto, scaglione e guadagno, dalla busta paga ("Venduto $504,67 · 12% → $60,56"). */
+/** Il turno nel calendario: sotto durata e compagnia, venduto, scaglione e guadagno, dalla busta paga ("$504,67 · 12% → $60,56"). */
 internal fun shiftEvent(s: Shift, pay: com.platinum20.dashboard.shifts.ShiftEarning? = null) =
     CalendarEvent(s.eventId, com.platinum20.dashboard.shifts.ShiftParse.shortTitle(s.title), s.start, s.end, allDay = false, location = pay?.takeIf(com.platinum20.dashboard.shifts.ShiftPay::worked)?.let(com.platinum20.dashboard.shifts.ShiftPay::soldLine).orEmpty(), people = s.mates.size + 1, mates = s.mates, color = SHIFT_COLOR)
 

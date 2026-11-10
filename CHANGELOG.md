@@ -1,8 +1,12 @@
 # Changelog
 
-## 1.462.0
+## 1.464.0
 **Tolto lo scorrimento trascinando la linea a destra del Calendario**
 - La linea a destra torna solo da guardare: il calendario si scorre come prima, con il dito sulla pagina
+
+## 1.463.0
+**Turni senza "Venduto"**
+- Nel calendario e nella card in Home la riga del turno dice solo "$504,67 · 12% → $60,56"
 
 ## 1.461.0
 **In Media i titoli tornano sotto le copertine**
