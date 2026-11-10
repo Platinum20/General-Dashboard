@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.463.0
+**Turni senza "Venduto"**
+- Nel calendario e nella card in Home la riga del turno dice solo "$504,67 · 12% → $60,56"
+
 ## 1.461.0
 **In Media i titoli tornano sotto le copertine**
 - In Media, Musica, Video, Radio e Continua prima la copertina, poi il titolo e sotto chi l'ha pubblicato

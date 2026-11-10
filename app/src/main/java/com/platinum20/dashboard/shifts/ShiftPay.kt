@@ -129,9 +129,10 @@ object ShiftPay {
     /**
      * La seconda riga del turno nel calendario, sotto durata e compagnia: venduto, scaglione, guadagno,
      * nell'ordine del conto (venduto × % = guadagno), la freccia porta al risultato (Antonio).
+     * Senza la parola "Venduto" (Antonio, 2026-11-10): "$504,67 · 12% → $60,56".
      */
     fun soldLine(e: ShiftEarning): String =
-        "Venduto " + money(e.sold) + " · " + percent(e.percent) + " → " + money(e.earned) + if (e.current) " finora" else ""
+        money(e.sold) + " · " + percent(e.percent) + " → " + money(e.earned) + if (e.current) " finora" else ""
 
     fun line(e: ShiftEarning): String =
         money(e.earned) + " · " + percent(e.percent) + if (e.current) " finora" else ""
