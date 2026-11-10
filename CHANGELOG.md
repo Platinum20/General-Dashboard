@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.448.0
+**Coda e impostazioni del video rifatte**
+- Coda: in alto cosa suona, con la copertina grande nel blocco blu; sotto cosa viene dopo, righe libere senza riquadri né linee
+- Ogni voce mostra autore e durata; le miniature dei video sono larghe, le copertine quadrate, i titoli tutti in colonna
+- In orizzontale la coda entra da destra a tutta altezza e si divide in due: a sinistra cosa suona, a destra cosa viene dopo
+- Impostazioni del video: non più un menu a pagine ma un pannello con tutto in vista: qualità, velocità, sottotitoli e ripeti
+- Ogni scelta vale subito con un tocco; in orizzontale il pannello sta di lato e il video resta a schermo intero
+
 ## 1.447.0
 **Niente più soldi nell'app: tolti Revolut e le spese**
 - Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo

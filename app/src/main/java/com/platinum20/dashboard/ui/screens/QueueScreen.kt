@@ -1,38 +1,16 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.material.icons.outlined.ClearAll
-import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -40,24 +18,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ClearAll
 import androidx.compose.material.icons.outlined.GraphicEq
-import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.OndemandVideo
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.DragHandle
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -67,8 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.capture.CaptureFeedback
@@ -76,7 +55,35 @@ import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.QueueEntry
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
-import com.platinum20.dashboard.media.spotify.SpotifyAuth
+
+/** Come si mostra una voce della coda (1.448). Pura per i test. */
+internal object QueueLook {
+    /** Video e YouTube hanno la miniatura larga (16:9), il resto la copertina quadrata. */
+    fun wide(kind: ResumeKind): Boolean = kind == ResumeKind.VIDEO || kind == ResumeKind.YOUTUBE
+
+    /** La riga sotto il titolo: autore, poi durata (se c'è); la fonte solo se manca l'autore. */
+    fun line(subtitle: String, source: String, durationMs: Long): String {
+        val who = subtitle.ifBlank { source }
+        val length = if (durationMs > 0) duration(durationMs) else ""
+        return listOf(who, length).filter { it.isNotBlank() }.joinToString(" · ")
+    }
+
+    /** "3:07", "1:02:45". */
+    fun duration(ms: Long): String {
+        val s = ms / 1000
+        val h = s / 3600
+        val m = (s % 3600) / 60
+        val sec = s % 60
+        return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
+    }
+
+    /** Il numero accanto al titolo "Coda". */
+    fun count(upcoming: Int): String? = when (upcoming) {
+        0 -> null
+        1 -> "1 dopo"
+        else -> "$upcoming dopo"
+    }
+}
 
 private fun ResumeItem.queueIcon(): ImageVector = when (kind) {
     ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
@@ -87,72 +94,134 @@ private fun ResumeItem.queueIcon(): ImageVector = when (kind) {
     ResumeKind.PODCAST -> Icons.Outlined.Mic
 }
 
-private fun ResumeItem.queueAccent(): TileAccent = when (kind) {
-    ResumeKind.VIDEO -> TileAccent.BLUE
-    ResumeKind.YOUTUBE -> TileAccent.ORANGE
-    ResumeKind.MUSIC, ResumeKind.SPOTIFY -> TileAccent.GREEN
-    ResumeKind.RADIO, ResumeKind.PODCAST -> TileAccent.PURPLE
-}
-
 private fun ResumeItem.sourceLabel(): String = when (kind) {
     ResumeKind.VIDEO -> "Video"
     ResumeKind.YOUTUBE -> "YouTube"
-    ResumeKind.MUSIC -> "YouTube Music"
+    ResumeKind.MUSIC -> "Musica"
     ResumeKind.SPOTIFY -> "Spotify"
     ResumeKind.RADIO -> "Radio"
     ResumeKind.PODCAST -> "Podcast"
 }
 
-/** Il contenuto della coda (vuota o con le voci): il pop-up sopra il player e sopra Media. */
+private fun ResumeItem.queueLine(): String = QueueLook.line(subtitle, sourceLabel(), durationMs)
+
+/** Miniatura della voce: larga per i video, quadrata per il resto; l'icona se non c'è immagine. */
+@Composable
+private fun QueueCover(item: ResumeItem, width: Dp, modifier: Modifier = Modifier) {
+    val wide = QueueLook.wide(item.kind)
+    Box(
+        modifier
+            .width(width)
+            .aspectRatio(if (wide) 16f / 9f else 1f)
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(item.queueIcon(), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+        if (item.image.isNotBlank()) {
+            AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/**
+ * La voce che suona, in alto (l'unico blocco colorato del pannello). [stacked]: copertina grande sopra il titolo,
+ * per la colonna sinistra della coda in orizzontale; se no copertina a sinistra e titolo accanto.
+ */
+@Composable
+private fun NowPlayingHero(entry: QueueEntry, stacked: Boolean, modifier: Modifier = Modifier) {
+    val item = entry.item
+    val colors = MaterialTheme.colorScheme
+    val texts: @Composable () -> Unit = {
+        Text(
+            "IN RIPRODUZIONE",
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onPrimaryContainer.copy(alpha = 0.7f),
+        )
+        Text(
+            item.title,
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.onPrimaryContainer,
+            maxLines = if (stacked) 3 else 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+        Text(
+            item.queueLine(),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onPrimaryContainer.copy(alpha = 0.75f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+    val box = modifier
+        .fillMaxWidth()
+        .clip(MaterialTheme.shapes.extraLarge)
+        .background(colors.primaryContainer)
+        .padding(12.dp)
+    if (stacked) {
+        Column(box) {
+            val wide = QueueLook.wide(item.kind)
+            QueueCover(
+                item,
+                width = Dp.Unspecified,
+                modifier = Modifier.fillMaxWidth(if (wide) 1f else 0.72f).align(Alignment.CenterHorizontally),
+            )
+            Spacer(Modifier.size(12.dp))
+            texts()
+        }
+    } else {
+        Row(box, verticalAlignment = Alignment.CenterVertically) {
+            QueueCover(item, width = if (QueueLook.wide(item.kind)) 128.dp else 80.dp)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) { texts() }
+        }
+    }
+}
+
+@Composable
+private fun EmptyQueue(modifier: Modifier) {
+    Column(
+        modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        IconTile(Icons.Outlined.QueueMusic, TileAccent.NEUTRAL, size = 64.dp, iconSize = 32.dp)
+        Spacer(Modifier.size(12.dp))
+        Text("La coda è vuota", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Tieni premuto un video, una canzone, una radio o un episodio e scegli \"Aggiungi alla coda\".",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
+ * Le voci dopo quella che suona: righe libere sul fondo (niente card né separatori, 1.448), trascinabili dalla maniglia.
+ * [now]: la voce che suona come prima riga della lista (in verticale), null se sta in un'altra colonna.
+ */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun QueueList(modifier: Modifier, contentPadding: PaddingValues) {
-    val queue by CanvasPlayer.queue.collectAsState()
-    val now = queue.now
-    val upcoming = queue.upcoming
-    if (now == null && upcoming.isEmpty()) {
-        Column(
-            modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            IconTile(Icons.Outlined.QueueMusic, TileAccent.BLUE, size = 64.dp, iconSize = 32.dp)
-            Spacer(Modifier.size(12.dp))
-            Text("La coda è vuota", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Tieni premuto un video, una canzone, una radio o un episodio e scegli \"Aggiungi alla coda\".",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-        return
-    }
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val view = androidx.compose.ui.platform.LocalView.current
+private fun UpcomingList(now: QueueEntry?, upcoming: List<QueueEntry>, modifier: Modifier, contentPadding: PaddingValues) {
+    val listState = rememberLazyListState()
+    val view = LocalView.current
     val upcomingIds = upcoming.map { it.id }.toSet()
     val reorder = rememberReorderState(listState, canMove = { it in upcomingIds }) { from, to ->
         view.haptic(Haptic.TICK)
         CanvasPlayer.moveTo(from as Long, to as Long)
     }
-    LazyColumn(
-        modifier,
-        state = listState,
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
+    LazyColumn(modifier, state = listState, contentPadding = contentPadding) {
         if (now != null) {
-            item(key = "h-now") { SectionHeader("In riproduzione") }
-            item(key = now.id) {
-                QueueRow(now, current = true, modifier = Modifier.animateItem(), onTap = {})
-            }
+            item(key = now.id) { NowPlayingHero(now, stacked = false, modifier = Modifier.animateItem().padding(bottom = 8.dp)) }
         }
         if (upcoming.isNotEmpty()) {
-            // "Svuota" non è più un tasto in alto (1.357): si tiene premuto "Dopo", come "Elimina i completati".
+            // "Svuota" non è un tasto (1.357): si tiene premuto "Dopo", come "Elimina i completati".
             item(key = "h-next") {
                 SectionHeader(
                     "Dopo",
-                    Modifier.padding(top = 8.dp).combinedClickable(onClick = {}, onLongClick = {
+                    Modifier.padding(top = 8.dp, start = 8.dp).combinedClickable(onClick = {}, onLongClick = {
                         view.haptic(Haptic.LONG_PRESS)
                         ActionBubble.show(
                             BubbleAction(
@@ -172,135 +241,78 @@ private fun QueueList(modifier: Modifier, contentPadding: PaddingValues) {
                     handle = Modifier.reorderHandle(reorder, entry.id) { view.haptic(Haptic.GRAB) },
                 )
             }
+        } else if (now != null) {
+            item(key = "nothing-next") { NothingNext() }
         }
     }
 }
 
-/**
- * Dove sta e quando si chiude il pop-up della coda sopra il player. Pura per i test.
- */
-internal object QueueSheet {
-    /** Schermo più largo che alto (video a schermo intero): pannello di lato, così il video resta in orizzontale. */
-    fun sideways(width: Float, height: Float): Boolean = width > height
-
-    /** Trascinato verso il bordo da cui è entrato: oltre un terzo, o lanciato, si chiude. */
-    fun closes(dragged: Float, velocity: Float, extent: Float): Boolean =
-        dragged > extent / 3f || (velocity > 1_200f && dragged > 0f)
+@Composable
+private fun NothingNext() {
+    Text(
+        "Dopo questo non c'è altro. Tieni premuto qualcosa e scegli \"Aggiungi alla coda\".",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp),
+    )
 }
 
 /**
- * La coda come pop-up sopra il player (video o audio), invece di un'altra pagina: il video resta
- * com'è, anche a schermo intero in orizzontale. In verticale sale dal basso, in orizzontale entra
- * da destra. Si chiude toccando fuori, col gesto indietro o trascinando l'intestazione verso il bordo.
+ * La coda come pannello sopra il player (video o audio) e sopra Media, invece di un'altra pagina.
+ * In verticale sale dal basso: in alto la voce che suona, sotto quelle dopo. In orizzontale entra da destra
+ * a tutta altezza e, se c'è posto, si divide in due colonne: a sinistra cosa suona con la copertina grande,
+ * a destra cosa viene dopo. Il video dietro resta a schermo intero.
  */
 @Composable
-internal fun QueuePopup(open: Boolean, onClose: () -> Unit, bottomExtra: androidx.compose.ui.unit.Dp = 0.dp) {
-    androidx.activity.compose.BackHandler(enabled = open, onBack = onClose)
-    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-        val sideways = QueueSheet.sideways(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
-        val extent = if (sideways) constraints.maxWidth * 0.45f else constraints.maxHeight * 0.7f
-        androidx.compose.animation.AnimatedVisibility(
-            visible = open,
-            enter = androidx.compose.animation.fadeIn(),
-            exit = androidx.compose.animation.fadeOut(),
-        ) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f))
-                    .pointerInput(Unit) { detectTapGestures { onClose() } },
-            )
-        }
-        androidx.compose.animation.AnimatedVisibility(
-            visible = open,
-            enter = if (sideways) androidx.compose.animation.slideInHorizontally { it } else androidx.compose.animation.slideInVertically { it },
-            exit = if (sideways) androidx.compose.animation.slideOutHorizontally { it } else androidx.compose.animation.slideOutVertically { it },
-            modifier = Modifier.align(if (sideways) Alignment.CenterEnd else Alignment.BottomCenter),
-        ) {
-            val scope = rememberCoroutineScope()
-            val drag = remember { Animatable(0f) }
-            val view = androidx.compose.ui.platform.LocalView.current
-            val density = LocalDensity.current
-            val shape = if (sideways) RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp)
-            else RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            val panel = with(density) { extent.toDp() }
-            Column(
-                (if (sideways) Modifier.width(panel).fillMaxHeight() else Modifier.fillMaxWidth().height(panel))
-                    .offset { if (sideways) IntOffset(drag.value.roundToInt(), 0) else IntOffset(0, drag.value.roundToInt()) }
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.background)
-                    // I tocchi sul pannello restano al pannello, non chiudono.
-                    .pointerInput(Unit) { detectTapGestures { } }
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(if (sideways) WindowInsetsSides.End + WindowInsetsSides.Vertical else WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
-            ) {
-                val queue by CanvasPlayer.queue.collectAsState()
-                // L'intestazione è la maniglia: portata verso il bordo chiude (le righe sotto si spostano di lato da sole).
-                val tracker = remember { VelocityTracker() }
+internal fun QueuePopup(open: Boolean, onClose: () -> Unit, bottomExtra: Dp = 0.dp) {
+    val queue by CanvasPlayer.queue.collectAsState()
+    val now = queue.now
+    val upcoming = queue.upcoming
+    PlayerSheet(
+        open = open,
+        onClose = onClose,
+        title = "Coda",
+        subtitle = QueueLook.count(upcoming.size),
+        fixedHeight = 0.78f,
+        sideShare = 0.62f,
+        sideMax = 680.dp,
+    ) { sideways, width ->
+        val listPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp + bottomExtra)
+        when {
+            now == null && upcoming.isEmpty() -> EmptyQueue(Modifier.fillMaxWidth().weight(1f))
+            sideways && now != null && QueueSheet.twoColumns(width.value) -> Row(Modifier.fillMaxWidth().weight(1f)) {
                 Column(
                     Modifier
-                        .fillMaxWidth()
-                        .pointerInput(sideways) {
-                            val onDrag: (androidx.compose.ui.input.pointer.PointerInputChange, Float) -> Unit = { change, amount ->
-                                // Il pannello si sposta col dito: si misura la posizione sullo schermo, non sul pannello.
-                                val p = change.position
-                                tracker.addPosition(change.uptimeMillis, if (sideways) Offset(p.x + drag.value, p.y) else Offset(p.x, p.y + drag.value))
-                                scope.launch { drag.snapTo((drag.value + amount).coerceAtLeast(0f)) }
-                            }
-                            val onEnd: () -> Unit = {
-                                val v = tracker.calculateVelocity()
-                                val velocity = if (sideways) v.x else v.y
-                                if (QueueSheet.closes(drag.value, velocity, extent)) {
-                                    view.haptic(Haptic.SNAP)
-                                    onClose()
-                                } else {
-                                    scope.launch { drag.animateTo(0f, Motion.gesture()) }
-                                }
-                            }
-                            val onStart: (Offset) -> Unit = { tracker.resetTracking() }
-                            if (sideways) {
-                                detectHorizontalDragGestures(onDragStart = onStart, onDragEnd = onEnd) { change, amount -> onDrag(change, amount) }
-                            } else {
-                                detectVerticalDragGestures(onDragStart = onStart, onDragEnd = onEnd) { change, amount -> onDrag(change, amount) }
-                            }
-                        }
-                        .padding(start = 20.dp, end = 12.dp, top = 10.dp, bottom = 4.dp),
+                        .weight(0.42f)
+                        .fillMaxHeight()
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, top = 4.dp, bottom = 16.dp),
                 ) {
-                    Box(
-                        Modifier
-                            .align(if (sideways) Alignment.Start else Alignment.CenterHorizontally)
-                            .size(width = 36.dp, height = 4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
-                    )
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Coda", style = MaterialTheme.typography.titleLarge)
-                            if (queue.upcoming.isNotEmpty()) {
-                                Text(
-                                    "${queue.upcoming.size} dopo questo",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
+                    NowPlayingHero(now, stacked = true)
+                }
+                Box(Modifier.weight(0.58f).fillMaxHeight()) {
+                    if (upcoming.isEmpty()) {
+                        NothingNext()
+                    } else {
+                        UpcomingList(null, upcoming, Modifier.fillMaxSize(), listPadding)
                     }
                 }
-                QueueList(Modifier.fillMaxWidth().weight(1f), PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp + bottomExtra))
             }
+            else -> UpcomingList(now, upcoming, Modifier.fillMaxWidth().weight(1f), listPadding)
         }
     }
 }
 
 /**
  * Le prossime voci della coda in Media, al posto della card "Riprendi": si vede cosa viene dopo senza
- * aprire la coda. Un tocco salta lì; il titolo apre la coda intera (lo stesso riquadro del player).
+ * aprire la coda. Un tocco salta lì; il titolo apre la coda intera (lo stesso pannello del player).
  */
 @Composable
 internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
     val queue by CanvasPlayer.queue.collectAsState()
     val next = queue.upcoming
     if (next.isEmpty()) return
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         // Il titolo stesso apre la coda, con lo stesso aspetto dei titoli delle file di Media.
         OpenableHeader("In coda · ${next.size}", onOpenQueue)
         next.take(3).forEach { entry -> androidx.compose.runtime.key(entry.id) { SwipeQueueRow(entry) } }
@@ -316,7 +328,6 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
         SwipeAwayMark(swipe)
         QueueRow(
             entry,
-            current = false,
             modifier = Modifier.swipeAway(swipe) {
                 val index = CanvasPlayer.queue.value.entries.indexOfFirst { it.id == entry.id }
                 CanvasPlayer.remove(entry.id)
@@ -330,10 +341,13 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
     }
 }
 
+/**
+ * Riga Canvas della coda: a sinistra la miniatura (sempre larga uguale, così i titoli sono in colonna),
+ * al centro titolo e una riga (autore · durata), a destra la maniglia per spostarla.
+ */
 @Composable
 private fun QueueRow(
     entry: QueueEntry,
-    current: Boolean,
     modifier: Modifier = Modifier,
     /** La maniglia per trascinare la riga (nella coda intera). */
     handle: Modifier? = null,
@@ -344,37 +358,32 @@ private fun QueueRow(
         modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(if (current) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card)
-            .clickable(enabled = !current, onClick = onTap)
-            .padding(8.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .clickable(onClick = onTap)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(52.dp).clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center) {
-            IconTile(item.queueIcon(), item.queueAccent(), size = 52.dp)
-            if (item.image.isNotBlank()) {
-                AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(52.dp))
-            }
+        Box(Modifier.width(80.dp), contentAlignment = Alignment.Center) {
+            QueueCover(item, width = if (QueueLook.wide(item.kind)) 80.dp else 48.dp)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                listOf(item.subtitle, item.sourceLabel()).filter { it.isNotBlank() }.distinct().joinToString(" · "),
+                item.queueLine(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (!current) {
-            if (handle != null) {
-                Icon(
-                    Icons.Rounded.DragHandle,
-                    contentDescription = "Trascina per spostare",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = handle.padding(8.dp).size(24.dp),
-                )
-            }
+        if (handle != null) {
+            Icon(
+                Icons.Rounded.DragHandle,
+                contentDescription = "Trascina per spostare",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = handle.padding(start = 4.dp).padding(8.dp).size(24.dp),
+            )
         }
     }
 }

@@ -156,6 +156,7 @@ fun PlayerScreen(
             AudioPlayer(onBack, onOpenQueue)
         }
         QueuePopup(open = queueOpen, onClose = { queueOpen = false })
+        VideoSettingsPopup()
     }
 }
 
