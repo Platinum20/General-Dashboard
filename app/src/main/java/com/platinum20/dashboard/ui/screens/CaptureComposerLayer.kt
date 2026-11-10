@@ -3,7 +3,10 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -18,7 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
@@ -235,8 +238,9 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
 }
 
 /**
- * Dentro la barra trasformata: la graffetta, il campo, la X per annullare e, mentre si scrive,
- * cosa diventerà. Il tasto invia è il + accanto, che intanto è diventato una freccia.
+ * Dentro la barra trasformata, sempre alta quanto il +: la graffetta, il campo (gli esempi fanno da
+ * segnaposto), la X e, tutto a destra mentre si scrive, il simbolo di cosa diventerà. Il tasto
+ * invia è il + accanto, che intanto è diventato una freccia.
  */
 @Composable
 internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
@@ -245,76 +249,79 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
     val mode = remember(text.text) { CaptureGuess.guess(text.text) }
     var reading by remember { mutableStateOf(false) }
     val attach = rememberPhotoAttach { reading = it }
-    Column(modifier.padding(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)) {
-        // Non una scelta ma una risposta: in una riga cosa diventa. Prima di scrivere, le prime volte, un esempio che cambia.
-        val saves by AppSettings.captureSaves.collectAsState()
-        val summary = remember(text.text, mode) { CaptureHints.summary(mode, text.text) }
-        val showExample = summary == null && !reading && CaptureHints.showExamples(saves)
-        var exampleAt by remember { mutableStateOf(0) }
-        LaunchedEffect(showExample) {
-            while (showExample) {
-                delay(3_000)
-                exampleAt += 1
-            }
+    val empty = text.text.isEmpty()
+    // Il segnaposto è un esempio che cambia: insegna cosa si può scrivere senza occupare una riga in più.
+    var exampleAt by remember { mutableStateOf(0) }
+    LaunchedEffect(empty, reading) {
+        while (empty && !reading) {
+            delay(CaptureHints.EXAMPLE_MS)
+            exampleAt += 1
         }
-        val line = summary ?: if (showExample) CaptureHints.example(exampleAt) else null
-        if (line != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(start = 14.dp, top = 6.dp, end = 10.dp),
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.height(CaptureHints.BAR_DP.dp).padding(horizontal = 6.dp),
+    ) {
+        // Tutto a sinistra, come nelle chat: allega una foto.
+        IconButton(onClick = { if (!reading) { haptic(Haptic.TICK); attach() } }, modifier = Modifier.size(40.dp)) {
+            Icon(
+                Icons.Rounded.AttachFile,
+                contentDescription = "Allega",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            val style = MaterialTheme.typography.bodyLarge
+            if (empty) {
+                val hint = if (reading) "Leggo la foto…" else CaptureHints.example(exampleAt)
+                Crossfade(hint, animationSpec = tween(Motion.EXIT_MS), label = "esempio") { shown ->
+                    Text(shown, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            // Una riga sola visibile: il testo lungo o a capo scorre dentro, la barra non cresce mai.
+            BasicTextField(
+                value = text,
+                onValueChange = { CaptureComposer.text = it },
+                textStyle = style.copy(color = MaterialTheme.colorScheme.onSurface),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                maxLines = 1,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .autoFocus()
+                    .semantics { contentDescription = "Scrivi" },
+            )
+        }
+        // La X: con del testo lo cancella, a campo vuoto chiude senza salvare.
+        IconButton(
+            onClick = {
+                haptic(Haptic.TICK)
+                if (empty) CaptureComposer.close() else CaptureComposer.text = TextFieldValue("")
+            },
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                Icons.Rounded.Close,
+                contentDescription = if (empty) "Annulla" else "Cancella il testo",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        // Tutto a destra, appena si scrive: il simbolo di cosa diventerà, che cambia mentre si scrive.
+        AnimatedVisibility(
+            visible = !empty,
+            enter = fadeIn(Motion.lively()) + expandHorizontally(Motion.lively(), expandFrom = Alignment.Start) + scaleIn(Motion.lively(), initialScale = 0.6f),
+            exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkHorizontally(Motion.settle(), shrinkTowards = Alignment.Start),
+        ) {
+            val summary = remember(text.text, mode) { CaptureHints.summary(mode, text.text) }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(40.dp).semantics { contentDescription = summary ?: mode.label },
             ) {
-                if (summary != null) {
-                    Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
+                Crossfade(mode, animationSpec = tween(Motion.EXIT_MS), label = "tipo") { shown ->
+                    Icon(shown.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
                 }
-                Crossfade(line, animationSpec = tween(Motion.EXIT_MS), label = "esempio") { shown ->
-                    Text(
-                        shown,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (summary != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 48.dp)) {
-            // Tutto a sinistra, come nelle chat: allega una foto.
-            IconButton(onClick = { if (!reading) { haptic(Haptic.TICK); attach() } }, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Rounded.AttachFile,
-                    contentDescription = "Allega",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            Box(Modifier.weight(1f).padding(vertical = 8.dp)) {
-                val style = MaterialTheme.typography.bodyLarge
-                if (text.text.isEmpty()) {
-                    Text(if (reading) "Leggo la foto…" else CaptureHints.PLACEHOLDER, style = style, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                BasicTextField(
-                    value = text,
-                    onValueChange = { CaptureComposer.text = it },
-                    textStyle = style.copy(color = MaterialTheme.colorScheme.onSurface),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    maxLines = 6,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 24.dp)
-                        .autoFocus()
-                        .semantics { contentDescription = "Scrivi" },
-                )
-            }
-            // La X annulla: la nota non si salva.
-            IconButton(onClick = { haptic(Haptic.TICK); CaptureComposer.close() }, modifier = Modifier.size(40.dp)) {
-                Icon(
-                    Icons.Rounded.Close,
-                    contentDescription = "Annulla",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
             }
         }
     }

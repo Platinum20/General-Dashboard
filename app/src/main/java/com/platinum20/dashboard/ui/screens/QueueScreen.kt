@@ -56,7 +56,7 @@ import com.platinum20.dashboard.media.QueueEntry
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 
-/** Come si mostra una voce della coda (1.448). Pura per i test. */
+/** Come si mostra una voce della coda (1.455). Pura per i test. */
 internal object QueueLook {
     /** Video e YouTube hanno la miniatura larga (16:9), il resto la copertina quadrata. */
     fun wide(kind: ResumeKind): Boolean = kind == ResumeKind.VIDEO || kind == ResumeKind.YOUTUBE
@@ -199,7 +199,7 @@ private fun EmptyQueue(modifier: Modifier) {
 }
 
 /**
- * Le voci dopo quella che suona: righe libere sul fondo (niente card né separatori, 1.448), trascinabili dalla maniglia.
+ * Le voci dopo quella che suona: righe libere sul fondo (niente card né separatori, 1.455), trascinabili dalla maniglia.
  * [now]: la voce che suona come prima riga della lista (in verticale), null se sta in un'altra colonna.
  */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)

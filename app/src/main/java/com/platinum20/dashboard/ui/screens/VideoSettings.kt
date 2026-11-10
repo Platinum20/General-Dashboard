@@ -37,7 +37,7 @@ import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtQuality
 
 /**
- * Le impostazioni del video (1.448): un pannello come la coda, con tutto in vista (qualità, velocità, sottotitoli,
+ * Le impostazioni del video (1.455): un pannello come la coda, con tutto in vista (qualità, velocità, sottotitoli,
  * ripeti) invece del fumetto a pagine di prima. Ogni scelta vale subito, dal punto in cui si è.
  */
 internal object VideoSettings {

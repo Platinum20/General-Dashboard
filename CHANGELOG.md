@@ -1,12 +1,36 @@
 # Changelog
 
-## 1.448.0
+## 1.455.0
 **Coda e impostazioni del video rifatte**
 - Coda: in alto cosa suona, con la copertina grande nel blocco blu; sotto cosa viene dopo, righe libere senza riquadri né linee
 - Ogni voce mostra autore e durata; le miniature dei video sono larghe, le copertine quadrate, i titoli tutti in colonna
 - In orizzontale la coda entra da destra a tutta altezza e si divide in due: a sinistra cosa suona, a destra cosa viene dopo
 - Impostazioni del video: non più un menu a pagine ma un pannello con tutto in vista: qualità, velocità, sottotitoli e ripeti
 - Ogni scelta vale subito con un tocco; in orizzontale il pannello sta di lato e il video resta a schermo intero
+## 1.453.0
+**La casella del + è più compatta**
+- Quando scrivi, la casella resta sempre alta quanto il +: niente più riga in più sopra, anche con un testo lungo
+- Gli esempi ("domani alle 9 chiamare il dentista"…) ora sono il testo grigio dentro la casella vuota e cambiano da soli
+- Tutto a destra compare un simbolo che ti dice cosa diventerà quello che scrivi: promemoria, evento, data, abitudine, nota o pacco, e cambia mentre scrivi
+- La X cancella il testo scritto; a casella vuota chiude come prima
+## 1.452.0
+**Una barra di ricerca nuova, tonda e morbida**
+- Il campo di Cerca è ora una pillola tonda e piena, senza bordo, che si vede bene in ogni tema
+- Quando la tocchi si accende piano, e la X per svuotare compare da sola appena scrivi
+- Niente più linee tra i risultati: la lista scorre più leggera
+- I gruppi di risultati entrano e escono scivolando mentre scrivi, senza scatti
+- Stessa barra anche nella ricerca della località del meteo
+## 1.451.0
+**Home più compatta**
+- Calendario: turni, treni ed eventi con inizio e fine sono una riga sola come le altre, tutte alte uguali (ora a sinistra, sotto "fino alle 13:00 · 6 h"); il disegno lungo resta nel calendario intero
+- Calendario: niente più titolo né mese in cima, la card comincia da OGGI
+- News: "25 nuove dalle…" sta sulla riga del titolo, a destra
+
+## 1.450.0
+**La card SIM in Home mostra tutto**
+- Giga, minuti e SMS, ognuno con la sua linea di quanto resta
+- Sotto, il credito residuo e la data del rinnovo
+- "SIM" scritto una volta sola: resta solo il titolo della card
 
 ## 1.447.0
 **Niente più soldi nell'app: tolti Revolut e le spese**

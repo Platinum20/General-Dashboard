@@ -76,7 +76,7 @@ internal object QueueSheet {
 }
 
 /**
- * Il pannello comune sopra il player (1.448): in verticale sale dal basso, in orizzontale entra da destra a tutta altezza.
+ * Il pannello comune sopra il player (1.455): in verticale sale dal basso, in orizzontale entra da destra a tutta altezza.
  * Si chiude toccando fuori, col gesto indietro o portando l'intestazione verso il bordo. [fixedHeight]: in verticale
  * occupa sempre quella parte dello schermo (la coda); se no è alto quanto il contenuto (le impostazioni).
  */
