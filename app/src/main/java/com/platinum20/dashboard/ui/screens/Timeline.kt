@@ -105,9 +105,9 @@ data class TimelineEntry(
     val trip: TripStops? = null,
     /** La prima riga di un giorno dopo un altro giorno: sopra c'è un sottile divisore (Antonio). */
     val divider: Boolean = false,
-    /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". Dal 1.420 sta nella colonna dell'icona. */
+    /** L'ora, su una riga sua sotto il nome (Antonio): "09:30". Dal 1.423 sta nella colonna dell'icona. */
     val time: String? = null,
-    /** L'importo delle spese, prima del nome in una colonna fissa allineata a destra (1.420, punto 9 B). */
+    /** L'importo delle spese, prima del nome in una colonna fissa allineata a destra (1.423, punto 9 B). */
     val amount: String? = null,
 )
 
@@ -329,7 +329,7 @@ fun TimelineRow(
             )
             Spacer(Modifier.width(10.dp))
         } else if (entry.time != null) {
-            // Le cose con un orario hanno l'ora nella colonna dell'icona (1.420): una colonna sola a sinistra.
+            // Le cose con un orario hanno l'ora nella colonna dell'icona (1.423): una colonna sola a sinistra.
             Text(
                 entry.time,
                 style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),

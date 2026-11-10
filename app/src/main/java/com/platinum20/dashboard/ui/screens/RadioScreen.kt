@@ -92,7 +92,7 @@ private fun StationRow(station: RadioStation, now: RadioNow?, first: Boolean, la
     val favorite = favorites.any { it.id == station.id }
     val playing = now?.station?.id == station.id
     val haptic = rememberHaptic()
-    // Le radio di una sezione sono righe di un'unica card (1.420, punto 8 A): 12 a schermo invece di 9.
+    // Le radio di una sezione sono righe di un'unica card (1.423, punto 8 A): 12 a schermo invece di 9.
     Box(
         Modifier.fillMaxWidth()
             .cardGroupItem(first, last, if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card)

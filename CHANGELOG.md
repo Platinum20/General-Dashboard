@@ -1,10 +1,19 @@
 # Changelog
 
-## 1.420.0
+## 1.423.0
 **Spese in colonna nel calendario, l'ora al posto dell'icona, radio e podcast in una card sola**
 - Nel calendario l'importo delle spese sta prima del nome in una colonna allineata: le cifre si confrontano a colpo d'occhio, coi colori delle categorie di sempre
 - Le cose con un orario mostrano l'ora nella colonna dell'icona, a sinistra del nome: una riga in meno per ognuna
 - Le radio, i podcast e la lista delle Card della Home sono righe di un'unica card, come le Impostazioni: ne vedi di più nello stesso schermo
+
+## 1.421.0
+**Impostazioni più corte: Strumenti in fondo, Aggiornamenti che dicono la verità**
+- Card della Home, località del meteo, backup e Wi-Fi stanno direttamente nella pagina principale: tre pagine in meno
+- In fondo ci sono Informazioni e la nuova pagina Strumenti: le letture di SIM, Revolut e turni da mandarmi, la chiave di Spotify e le liste dei filtri. Non stanno più in mezzo agli account
+- Nelle fonti delle News, sotto ogni fonte, quante storie ha dato oggi
+- Aggiornamenti: "Canvas 1.421 · aggiornata", quando ha controllato l'ultima volta (lo fa da sola ogni 15 minuti) e un pulsante piccolo "Controlla adesso". Le versioni sono righe che si aprono a richiesta
+- Card della Home in due gruppi: sopra quelle in Home, nell'ordine esatto della pagina; sotto le nascoste, da rimettere con un tocco
+- Nella ricerca le radio mostrano il genere in italiano
 
 ## 1.419.0
 **Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**

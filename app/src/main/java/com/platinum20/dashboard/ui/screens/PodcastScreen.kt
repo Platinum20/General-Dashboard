@@ -214,7 +214,7 @@ private fun EpisodeRow(
     now: PodcastNow?,
     savedMs: Long,
     showPodcast: Boolean,
-    /** Prima e ultima di un gruppo: righe di un'unica card (1.420). null = card a sé, come nella pagina del podcast. */
+    /** Prima e ultima di un gruppo: righe di un'unica card (1.423). null = card a sé, come nella pagina del podcast. */
     group: Pair<Boolean, Boolean>? = null,
 ) {
     val playing = now?.episode?.id == episode.id

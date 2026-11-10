@@ -100,7 +100,7 @@ fun ListenScreen(start: ListenTab, onBack: () -> Unit) {
                 )
             }
             LazyColumn(
-                // Senza spazio fra gli elementi: le righe di una sezione formano una card sola (1.420); i titoli hanno il loro.
+                // Senza spazio fra gli elementi: le righe di una sezione formano una card sola (1.423); i titoli hanno il loro.
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 96.dp),
             ) {
                 if (start == ListenTab.PODCAST) podcasts()

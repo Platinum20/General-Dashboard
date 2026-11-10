@@ -742,7 +742,7 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
 )
 
 /**
- * Una riga di un elenco lungo (LazyColumn) disegnata come parte di un'unica card (1.420, punto 8 A): la prima ha gli
+ * Una riga di un elenco lungo (LazyColumn) disegnata come parte di un'unica card (1.423, punto 8 A): la prima ha gli
  * angoli in alto, l'ultima in basso, in mezzo un separatore come [RowDivider]. Le righe vanno messe senza spazio fra loro.
  */
 @Composable

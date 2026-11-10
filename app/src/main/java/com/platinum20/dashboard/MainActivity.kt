@@ -1529,6 +1529,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onBack = { navController.popBackStack() },
                     onOpenPage = { navController.navigate(Routes.settingsPage(it)) },
                     onOpenAutoFill = { navController.navigate(Routes.AUTOFILL) },
+                    onOpenCustomize = { navController.navigate(Routes.CUSTOMIZE) },
+                    onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
             }
             composable(Routes.SETTINGS_PAGE, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
