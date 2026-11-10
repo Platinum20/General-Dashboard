@@ -45,25 +45,6 @@ object Upcoming {
     /** Il nome della riga del rinnovo SIM, uguale in Oggi e in Note. */
     const val SIM_RENEWAL = "Rinnovo offerta SIM"
 
-    /** Lo spazio più piccolo (un giorno vuoto in mezzo) e il più grande sulla linea. */
-    const val MIN_GAP_DP = 4f
-    const val MAX_GAP_DP = 28f
-
-    /** Quanto cresce lo spazio ogni volta che i giorni vuoti raddoppiano. */
-    const val GAP_STEP_DP = 6f
-
-    /**
-     * Lo spazio in più (dp) fra due righe: zero se sono giorni di fila, poi cresce come il logaritmo dei giorni
-     * vuoti in mezzo (1 = 4 dp, 2 = 10, 4 = 16, 8 = 22, da 16 in su 28). Così si legge quanto tempo passa,
-     * ma senza buchi enormi fra cose lontane.
-     */
-    fun gapDp(from: LocalDate, to: LocalDate): Float {
-        val empty = kotlin.math.abs(java.time.temporal.ChronoUnit.DAYS.between(from, to)) - 1
-        if (empty <= 0) return 0f
-        val log2 = kotlin.math.ln(empty.toDouble()) / kotlin.math.ln(2.0)
-        return (MIN_GAP_DP + GAP_STEP_DP * log2.toFloat()).coerceAtMost(MAX_GAP_DP)
-    }
-
     private val monthName = DateTimeFormatter.ofPattern("LLLL", java.util.Locale.ITALIAN)
 
     /**

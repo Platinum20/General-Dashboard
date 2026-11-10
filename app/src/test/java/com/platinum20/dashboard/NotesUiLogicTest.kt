@@ -152,10 +152,6 @@ class NotesUiLogicTest {
         // L'ora sulla riga sotto il nome; lo scaduto no.
         assertEquals(listOf(null, "09:30", "18:00", "07:00"), entries.map { it.time })
         assertEquals(listOf(true, false, false, false), entries.map { it.late })
-        // Fra domani e sabato ci sono tre giorni vuoti: la linea si allunga.
-        assertEquals(listOf(0f, 0f, 0f), entries.take(3).map { it.gapDp })
-        assertEquals(Upcoming.gapDp(today.plusDays(1), today.plusDays(5)), entries[3].gapDp)
-        assertEquals(true, entries[3].gapDp > 10f)
         // Tutto in ottobre: nessun segno del mese.
         assertEquals(true, entries.all { it.month == null })
     }
@@ -227,8 +223,6 @@ class NotesUiLogicTest {
         // Il passato sopra, le più nuove in fondo, poi le fissate (Antonio: stesso verso di Prossimi giorni).
         assertEquals(listOf("Comprare lampadine", "Chiamare Luca", "Idee regalo", "Password wifi"), entries.map { it.text })
         assertEquals(listOf("Mer 21", "Oggi", null, "Fissate"), entries.map { it.dayLabel })
-        // Fra mercoledì scorso e oggi quattro giorni vuoti.
-        assertEquals(16f, entries[1].gapDp, 0.01f)
         // "OGGI" prima delle righe di oggi.
         assertEquals(1, com.platinum20.dashboard.ui.screens.nowIndex(entries))
         // Niente di oggi: "OGGI" in fondo.
@@ -321,7 +315,6 @@ class NotesUiLogicTest {
         assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, "fronte di", other)))
         assertEquals("Pagamento", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 303, " ", other)))
         assertEquals("Antico Caffe' Roma", com.platinum20.dashboard.notes.Expenses.displayName(com.platinum20.dashboard.notes.Expense(9, 300, "Antico Caffe' Roma", other)))
-        assertEquals(10f, entries[1].gapDp, 0.01f)
         // Nella card in Oggi solo le ultime, sempre in fondo la più recente.
         assertEquals(listOf("Benzina", "Caffè"), expenseEntries(listOf(
             com.platinum20.dashboard.notes.Expense(1, 1250, "Pizza", com.platinum20.dashboard.notes.ExpenseCategory.values().first(), today.minusDays(3)),

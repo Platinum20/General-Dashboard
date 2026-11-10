@@ -76,8 +76,6 @@ data class TimelineEntry(
     val text: String,
     /** Il giorno scritto a destra, solo sulla prima riga di quel giorno. */
     val dayLabel: String?,
-    /** Spazio in più sopra la riga (dp): fra due giorni lontani la linea si allunga. */
-    val gapDp: Float = 0f,
     /** Colore del calendario per gli eventi, 0 = quello normale. */
     val color: Int = 0,
     /** "Scaduti": il giorno in rosso. */
@@ -224,8 +222,6 @@ fun TimelineRow(
     val headed = entry.dayLabel != null && !entry.todayHeader
     val monthShown = showMonth && entry.month != null
     val laterShown = entry.later && !monthShown
-    val gap = timelineGap(entry, showMonth)
-    if (gap > 0f) TimelineGap(gap.dp, line, top = top)
     // Sotto un segno (mese, PIÙ AVANTI) il giorno sta sulla riga del segno, non su una riga vuota sua (Antonio).
     // Dal 1.389 il giorno ha sempre la sua riga, col nome a sinistra e la linea fino al pallino (Antonio).
     val dayOnMarker = false
@@ -504,22 +500,6 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
         TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true, joinLeft = rule)
-    }
-}
-
-/**
- * Lo spazio vuoto sopra una riga ([TimelineEntry.gapDp]). Sopra un segno del mese niente: il mese già dice
- * che è passato del tempo, e il buco sotto la riga prima sembrava un errore (compleanni di ogni anno, Antonio).
- */
-fun timelineGap(entry: TimelineEntry, showMonth: Boolean = true): Float =
-    if ((showMonth && entry.month != null) || entry.later) 0f else entry.gapDp
-
-/** Lo spazio vuoto fra due giorni lontani: solo la linea, allineata a quella delle righe. */
-@Composable
-private fun TimelineGap(height: Dp, line: Color, top: Boolean) {
-    Row(Modifier.fillMaxWidth().height(height).padding(end = LINE_END)) {
-        Spacer(Modifier.weight(1f))
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = null, top = top, bottom = top)
     }
 }
 
