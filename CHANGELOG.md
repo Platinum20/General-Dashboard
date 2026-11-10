@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.438.0
+**Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
+- Appoggia il dito sulla linea a destra e trascina su o giù: il calendario scorre un giorno alla volta, con un tic per ogni giorno e un colpo più netto quando cambia il mese
+- Più allunghi il gesto, più va veloce: con un pollice attraversi settimane
+- Accanto al dito un fumetto dice su che giorno sei; in cima e in fondo il cursore fa da elastico e torna al suo posto
+- Lasciando il dito non si apre niente: la linea serve solo a muoversi. Un tocco normale sulle righe resta com'era
+- Con l'accesso ai turni scaduto la pagina si apre di nuovo esattamente su OGGI
+
 ## 1.437.0
 **In Media il titolo sta sopra la copertina e chi lo pubblica sotto; i podcast passano in Musica**
 - Musica, Video, Continua, Shorts e i video di YouTube: il titolo sopra l'immagine, appoggiato a lei (se è lungo va a capo verso l'alto), l'autore o il canale subito sotto (se è lungo va a capo verso il basso)
