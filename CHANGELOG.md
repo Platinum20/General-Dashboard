@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.437.0
+**Il turno si chiama con le sue creator**
+- Nella scheda del turno il titolo è "Turno su Debora e Chiara", solo i nomi, come nel calendario
+- Tolta la riga con le creator sotto l'orario: stanno già nel titolo
+
 ## 1.436.0
 **Tornano come prima le schede, Media, gli Aggiornamenti e le letture negli account; il fumetto delle categorie è uno solo**
 - Promemoria, date, pacchi, spese, abitudini e turni hanno di nuovo la scheda della 1.401: il quando nella prima riga con la X, Luogo e Note sempre visibili, il tasto tondo in basso con la scritta accanto

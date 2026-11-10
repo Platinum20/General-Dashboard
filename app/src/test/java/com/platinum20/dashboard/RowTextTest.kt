@@ -25,6 +25,12 @@ class RowTextTest {
     }
 
     @Test
+    fun titoloDelTurnoSoloNomi() {
+        assertEquals("Turno su Debora e Chiara", RowText.shift("Turno · Debora Rossi, Chiara Bianchi"))
+        assertEquals(null, RowText.shift("Turno"))
+    }
+
+    @Test
     fun dataSuUnaRigaColleEta() {
         val marta = TaskItem(1, "Compleanno di Marta", createdAt = 0, dueAt = today.plusDays(5).atStartOfDay(zone).toInstant().toEpochMilli(),
             allDay = true, repeat = Repeat.YEARLY, firstYear = 1992)

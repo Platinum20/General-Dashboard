@@ -14,9 +14,17 @@ internal object RowText {
     /** Il nome di un evento in lista: treni e turni col loro nome, gli altri col titolo. */
     fun event(e: CalendarEvent): String {
         e.trip?.let { return "Treno per ${it.to}" }
-        val creators = if (e.eventId < -1) com.platinum20.dashboard.shifts.ShiftParse.creators(e.title) else emptyList()
-        if (creators.isNotEmpty()) return "Turno su " + andList(creators)
+        if (e.eventId < -1) shift(e.title)?.let { return it }
         return e.title.ifBlank { "Evento" }
+    }
+
+    /**
+     * Il nome di un turno: "Turno su Debora e Chiara", solo i nomi. Lo stesso in lista e come titolo della
+     * scheda, dove la riga delle creator non c'è più (Antonio). Null se il turno non dice le creator.
+     */
+    fun shift(title: String): String? {
+        val creators = com.platinum20.dashboard.shifts.ShiftParse.creators(title).map(com.platinum20.dashboard.shifts.ShiftParse::firstName)
+        return if (creators.isEmpty()) null else "Turno su " + andList(creators)
     }
 
     /** Il nome di una data di tutto il giorno; età e quanto manca stanno nella riga sotto ([WhenText.dateLine]). */
