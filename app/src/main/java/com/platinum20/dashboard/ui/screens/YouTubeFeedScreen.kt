@@ -529,7 +529,7 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
 }
 
 /**
- * Video in grande (1.458, Antonio: titolo di nuovo sotto): l'anteprima, poi il titolo su due righe al massimo,
+ * Video in grande (1.461, Antonio: titolo di nuovo sotto): l'anteprima, poi il titolo su due righe al massimo,
  * poi foto del canale, canale e dettagli su una riga. Altezze fisse (1.442), niente divisori.
  */
 @Composable

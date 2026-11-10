@@ -54,7 +54,7 @@ internal object MediaShelves {
     /** Quante copertine al massimo in una fila: il resto sta nella pagina intera. */
     const val MAX = 12
 
-    /** Righe del titolo nelle file di Media e in Continua (1.458, Antonio: massimo 2, poi i puntini). */
+    /** Righe del titolo nelle file di Media e in Continua (1.461, Antonio: massimo 2, poi i puntini). */
     const val TITLE_LINES = 2
 
     /** Fila Video (1.442, Antonio): i video dei canali a cui sei iscritto, dal più nuovo; senza data in fondo. */
@@ -87,7 +87,7 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
 }
 
 /**
- * Copertina con le sue scritte (1.458, Antonio: di nuovo sotto, come prima del 1.437): l'immagine, poi il titolo
+ * Copertina con le sue scritte (1.461, Antonio: di nuovo sotto, come prima del 1.437): l'immagine, poi il titolo
  * al massimo su [titleLines] righe e chi lo pubblica su una riga, con i puntini se non ci stanno. Altezze fisse:
  * il titolo occupa sempre [titleLines] righe e l'autore una, così le tessere di una fila sono alte uguali.
  * Va chiamata dentro la Column della tessera.

@@ -129,14 +129,10 @@ data class TripStops(
     val below: String? = null,
 ) {
     /**
-     * Lo spazio (dp) fra inizio e fine: cresce col logaritmo della durata, come lo spazio fra i giorni
-     * (Antonio). 15 min ≈ 22, 1 h = 30, 5 h ≈ 49, da 8 h in su 56: si vede quanto dura senza riempire lo schermo.
+     * Lo spazio (dp) fra inizio e fine: uguale per tutti, non più in base alla durata, che è già scritta in mezzo
+     * ("5 h"). Così ogni evento è alto uguale e stretto (Antonio, 2026-11-10).
      */
-    fun midDp(): Float {
-        val hours = ((end - begin).coerceAtLeast(0) / 60_000L) / 60f
-        val log2 = (kotlin.math.ln(1.0 + hours) / kotlin.math.ln(2.0)).toFloat()
-        return (MID_MIN_DP + MID_STEP_DP * log2).coerceAtMost(MID_MAX_DP)
-    }
+    fun midDp(): Float = MID_DP
 
     /**
      * L'altezza minima fra inizio e fine: quella della durata, ma con le creator in mezzo decide il testo,
@@ -144,31 +140,12 @@ data class TripStops(
      */
     fun middleMinDp(): Float = if (names != null) 0f else midDp()
 
-    /** Il nome nella riga compatta della Home: quello dell'evento, o "Treno per X" accanto all'ora di partenza. */
-    fun compactTitle(): String = title ?: from
-
-    /**
-     * La riga sotto il nome nella card della Home, dove tutte le righe sono alte uguali (Antonio, 2026-11-10):
-     * "fino alle 13:00 · 6 h · In doppio con Marco", "Arrivo a Milano alle 10:30 · 2 h 18".
-     * Carrozza, posto e guadagno restano nella pagina intera e nella scheda.
-     */
-    fun compactLine(): String {
-        val arrival = when {
-            to.isEmpty() -> "fino alle $arriveAt"
-            to.startsWith("Arrivo") -> "$to alle $arriveAt"
-            else -> "fino a ${to.lowercase(java.util.Locale.ITALIAN)} alle $arriveAt"
-        }
-        return listOf(arrival, middle, extra).filter { it.isNotBlank() }.joinToString(" · ")
-    }
-
     /** Quanto del viaggio è fatto (0..1) adesso; null prima di partire e dopo l'arrivo. */
     fun progress(now: Long): Float? =
         if (end > begin && now in begin until end) (now - begin).toFloat() / (end - begin) else null
 
     companion object {
-        const val MID_MIN_DP = 18f
-        const val MID_STEP_DP = 12f
-        const val MID_MAX_DP = 56f
+        const val MID_DP = 14f
     }
 }
 
@@ -205,11 +182,6 @@ fun TimelineRow(
     showMonth: Boolean = true,
     /** La lista in cui sta la riga ([SharedRows]): il titolo vola solo verso la scheda aperta da qui. */
     sharedScope: String = SharedRows.PAGE,
-    /**
-     * La card della Home: gli eventi con inizio e fine sono una riga come le altre (ora a sinistra, nome, sotto
-     * fino a quando e quanto dura), tutte alte uguali, senza l'altezza in base alla durata (Antonio, 2026-11-10).
-     */
-    compact: Boolean = false,
 ) {
     val haptic = rememberHaptic()
     val line = MaterialTheme.colorScheme.outlineVariant
@@ -297,30 +269,7 @@ fun TimelineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
-        val trip = entry.trip
-        if (trip != null && compact) {
-            // Mentre è in corso l'ora è blu: è "adesso" (regola dei colori).
-            val now = trip.progress(System.currentTimeMillis()) != null
-            Text(
-                trip.departAt,
-                style = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum"),
-                color = if (now) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                modifier = Modifier.widthIn(min = 26.dp),
-            )
-            Spacer(Modifier.width(8.dp))
-            Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
-                Text(
-                    trip.compactTitle(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (entry.past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)),
-                )
-                Text(trip.compactLine(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        } else if (entry.trip != null) {
+        if (entry.trip != null) {
             TripBlock(entry.trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)))
         } else {
         if (onIcon != null || entry.done) {
@@ -384,15 +333,16 @@ fun TimelineRow(
             dot = MaterialTheme.colorScheme.outline to 4.dp,
             top = top || headed,
             bottom = bottom,
-            dotY = if (entry.trip != null && !compact) TRIP_PAD + TRIP_LINE / 2 else null,
+            dotY = if (entry.trip != null) TRIP_PAD + TRIP_LINE / 2 else null,
         )
     }
 }
 
-private val TRIP_LINE = 26.dp
+/** L'altezza delle righe di inizio e fine: stretta, come una riga di testo (Antonio, 2026-11-10). */
+private val TRIP_LINE = 20.dp
 
 /** Larga quanto "123,45 €": gli importi fino a mille stanno tutti nella stessa colonna. */
-private val TRIP_PAD = 4.dp
+private val TRIP_PAD = 2.dp
 
 /**
  * Il viaggio: a sinistra la linea dalla partenza (cerchio vuoto) all'arrivo (pallino pieno), col pallino
