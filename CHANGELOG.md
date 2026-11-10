@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.459.0
+**Eventi con inizio e fine più compatti**
+- Torna la linea verticale con inizio e fine, nella card in Home e nel calendario, ma più stretta
+- Tutti gli eventi sono alti uguali, non più in base a quanto durano (la durata resta scritta in mezzo)
+
 ## 1.456.0
 **Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
 - Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
