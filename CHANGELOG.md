@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.402.0
+## 1.404.0
 **Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
 - Il campo dice solo "Scrivi qualcosa…" e il velo dietro è più leggero
 - Le prime cinque volte sopra la barra girano degli esempi ("Prova: pizza 12,50"); spariscono appena inizi a scrivere
