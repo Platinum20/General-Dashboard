@@ -8,6 +8,8 @@ import android.content.Context
  */
 object GestureHints {
     const val SWIPE_BUBBLE = "swipe_bubble"
+    /** Il "quando" delle schede si tocca per cambiarlo (punto 26). */
+    const val DETAIL_WHEN = "detail_when"
 
     private fun prefs(context: Context) = context.getSharedPreferences("gesture_hints", Context.MODE_PRIVATE)
 
