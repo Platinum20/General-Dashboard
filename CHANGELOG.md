@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.424.0
+## 1.426.0
 **Abitudini nel Calendario della Home, da segnare con un tocco**
 - Nella card Calendario, in fondo a OGGI, c'è la riga "Abitudini · 1 su 3": toccala e dal basso sale il fumetto con le abitudini da segnare fatte
 - Nella pagina Calendario la stessa riga apre lo stesso fumetto, invece di allungare la lista con la freccia
