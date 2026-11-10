@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.403.0
+**Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
+- In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
+- Il meteo in cima è un blocco basso: icona, temperatura e condizioni su una riga, sotto l'avviso di pioggia. Niente più "Adesso · Roma": la città la trovi in Meteo
+- Scorrendo una pagina il titolo grande diventa una riga sottile, così resta più spazio alla lista (Home, Calendario, News, Media, Meteo, Impostazioni e le altre)
+
 ## 1.401.0
 **Calendario più compatto: niente buchi fra i giorni, nome degli eventi accanto all'orario**
 - Fra due giorni lontani non c'è più lo spazio vuoto che si allungava coi giorni in mezzo: ogni giorno ha già la sua riga col nome, e basta quella

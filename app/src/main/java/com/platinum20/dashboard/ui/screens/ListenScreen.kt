@@ -57,10 +57,13 @@ fun ListenScreen(start: ListenTab, onBack: () -> Unit) {
         RadioStore.loadPopular()
         PodcastStore.loadLatest()
     }
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = open?.title ?: "Radio e podcast",
+                scrollBehavior = barScroll,
                 subtitle = when {
                     open != null -> open?.author?.ifBlank { null } ?: if (open?.fromSpotify == true) "Da Spotify" else null
                     radio?.playing == true -> "In diretta: ${radio?.station?.name}"

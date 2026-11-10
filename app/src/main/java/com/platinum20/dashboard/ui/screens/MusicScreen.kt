@@ -160,10 +160,13 @@ fun MusicScreen(
         }
     }
 
+    val barScroll = androidx.compose.material3.TopAppBarDefaults.pinnedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
+        modifier = Modifier.androidx.compose.ui.input.nestedscroll.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
                 title = opened?.title ?: "Musica",
+                scrollBehavior = barScroll,
                 subtitle = "Spotify",
                 onBack = { if (opened != null) opened = null else onBack() },
             )
