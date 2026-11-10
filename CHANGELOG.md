@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.430.0
+**Home più pulita: la card News sparisce quando non c'è niente di nuovo, Impostazioni in fondo solo se serve**
+- Se hai già letto tutto, la card News non c'è: torna quando arrivano storie nuove
+- In fondo alla Home compare la riga "Impostazioni" col pallino arancione solo quando c'è qualcosa da sistemare: un accesso scaduto (Revolut, turni) o qualcosa da attivare
+- Toccala e dal basso sale il fumetto con le scelte, come "Rientra in Revolut" o "Consenti l'agenda". Sistemato tutto, la riga sparisce
+
 ## 1.429.0
 **Le date dicono quanti anni compie e quanto manca, chip "Tutto" nel Calendario**
 - Sotto compleanni e date una riga piccola: "compie 34 anni · tra 12 giorni". Compare quando si sa l'età o quando manca più di 3 giorni, anche per le scadenze dei documenti

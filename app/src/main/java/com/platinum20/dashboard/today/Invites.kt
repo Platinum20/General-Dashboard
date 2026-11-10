@@ -1,14 +1,16 @@
 package com.platinum20.dashboard.today
 
-/** Le cose che Oggi può fare in più se l'utente le attiva. */
+/** Le cose da sistemare nelle Impostazioni: da attivare, o un accesso scaduto. */
 enum class Invite(val label: String) {
     AGENDA("agenda"),
     AUTOFILL("compila da solo"),
+    REVOLUT("Revolut scaduto"),
+    SHIFTS("turni scaduti"),
 }
 
 /**
- * Gli inviti a impostare qualcosa non stanno in cima a Oggi: si raccolgono in una riga
- * in fondo che sparisce quando non resta niente da attivare. Funzioni pure.
+ * Gli inviti non stanno in cima a Oggi: si raccolgono nella riga "Impostazioni" in fondo, col pallino arancione,
+ * che c'è solo quando resta qualcosa da sistemare (punto 21 D). Funzioni pure.
  */
 object Invites {
     fun pending(
@@ -16,15 +18,20 @@ object Invites {
         calendarGranted: Boolean,
         autoFillEnabled: Boolean,
         autoFillDismissed: Boolean,
+        revolutExpired: Boolean = false,
+        shiftsExpired: Boolean = false,
     ): List<Invite> = buildList {
+        // Prima gli accessi scaduti: senza, i dati smettono di arrivare.
+        if (revolutExpired) add(Invite.REVOLUT)
+        if (shiftsExpired) add(Invite.SHIFTS)
         if (agendaVisible && !calendarGranted) add(Invite.AGENDA)
         if (!autoFillEnabled && !autoFillDismissed) add(Invite.AUTOFILL)
     }
 
-    /** "2 cose da attivare: agenda, compila da solo"; null se non c'è niente. */
+    /** "2 cose da sistemare: agenda, compila da solo"; null se non c'è niente. */
     fun line(invites: List<Invite>): String? = when (invites.size) {
         0 -> null
-        1 -> "1 cosa da attivare: ${invites.single().label}"
-        else -> "${invites.size} cose da attivare: ${invites.joinToString(", ") { it.label }}"
+        1 -> "1 cosa da sistemare: ${invites.single().label}"
+        else -> "${invites.size} cose da sistemare: ${invites.joinToString(", ") { it.label }}"
     }
 }

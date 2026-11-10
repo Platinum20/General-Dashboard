@@ -249,6 +249,11 @@ fun HomeScreen(
     AutoFill.init(context)
     val autoFillEnabled by AutoFill.enabled.collectAsStateWithLifecycle()
     val autoFillDismissed by AutoFill.introDismissed.collectAsStateWithLifecycle()
+    // Gli accessi scaduti finiscono nella riga Impostazioni in fondo (punto 21 D).
+    com.platinum20.dashboard.bank.RevolutStore.init(context)
+    com.platinum20.dashboard.shifts.ShiftStore.init(context)
+    val revolutExpired by com.platinum20.dashboard.bank.RevolutStore.expired.collectAsStateWithLifecycle()
+    val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     MailStore.init(context)
     com.platinum20.dashboard.docs.DocumentsStore.init(context)
     val docs by com.platinum20.dashboard.docs.DocumentsStore.docs.collectAsStateWithLifecycle()
@@ -267,6 +272,8 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
             HomeCard.DOCS -> docs.isNotEmpty()
+            // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
+            HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
             HomeCard.SIM, HomeCard.BANK -> card == contiAt
             else -> true
         }
@@ -412,6 +419,8 @@ fun HomeScreen(
                         calendarGranted = agenda.granted,
                         autoFillEnabled = autoFillEnabled,
                         autoFillDismissed = autoFillDismissed,
+                        revolutExpired = revolutExpired,
+                        shiftsExpired = shiftsExpired,
                     ),
                     onAllowCalendar = agenda.requestPermission,
                     onOpenAutoFill = onOpenAutoFill,
