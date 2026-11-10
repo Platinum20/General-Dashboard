@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.draw.alpha
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -129,7 +130,11 @@ internal fun SimCard(onOpen: () -> Unit) {
     val linked by SimStore.linked.collectAsStateWithLifecycle()
     // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
     AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
+    val scope = rememberCoroutineScope()
+    // Vecchio dopo tre ore: la rilettura è ogni ora, una saltata non accende niente.
+    val link = LinkStatus.of(linked, expired = false, readAt = status?.at ?: 0, now = System.currentTimeMillis(), staleAfter = 3 * SimStore.STALE_MS)
     Section(title = "SIM", modifier = Modifier.sharedItem(SharedKeys.SIM, rounded = true)) {
+        StatusLine(link, action = "Aggiorna", onAction = { scope.launch { WindTreLink.refresh(context) } }, modifier = Modifier.padding(top = 8.dp))
         Column(
             Modifier
                 .fillMaxWidth()
@@ -166,7 +171,7 @@ internal fun SimCard(onOpen: () -> Unit) {
                 }
                 return@Column
             }
-            SimPanel(s)
+            Column(Modifier.alpha(if (link.faded) FADED_ALPHA else 1f)) { SimPanel(s) }
         }
     }
 }
@@ -190,7 +195,8 @@ private fun SimPanel(s: SimStatus, big: Boolean = false) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(relativeTime(Instant.ofEpochMilli(s.at)), style = MaterialTheme.typography.labelSmall, color = soft)
+        // Nella card l'ora la dice la riga di stato, solo quando il dato è vecchio (1.402).
+        if (big) Text(relativeTime(Instant.ofEpochMilli(s.at)), style = MaterialTheme.typography.labelSmall, color = soft)
     }
     // Un dato per riga (Antonio): nome a sinistra, valore a destra, barra sottile sotto le soglie.
     // Il roaming UE solo nella pagina, non nella card della Home.

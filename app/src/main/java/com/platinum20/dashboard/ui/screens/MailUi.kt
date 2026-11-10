@@ -132,26 +132,16 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
 
     Section(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
         Column {
-            if (consent) {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Outlined.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(
-                        if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail",
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    FilledTonalButton(enabled = !connect.busy, onClick = {
-                        haptic(Haptic.TICK)
-                        if (imap) askPassword = true else connect.start()
-                    }) { Text("Ricollega") }
-                }
-            }
+            // La stessa riga di stato di WindTre e Revolut (1.402), con "Rientra" lì.
+            StatusLine(
+                LinkStatus(LinkStatus.Kind.EXPIRED, if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail").takeIf { consent }
+                    ?: LinkStatus(LinkStatus.Kind.OK, null),
+                action = "Rientra",
+                onAction = {
+                    haptic(Haptic.TICK)
+                    if (imap) askPassword = true else connect.start()
+                },
+            )
             mail.forEachIndexed { index, m ->
                 if (index > 0 || consent) RowDivider()
                 MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })

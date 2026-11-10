@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -56,7 +59,7 @@ import java.time.Instant
 /** La riga del saldo per la pagina Spese: null se Revolut non è collegato. */
 internal fun revolutLine(linked: Boolean, expired: Boolean, balance: Long?): String? = when {
     !linked -> null
-    expired -> "Revolut: rifai l'accesso in Impostazioni › Account"
+    expired -> "Revolut: accesso scaduto"
     balance != null -> "Saldo Revolut " + Expenses.format(balance)
     else -> "Revolut collegato"
 }
@@ -76,8 +79,21 @@ internal fun RevolutCard(onOpen: () -> Unit) {
     val balance by RevolutStore.balance.collectAsStateWithLifecycle()
     val readAt by RevolutStore.readAt.collectAsStateWithLifecycle()
     val inApp = LocalInAppNav.current
+    val scope = rememberCoroutineScope()
+    // Vecchio dopo un'ora: la rilettura è ogni 14 minuti, quindi ne sono saltate almeno tre.
+    val link = LinkStatus.of(linked, expired, readAt, System.currentTimeMillis(), staleAfter = 4 * RevolutStore.STALE_MS)
     // La rilettura ogni mezz'ora la fa già la Home (spese nel calendario): qui solo si mostra.
     Section(title = "Revolut", modifier = Modifier.sharedItem(SharedKeys.BANK, rounded = true)) {
+        // Lo stato vero sopra il dato, con l'azione lì (1.402): "Rientra" apre subito l'accesso.
+        StatusLine(
+            link,
+            action = if (expired) "Rientra" else "Aggiorna",
+            onAction = {
+                if (expired) inApp?.openRoute?.invoke(Routes.REVOLUT)
+                else scope.launch { RevolutLink.refresh(context) }
+            },
+            modifier = Modifier.padding(top = 8.dp),
+        )
         Column(
             Modifier
                 .fillMaxWidth()
@@ -99,6 +115,7 @@ internal fun RevolutCard(onOpen: () -> Unit) {
                 }
                 return@Column
             }
+            if (expired && shown.isEmpty()) return@Column
             if (!linked || shown.isEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconTile(Icons.Outlined.AccountBalanceWallet, TileAccent.BLUE, size = 36.dp, iconSize = 20.dp)
@@ -106,7 +123,6 @@ internal fun RevolutCard(onOpen: () -> Unit) {
                     Text(
                         when {
                             !linked -> "Collega Revolut: saldo e tasche qui"
-                            expired -> "Accesso a Revolut scaduto: tocca per rientrare"
                             else -> "Sto leggendo il conto Revolut…"
                         },
                         style = MaterialTheme.typography.bodyMedium,
@@ -118,23 +134,17 @@ internal fun RevolutCard(onOpen: () -> Unit) {
                 }
                 return@Column
             }
-            RevolutPanel(shown, readAt, expired)
+            Column(Modifier.alpha(if (link.faded) FADED_ALPHA else 1f)) { RevolutPanel(shown) }
         }
     }
 }
 
 /** Saldo totale grande in alto, poi una tasca per riga: nome a sinistra, importo a destra. */
 @Composable
-private fun RevolutPanel(pockets: List<Pocket>, readAt: Long, expired: Boolean) {
+private fun RevolutPanel(pockets: List<Pocket>) {
     val soft = LocalContentColor.current.copy(alpha = 0.7f)
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("SALDO TOTALE", style = MaterialTheme.typography.labelMedium, color = soft, modifier = Modifier.weight(1f))
-        Text(
-            if (expired) "accesso scaduto" else if (readAt > 0) relativeTime(Instant.ofEpochMilli(readAt)) else "",
-            style = MaterialTheme.typography.labelSmall,
-            color = if (expired) MaterialTheme.colorScheme.error else soft,
-        )
-    }
+    // Quando è stato letto lo dice la riga di stato, solo se il dato è vecchio (1.402).
+    Text("SALDO TOTALE", style = MaterialTheme.typography.labelMedium, color = soft)
     Spacer(Modifier.height(4.dp))
     RollingText(Expenses.format(RevolutPockets.total(pockets)), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
     // Con una tasca sola il totale è già lei: niente riga doppia.
