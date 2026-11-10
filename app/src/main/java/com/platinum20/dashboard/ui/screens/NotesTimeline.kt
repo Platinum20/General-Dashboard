@@ -453,8 +453,9 @@ internal fun timelineEntries(
                 // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
                 r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
                     (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
-                // Tutto il giorno (compleanni, scadenze): niente ora, e gli anni che compie.
-                r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to r.task.titleWithYears(today)
+                // Tutto il giorno (compleanni, scadenze): niente ora.
+                // Gli anni che compie stanno nella riga sotto ([TimelineEntry.detail]), con quanto manca.
+                r.task != null && r.task.allDay -> com.platinum20.dashboard.today.BriefKind.DATE to r.task.text
                 // L'ora va sulla riga sotto il nome (Antonio): vedi [TimelineEntry.time].
                 r.task != null -> com.platinum20.dashboard.today.BriefKind.TASK to r.task.text
                 r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to r.event.title
@@ -498,6 +499,8 @@ internal fun timelineEntries(
                 },
                 trip = r.event?.let { tripStops(it, today, zone) },
                 amount = (r.expense?.cents ?: r.charge?.cents)?.let { Expenses.format(it) },
+                detail = r.task?.takeIf { it.allDay && !g.past && day != null }
+                    ?.let { com.platinum20.dashboard.notes.WhenText.dateLine(it.yearsAtNext(today, zone), day!!, today) },
                 image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
             ) to r
         }

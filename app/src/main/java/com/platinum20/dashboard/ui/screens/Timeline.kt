@@ -109,6 +109,8 @@ data class TimelineEntry(
     val time: String? = null,
     /** L'importo delle spese, prima del nome in una colonna fissa allineata a destra (1.423, punto 9 B). */
     val amount: String? = null,
+    /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
+    val detail: String? = null,
 )
 
 /**
@@ -367,6 +369,9 @@ fun TimelineRow(
                 // Lo stesso titolo della scheda: toccando la riga vola lì ([sharedItem]).
                 modifier = Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)),
             )
+            entry.detail?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
         }
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))

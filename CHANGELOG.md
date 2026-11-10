@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.429.0
+**Le date dicono quanti anni compie e quanto manca, chip "Tutto" nel Calendario**
+- Sotto compleanni e date una riga piccola: "compie 34 anni · tra 12 giorni". Compare quando si sa l'età o quando manca più di 3 giorni, anche per le scadenze dei documenti
+- Nel Calendario i filtri cominciano con "Tutto", acceso di partenza: si vede subito che Spese, Note ed Eventi sono scelte
+- Toccando "Tutto" torni a vedere ogni cosa
 ## 1.428.0
 **Le fondamenta della revisione: colori con un significato, pulsanti chiari, lo stato vero**
 - Icone tutte color inchiostro, anche nei quadratini di Impostazioni; date e titoli che aprono una pagina in inchiostro con la freccia: il blu resta per OGGI, l'eroe e le azioni
