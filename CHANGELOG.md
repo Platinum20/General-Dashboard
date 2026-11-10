@@ -1,10 +1,16 @@
 # Changelog
 
-## 1.403.0
+## 1.407.0
 **Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**
 - In cima alla Home c'è la data ("Martedì 10") in grande; il saluto e il mese stanno piccoli sopra
 - Il meteo in cima è un blocco basso: icona, temperatura e condizioni su una riga, sotto l'avviso di pioggia. Niente più "Adesso · Roma": la città la trovi in Meteo
 - Scorrendo una pagina il titolo grande diventa una riga sottile, così resta più spazio alla lista (Home, Calendario, News, Media, Meteo, Impostazioni e le altre)
+
+## 1.404.0
+**Il + più leggero: esempi le prime volte e in una riga cosa diventerà**
+- Il campo dice solo "Scrivi qualcosa…" e il velo dietro è più leggero
+- Le prime cinque volte sopra la barra girano degli esempi ("Prova: pizza 12,50"); spariscono appena inizi a scrivere
+- Mentre scrivi, una riga sola ti dice cosa verrà salvato: "Spesa · 12,50 € · Cibo", "Promemoria · domani 9:00"
 
 ## 1.401.0
 **Calendario più compatto: niente buchi fra i giorni, nome degli eventi accanto all'orario**
