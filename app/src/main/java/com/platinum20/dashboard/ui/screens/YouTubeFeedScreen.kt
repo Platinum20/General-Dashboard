@@ -1,8 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
-import androidx.compose.ui.semantics.clearAndSetSemantics
 
-import androidx.compose.ui.draw.alpha
 
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -531,8 +529,8 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
 }
 
 /**
- * Video in grande (1.437, Antonio): il titolo SOPRA l'anteprima, appoggiato a lei; sotto foto del canale, canale e
- * dettagli su una riga. Altezze fisse (1.442), niente divisori.
+ * Video in grande (1.458, Antonio: titolo di nuovo sotto): l'anteprima, poi il titolo su due righe al massimo,
+ * poi foto del canale, canale e dettagli su una riga. Altezze fisse (1.442), niente divisori.
  */
 @Composable
 fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
@@ -543,18 +541,21 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
             .clip(MaterialTheme.shapes.large)
             .tapOrSave({ SavedLinks.youtube(video) }, onClick)
     ) {
-        // Altezza fissa (1.442): sempre due righe, appoggiate all'anteprima; la lista non salta da un video all'altro.
-        val titleStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-        Box(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 8.dp), contentAlignment = Alignment.BottomStart) {
-            Text(" ", style = titleStyle, minLines = 2, maxLines = 2, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
-            Text(video.title, style = titleStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
-        Row(Modifier.padding(start = 2.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
+        // Altezza fissa (1.442): sempre due righe, la lista non salta da un video all'altro.
+        Text(
+            video.title,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp),
+        )
+        Row(Modifier.padding(start = 2.dp, top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
             ChannelAvatar(video.channelAvatar, video.channel, 24)
             Spacer(Modifier.width(10.dp))
             Text(

@@ -345,7 +345,7 @@ private fun LazyListScope.podcastRows(
     }
 }
 
-/** Copertine di podcast in fila: titolo sopra, autore sotto; un tocco apre gli episodi. */
+/** Copertine di podcast in fila: titolo e autore sotto; un tocco apre gli episodi. */
 @Composable
 private fun PodcastCovers(list: List<Podcast>, onOpen: (Podcast) -> Unit) {
     val tile = coverTileWidth()

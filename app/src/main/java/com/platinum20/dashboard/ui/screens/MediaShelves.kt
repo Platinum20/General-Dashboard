@@ -27,9 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -56,8 +54,8 @@ internal object MediaShelves {
     /** Quante copertine al massimo in una fila: il resto sta nella pagina intera. */
     const val MAX = 12
 
-    /** Righe del titolo nelle file di Media e in Continua: tutte uguali, così le tessere di una fila sono alte uguali. */
-    const val TITLE_LINES = 3
+    /** Righe del titolo nelle file di Media e in Continua (1.458, Antonio: massimo 2, poi i puntini). */
+    const val TITLE_LINES = 2
 
     /** Fila Video (1.442, Antonio): i video dei canali a cui sei iscritto, dal più nuovo; senza data in fondo. */
     fun newestFirst(videos: List<YtVideo>): List<YtVideo> =
@@ -68,7 +66,7 @@ internal object MediaShelves {
         (first + then).distinctBy(key).take(max)
 }
 
-/** Una copertina della fila: titolo sopra, immagine, chi lo pubblica sotto. */
+/** Una copertina della fila: immagine, poi titolo e chi lo pubblica sotto. */
 @Composable
 private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, first: Boolean, onClick: () -> Unit) {
     Column(
@@ -89,10 +87,10 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
 }
 
 /**
- * Copertina con le sue scritte (1.437, Antonio): il titolo SOPRA l'immagine e chi lo pubblica SOTTO. Tutte e due
- * partono dal bordo dell'immagine: il titolo è appoggiato in basso e se è lungo va a capo verso l'alto, l'autore
- * sta subito sotto. Altezze fisse (1.442): il titolo occupa sempre [titleLines] righe e l'autore una, con i puntini
- * se non ci stanno, così nessuna tessera cambia altezza. Va chiamata dentro la Column della tessera.
+ * Copertina con le sue scritte (1.458, Antonio: di nuovo sotto, come prima del 1.437): l'immagine, poi il titolo
+ * al massimo su [titleLines] righe e chi lo pubblica su una riga, con i puntini se non ci stanno. Altezze fisse:
+ * il titolo occupa sempre [titleLines] righe e l'autore una, così le tessere di una fila sono alte uguali.
+ * Va chiamata dentro la Column della tessera.
  */
 @Composable
 internal fun CaptionedCover(
@@ -104,24 +102,17 @@ internal fun CaptionedCover(
     cover: @Composable () -> Unit,
 ) {
     val align = if (centered) TextAlign.Center else TextAlign.Start
-    val titleStyle = MaterialTheme.typography.labelLarge
-    // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
-    Box(
-        textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 4.dp),
-        contentAlignment = if (centered) Alignment.BottomCenter else Alignment.BottomStart,
-    ) {
-        // Riga vuota invisibile: tiene l'altezza di [titleLines] righe qualunque sia il titolo.
-        Text(" ", style = titleStyle, minLines = titleLines, maxLines = titleLines, modifier = Modifier.alpha(0f).clearAndSetSemantics {})
-        Text(
-            title,
-            style = titleStyle,
-            maxLines = titleLines,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = align,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
     cover()
+    // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
+    Text(
+        title,
+        style = MaterialTheme.typography.labelLarge,
+        minLines = titleLines,
+        maxLines = titleLines,
+        overflow = TextOverflow.Ellipsis,
+        textAlign = align,
+        modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 6.dp),
+    )
     if (subtitle != null) {
         Text(
             subtitle,
@@ -132,7 +123,7 @@ internal fun CaptionedCover(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = align,
-            modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
+            modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 4.dp),
         )
     }
 }
@@ -143,8 +134,8 @@ private fun ShelfPlaceholder(width: Dp, height: Dp, shape: Shape) {
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), userScrollEnabled = false) {
         items(4) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Placeholder(width * 0.8f, 12.dp)
                 Placeholder(width, height, shape = shape)
+                Placeholder(width * 0.8f, 12.dp)
                 Placeholder(width * 0.5f, 10.dp)
             }
         }

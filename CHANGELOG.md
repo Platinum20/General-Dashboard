@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.458.0
+**In Media i titoli tornano sotto le copertine**
+- In Media, Musica, Video, Radio e Continua prima la copertina, poi il titolo e sotto chi l'ha pubblicato
+- Il titolo sta al massimo su due righe, poi si taglia coi puntini; l'autore su una riga sola
+- Le scritte hanno sempre la stessa altezza, così le copertine di una fila restano allineate
+- Anche i video grandi di YouTube hanno il titolo sotto l'anteprima
+
 ## 1.456.0
 **Lo scorrimento sulla linea a destra del Calendario non lampeggia più**
 - Trascinando la linea la lista scorre fluida da un giorno all'altro, sempre nel verso del dito: prima andava avanti e indietro a scatti a ogni giorno
