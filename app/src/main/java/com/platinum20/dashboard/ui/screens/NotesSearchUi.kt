@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -78,24 +79,19 @@ fun NotesSearchPanel(
                 value = query,
                 onValueChange = { query = it },
                 placeholder = placeholder,
-                trailing = {
-                    IconButton(onClick = { if (query.isEmpty()) onClose() else query = "" }) {
-                        Icon(Icons.Outlined.Close, contentDescription = if (query.isEmpty()) "Chiudi ricerca" else "Cancella ricerca")
-                    }
-                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .autoFocus(),
             )
         }
         if (header != null) item(key = "header") { header() }
-        if (empty != null && query.isBlank()) item(key = "empty-hints") { empty { query = it } }
+        // Le parti compaiono e spariscono scivolando, non a scatti, mentre si scrive.
+        if (empty != null && query.isBlank()) item(key = "empty-hints") { Box(Modifier.animateItem()) { empty { query = it } } }
         hits.groupBy { it.kind }.forEach { (kind, group) ->
             item(key = kind.name) {
-                Section(title = "${kind.label} · ${group.size}") {
+                Section(title = "${kind.label} · ${group.size}", modifier = Modifier.animateItem()) {
                     val shown = if (kind in more) group else group.take(perGroup)
                     shown.forEachIndexed { i, hit ->
-                        if (i > 0) RowDivider()
                         HitRow(hit, data) {
                             when (hit.kind) {
                                 SearchKind.NOTE -> onOpenNote(hit.id)
@@ -107,7 +103,6 @@ fun NotesSearchPanel(
                         }
                     }
                     if (kind !in more && group.size > perGroup) {
-                        RowDivider()
                         TextButton(onClick = { more = more + kind }, modifier = Modifier.fillMaxWidth()) {
                             Text("Mostra altri ${group.size - perGroup}")
                         }
