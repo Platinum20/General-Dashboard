@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.417.0
+**Media: prima quello che va, radio col genere, "Riprendi" nel player vuoto**
+- In Media le file che funzionano subito stanno in cima; quelle da collegare vanno in fondo, una riga con il pulsante "Accedi"
+- Senza radio preferite, la fila Radio si riempie con le più ascoltate: si può ascoltare subito, senza account
+- Per collegare YouTube o Spotify c'è un pulsante solo; il collegamento ufficiale resta in Impostazioni › Account. "Video del telefono" è una riga
+- Sotto ogni radio c'è il genere in italiano ("Notizie e parlato", "Classica e cultura") e non più tag in inglese e kbps; senza logo, le iniziali
+- Il player vuoto propone "Riprendi" con le ultime cose ascoltate o viste
+- La prima volta che suona qualcosa, una riga spiega i gesti: giù per il mini player, di lato per chiudere
+
 ## 1.415.0
 **News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
 - Senza novità, il segno dell'ultima visita dice da solo "niente di nuovo": una riga in meno
