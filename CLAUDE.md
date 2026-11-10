@@ -48,7 +48,7 @@ create something it lists, so the next thread doesn't have to explore.
   scaffold + `BubbleRow`). `ActionBubble.kt`: `ActionBubble.show(BubbleAction…)` = every menu/confirm
   pop-up (glass, bottom center, swipe to close). Use it instead of DropdownMenu or confirm dialogs.
 
-**NO MONEY IN THE APP (1.439, Antonio)**: Revolut, expenses (manual, fixed, from notifications/mail/receipts), Spese page,
+**NO MONEY IN THE APP (1.443, Antonio)**: Revolut, expenses (manual, fixed, from notifications/mail/receipts), Spese page,
 totals, budget and the Spese widget were removed entirely. Don't reintroduce any money tracking. `settings/Leftovers.kt` wipes
 the old Revolut prefs/captures/cookies once; NotesStore drops old `expenses` keys on load. Shift pay (Creators Pro) stays.
 **Calendario unico (1.314, Antonio)**: ONE calendar holds everything.
@@ -68,9 +68,9 @@ events/tasks/dates/parcels, `Upcoming.MAX`=5 rows, drawn with the shared `ui/scr
 **Note**: data in `notes/NotesStore.kt` (one JSON file: tasks, notes, habits,
 parcels). `notes/QuickParse.kt` = Italian natural-language dates. Screens:
 `NotesScreen.kt` (= the Calendario page since 1.314, see above; no overview/sections any more), `NotesTimeline.kt` (pure `dueDays` = one group per day + Scaduti/Senza data, `timelineEntries` = Prossimi giorni drawn with the same `TimelineRow` as the Home card; `pastDays` = past 60d above it, page opens scrolled to now; `undatedEntries` = Note page as the same timeline by createdAt (all timelines: past on top, open on OGGI at the top of the screen with room below, `nowIndex` for Note); pages draw it on the background (no card), `TimelineRow(onLongClick=)` → `ActionBubble` actions per row; `TimelineNowMarker` + `PastBarrier`/`rememberPastBarrier` = 'OGGI' marker with scroll resistance and haptic),
-`DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
+`DayScrub.kt` (1.440, Antonio: drag on the timeline's right line = fast scroll day by day, `Modifier.dayScrub` on the Calendario LazyColumn takes the gesture in the Initial pass so release never opens a row; pure `DayScrub` shift/rubber/days, `DayScrubThumb` cursor + day bubble; line x = `TimelineLineInset`), `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
-Detail pages (back to the 1.401 layout in 1.436, Antonio rejected review points 26-31: when = first row with X, empty Luogo/Note rows, round button + label at the bottom): `DetailPage.kt` = THE full-screen detail scaffold, shaped like the note editor since 1.315 (top: back + `meta` line; bottom: left `primary: DetailAction` (or Modifica), right "Altro" → ActionBubble with `more` + Modifica + Elimina; `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
+Detail pages (back to the 1.401 layout in 1.436, Antonio rejected review points 26-31: when = first row with X, empty Luogo/Note rows, round button + label at the bottom): `DetailPage.kt` = THE full-screen detail scaffold, shaped like the note editor since 1.315 (top: back + `meta` line; bottom: left `primary: DetailAction` (or Modifica), right "Altro" → ActionBubble with `more` + Modifica + Elimina; `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
 Reminders: `TaskReminderWorker`, `HabitReminderWorker`; notification wording `notes/ReminderText.kt` (title = the thing, text = when), rain `RainNotice.title()/detail()`.
 **Promemoria = date (1.361, Antonio)**: no `Countdown` type any more. A "data da ricordare" is a `TaskItem` with `allDay`
 (dueAt = midnight; `TaskItem.date(...)`, `NotesStore.saveDate`; old `countdowns` JSON migrated in `parse`). Every task has the
@@ -165,7 +165,7 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
   headers (search = pull down, settings = drag "+" down). One colored "hero" block per page.
 - Each piece of info lives in one place; no duplicates. Settings = set-once things only.
 - "+" and voice never ask for the type. Note = 2 kinds only (Con scadenza, Senza scadenza);
-  no expenses/money anywhere (1.439). No tabs, no Idee.
+  no expenses/money anywhere (1.443). No tabs, no Idee.
 - Nav pill animation must stay exactly as 1.140 (restored in 1.149): don't touch it.
 - No serif fonts (tried and rejected). UI polish has priority over new features.
 - Player: one source at a time, no sleep timer, no close button (gestures), mini player free

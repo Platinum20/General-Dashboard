@@ -320,7 +320,8 @@ fun NotesScreen(
         val listPadding = padding
 
         // Si apre sempre da adesso: il passato sta sopra, scorrendo in su.
-        val timelineIndex = (if (empty) 1 else 0) + (if (invite) 1 else 0)
+        // Prima della linea: il suggerimento se è vuota, l'avviso dei turni scaduti e l'invito al calendario.
+        val timelineIndex = (if (empty) 1 else 0) + (if (shiftsExpired) 1 else 0) + (if (invite) 1 else 0)
         // L'item con "OGGI" (null se la linea non ha un adesso dopo il passato) e l'ultima riga della linea.
         val nowItem = if (nowAt > 0) timelineIndex + nowAt else null
         // Le abitudini si fanno oggi (1.357): una riga dentro OGGI, prima dei giorni dopo. In fondo alla linea non ci si
@@ -388,6 +389,9 @@ fun NotesScreen(
             }
         }
         val barrier = rememberPastBarrier(listState, nowItem ?: -1, nowItem?.let { 0 })
+        // La linea a destra si trascina per correre di giorno in giorno (Antonio); lasciandola non si apre niente.
+        val scrubDays = remember(entries, timelineIndex, habitsAt, habitCount) { DayScrub.days(entries.map { it.first }, timelineIndex, habitsAt, habitCount) }
+        val scrub = rememberDayScrub(listState, scrubDays)
         Box(Modifier.fillMaxSize()) {
         // Il margine in alto sta fuori dalla lista: così le righe del passato non si vedono sotto il titolo.
         LazyColumn(
@@ -398,7 +402,7 @@ fun NotesScreen(
                 bottom = listPadding.calculateBottomPadding(),
             ),
             // Niente spazio fisso fra gli item: le righe della linea devono toccarsi. Gli altri item hanno il loro margine.
-            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).nestedScroll(barrier),
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM).dayScrub(scrub).nestedScroll(barrier),
         ) {
             if (empty) {
                 item(key = "empty") {
@@ -513,6 +517,11 @@ fun NotesScreen(
                 Spacer(Modifier.height(maxOf(72.dp, room)))
             }
         }
+        DayScrubThumb(
+            scrub,
+            lineFromEnd = listPadding.calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr) + TimelineLineInset,
+            modifier = Modifier.padding(top = listPadding.calculateTopPadding() + CHIPS_ROOM, bottom = listPadding.calculateBottomPadding()),
+        )
         // I filtri stanno fermi sotto il titolo, fuori dalla lista: la pagina si apre su OGGI e restano a portata.
         Row(
             Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = inner.calculateTopPadding() + 4.dp),

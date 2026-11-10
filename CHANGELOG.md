@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.443.0
+**Niente più soldi nell'app: tolti Revolut e le spese**
+- Tolto il collegamento a Revolut: niente più accessi, saldo, salvadanai o aggiornamenti in sottofondo
+- L'app non legge più i soldi che spendi da notifiche, SMS, mail o scontrini
+- Tolte anche le spese scritte a mano e quelle fisse, la pagina Spese, i totali del mese e il budget
+- Il calendario non mostra più spese né totali: OGGI resta in cima come sempre
+- Tolti il filtro Spese, il widget Spese e la scorciatoia "Nuova spesa"; la card in Home ora è solo la SIM
+- Le spese salvate e i dati di Revolut vengono cancellati dal telefono al primo avvio
+- I guadagni dei turni restano dove sono
+
+## 1.440.0
+**Nel Calendario la linea a destra si trascina per correre di giorno in giorno**
+- Appoggia il dito sulla linea a destra e trascina su o giù: il calendario scorre un giorno alla volta, con un tic per ogni giorno e un colpo più netto quando cambia il mese
+- Più allunghi il gesto, più va veloce: con un pollice attraversi settimane
+- Accanto al dito un fumetto dice su che giorno sei; in cima e in fondo il cursore fa da elastico e torna al suo posto
+- Lasciando il dito non si apre niente: la linea serve solo a muoversi. Un tocco normale sulle righe resta com'era
+- Con l'accesso ai turni scaduto la pagina si apre di nuovo esattamente su OGGI
+
 ## 1.438.0
 **Nei treni, sotto la durata, il treno con carrozza e posto**
 - Nel calendario fra partenza e arrivo: in mezzo la durata, sotto "Intercity 612 · Carrozza 5 · Posto 42D", tutte e due al centro
