@@ -104,6 +104,7 @@ object AppSettings {
     private const val KEY_SPONSORBLOCK = "video_sponsorblock"
     private const val KEY_SPONSOR_ACTION = "video_sponsorblock_"
     private const val KEY_DISLIKES = "video_dislikes"
+    private const val KEY_CAPTURE_SAVES = "capture_saves"
 
     private lateinit var prefs: SharedPreferences
     private val _theme = MutableStateFlow(AppTheme.CANVAS)
@@ -151,6 +152,16 @@ object AppSettings {
     private val _dislikes = MutableStateFlow(true)
     /** I "Non mi piace" stimati da Return YouTube Dislike nella pagina del video. */
     val dislikes: StateFlow<Boolean> = _dislikes.asStateFlow()
+    private val _captureSaves = MutableStateFlow(0)
+    /** Quante cose sono state salvate col +: dopo le prime cinque gli esempi nel campo non servono più. */
+    val captureSaves: StateFlow<Int> = _captureSaves.asStateFlow()
+
+    /** Un salvataggio in più col +; si smette di contare quando gli esempi sono già spariti. */
+    fun countCaptureSave() {
+        if (!::prefs.isInitialized || _captureSaves.value >= 100) return
+        _captureSaves.value += 1
+        prefs.edit().putInt(KEY_CAPTURE_SAVES, _captureSaves.value).apply()
+    }
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -211,6 +222,7 @@ object AppSettings {
             SbAction.entries.firstOrNull { it.key == saved && it in category.actions } ?: category.default
         }
         _dislikes.value = prefs.getBoolean(KEY_DISLIKES, true)
+        _captureSaves.value = prefs.getInt(KEY_CAPTURE_SAVES, 0)
     }
 
     fun setSponsorBlock(enabled: Boolean) {
