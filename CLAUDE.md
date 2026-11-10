@@ -24,7 +24,7 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/Common.kt`: `TopLevelBar(title, subtitle, onBack=)`, `CanvasCard`, `SectionHeader`,
   `Section`, `RowDivider`, `CanvasChip`, `RoundIconButton`, `IconTile`/`TileAccent`,
   `canvasFieldColors()`, `cardBorder()`, `Modifier.glass()/glassSource()`, `bouncyPress()`,
-  `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Springs`, `AutoRefresh`,
+  `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button; `ButtonLevel` PRIMARY/TONAL/DANGER since 1.402; dialogs use `ConfirmButton`/`DismissButton`, row "Esci" = `DangerButton`), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Springs`, `AutoRefresh`,
   `TabReselect`/`rememberReselectListState`, `PlusAction`/`ProvidePlusAction`, `relativeTime`,
   `weatherIcon`.
 - `ui/screens/Motion.kt`: motion tokens (`Motion.*`, tab/push transitions, `Modifier.entrance()`
@@ -36,6 +36,7 @@ create something it lists, so the next thread doesn't have to explore.
   `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page). `Timeline.kt` `RowFlash`
   (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
   `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.
+- `ui/screens/StatusLine.kt` (1.402): pure `LinkStatus.of(linked, expired, readAt, now, staleAfter)` + `StatusLine` row with "Rientra"/"Aggiorna" inside a card (SIM, Revolut, Gmail card, Creators Pro on the Calendar page); faded data = `FADED_ALPHA`. `net/Online.kt` = one connectivity flow; `TopLevelBar` puts "Senza rete" in the line above the title, `PlaceholderList` says it instead of loading forever.
 - `ui/screens/GlassDialog.kt`: `CanvasDialog` (same params as AlertDialog) for every dialog;
   `Modifier.glassDialog()` for other dialog types.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
@@ -69,7 +70,7 @@ expenses, parcels). `notes/QuickParse.kt` = Italian natural-language dates. Scre
 `DayScrollbar.kt` (reusable time-proportional timeline + fast scroll with tick labels: `DayMark(at=epochDay)` + `DayScroll` pure logic; currently unused since 1.201, notes ordered by `Note.createdAt`), `NotesExtras.kt`, `NotesSearchUi.kt`.
 Long notes: `NoteEditorScreen` (NotesScreen.kt) = sheet with only back + meta line on top, bottom bar (list toggle, `notes/NoteText.kt` word count, "Altro" → ActionBubble pin/share/delete).
 Detail pages: `DetailPage.kt` = THE full-screen detail scaffold, shaped like the note editor since 1.315 (top: back + `meta` line; bottom: left `primary: DetailAction` (or Modifica), right "Altro" → ActionBubble with `more` + Modifica + Elimina; `DetailTitle`/`DetailRow`), used by the event page and `ItemDetailScreen.kt` (route `notes/item/{kind}/{id}`, `Routes.noteItem`, `rememberOpenItem()`: tasks, dates, parcels, habits, expenses, fixed expenses all open here; edited inline since 1.219: `EditableDetailTitle`, `DetailTapRow` (pickers/ActionBubble), `DetailFieldRow` in DetailPage.kt, wiring in `lineEdit`). `CalendarScreen.kt` now only holds the event detail/edit screens, `NotesExtras.kt`, `NotesSearchUi.kt`.
-Reminders: `TaskReminderWorker`, `HabitReminderWorker`.
+Reminders: `TaskReminderWorker`, `HabitReminderWorker`; notification wording `notes/ReminderText.kt` (title = the thing, text = when), rain `RainNotice.title()/detail()`.
 **Promemoria = date (1.361, Antonio)**: no `Countdown` type any more. A "data da ricordare" is a `TaskItem` with `allDay`
 (dueAt = midnight; `TaskItem.date(...)`, `NotesStore.saveDate`; old `countdowns` JSON migrated in `parse`). Every task has the
 event's fields: `alert` (`Alert` ON_TIME/DAY_BEFORE/NONE, `alertAt()`; all-day at 9:00), `notes`, `place`, `firstYear` (age).
