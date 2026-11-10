@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.461.0
+**In Media i titoli tornano sotto le copertine**
+- In Media, Musica, Video, Radio e Continua prima la copertina, poi il titolo e sotto chi l'ha pubblicato
+- Il titolo sta al massimo su due righe, poi si taglia coi puntini; l'autore su una riga sola
+- Le scritte hanno sempre la stessa altezza, così le copertine di una fila restano allineate
+- Anche i video grandi di YouTube hanno il titolo sotto l'anteprima
+
 ## 1.460.0
 **Card SIM: "Letto alle…" sulla riga del titolo**
 - Quando i dati della SIM sono vecchi, "Letto …" con l'orario ora sta a destra del titolo "SIM", non più in una riga sua
