@@ -374,12 +374,11 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         begin = event.begin,
         end = event.end,
     ) else {
-    // Il nome su una riga sua sopra inizio e fine (Antonio); un turno "Turno su A, B e C" accanto all'inizio.
+    // Il nome accanto all'ora d'inizio, come "Treno per …" e "Turno su A, B e C": niente riga in più (Antonio, 1.401).
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(
         departAt = from.format(hour),
-        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else "",
-        title = if (labels || creators.isNotEmpty()) null else event.title.ifBlank { "Evento" },
+        from = if (labels) "Inizio" else if (creators.isNotEmpty()) "Turno su " + andList(creators) else event.title.ifBlank { "Evento" },
         arriveAt = to.format(hour),
         to = listOfNotNull("Fine".takeIf { labels }, endDay).joinToString(" · "),
         // Il luogo sta già nella sua riga sulla pagina dell'evento.
@@ -396,7 +395,7 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
 
 /**
  * Prossimi giorni come linea del tempo, uguale alla card di Oggi ma con tutto: una riga per cosa, il giorno
- * sulla prima riga di ogni giorno, e fra due giorni lontani la linea si allunga ([com.platinum20.dashboard.today.Upcoming.gapDp]).
+ * sulla prima riga di ogni giorno. Fra due giorni lontani nessuno spazio in più: la lista resta compatta (Antonio, 1.401).
  */
 internal fun timelineEntries(
     groups: List<DueDay>,
@@ -411,7 +410,6 @@ internal fun timelineEntries(
 ): List<Pair<TimelineEntry, DueRow>> {
     val hour = DateTimeFormatter.ofPattern("HH:mm")
     fun Long.time() = Instant.ofEpochMilli(this).atZone(zone).format(hour)
-    var previous: LocalDate? = null
     // Il mese si confronta con la riga prima; da adesso in poi con oggi, così sotto "OGGI" non si ripete il mese.
     var monthPrevious: LocalDate? = null
     var shown: java.time.YearMonth? = null
@@ -421,7 +419,6 @@ internal fun timelineEntries(
         val dayAfterDay = rowsBefore > 0
         rowsBefore += g.rows.size
         val day = g.day
-        val gap = if (!g.late && day != null && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
         if (!reachedNow && !g.past && !g.late && day != null) {
             reachedNow = true
             // Nel calendario unico il mese di oggi ha il suo segno (col totale): non si salta.
@@ -438,7 +435,6 @@ internal fun timelineEntries(
             Expenses.total(expenses, m).takeIf { it > 0 || m == java.time.YearMonth.from(today) }?.let { Expenses.format(it) }
         } else null
         if (day != null && !g.late) {
-            previous = day
             monthPrevious = day
             // Da qui in giù il mese si legge già: nel segno appena messo, o sotto "OGGI" il mese di oggi.
             if (month != null) shown = java.time.YearMonth.from(day)
@@ -476,7 +472,6 @@ internal fun timelineEntries(
                 kind = kind,
                 text = text,
                 dayLabel = if (i == 0) label else null,
-                gapDp = if (i == 0) gap else 0f,
                 color = r.event?.color ?: r.expense?.category?.color() ?: 0,
                 late = g.late || r.overdueFrom != null,
                 done = r.task?.done == true,
@@ -560,16 +555,15 @@ internal fun undatedEntries(
     rows.forEach { (at, row) ->
         val day = dayOf(at)
         val first = day != previous
-        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, day) else 0f
         // In cima il mese della prima riga, se non è quello di oggi; poi a ogni cambio di mese.
         val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous ?: today, day, today)
         if (month != null) shown = java.time.YearMonth.from(day)
         val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                label, gap, month = month, done = row.task.done)
+                label, month = month, done = row.task.done)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
-                label, gap, icon = row.note.icon(),
+                label, icon = row.note.icon(),
                 trailing = NoteText.badge(row.note.text), month = month)
         }
         out += entry to row
@@ -626,7 +620,6 @@ internal fun expenseEntries(
     val sorted = expenses.sortedWith(Expenses.byTime).let { e -> limit?.let { e.takeLast(it) } ?: e }
     return sorted.map { e ->
         val first = e.date != previous
-        val gap = if (first && previous != null) com.platinum20.dashboard.today.Upcoming.gapDp(previous!!, e.date) else 0f
         // In cima il mese della prima riga, se non è quello già scritto sopra.
         val month = com.platinum20.dashboard.today.Upcoming.monthBreak(previous ?: header?.atDay(1) ?: today, e.date, today)
         if (month != null) shown = java.time.YearMonth.from(e.date)
@@ -637,7 +630,6 @@ internal fun expenseEntries(
             // L'importo per primo (Antonio), come l'ora degli eventi.
             "${Expenses.format(e.cents)}  ${Expenses.displayName(e)}",
             if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(e.date, today, shown) else null,
-            gap,
             // Icona e colore dicono la categoria, come la barra del riepilogo.
             color = e.category.color(),
             icon = e.category.icon(),

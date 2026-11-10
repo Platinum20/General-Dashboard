@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.401.0
+**Calendario più compatto: niente buchi fra i giorni, nome degli eventi accanto all'orario**
+- Fra due giorni lontani non c'è più lo spazio vuoto che si allungava coi giorni in mezzo: ogni giorno ha già la sua riga col nome, e basta quella
+- Gli eventi con orario hanno il nome accanto all'ora d'inizio, come i treni e i turni: una riga in meno per ognuno
+- La lista del calendario, la card in Home, le note e le spese ora stanno tutte strette, una riga dopo l'altra
+
 ## 1.400.0
 **Le spese di oggi nella card in Home, in ordine d'orario**
 - Nella card Calendario in Home, sotto OGGI, ci sono anche le spese di oggi una per una, non solo il totale
