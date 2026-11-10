@@ -400,7 +400,7 @@ private fun ConnectSpotify(onLogin: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp))
+        Icon(Icons.Outlined.GraphicEq, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(56.dp))
         Spacer(Modifier.height(16.dp))
         Text("Collega il tuo Spotify", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))

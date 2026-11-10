@@ -279,7 +279,7 @@ private fun DetailCell(icon: ImageVector, label: String, value: String, modifier
         modifier = modifier,
     ) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.size(10.dp))
             Column {
                 Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -307,13 +307,13 @@ private fun HourCell(point: HourlyPoint) {
         ) {
             Text(point.time.format(DateTimeFormatter.ofPattern("HH")), style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(6.dp))
-            Icon(weatherIcon(point.code, point.isDay), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(weatherIcon(point.code, point.isDay), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(6.dp))
             Text(point.temperature.asTemp(), style = MaterialTheme.typography.titleMedium)
             Text(
                 if (point.precipitationProbability > 0) "${point.precipitationProbability}%" else " ",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -331,11 +331,11 @@ private fun DayRow(day: DailyPoint, low: Double, high: Double) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(72.dp))
-        Icon(weatherIcon(day.code), contentDescription = WeatherCodes.description(day.code), tint = MaterialTheme.colorScheme.primary)
+        Icon(weatherIcon(day.code), contentDescription = WeatherCodes.description(day.code), tint = MaterialTheme.colorScheme.onSurface)
         Text(
             if (day.precipitationProbability > 0) " ${day.precipitationProbability}%" else "",
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(44.dp),
         )
         Text(day.min.asTemp(), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)

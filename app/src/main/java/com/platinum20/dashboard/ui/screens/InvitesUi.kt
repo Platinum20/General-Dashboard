@@ -101,7 +101,7 @@ fun InvitesRow(
 private fun InviteItem(icon: ImageVector, text: String, action: String, onAction: () -> Unit, onLater: () -> Unit) {
     Column {
         Row(verticalAlignment = Alignment.Top) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(12.dp))
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }

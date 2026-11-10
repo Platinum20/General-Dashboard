@@ -268,7 +268,7 @@ internal fun CapturePreview(mode: CaptureMode, text: String) {
 @Composable
 internal fun CaptureKindTag(mode: CaptureMode) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Icon(mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         Text(
             "Diventa: " + mode.label.lowercase().let { if (mode == CaptureMode.EVENT) "evento in calendario" else it },

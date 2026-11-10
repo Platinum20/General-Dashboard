@@ -503,18 +503,22 @@ enum class TileAccent(val light: Long, val lightBg: Long, val dark: Long, val da
     NEUTRAL(0xFF5E5A52, 0xFFECE8DF, 0xFFC9C4BA, 0xFF2E2C28),
 }
 
-/** Icona dentro un quadratino colorato. */
+/**
+ * Icona dentro un quadratino (1.402, Antonio): sempre inchiostro sul beige, qualunque [accent]. I colori
+ * diversi per riga non volevano dire niente ed erano rumore; il colore resta solo per gli stati.
+ */
 @Composable
-fun IconTile(icon: ImageVector, accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
+fun IconTile(icon: ImageVector, @Suppress("UNUSED_PARAMETER") accent: TileAccent, size: Dp = 40.dp, iconSize: Dp = 22.dp) {
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val neutral = TileAccent.NEUTRAL
     Box(
         Modifier
             .size(size)
             .clip(MaterialTheme.shapes.medium)
-            .background(Color(if (dark) accent.darkBg else accent.lightBg)),
+            .background(Color(if (dark) neutral.darkBg else neutral.lightBg)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, contentDescription = null, tint = Color(if (dark) accent.dark else accent.light), modifier = Modifier.size(iconSize))
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(iconSize))
     }
 }
 
@@ -605,13 +609,13 @@ fun SectionHeader(
 }
 
 /**
- * Un'etichetta che apre una pagina (1.361): colore primario e freccia accanto, così si distingue a colpo
- * d'occhio da un'etichetta semplice come "Continua", che resta grigia e non si tocca.
+ * Un'etichetta che apre una pagina (1.361): inchiostro e freccia accanto (1.402: il blu è solo per "adesso"
+ * e le azioni, la freccia dice già "si apre"), così si distingue da un'etichetta grigia come "Continua".
  */
 @Composable
 fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
-    val color = MaterialTheme.colorScheme.primary
+    val color = MaterialTheme.colorScheme.onSurface
     Row(
         modifier = modifier
             .entrance()

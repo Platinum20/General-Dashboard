@@ -166,7 +166,7 @@ fun StoryLead(story: NewsStory, read: Boolean, onOpen: (NewsItem) -> Unit, onLon
         Text(
             story.metaLine(),
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -284,7 +284,7 @@ fun StoryRow(
                         Text(
                             item.source.name + (item.publishedAt?.let { "  ·  " + relativeTime(it) } ?: ""),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                         )
                         Text(

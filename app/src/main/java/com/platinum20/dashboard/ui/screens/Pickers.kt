@@ -166,7 +166,7 @@ fun QuickPreview(draft: String, modifier: Modifier = Modifier) {
     val due = entry?.due ?: return
     val ms = due.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+        Icon(Icons.Outlined.Alarm, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Spacer(Modifier.size(6.dp))
         Text(
             dueLabel(ms) + (entry.repeat?.let { " · ${it.label}" } ?: "") + " · \"${entry.text}\"",

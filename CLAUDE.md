@@ -168,6 +168,15 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 - No serif fonts (tried and rejected). UI polish has priority over new features.
 - Player: one source at a time, no sleep timer, no close button (gestures), mini player free
   2D drag without tilt.
+- Four rules from the 1.402 review (Antonio, approved 2026-11-10; follow them in every new screen):
+  1. The Canvas row: left = time or icon (one column), middle = name with at most one line below, right = a value or an action
+     (calendar expense rows keep the amount before the name, in a fixed aligned column: review point 9 B).
+  2. One color, one meaning: blue = "now" (OGGI, hero, playing) and actions (buttons, toggles, +); orange = attention;
+     red = delete. Everything else is ink (icons in `IconTile` too, dates, titles that open a page = ink + chevron).
+     Category colors only in Spese, where they are the legend.
+  3. Every page answers one question; what doesn't serve it isn't there.
+  4. State tells the truth: old data says so, with the action to refresh/re-login right next to it.
+- Motion: only the three springs (`Motion.settle/lively/gesture` + `fling`); a new element picks one of them, never a new spring.
 
 ## Build and release (CI only)
 

@@ -801,7 +801,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                         Icon(
                             savedIcon(it),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(end = 8.dp).size(20.dp),
                         )
                     }
@@ -816,7 +816,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                         Icon(
                             Icons.Outlined.PushPin,
                             contentDescription = "Fissata",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -825,7 +825,7 @@ private fun NoteCard(note: Note, onOpen: () -> Unit, onDelete: () -> Unit, modif
                     Text(
                         progress,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 if (note.body.isNotBlank()) {

@@ -137,7 +137,7 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                     Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Outlined.Mail, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(12.dp))
                     Text(
                         if (imap) "Gmail non accetta più la password" else connect.problem ?: "Google chiede di ricollegare Gmail",
