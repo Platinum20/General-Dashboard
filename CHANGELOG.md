@@ -1,10 +1,18 @@
 # Changelog
 
-## 1.414.0
+## 1.418.0
 **Home: il titolo dentro ogni card, il totale del mese accanto a "Calendario", SIM e Revolut in una card "Conti"**
 - Niente più etichette maiuscole sopra le card: ogni card ha il suo nome dentro, in alto
 - La card Calendario scrive accanto al titolo quanto hai speso questo mese ("novembre 486,30 €"): toccalo e si apre il mese. In cima alla card resta solo OGGI con la spesa di oggi
 - SIM e Revolut stanno in una card sola, "Conti": a sinistra i giga rimasti, a destra il saldo con quanto hai da spendere sul conto principale. Ogni metà apre la sua pagina come prima
+
+## 1.415.0
+**News più pulite: niente tg interi, una foto per gruppo, "· 2 fonti"**
+- Senza novità, il segno dell'ultima visita dice da solo "niente di nuovo": una riga in meno
+- I telegiornali interi ("World24 del 09/11", "Tg1 delle 20") non compaiono più tra le storie
+- Una foto grande sulla prima storia delle nuove e sulla prima delle già viste; le altre sono titoli puliti
+- Al posto della freccina accanto alla fonte c'è "· 2 fonti": il tocco apre le versioni come prima
+- L'icona di News nella barra è un foglio di testo, non sembra più un calendario
 
 ## 1.413.0
 **Home: la data è il titolo, meteo compatto, titoli che si riducono scorrendo**

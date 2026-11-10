@@ -220,25 +220,13 @@ fun StoryRow(
                     modifier = Modifier.sharedItem(newsSharedKey(lead.link)),
                 )
                 Spacer(Modifier.height(3.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        story.metaLine(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (many) {
-                        val turn by animateFloatAsState(if (expanded) 180f else 0f, Motion.settle(), label = "freccia")
-                        Icon(
-                            Icons.Rounded.KeyboardArrowDown,
-                            contentDescription = if (expanded) "Chiudi" else "Le altre testate",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = turn },
-                        )
-                    }
-                }
+                Text(
+                    NewsStories.metaLine(story, story.newest?.let { relativeTime(it) }),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             val image = story.items.firstNotNullOfOrNull { NewsLayout.usableImage(it.imageUrl) }
             var imageFailed by remember(image) { mutableStateOf(false) }
