@@ -5,6 +5,7 @@
 - Ogni giorno ha il suo numero in un cerchio sulla linea a sinistra, accanto al nome
 - I mesi hanno un pallino pieno più grande
 - Così i pallini colorati restano solo per le cose
+- I pallini delle cose sono spessi come la linea colorata di treni e turni
 
 ## 1.468.0
 **Lo zaino del treno**

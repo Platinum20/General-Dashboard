@@ -298,7 +298,8 @@ fun TimelineRow(
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
-            dot = if (trip != null) null else dotColor to 8.dp,
+            // Il pallino largo quanto il pezzo colorato dei treni ([TRIP_STROKE]): stesso segno, solo più corto (Antonio).
+            dot = if (trip != null) null else dotColor to TRIP_STROKE,
             top = top || headed,
             bottom = bottom,
             segment = trip?.let {
@@ -486,6 +487,9 @@ private fun TripStop(time: String, station: String, color: Color, title: Modifie
 
 private val GUTTER = 22.dp
 
+/** Lo spessore del pezzo colorato di un evento con orario, e il diametro del pallino delle altre cose. */
+private val TRIP_STROKE = 4.dp
+
 /** Il cerchio col numero del giorno; il pallino del mese ([MONTH_DOT]) è più grande (Antonio, 2026-11-11). */
 private val DAY_NUMBER = 18.dp
 private val MONTH_DOT = 22.dp
@@ -556,7 +560,7 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
             segment?.let { s ->
                 val a = s.from.toPx()
                 val b = maxOf(a, size.height - s.toBottom.toPx())
-                drawLine(s.color, Offset(x, a), Offset(x, b), 4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(s.color, Offset(x, a), Offset(x, b), TRIP_STROKE.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
                 // Mentre è in corso, il pallino "sei qui" scende lungo il pezzo colorato.
                 s.progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, a + (b - a) * it)) }
             }
