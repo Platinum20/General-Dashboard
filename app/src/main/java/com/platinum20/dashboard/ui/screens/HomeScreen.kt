@@ -385,8 +385,9 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Le card nell'ordine scelto in Personalizza. Quelle che compaiono, spariscono o cambiano posto scivolano.
-            items(cards, key = { it.name }) { Box(Modifier.animateItem()) { cardContent(it) } }
+            // Le card nell'ordine scelto in Personalizza. Quelle che compaiono o spariscono sfumano; niente scivolata di
+            // posto: quando il Calendario cambia altezza la card sotto restava a metà strada sopra di lui (Antonio, 2026-11-11).
+            items(cards, key = { it.name }) { Box(Modifier.animateItem(placementSpec = null)) { cardContent(it) } }
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(

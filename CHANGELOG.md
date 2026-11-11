@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.472.0
+**Pallini piccoli, Home ordinata**
+- Il numero del giorno torna nel nome ("Dom 15"), non più dentro il pallino
+- I pallini dei giorni sono di nuovo piccoli, OGGI è grande uguale, e quelli dei mesi sono rimpiccioliti
+- Le novità dopo un aggiornamento stanno in una card sola, non più una dentro l'altra
+- La card SIM non finisce più sopra il Calendario quando questo cambia altezza
+
 ## 1.471.0
 **Calendario più pulito, card della Home più corta, tessere Media ordinate**
 - Il numero del giorno sta solo nel cerchio: accanto c'è il nome ("Dom"), non più "Dom 15"

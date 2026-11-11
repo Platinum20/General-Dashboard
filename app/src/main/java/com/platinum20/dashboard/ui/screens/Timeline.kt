@@ -99,7 +99,7 @@ data class TimelineEntry(
     val time: String? = null,
     /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
     val detail: String? = null,
-    /** Il numero del giorno, nel cerchio sulla linea accanto a [dayLabel] (Antonio, 2026-11-11); null = pallino. */
+    /** Il numero del giorno di [dayLabel] (non più disegnato nel pallino dal 1.472, Antonio). */
     val dayNumber: Int? = null,
     /** Il tipo per il pallino colorato sulla linea; null = quello di [kind]. */
     val dot: RowDot? = null,
@@ -225,7 +225,6 @@ fun TimelineRow(
     if (headed && !dayOnMarker) TimelineDayHeader(
         entry.dayLabel!!, start, line, top,
         rule = true,
-        number = entry.dayNumber,
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
@@ -503,32 +502,17 @@ private val GUTTER = 22.dp
 /** Lo spessore del pezzo colorato di un evento con orario, e il diametro del pallino delle altre cose. */
 private val TRIP_STROKE = 4.dp
 
-/** Il cerchio col numero del giorno; il pallino del mese ([MONTH_DOT]) è più grande (Antonio, 2026-11-11). */
-private val DAY_NUMBER = 18.dp
-private val MONTH_DOT = 22.dp
+/**
+ * Il pallino del giorno (anche OGGI, uguale) e quello più grande del mese. Il numero nel cerchio (1.470) è stato
+ * tolto: il giorno si legge nel nome accanto, "Dom 15", e i pallini sono di nuovo piccoli (Antonio, 2026-11-11).
+ */
+private val DAY_DOT = 8.dp
+private val MONTH_DOT = 12.dp
 
 /** La linea del mese: più spessa di quella dei giorni (1 dp). */
 private val MONTH_RULE = 3.dp
 
 
-
-/** Il nome del giorno accanto al cerchio col numero: il numero sta già nel cerchio, non si ripete (Antonio, 2026-11-11). */
-internal object DayLabel {
-    /** "Dom 15" → "Dom", "Ven 20 dic" → "Ven · dic", "15 nov 2027" → "nov 2027"; "Domani" resta "Domani". */
-    fun withoutNumber(label: String, number: Int?): String {
-        if (number == null) return label
-        val parts = label.split(' ').filter { it.isNotEmpty() }
-        val i = parts.indexOf(number.toString())
-        if (i < 0) return label
-        val before = parts.take(i)
-        val after = parts.drop(i + 1)
-        return when {
-            before.isEmpty() -> after.joinToString(" ")
-            after.isEmpty() -> before.joinToString(" ")
-            else -> before.joinToString(" ") + " · " + after.joinToString(" ")
-        }.ifEmpty { label }
-    }
-}
 
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
@@ -543,7 +527,7 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
  * del tempo, come OGGI e i mesi: separa dal giorno prima.
  */
 @Composable
-private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean, number: Int? = null) {
+private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
     val color = dayLabelColor(late, past)
     val dot = when {
         past -> MaterialTheme.colorScheme.outline
@@ -555,22 +539,9 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Il pallino sulla linea a sinistra, il nome e poi il filo fino in fondo: "● Domani ———" (1.465).
-        // Il giorno è il suo numero in un cerchio: non si confonde con i pallini colorati delle cose (Antonio, 2026-11-11).
-        Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-            TimelineGutter(Modifier.fillMaxHeight(), line, dot = if (number == null) dot to 7.dp else null, top = top, bottom = true)
-            if (number != null) Box(Modifier.size(DAY_NUMBER).clip(CircleShape).background(dot), contentAlignment = Alignment.Center) {
-                Text(
-                    number.toString(),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFeatureSettings = "tnum",
-                    ),
-                    color = MaterialTheme.colorScheme.surface,
-                    maxLines = 1,
-                )
-            }
-        }
+        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to DAY_DOT, top = top, bottom = true)
         Spacer(Modifier.width(6.dp))
-        Text(DayLabel.withoutNumber(label, number), style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
     }
@@ -643,8 +614,8 @@ fun TimelineNowMarker(
                 // La linea grigia continua sopra e sotto OGGI: niente buchi intorno al pallino.
                 if (top) drawLine(rail, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(rail, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                // Grande quanto il cerchio dei giorni ([DAY_NUMBER], Antonio 2026-11-11).
-                drawCircle(primary, DAY_NUMBER.toPx() / 2 * (1f + 0.25f * pulse.value), Offset(size.width / 2, size.height / 2))
+                // Grande quanto il pallino dei giorni ([DAY_DOT], Antonio 2026-11-11).
+                drawCircle(primary, DAY_DOT.toPx() / 2 * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
         Spacer(Modifier.width(6.dp))
