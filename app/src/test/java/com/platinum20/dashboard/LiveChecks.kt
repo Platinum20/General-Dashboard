@@ -153,6 +153,23 @@ class LiveChecks {
         val search = runCatching { RadioApi.search("radio deejay") }
         line(search.getOrNull().orEmpty().isNotEmpty(), "Ricerca \"radio deejay\": ${search.getOrNull()?.size ?: 0} risultati")
 
+        report.append("\n## Treni dal vivo (ViaggiaTreno)\n\n")
+        val base = "https://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/"
+        var trainOk = false
+        val trainNotes = StringBuilder()
+        for (n in listOf("9542", "9600", "612", "35")) {
+            val auto = runCatching { Http.getText(base + "cercaNumeroTrenoTrenoAutocomplete/$n") }
+            val origin = auto.getOrNull()?.let { com.platinum20.dashboard.trips.TrainLive.origin(it, null) }
+            trainNotes.append("\n  - $n: ${auto.getOrNull()?.lines()?.firstOrNull() ?: auto.exceptionOrNull()}")
+            if (origin == null) continue
+            val midnight = java.time.LocalDate.now(java.time.ZoneId.of("Europe/Rome")).atStartOfDay(java.time.ZoneId.of("Europe/Rome")).toInstant().toEpochMilli()
+            val json = runCatching { Http.getText(base + "andamentoTreno/$origin/$n/$midnight") }
+            val status = json.getOrNull()?.let { com.platinum20.dashboard.trips.TrainLive.parse(it, null, System.currentTimeMillis()) }
+            trainNotes.append(" → $origin, ${status ?: json.exceptionOrNull() ?: json.getOrNull()?.take(200)}")
+            if (status != null) { trainOk = true; break }
+        }
+        line(trainOk, "Ritardo di un treno letto$trainNotes")
+
         File(liveDir, "funzioni.md").writeText(report.toString())
         println(report)
         assertTrue("Problemi: $problems", problems.isEmpty())
