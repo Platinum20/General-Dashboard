@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.471.0
+**Calendario più pulito, card della Home più corta, tessere Media ordinate**
+- Il numero del giorno sta solo nel cerchio: accanto c'è il nome ("Dom"), non più "Dom 15"
+- Il pallino di OGGI è grande quanto i cerchi dei giorni
+- Tenendo premuto un evento si muovono solo il suo pallino (o la linea colorata del treno) e la scritta, la linea del tempo resta ferma
+- La card Calendario in Home mostra solo oggi e domani; il resto è nel calendario intero
+- Nelle tessere di Media, se il titolo sta su una riga, chi l'ha pubblicato va subito sotto; le tessere restano tutte alte uguali
+- Documenti: un pulsante sulla foto per ruotarla, fronte e retro
+
 ## 1.470.0
 **Giorni e mesi si distinguono dai pallini del Calendario**
 - Ogni giorno ha il suo numero in un cerchio sulla linea a sinistra, accanto al nome

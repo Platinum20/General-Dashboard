@@ -260,6 +260,8 @@ fun TimelineRow(
     }
     val flashColor = MaterialTheme.colorScheme.primary
     val held = ActionBubble.heldBy(entry.key)
+    // Premendo si stringono il pallino (o il pezzo colorato) e il testo, la linea verticale resta ferma (Antonio, 2026-11-11).
+    val press = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(1f) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -273,7 +275,7 @@ fun TimelineRow(
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
                 )
             }
-            .bouncyPress(0.98f)
+            .bouncyPress(0.98f, external = press)
             .combinedClickable(
                 onClick = { SharedRows.origin = sharedScope; onClick() },
                 onLongClick = onLongClick?.let { long ->
@@ -302,6 +304,8 @@ fun TimelineRow(
             dot = if (trip != null) null else dotColor to TRIP_STROKE,
             top = top || headed,
             bottom = bottom,
+            // Il pallino si stringe di più del testo, sennò su 4 dp non si vede.
+            press = { 1f - (1f - press.value) * 4f },
             segment = trip?.let {
                 TripSegment(
                     color = dotColor,
@@ -312,6 +316,14 @@ fun TimelineRow(
             },
         )
         Spacer(Modifier.width(6.dp))
+        Row(
+            Modifier.weight(1f).graphicsLayer {
+                scaleX = press.value
+                scaleY = press.value
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
         if (trip != null) {
             TripBlock(trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)), rail = false)
         } else {
@@ -364,6 +376,7 @@ fun TimelineRow(
         }
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+        }
         }
         }
     }
@@ -499,6 +512,24 @@ private val MONTH_RULE = 3.dp
 
 
 
+/** Il nome del giorno accanto al cerchio col numero: il numero sta già nel cerchio, non si ripete (Antonio, 2026-11-11). */
+internal object DayLabel {
+    /** "Dom 15" → "Dom", "Ven 20 dic" → "Ven · dic", "15 nov 2027" → "nov 2027"; "Domani" resta "Domani". */
+    fun withoutNumber(label: String, number: Int?): String {
+        if (number == null) return label
+        val parts = label.split(' ').filter { it.isNotEmpty() }
+        val i = parts.indexOf(number.toString())
+        if (i < 0) return label
+        val before = parts.take(i)
+        val after = parts.drop(i + 1)
+        return when {
+            before.isEmpty() -> after.joinToString(" ")
+            after.isEmpty() -> before.joinToString(" ")
+            else -> before.joinToString(" ") + " · " + after.joinToString(" ")
+        }.ifEmpty { label }
+    }
+}
+
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
 private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
@@ -539,7 +570,7 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
             }
         }
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
+        Text(DayLabel.withoutNumber(label, number), style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
     }
@@ -547,7 +578,11 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, segment: TripSegment? = null) {
+private fun TimelineGutter(
+    modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, segment: TripSegment? = null,
+    /** La scala della pressione per pallino e pezzo colorato (letta mentre disegna); la linea grigia non si muove. */
+    press: () -> Float = { 1f },
+) {
     val here = MaterialTheme.colorScheme.primary
     Box(
         modifier.width(GUTTER).drawBehind {
@@ -556,11 +591,16 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
             val stroke = 2.dp.toPx()
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
-            dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
+            val k = press().coerceIn(0.5f, 1.2f)
+            dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2 * k, Offset(x, mid)) }
             segment?.let { s ->
-                val a = s.from.toPx()
-                val b = maxOf(a, size.height - s.toBottom.toPx())
-                drawLine(s.color, Offset(x, a), Offset(x, b), TRIP_STROKE.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                val a0 = s.from.toPx()
+                val b0 = maxOf(a0, size.height - s.toBottom.toPx())
+                // Il pezzo colorato si accorcia verso il suo centro, come il testo accanto.
+                val c = (a0 + b0) / 2
+                val a = c + (a0 - c) * (1f - (1f - k) / 4f)
+                val b = c + (b0 - c) * (1f - (1f - k) / 4f)
+                drawLine(s.color, Offset(x, a), Offset(x, b), TRIP_STROKE.toPx() * k, cap = androidx.compose.ui.graphics.StrokeCap.Round)
                 // Mentre è in corso, il pallino "sei qui" scende lungo il pezzo colorato.
                 s.progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, a + (b - a) * it)) }
             }
@@ -603,7 +643,8 @@ fun TimelineNowMarker(
                 // La linea grigia continua sopra e sotto OGGI: niente buchi intorno al pallino.
                 if (top) drawLine(rail, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(rail, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
+                // Grande quanto il cerchio dei giorni ([DAY_NUMBER], Antonio 2026-11-11).
+                drawCircle(primary, DAY_NUMBER.toPx() / 2 * (1f + 0.25f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
         Spacer(Modifier.width(6.dp))

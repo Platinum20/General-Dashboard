@@ -159,15 +159,23 @@ object Springs {
  * Un tocco rapido fa comunque un piccolo cenno. Dentro una card che si stringe, reagisce solo
  * l'elemento più interno sotto il dito (la riga, non anche la card intorno).
  */
-fun Modifier.bouncyPress(pressedScale: Float = 0.96f): Modifier = this.then(BouncyMark).composed {
-    val scale = remember { Animatable(1f) }
+fun Modifier.bouncyPress(
+    pressedScale: Float = 0.96f,
+    /**
+     * La scala la applica chi chiama, solo a una parte (le righe del calendario: il pallino e il testo, non la
+     * linea verticale, Antonio 2026-11-11). null = si stringe tutto l'elemento.
+     */
+    external: Animatable<Float, androidx.compose.animation.core.AnimationVector1D>? = null,
+): Modifier = this.then(BouncyMark).composed {
+    val own = remember { Animatable(1f) }
+    val scale = external ?: own
     val scope = rememberCoroutineScope()
     fun to(target: Float) = scope.launch { scale.animateTo(target, if (target < 1f) PressRule.press() else PressRule.release()) }
     this
-        .graphicsLayer {
+        .then(if (external != null) Modifier else Modifier.graphicsLayer {
             scaleX = scale.value
             scaleY = scale.value
-        }
+        })
         .pointerInput(pressedScale) {
             awaitEachGesture {
                 // Main va dal più interno al più esterno: il primo che vede il tocco lo prende.
