@@ -32,23 +32,19 @@ class WholeAppReviewTest {
     }
 
     @Test
-    fun calendarCardShowsTheRestOfTheWeekThenCountsTheMonth() {
-        // Dopo oggi: giovedì, venerdì, domenica (fine settimana), poi 4 cose a novembre e una a dicembre.
+    fun calendarCardShowsOnlyTomorrowThenCountsTheMonth() {
+        // Dopo oggi: due cose domani, poi 4 a novembre e una a dicembre.
         val days = listOf(
-            today.plusDays(1), today.plusDays(2), today.plusDays(4),
-            today.plusDays(6), today.plusDays(8), today.plusDays(10), today.plusDays(20),
+            today.plusDays(1), today.plusDays(1), today.plusDays(4),
+            today.plusDays(6), today.plusDays(8), today.plusDays(10),
             LocalDate.of(2026, 12, 2),
         )
-        // Almeno 5 righe anche se la settimana ne ha 3; restano 2 cose di novembre (la 6ª e la 7ª).
-        assertEquals(5 to 2, calendarCardCut(days, today, min = 5))
-        // Con un minimo basso conta la settimana: 3 righe, 4 altre a novembre.
-        assertEquals(3 to 4, calendarCardCut(days, today, min = 2))
+        assertEquals(2 to 4, calendarCardCut(days, today))
     }
 
     @Test
-    fun calendarCardWithFewThingsShowsThemAll() {
-        val days = listOf(today.plusDays(1), null)
-        assertEquals(2 to 0, calendarCardCut(days, today, min = 5))
+    fun calendarCardWithNothingTomorrowShowsOnlyToday() {
+        assertEquals(0 to 1, calendarCardCut(listOf(today.plusDays(3), null), today))
     }
 
     @Test

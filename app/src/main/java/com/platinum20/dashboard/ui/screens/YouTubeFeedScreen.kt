@@ -2,6 +2,8 @@ package com.platinum20.dashboard.ui.screens
 
 
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import com.platinum20.dashboard.settings.AppSettings
@@ -546,20 +548,32 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
-        // Altezza fissa (1.442): sempre due righe, la lista non salta da un video all'altro.
+        // Altezza fissa (1.442): sempre lo spazio di due righe di titolo + canale, la lista non salta da un video
+        // all'altro; ma il canale sta subito sotto il titolo, anche quando il titolo è su una riga (Antonio, 2026-11-11).
+        Box {
+            Box(Modifier.alpha(0f).clearAndSetSemantics { }) { VideoCardText(" ", " ", null, null, fixed = true) }
+            VideoCardText(video.title, videoMeta(video), video.channelAvatar, video.channel, fixed = false)
+        }
+    }
+}
+
+/** Titolo e riga del canale di [VideoCard]; [fixed] = occupa sempre due righe di titolo. */
+@Composable
+private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean) {
+    Column {
         Text(
-            video.title,
+            title,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            minLines = 2,
+            minLines = if (fixed) 2 else 1,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp),
         )
         Row(Modifier.padding(start = 2.dp, top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
-            ChannelAvatar(video.channelAvatar, video.channel, 24)
+            if (channel != null) ChannelAvatar(avatar.orEmpty(), channel, 24) else Spacer(Modifier.size(24.dp))
             Spacer(Modifier.width(10.dp))
             Text(
-                videoMeta(video),
+                meta,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 minLines = 1,

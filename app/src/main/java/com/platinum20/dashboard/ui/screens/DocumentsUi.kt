@@ -214,8 +214,13 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
                 cut?.let { BubbleAction(Icons.Outlined.CropFree, "Foto intera", "Togli il ritaglio") { DocumentsStore.useFull(id, back) } },
             ).toTypedArray())
         }
-        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id)), onLongClick = { sideActions(back = false) }) { zoom = doc.front }
-        doc.back?.let { back -> DocPhoto(back, "Retro", onLongClick = { sideActions(back = true) }) { zoom = back } }
+        // Il pulsante per ruotare sta sulla foto, sempre visibile (Antonio, 2026-11-11): un quarto di giro a ogni tocco.
+        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id)), onLongClick = { sideActions(back = false) },
+            onRotate = { scope.launch { DocumentsStore.turn(context, id, back = false) } }) { zoom = doc.front }
+        doc.back?.let { back ->
+            DocPhoto(back, "Retro", onLongClick = { sideActions(back = true) },
+                onRotate = { scope.launch { DocumentsStore.turn(context, id, back = true) } }) { zoom = back }
+        }
         DetailFieldRow(doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento") { DocumentsStore.setNumber(id, it) }
         DetailTapRow(
             Icons.Outlined.EventBusy,
@@ -240,12 +245,13 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     }
 }
 
-/** Tocca per vederla grande; tieni premuto per ruotarla o tornare alla foto intera. */
+/** Tocca per vederla grande; il pulsante in basso la ruota; tieni premuto per ruotarla o tornare alla foto intera. */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onLongClick: () -> Unit, onClick: () -> Unit) {
+private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onLongClick: () -> Unit, onRotate: () -> Unit, onClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box {
         coil3.compose.AsyncImage(
             model = File(path),
             contentDescription = label,
@@ -257,5 +263,9 @@ private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, on
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .combinedClickable(onClick = onClick, onLongClick = onLongClick),
         )
+        Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
+            RoundIconButton(Icons.Outlined.Rotate90DegreesCw, "Ruota ${label.lowercase()}", onClick = onRotate)
+        }
+        }
     }
 }

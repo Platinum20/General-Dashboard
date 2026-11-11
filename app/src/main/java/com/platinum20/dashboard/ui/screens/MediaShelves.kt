@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.alpha
 import com.platinum20.dashboard.media.radio.RadioGenre
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -103,28 +105,34 @@ internal fun CaptionedCover(
 ) {
     val align = if (centered) TextAlign.Center else TextAlign.Start
     cover()
-    // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
-    Text(
-        title,
-        style = MaterialTheme.typography.labelLarge,
-        minLines = titleLines,
-        maxLines = titleLines,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = align,
-        modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 6.dp),
-    )
-    if (subtitle != null) {
+    @Composable
+    fun texts(title: String, subtitle: String?, fixed: Boolean) = Column {
+        // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
         Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            minLines = if (fixed) titleLines else 1,
+            maxLines = titleLines,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = align,
+            modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 6.dp),
+        )
+        if (subtitle != null) Text(
             subtitle,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            // Altezza fissa (1.442, Antonio: la pagina non deve muoversi): sempre una riga, anche se vuota.
             minLines = 1,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = align,
             modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 4.dp),
         )
+    }
+    // Altezza fissa (titolo su [titleLines] righe + autore): la tessera tiene sempre quello spazio, invisibile,
+    // ma l'autore sta subito sotto il titolo. Titolo su una riga → autore sulla seconda, terza vuota (Antonio, 2026-11-11).
+    Box {
+        Box(Modifier.alpha(0f).clearAndSetSemantics { }) { texts(" ", subtitle?.let { " " }, fixed = true) }
+        texts(title, subtitle, fixed = false)
     }
 }
 
