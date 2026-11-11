@@ -245,8 +245,9 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         }
         DetailFieldRow(
             doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento",
+            onCommit = { DocumentsStore.setNumber(id, it) },
             trailing = doc.number?.takeIf { it.isNotBlank() }?.let { n -> { CopyCodeButton(n) } },
-        ) { DocumentsStore.setNumber(id, it) }
+        )
         DetailTapRow(
             Icons.Outlined.EventBusy,
             doc.expiry?.let { "Scade il " + it.format(docDate) + " · nel calendario" } ?: "Aggiungi la scadenza",
