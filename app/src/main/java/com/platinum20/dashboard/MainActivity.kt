@@ -1295,7 +1295,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     bottomPadding = padding,
                     onOpenMusic = { navController.navigate(Routes.SPOTIFY_FEED) },
                     onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
-                    onOpenRadio = { navController.navigate(Routes.RADIO) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
                     onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
@@ -1309,6 +1308,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 MusicScreen(
                     onBack = { navController.popBackStack() },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
+                    onOpenRadio = { navController.navigate(Routes.RADIO) },
+                    onOpenPlayer = { navController.navigate(Routes.PLAYER) },
                 )
             }
             composable(
@@ -1367,8 +1368,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                     onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
                     onOpenPhone = { navController.navigate(Routes.VIDEO) },
-                    onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
-                    onOpenPlaylist = { navController.navigate(Routes.youtubePlaylist(it)) },
                     onOpenLiked = { navController.navigate(Routes.YOUTUBE_LIKED) },
                 )
             }
@@ -1402,6 +1401,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 MusicScreen(
                     onBack = { navController.popBackStack() },
                     onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
+                    onOpenRadio = { navController.navigate(Routes.RADIO) },
+                    onOpenPlayer = { navController.navigate(Routes.PLAYER) },
                 )
             }
             composable(

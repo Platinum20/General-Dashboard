@@ -46,6 +46,9 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import com.platinum20.dashboard.media.PlaySource
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -117,15 +120,18 @@ import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.delay
 
 /**
- * Musica: il tuo Spotify (API ufficiali, suona nel suo riproduttore dentro l'app). Una pagina sola
- * che scorre, con le sezioni in file orizzontali: nuove uscite, mix, playlist, preferiti, album.
- * Cerca = trascinare giù (Cerca ovunque già su Musica). I podcast stanno in "Radio e podcast".
+ * Musica: il tuo Spotify (API ufficiali, suona nel suo riproduttore dentro l'app), i podcast e la radio (1.475).
+ * Una pagina sola con cinque file orizzontali: Per te, Libreria, Podcast, Radio, Di recente.
+ * Cerca = trascinare giù (Cerca ovunque già su Musica).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreen(
     onBack: () -> Unit,
     onLogin: () -> Unit,
+    /** "Tutte le radio": l'elenco delle più ascoltate, per sceglierne una nuova. */
+    onOpenRadio: () -> Unit = {},
+    onOpenPlayer: (com.platinum20.dashboard.media.Playing) -> Unit = {},
 ) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
@@ -140,12 +146,27 @@ fun MusicScreen(
     var opened by remember { mutableStateOf<SpItem?>(null) }
     // Un podcast aperto dalla sua fila (1.437: i podcast stanno in Musica): i suoi episodi al posto della pagina.
     var podcast by remember { mutableStateOf<Podcast?>(null) }
+    // "I tuoi podcast" (1.475): si apre dal titolo della fila Podcast, al posto della pagina.
+    var followedOpen by remember { mutableStateOf(false) }
     remember { PodcastStore.init(context) }
     val podcastNow by PodcastStore.now.collectAsState()
 
-    BackHandler(enabled = opened != null || podcast != null) {
-        if (podcast != null) podcast = null else opened = null
+    BackHandler(enabled = opened != null || podcast != null || followedOpen) {
+        when {
+            podcast != null -> podcast = null
+            followedOpen -> followedOpen = false
+            else -> opened = null
+        }
     }
+    // Sopra il titolo cosa è cambiato (1.475, Antonio): uscite da ascoltare ed episodi nuovi.
+    val releasesNow by SpotifyStore.releases.collectAsState()
+    val seenNow by SpotifyStore.seenReleases.collectAsState()
+    val latestNow by PodcastStore.latest.collectAsState()
+    val historyNow by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val freshLine = com.platinum20.dashboard.media.MediaFresh.musicLine(
+        if (connected) NewReleases.unseen(releasesNow.data.orEmpty(), seenNow) else 0,
+        newEpisodes(latestNow.data.orEmpty(), historyNow).size,
+    )
 
     LaunchedEffect(message) {
         message?.let {
@@ -176,12 +197,14 @@ fun MusicScreen(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
-                title = podcast?.title ?: opened?.title ?: "Musica",
+                title = podcast?.title ?: opened?.title ?: if (followedOpen) "I tuoi podcast" else "Musica",
                 scrollBehavior = barScroll,
-                subtitle = podcast?.let { p -> p.author.ifBlank { if (p.fromSpotify) "Da Spotify" else "Podcast" } } ?: "Spotify e podcast",
+                subtitle = podcast?.let { p -> p.author.ifBlank { if (p.fromSpotify) "Da Spotify" else "Podcast" } }
+                    ?: if (followedOpen) "Podcast" else freshLine ?: "Spotify, podcast e radio",
                 onBack = {
                     when {
                         podcast != null -> podcast = null
+                        followedOpen -> followedOpen = false
                         opened != null -> opened = null
                         else -> onBack()
                     }
@@ -196,6 +219,10 @@ fun MusicScreen(
         ) {
             podcast?.let { page ->
                 PodcastPage(page, podcastNow)
+                return@Column
+            }
+            if (followedOpen) {
+                FollowedPodcasts(onOpen = { podcast = it })
                 return@Column
             }
             if (!connected) {
@@ -214,14 +241,26 @@ fun MusicScreen(
                 })
                 return@Column
             }
-            MusicHome(onOpen = { opened = it }, onOpenPodcast = { podcast = it })
+            MusicHome(
+                onOpen = { opened = it },
+                onOpenPodcast = { podcast = it },
+                onOpenFollowed = { followedOpen = true },
+                onOpenRadio = onOpenRadio,
+                onOpenPlayer = onOpenPlayer,
+            )
         }
     }
 }
 
 /** La pagina unica di Musica: ogni sezione è una fila che scorre di lato. */
 @Composable
-private fun MusicHome(onOpen: (SpItem) -> Unit, onOpenPodcast: (Podcast) -> Unit) {
+private fun MusicHome(
+    onOpen: (SpItem) -> Unit,
+    onOpenPodcast: (Podcast) -> Unit,
+    onOpenFollowed: () -> Unit,
+    onOpenRadio: () -> Unit,
+    onOpenPlayer: (com.platinum20.dashboard.media.Playing) -> Unit,
+) {
     val context = LocalContext.current
     val homeState by SpotifyStore.home.collectAsState()
     val playlistsState by SpotifyStore.playlists.collectAsState()
@@ -256,6 +295,9 @@ private fun MusicHome(onOpen: (SpItem) -> Unit, onOpenPodcast: (Podcast) -> Unit
         if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) playTracks(context, row, item) else onOpen(item)
     }
     val loading = home == null && homeState.loading
+    val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val playingNow by com.platinum20.dashboard.media.Playback.now.collectAsState()
+    val nowMusic = playingNow?.takeIf { it.source in MUSIC_SOURCES }
     LazyColumn(
         contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -266,26 +308,33 @@ private fun MusicHome(onOpen: (SpItem) -> Unit, onOpenPodcast: (Podcast) -> Unit
         listOfNotNull(homeState.error, playlistsState.error, libraryState.error).distinct().forEach { error ->
             item(key = "error-$error") { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp)) }
         }
-        // In cima quello che è uscito da poco: lo scopo di News, applicato alla musica.
-        val recentReleases = releases.data.orEmpty()
-        if (recentReleases.isNotEmpty()) item(key = "releases") {
-            ReleasesRow(recentReleases, seen) { release ->
-                SpotifyStore.markReleaseSeen(release.item.id)
-                onOpen(release.item)
+        // Il blocco colorato solo quando suona qualcosa di Musica (1.475: blu = adesso).
+        nowMusic?.let { playing ->
+            item(key = "now") {
+                MediaNowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
             }
         }
-        if (mixes.isNotEmpty()) item(key = "mixes") { MixRow(mixes) }
-        coverRow("Le tue playlist", playlistsState.data.orEmpty(), open)
-        coverRow("Ascoltati di recente", home?.recent.orEmpty(), open)
-        coverRow("Brani che ti piacciono", library?.liked.orEmpty(), open)
-        coverRow("Album salvati", library?.albums.orEmpty(), open)
-        coverRow("I tuoi brani del mese", home?.topTracks.orEmpty(), open)
-        coverRow("Artisti che ascolti di più", home?.topArtists.orEmpty(), open)
-        // In fondo i podcast (1.437, Antonio: dentro Musica, la radio resta a parte).
-        podcastRows(followed, latest.data.orEmpty(), ideas = search.data.orEmpty().takeIf { idea != null }, onIdea = { text ->
+        // Per te (1.475): uscite e mix in una fila sola, prima le uscite da ascoltare.
+        val recentReleases = releases.data.orEmpty()
+        if (recentReleases.isNotEmpty()) item(key = "releases") {
+            ReleasesRow(MediaShelves.freshFirst(recentReleases) { it.item.id !in seen }, seen, mixes, onOpen = { release ->
+                SpotifyStore.markReleaseSeen(release.item.id)
+                onOpen(release.item)
+            })
+        }
+        if (mixes.isNotEmpty() && recentReleases.isEmpty()) item(key = "mixes") { MixRow(mixes) }
+        // Libreria (1.475): le cose tue salvate in una fila, prima "Brani che ti piacciono".
+        val liked = library?.liked.orEmpty()
+        val saved = playlistsState.data.orEmpty() + library?.albums.orEmpty()
+        if (liked.isNotEmpty() || saved.isNotEmpty()) item(key = "library") { LibraryRow(liked, saved, open) }
+        // Podcast: gli episodi nuovi; "I tuoi podcast" dal titolo della fila.
+        podcastRows(followed, latest.data.orEmpty(), history, ideas = search.data.orEmpty().takeIf { idea != null }, onIdea = { text ->
             idea = text
             PodcastStore.search(text)
-        }, onOpenPodcast = onOpenPodcast)
+        }, onOpenPodcast = onOpenPodcast, onOpenFollowed = onOpenFollowed)
+        item(key = "radio") { RadioRow(onOpenRadio) }
+        // In fondo lo sguardo indietro. Brani del mese e Artisti che ascolti di più non hanno più una fila: fanno i Mix.
+        coverRow("Di recente", home?.recent.orEmpty(), open)
     }
 }
 
@@ -296,9 +345,11 @@ private fun MusicHome(onOpen: (SpItem) -> Unit, onOpenPodcast: (Podcast) -> Unit
 private fun LazyListScope.podcastRows(
     followed: List<Podcast>,
     latest: List<Episode>,
+    history: List<com.platinum20.dashboard.media.ResumeItem>,
     ideas: List<Podcast>?,
     onIdea: (String) -> Unit,
     onOpenPodcast: (Podcast) -> Unit,
+    onOpenFollowed: () -> Unit,
 ) {
     if (followed.isEmpty()) {
         item(key = "podcast-start") {
@@ -317,18 +368,19 @@ private fun LazyListScope.podcastRows(
         }
         return
     }
-    item(key = "podcast-followed") {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionHeader("I tuoi podcast", Modifier.padding(horizontal = 16.dp))
-            PodcastCovers(followed, onOpenPodcast)
-        }
-    }
-    if (latest.isNotEmpty()) item(key = "podcast-latest") {
+    // Una fila sola (1.475): gli episodi, prima quelli nuovi col pallino; il titolo apre "I tuoi podcast".
+    val fresh = newEpisodes(latest, history).map { it.id }.toSet()
+    val ordered = MediaShelves.freshFirst(latest) { it.id in fresh }
+    item(key = "podcast-latest") {
         val tile = coverTileWidth()
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionHeader("Nuovi episodi", Modifier.padding(horizontal = 16.dp))
+            OpenableHeader(MediaShelves.title("Podcast", fresh.size), onOpenFollowed, Modifier.padding(horizontal = 12.dp))
+            if (ordered.isEmpty()) {
+                PodcastCovers(followed, onOpenPodcast)
+                return@Column
+            }
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                itemsIndexed(latest, key = { _, e -> "ep-${e.id}" }) { i, episode ->
+                itemsIndexed(ordered, key = { _, e -> "ep-${e.id}" }) { i, episode ->
                     Column(
                         Modifier
                             .width(tile)
@@ -336,7 +388,10 @@ private fun LazyListScope.podcastRows(
                             .clickable { PodcastStore.play(episode) },
                     ) {
                         CaptionedCover(episode.title, episode.podcastTitle) {
-                            Cover(episode.image, MaterialTheme.shapes.medium, tile)
+                            Box {
+                                Cover(episode.image, MaterialTheme.shapes.medium, tile)
+                                if (episode.id in fresh) NewDot(Modifier.align(Alignment.TopEnd))
+                            }
                         }
                     }
                 }
@@ -365,14 +420,14 @@ private fun PodcastCovers(list: List<Podcast>, onOpen: (Podcast) -> Unit) {
     }
 }
 
-/** "Nuove uscite": copertine in fila, con il pallino finché non le apri. */
+/** "Per te" (1.475): le uscite (col pallino finché non le apri) e poi i mix, in una fila sola. */
 @Composable
-private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRelease) -> Unit) {
+private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, mixes: List<SpMix>, onOpen: (SpRelease) -> Unit) {
+    val context = LocalContext.current
     val today = LocalDate.now()
-    val fresh = NewReleases.unseen(list, seen)
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(if (fresh > 0) "Nuove uscite · $fresh da ascoltare" else "Nuove uscite", Modifier.padding(horizontal = 16.dp))
+        SectionHeader("Per te", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             itemsIndexed(list, key = { _, r -> "release-${r.item.id}" }) { i, release ->
                 Column(
@@ -384,18 +439,117 @@ private fun ReleasesRow(list: List<SpRelease>, seen: Set<String>, onOpen: (SpRel
                     CaptionedCover(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today)) {
                         Box {
                             Cover(release.item.image, MaterialTheme.shapes.medium, tile)
-                            if (release.item.id !in seen) {
-                                Box(
-                                    Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(6.dp)
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.primary),
-                                )
-                            }
+                            if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd))
                         }
                     }
+                }
+            }
+            itemsIndexed(mixes, key = { _, m -> "mix-${m.id}" }) { _, mix -> MixTile(mix, tile) { playTracks(context, mix.tracks, null) } }
+        }
+    }
+}
+
+/** Il pallino blu di una cosa nuova sulla copertina. */
+@Composable
+private fun NewDot(modifier: Modifier) {
+    Box(modifier.padding(6.dp).size(10.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+}
+
+/** Cosa suona in Musica: canzoni, episodi e radio (il blocco colorato compare solo per queste). */
+private val MUSIC_SOURCES = setOf(PlaySource.SPOTIFY, PlaySource.PODCAST, PlaySource.RADIO, PlaySource.MUSIC)
+
+/**
+ * Libreria (1.475): "Brani che ti piacciono" per primo (un tocco e partono), poi playlist e album salvati.
+ */
+@Composable
+private fun LibraryRow(liked: List<SpItem>, saved: List<SpItem>, open: (SpItem, List<SpItem>) -> Unit) {
+    val context = LocalContext.current
+    val tile = coverTileWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Libreria", Modifier.padding(horizontal = 16.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (liked.isNotEmpty()) item(key = "liked") {
+                Column(Modifier.width(tile).bouncyPress(0.96f).clickable { playTracks(context, liked, null) }) {
+                    CaptionedCover("Brani che ti piacciono", "${liked.size} brani") {
+                        Box(
+                            Modifier.size(tile).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(36.dp))
+                        }
+                    }
+                }
+            }
+            itemsIndexed(saved, key = { _, r -> "lib-${r.uri}" }) { i, item -> CoverTile(item, first = false, onClick = { open(item, saved) }) }
+        }
+    }
+}
+
+/**
+ * Radio dentro Musica (1.475, Antonio): le preferite e le ascoltate di recente in loghi tondi, sotto la canzone in onda
+ * quando la radio la manda; l'ultima tessera "Tutte le radio" apre l'elenco delle più ascoltate.
+ */
+@Composable
+private fun RadioRow(onOpenAll: () -> Unit) {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.media.radio.RadioStore.init(context) }
+    val favorites by com.platinum20.dashboard.media.radio.RadioStore.favorites.collectAsState()
+    val recent by com.platinum20.dashboard.media.radio.RadioStore.recent.collectAsState()
+    val now by com.platinum20.dashboard.media.radio.RadioStore.now.collectAsState()
+    val radios = MediaShelves.mix(favorites, recent, { it.id })
+    val tile = coverTileWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Radio", Modifier.padding(horizontal = 16.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(radios, key = { "radio-${it.id}" }) { station ->
+                val track = now?.takeIf { it.station.id == station.id }?.track.orEmpty()
+                val genre = com.platinum20.dashboard.media.radio.RadioGenre.of(station.tags) ?: "Radio"
+                Column(
+                    Modifier.width(tile).bouncyPress(0.96f).clickable { com.platinum20.dashboard.media.radio.RadioStore.play(station) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CaptionedCover(station.name, if (track.isNotBlank()) "In onda: $track" else genre, centered = true) {
+                        Cover(station.logo, CircleShape, tile)
+                    }
+                }
+            }
+            item(key = "radio-all") {
+                Column(Modifier.width(tile).bouncyPress(0.96f).clickable(onClick = onOpenAll), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CaptionedCover("Tutte le radio", "Le più ascoltate", centered = true) {
+                        Box(Modifier.size(tile).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** "I tuoi podcast": quelli che segui (anche salvati su Spotify), uno per riga; un tocco apre gli episodi. */
+@Composable
+private fun FollowedPodcasts(onOpen: (Podcast) -> Unit) {
+    val followedHere by PodcastStore.followed.collectAsState()
+    val spotifyShows by PodcastStore.spotify.collectAsState()
+    val followed = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
+    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (followed.isEmpty()) item { Text("Non segui ancora nessun podcast", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        items(followed, key = { it.feedUrl }) { podcast ->
+            Row(
+                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).bouncyPress(0.97f).clickable { onOpen(podcast) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Cover(podcast.artwork, MaterialTheme.shapes.medium, 56.dp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(podcast.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        podcast.author.ifBlank { if (podcast.fromSpotify) "Spotify" else "Podcast" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -453,32 +607,36 @@ private fun MixRow(mixes: List<SpMix>) {
     val context = LocalContext.current
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Mix per te", Modifier.padding(horizontal = 16.dp))
+        SectionHeader("Per te", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            itemsIndexed(mixes, key = { _, m -> m.id }) { i, mix ->
-                Column(
-                    Modifier
-                        .width(tile)
-                        .bouncyPress(0.96f)
-                        .clickable { playTracks(context, mix.tracks, null) },
-                ) {
-                    CaptionedCover(mix.title, mix.subtitle) {
-                        Box {
-                            Cover(mix.image, MaterialTheme.shapes.medium, tile)
-                            Text(
-                                "Mix",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier
-                                    .align(Alignment.BottomStart)
-                                    .padding(8.dp)
-                                    .clip(MaterialTheme.shapes.small)
-                                    .background(MaterialTheme.colorScheme.primaryContainer)
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                            )
-                        }
-                    }
-                }
+            itemsIndexed(mixes, key = { _, m -> m.id }) { _, mix -> MixTile(mix, tile) { playTracks(context, mix.tracks, null) } }
+        }
+    }
+}
+
+/** Un mix: la foto dell'artista con la scritta Mix sopra. */
+@Composable
+private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
+    Column(
+        Modifier
+            .width(tile)
+            .bouncyPress(0.96f)
+            .clickable(onClick = onClick),
+    ) {
+        CaptionedCover(mix.title, mix.subtitle) {
+            Box {
+                Cover(mix.image, MaterialTheme.shapes.medium, tile)
+                Text(
+                    "Mix",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
             }
         }
     }
@@ -622,7 +780,7 @@ private fun Cover(url: String, shape: Shape, size: Dp) {
  * [startAt] in poi, così si vedono, si spostano e si mischiano con le altre fonti. Se la lista non
  * c'è ancora, suona come prima dentro Spotify.
  */
-private fun playSpotifyList(context: android.content.Context, parent: SpItem, startAt: SpItem?) {
+internal fun playSpotifyList(context: android.content.Context, parent: SpItem, startAt: SpItem?) {
     val tracks = SpotifyStore.children.value[parent.id]?.data.orEmpty()
         .filter { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
     if (tracks.isEmpty()) return SpotifyPlayer.play(context, parent, startAt)

@@ -70,6 +70,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import coil3.compose.AsyncImage
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -108,8 +109,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
 
 /**
- * Media: in cima quello che suona adesso (o da riprendere), la coda e "Continua"; sotto tre file di copertine
- * (Musica con i podcast, Video, Radio) con quello che c'è dentro, e il titolo della fila apre la pagina intera.
+ * Media: in cima quello che suona adesso (o da riprendere) con la coda dentro, poi "Continua"; sotto due file di
+ * copertine (Video, Musica con podcast e radio) e il titolo della fila apre la pagina intera.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,7 +118,6 @@ fun MediaScreen(
     bottomPadding: PaddingValues,
     onOpenMusic: () -> Unit,
     onOpenVideo: () -> Unit,
-    onOpenRadio: () -> Unit,
     onOpenPlayer: (Playing) -> Unit,
     onOpenSettings: () -> Unit,
     /** Un video della fila Video: si apre nel player. */
@@ -153,6 +153,15 @@ fun MediaScreen(
     }
     val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
+    // Sopra il titolo cosa c'è di nuovo (1.475, Antonio): quello che suona lo dice già il blocco colorato.
+    remember { com.platinum20.dashboard.media.VideoVisit.init(context) }
+    val videoSince by com.platinum20.dashboard.media.VideoVisit.since.collectAsState()
+    val subs by com.platinum20.dashboard.media.youtube.YouTubeStore.subscriptions.collectAsState()
+    val latestEpisodes by PodcastStore.latest.collectAsState()
+    val freshVideos = remember(subs.data, videoSince) {
+        com.platinum20.dashboard.media.MediaFresh.newVideos(pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = false).videos, videoSince)
+    }
+    val freshEpisodes = remember(latestEpisodes.data, history) { newEpisodes(latestEpisodes.data.orEmpty(), history).size }
 
     // La coda si apre nello stesso riquadro del player (1.357): una coda sola, un posto solo.
     var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
@@ -163,12 +172,8 @@ fun MediaScreen(
         topBar = {
             TopLevelBar(
                 title = "Media",
-                subtitle = when {
-                    now?.playing == true -> "In riproduzione · ${now?.source?.label}"
-                    now != null -> "In pausa · ${now?.source?.label}"
-                    hero != null -> "Riprendi da dove eri"
-                    else -> "Musica, video, radio e podcast"
-                },
+                subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(if (youTubeOn) freshVideos else 0, freshEpisodes)
+                    ?: "Musica e video",
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -183,7 +188,12 @@ fun MediaScreen(
         ) {
             now?.let { playing ->
                 item(key = "now") {
-                    MediaNowCard(playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp))
+                    MediaNowCard(
+                        playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp),
+                        next = queue.upcoming.firstOrNull()?.item?.title,
+                        more = (queue.upcoming.size - 1).coerceAtLeast(0),
+                        onQueue = { queueOpen = true },
+                    )
                 }
             }
             hero?.let { last ->
@@ -191,8 +201,8 @@ fun MediaScreen(
                     MediaResumeCard(last, onClick = { openResume(last) }, modifier = Modifier.padding(horizontal = 16.dp))
                 }
             }
-            // La coda: cosa viene dopo, di qualunque fonte.
-            if (queue.upcoming.isNotEmpty()) item(key = "queue") {
+            // La coda sta nel blocco quando qualcosa suona; da ferma, sotto "Riprendi".
+            if (now == null && queue.upcoming.isNotEmpty()) item(key = "queue") {
                 QueuePeek(
                     onOpenQueue = { queueOpen = true },
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -209,9 +219,9 @@ fun MediaScreen(
             // Le tre file (1.357): quello che c'è in Musica (con i podcast, 1.437), Video e Radio, non tre tessere da aprire.
             // Il titolo di ogni fila apre la pagina intera.
             // 1.442 (Antonio): prima Video, poi Musica.
+            // 1.475 (Antonio): la radio sta dentro Musica, in fondo alla sua fila; niente fila Radio a parte.
             item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
             item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
-            item(key = "shelf-radio") { RadioShelf(onOpenAll = onOpenRadio) }
         }
     }
     // Sopra Media la barra resta in basso: l'ultima voce della coda le sta sopra.
@@ -260,8 +270,18 @@ private fun RowScope.SectionTile(
  * adesso oppure, se nulla suona, l'ultima cosa lasciata a metà da far ripartire.
  */
 @Composable
-internal fun MediaNowCard(now: Playing, onOpen: () -> Unit, modifier: Modifier = Modifier, hero: Boolean = true) {
+internal fun MediaNowCard(
+    now: Playing,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+    hero: Boolean = true,
+    /** La coda dentro il blocco (1.475, Antonio): "Dopo: titolo · altri N", un tocco la apre. */
+    next: String? = null,
+    more: Int = 0,
+    onQueue: (() -> Unit)? = null,
+) {
     MediaRowCard(
+        footer = if (next != null && onQueue != null) ({ QueueLine(next, more, onQueue) }) else null,
         hero = hero,
         label = (if (now.playing) "In riproduzione" else "In pausa") + " · " + now.source.label,
         title = now.title,
@@ -325,6 +345,7 @@ private fun MediaRowCard(
     modifier: Modifier,
     thumb: @Composable () -> Unit,
     action: @Composable () -> Unit,
+    footer: (@Composable () -> Unit)? = null,
 ) {
     CanvasCard(
         onClick = onClick,
@@ -359,6 +380,31 @@ private fun MediaRowCard(
             Spacer(Modifier.size(8.dp))
             action()
         }
+        footer?.invoke()
+    }
+}
+
+/** L'ultima riga del blocco colorato: cosa viene dopo. Prende il colore del blocco, niente card a parte. */
+@Composable
+private fun QueueLine(next: String, more: Int, onClick: () -> Unit) {
+    val ink = LocalContentColor.current
+    androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = 12.dp), color = ink.copy(alpha = 0.18f))
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            androidx.compose.ui.text.buildAnnotatedString {
+                append("Dopo: ")
+                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)) { append(next) }
+                if (more > 0) append(" · altri $more")
+            },
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = "Apri la coda", modifier = Modifier.size(18.dp))
     }
 }
 
@@ -374,7 +420,8 @@ private fun ContinueTile(item: ResumeItem, first: Boolean, onClick: () -> Unit) 
     ) {
         CaptionedCover(
             item.title,
-            listOf(item.subtitle, Resume.progressLabel(item)).filter { it.isNotBlank() }.joinToString(" · "),
+            // Quanto manca lo dice la barra sulla copertina (1.475): sotto resta solo chi lo pubblica.
+            item.subtitle,
             titleLines = MediaShelves.TITLE_LINES,
             textModifier = Modifier.padding(horizontal = 4.dp),
         ) {
@@ -449,3 +496,10 @@ private fun ResumeThumb(item: ResumeItem, size: Int) {
     }
 }
 
+
+/** Gli episodi usciti da poco che non hai ancora ascoltato (chiave della cronologia = id dell'episodio). */
+internal fun newEpisodes(latest: List<com.platinum20.dashboard.media.podcast.Episode>, history: List<ResumeItem>): List<com.platinum20.dashboard.media.podcast.Episode> {
+    val listened = history.filter { it.kind == ResumeKind.PODCAST }.map { it.key }.toSet()
+    val now = System.currentTimeMillis()
+    return latest.filter { com.platinum20.dashboard.media.MediaFresh.isNewEpisode(it, listened, now) }
+}
