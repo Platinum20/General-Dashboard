@@ -12,10 +12,15 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.robolectric.annotation.Config
 import java.time.LocalDateTime
 import java.time.ZoneId
 
 /** Il viaggio vivo: quando nasce la notifica, cosa dice, e la lettura dei dati di ViaggiaTreno. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
 class TripLiveTest {
     private val zone = ZoneId.of("Europe/Rome")
     private fun at(h: Int, m: Int) = LocalDateTime.of(2026, 11, 12, h, m).atZone(zone).toInstant().toEpochMilli()
