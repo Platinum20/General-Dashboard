@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Luggage
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
@@ -230,7 +231,9 @@ fun EventDetailScreen(
                     detail = com.platinum20.dashboard.trips.TrainPack.readyLine(packSec).orEmpty(),
                 ) { com.platinum20.dashboard.media.CanvasPlayer.playList(context, items) },
             )
-        }.orEmpty(),
+        }.orEmpty() +
+            // Condividi, che prima stava tenendo premuta la riga (Antonio, 2026-11-11).
+            listOfNotNull(current?.let { ev -> BubbleAction(Icons.Outlined.Share, "Condividi") { shareText(context, eventShareText(ev)) } }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({
