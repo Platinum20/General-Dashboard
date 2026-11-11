@@ -1,0 +1,45 @@
+https://www.agi.it/estero/news/2026-11-10/russia-ucraina-negoziati-abu-dhabi-39972512/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AGaJufY+KMkiJ28h55/e1g3AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMNMXc3jWCKu1qUfL0AgEQgDve3IFC09O6brJlSEg81dQORlD5uX87tcAC0dcx5brtdauwcAIJ6QZiMXX+0VxYaKU1s16nP4EEEuccyw==",
+          "iv":"D571aADxZAAAAqFh",
+          "context":"Cs6Y2Pp9w8VABsvIlvZC8ZSVkdrGgJyGLitM3YEFOpcVDsFC6B3QJhz//YLTTfJUC+WyJ8E8aqI/kQy0tvUPIP+HwkrzkkE6nGwGkmp7Yc/qYkkjWXQR9aFrYQ36mBF/SuB1RMD2N+BI1GuxfXH1W0Hig3JIa1zFnjHf+LwuXluacrkMCNQYfo66a2j0AVhH48rZzYUU9tp9O9kTFuEgMUA/qnHJrmHPGSWBKy6rVL/j/J5ETOVDiqHHDqL3COW/eNJurrs4XKld7YRI1yRDLkoRmaA+LnFKlRZfBVn2XgKPjMgE633puWuCAVNuVjv8apG5QnBpsjBd7qqdHsSHlX9FOyjN5lDQPe6HrAMBawsjSuJvnZ64oG+CpfE7l+9chqOdhB4h7Lc4Q4hTZPjQHZ1EI9o40cuukzmvoJzXzK2KM0E0zWeI5PckldjdE1cuL/4ecgV/etg7CDTWPB+CmWL1J4/2mFfHmn1Qf9DfbpyspHxJ3/2kIVz/Rb/g6Iv//ASE+kfg1F54lyt+/7aTadU2JvQBY56HThij7JKGqceZx5NBO6g8mnC02lIB6RXdw1toQbx0702QTYCYPqxmt/8GCd+MnnMsAh1xuM5GNnlm0psv6CpEns/V8Yu725VbKK+crG+tWhaTfL3w/zd8eN+UcCP+HsosfvltmgEIeDchUmNqHt1ZEvHZnpsac4/Y0rSrHmkwSpHiUMIWGDJjI3b1mahba1o7BVVIxILFAtmYgw9ZDq8/FW+zYemJh7e+NEE="
+};
+    </script>
+  <script src="https://a49c870577a3.623400f4.us-west-1.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>
