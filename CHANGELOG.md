@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.468.0
+**Lo zaino del treno**
+- La sera prima di un viaggio in treno, col Wi-Fi di casa, Canvas scarica da solo cosa ascoltare e guardare in treno
+- Prima i podcast e i video di YouTube che hai salvato nelle Note, poi gli episodi nuovi dei podcast che segui, quanto basta per il viaggio
+- Sul treno si ascoltano e si guardano senza rete: la SIM resta intatta
+- Sotto il treno nel Calendario c'è scritto quanto è pronto, per esempio "Pronti 3 h 20 per il viaggio"
+- Nella pagina del treno, in "Altro", "Ascolta lo zaino" mette tutto in coda
+- Mai coi dati mobili, mai più di 2 GB, e tutto si cancella da solo qualche ora dopo il ritorno
+- Si spegne in Impostazioni › Media › Zaino del treno
+
 ## 1.467.0
 **Il viaggio dal vivo**
 - Un'ora prima del treno arriva una notifica sola: quanti minuti mancano alla partenza, il ritardo vero, il binario, carrozza e posto
