@@ -55,7 +55,7 @@ data class AskData(
 )
 
 /**
- * Chiedi al "+" (1.469): una frase che è una domanda ("quando ho il prossimo turno con Marco?", "quanti giga ho?",
+ * Chiedi al "+" (1.473): una frase che è una domanda ("quando ho il prossimo turno con Marco?", "quanti giga ho?",
  * "che tempo fa sabato?") non si salva: il + risponde con quello che Canvas sa già, sul telefono, con regole
  * scritte qui (niente IA, niente rete). Se non capisce, la frase si salva come sempre. Il tipo non si chiede mai.
  */

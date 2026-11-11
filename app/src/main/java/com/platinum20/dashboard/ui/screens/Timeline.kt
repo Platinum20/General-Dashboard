@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -59,6 +60,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.today.BriefKind
 
 /**
@@ -97,6 +99,8 @@ data class TimelineEntry(
     val time: String? = null,
     /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
     val detail: String? = null,
+    /** Il numero del giorno, nel cerchio sulla linea accanto a [dayLabel] (Antonio, 2026-11-11); null = pallino. */
+    val dayNumber: Int? = null,
     /** Il tipo per il pallino colorato sulla linea; null = quello di [kind]. */
     val dot: RowDot? = null,
 ) {
@@ -221,6 +225,7 @@ fun TimelineRow(
     if (headed && !dayOnMarker) TimelineDayHeader(
         entry.dayLabel!!, start, line, top,
         rule = true,
+        number = entry.dayNumber,
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
@@ -255,6 +260,8 @@ fun TimelineRow(
     }
     val flashColor = MaterialTheme.colorScheme.primary
     val held = ActionBubble.heldBy(entry.key)
+    // Premendo si stringono il pallino (o il pezzo colorato) e il testo, la linea verticale resta ferma (Antonio, 2026-11-11).
+    val press = androidx.compose.runtime.remember(entry.key) { androidx.compose.animation.core.Animatable(1f) }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -268,7 +275,7 @@ fun TimelineRow(
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
                 )
             }
-            .bouncyPress(0.98f)
+            .bouncyPress(0.98f, external = press)
             .combinedClickable(
                 onClick = { SharedRows.origin = sharedScope; onClick() },
                 onLongClick = onLongClick?.let { long ->
@@ -293,9 +300,12 @@ fun TimelineRow(
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
-            dot = if (trip != null) null else dotColor to 8.dp,
+            // Il pallino largo quanto il pezzo colorato dei treni ([TRIP_STROKE]): stesso segno, solo più corto (Antonio).
+            dot = if (trip != null) null else dotColor to TRIP_STROKE,
             top = top || headed,
             bottom = bottom,
+            // Il pallino si stringe di più del testo, sennò su 4 dp non si vede.
+            press = { 1f - (1f - press.value) * 4f },
             segment = trip?.let {
                 TripSegment(
                     color = dotColor,
@@ -306,6 +316,14 @@ fun TimelineRow(
             },
         )
         Spacer(Modifier.width(6.dp))
+        Row(
+            Modifier.weight(1f).graphicsLayer {
+                scaleX = press.value
+                scaleY = press.value
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
+            },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
         if (trip != null) {
             TripBlock(trip, tint, entry.past, Modifier.weight(1f), Modifier.sharedItem(SharedRows.key(sharedScope, entry.key)), rail = false)
         } else {
@@ -358,6 +376,7 @@ fun TimelineRow(
         }
         entry.trailing?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+        }
         }
         }
     }
@@ -481,10 +500,35 @@ private fun TripStop(time: String, station: String, color: Color, title: Modifie
 
 private val GUTTER = 22.dp
 
+/** Lo spessore del pezzo colorato di un evento con orario, e il diametro del pallino delle altre cose. */
+private val TRIP_STROKE = 4.dp
+
+/** Il cerchio col numero del giorno; il pallino del mese ([MONTH_DOT]) è più grande (Antonio, 2026-11-11). */
+private val DAY_NUMBER = 18.dp
+private val MONTH_DOT = 22.dp
+
 /** La linea del mese: più spessa di quella dei giorni (1 dp). */
 private val MONTH_RULE = 3.dp
 
 
+
+/** Il nome del giorno accanto al cerchio col numero: il numero sta già nel cerchio, non si ripete (Antonio, 2026-11-11). */
+internal object DayLabel {
+    /** "Dom 15" → "Dom", "Ven 20 dic" → "Ven · dic", "15 nov 2027" → "nov 2027"; "Domani" resta "Domani". */
+    fun withoutNumber(label: String, number: Int?): String {
+        if (number == null) return label
+        val parts = label.split(' ').filter { it.isNotEmpty() }
+        val i = parts.indexOf(number.toString())
+        if (i < 0) return label
+        val before = parts.take(i)
+        val after = parts.drop(i + 1)
+        return when {
+            before.isEmpty() -> after.joinToString(" ")
+            after.isEmpty() -> before.joinToString(" ")
+            else -> before.joinToString(" ") + " · " + after.joinToString(" ")
+        }.ifEmpty { label }
+    }
+}
 
 /** Il colore del nome del giorno: rosso se in ritardo, tenue se passato, altrimenti inchiostro (blu solo OGGI). */
 @Composable
@@ -499,7 +543,7 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
  * del tempo, come OGGI e i mesi: separa dal giorno prima.
  */
 @Composable
-private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
+private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean, number: Int? = null) {
     val color = dayLabelColor(late, past)
     val dot = when {
         past -> MaterialTheme.colorScheme.outline
@@ -511,9 +555,22 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Il pallino sulla linea a sinistra, il nome e poi il filo fino in fondo: "● Domani ———" (1.465).
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true)
+        // Il giorno è il suo numero in un cerchio: non si confonde con i pallini colorati delle cose (Antonio, 2026-11-11).
+        Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+            TimelineGutter(Modifier.fillMaxHeight(), line, dot = if (number == null) dot to 7.dp else null, top = top, bottom = true)
+            if (number != null) Box(Modifier.size(DAY_NUMBER).clip(CircleShape).background(dot), contentAlignment = Alignment.Center) {
+                Text(
+                    number.toString(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFeatureSettings = "tnum",
+                    ),
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                )
+            }
+        }
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
+        Text(DayLabel.withoutNumber(label, number), style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f).height(1.dp).drawBehind { if (rule) drawRect(line) })
     }
@@ -521,7 +578,11 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
 
 /** Il pezzo di linea di una riga: sopra e/o sotto il centro, con il pallino (colore e grandezza) se c'è. */
 @Composable
-private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, segment: TripSegment? = null) {
+private fun TimelineGutter(
+    modifier: Modifier, line: Color, dot: Pair<Color, Dp>?, top: Boolean, bottom: Boolean, segment: TripSegment? = null,
+    /** La scala della pressione per pallino e pezzo colorato (letta mentre disegna); la linea grigia non si muove. */
+    press: () -> Float = { 1f },
+) {
     val here = MaterialTheme.colorScheme.primary
     Box(
         modifier.width(GUTTER).drawBehind {
@@ -530,11 +591,16 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
             val stroke = 2.dp.toPx()
             if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), stroke)
             if (bottom) drawLine(line, Offset(x, mid), Offset(x, size.height), stroke)
-            dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2, Offset(x, mid)) }
+            val k = press().coerceIn(0.5f, 1.2f)
+            dot?.let { (color, r) -> drawCircle(color, r.toPx() / 2 * k, Offset(x, mid)) }
             segment?.let { s ->
-                val a = s.from.toPx()
-                val b = maxOf(a, size.height - s.toBottom.toPx())
-                drawLine(s.color, Offset(x, a), Offset(x, b), 4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                val a0 = s.from.toPx()
+                val b0 = maxOf(a0, size.height - s.toBottom.toPx())
+                // Il pezzo colorato si accorcia verso il suo centro, come il testo accanto.
+                val c = (a0 + b0) / 2
+                val a = c + (a0 - c) * (1f - (1f - k) / 4f)
+                val b = c + (b0 - c) * (1f - (1f - k) / 4f)
+                drawLine(s.color, Offset(x, a), Offset(x, b), TRIP_STROKE.toPx() * k, cap = androidx.compose.ui.graphics.StrokeCap.Round)
                 // Mentre è in corso, il pallino "sei qui" scende lungo il pezzo colorato.
                 s.progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, a + (b - a) * it)) }
             }
@@ -577,7 +643,8 @@ fun TimelineNowMarker(
                 // La linea grigia continua sopra e sotto OGGI: niente buchi intorno al pallino.
                 if (top) drawLine(rail, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(rail, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawCircle(primary, 6.dp.toPx() * (1f + 0.4f * pulse.value), Offset(size.width / 2, size.height / 2))
+                // Grande quanto il cerchio dei giorni ([DAY_NUMBER], Antonio 2026-11-11).
+                drawCircle(primary, DAY_NUMBER.toPx() / 2 * (1f + 0.25f * pulse.value), Offset(size.width / 2, size.height / 2))
             },
         )
         Spacer(Modifier.width(6.dp))
@@ -634,6 +701,7 @@ fun TimelineMonthMarker(
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
     val month = MaterialTheme.colorScheme.outline
+    val ink = MaterialTheme.colorScheme.onSurface
     Row(
         Modifier.fillMaxWidth().height(30.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
@@ -646,7 +714,8 @@ fun TimelineMonthMarker(
                 val mid = size.height / 2
                 if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
+                // Il mese è un pallino pieno più grande del cerchio dei giorni (Antonio, 2026-11-11).
+                drawCircle(ink, MONTH_DOT.toPx() / 2, Offset(x, mid))
             },
         )
         Spacer(Modifier.width(6.dp))

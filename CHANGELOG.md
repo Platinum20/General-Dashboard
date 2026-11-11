@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.469.0
+## 1.473.0
 **Chiedi al "+"**
 - Scrivi o di' una domanda nel "+" e Canvas risponde invece di salvarla, con quello che sa già
 - "Quando ho il prossimo turno con Marco?", "Quante ore ho lavorato questo mese?", "Quando parto?"
@@ -8,6 +8,22 @@
 - "Dov'è il pacco?", "Quando è il compleanno di Marta?"
 - La risposta compare nel fumetto in basso; "Apri" porta alla pagina giusta
 - Tutto sul telefono, senza rete; se Canvas non sa rispondere la frase si salva come sempre
+
+## 1.471.0
+**Calendario più pulito, card della Home più corta, tessere Media ordinate**
+- Il numero del giorno sta solo nel cerchio: accanto c'è il nome ("Dom"), non più "Dom 15"
+- Il pallino di OGGI è grande quanto i cerchi dei giorni
+- Tenendo premuto un evento si muovono solo il suo pallino (o la linea colorata del treno) e la scritta, la linea del tempo resta ferma
+- La card Calendario in Home mostra solo oggi e domani; il resto è nel calendario intero
+- Nelle tessere di Media, se il titolo sta su una riga, chi l'ha pubblicato va subito sotto; le tessere restano tutte alte uguali
+- Documenti: un pulsante sulla foto per ruotarla, fronte e retro
+
+## 1.470.0
+**Giorni e mesi si distinguono dai pallini del Calendario**
+- Ogni giorno ha il suo numero in un cerchio sulla linea a sinistra, accanto al nome
+- I mesi hanno un pallino pieno più grande
+- Così i pallini colorati restano solo per le cose
+- I pallini delle cose sono spessi come la linea colorata di treni e turni
 
 ## 1.468.0
 **Lo zaino del treno**

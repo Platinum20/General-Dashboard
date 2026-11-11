@@ -6,6 +6,10 @@ import com.platinum20.dashboard.ui.screens.TimelineEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
+import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.undatedEntries
+import java.time.LocalDate
+import java.time.ZoneId
 
 /** Il pallino colorato per tipo al posto dell'icona nelle righe del calendario (Antonio, 2026-11-11). */
 class RowDotTest {
@@ -34,5 +38,17 @@ class RowDotTest {
         val colors = RowDot.entries.map { it.argb(0) }
         assertEquals(colors.size, colors.toSet().size)
         assertNotEquals(RowDot.TASK.argb(0), RowDot.NOTE.argb(0))
+    }
+
+    /** Il giorno ha il suo numero nel cerchio sulla linea, solo sulla prima riga di quel giorno. */
+    @Test fun dayHeaderCarriesItsNumber() {
+        val zone = ZoneId.of("Europe/Rome")
+        val today = LocalDate.of(2026, 11, 11)
+        fun at(d: LocalDate, h: Int) = d.atTime(h, 0).atZone(zone).toInstant().toEpochMilli()
+        val entries = undatedEntries(
+            tasks = listOf(TaskItem(1, "A", createdAt = at(today.minusDays(3), 9)), TaskItem(2, "B", createdAt = at(today.minusDays(3), 10))),
+            notes = emptyList(), today = today, zone = zone,
+        ).map { it.first }
+        assertEquals(listOf(8, null), entries.map { it.dayNumber })
     }
 }

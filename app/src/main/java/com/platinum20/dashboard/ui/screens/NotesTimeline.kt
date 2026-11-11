@@ -423,6 +423,7 @@ internal fun timelineEntries(
                 kind = kind,
                 text = text,
                 dayLabel = if (i == 0) label else null,
+                dayNumber = if (i == 0 && !g.late) day?.dayOfMonth else null,
                 color = r.event?.color ?: 0,
                 late = g.late || r.overdueFrom != null,
                 done = r.task?.done == true,
@@ -511,10 +512,10 @@ internal fun undatedEntries(
         val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                label, month = month, done = row.task.done)
+                label, month = month, done = row.task.done, dayNumber = label?.let { day.dayOfMonth })
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
                 label,
-                trailing = NoteText.badge(row.note.text), month = month)
+                trailing = NoteText.badge(row.note.text), month = month, dayNumber = label?.let { day.dayOfMonth })
         }
         out += entry to row
         previous = day
@@ -589,15 +590,14 @@ internal fun habitsIndex(days: List<Pair<LocalDate?, Boolean>>, nowAt: Int, toda
 }
 
 /**
- * Quante righe mostra la card Calendario in Home dopo quelle di oggi (1.357, Antonio): il resto della settimana,
- * almeno [min]; e quante altre cose restano nel mese in corso, per la riga "Altre N a novembre".
- * [days] = per ogni riga dopo oggi il suo giorno (null = senza data).
+ * Quante righe mostra la card Calendario in Home dopo quelle di oggi: solo domani (Antonio, 2026-11-11: "solo oggi
+ * e domani"); e quante altre cose restano nel mese in corso, per la riga "Altre N a novembre".
+ * [days] = per ogni riga dopo oggi il suo giorno (null = senza data), in ordine.
  */
-internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate, min: Int): Pair<Int, Int> {
-    val weekEnd = today.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY))
-    val week = days.count { it != null && it.isAfter(today) && !it.isAfter(weekEnd) }
-    val shown = minOf(days.size, maxOf(week, min))
+internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int, Int> {
+    val tomorrow = today.plusDays(1)
+    val shown = days.takeWhile { it == tomorrow }.size
     val month = java.time.YearMonth.from(today)
-    val more = days.drop(shown).count { it != null && java.time.YearMonth.from(it) == month }
+    val more = days.drop(shown).count { it != null && it.isAfter(today) && java.time.YearMonth.from(it) == month }
     return shown to more
 }

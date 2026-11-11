@@ -15,7 +15,7 @@ internal object VoiceCapture {
         /** Salvato: [undo] lo toglie, se si può. */
         data class Saved(val mode: CaptureMode, val message: String, val undo: (suspend () -> Unit)?) : Outcome
         data object NeedsDialog : Outcome
-        /** Era una domanda (Chiedi al "+", 1.469): niente da salvare, c'è la risposta. */
+        /** Era una domanda (Chiedi al "+", 1.473): niente da salvare, c'è la risposta. */
         data class Answered(val answer: Answer) : Outcome
     }
 
