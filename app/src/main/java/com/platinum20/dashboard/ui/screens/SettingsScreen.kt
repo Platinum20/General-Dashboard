@@ -83,6 +83,7 @@ import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Umbrella
+import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -390,6 +391,8 @@ fun SettingsPageScreen(
                         MorningSettings()
                         RowDivider()
                         RainAlertSetting()
+                        RowDivider()
+                        LiveTripSettings()
                         RowDivider()
                         RadioAlarmSetting()
                         RowDivider()
@@ -1203,6 +1206,51 @@ private fun RainAlertSetting() {
         },
         onClick = toggle,
         trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
+    )
+}
+
+/**
+ * Il viaggio vivo: un'ora prima del treno una notifica sola con minuti alla partenza, ritardo, binario e biglietto;
+ * sotto, lo stesso conto alla rovescia prima dei turni (solo se lo accendi).
+ */
+@Composable
+private fun LiveTripSettings() {
+    val context = LocalContext.current
+    val trains by AppSettings.liveTrips.collectAsState()
+    val shifts by AppSettings.liveShifts.collectAsState()
+    var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) pending?.invoke()
+        pending = null
+    }
+    val needsPermission = !MorningWorker.canNotify(context) && Build.VERSION.SDK_INT >= 33
+    fun change(on: Boolean, apply: (Boolean) -> Unit) {
+        val done = { apply(on); com.platinum20.dashboard.work.TripLiveWorker.schedule(context) }
+        if (on && needsPermission) {
+            pending = done
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else done()
+    }
+    SettingsItem(
+        icon = Icons.Outlined.Train,
+        accent = TileAccent.BLUE,
+        title = "Viaggio dal vivo",
+        subtitle = when {
+            trains && needsPermission -> "Notifiche bloccate: tocca per consentirle"
+            trains -> "Un'ora prima del treno: ritardo, binario e biglietto"
+            else -> "Una notifica che segue il treno fino all'arrivo"
+        },
+        onClick = { change(!trains || needsPermission, AppSettings::setLiveTrips) },
+        trailing = { Switch(checked = trains && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveTrips) }) },
+    )
+    RowDivider()
+    SettingsItem(
+        icon = Icons.Outlined.Schedule,
+        accent = TileAccent.BLUE,
+        title = "Conto alla rovescia dei turni",
+        subtitle = if (shifts) "Tre quarti d'ora prima di ogni turno" else "La stessa notifica prima di ogni turno",
+        onClick = { change(!shifts, AppSettings::setLiveShifts) },
+        trailing = { Switch(checked = shifts && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveShifts) }) },
     )
 }
 

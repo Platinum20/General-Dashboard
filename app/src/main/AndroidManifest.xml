@@ -15,6 +15,8 @@
     <!-- Compila da solo: solo per rileggere gli SMS degli ultimi giorni, quando lo chiedi tu. -->
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Android 16+: il viaggio vivo in alto sulla schermata di blocco (Live Update). -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission
@@ -66,6 +68,15 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Il biglietto dalla notifica del viaggio: si apre anche col telefono bloccato. -->
+        <activity
+            android:name=".tickets.TicketActivity"
+            android:exported="false"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
         <!-- Cattura al volo: finestrella sopra le altre app per promemoria e note. -->
         <activity

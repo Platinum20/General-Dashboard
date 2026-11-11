@@ -93,6 +93,8 @@ object AppSettings {
     private const val KEY_AD_BLOCK = "ad_block"
     private const val KEY_UPDATE_NOTIFY = "update_notify"
     private const val KEY_RAIN_ALERT = "rain_alert"
+    private const val KEY_LIVE_TRIPS = "live_trips"
+    private const val KEY_LIVE_SHIFTS = "live_shifts"
     private const val KEY_READING_VOICE = "reading_voice"
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
@@ -121,6 +123,12 @@ object AppSettings {
     private val _rainAlert = MutableStateFlow(false)
     /** Notifica quando sta per piovere (spenta di default). */
     val rainAlert: StateFlow<Boolean> = _rainAlert.asStateFlow()
+    private val _liveTrips = MutableStateFlow(true)
+    /** Il viaggio vivo: un'ora prima del treno una notifica sola con ritardo, binario e biglietto (acceso di default). */
+    val liveTrips: StateFlow<Boolean> = _liveTrips.asStateFlow()
+    private val _liveShifts = MutableStateFlow(false)
+    /** Lo stesso conto alla rovescia prima di ogni turno (spento di default). */
+    val liveShifts: StateFlow<Boolean> = _liveShifts.asStateFlow()
     private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
     /** La voce che legge notizie e punto del giorno. */
     val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
@@ -208,6 +216,8 @@ object AppSettings {
         _adBlock.value = prefs.getBoolean(KEY_AD_BLOCK, true)
         _updateNotify.value = prefs.getBoolean(KEY_UPDATE_NOTIFY, true)
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
+        _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
+        _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, false)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
@@ -298,6 +308,16 @@ object AppSettings {
     fun setRainAlert(enabled: Boolean) {
         _rainAlert.value = enabled
         prefs.edit().putBoolean(KEY_RAIN_ALERT, enabled).apply()
+    }
+
+    fun setLiveTrips(enabled: Boolean) {
+        _liveTrips.value = enabled
+        prefs.edit().putBoolean(KEY_LIVE_TRIPS, enabled).apply()
+    }
+
+    fun setLiveShifts(enabled: Boolean) {
+        _liveShifts.value = enabled
+        prefs.edit().putBoolean(KEY_LIVE_SHIFTS, enabled).apply()
     }
 
     private fun readLayout(): HomeLayout {
