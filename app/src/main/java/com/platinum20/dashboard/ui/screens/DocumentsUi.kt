@@ -131,7 +131,7 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
     }
 }
 
-/** Copia il numero del documento negli appunti e lo dice nel fumetto in basso. */
+/** Copia il numero del documento negli appunti (avviso: vedi [Clip]). */
 @Composable
 internal fun CopyCodeButton(code: String) {
     val context = LocalContext.current
@@ -139,9 +139,7 @@ internal fun CopyCodeButton(code: String) {
     androidx.compose.material3.IconButton(
         onClick = {
             haptic(Haptic.CONFIRM)
-            val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
-            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Numero del documento", code))
-            CaptureFeedback.tell(context, "Numero copiato", Icons.Outlined.ContentCopy)
+            Clip.copy(context, "Numero del documento", code, "Numero copiato")
         },
         modifier = Modifier.size(40.dp).bouncyPress(0.9f),
     ) {
