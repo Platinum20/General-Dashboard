@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.467.0
+**Il viaggio dal vivo**
+- Un'ora prima del treno arriva una notifica sola: quanti minuti mancano alla partenza, il ritardo vero, il binario, carrozza e posto
+- In viaggio la notifica diventa una barra che avanza fino all'arrivo, con l'orario d'arrivo che tiene conto del ritardo
+- Su Android 16 e successivi sta in alto sulla schermata di blocco, con l'orario nella barra di stato
+- Il tasto "Biglietto" nella notifica apre il QR anche col telefono bloccato, a luminosità piena
+- Nel Calendario, accanto alla durata del treno, compaiono ritardo e binario mentre il viaggio è vivo
+- Il ritardo viene da Trenitalia (ViaggiaTreno); se non risponde la notifica lo dice
+- In Impostazioni › Notifiche puoi accendere lo stesso conto alla rovescia prima di ogni turno
+
 ## 1.466.0
 **Pallini colorati al posto delle icone nel Calendario**
 - Ogni cosa del calendario ha un pallino colorato sulla linea a sinistra, invece dell'icona: il colore dice che cos'è

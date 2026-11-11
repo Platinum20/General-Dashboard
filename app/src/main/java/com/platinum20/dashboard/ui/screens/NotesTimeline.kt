@@ -298,7 +298,14 @@ internal fun CalendarInvite(onAllow: () -> Unit, onLater: () -> Unit) {
 internal fun andList(names: List<String>): String =
     if (names.size <= 1) names.joinToString() else names.dropLast(1).joinToString(", ") + " e " + names.last()
 
-internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), labels: Boolean = false): TripStops? {
+internal fun tripStops(
+    event: CalendarEvent,
+    today: LocalDate,
+    zone: ZoneId = ZoneId.systemDefault(),
+    labels: Boolean = false,
+    /** Il treno adesso (viaggio vivo, 1.467): ritardo e binario accanto alla durata, solo se letti da poco. */
+    live: com.platinum20.dashboard.trips.TrainStatus? = event.trip?.let { com.platinum20.dashboard.trips.TrainLive.fresh(event.eventId) },
+): TripStops? {
     if (event.allDay || event.end <= event.begin) return null
     val trip = event.trip
     val hour = DateTimeFormatter.ofPattern("HH:mm")
@@ -314,7 +321,7 @@ internal fun tripStops(event: CalendarEvent, today: LocalDate, zone: ZoneId = Zo
         arriveAt = to.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
-        middle = duration,
+        middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line)).joinToString(" · "),
         below = com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
         begin = event.begin,
         end = event.end,

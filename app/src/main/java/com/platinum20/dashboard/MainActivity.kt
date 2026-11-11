@@ -324,6 +324,7 @@ class MainActivity : ComponentActivity() {
                 if (Widgets.hasAny(app)) RefreshWorker.schedule(app)
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
+                com.platinum20.dashboard.work.TripLiveWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)

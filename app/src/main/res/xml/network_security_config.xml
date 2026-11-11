@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tutto in https, tranne i dati dei treni di ViaggiaTreno, che rimandano a http (il viaggio dal vivo, 1.467). -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">viaggiatreno.it</domain>
+    </domain-config>
+</network-security-config>
