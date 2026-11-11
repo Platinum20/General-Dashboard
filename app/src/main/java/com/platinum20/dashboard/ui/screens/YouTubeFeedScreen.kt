@@ -2,6 +2,10 @@ package com.platinum20.dashboard.ui.screens
 
 
 
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import com.platinum20.dashboard.media.youtube.YtRatings
+import com.platinum20.dashboard.capture.CaptureFeedback
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -96,145 +100,21 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-/** 1.475 (Antonio): via Canali e Playlist; "Home" si chiama "Per te" (Home è già la prima pagina dell'app). */
-private val youTubeTabs = listOf("Iscrizioni", "Per te", "Cronologia")
-private const val TAB_SUBS = 0
-private const val TAB_HOME = 1
-private const val TAB_HISTORY = 2
-
 /**
- * Il tuo YouTube nell'app: tre schede larghe (Iscrizioni, Per te, Cronologia), niente riquadri sopra. Mi piace sta in
- * cima a Cronologia; un canale si apre dal suo nome sotto il video; i video del telefono dalla graffetta del +
- * (1.475, Antonio). Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
+ * La Cronologia di YouTube (1.481, Antonio: Video non è più una pagina con le schede; questa è una riga in fondo a
+ * Media): i video guardati qui, poi quelli della tua cronologia di YouTube.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YouTubeFeedScreen(
-    onBack: () -> Unit,
-    onPlay: (String) -> Unit,
-    onLogin: () -> Unit,
-    /** I video del telefono: solo dalla pagina per collegare YouTube, se non è collegato. */
-    onOpenPhone: () -> Unit,
-    /** Mi piace è una pagina vera (1.357): transizione e gesto indietro come le altre. */
-    onOpenLiked: () -> Unit = {},
-) {
-    val context = LocalContext.current
-    YouTubeAuth.init(context)
-    val official by YouTubeAuth.connected.collectAsState()
-    val loggedIn by Accounts.loggedIn.collectAsState()
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
-    // Basta l'accesso a YouTube fatto nell'app; il collegamento ufficiale sta in Impostazioni › Account.
-    val connected = official || MediaService.YOUTUBE in loggedIn
-    // Si apre sulle Iscrizioni: la pagina risponde a "cosa è uscito dai canali che seguo".
-    var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
-    // L'ultima visita: quello uscito dopo sta sopra ULTIMA VISITA. Aprire un video e tornare non conta come visita.
-    remember { com.platinum20.dashboard.media.VideoVisit.init(context) }
-    val visitSince = remember { com.platinum20.dashboard.media.VideoVisit.enter() }
-    DisposableEffect(Unit) { onDispose { com.platinum20.dashboard.media.VideoVisit.leave() } }
-    // Escludi Shorts / live si scelgono una volta in Impostazioni › Fa da solo.
-    val hideShorts by AppSettings.hideShorts.collectAsState()
-    val hideLive by AppSettings.hideLive.collectAsState()
-
-    val subs by YouTubeStore.subscriptions.collectAsState()
-    val fresh = com.platinum20.dashboard.media.MediaFresh.newVideos(pickFeed(subs.data.orEmpty(), hideShorts, hideLive).videos, visitSince)
-
+fun YouTubeHistoryScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopLevelBar(
-                title = "Video",
-                scrollBehavior = barScroll,
-                subtitle = if (fresh > 0) "$fresh nuovi dall'ultima visita" else "YouTube",
-                onBack = onBack,
-            )
-        },
+        topBar = { TopLevelBar(title = "Cronologia", subtitle = "YouTube", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-        ) {
-            if (!connected) {
-                ConnectYouTube(onLogin = onLogin, onOpenPhone = onOpenPhone)
-                return@Column
-            }
-            // Le tre schede in parti uguali fino al bordo destro.
-            Row(
-                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                youTubeTabs.forEachIndexed { index, label ->
-                    CanvasTabChip(selected = tab == index, onClick = { tab = index }, label = label, modifier = Modifier.weight(1f))
-                }
-            }
-            when (tab) {
-                TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
-                TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, visitSince, onPlay)
-                else -> HistoryTab(onPlay, onOpenLiked)
-            }
-        }
+        Column(Modifier.fillMaxSize().padding(inner)) { HistoryTab(onPlay) }
     }
-}
-
-/**
- * Un pulsante solo: accedere a YouTube qui nell'app. Il collegamento con l'API ufficiale di Google sta in
- * Impostazioni › Account, per chi lo vuole; i video del telefono sono una riga, non un'altra strada.
- */
-@Composable
-private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        IconTile(Icons.Outlined.OndemandVideo, TileAccent.ORANGE, size = 72.dp, iconSize = 36.dp)
-        Spacer(Modifier.height(20.dp))
-        Text("Collega YouTube", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Iscrizioni, playlist e Mi piace, qui nell'app.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
-        CanvasButton("Accedi a YouTube", onClick = onLogin, primary = true)
-        Spacer(Modifier.height(24.dp))
-        CanvasCard(onClick = onOpenPhone, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Video del telefono", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeTab(hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val state by YouTubeStore.home.collectAsState()
-    val ended by YouTubeStore.homeEnded.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
-    VideoFeed(
-        state, empty = "La Home è vuota", hideShorts, hideLive, onPlay = onPlay,
-        onNearEnd = if (ended) null else ({ YouTubeStore.loadMoreHome(context) }),
-    )
-}
-
-@Composable
-private fun SubscriptionsTab(hideShorts: Boolean, hideLive: Boolean, since: Long, onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val state by YouTubeStore.subscriptions.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshSubscriptions(context) }
-    VideoFeed(state, empty = "Nessun video nuovo dai canali che segui", hideShorts, hideLive, onPlay = onPlay, since = since)
 }
 
 /** Quello che resta del feed con i filtri: gli Short (fila a parte) e gli altri video. */
@@ -334,7 +214,7 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
 
 /** Una riga fissa in cima a Cronologia (Mi piace). */
 @Composable
-private fun ListRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
+internal fun ListRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
     CanvasCard(Modifier.fillMaxWidth().bouncyPress(0.97f), onClick = onClick) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             IconTile(icon, accent, size = 40.dp, iconSize = 22.dp)
@@ -364,19 +244,197 @@ internal fun channelLines(channels: List<YtChannel>, recent: List<YtVideo>): Lis
 }
 
 /**
- * La pagina di un canale aperta da fuori (tocco sul canale nella pagina del video): la stessa lista
- * di tutti i video della scheda Canali.
+ * La pagina di un canale come su YouTube (1.481, Antonio: "esattamente come YouTube", non solo gli ultimi video):
+ * copertina, foto, nome, iscritti, descrizione, Iscriviti, poi le schede Video, Shorts, Live e Playlist che il canale
+ * ha. Ci si arriva dalle storie di Media, dal canale sotto ogni video e dalla pagina del video.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YouTubeChannelScreen(channel: YtChannel, onBack: () -> Unit, onPlay: (String) -> Unit) {
-    val hideShorts by AppSettings.hideShorts.collectAsState()
+fun YouTubeChannelScreen(
+    channel: YtChannel,
+    onBack: () -> Unit,
+    onPlay: (String) -> Unit,
+    onOpenPlaylist: (YtPlaylist) -> Unit = {},
+) {
+    val context = LocalContext.current
     val hideLive by AppSettings.hideLive.collectAsState()
-    Scaffold(
-        topBar = { TopLevelBar(title = channel.title, subtitle = "Tutti i video, dal più recente", onBack = onBack) },
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
-            ChannelVideos(channel, hideShorts, hideLive, onPlay)
+    val hideMembers by AppSettings.hideMembers.collectAsState()
+    val infos by YouTubeStore.channelInfo.collectAsState()
+    val tabsState by YouTubeStore.channelTabs.collectAsState()
+    val videosAll by YouTubeStore.channelVideos.collectAsState()
+    val more by YouTubeStore.channelHasMore.collectAsState()
+    LaunchedEffect(channel.id) {
+        YouTubeStore.loadChannelInfo(channel)
+        YouTubeStore.loadChannel(channel)
+    }
+    YtRatings.init(context)
+    val changedSubs by YtRatings.subscribed.collectAsState()
+    val channels by YouTubeStore.channels.collectAsState()
+    val subscribed = YtRatings.isSubscribed(channel.id, changedSubs, channels.data)
+    val info = infos[channel.id]?.data
+    val tabs = remember(info) { channelTabs(info?.tabs?.keys) }
+    var tab by rememberSaveable { mutableStateOf(org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS) }
+    LaunchedEffect(tab, info != null) {
+        if (tab != org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS) YouTubeStore.loadChannelTab(channel, tab)
+    }
+    var descriptionOpen by rememberSaveable { mutableStateOf(false) }
+    val videos = videosAll[channel.id] ?: Loadable(loading = true)
+    val pick = pickFeed(videos.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers)
+    val other = tabsState[channel.id + "/" + tab]
+    val name = info?.name?.ifBlank { null } ?: channel.title
+    val avatar = info?.avatar?.ifBlank { null } ?: channel.thumbnail
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        LazyColumn(
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.statusBarsPadding(),
+        ) {
+            item(key = "top") { Spacer(Modifier.height(48.dp)) }
+            if (!info?.banner.isNullOrBlank()) item(key = "banner") {
+                AsyncImage(
+                    model = info!!.banner,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().aspectRatio(6.2f / 1f).clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                )
+            }
+            item(key = "head") {
+                Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ChannelAvatar(avatar, name, 72)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        val line = channelLine(info?.subscribers ?: -1, info?.verified == true)
+                        if (line.isNotBlank()) {
+                            Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        }
+                    }
+                }
+            }
+            info?.description?.takeIf { it.isNotBlank() }?.let { text ->
+                item(key = "about") {
+                    Text(
+                        text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = if (descriptionOpen) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 16.dp).clickable { descriptionOpen = !descriptionOpen },
+                    )
+                }
+            }
+            item(key = "subscribe") {
+                CanvasButton(
+                    if (subscribed) "Iscritto" else "Iscriviti",
+                    onClick = {
+                        val ok = YtRatings.toggleSubscribe(context, channel.id, subscribed) {
+                            CaptureFeedback.tell(context, "YouTube non ha preso l'iscrizione, riprova")
+                        }
+                        if (!ok) CaptureFeedback.tell(context, "Accedi a YouTube in Impostazioni › Account")
+                    },
+                    primary = !subscribed,
+                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                )
+            }
+            if (tabs.size > 1) item(key = "tabs") {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tabs.forEach { (filter, label) ->
+                        CanvasTabChip(selected = tab == filter, onClick = { tab = filter }, label = label, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+            when (tab) {
+                org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS -> {
+                    if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico i video") }
+                    videos.error?.takeIf { videos.data == null }?.let { e -> item(key = "v-error") { ChannelNote(e) } }
+                    itemsIndexed(pick.videos, key = { _, v -> "v-" + v.id }) { i, v ->
+                        Box(Modifier.padding(horizontal = 16.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }, first = i == 0) }
+                    }
+                    if (channel.id in more) item(key = "v-more") {
+                        LaunchedEffect(pick.videos.size) { YouTubeStore.loadMoreChannel(channel) }
+                        Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+                    }
+                }
+                else -> {
+                    if (other == null || (other.data == null && other.loading)) item(key = "t-loading") {
+                        PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico")
+                    }
+                    other?.error?.let { e -> item(key = "t-error") { ChannelNote(e) } }
+                    val data = other?.data
+                    if (data != null && data.videos.isEmpty() && data.playlists.isEmpty()) item(key = "t-empty") { ChannelNote("Niente qui") }
+                    if (tab == org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.SHORTS) {
+                        // Gli Short in griglia da tre, verticali, come sul canale in YouTube.
+                        items(data?.videos.orEmpty().chunked(3), key = { row -> "s-" + row.first().id }) { row ->
+                            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                row.forEach { short ->
+                                    AsyncImage(
+                                        model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
+                                        contentDescription = short.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.weight(1f).aspectRatio(9f / 16f).clip(MaterialTheme.shapes.medium)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                            .bouncyPress(0.96f).clickable { onPlay(short.watchUrl) },
+                                    )
+                                }
+                                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    } else {
+                        items(data?.videos.orEmpty(), key = { "t-" + it.id }) { v ->
+                            Box(Modifier.padding(horizontal = 16.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
+                        }
+                    }
+                    items(data?.playlists.orEmpty(), key = { "p-" + it.id }) { p -> PlaylistLine(p) { onOpenPlaylist(p) } }
+                }
+            }
+        }
+        Box(Modifier.statusBarsPadding().padding(8.dp)) {
+            RoundIconButton(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Indietro", onClick = onBack)
+        }
+    }
+}
+
+/** Le schede del canale, nell'ordine di YouTube; Video c'è sempre. */
+internal fun channelTabs(available: Set<String>?): List<Pair<String, String>> {
+    val tabs = org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS
+    return listOf(
+        tabs to "Video",
+        org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.SHORTS to "Shorts",
+        org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.LIVESTREAMS to "Live",
+        org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS to "Playlist",
+    ).filter { (filter, _) -> filter == tabs || available.orEmpty().contains(filter) }
+}
+
+/** "1,2 Mln di iscritti · Verificato"; vuoto se il canale nasconde gli iscritti e non è verificato. */
+internal fun channelLine(subscribers: Long, verified: Boolean): String =
+    listOfNotNull(
+        subscribers.takeIf { it >= 0 }?.let { "${compactCount(it)} iscritti" },
+        "Verificato".takeIf { verified },
+    ).joinToString(" · ")
+
+@Composable
+private fun ChannelNote(text: String) {
+    Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
+}
+
+/** Una playlist del canale: miniatura, titolo, quanti video. */
+@Composable
+private fun PlaylistLine(p: YtPlaylist, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Thumbnail(p.thumbnail, Modifier.width(140.dp), large = false)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(p.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (p.count > 0) Text("${p.count} video", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -468,14 +526,19 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
         // all'altro; ma il canale sta subito sotto il titolo, anche quando il titolo è su una riga (Antonio, 2026-11-11).
         Box {
             Box(Modifier.alpha(0f).clearAndSetSemantics { }) { VideoCardText(" ", " ", null, null, fixed = true) }
-            VideoCardText(video.title, videoMeta(video), video.channelAvatar, video.channel, fixed = false)
+            // Un tocco sulla riga del canale apre la sua pagina (1.481), ovunque ci sia un video.
+            val inApp = LocalInAppNav.current
+            val onChannel = inApp?.openRoute?.takeIf { video.channelId.isNotBlank() }?.let { open ->
+                { open(com.platinum20.dashboard.Routes.youtubeChannel(YtChannel(video.channelId, video.channel, video.channelAvatar))) }
+            }
+            VideoCardText(video.title, videoMeta(video), video.channelAvatar, video.channel, fixed = false, onChannel = onChannel)
         }
     }
 }
 
 /** Titolo e riga del canale di [VideoCard]; [fixed] = occupa sempre due righe di titolo. */
 @Composable
-private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean) {
+private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean, onChannel: (() -> Unit)? = null) {
     Column {
         Text(
             title,
@@ -485,7 +548,10 @@ private fun VideoCardText(title: String, meta: String, avatar: String?, channel:
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 8.dp),
         )
-        Row(Modifier.padding(start = 2.dp, top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.Top) {
+        Row(
+            Modifier.then(if (onChannel != null) Modifier.clickable(onClick = onChannel) else Modifier).padding(start = 2.dp, top = 6.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
             if (channel != null) ChannelAvatar(avatar.orEmpty(), channel, 24) else Spacer(Modifier.size(24.dp))
             Spacer(Modifier.width(10.dp))
             Text(
@@ -557,7 +623,7 @@ private fun WatchedBar(video: YtVideo, modifier: Modifier) {
 
 /** I video guardati nell'app (con il punto in cui eri) e la cronologia del tuo account YouTube. */
 @Composable
-private fun HistoryTab(onPlay: (String) -> Unit, onOpenLiked: () -> Unit) {
+private fun HistoryTab(onPlay: (String) -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         YtHistory.init(context)
@@ -608,8 +674,6 @@ private fun HistoryTab(onPlay: (String) -> Unit, onOpenLiked: () -> Unit) {
             }
         }
         FeedList(state, empty = "Ancora nessun video guardato") {
-            // 1.475 (Antonio): Mi piace in cima, i video del telefono si aprono dalla graffetta del +.
-            item(key = "liked") { ListRow(Icons.Outlined.ThumbUp, TileAccent.BLUE, "Mi piace", "I video che ti sono piaciuti", onOpenLiked) }
             if (watched.isNotEmpty()) {
                 item(key = "local-h") {
                     Row(verticalAlignment = Alignment.CenterVertically) {

@@ -1,6 +1,9 @@
 package com.platinum20.dashboard.media.spotify
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -187,6 +190,52 @@ object SpotifyApi {
     /** Gli ultimi album e singoli di un artista, così come arrivano (servono le date di uscita). */
     suspend fun artistAlbumsRaw(token: String, artistId: String): JSONObject? =
         request(token, "artists/$artistId/albums?include_groups=album,single&limit=10")
+
+    /** Gli artisti che segui con nome e foto (le storie in cima a Media), a pagine da 50. */
+    suspend fun followedArtistItems(token: String): List<SpItem> {
+        val list = mutableListOf<SpItem>()
+        var after: String? = null
+        do {
+            val path = "me/following?type=artist&limit=50" + (after?.let { "&after=" + URLEncoder.encode(it, "UTF-8") } ?: "")
+            val (page, next) = SpotifyArtist.following(request(token, path))
+            list += page
+            after = next
+        } while (after != null && page.isNotEmpty() && list.size < NewReleases.MAX_ARTISTS)
+        return list.distinctBy { it.id }.take(NewReleases.MAX_ARTISTS)
+    }
+
+    /** La pagina di un artista: scheda, popolari (dalla ricerca), album, singoli e dove appare, insieme. */
+    suspend fun artistPage(token: String, artist: SpItem): SpArtistPage = coroutineScope {
+        // Con l'accesso scaduto si ferma tutto (e si riprova col token nuovo); le altre parti mancanti restano vuote.
+        val info = async {
+            try {
+                request(token, "artists/${artist.id}")
+            } catch (e: SpotifyApiException) {
+                if (e.code == 401) throw e else null
+            }
+        }
+        val name = URLEncoder.encode("artist:\"${artist.title}\"", "UTF-8")
+        val searches = (0..1).map { page ->
+            async { runCatching { request(token, "search?q=$name&type=track&limit=10&offset=${page * 10}&market=from_token") }.getOrNull() }
+        }
+        fun albums(group: String) = async {
+            runCatching { request(token, "artists/${artist.id}/albums?include_groups=$group&limit=10&market=from_token") }.getOrNull()
+        }
+        val albums = albums("album")
+        val singles = albums("single")
+        val appears = albums("appears_on")
+        val json = info.await()
+        SpArtistPage(
+            artist = json?.let { parseItem(it) } ?: artist,
+            photo = SpotifyArtist.photo(json).ifBlank { artist.image },
+            followers = SpotifyArtist.followers(json),
+            genres = SpotifyArtist.genres(json),
+            popular = SpotifyArtist.popular(searches.awaitAll(), artist.id),
+            albums = SpotifyArtist.albums(albums.await()),
+            singles = SpotifyArtist.albums(singles.await()),
+            appearsOn = SpotifyArtist.albums(appears.await()),
+        )
+    }
 
     suspend fun search(token: String, query: String): List<SpItem> {
         val q = URLEncoder.encode(query, "UTF-8")

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.481.0
+**Media è un feed unico**
+- Video e Musica non sono più pagine a parte: tutto sta in Media, in una lista sola
+- In cima le storie dei canali e degli artisti che segui, dal più recente; l'anello blu vuol dire che hanno pubblicato dopo la tua ultima visita
+- Un tocco su una storia apre il canale o la pagina dell'artista
+- Nuova pagina artista: foto grande, Popolari, Discografia (Album e Singoli e EP) e Appare in
+- Per te parte dai mix, poi le uscite nuove
+- Novità: video dei canali ed episodi nuovi insieme, dal più nuovo; sotto ULTIMA VISITA il resto e qualche consigliato
+- In fondo le radio e quattro righe: Brani che ti piacciono, Mi piace, Cronologia, I tuoi podcast
+- Dalla ricerca artisti, album e playlist si aprono nella loro pagina
+- Pagina canale come su YouTube: copertina, iscritti, descrizione, Iscriviti e le schede Video, Shorts, Live e Playlist
+- Toccando il canale sotto un video si apre la sua pagina
 ## 1.480.0
 **Card Calendario: tieni premuto e scorri i giorni**
 - Nella card Calendario della Home tieni premuto e trascina su o giù: vai avanti e indietro di un giorno alla volta, anche nei giorni passati

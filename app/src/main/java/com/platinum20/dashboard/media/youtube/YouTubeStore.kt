@@ -89,6 +89,46 @@ object YouTubeStore {
         }
     }
 
+    private val _channelInfo = MutableStateFlow<Map<String, Loadable<com.platinum20.dashboard.media.youtube.player.YtChannelInfo>>>(emptyMap())
+    /** La testata dei canali aperti (copertina, iscritti, schede), per id. */
+    val channelInfo: StateFlow<Map<String, Loadable<com.platinum20.dashboard.media.youtube.player.YtChannelInfo>>> = _channelInfo.asStateFlow()
+
+    fun loadChannelInfo(channel: YtChannel) {
+        val state = _channelInfo.value[channel.id]
+        if (state != null && (state.loading || state.data != null)) return
+        _channelInfo.update { it + (channel.id to Loadable(loading = true)) }
+        scope.launch {
+            val result = try {
+                Loadable(data = YtResolver.channelInfo(channel.id), loadedAt = System.currentTimeMillis())
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Loadable(error = e.userMessage("Il canale non risponde, riprova tra poco."))
+            }
+            _channelInfo.update { it + (channel.id to result) }
+        }
+    }
+
+    private val _channelTabs = MutableStateFlow<Map<String, Loadable<com.platinum20.dashboard.media.youtube.player.YtChannelTabItems>>>(emptyMap())
+    /** Shorts, Live e Playlist dei canali aperti, per "id/scheda". */
+    val channelTabs: StateFlow<Map<String, Loadable<com.platinum20.dashboard.media.youtube.player.YtChannelTabItems>>> = _channelTabs.asStateFlow()
+
+    fun loadChannelTab(channel: YtChannel, filter: String) {
+        val key = channel.id + "/" + filter
+        val state = _channelTabs.value[key]
+        if (state != null && (state.loading || state.data != null)) return
+        val tab = _channelInfo.value[channel.id]?.data?.tabs?.get(filter) ?: return
+        _channelTabs.update { it + (key to Loadable(loading = true)) }
+        scope.launch {
+            val result = try {
+                Loadable(data = YtResolver.channelTab(channel.id, tab), loadedAt = System.currentTimeMillis())
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Loadable(error = e.userMessage("Questa scheda del canale non arriva, riprova tra poco."))
+            }
+            _channelTabs.update { it + (key to result) }
+        }
+    }
+
     private var loadingMore: String? = null
 
     /** La pagina dopo dei video del canale: si chiama arrivando in fondo alla lista. */

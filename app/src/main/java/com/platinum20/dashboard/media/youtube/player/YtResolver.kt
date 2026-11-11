@@ -95,6 +95,25 @@ data class YtStoryboard(
 /** Una pagina dei video di un canale, dal più recente; [next] è null quando sono finiti. */
 class YtChannelPage(val videos: List<YtVideo>, val tab: ListLinkHandler, val next: Page?)
 
+/**
+ * La testata di un canale come su YouTube (1.481): copertina, foto, iscritti, descrizione e le schede che ha
+ * (Video, Shorts, Live, Playlist), per filtro di NewPipe ([ChannelTabs]).
+ */
+class YtChannelInfo(
+    val id: String,
+    val name: String,
+    val avatar: String,
+    val banner: String,
+    /** -1 se il canale li nasconde. */
+    val subscribers: Long,
+    val description: String,
+    val verified: Boolean,
+    val tabs: Map<String, ListLinkHandler>,
+)
+
+/** Il contenuto di una scheda del canale: video (Shorts, Live) oppure playlist. */
+data class YtChannelTabItems(val videos: List<YtVideo>, val playlists: List<com.platinum20.dashboard.media.youtube.YtPlaylist>)
+
 data class YtQuality(val height: Int, val url: String)
 
 data class YtChapter(val title: String, val startSec: Int)
@@ -232,6 +251,43 @@ object YtResolver {
             )
         }
         YtChannelPage(videos, tab, next?.takeIf { videos.isNotEmpty() })
+    }
+
+    /** La testata del canale e le sue schede. */
+    suspend fun channelInfo(channelId: String): YtChannelInfo = withContext(Dispatchers.IO) {
+        init()
+        val info = ChannelInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/channel/$channelId")
+        val wanted = listOf(ChannelTabs.VIDEOS, ChannelTabs.SHORTS, ChannelTabs.LIVESTREAMS, ChannelTabs.PLAYLISTS)
+        YtChannelInfo(
+            id = channelId,
+            name = info.name.orEmpty(),
+            avatar = info.avatars.maxByOrNull { it.height }?.url.orEmpty(),
+            banner = info.banners.maxByOrNull { it.width }?.url.orEmpty(),
+            subscribers = info.subscriberCount,
+            description = info.description.orEmpty(),
+            verified = runCatching { info.isVerified }.getOrDefault(false),
+            tabs = wanted.mapNotNull { filter -> info.tabs.firstOrNull { filter in it.contentFilters }?.let { filter to it } }.toMap(),
+        )
+    }
+
+    /** La prima pagina di una scheda del canale (Shorts, Live, Playlist). */
+    suspend fun channelTab(channelId: String, tab: ListLinkHandler): YtChannelTabItems = withContext(Dispatchers.IO) {
+        init()
+        val items = ChannelTabInfo.getInfo(ServiceList.YouTube, tab).relatedItems
+        YtChannelTabItems(
+            videos = items.filterIsInstance<StreamInfoItem>().mapNotNull { item ->
+                video(item)?.copy(
+                    channelId = channelId,
+                    published = runCatching { item.uploadDate?.offsetDateTime()?.toInstant() }.getOrNull(),
+                )
+            },
+            playlists = items.filterIsInstance<org.schabi.newpipe.extractor.playlist.PlaylistInfoItem>().mapNotNull { p ->
+                val id = p.url.substringAfter("list=", "").substringBefore('&').takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                com.platinum20.dashboard.media.youtube.YtPlaylist(
+                    id, p.name.orEmpty(), p.thumbnails.maxByOrNull { it.height }?.url.orEmpty(), p.streamCount.toInt().coerceAtLeast(0),
+                )
+            },
+        )
     }
 
     private fun comment(c: CommentsInfoItem): YtComment {

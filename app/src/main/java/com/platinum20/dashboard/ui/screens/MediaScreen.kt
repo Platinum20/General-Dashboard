@@ -3,6 +3,14 @@ package com.platinum20.dashboard.ui.screens
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.Routes
+import androidx.compose.runtime.DisposableEffect
+import com.platinum20.dashboard.media.youtube.YouTubeStore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Arrangement
@@ -109,19 +117,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
 
 /**
- * Media: in cima quello che suona adesso (o da riprendere) con la coda dentro, poi "Continua"; sotto due file di
- * copertine (Video, Musica con podcast e radio) e il titolo della fila apre la pagina intera.
+ * Media = un unico feed (1.481, Antonio: "niente tre menu, un unico feed"): in cima le storie dei canali e degli
+ * artisti che segui, poi quello che suona con la coda dentro, Per te (i mix per primi), Continua, le Novità (video e
+ * episodi insieme, dal più nuovo, ULTIMA VISITA in mezzo), le radio e in fondo quattro righe fisse.
+ * Video e Musica non sono più pagine a parte.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaScreen(
     bottomPadding: PaddingValues,
-    onOpenMusic: () -> Unit,
-    onOpenVideo: () -> Unit,
     onOpenPlayer: (Playing) -> Unit,
-    onOpenSettings: () -> Unit,
-    /** Un video della fila Video: si apre nel player. */
+    /** Un video del feed: si apre nel player. */
     onPlayVideo: (String) -> Unit = {},
+    /** Una pagina dentro Media (canale, artista, radio, Mi piace, Cronologia, I tuoi podcast, accesso). */
+    onOpenRoute: (String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
@@ -133,14 +142,14 @@ fun MediaScreen(
     val spotifyLinked by SpotifyAuth.connected.collectAsState()
     // Il riproduttore di Spotify si prepara già da qui: al primo tocco la musica parte subito.
     LaunchedEffect(spotifyLinked) { if (spotifyLinked) com.platinum20.dashboard.media.spotify.SpotifyPlayer.start(context) }
+    SpotifyNotices()
     val youTubeLinked by YouTubeAuth.connected.collectAsState()
     val loggedIn by Accounts.loggedIn.collectAsState()
     val now by Playback.now.collectAsState()
     val history by MediaHistory.items.collectAsState()
     val videos by VideoLibrary.recent.collectAsState()
     val resumable = remember(history, videos) { Resume.pick(history + videos.map(ResumeItem::fromVideo)) }
-    val inApp = LocalInAppNav.current
-    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) } }
+    val openResume: (ResumeItem) -> Unit = { item -> openResumeItem(context, item) { route -> onOpenRoute(route) } }
     val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
     // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata, di qualunque fonte:
     // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
@@ -153,14 +162,53 @@ fun MediaScreen(
     }
     val spotifyOn = spotifyLinked || MediaService.SPOTIFY in loggedIn
     val youTubeOn = youTubeLinked || MediaService.YOUTUBE in loggedIn
-    // Sopra il titolo cosa c'è di nuovo (1.475, Antonio): quello che suona lo dice già il blocco colorato.
+    // L'ultima visita (ora di Media, prima di Video): quello uscito dopo sta sopra ULTIMA VISITA e accende le storie.
+    // Aprire un video e tornare non conta come visita nuova.
     remember { com.platinum20.dashboard.media.VideoVisit.init(context) }
-    val videoSince by com.platinum20.dashboard.media.VideoVisit.since.collectAsState()
-    val subs by com.platinum20.dashboard.media.youtube.YouTubeStore.subscriptions.collectAsState()
+    val since = remember { com.platinum20.dashboard.media.VideoVisit.enter() }
+    DisposableEffect(Unit) { onDispose { com.platinum20.dashboard.media.VideoVisit.leave() } }
+    val hideLive by AppSettings.hideLive.collectAsState()
+    val hideMembers by AppSettings.hideMembers.collectAsState()
+    val subs by YouTubeStore.subscriptions.collectAsState()
+    val channels by YouTubeStore.channels.collectAsState()
+    val recommended by YouTubeStore.home.collectAsState()
+    val artists by com.platinum20.dashboard.media.spotify.SpotifyStore.artists.collectAsState()
+    val library by com.platinum20.dashboard.media.spotify.SpotifyStore.library.collectAsState()
     val latestEpisodes by PodcastStore.latest.collectAsState()
-    val freshVideos = remember(subs.data, videoSince) {
-        com.platinum20.dashboard.media.MediaFresh.newVideos(pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = false).videos, videoSince)
+    val followedHere by PodcastStore.followed.collectAsState()
+    val spotifyShows by PodcastStore.spotify.collectAsState()
+    val followedCount = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows).size }
+    LaunchedEffect(youTubeOn) {
+        if (youTubeOn) {
+            YouTubeStore.refreshSubscriptions(context)
+            YouTubeStore.refreshChannels(context)
+            YouTubeStore.refreshHome(context)
+        }
     }
+    LaunchedEffect(spotifyOn) {
+        if (spotifyOn) {
+            com.platinum20.dashboard.media.spotify.SpotifyStore.refreshHome()
+            com.platinum20.dashboard.media.spotify.SpotifyStore.refreshLibrary()
+            com.platinum20.dashboard.media.spotify.SpotifyStore.refreshReleases()
+        }
+    }
+    LaunchedEffect(Unit) { PodcastStore.loadLatest() }
+    // Nel feed niente Short (verticali, non stanno tra i video grandi); le live solo se non le escludi.
+    val subVideos = if (youTubeOn) pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos else emptyList()
+    val tips = if (youTubeOn) pickFeed(recommended.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos else emptyList()
+    val listened = remember(history) { history.filter { it.kind == ResumeKind.PODCAST }.map { it.key }.toSet() }
+    val feed = remember(subVideos, latestEpisodes.data, tips, since, listened) {
+        com.platinum20.dashboard.media.MediaFeed.build(subVideos, latestEpisodes.data.orEmpty(), tips, since, listened)
+    }
+    val stories = remember(channels.data, subs.data, artists.data, since, youTubeOn, spotifyOn) {
+        com.platinum20.dashboard.media.MediaStories.build(
+            if (youTubeOn) channels.data.orEmpty() else emptyList(),
+            subs.data.orEmpty(),
+            if (spotifyOn) artists.data.orEmpty() else emptyList(),
+            since,
+        )
+    }
+    val freshVideos = com.platinum20.dashboard.media.MediaFresh.newVideos(subVideos, since)
     val freshEpisodes = remember(latestEpisodes.data, history) { newEpisodes(latestEpisodes.data.orEmpty(), history).size }
 
     // La coda si apre nello stesso riquadro del player (1.357): una coda sola, un posto solo.
@@ -172,8 +220,7 @@ fun MediaScreen(
         topBar = {
             TopLevelBar(
                 title = "Media",
-                subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(if (youTubeOn) freshVideos else 0, freshEpisodes)
-                    ?: "Musica e video",
+                subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(freshVideos, freshEpisodes) ?: "Video, musica e podcast",
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -186,6 +233,22 @@ fun MediaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (stories.isNotEmpty()) item(key = "stories") {
+                StoriesRow(stories) { story ->
+                    onOpenRoute(
+                        when (story.kind) {
+                            com.platinum20.dashboard.media.MediaStory.Kind.CHANNEL ->
+                                Routes.youtubeChannel(com.platinum20.dashboard.media.youtube.YtChannel(story.id, story.title, story.image))
+                            com.platinum20.dashboard.media.MediaStory.Kind.ARTIST -> Routes.spotifyItem(
+                                com.platinum20.dashboard.media.spotify.SpItem(
+                                    story.id, "spotify:artist:${story.id}", com.platinum20.dashboard.media.spotify.SpKind.ARTIST,
+                                    story.title, "Artista", story.image,
+                                ),
+                            )
+                        },
+                    )
+                }
+            }
             now?.let { playing ->
                 item(key = "now") {
                     MediaNowCard(
@@ -208,6 +271,8 @@ fun MediaScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
+            // Per te (1.481, Antonio): prima i mix, poi le uscite.
+            if (spotifyOn) item(key = "perte") { PerTeRow(onOpen = { onOpenRoute(Routes.spotifyItem(it)) }) }
             if (continueList.isNotEmpty()) {
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
                 item(key = "continue") {
@@ -216,12 +281,44 @@ fun MediaScreen(
                     }
                 }
             }
-            // Le tre file (1.357): quello che c'è in Musica (con i podcast, 1.437), Video e Radio, non tre tessere da aprire.
-            // Il titolo di ogni fila apre la pagina intera.
-            // 1.442 (Antonio): prima Video, poi Musica.
-            // 1.475 (Antonio): la radio sta dentro Musica, in fondo alla sua fila; niente fila Radio a parte.
-            item(key = "shelf-video") { VideoShelf(youTubeOn, onPlay = onPlayVideo, onOpenAll = onOpenVideo) }
-            item(key = "shelf-music") { MusicShelf(spotifyOn, onOpenAll = onOpenMusic) }
+            // Novità: un feed solo, video ed episodi insieme; sotto ULTIMA VISITA il resto, sbiadito, con qualche consigliato.
+            if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
+                item(key = "feed-h") { SectionHeader("Novità", Modifier.padding(horizontal = 16.dp)) }
+            }
+            items(feed.fresh, key = { "f-" + it.key }) { entry -> FeedRow(entry, faded = false, onPlayVideo) }
+            if (feed.fresh.isNotEmpty() && feed.older.isNotEmpty()) item(key = "feed-marker") {
+                NewsVisitMarker("Ultima visita", Modifier.padding(horizontal = 16.dp))
+            }
+            items(feed.older, key = { "o-" + it.key }) { entry -> FeedRow(entry, faded = feed.fresh.isNotEmpty(), onPlayVideo) }
+            item(key = "radio") { RadioRow(onOpenAll = { onOpenRoute(Routes.RADIO) }) }
+            // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
+            item(key = "rows") {
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (spotifyOn) {
+                        val liked = library.data?.liked?.size ?: 0
+                        ListRow(
+                            Icons.Filled.Favorite, TileAccent.NEUTRAL, "Brani che ti piacciono",
+                            if (liked > 0) "$liked brani, playlist e album salvati" else "Playlist e album salvati",
+                        ) { onOpenRoute(Routes.SPOTIFY_FEED) }
+                    } else {
+                        ListRow(Icons.Outlined.GraphicEq, TileAccent.NEUTRAL, "Collega Spotify", "Mix, uscite e la tua musica qui") {
+                            onOpenRoute(Routes.login(MediaService.SPOTIFY))
+                        }
+                    }
+                    if (youTubeOn) {
+                        ListRow(Icons.Outlined.ThumbUp, TileAccent.NEUTRAL, "Mi piace", "I video che ti sono piaciuti") { onOpenRoute(Routes.YOUTUBE_LIKED) }
+                        ListRow(Icons.Outlined.History, TileAccent.NEUTRAL, "Cronologia", "I video che hai visto") { onOpenRoute(Routes.YOUTUBE_FEED) }
+                    } else {
+                        ListRow(Icons.Outlined.OndemandVideo, TileAccent.NEUTRAL, "Collega YouTube", "I video dei canali che segui qui") {
+                            onOpenRoute(Routes.login(MediaService.YOUTUBE))
+                        }
+                    }
+                    ListRow(
+                        Icons.Outlined.Mic, TileAccent.NEUTRAL, "I tuoi podcast",
+                        if (followedCount > 0) "$followedCount che segui" else "Scegline qualcuno da seguire",
+                    ) { onOpenRoute(Routes.PODCAST) }
+                }
+            }
         }
     }
     // Sopra Media la barra resta in basso: l'ultima voce della coda le sta sopra.
@@ -229,38 +326,82 @@ fun MediaScreen(
     }
 }
 
-/** Una delle tre sezioni: icona colorata, nome e cosa c'è dentro; con un puntino se suona da lì. */
+/** Le storie (1.481): foto tonde in fila, anello blu se ha pubblicato dopo l'ultima visita, sotto nome e quando. */
 @Composable
-private fun RowScope.SectionTile(
-    icon: ImageVector,
-    accent: TileAccent,
-    title: String,
-    subtitle: String,
-    active: Boolean,
-    onClick: () -> Unit,
-) {
-    CanvasCard(
-        onClick = onClick,
-        modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 124.dp).bouncyPress(),
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconTile(icon, accent, size = 36.dp, iconSize = 20.dp)
-                Spacer(Modifier.weight(1f))
-                if (active) {
-                    Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>, onOpen: (com.platinum20.dashboard.media.MediaStory) -> Unit) {
+    val nowMs = remember { System.currentTimeMillis() }
+    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        items(stories, key = { it.key }) { story ->
+            Column(
+                Modifier.width(72.dp).bouncyPress(0.94f).clickable { onOpen(story) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val ring = if (story.fresh) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                Box(
+                    Modifier
+                        .size(68.dp)
+                        .border(if (story.fresh) 2.5.dp else 1.dp, ring, CircleShape)
+                        .padding(4.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(story.title.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (story.image.isNotBlank()) {
+                        AsyncImage(model = story.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+                    }
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(story.title, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                Text(
+                    com.platinum20.dashboard.media.MediaStories.age(story.latest, nowMs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
-            Spacer(Modifier.height(12.dp))
-            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Una voce delle Novità: un video grande come nelle Iscrizioni, o un episodio in una riga con il tasto play. */
+@Composable
+private fun FeedRow(entry: com.platinum20.dashboard.media.FeedEntry, faded: Boolean, onPlayVideo: (String) -> Unit) {
+    Box(Modifier.padding(horizontal = 16.dp).alpha(if (faded) FADED_ALPHA else 1f)) {
+        when (entry) {
+            is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
+            is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeRow(entry.episode)
+        }
+    }
+}
+
+/** Un episodio nel feed: copertina quadrata, titolo, podcast · durata · quando; tocco = parte. */
+@Composable
+private fun EpisodeRow(episode: com.platinum20.dashboard.media.podcast.Episode) {
+    Row(
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).bouncyPress(0.97f).clickable { PodcastStore.play(episode) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(72.dp).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+            Icon(Icons.Outlined.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (episode.image.isNotBlank()) {
+                AsyncImage(model = episode.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(episode.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
-                subtitle,
+                com.platinum20.dashboard.media.MediaStories.episodeLine(episode, System.currentTimeMillis()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+        Spacer(Modifier.width(8.dp))
+        FilledTonalIconButton(onClick = { PodcastStore.play(episode) }) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = "Ascolta")
         }
     }
 }

@@ -20,7 +20,7 @@ import com.platinum20.dashboard.media.youtube.player.YtPlayer
 import com.platinum20.dashboard.media.youtube.player.YtQuality
 import com.platinum20.dashboard.media.youtube.player.YtStream
 import com.platinum20.dashboard.settings.AppTheme
-import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
+import com.platinum20.dashboard.ui.screens.YouTubeHistoryScreen
 import com.platinum20.dashboard.ui.screens.YouTubeWatchScreen
 import com.platinum20.dashboard.ui.theme.GeneralDashboardTheme
 import org.junit.Assume.assumeTrue
@@ -71,7 +71,7 @@ class YouTubeTour {
     @Test
     fun feed() {
         compose.setContent {
-            GeneralDashboardTheme(AppTheme.CANVAS) { YouTubeFeedScreen(onBack = {}, onPlay = {}, onLogin = {}, onOpenPhone = {}) }
+            GeneralDashboardTheme(AppTheme.CANVAS) { YouTubeHistoryScreen(onBack = {}, onPlay = {}) }
         }
         settle()
         shot("youtube_iscrizioni")
