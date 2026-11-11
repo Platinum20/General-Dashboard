@@ -602,3 +602,82 @@ internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int
     val more = days.drop(shown).count { it != null && it.isAfter(today) && java.time.YearMonth.from(it) == month }
     return shown to more
 }
+
+/**
+ * I giorni della card Calendario in Home, per scorrerli tenendo premuto e trascinando (Antonio, 2026-11-11):
+ * dove comincia ogni giorno nelle righe ([starts]), che giorno è ([days]) e quale è oggi ([today]).
+ */
+internal data class CardDays(val starts: List<Int>, val days: List<LocalDate>, val today: Int, val size: Int)
+
+/** [rows] = per ogni riga il suo giorno e se è passata, in ordine (passato, OGGI, poi i giorni dopo). */
+internal fun cardDays(rows: List<Pair<LocalDate?, Boolean>>, today: LocalDate): CardDays {
+    val starts = mutableListOf<Int>()
+    val days = mutableListOf<LocalDate>()
+    var todayAt = -1
+    var last: Pair<LocalDate?, Boolean>? = null
+    rows.forEachIndexed { i, (day, past) ->
+        // Una riga senza giorno resta col giorno di sopra.
+        val d = day ?: (days.lastOrNull() ?: today)
+        if (last == null || d != last!!.first || past != last!!.second) {
+            if (todayAt < 0 && !past && d == today) todayAt = starts.size
+            starts += i
+            days += d
+            last = d to past
+        }
+    }
+    if (todayAt < 0) todayAt = rows.indexOfFirst { !it.second }.let { first -> if (first < 0) 0 else starts.indexOfLast { it <= first }.coerceAtLeast(0) }
+    return CardDays(starts, days, todayAt, rows.size)
+}
+
+/** Le righe che la card mostra spostata di [shift] giorni da oggi: quel giorno e, se ha qualcosa, il giorno dopo. */
+internal data class CardWindow(val from: Int, val to: Int, val anchor: LocalDate?, val todayAt: Int?, val todayEnd: Int?)
+
+internal fun CardDays.window(shift: Int): CardWindow {
+    if (starts.isEmpty()) return CardWindow(0, size, null, null, null)
+    val at = (today + shift).coerceIn(0, starts.lastIndex)
+    fun end(i: Int) = starts.getOrNull(i + 1) ?: size
+    val anchor = days[at]
+    val to = if (at + 1 <= starts.lastIndex && days[at + 1] == anchor.plusDays(1)) end(at + 1) else end(at)
+    val todayIn = starts[today] >= starts[at] && starts[today] < to
+    return CardWindow(starts[at], to, anchor, if (todayIn) starts[today] else null, if (todayIn) end(today) else null)
+}
+
+/** Fin dove si può scorrere: [shift] tenuto fra il primo giorno passato e l'ultimo. */
+internal fun CardDays.clamp(shift: Int): Int = if (starts.isEmpty()) 0 else (today + shift).coerceIn(0, starts.lastIndex) - today
+
+/**
+ * Il trascinamento a scatti: ogni [stepPx] di dito un giorno. Dito in su = avanti, come scorrere la pagina intera.
+ */
+internal class DayDrag(private val stepPx: Float) {
+    private var acc = 0f
+
+    fun move(dy: Float): Int {
+        acc -= dy
+        val n = (acc / stepPx).toInt()
+        acc -= n * stepPx
+        return n
+    }
+}
+
+/** I giorni senza le cose da spuntare: stanno tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11, scelta A). */
+internal fun List<DueDay>.withoutTicks(): List<DueDay> =
+    map { g -> g.copy(rows = g.rows.filterNot { it.task?.tickable == true }) }.filter { it.rows.isNotEmpty() }
+
+/**
+ * Le righe che si aprono sotto "Da fare": tutte le cose da spuntare (quelle fatte oggi restano, spuntate,
+ * per poterle rimettere), senza giorno sulla riga. Uguali nella card della Home e nella pagina.
+ */
+internal fun cardTodo(groups: List<DueDay>, today: LocalDate): List<Pair<TimelineEntry, DueRow>> {
+    val rows = groups.filter { it.day == today && !it.past && !it.late }.flatMap { g -> g.rows.filter { it.task?.tickable == true } }
+    if (rows.isEmpty()) return emptyList()
+    return timelineEntries(listOf(DueDay(today, false, rows)), today)
+        .map { (e, r) -> e.copy(dayLabel = null, dayNumber = null, month = null) to r }
+}
+
+/** La riga "Da fare" dentro OGGI: quante restano; un tocco apre (o chiude) le cose da spuntare sotto. */
+internal fun todoLine(open: Int): String = if (open == 0) "Da fare · tutto fatto" else "Da fare · $open"
+
+internal fun todoEntry(todo: List<Pair<TimelineEntry, DueRow>>): TimelineEntry = TimelineEntry(
+    key = "todo", kind = com.platinum20.dashboard.today.BriefKind.TASK,
+    text = todoLine(todo.count { !it.first.done }), dayLabel = null,
+)
