@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.477.0
+**Copia il numero del documento**
+- Nella card Documenti e nella pagina del documento, in fondo a destra della riga c'è un tasto che copia il numero negli appunti
+- Un fumetto in basso conferma "Numero copiato"
+
 ## 1.476.0
 **Da dove parte il treno**
 - Nel calendario e nella card della Home la riga del treno ora dice da dove parti ("Treno da Taranto") e in fondo dove arrivi ("Arrivo a Pescara")
