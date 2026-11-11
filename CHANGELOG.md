@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.476.0
+**Da dove parte il treno**
+- Nel calendario e nella card della Home la riga del treno ora dice da dove parti ("Treno da Taranto") e in fondo dove arrivi ("Arrivo a Pescara")
+- Il nome del viaggio resta "Treno per Pescara" nella scheda e nelle notifiche
+
 ## 1.474.0
 **Pallini piccoli, Home ordinata**
 - Il numero del giorno torna nel nome ("Dom 15"), non più dentro il pallino
