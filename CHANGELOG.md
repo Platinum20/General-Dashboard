@@ -1,12 +1,21 @@
 # Changelog
 
-## 1.472.0
+## 1.474.0
 **Pallini piccoli, Home ordinata**
 - Il numero del giorno torna nel nome ("Dom 15"), non più dentro il pallino
 - I pallini dei giorni sono di nuovo piccoli, OGGI è grande uguale, e quelli dei mesi sono rimpiccioliti
 - Le novità dopo un aggiornamento stanno in una card sola, non più una dentro l'altra
 - La card SIM non finisce più sopra il Calendario quando questo cambia altezza
 - I turni da fare sono alti come quelli fatti, con le informazioni al centro
+
+## 1.473.0
+**Chiedi al "+"**
+- Scrivi o di' una domanda nel "+" e Canvas risponde invece di salvarla, con quello che sa già
+- "Quando ho il prossimo turno con Marco?", "Quante ore ho lavorato questo mese?", "Quando parto?"
+- "Quanti giga ho?", "Che tempo fa sabato?", "Cosa ho domani?", "Quando scade la patente?"
+- "Dov'è il pacco?", "Quando è il compleanno di Marta?"
+- La risposta compare nel fumetto in basso; "Apri" porta alla pagina giusta
+- Tutto sul telefono, senza rete; se Canvas non sa rispondere la frase si salva come sempre
 
 ## 1.471.0
 **Calendario più pulito, card della Home più corta, tessere Media ordinate**

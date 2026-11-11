@@ -15,9 +15,12 @@ internal object VoiceCapture {
         /** Salvato: [undo] lo toglie, se si può. */
         data class Saved(val mode: CaptureMode, val message: String, val undo: (suspend () -> Unit)?) : Outcome
         data object NeedsDialog : Outcome
+        /** Era una domanda (Chiedi al "+", 1.473): niente da salvare, c'è la risposta. */
+        data class Answered(val answer: Answer) : Outcome
     }
 
     suspend fun save(context: Context, text: String): Outcome {
+        CaptureAsk.answer(context, text)?.let { return Outcome.Answered(it) }
         val mode = CaptureGuess.guess(text)
         if (mode == CaptureMode.EVENT) {
             val draft = QuickEvent.parse(text) ?: return Outcome.NeedsDialog
