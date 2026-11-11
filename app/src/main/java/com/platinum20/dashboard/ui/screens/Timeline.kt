@@ -17,11 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
-import androidx.compose.material.icons.outlined.Celebration
-import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.DirectionsCar
@@ -57,7 +53,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.heading
@@ -68,7 +63,7 @@ import com.platinum20.dashboard.today.BriefKind
 
 /**
  * Una riga della linea del tempo, uguale nella card "Prossimi giorni" di Oggi e in Note › Prossimi giorni:
- * a sinistra l'icona e il nome, a destra il giorno e poi la linea con il pallino, sotto il +.
+ * a sinistra il pallino colorato per tipo e il nome, a destra il giorno e poi la linea con il pallino, sotto il +.
  */
 data class TimelineEntry(
     val key: String,
@@ -82,8 +77,6 @@ data class TimelineEntry(
     val late: Boolean = false,
     /** Già passato: tutto più tenue. */
     val past: Boolean = false,
-    /** L'icona a sinistra, se non è quella del tipo (le note). */
-    val icon: ImageVector? = null,
     /** Sempre visibile dopo il nome, che si accorcia lui (le righe di una nota). */
     val trailing: String? = null,
     /** Il mese che comincia con questa riga ("NOVEMBRE"): sopra si disegna il segno del mese. */
@@ -104,7 +97,41 @@ data class TimelineEntry(
     val time: String? = null,
     /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
     val detail: String? = null,
-)
+    /** Il tipo per il pallino colorato sulla linea; null = quello di [kind]. */
+    val dot: RowDot? = null,
+) {
+    /** Il colore del pallino (e del pezzo di linea degli eventi con orario). */
+    fun dotColor(): Int = (dot ?: RowDot.of(kind)).argb(color)
+}
+
+/**
+ * Che cosa è una riga del calendario: al posto dell'icona c'è un pallino colorato sulla linea (Antonio, 2026-11-11).
+ * Un colore per tipo; gli eventi tengono il colore del loro calendario (i turni hanno il loro).
+ */
+enum class RowDot(private val argb: Int) {
+    EVENT(0xFF2E9E8F.toInt()),
+    TRAIN(0xFF2E9E5B.toInt()),
+    TASK(0xFFE35D8F.toInt()),
+    DATE(0xFFE0A100.toInt()),
+    NOTE(0xFF9A968C.toInt()),
+    PARCEL(0xFFA0714F.toInt()),
+    SIM(0xFF5C7A99.toInt()),
+    HABIT(0xFF8BC34A.toInt());
+
+    /** [eventColor]: il colore del calendario, che vale solo per gli eventi (0 = nessuno). */
+    fun argb(eventColor: Int): Int = if (this == EVENT && eventColor != 0) eventColor else argb
+
+    companion object {
+        fun of(kind: BriefKind): RowDot = when (kind) {
+            BriefKind.EVENT -> EVENT
+            BriefKind.TASK -> TASK
+            BriefKind.DATE -> DATE
+            BriefKind.PARCEL -> PARCEL
+            BriefKind.HABIT -> HABIT
+            else -> NOTE
+        }
+    }
+}
 
 /**
  * Un viaggio in treno su una riga sola (Antonio): in alto l'ora e la stazione di partenza, in basso quelle di
@@ -147,16 +174,6 @@ data class TripStops(
     companion object {
         const val MID_DP = 14f
     }
-}
-
-/** L'icona piccola di una riga: evento, promemoria, data, pacco o rinnovo. */
-fun BriefKind.timelineIcon(): ImageVector = when (this) {
-    BriefKind.EVENT -> Icons.Outlined.Event
-    BriefKind.TASK -> Icons.Outlined.Checklist
-    BriefKind.DATE -> Icons.Outlined.Celebration
-    BriefKind.PARCEL -> Icons.Outlined.LocalShipping
-    BriefKind.MONEY -> Icons.AutoMirrored.Outlined.ReceiptLong
-    else -> Icons.Outlined.Event
 }
 
 /**
@@ -268,18 +285,20 @@ fun TimelineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val tint = entry.color.takeIf { it != 0 }?.let { Color(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
+        // Il pallino colorato per tipo al posto dell'icona (Antonio, 2026-11-11).
+        val dotColor = Color(entry.dotColor()).copy(alpha = if (entry.past) 0.55f else 1f)
         // La linea del tempo a sinistra (1.465, Antonio, variante H): un turno o un evento con orario colora
         // il suo pezzo di linea, dall'inizio alla fine, invece di avere una lineetta sua.
         val trip = entry.trip
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
-            dot = if (trip != null) null else MaterialTheme.colorScheme.outline to 4.dp,
+            dot = if (trip != null) null else dotColor to 8.dp,
             top = top || headed,
             bottom = bottom,
             segment = trip?.let {
                 TripSegment(
-                    color = tint.copy(alpha = if (entry.past) 0.55f else 1f),
+                    color = dotColor,
                     from = TRIP_PAD + (if (it.title != null) TRIP_LINE else 0.dp) + TRIP_LINE / 2,
                     toBottom = TRIP_PAD + TRIP_LINE / 2,
                     progress = it.progress(System.currentTimeMillis()),
@@ -320,8 +339,7 @@ fun TimelineRow(
             )
             Spacer(Modifier.width(8.dp))
         } else {
-            Icon(entry.icon ?: entry.kind.timelineIcon(), contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(10.dp))
+            Spacer(Modifier.width(4.dp))
         }
         Column(Modifier.weight(1f).padding(vertical = 7.dp)) {
             Text(
