@@ -204,8 +204,16 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
     val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         readInto(if (ok) ReceiptReader.photoUri(context) else null, cameraFile = true)
     }
+    val inApp = LocalInAppNav.current
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        readInto(uri, cameraFile = false)
+        // Un video del telefono si guarda nel player unico (1.475: "Sul telefono" non sta più in Video).
+        if (uri != null && context.contentResolver.getType(uri)?.startsWith("video/") == true) {
+            CaptureComposer.attaching = false
+            CaptureComposer.close()
+            runCatching { com.platinum20.dashboard.media.MediaLauncher.playVideo(context, uri) }
+                .onSuccess { route -> inApp?.openRoute?.invoke(route) }
+                .onFailure { CaptureFeedback.tell(context, "Non riesco ad aprire questo video") }
+        } else readInto(uri, cameraFile = false)
     }
     // Il fumetto sta in basso: la tastiera si chiude per lasciarlo vedere, senza annullare la nota.
     val keyboard = LocalSoftwareKeyboardController.current
@@ -231,8 +239,8 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
             BubbleAction(Icons.Outlined.PhotoCamera, "Scatta una foto", "Scontrino, documento, biglietto: capisce da sé") {
                 go { camera.launch(ReceiptReader.photoUri(context)) }
             },
-            BubbleAction(Icons.Outlined.PhotoLibrary, "Scegli una foto", "Canvas la legge e capisce cosa farne") {
-                go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            BubbleAction(Icons.Outlined.PhotoLibrary, "Scegli una foto o un video", "La foto la legge, il video lo guardi qui") {
+                go { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
             },
         )
     }

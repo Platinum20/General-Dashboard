@@ -2,7 +2,6 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.alpha
-import com.platinum20.dashboard.media.radio.RadioGenre
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,14 +65,31 @@ internal object MediaShelves {
     /** Che cosa mostra la fila Musica: prima i mix, poi gli ascoltati di recente, senza doppioni. */
     fun <T> mix(first: List<T>, then: List<T>, key: (T) -> String, max: Int = MAX): List<T> =
         (first + then).distinctBy(key).take(max)
+
+    /** Prima quelli nuovi, poi gli altri, ognuno nel suo ordine (uscite non aperte, episodi non ascoltati). */
+    fun <T> freshFirst(list: List<T>, isNew: (T) -> Boolean): List<T> = list.filter(isNew) + list.filterNot(isNew)
+
+    /** Il titolo di una fila con quanti nuovi ci sono: "Video · 6 nuovi"; solo il nome se zero. */
+    fun title(name: String, fresh: Int): String =
+        com.platinum20.dashboard.media.MediaFresh.shelfCount(fresh).let { if (it.isEmpty()) name else "$name · $it" }
 }
 
 /** Una copertina della fila: immagine, poi titolo e chi lo pubblica sotto. */
 @Composable
-private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, first: Boolean, onClick: () -> Unit) {
+private fun ShelfTile(
+    image: String, title: String, subtitle: String, width: Dp, height: Dp, shape: Shape, first: Boolean,
+    /** Uscito dopo l'ultima visita: pallino blu (blu = adesso, regola 2). */
+    dot: Boolean = false,
+    /** Già visto, mentre accanto ci sono dei nuovi: sbiadito. */
+    faded: Boolean = false,
+    /** Sopra la copertina in basso a sinistra, per i Mix. */
+    badge: String? = null,
+    onClick: () -> Unit,
+) {
     Column(
         Modifier
             .width(width)
+            .alpha(if (faded) FADED_ALPHA else 1f)
             .bouncyPress(0.96f)
             .clip(MaterialTheme.shapes.medium)
             .clickable(onClick = onClick),
@@ -83,6 +99,17 @@ private fun ShelfTile(image: String, title: String, subtitle: String, width: Dp,
                 if (image.isNotBlank()) {
                     AsyncImage(model = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(width, height))
                 }
+                if (dot) Box(
+                    Modifier.align(Alignment.TopEnd).padding(8.dp).size(10.dp).clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+                if (badge != null) Text(
+                    badge,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp).clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal = 8.dp, vertical = 2.dp),
+                )
             }
         }
     }
@@ -174,91 +201,100 @@ private fun ShelfInvite(text: String, onClick: () -> Unit, action: String? = nul
 }
 
 /**
- * Musica: i mix per te, gli ascoltati di recente e, in fondo, i nuovi episodi dei podcast che segui (1.437, Antonio:
- * i podcast stanno dentro Musica). Un tocco e parte, il resto nella pagina Musica.
+ * Musica (1.475, Antonio): in ordine fisso i mix, le uscite nuove, gli episodi nuovi e in fondo le radio (tonde).
+ * La riga sotto il titolo dice cos'è ("Mix", "Uscita · …", "Episodio · …", "Radio"). Un tocco e parte.
  */
 @Composable
 internal fun MusicShelf(connected: Boolean, onOpenAll: () -> Unit) {
     val context = LocalContext.current
-    remember { PodcastStore.init(context) }
+    remember { PodcastStore.init(context); RadioStore.init(context) }
     val latest by PodcastStore.latest.collectAsState()
+    val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val favorites by RadioStore.favorites.collectAsState()
+    val recentRadios by RadioStore.recent.collectAsState()
+    val radioNow by RadioStore.now.collectAsState()
     LaunchedEffect(Unit) { PodcastStore.loadLatest() }
-    val episodes = latest.data.orEmpty().take(MediaShelves.MAX / 2)
-    Shelf("Musica", onOpenAll) {
-        val size = 132.dp
-        if (!connected) {
-            ShelfInvite("Collega Spotify per vedere qui i tuoi mix", onOpenAll)
-            if (episodes.isNotEmpty()) {
-                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    itemsIndexed(episodes, key = { _, e -> "ep-${e.id}" }) { i, episode ->
-                        ShelfTile(episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium, first = i == 0) { PodcastStore.play(episode) }
-                    }
-                }
-            }
-            return@Shelf
-        }
-        val homeState by SpotifyStore.home.collectAsState()
-        val libraryState by SpotifyStore.library.collectAsState()
-        LaunchedEffect(Unit) {
+    val episodes = remember(latest.data, history) { newEpisodes(latest.data.orEmpty(), history).take(4) }
+    val radios = MediaShelves.mix(favorites, recentRadios, { it.id }, max = 6)
+    val homeState by SpotifyStore.home.collectAsState()
+    val libraryState by SpotifyStore.library.collectAsState()
+    val releasesState by SpotifyStore.releases.collectAsState()
+    val seen by SpotifyStore.seenReleases.collectAsState()
+    LaunchedEffect(connected) {
+        if (connected) {
             SpotifyStore.refreshHome()
             SpotifyStore.refreshLibrary()
+            SpotifyStore.refreshReleases()
         }
-        val home = homeState.data
-        val library = libraryState.data
-        val today = remember { LocalDate.now() }
-        val mixes = remember(home, library, today) {
-            SpotifyMixes.build(
-                home?.topArtists.orEmpty(),
-                home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
-                today.toEpochDay(),
-            )
-        }
-        val recent = home?.recent.orEmpty()
-        if (home == null && homeState.loading && episodes.isEmpty()) {
+    }
+    val home = homeState.data
+    val library = libraryState.data
+    val today = remember { LocalDate.now() }
+    val mixes = remember(home, library, today) {
+        if (!connected) emptyList() else SpotifyMixes.build(
+            home?.topArtists.orEmpty(),
+            home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
+            today.toEpochDay(),
+        ).take(3)
+    }
+    val releases = if (connected) releasesState.data.orEmpty().filter { it.item.id !in seen }.take(4) else emptyList()
+    Shelf(MediaShelves.title("Musica", releases.size + episodes.size), onOpenAll) {
+        val size = 132.dp
+        if (!connected) ShelfInvite("Collega Spotify per vedere qui i tuoi mix", onOpenAll)
+        if (connected && home == null && homeState.loading && episodes.isEmpty() && radios.isEmpty()) {
             ShelfPlaceholder(size, size, MaterialTheme.shapes.medium)
             return@Shelf
         }
-        if (mixes.isEmpty() && recent.isEmpty() && episodes.isEmpty()) {
-            ShelfInvite("Ancora niente da Spotify: apri Musica", onOpenAll)
+        if (mixes.isEmpty() && releases.isEmpty() && episodes.isEmpty() && radios.isEmpty()) {
+            if (connected) ShelfInvite("Ancora niente da Spotify: apri Musica", onOpenAll)
             return@Shelf
         }
-        val shownMixes = mixes.take(MediaShelves.MAX / 2)
-        val shownRecent = MediaShelves.mix(emptyList(), recent, { it.uri }, MediaShelves.MAX / 2)
+        val medium = MaterialTheme.shapes.medium
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            itemsIndexed(shownMixes, key = { _, m -> "mix-${m.id}" }) { i, mix ->
-                ShelfTile(mix.image, mix.title, mix.subtitle, size, size, MaterialTheme.shapes.medium, first = i == 0) {
+            itemsIndexed(mixes, key = { _, m -> "mix-${m.id}" }) { i, mix ->
+                ShelfTile(mix.image, mix.title, "Mix", size, size, medium, first = i == 0, badge = "Mix") {
                     playTracks(context, mix.tracks, null)
                 }
             }
-            itemsIndexed(shownRecent, key = { _, r -> "recent-${r.uri}" }) { i, item ->
-                val shape = if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium
-                ShelfTile(item.image, item.title, item.subtitle, size, size, shape, first = i == 0 && shownMixes.isEmpty()) {
-                    if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) playTracks(context, recent, item) else onOpenAll()
+            items(releases, key = { "rel-${it.item.id}" }) { release ->
+                ShelfTile(release.item.image, release.item.title, "Uscita · " + release.item.subtitle.substringBefore(" · "), size, size, medium, first = false, dot = true) {
+                    SpotifyStore.markReleaseSeen(release.item.id)
+                    playSpotifyList(context, release.item, null)
                 }
             }
-            itemsIndexed(episodes, key = { _, e -> "ep-${e.id}" }) { i, episode ->
-                ShelfTile(
-                    episode.image, episode.title, episode.podcastTitle, size, size, MaterialTheme.shapes.medium,
-                    first = i == 0 && shownMixes.isEmpty() && shownRecent.isEmpty(),
-                ) { PodcastStore.play(episode) }
+            items(episodes, key = { "ep-${it.id}" }) { episode ->
+                ShelfTile(episode.image, episode.title, "Episodio · " + episode.podcastTitle, size, size, medium, first = false, dot = true) {
+                    PodcastStore.play(episode)
+                }
+            }
+            items(radios, key = { "radio-${it.id}" }) { station ->
+                val track = radioNow?.takeIf { it.station.id == station.id }?.track.orEmpty()
+                ShelfTile(station.logo, station.name, if (track.isNotBlank()) "In onda: $track" else "Radio", size, size, CircleShape, first = false) {
+                    RadioStore.play(station)
+                }
             }
         }
     }
 }
 
-/** Video: i nuovi dai canali a cui sei iscritto, in ordine dal più recente, con gli stessi filtri del feed (Shorts, live, membri). */
+/**
+ * Video: i nuovi dai canali a cui sei iscritto, dal più recente, con gli stessi filtri del feed. Quelli usciti dopo
+ * l'ultima visita a Video hanno il pallino e gli altri sono sbiaditi (1.475, Antonio: come in News).
+ */
 @Composable
 internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll: () -> Unit) {
     val context = LocalContext.current
     val state by YouTubeStore.subscriptions.collectAsState()
-    val hideShorts by AppSettings.hideShorts.collectAsState()
     val hideLive by AppSettings.hideLive.collectAsState()
     val hideMembers by AppSettings.hideMembers.collectAsState()
+    remember { com.platinum20.dashboard.media.VideoVisit.init(context) }
+    val since by com.platinum20.dashboard.media.VideoVisit.since.collectAsState()
     LaunchedEffect(connected) { if (connected) YouTubeStore.refreshSubscriptions(context) }
-    val videos = remember(state.data, hideShorts, hideLive, hideMembers) {
+    val videos = remember(state.data, hideLive, hideMembers) {
         MediaShelves.newestFirst(pickFeed(state.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos).take(MediaShelves.MAX)
     }
-    Shelf("Video", onOpenAll) {
+    val fresh = com.platinum20.dashboard.media.MediaFresh.newVideos(videos, since)
+    Shelf(MediaShelves.title("Video", if (connected) fresh else 0), onOpenAll) {
         val width = 200.dp
         val height = 112.dp
         when {
@@ -267,30 +303,12 @@ internal fun VideoShelf(connected: Boolean, onPlay: (String) -> Unit, onOpenAll:
             videos.isEmpty() -> ShelfInvite("Niente di nuovo dai canali che segui", onOpenAll)
             else -> LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 itemsIndexed(videos, key = { _, v -> v.id }) { i, video ->
-                    ShelfTile(video.thumbnail, video.title, video.channel, width, height, MaterialTheme.shapes.medium, first = i == 0) { onPlay(video.watchUrl) }
+                    val isNew = com.platinum20.dashboard.media.MediaFresh.isNew(video.published, since)
+                    ShelfTile(
+                        video.thumbnail, video.title, video.channel, width, height, MaterialTheme.shapes.medium, first = i == 0,
+                        dot = isNew, faded = fresh > 0 && !isNew,
+                    ) { onPlay(video.watchUrl) }
                 }
-            }
-        }
-    }
-}
-
-/** Radio (1.437: da sola, i podcast sono passati in Musica): le preferite e poi le ascoltate di recente, tonde. */
-@Composable
-internal fun RadioShelf(onOpenAll: () -> Unit) {
-    val context = LocalContext.current
-    remember { RadioStore.init(context) }
-    val favorites by RadioStore.favorites.collectAsState()
-    val recentRadios by RadioStore.recent.collectAsState()
-    val radios = MediaShelves.mix(favorites, recentRadios, { it.id })
-    Shelf("Radio", onOpenAll) {
-        val size = 120.dp
-        if (radios.isEmpty()) {
-            ShelfInvite("Scegli una radio", onOpenAll)
-            return@Shelf
-        }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            itemsIndexed(radios, key = { _, s -> "radio-${s.id}" }) { i, station ->
-                ShelfTile(station.logo, station.name, RadioGenre.of(station.tags) ?: "Radio", size, size, CircleShape, first = i == 0) { RadioStore.play(station) }
             }
         }
     }

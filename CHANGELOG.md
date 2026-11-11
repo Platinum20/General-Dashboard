@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.475.0
+**Media rifatta: Musica e Video**
+- Media ha due file, Video e Musica: la radio adesso sta dentro Musica
+- Sopra il titolo c'è cosa è arrivato di nuovo ("6 video nuovi · 2 episodi")
+- La coda sta dentro il blocco colorato: "Dopo: …", un tocco e si apre
+- In Continua quanto manca lo dice solo la barra sulla copertina
+- Nella fila Video i nuovi dall'ultima visita hanno il pallino blu, i già visti sono più chiari
+- La fila Musica ha i mix, le uscite nuove, gli episodi nuovi e in fondo le tue radio
+- Musica ha cinque file: Per te, Libreria, Podcast, Radio, Di recente
+- Per te tiene insieme uscite e mix; Libreria parte da "Brani che ti piacciono"
+- Podcast è una fila sola di episodi; dal titolo si aprono i tuoi podcast
+- Radio: le tue stazioni tonde con la canzone in onda, e "Tutte le radio" per sceglierne altre
+- Brani del mese e Artisti che ascolti di più non hanno più una fila: finiscono nei mix
+- Il blocco colorato in Musica c'è solo quando suona qualcosa
+- Video ha tre schede: Iscrizioni, Per te (era Home) e Cronologia; via Canali e Playlist
+- In Iscrizioni il segno ULTIMA VISITA separa i video nuovi dagli altri
+- Mi piace sta in cima a Cronologia; i video del telefono si aprono dalla graffetta del +
+- La barra dei video lasciati a metà è blu
+
 ## 1.474.0
 **Pallini piccoli, Home ordinata**
 - Il numero del giorno torna nel nome ("Dom 15"), non più dentro il pallino
