@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.media
 
+import com.platinum20.dashboard.media.spotify.SpArtistLatest
 import com.platinum20.dashboard.media.spotify.SpHome
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
@@ -119,6 +120,13 @@ object FeedCache {
         "sp-releases.json",
         { list -> list.toArray { item(it.item).put("d", it.released.toString()) } },
         { array -> array.objects { SpRelease(item(it), LocalDate.parse(it.getString("d"))) } },
+    )
+
+    /** Gli artisti che segui con la data dell'ultima uscita (le storie di Media). */
+    val spArtists = FeedCodec<List<SpArtistLatest>>(
+        "sp-artists.json",
+        { list -> list.toArray { item(it.artist).put("d", it.latest?.toString().orEmpty()) } },
+        { array -> array.objects { SpArtistLatest(item(it), it.optString("d").takeIf { d -> d.isNotBlank() }?.let(LocalDate::parse)) } },
     )
 
     /** "Per te": quattro parti, salvate come elenchi uno dopo l'altro. */

@@ -85,18 +85,49 @@ object SpotifyStore {
         }
     }
 
-    /** Le nuove uscite si cercano al massimo una volta al giorno: una richiesta per artista seguito. */
+    private val _artists = MutableStateFlow(Loadable<List<SpArtistLatest>>())
+    /** Gli artisti che segui con la loro ultima uscita: le storie in cima a Media (1.479). */
+    val artists: StateFlow<Loadable<List<SpArtistLatest>>> = _artists.asStateFlow()
+
+    private val _artistPages = MutableStateFlow<Map<String, Loadable<SpArtistPage>>>(emptyMap())
+    /** Le pagine degli artisti aperte, per id. */
+    val artistPages: StateFlow<Map<String, Loadable<SpArtistPage>>> = _artistPages.asStateFlow()
+
+    /**
+     * Le nuove uscite si cercano al massimo una volta al giorno: una richiesta per artista seguito. Dalle stesse
+     * risposte esce anche l'ultima uscita di ogni artista (le storie), così non si chiede niente due volte.
+     */
     fun refreshReleases(force: Boolean = false) {
         loadSeen()
-        load(_releases, force, FeedCache.spReleases, maxAge = RELEASES_MAX_AGE) { token ->
-            val artists = SpotifyApi.followedArtists(token)
-            val responses = coroutineScope {
-                // A gruppi di 6, per non farsi rispondere "troppe richieste".
-                artists.chunked(6).flatMap { group ->
-                    group.map { id -> async { runCatching { SpotifyApi.artistAlbumsRaw(token, id) }.getOrNull() } }.awaitAll()
+        scope.launch {
+            if (_artists.value.data == null) FeedCache.restore(FeedCache.spArtists)?.let { saved -> _artists.update { saved } }
+            // Senza storie salvate (la prima volta) si rilegge anche se le uscite sono fresche.
+            val missing = _artists.value.data == null
+            load(_releases, force || missing, FeedCache.spReleases, maxAge = RELEASES_MAX_AGE) { token ->
+                val artists = SpotifyApi.followedArtistItems(token)
+                val responses = coroutineScope {
+                    // A gruppi di 6, per non farsi rispondere "troppe richieste".
+                    artists.chunked(6).flatMap { group ->
+                        group.map { a -> async { runCatching { SpotifyApi.artistAlbumsRaw(token, a.id) }.getOrNull() } }.awaitAll()
+                    }
                 }
+                val latest = artists.zip(responses).map { (a, r) -> SpArtistLatest(a, SpotifyArtist.latestRelease(r)) }
+                val now = System.currentTimeMillis()
+                _artists.value = Loadable(data = latest, loadedAt = now)
+                FeedCache.save(FeedCache.spArtists, latest, now)
+                NewReleases.pick(responses, LocalDate.now())
             }
-            NewReleases.pick(responses, LocalDate.now())
+        }
+    }
+
+    /** La pagina di un artista: si scarica alla prima apertura e si tiene finché l'app è aperta. */
+    fun loadArtist(artist: SpItem, force: Boolean = false) {
+        val state = _artistPages.value[artist.id]
+        if (!force && state != null && (state.loading || state.data != null)) return
+        _artistPages.update { it + (artist.id to (state ?: Loadable()).copy(loading = true, error = null)) }
+        scope.launch {
+            val result = call { token -> SpotifyApi.artistPage(token, artist) }
+            _artistPages.update { it + (artist.id to if (result.data == null) result.copy(data = state?.data) else result) }
         }
     }
 
@@ -215,6 +246,8 @@ object SpotifyStore {
         _children.value = emptyMap()
         _search.value = Loadable()
         _releases.value = Loadable()
+        _artists.value = Loadable()
+        _artistPages.value = emptyMap()
         _seenReleases.value = emptySet()
         _playback.value = null
     }

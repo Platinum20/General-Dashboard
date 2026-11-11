@@ -207,8 +207,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import com.platinum20.dashboard.ui.screens.VideoPlayerScreen
-import com.platinum20.dashboard.ui.screens.YouTubeFeedScreen
-import com.platinum20.dashboard.ui.screens.MusicScreen
 import com.platinum20.dashboard.ui.screens.ArticleScreen
 import com.platinum20.dashboard.ui.screens.CustomizeScreen
 import com.platinum20.dashboard.ui.screens.HomeScreen
@@ -425,6 +423,10 @@ object Routes {
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
     const val YOUTUBE_LIKED = "media/liked"
+    /** Un artista, un album o una playlist di Spotify come pagina sua (1.479: Musica non è più una pagina a parte). */
+    const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
+    fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
+        "media/spotify/item/${i.kind.name}/${Uri.encode(i.id)}?title=${Uri.encode(i.title)}&subtitle=${Uri.encode(i.subtitle)}&image=${Uri.encode(i.image)}"
     const val LOGIN = "settings/login/{service}"
 
     /** Il player YouTube dell'app (senza la pagina del sito); senza [url] mostra il video in corso. */
@@ -1293,23 +1295,40 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.MEDIA) {
                 MediaScreen(
                     bottomPadding = padding,
-                    onOpenMusic = { navController.navigate(Routes.SPOTIFY_FEED) },
-                    onOpenVideo = { navController.navigate(Routes.YOUTUBE_FEED) },
                     onOpenPlayer = { navController.navigate(if (it.isVideo) Routes.youtubeWatch() else Routes.PLAYER) },
-                    onOpenSettings = { navController.navigate(Routes.settingsPage(SettingsPage.MEDIA)) },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
+                    onOpenRoute = { navController.navigate(it) },
                 )
             }
             // Dalla 1.437 la radio è una sezione da sola e i podcast stanno in Musica: la vecchia strada dei podcast apre Musica.
             composable(Routes.RADIO) {
                 ListenScreen(onBack = { navController.popBackStack() })
             }
+            // "I tuoi podcast" (1.479): una riga in fondo a Media.
             composable(Routes.PODCAST) {
-                MusicScreen(
+                com.platinum20.dashboard.ui.screens.PodcastsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                Routes.SPOTIFY_ITEM,
+                arguments = listOf(
+                    navArgument("kind") { type = NavType.StringType },
+                    navArgument("id") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("subtitle") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("image") { type = NavType.StringType; defaultValue = "" },
+                ),
+            ) { entry ->
+                val args = entry.arguments
+                val kind = runCatching { com.platinum20.dashboard.media.spotify.SpKind.valueOf(args?.getString("kind").orEmpty()) }
+                    .getOrDefault(com.platinum20.dashboard.media.spotify.SpKind.ARTIST)
+                val id = args?.getString("id").orEmpty()
+                com.platinum20.dashboard.ui.screens.SpotifyItemScreen(
+                    item = com.platinum20.dashboard.media.spotify.SpItem(
+                        id, "spotify:${kind.name.lowercase()}:$id", kind,
+                        args?.getString("title").orEmpty(), args?.getString("subtitle").orEmpty(), args?.getString("image").orEmpty(),
+                    ),
                     onBack = { navController.popBackStack() },
-                    onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
-                    onOpenRadio = { navController.navigate(Routes.RADIO) },
-                    onOpenPlayer = { navController.navigate(Routes.PLAYER) },
+                    onOpenItem = { navController.navigate(Routes.spotifyItem(it)) },
                 )
             }
             composable(
@@ -1362,13 +1381,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
+            // Cronologia (1.479): una riga in fondo a Media, non più una scheda di Video.
             composable(Routes.YOUTUBE_FEED) {
-                YouTubeFeedScreen(
+                com.platinum20.dashboard.ui.screens.YouTubeHistoryScreen(
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
-                    onLogin = { navController.navigate(Routes.login(MediaService.YOUTUBE)) },
-                    onOpenPhone = { navController.navigate(Routes.VIDEO) },
-                    onOpenLiked = { navController.navigate(Routes.YOUTUBE_LIKED) },
                 )
             }
             composable(
@@ -1397,12 +1414,11 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
+            // "Brani che ti piacciono" (1.479): una riga in fondo a Media, con playlist e album salvati.
             composable(Routes.SPOTIFY_FEED) {
-                MusicScreen(
+                com.platinum20.dashboard.ui.screens.MusicLibraryScreen(
                     onBack = { navController.popBackStack() },
-                    onLogin = { navController.navigate(Routes.login(MediaService.SPOTIFY)) },
-                    onOpenRadio = { navController.navigate(Routes.RADIO) },
-                    onOpenPlayer = { navController.navigate(Routes.PLAYER) },
+                    onOpenItem = { navController.navigate(Routes.spotifyItem(it)) },
                 )
             }
             composable(

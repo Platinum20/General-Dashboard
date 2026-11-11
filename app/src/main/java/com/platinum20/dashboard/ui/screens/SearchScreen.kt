@@ -249,8 +249,13 @@ fun SearchScreen(
                 if (music.isNotEmpty()) item(key = "music") {
                     SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }, Modifier.animateItem()) { item ->
                         ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {
-                            SpotifyPlayer.play(context, item)
-                            onOpenPlayer()
+                            // Artisti, album e playlist si aprono nella loro pagina (1.479); un brano parte.
+                            if (item.kind == SpKind.ARTIST || item.kind == SpKind.ALBUM || item.kind == SpKind.PLAYLIST) {
+                                inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.spotifyItem(item))
+                            } else {
+                                SpotifyPlayer.play(context, item)
+                                onOpenPlayer()
+                            }
                         }
                     }
                 }

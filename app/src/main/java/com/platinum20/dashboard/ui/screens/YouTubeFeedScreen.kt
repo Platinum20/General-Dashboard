@@ -96,145 +96,21 @@ import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.Instant
 
-/** 1.475 (Antonio): via Canali e Playlist; "Home" si chiama "Per te" (Home è già la prima pagina dell'app). */
-private val youTubeTabs = listOf("Iscrizioni", "Per te", "Cronologia")
-private const val TAB_SUBS = 0
-private const val TAB_HOME = 1
-private const val TAB_HISTORY = 2
-
 /**
- * Il tuo YouTube nell'app: tre schede larghe (Iscrizioni, Per te, Cronologia), niente riquadri sopra. Mi piace sta in
- * cima a Cronologia; un canale si apre dal suo nome sotto il video; i video del telefono dalla graffetta del +
- * (1.475, Antonio). Escludi Shorts/live stanno in Impostazioni. Cerca = trascinare giù.
+ * La Cronologia di YouTube (1.479, Antonio: Video non è più una pagina con le schede; questa è una riga in fondo a
+ * Media): i video guardati qui, poi quelli della tua cronologia di YouTube.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YouTubeFeedScreen(
-    onBack: () -> Unit,
-    onPlay: (String) -> Unit,
-    onLogin: () -> Unit,
-    /** I video del telefono: solo dalla pagina per collegare YouTube, se non è collegato. */
-    onOpenPhone: () -> Unit,
-    /** Mi piace è una pagina vera (1.357): transizione e gesto indietro come le altre. */
-    onOpenLiked: () -> Unit = {},
-) {
-    val context = LocalContext.current
-    YouTubeAuth.init(context)
-    val official by YouTubeAuth.connected.collectAsState()
-    val loggedIn by Accounts.loggedIn.collectAsState()
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { Accounts.refresh() }
-    // Basta l'accesso a YouTube fatto nell'app; il collegamento ufficiale sta in Impostazioni › Account.
-    val connected = official || MediaService.YOUTUBE in loggedIn
-    // Si apre sulle Iscrizioni: la pagina risponde a "cosa è uscito dai canali che seguo".
-    var tab by rememberSaveable { mutableIntStateOf(TAB_SUBS) }
-    // L'ultima visita: quello uscito dopo sta sopra ULTIMA VISITA. Aprire un video e tornare non conta come visita.
-    remember { com.platinum20.dashboard.media.VideoVisit.init(context) }
-    val visitSince = remember { com.platinum20.dashboard.media.VideoVisit.enter() }
-    DisposableEffect(Unit) { onDispose { com.platinum20.dashboard.media.VideoVisit.leave() } }
-    // Escludi Shorts / live si scelgono una volta in Impostazioni › Fa da solo.
-    val hideShorts by AppSettings.hideShorts.collectAsState()
-    val hideLive by AppSettings.hideLive.collectAsState()
-
-    val subs by YouTubeStore.subscriptions.collectAsState()
-    val fresh = com.platinum20.dashboard.media.MediaFresh.newVideos(pickFeed(subs.data.orEmpty(), hideShorts, hideLive).videos, visitSince)
-
+fun YouTubeHistoryScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopLevelBar(
-                title = "Video",
-                scrollBehavior = barScroll,
-                subtitle = if (fresh > 0) "$fresh nuovi dall'ultima visita" else "YouTube",
-                onBack = onBack,
-            )
-        },
+        topBar = { TopLevelBar(title = "Cronologia", subtitle = "YouTube", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(inner)
-        ) {
-            if (!connected) {
-                ConnectYouTube(onLogin = onLogin, onOpenPhone = onOpenPhone)
-                return@Column
-            }
-            // Le tre schede in parti uguali fino al bordo destro.
-            Row(
-                Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                youTubeTabs.forEachIndexed { index, label ->
-                    CanvasTabChip(selected = tab == index, onClick = { tab = index }, label = label, modifier = Modifier.weight(1f))
-                }
-            }
-            when (tab) {
-                TAB_HOME -> HomeTab(hideShorts, hideLive, onPlay)
-                TAB_SUBS -> SubscriptionsTab(hideShorts, hideLive, visitSince, onPlay)
-                else -> HistoryTab(onPlay, onOpenLiked)
-            }
-        }
+        Column(Modifier.fillMaxSize().padding(inner)) { HistoryTab(onPlay) }
     }
-}
-
-/**
- * Un pulsante solo: accedere a YouTube qui nell'app. Il collegamento con l'API ufficiale di Google sta in
- * Impostazioni › Account, per chi lo vuole; i video del telefono sono una riga, non un'altra strada.
- */
-@Composable
-private fun ConnectYouTube(onLogin: () -> Unit, onOpenPhone: () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        IconTile(Icons.Outlined.OndemandVideo, TileAccent.ORANGE, size = 72.dp, iconSize = 36.dp)
-        Spacer(Modifier.height(20.dp))
-        Text("Collega YouTube", style = MaterialTheme.typography.headlineSmall)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Iscrizioni, playlist e Mi piace, qui nell'app.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(24.dp))
-        CanvasButton("Accedi a YouTube", onClick = onLogin, primary = true)
-        Spacer(Modifier.height(24.dp))
-        CanvasCard(onClick = onOpenPhone, modifier = Modifier.fillMaxWidth().bouncyPress(0.98f)) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Video del telefono", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                Icon(
-                    Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeTab(hideShorts: Boolean, hideLive: Boolean, onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val state by YouTubeStore.home.collectAsState()
-    val ended by YouTubeStore.homeEnded.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
-    VideoFeed(
-        state, empty = "La Home è vuota", hideShorts, hideLive, onPlay = onPlay,
-        onNearEnd = if (ended) null else ({ YouTubeStore.loadMoreHome(context) }),
-    )
-}
-
-@Composable
-private fun SubscriptionsTab(hideShorts: Boolean, hideLive: Boolean, since: Long, onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val state by YouTubeStore.subscriptions.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshSubscriptions(context) }
-    VideoFeed(state, empty = "Nessun video nuovo dai canali che segui", hideShorts, hideLive, onPlay = onPlay, since = since)
 }
 
 /** Quello che resta del feed con i filtri: gli Short (fila a parte) e gli altri video. */
@@ -334,7 +210,7 @@ private fun ShortsShelf(shorts: List<YtVideo>, onPlay: (String) -> Unit) {
 
 /** Una riga fissa in cima a Cronologia (Mi piace). */
 @Composable
-private fun ListRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
+internal fun ListRow(icon: ImageVector, accent: TileAccent, title: String, subtitle: String, onClick: () -> Unit) {
     CanvasCard(Modifier.fillMaxWidth().bouncyPress(0.97f), onClick = onClick) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             IconTile(icon, accent, size = 40.dp, iconSize = 22.dp)
@@ -557,7 +433,7 @@ private fun WatchedBar(video: YtVideo, modifier: Modifier) {
 
 /** I video guardati nell'app (con il punto in cui eri) e la cronologia del tuo account YouTube. */
 @Composable
-private fun HistoryTab(onPlay: (String) -> Unit, onOpenLiked: () -> Unit) {
+private fun HistoryTab(onPlay: (String) -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         YtHistory.init(context)
@@ -608,8 +484,6 @@ private fun HistoryTab(onPlay: (String) -> Unit, onOpenLiked: () -> Unit) {
             }
         }
         FeedList(state, empty = "Ancora nessun video guardato") {
-            // 1.475 (Antonio): Mi piace in cima, i video del telefono si aprono dalla graffetta del +.
-            item(key = "liked") { ListRow(Icons.Outlined.ThumbUp, TileAccent.BLUE, "Mi piace", "I video che ti sono piaciuti", onOpenLiked) }
             if (watched.isNotEmpty()) {
                 item(key = "local-h") {
                     Row(verticalAlignment = Alignment.CenterVertically) {

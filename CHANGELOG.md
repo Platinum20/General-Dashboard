@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.479.0
+**Media è un feed unico**
+- Video e Musica non sono più pagine a parte: tutto sta in Media, in una lista sola
+- In cima le storie dei canali e degli artisti che segui, dal più recente; l'anello blu vuol dire che hanno pubblicato dopo la tua ultima visita
+- Un tocco su una storia apre il canale o la pagina dell'artista
+- Nuova pagina artista: foto grande, Popolari, Discografia (Album e Singoli e EP) e Appare in
+- Per te parte dai mix, poi le uscite nuove
+- Novità: video dei canali ed episodi nuovi insieme, dal più nuovo; sotto ULTIMA VISITA il resto e qualche consigliato
+- In fondo le radio e quattro righe: Brani che ti piacciono, Mi piace, Cronologia, I tuoi podcast
+- Dalla ricerca artisti, album e playlist si aprono nella loro pagina
+
 ## 1.478.0
 **Media rifatta: Musica e Video**
 - Media ha due file, Video e Musica: la radio adesso sta dentro Musica
