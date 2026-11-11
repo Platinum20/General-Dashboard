@@ -1,0 +1,45 @@
+https://www.agi.it/scienza/news/2026-11-11/copernicus-2026-temperatura-globale--39967189/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AHdqu9TUFQDftOPC0tPdAK5AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM+duStb/TDqKlXBCLAgEQgDvA+KHP5f2ke+wKSAVrUKD+elVTaX+Y8xvzkOOlC3Tboz1X9J67cI2XHITVrhaixExTlkPyZjCu/+Vz5g==",
+          "iv":"EkQp5ADbYQAAAH6G",
+          "context":"acVWrwuc+ouIz+4F6CFCet9Qy32XpiehxCAncuxftajCRVowuSi9txVrAqy/6li4Xx/3HvZ7/zFlIsCj7IMsYImIqlz0RoWELLXvj4EeSNvw/CAn34iyWu6HlhM9h7/tjNNhOrKLyuhlhEzgGtrGk5sU7Vc52kyth+fDrYR9Wa2OaGpTCzQHAyis3S1MHtIL5Rm02uJDK1mpYGMhKct7Gqjv/376HyM6JDAOLBVKcRKpcPmUk1EZihRokS68z6H1+sQpz8gKXlaK19KV0ISL8cpLRFWLTCIy2hqFYA+SE+orhb+nOv+VGBaDBTKYV3iTuoQPzrEaNqOXOoszmnerh9JUa/B8zfMsFYlsgkyDvX3f+hvLjFe3E/vEFU2Y6qQQR/9i0AMcKuxD2R78X5sf5G7CQKfNdFjZpMAldvAHWkDK+a5qGEJ+mQLyuWm5deBVHqpVGEbPC0de6av4gp3v/IbFpD9kC9bI8VFnRDkAnvwoR2En/0LzHN8gNv+12rgS2810LfHHL9yfqnabK4pBWTGwZDv46Rh+uOPlYnGj44RRuyOHg2mbljhkFTV448kkgZCSvB0xo9whnFkzjiDgKzkiqsgbeXtSu7q0Q356XGo91R8A1i3CKi3fTxbt/hTMY8mxx75d50liVN4t9Cyr1G4JLhHioufgASoVCFx4Oy+XwZlA4//67qVHoxZofG3bDCjpoIbp/W13P6YtnIWqlJbMJhl2BfBoOn0T2q744nKM7c87ckKLPCfqWquluDK2f0g="
+};
+    </script>
+  <script src="https://a49c870577a3.f245ce8f.us-east-2.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>
