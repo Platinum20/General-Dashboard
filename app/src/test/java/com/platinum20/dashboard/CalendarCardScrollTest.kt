@@ -8,13 +8,14 @@ import com.platinum20.dashboard.ui.screens.cardDays
 import com.platinum20.dashboard.ui.screens.cardTodo
 import com.platinum20.dashboard.ui.screens.clamp
 import com.platinum20.dashboard.ui.screens.window
+import com.platinum20.dashboard.ui.screens.todoLine
 import com.platinum20.dashboard.ui.screens.withoutTicks
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.LocalDate
 
-/** La card Calendario in Home: tieni premuto e trascina per scorrere i giorni, le cose da spuntare in fondo (2026-11-11). */
+/** La card Calendario in Home: tieni premuto e trascina per scorrere i giorni; le cose da spuntare nella riga Da fare (2026-11-11). */
 class CalendarCardScrollTest {
     private val today = LocalDate.of(2026, 11, 11)
 
@@ -82,5 +83,11 @@ class CalendarCardScrollTest {
         val section = cardTodo(groups, today)
         assertEquals(listOf("task-1"), section.map { it.first.key })
         assertNull(section.single().first.dayLabel)
+    }
+
+    @Test
+    fun todoLineSaysHowManyAreLeft() {
+        assertEquals("Da fare · 3", todoLine(3))
+        assertEquals("Da fare · tutto fatto", todoLine(0))
     }
 }

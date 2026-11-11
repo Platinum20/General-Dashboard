@@ -659,13 +659,13 @@ internal class DayDrag(private val stepPx: Float) {
     }
 }
 
-/** I giorni senza le cose da spuntare: nella card Calendario stanno nella sezione "Da fare" in fondo. */
+/** I giorni senza le cose da spuntare: stanno tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11, scelta A). */
 internal fun List<DueDay>.withoutTicks(): List<DueDay> =
     map { g -> g.copy(rows = g.rows.filterNot { it.task?.tickable == true }) }.filter { it.rows.isNotEmpty() }
 
 /**
- * La sezione "Da fare" della card Calendario: tutte le cose da spuntare (quelle fatte oggi restano, spuntate,
- * per poterle rimettere), senza giorno sulla riga.
+ * Le righe che si aprono sotto "Da fare": tutte le cose da spuntare (quelle fatte oggi restano, spuntate,
+ * per poterle rimettere), senza giorno sulla riga. Uguali nella card della Home e nella pagina.
  */
 internal fun cardTodo(groups: List<DueDay>, today: LocalDate): List<Pair<TimelineEntry, DueRow>> {
     val rows = groups.filter { it.day == today && !it.past && !it.late }.flatMap { g -> g.rows.filter { it.task?.tickable == true } }
@@ -673,3 +673,11 @@ internal fun cardTodo(groups: List<DueDay>, today: LocalDate): List<Pair<Timelin
     return timelineEntries(listOf(DueDay(today, false, rows)), today)
         .map { (e, r) -> e.copy(dayLabel = null, dayNumber = null, month = null) to r }
 }
+
+/** La riga "Da fare" dentro OGGI: quante restano; un tocco apre (o chiude) le cose da spuntare sotto. */
+internal fun todoLine(open: Int): String = if (open == 0) "Da fare · tutto fatto" else "Da fare · $open"
+
+internal fun todoEntry(todo: List<Pair<TimelineEntry, DueRow>>): TimelineEntry = TimelineEntry(
+    key = "todo", kind = com.platinum20.dashboard.today.BriefKind.TASK,
+    text = todoLine(todo.count { !it.first.done }), dayLabel = null,
+)

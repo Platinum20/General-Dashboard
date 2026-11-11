@@ -5,7 +5,7 @@
 - Nella card Calendario della Home tieni premuto e trascina su o giù: vai avanti e indietro di un giorno alla volta, anche nei giorni passati
 - Lasciata ferma per 20 secondi torna da sola a oggi
 - Tenere premuto sulla card serve solo a scorrere: le azioni delle righe sono nel menu "Altro" della scheda (Condividi, Rimanda a domani)
-- In fondo alla card c'è la sezione "Da fare" con tutte le cose da spuntare; nei giorni della card non ci sono più
+- Le cose da spuntare escono dai giorni: dentro OGGI c'è la riga "Da fare · 3", un tocco e si aprono sotto per spuntarle. Uguale nella card e nel calendario intero
 
 ## 1.478.0
 **Media rifatta: Musica e Video**

@@ -191,18 +191,27 @@ internal fun CalendarCard(
     val month = java.time.YearMonth.from(anchor)
     val more = all.drop(window.to).count { (_, row) -> row.day?.let { it.isAfter(anchor) && java.time.YearMonth.from(it) == month } == true }
     val shown = all.subList(window.from, window.to)
-    // Le abitudini sono una riga sola in fondo a OGGI, come nella pagina (punto 19): il tocco apre il fumetto per segnarle.
-    val habitAt = if (habits.isNotEmpty() && window.todayEnd != null) window.todayEnd - window.from else -1
-    val habitRow = TimelineEntry(
-        key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null,
-    )
-    fun <T> withHabit(list: List<T>, item: T): List<T> =
-        if (habitAt < 0) list else list.toMutableList().apply { add(habitAt.coerceAtMost(size), item) }
+    // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle),
+    // poi "Da fare · N" che si apre sul posto con tutte le cose da spuntare (Antonio, 2026-11-11, scelta A).
+    var todoOpen by rememberSaveable { mutableStateOf(false) }
+    val extraAt = window.todayEnd?.let { it - window.from } ?: -1
+    val extras = buildList<Triple<TimelineEntry, (() -> Unit)?, () -> Unit>> {
+        if (habits.isNotEmpty()) add(Triple(
+            TimelineEntry(key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null),
+            null, { ActionBubble.show(*habitsBubble(habits, today)) },
+        ))
+        if (todo.isNotEmpty()) {
+            add(Triple(todoEntry(todo), null, { todoOpen = !todoOpen }))
+            if (todoOpen) todo.forEach { (entry, row) -> add(Triple(entry, row.task?.let { tickTask(it.id) }, { open(row) })) }
+        }
+    }
+    fun <T> withExtras(list: List<T>, items: List<T>): List<T> =
+        if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
     val monthName = anchor.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
         // Senza titolo né mese: si apre direttamente su OGGI, una riga in meno (Antonio, 2026-11-10).
         null,
-        withHabit(shown.map { it.first }, habitRow),
+        withExtras(shown.map { it.first }, extras.map { it.first }),
         onOpenAll,
         empty = "Niente in programma.",
         // La card si allarga fino a diventare la pagina Calendario (e ci torna chiudendola).
@@ -210,9 +219,9 @@ internal fun CalendarCard(
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
         // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.376).
-        ticks = withHabit(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, null),
+        ticks = withExtras(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, extras.map { it.second }),
         // Toccando una riga si apre proprio quella cosa (le sue azioni sono nel suo "Altro"); il resto della card apre il calendario intero.
-        rows = withHabit(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
+        rows = withExtras(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, extras.map { it.third }),
         // Tenere premuto è solo per scorrere i giorni (Antonio): lasciando senza muovere si apre il calendario intero.
         onLongOpen = onOpenAll,
         onScrub = { steps ->
@@ -223,20 +232,6 @@ internal fun CalendarCard(
             moved
         },
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
-        bottom = if (todo.isEmpty()) null else ({
-            val haptic = rememberHaptic()
-            CardTitle("Da fare", trailing = {
-                Text("${todo.count { !it.first.done }}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
-            })
-            todo.forEachIndexed { i, (entry, row) ->
-                TimelineRow(
-                    entry, top = i > 0, bottom = i < todo.lastIndex,
-                    onClick = { haptic(Haptic.TICK); open(row) },
-                    onIcon = row.task?.let { tickTask(it.id) },
-                    monthTick = false, sharedScope = SharedRows.HOME,
-                )
-            }
-        }),
     )
 }
 
@@ -298,8 +293,6 @@ fun TimelineCard(
      * Con questo tenere premuto non apre più le azioni delle righe: lasciando senza muovere vale [onLongOpen].
      */
     onScrub: ((Int) -> Boolean)? = null,
-    /** In fondo alla card, dopo [footer]: una sezione sua (le cose da spuntare del Calendario). */
-    bottom: (@Composable () -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
     val scrub by androidx.compose.runtime.rememberUpdatedState(onScrub)
@@ -343,7 +336,6 @@ fun TimelineCard(
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
-            bottom?.invoke()
         }
     }
 }
