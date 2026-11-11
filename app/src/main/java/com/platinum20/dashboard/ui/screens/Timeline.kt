@@ -1,5 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.widthIn
@@ -438,6 +440,12 @@ internal fun TripBlock(
                 // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
                 Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
+                    // Un turno è sempre alto due righe (durata + guadagno), anche prima che ci sia il guadagno:
+                    // da fare alto come fatto, con la riga in mezzo al centro (Antonio, 2026-11-11).
+                    if (trip.people != null) Column(Modifier.alpha(0f).clearAndSetSemantics { }) {
+                        Text(" ", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                        Text(" ", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                    }
                     Column(Modifier.padding(vertical = if (trip.names != null) 4.dp else 0.dp)) {
                         // Una riga sola, anche con tre creator: tutti i turni alti uguali (Antonio).
                         trip.names?.let {

@@ -6,6 +6,7 @@
 - I pallini dei giorni sono di nuovo piccoli, OGGI è grande uguale, e quelli dei mesi sono rimpiccioliti
 - Le novità dopo un aggiornamento stanno in una card sola, non più una dentro l'altra
 - La card SIM non finisce più sopra il Calendario quando questo cambia altezza
+- I turni da fare sono alti come quelli fatti, con le informazioni al centro
 
 ## 1.471.0
 **Calendario più pulito, card della Home più corta, tessere Media ordinate**
