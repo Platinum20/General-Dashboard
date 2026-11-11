@@ -1,0 +1,45 @@
+https://www.agi.it/estero/news/2026-11-11/usa-camera-impeachment-pete-hegseth-39974473/
+
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+        body {
+            font-family: "Arial";
+        }
+    </style>
+  <script type="text/javascript">
+    window.awsWafCookieDomainList = [];
+    window.gokuProps = {
+"key":"AQIDAHjcYu/GjX+QlghicBgQ/7bFaQZ+m5FKCMDnO+vTbNg96AHdqu9TUFQDftOPC0tPdAK5AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM+duStb/TDqKlXBCLAgEQgDvA+KHP5f2ke+wKSAVrUKD+elVTaX+Y8xvzkOOlC3Tboz1X9J67cI2XHITVrhaixExTlkPyZjCu/+Vz5g==",
+          "iv":"EkQNSgGC1AAAANQ6",
+          "context":"qiVYGvpIhBZMeM3HjxDaoRM+f1srsAyr66scWXrP1kB7fGIeogQaTr+V7y6AWESBUgjFSOB/OEqA3lo1pqYlQIlETkTaQszFS6HOTBQjDpPe/Z7InwFlTiTwnB5oHgDHJTGPJ72wPDb4SJRRpd2lPiD+dODo1+wDTMhpSemkTGBovaMqFvh7aXlOuFtIg5TH/WXz/FAELHLY72ZDTxlEmtHD9KObJis/gKYLGJdCyQyGFgyWNx90UgAvgDLftMH2aQ00dUdT1JgwTx0+XsksVRA5v+J+Ws1Q/0rDg1mcWc/s0DRgj66SwPF3PGunPMuYrUyB+3qO6INYVR4wGzLFjNu0ZH45C2wApNM4e+Ew0qdo/TezmCO5iDY8gM8x1bxDK5Tkt4/I27Gj/P/gmocu4VSPrBykRiXPQD3ZFTyUbdzAHTpvuH1E/gQle++wJTK1vTX2BYq8XFrGA0ZSJOO9Bovwcyz1fI+r8x0qS05T6jpjxFnoy0+B+nPuEZvLjuoEMpG6gUG4+Ksbm+tNU8ui7Uw+IXDA6oJGLTAHx86jExET6Ni9+B/xWUekq3m9zruaRslvAUeoHJuhlf77898TdHf66Xz0stTCBjvtF9jr+GNJAxDuxk7u/cqvVWV+ewgwXc6YaEy/XBcvjDIShS69gDr3kcYeGrUqKcOYcdQlaVBJ+UjFGKwPqroGvR4p70qurxbQPnGSQODocu6OxUduZuOmSGWTYYsWjT9cj248NH7ORkx/3+B3hl4cbA8YymC9e/U="
+};
+    </script>
+  <script src="https://a49c870577a3.f245ce8f.us-east-2.token.awswaf.com/a49c870577a3/748f688d6c36/b3c9036127c4/challenge.js"></script>
+ </head>
+ <body>
+  <div id="challenge-container"></div>
+  <script type="text/javascript">
+        AwsWafIntegration.saveReferrer();
+        AwsWafIntegration.checkForceRefresh().then((forceRefresh) => {
+            if (forceRefresh) {
+                AwsWafIntegration.forceRefreshToken().then(() => {
+                    window.location.reload(true);
+                });
+            } else {
+                AwsWafIntegration.getToken().then(() => {
+                    window.location.reload(true);
+                });
+            }
+        });
+    </script>
+  <noscript>
+   <h1>JavaScript is disabled</h1>
+   In order to continue, we need to verify that you're not a robot. This requires JavaScript. Enable JavaScript and then reload the page.
+  </noscript>
+ </body>
+</html>
