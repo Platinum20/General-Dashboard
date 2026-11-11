@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.475.0
+**Copia il numero del documento**
+- Nella card Documenti e nella pagina del documento, in fondo a destra della riga c'è un tasto che copia il numero negli appunti
+- Un fumetto in basso conferma "Numero copiato"
+
 ## 1.474.0
 **Pallini piccoli, Home ordinata**
 - Il numero del giorno torna nel nome ("Dom 15"), non più dentro il pallino

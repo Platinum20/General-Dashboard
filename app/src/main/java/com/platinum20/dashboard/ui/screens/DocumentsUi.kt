@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Rotate90DegreesCw
 import androidx.compose.material.icons.outlined.CropFree
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Badge
@@ -121,9 +122,30 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
+                // Col numero, a destra il tasto che lo copia (Antonio, 2026-11-11): la riga lo tronca spesso.
+                val number = doc.number?.takeIf { it.isNotBlank() }
+                if (number != null) CopyCodeButton(number)
+                else Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
             }
         }
+    }
+}
+
+/** Copia il numero del documento negli appunti e lo dice nel fumetto in basso. */
+@Composable
+internal fun CopyCodeButton(code: String) {
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    androidx.compose.material3.IconButton(
+        onClick = {
+            haptic(Haptic.CONFIRM)
+            val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Numero del documento", code))
+            CaptureFeedback.tell(context, "Numero copiato", Icons.Outlined.ContentCopy)
+        },
+        modifier = Modifier.size(40.dp).bouncyPress(0.9f),
+    ) {
+        Icon(Icons.Outlined.ContentCopy, contentDescription = "Copia il numero", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -221,7 +243,10 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
             DocPhoto(back, "Retro", onLongClick = { sideActions(back = true) },
                 onRotate = { scope.launch { DocumentsStore.turn(context, id, back = true) } }) { zoom = back }
         }
-        DetailFieldRow(doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento") { DocumentsStore.setNumber(id, it) }
+        DetailFieldRow(
+            doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento",
+            trailing = doc.number?.takeIf { it.isNotBlank() }?.let { n -> { CopyCodeButton(n) } },
+        ) { DocumentsStore.setNumber(id, it) }
         DetailTapRow(
             Icons.Outlined.EventBusy,
             doc.expiry?.let { "Scade il " + it.format(docDate) + " · nel calendario" } ?: "Aggiungi la scadenza",
