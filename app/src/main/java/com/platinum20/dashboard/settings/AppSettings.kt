@@ -95,6 +95,7 @@ object AppSettings {
     private const val KEY_RAIN_ALERT = "rain_alert"
     private const val KEY_LIVE_TRIPS = "live_trips"
     private const val KEY_LIVE_SHIFTS = "live_shifts"
+    private const val KEY_TRAIN_PACK = "train_pack"
     private const val KEY_READING_VOICE = "reading_voice"
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
@@ -129,6 +130,9 @@ object AppSettings {
     private val _liveShifts = MutableStateFlow(false)
     /** Lo stesso conto alla rovescia prima di ogni turno (spento di default). */
     val liveShifts: StateFlow<Boolean> = _liveShifts.asStateFlow()
+    private val _trainPack = MutableStateFlow(true)
+    /** Lo zaino del treno: prima del viaggio, col Wi-Fi, scarica podcast e video per il treno (acceso di default). */
+    val trainPack: StateFlow<Boolean> = _trainPack.asStateFlow()
     private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
     /** La voce che legge notizie e punto del giorno. */
     val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
@@ -218,6 +222,7 @@ object AppSettings {
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
         _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, false)
+        _trainPack.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
@@ -313,6 +318,11 @@ object AppSettings {
     fun setLiveTrips(enabled: Boolean) {
         _liveTrips.value = enabled
         prefs.edit().putBoolean(KEY_LIVE_TRIPS, enabled).apply()
+    }
+
+    fun setTrainPack(enabled: Boolean) {
+        _trainPack.value = enabled
+        prefs.edit().putBoolean(KEY_TRAIN_PACK, enabled).apply()
     }
 
     fun setLiveShifts(enabled: Boolean) {

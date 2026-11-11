@@ -218,6 +218,17 @@ object PodcastStore {
         }
     }
 
+    /**
+     * Gli episodi nuovi dei podcast seguiti, letti adesso (lo zaino del treno, in sottofondo). Solo i feed veri:
+     * gli episodi che stanno solo su Spotify sono protetti e non si scaricano.
+     */
+    internal suspend fun latestNow(): List<Episode> = kotlinx.coroutines.coroutineScope {
+        val lists = _followed.value.filterNot { it.feedUrl.startsWith("spotify:") }
+            .map { podcast -> async { runCatching { fetchEpisodes(podcast) }.getOrNull() } }
+            .awaitAll()
+        latestOf(lists.filterNotNull()).filterNot { it.audioUrl.startsWith("spotify:") }
+    }
+
     /** I più nuovi tra gli episodi di tutti i podcast, al massimo [perPodcast] per podcast e [max] in tutto. */
     fun latestOf(lists: List<List<Episode>>, perPodcast: Int = 5, max: Int = 30): List<Episode> =
         lists.flatMap { it.sortedByDescending(Episode::publishedAt).take(perPodcast) }

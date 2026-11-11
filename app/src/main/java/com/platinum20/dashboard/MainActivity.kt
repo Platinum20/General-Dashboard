@@ -325,6 +325,8 @@ class MainActivity : ComponentActivity() {
                 MorningWorker.schedule(app)
                 RainAlertWorker.schedule(app)
                 com.platinum20.dashboard.work.TripLiveWorker.schedule(app)
+                com.platinum20.dashboard.trips.TrainPackStore.init(app)
+                com.platinum20.dashboard.work.TrainPackWorker.schedule(app)
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)

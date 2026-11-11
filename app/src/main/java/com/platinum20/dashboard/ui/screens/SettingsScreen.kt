@@ -373,6 +373,8 @@ fun SettingsPageScreen(
                             QueueFillSetting()
                             RowDivider()
                             AutoplaySetting()
+                            RowDivider()
+                            TrainPackSetting()
                         }
                     }
                     item {
@@ -1206,6 +1208,28 @@ private fun RainAlertSetting() {
         },
         onClick = toggle,
         trailing = { Switch(checked = enabled && !blocked, onCheckedChange = hapticToggle { toggle() }) },
+    )
+}
+
+/** Lo zaino del treno: prima del viaggio, solo col Wi-Fi, podcast e video pronti senza rete. */
+@Composable
+private fun TrainPackSetting() {
+    val enabled by AppSettings.trainPack.collectAsState()
+    val files by com.platinum20.dashboard.trips.TrainPackStore.files.collectAsState()
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.trips.TrainPackStore.init(context) }
+    val ready = files.sumOf { it.sec }
+    SettingsItem(
+        icon = Icons.Outlined.Train,
+        accent = TileAccent.BLUE,
+        title = "Zaino del treno",
+        subtitle = when {
+            !enabled -> "Prima del viaggio, col Wi-Fi, podcast e video per il treno"
+            ready > 0 -> com.platinum20.dashboard.trips.TrainPack.readyLine(ready)!!
+            else -> "Si prepara col Wi-Fi il giorno prima di un treno"
+        },
+        onClick = { AppSettings.setTrainPack(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { AppSettings.setTrainPack(it) }) },
     )
 }
 
