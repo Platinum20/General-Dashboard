@@ -318,8 +318,9 @@ internal fun tripStops(
     val duration = com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end)
     return if (trip != null) TripStops(
         departAt = from.format(hour),
-        // Nel calendario dove va e quando arriva (Antonio); sulla pagina del viaggio le due stazioni.
-        from = if (labels) trip.from ?: "Partenza" else RowText.event(event),
+        // Nel calendario da dove parte in alto e dove arriva in fondo: "Treno da Taranto" … "Arrivo a Pescara"
+        // (Antonio, 1.475; il titolo resta "Treno per …" altrove). Sulla pagina del viaggio le due stazioni.
+        from = if (labels) trip.from ?: "Partenza" else trip.from?.let { "Treno da $it" } ?: RowText.event(event),
         arriveAt = to.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).

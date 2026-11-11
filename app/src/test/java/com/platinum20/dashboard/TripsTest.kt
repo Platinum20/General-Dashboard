@@ -58,7 +58,7 @@ class TripsTest {
         val e = CalendarEvent(2, "Treno per Pescara Centrale", dep, arr, false, "", 0, Trip("Taranto", "Pescara Centrale", "Intercity 612"))
         val stops = tripStops(e, LocalDate.of(2026, 11, 9), zone)!!
         assertEquals("10:28", stops.departAt)
-        assertEquals("Treno per Pescara Centrale", stops.from)
+        assertEquals("Treno da Taranto", stops.from)
         assertEquals("15:00", stops.arriveAt)
         assertEquals("Arrivo a Pescara Centrale", stops.to)
         // Sulla pagina del viaggio le due stazioni.
