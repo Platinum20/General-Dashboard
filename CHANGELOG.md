@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.468.0
+**Giorni e mesi si distinguono dai pallini del Calendario**
+- Ogni giorno ha il suo numero in un cerchio sulla linea a sinistra, accanto al nome
+- I mesi hanno un pallino pieno più grande
+- Così i pallini colorati restano solo per le cose
+
 ## 1.467.0
 **Il viaggio dal vivo**
 - Un'ora prima del treno arriva una notifica sola: quanti minuti mancano alla partenza, il ritardo vero, il binario, carrozza e posto
