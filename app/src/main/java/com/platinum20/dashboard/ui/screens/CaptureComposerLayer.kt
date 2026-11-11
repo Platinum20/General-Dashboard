@@ -137,6 +137,7 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
                 scope.launch {
                     when (val outcome = VoiceCapture.save(context, value)) {
                         VoiceCapture.Outcome.NeedsDialog -> needsDialog(value)
+                        is VoiceCapture.Outcome.Answered -> com.platinum20.dashboard.capture.CaptureAsk.show(context, outcome.answer)
                         is VoiceCapture.Outcome.Saved -> {
                             AppSettings.countCaptureSave()
                             CaptureFeedback.show(CaptureNotice(outcome.mode, outcome.message, outcome.undo))

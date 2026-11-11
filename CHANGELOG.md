@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.473.0
+**Chiedi al "+"**
+- Scrivi o di' una domanda nel "+" e Canvas risponde invece di salvarla, con quello che sa già
+- "Quando ho il prossimo turno con Marco?", "Quante ore ho lavorato questo mese?", "Quando parto?"
+- "Quanti giga ho?", "Che tempo fa sabato?", "Cosa ho domani?", "Quando scade la patente?"
+- "Dov'è il pacco?", "Quando è il compleanno di Marta?"
+- La risposta compare nel fumetto in basso; "Apri" porta alla pagina giusta
+- Tutto sul telefono, senza rete; se Canvas non sa rispondere la frase si salva come sempre
+
 ## 1.471.0
 **Calendario più pulito, card della Home più corta, tessere Media ordinate**
 - Il numero del giorno sta solo nel cerchio: accanto c'è il nome ("Dom"), non più "Dom 15"

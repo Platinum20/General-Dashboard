@@ -1186,6 +1186,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     }
                     is VoiceCapture.Outcome.Saved ->
                         CaptureFeedback.show(CaptureNotice(outcome.mode, outcome.message, outcome.undo))
+                    is VoiceCapture.Outcome.Answered -> com.platinum20.dashboard.capture.CaptureAsk.show(context, outcome.answer)
                 }
             }
         }
