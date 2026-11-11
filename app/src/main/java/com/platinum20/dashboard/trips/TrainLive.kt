@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.trips
 
 import com.platinum20.dashboard.calendar.Trip
-import com.platinum20.dashboard.net.Http
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +25,7 @@ data class TrainStatus(
  * (Trenitalia), in JSON, disegnati da noi. Nessun sito mostrato. La lettura è pura, per i test.
  */
 object TrainLive {
-    private const val BASE = "https://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/"
+    internal const val BASE = "https://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/"
     /** Dopo quanto un ritardo letto non vale più: la riga torna a dire solo gli orari. */
     const val FRESH_MS = 10 * 60_000L
 
@@ -43,12 +42,41 @@ object TrainLive {
         val number = number(trip.train) ?: return null
         val day = Instant.ofEpochMilli(departure).atZone(zone).toLocalDate()
         val status = runCatching {
-            val found = origin(Http.getText(BASE + "cercaNumeroTrenoTrenoAutocomplete/$number"), trip.from) ?: return null
+            val found = origin(get(BASE + "cercaNumeroTrenoTrenoAutocomplete/$number"), trip.from) ?: return null
             val midnight = day.atStartOfDay(zone).toInstant().toEpochMilli()
-            parse(Http.getText(BASE + "andamentoTreno/${found}/$number/$midnight"), trip.from, System.currentTimeMillis())
+            parse(get(BASE + "andamentoTreno/${found}/$number/$midnight"), trip.from, System.currentTimeMillis())
         }.getOrNull() ?: return null
         _statuses.update { it + (eventId to status) }
         return status
+    }
+
+    /**
+     * GET che segue i rimandi da sé (ViaggiaTreno rimanda fra https e http, che HttpURLConnection non segue).
+     * L'http è permesso solo per viaggiatreno.it (network_security_config).
+     */
+    internal suspend fun get(url: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        var address = url
+        repeat(6) {
+            val conn = (java.net.URL(address).openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 10_000
+                readTimeout = 15_000
+                instanceFollowRedirects = false
+                setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 15) Canvas")
+                setRequestProperty("Accept", "application/json, text/plain, */*")
+            }
+            try {
+                val code = conn.responseCode
+                if (code in 300..399) {
+                    address = java.net.URL(java.net.URL(address), conn.getHeaderField("Location") ?: throw java.io.IOException("HTTP $code")).toString()
+                    return@repeat
+                }
+                if (code !in 200..299) throw java.io.IOException("HTTP $code da $address")
+                return@withContext conn.inputStream.bufferedReader().use { it.readText() }
+            } finally {
+                conn.disconnect()
+            }
+        }
+        throw java.io.IOException("Troppi rimandi da $url")
     }
 
     /** Il numero del treno: "Intercity 612" → "612". */
