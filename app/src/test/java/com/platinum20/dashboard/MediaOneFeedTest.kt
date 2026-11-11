@@ -151,4 +151,15 @@ class MediaOneFeedTest {
         assertEquals("Pink Floyd", items.single().title)
         assertEquals("pf", after)
     }
+
+    @Test fun canaleComeSuYouTube() {
+        val all = setOf(
+            org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS,
+            org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.SHORTS,
+        )
+        assertEquals(listOf("Video", "Shorts", "Playlist"), com.platinum20.dashboard.ui.screens.channelTabs(all).map { it.second })
+        assertEquals(listOf("Video"), com.platinum20.dashboard.ui.screens.channelTabs(null).map { it.second })
+        assertEquals("", com.platinum20.dashboard.ui.screens.channelLine(-1, false))
+        assertTrue(com.platinum20.dashboard.ui.screens.channelLine(15_300, true).endsWith("iscritti · Verificato"))
+    }
 }

@@ -10,6 +10,8 @@
 - Novità: video dei canali ed episodi nuovi insieme, dal più nuovo; sotto ULTIMA VISITA il resto e qualche consigliato
 - In fondo le radio e quattro righe: Brani che ti piacciono, Mi piace, Cronologia, I tuoi podcast
 - Dalla ricerca artisti, album e playlist si aprono nella loro pagina
+- Pagina canale come su YouTube: copertina, iscritti, descrizione, Iscriviti e le schede Video, Shorts, Live e Playlist
+- Toccando il canale sotto un video si apre la sua pagina
 
 ## 1.478.0
 **Media rifatta: Musica e Video**

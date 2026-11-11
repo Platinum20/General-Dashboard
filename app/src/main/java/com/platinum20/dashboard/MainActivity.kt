@@ -1362,6 +1362,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     ),
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
+                    onOpenPlaylist = { navController.navigate(Routes.youtubePlaylist(it)) },
                 )
             }
             composable(
