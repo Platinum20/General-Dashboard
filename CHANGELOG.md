@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.470.0
+**Giorni e mesi si distinguono dai pallini del Calendario**
+- Ogni giorno ha il suo numero in un cerchio sulla linea a sinistra, accanto al nome
+- I mesi hanno un pallino pieno più grande
+- Così i pallini colorati restano solo per le cose
+- I pallini delle cose sono spessi come la linea colorata di treni e turni
+
 ## 1.468.0
 **Lo zaino del treno**
 - La sera prima di un viaggio in treno, col Wi-Fi di casa, Canvas scarica da solo cosa ascoltare e guardare in treno

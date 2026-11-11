@@ -423,6 +423,7 @@ internal fun timelineEntries(
                 kind = kind,
                 text = text,
                 dayLabel = if (i == 0) label else null,
+                dayNumber = if (i == 0 && !g.late) day?.dayOfMonth else null,
                 color = r.event?.color ?: 0,
                 late = g.late || r.overdueFrom != null,
                 done = r.task?.done == true,
@@ -511,10 +512,10 @@ internal fun undatedEntries(
         val label = if (first) com.platinum20.dashboard.today.Upcoming.dayLabel(day, today, shown) else null
         val entry = when {
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
-                label, month = month, done = row.task.done)
+                label, month = month, done = row.task.done, dayNumber = label?.let { day.dayOfMonth })
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
                 label,
-                trailing = NoteText.badge(row.note.text), month = month)
+                trailing = NoteText.badge(row.note.text), month = month, dayNumber = label?.let { day.dayOfMonth })
         }
         out += entry to row
         previous = day

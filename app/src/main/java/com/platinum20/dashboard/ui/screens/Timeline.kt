@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -59,6 +60,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.today.BriefKind
 
 /**
@@ -97,6 +99,8 @@ data class TimelineEntry(
     val time: String? = null,
     /** Una riga piccola sotto il nome: età e quanto manca per le date ("compie 34 anni · tra 12 giorni", punto 23). */
     val detail: String? = null,
+    /** Il numero del giorno, nel cerchio sulla linea accanto a [dayLabel] (Antonio, 2026-11-11); null = pallino. */
+    val dayNumber: Int? = null,
     /** Il tipo per il pallino colorato sulla linea; null = quello di [kind]. */
     val dot: RowDot? = null,
 ) {
@@ -221,6 +225,7 @@ fun TimelineRow(
     if (headed && !dayOnMarker) TimelineDayHeader(
         entry.dayLabel!!, start, line, top,
         rule = true,
+        number = entry.dayNumber,
         late = entry.late, past = entry.past,
     )
     if (entry.todayHeader) {
@@ -293,7 +298,8 @@ fun TimelineRow(
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
-            dot = if (trip != null) null else dotColor to 8.dp,
+            // Il pallino largo quanto il pezzo colorato dei treni ([TRIP_STROKE]): stesso segno, solo più corto (Antonio).
+            dot = if (trip != null) null else dotColor to TRIP_STROKE,
             top = top || headed,
             bottom = bottom,
             segment = trip?.let {
@@ -481,6 +487,13 @@ private fun TripStop(time: String, station: String, color: Color, title: Modifie
 
 private val GUTTER = 22.dp
 
+/** Lo spessore del pezzo colorato di un evento con orario, e il diametro del pallino delle altre cose. */
+private val TRIP_STROKE = 4.dp
+
+/** Il cerchio col numero del giorno; il pallino del mese ([MONTH_DOT]) è più grande (Antonio, 2026-11-11). */
+private val DAY_NUMBER = 18.dp
+private val MONTH_DOT = 22.dp
+
 /** La linea del mese: più spessa di quella dei giorni (1 dp). */
 private val MONTH_RULE = 3.dp
 
@@ -499,7 +512,7 @@ private fun dayLabelColor(late: Boolean, past: Boolean): Color = when {
  * del tempo, come OGGI e i mesi: separa dal giorno prima.
  */
 @Composable
-private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean) {
+private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolean, rule: Boolean, late: Boolean, past: Boolean, number: Int? = null) {
     val color = dayLabelColor(late, past)
     val dot = when {
         past -> MaterialTheme.colorScheme.outline
@@ -511,7 +524,20 @@ private fun TimelineDayHeader(label: String, start: Dp, line: Color, top: Boolea
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Il pallino sulla linea a sinistra, il nome e poi il filo fino in fondo: "● Domani ———" (1.465).
-        TimelineGutter(Modifier.fillMaxHeight(), line, dot = dot to 7.dp, top = top, bottom = true)
+        // Il giorno è il suo numero in un cerchio: non si confonde con i pallini colorati delle cose (Antonio, 2026-11-11).
+        Box(Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+            TimelineGutter(Modifier.fillMaxHeight(), line, dot = if (number == null) dot to 7.dp else null, top = top, bottom = true)
+            if (number != null) Box(Modifier.size(DAY_NUMBER).clip(CircleShape).background(dot), contentAlignment = Alignment.Center) {
+                Text(
+                    number.toString(),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFeatureSettings = "tnum",
+                    ),
+                    color = MaterialTheme.colorScheme.surface,
+                    maxLines = 1,
+                )
+            }
+        }
         Spacer(Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1)
         Spacer(Modifier.width(10.dp))
@@ -534,7 +560,7 @@ private fun TimelineGutter(modifier: Modifier, line: Color, dot: Pair<Color, Dp>
             segment?.let { s ->
                 val a = s.from.toPx()
                 val b = maxOf(a, size.height - s.toBottom.toPx())
-                drawLine(s.color, Offset(x, a), Offset(x, b), 4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(s.color, Offset(x, a), Offset(x, b), TRIP_STROKE.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
                 // Mentre è in corso, il pallino "sei qui" scende lungo il pezzo colorato.
                 s.progress?.let { drawCircle(here, 4.5.dp.toPx(), Offset(x, a + (b - a) * it)) }
             }
@@ -634,6 +660,7 @@ fun TimelineMonthMarker(
     val color = MaterialTheme.colorScheme.onSurfaceVariant
     val line = MaterialTheme.colorScheme.outlineVariant
     val month = MaterialTheme.colorScheme.outline
+    val ink = MaterialTheme.colorScheme.onSurface
     Row(
         Modifier.fillMaxWidth().height(30.dp)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
@@ -646,7 +673,8 @@ fun TimelineMonthMarker(
                 val mid = size.height / 2
                 if (top) drawLine(line, Offset(x, 0f), Offset(x, mid), 2.dp.toPx())
                 drawLine(line, Offset(x, mid), Offset(x, size.height), 2.dp.toPx())
-                drawCircle(color, 4.5.dp.toPx(), Offset(x, mid))
+                // Il mese è un pallino pieno più grande del cerchio dei giorni (Antonio, 2026-11-11).
+                drawCircle(ink, MONTH_DOT.toPx() / 2, Offset(x, mid))
             },
         )
         Spacer(Modifier.width(6.dp))
