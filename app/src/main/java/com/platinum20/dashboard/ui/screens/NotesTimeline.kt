@@ -305,6 +305,8 @@ internal fun tripStops(
     labels: Boolean = false,
     /** Il treno adesso (viaggio vivo, 1.467): ritardo e binario accanto alla durata, solo se letti da poco. */
     live: com.platinum20.dashboard.trips.TrainStatus? = event.trip?.let { com.platinum20.dashboard.trips.TrainLive.fresh(event.eventId) },
+    /** Lo zaino del treno pronto (secondi), letto dall'indice dei file. */
+    packSec: Long = if (event.trip != null && event.end > System.currentTimeMillis()) com.platinum20.dashboard.trips.TrainPackStore.readySec(event.eventId) else 0L,
 ): TripStops? {
     if (event.allDay || event.end <= event.begin) return null
     val trip = event.trip
@@ -322,7 +324,11 @@ internal fun tripStops(
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
         middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line)).joinToString(" · "),
-        below = com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
+        // Sotto treno, carrozza e posto; se lo zaino è pronto, quanto c'è da ascoltare e guardare (1.468).
+        below = listOfNotNull(
+            com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
+            packSec.takeIf { it > 0 && !labels }?.let(com.platinum20.dashboard.trips.TrainPack::readyLine),
+        ).joinToString(" · ").ifEmpty { null },
         begin = event.begin,
         end = event.end,
     ) else {

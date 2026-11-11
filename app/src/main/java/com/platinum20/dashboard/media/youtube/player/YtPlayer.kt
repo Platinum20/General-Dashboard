@@ -226,7 +226,18 @@ object YtPlayer {
         val link = "https://www.youtube.com/watch?v=$id"
         appContext = context.applicationContext
         _now.value = YtNow(link = link, stream = null, audioOnly = audioOnly)
-        val stream = runCatching { YtResolver.resolve(link, preferredHeight(context)) }.getOrElse { e ->
+        // Nello zaino del treno: si guarda dal file, senza rete e senza consumare la SIM.
+        com.platinum20.dashboard.trips.TrainPackStore.init(context)
+        val packed = com.platinum20.dashboard.trips.TrainPackStore.localVideo(id)?.let { f ->
+            com.platinum20.dashboard.trips.TrainPackStore.fileOf(f)?.let { file ->
+                YtStream(
+                    id = id, title = f.item.title, channel = f.item.subtitle, thumbnail = f.item.image,
+                    videoUrl = null, audioUrl = null, muxedUrl = Uri.fromFile(file).toString(), hlsUrl = null,
+                    height = 360, durationSec = f.sec,
+                )
+            }
+        }
+        val stream = packed ?: runCatching { YtResolver.resolve(link, preferredHeight(context)) }.getOrElse { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
             // Un'anteprima non ancora iniziata non è un errore: si aspetta col conto alla rovescia.
             val upcoming = YtPremiere.check(id)
@@ -439,6 +450,7 @@ object YtPlayer {
 
     /** I server dei video di YouTube vogliono lo stesso "client" con cui sono stati chiesti i flussi. */
     private fun factory(url: String): DataSource.Factory {
+        if (url.startsWith("file:")) return androidx.media3.datasource.FileDataSource.Factory()
         return DefaultHttpDataSource.Factory()
             .setUserAgent(YtResolver.userAgentFor(url))
             .setAllowCrossProtocolRedirects(true)
