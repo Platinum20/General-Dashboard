@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.466.0
+**Pallini colorati al posto delle icone nel Calendario**
+- Ogni cosa del calendario ha un pallino colorato sulla linea a sinistra, invece dell'icona: il colore dice che cos'è
+- Eventi col colore del loro calendario, turni viola, treni verdi, promemoria rosa, date gialle, note grigie, pacchi marroni, abitudini verde chiaro
+- Uguale nella pagina Calendario e nella card della Home
+
 ## 1.465.0
 **La linea del Calendario passa a sinistra**
 - La linea del tempo ora sta a sinistra, con il giorno subito accanto al suo pallino: "● Domani ———"

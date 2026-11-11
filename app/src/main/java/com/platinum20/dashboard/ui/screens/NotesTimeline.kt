@@ -5,13 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.SimCard
-import androidx.compose.material.icons.outlined.Train
-import androidx.compose.material.icons.outlined.LocalShipping
-import androidx.compose.material.icons.outlined.Image
 import com.platinum20.dashboard.notes.NoteText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -421,10 +414,12 @@ internal fun timelineEntries(
                 late = g.late || r.overdueFrom != null,
                 done = r.task?.done == true,
                 past = g.past,
-                icon = when {
-                    r.simRenewal -> Icons.Outlined.SimCard
-                    r.parcel != null -> Icons.Outlined.LocalShipping
-                    r.note != null -> r.note.icon()
+                // Il pallino colorato per tipo sulla linea (Antonio, 2026-11-11).
+                dot = when {
+                    r.simRenewal -> RowDot.SIM
+                    r.parcel != null -> RowDot.PARCEL
+                    r.note != null -> RowDot.NOTE
+                    r.event?.trip != null -> RowDot.TRAIN
                     else -> null
                 },
                 trailing = r.note?.let { NoteText.badge(it.text) },
@@ -505,14 +500,14 @@ internal fun undatedEntries(
             row.task != null -> TimelineEntry("task-${row.task.id}", com.platinum20.dashboard.today.BriefKind.TASK, row.task.text,
                 label, month = month, done = row.task.done)
             else -> TimelineEntry("note-${row.note!!.id}", com.platinum20.dashboard.today.BriefKind.FREE, row.note.title.ifEmpty { "Nota" },
-                label, icon = row.note.icon(),
+                label,
                 trailing = NoteText.badge(row.note.text), month = month)
         }
         out += entry to row
         previous = day
     }
     pinned.forEachIndexed { i, n ->
-        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, icon = n.icon(), trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
+        out += TimelineEntry("note-${n.id}", com.platinum20.dashboard.today.BriefKind.FREE, n.title, if (i == 0) "Fissate" else null, trailing = NoteText.badge(n.text)) to UndatedRow(note = n)
     }
     return out
 }
@@ -544,15 +539,6 @@ internal fun nowRoom(viewport: Int, bottomPadding: Int, below: Int?): Int =
  */
 internal fun nowIndex(entries: List<TimelineEntry>): Int =
     entries.indexOfFirst { it.dayLabel == "Oggi" || it.dayLabel == "Fissate" }.takeIf { it >= 0 } ?: entries.size
-
-private val NOTE_ICON = Icons.AutoMirrored.Outlined.Notes
-
-/** Si vede subito che nota è: con la foto, una lista da spuntare, o testo. */
-private fun com.platinum20.dashboard.notes.Note.icon() = when {
-    photo.isNotEmpty() -> Icons.Outlined.Image
-    com.platinum20.dashboard.notes.Checklist.hasItems(text) -> Icons.Outlined.Checklist
-    else -> NOTE_ICON
-}
 
 /** I filtri del calendario intero (Antonio): uno per le note, uno per gli eventi. */
 internal enum class CalendarFilter(val label: String) { NOTES("Note"), EVENTS("Eventi") }

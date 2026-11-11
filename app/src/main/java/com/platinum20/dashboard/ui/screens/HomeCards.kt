@@ -19,10 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Autorenew
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.HourglassTop
 import androidx.compose.material3.Checkbox
@@ -177,7 +175,6 @@ internal fun CalendarCard(
     val habitAt = if (habits.isNotEmpty()) todayCount else -1
     val habitRow = TimelineEntry(
         key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null,
-        icon = Icons.Outlined.Autorenew,
     )
     fun <T> withHabit(list: List<T>, item: T): List<T> =
         if (habitAt < 0) list else list.toMutableList().apply { add(habitAt.coerceAtMost(size), item) }
