@@ -34,6 +34,7 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Place
@@ -55,6 +56,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -209,6 +211,9 @@ fun EventDetailScreen(
     if (showTicket && codes.isNotEmpty()) TicketSheet(codes) { showTicket = false }
     // I turni di Creators Pro: scheda tutta loro (con chi, guadagno, mese), niente righe da calendario (Antonio).
     val shift = if (eventId < -1) rememberShift(eventId) else null
+    val packFiles by com.platinum20.dashboard.trips.TrainPackStore.files.collectAsState()
+    val pack = packFiles.filter { it.eventId == eventId }.map { it.item }
+    val packSec = packFiles.filter { it.eventId == eventId }.sumOf { it.sec }
     DetailPage(
         onBack = onBack,
         meta = if (shift != null) "Creators Pro" else "Evento",
@@ -216,6 +221,16 @@ fun EventDetailScreen(
             haptic(Haptic.CONFIRM)
             showTicket = true
         } else null,
+        // Lo zaino del treno pronto: un tocco e va tutto in coda (1.468).
+        more = pack.takeIf { it.isNotEmpty() }?.let { items ->
+            listOf(
+                BubbleAction(
+                    Icons.Outlined.Luggage,
+                    "Ascolta lo zaino",
+                    detail = com.platinum20.dashboard.trips.TrainPack.readyLine(packSec).orEmpty(),
+                ) { com.platinum20.dashboard.media.CanvasPlayer.playList(context, items) },
+            )
+        }.orEmpty(),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,
         // Eliminare dal calendario non si può annullare: si conferma nel solito fumetto in basso.
         onDelete = if (writable) ({
