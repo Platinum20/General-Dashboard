@@ -1192,9 +1192,7 @@ private fun Description(stream: YtStream) {
                             if (YtResolver.videoId(url) != null) {
                                 YtPlayer.play(context, url)
                             } else {
-                                val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
-                                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Link", url))
-                                CaptureFeedback.tell(context, "Link copiato")
+                                Clip.copy(context, "Link", url, "Link copiato")
                             }
                         },
                     )

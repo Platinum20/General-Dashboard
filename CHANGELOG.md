@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.479.0
+**Un solo avviso quando copi**
+- Copiando il numero di un documento o un link compare solo l'avviso di Android, senza il nostro fumetto doppio
+- Su Android 12 e precedenti, dove il sistema non avvisa, resta il fumetto di vetro
+
 ## 1.478.0
 **Media rifatta: Musica e Video**
 - Media ha due file, Video e Musica: la radio adesso sta dentro Musica
