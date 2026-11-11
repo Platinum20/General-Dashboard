@@ -102,9 +102,11 @@ internal fun shareText(context: android.content.Context, text: String) {
 }
 
 /** Come si condivide un evento: il nome e il giorno ("Cena · Domani"). */
-internal fun eventShareText(e: CalendarEvent): String =
-    e.title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(
-        java.time.Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now(),
+internal fun eventShareText(e: CalendarEvent): String = eventShareText(e.title, e.begin)
+
+internal fun eventShareText(title: String, begin: Long): String =
+    title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(
+        java.time.Instant.ofEpochMilli(begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now(),
     )
 
 /** "Rimanda a domani" per una cosa con data non ancora fatta: stessa ora, domani. Uguale nel fumetto e nella scheda. */
