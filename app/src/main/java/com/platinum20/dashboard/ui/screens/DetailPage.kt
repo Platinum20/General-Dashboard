@@ -247,6 +247,8 @@ fun DetailFieldRow(
     /** Testo libero (note, luogo): più righe e la maiuscola solo a inizio frase, non tutto maiuscolo come un codice. */
     prose: Boolean = false,
     onCommit: (String) -> Unit,
+    /** Un'azione in fondo a destra della riga (es. copia il numero del documento). */
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     var text by androidx.compose.runtime.saveable.rememberSaveable(key) { androidx.compose.runtime.mutableStateOf(value) }
     val commit by androidx.compose.runtime.rememberUpdatedState(onCommit)
@@ -280,5 +282,6 @@ fun DetailFieldRow(
                 inner()
             },
         )
+        trailing?.invoke()
     }
 }

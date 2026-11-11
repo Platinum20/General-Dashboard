@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.475.0
+## 1.478.0
 **Media rifatta: Musica e Video**
 - Media ha due file, Video e Musica: la radio adesso sta dentro Musica
 - Sopra il titolo c'è cosa è arrivato di nuovo ("6 video nuovi · 2 episodi")
@@ -18,6 +18,16 @@
 - In Iscrizioni il segno ULTIMA VISITA separa i video nuovi dagli altri
 - Mi piace sta in cima a Cronologia; i video del telefono si aprono dalla graffetta del +
 - La barra dei video lasciati a metà è blu
+
+## 1.477.0
+**Copia il numero del documento**
+- Nella card Documenti e nella pagina del documento, in fondo a destra della riga c'è un tasto che copia il numero negli appunti
+- Un fumetto in basso conferma "Numero copiato"
+
+## 1.476.0
+**Da dove parte il treno**
+- Nel calendario e nella card della Home la riga del treno ora dice da dove parti ("Treno da Taranto") e in fondo dove arrivi ("Arrivo a Pescara")
+- Il nome del viaggio resta "Treno per Pescara" nella scheda e nelle notifiche
 
 ## 1.474.0
 **Pallini piccoli, Home ordinata**
