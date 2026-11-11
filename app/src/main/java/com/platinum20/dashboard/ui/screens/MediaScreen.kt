@@ -117,7 +117,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.LocalContentColor
 
 /**
- * Media = un unico feed (1.479, Antonio: "niente tre menu, un unico feed"): in cima le storie dei canali e degli
+ * Media = un unico feed (1.481, Antonio: "niente tre menu, un unico feed"): in cima le storie dei canali e degli
  * artisti che segui, poi quello che suona con la coda dentro, Per te (i mix per primi), Continua, le Novità (video e
  * episodi insieme, dal più nuovo, ULTIMA VISITA in mezzo), le radio e in fondo quattro righe fisse.
  * Video e Musica non sono più pagine a parte.
@@ -271,7 +271,7 @@ fun MediaScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
-            // Per te (1.479, Antonio): prima i mix, poi le uscite.
+            // Per te (1.481, Antonio): prima i mix, poi le uscite.
             if (spotifyOn) item(key = "perte") { PerTeRow(onOpen = { onOpenRoute(Routes.spotifyItem(it)) }) }
             if (continueList.isNotEmpty()) {
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
@@ -291,7 +291,7 @@ fun MediaScreen(
             }
             items(feed.older, key = { "o-" + it.key }) { entry -> FeedRow(entry, faded = feed.fresh.isNotEmpty(), onPlayVideo) }
             item(key = "radio") { RadioRow(onOpenAll = { onOpenRoute(Routes.RADIO) }) }
-            // In fondo le righe fisse (1.479): quello che è tuo e non è una novità.
+            // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (spotifyOn) {
@@ -326,7 +326,7 @@ fun MediaScreen(
     }
 }
 
-/** Le storie (1.479): foto tonde in fila, anello blu se ha pubblicato dopo l'ultima visita, sotto nome e quando. */
+/** Le storie (1.481): foto tonde in fila, anello blu se ha pubblicato dopo l'ultima visita, sotto nome e quando. */
 @Composable
 private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>, onOpen: (com.platinum20.dashboard.media.MediaStory) -> Unit) {
     val nowMs = remember { System.currentTimeMillis() }

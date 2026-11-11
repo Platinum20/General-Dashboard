@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LocalShipping
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Repeat
@@ -209,6 +210,13 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
     val tracking = if (kind == ItemKind.PARCEL) data.parcels.firstOrNull { it.id == id }?.takeIf { !it.delivered }?.let { p ->
         p.trackingUrl()?.let { url -> { inApp?.openWeb?.invoke(url, p.carrier.label); Unit } }
     } else null
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val task = if (kind == ItemKind.TASK) data.tasks.firstOrNull { it.id == id } else null
+    val shareLine = when (kind) {
+        ItemKind.TASK -> task?.text
+        ItemKind.PARCEL -> data.parcels.firstOrNull { it.id == id }?.title
+        ItemKind.HABIT -> null
+    }
     DetailPage(
         onBack = onBack,
         onEdit = null,
@@ -216,7 +224,12 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         meta = if (detail == null) null else kind.metaLabel(),
         primary = action?.let { (icon, text, onClick) -> DetailAction(icon, text, onClick) },
         // La pagina del corriere si apre dentro Canvas, non nel browser.
-        more = listOfNotNull(tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", onClick = open) }),
+        // Le azioni che prima stavano tenendo premuta la riga (Antonio, 2026-11-11): qui, con un tocco.
+        more = listOfNotNull(
+            tracking?.let { open -> BubbleAction(Icons.Outlined.LocalShipping, "Traccia la spedizione", onClick = open) },
+            task?.let { snoozeAction(it) },
+            shareLine?.let { text -> BubbleAction(Icons.Outlined.Share, "Condividi") { shareText(context, text) } },
+        ),
     ) {
         if (detail == null) {
             DetailMissing(Icons.Outlined.EventBusy, "Questa cosa non c'è più.")

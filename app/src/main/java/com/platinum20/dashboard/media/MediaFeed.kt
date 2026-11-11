@@ -7,7 +7,7 @@ import com.platinum20.dashboard.media.youtube.YtVideo
 import java.time.Instant
 import java.time.ZoneId
 
-/** Una storia in cima a Media (1.479, Antonio: "tipo storie di Instagram"): un canale YouTube o un artista Spotify. */
+/** Una storia in cima a Media (1.481, Antonio: "tipo storie di Instagram"): un canale YouTube o un artista Spotify. */
 data class MediaStory(
     val kind: Kind,
     val id: String,
@@ -108,7 +108,7 @@ sealed interface FeedEntry {
 data class MediaFeedRows(val fresh: List<FeedEntry>, val older: List<FeedEntry>)
 
 /**
- * Il feed unico di Media (1.479, Antonio: "un unico feed, senza tre menu"): video dei canali che segui ed episodi dei
+ * Il feed unico di Media (1.481, Antonio: "un unico feed, senza tre menu"): video dei canali che segui ed episodi dei
  * podcast insieme, dal più nuovo. Sotto ULTIMA VISITA ogni [every] voci entra un video consigliato; il feed finisce
  * dopo [maxOlder] voci vecchie, così le righe in fondo (radio, Mi piace, Cronologia, I tuoi podcast) si raggiungono.
  */

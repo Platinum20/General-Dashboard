@@ -120,7 +120,7 @@ import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.delay
 
 /**
- * Una cosa di Spotify aperta da Media (1.479, Antonio: Musica non è più una pagina a parte): l'artista ha la sua
+ * Una cosa di Spotify aperta da Media (1.481, Antonio: Musica non è più una pagina a parte): l'artista ha la sua
  * pagina, album, playlist e podcast l'elenco. Un album aperto da un artista è un'altra pagina, col gesto indietro.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -187,7 +187,7 @@ internal fun SpotifyNotices() {
 }
 
 /**
- * "Brani che ti piacciono" (1.479, una riga in fondo a Media): i brani salvati, un tocco e parte da lì; sotto le
+ * "Brani che ti piacciono" (1.481, una riga in fondo a Media): i brani salvati, un tocco e parte da lì; sotto le
  * playlist e gli album salvati, che si aprono.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -235,7 +235,7 @@ fun MusicLibraryScreen(onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
 }
 
 /**
- * "I tuoi podcast" (1.479, Antonio: una riga in fondo a Media, non un titolo da toccare): quelli che segui, un tocco
+ * "I tuoi podcast" (1.481, Antonio: una riga in fondo a Media, non un titolo da toccare): quelli che segui, un tocco
  * apre gli episodi qui dentro.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -268,7 +268,7 @@ fun PodcastsScreen(onBack: () -> Unit) {
     }
 }
 /**
- * "Per te" (1.479, Antonio: i mix per primi): i mix fatti dai tuoi ascolti, poi le uscite degli artisti che segui
+ * "Per te" (1.481, Antonio: i mix per primi): i mix fatti dai tuoi ascolti, poi le uscite degli artisti che segui
  * (col pallino finché non le apri), in una fila sola. Si carica da sola; senza niente non si disegna.
  */
 @Composable

@@ -217,6 +217,13 @@ fun HomeScreen(
             simRenewal = simRenewal, withToday = true, notes = notes.notes,
         )
     }
+    // Il passato della card Calendario: ci si arriva tenendo premuto e trascinando in giù (Antonio, 2026-11-11).
+    val pastEvents by produceState(emptyList<CalendarEvent>(), minute.toLocalDate(), agenda.granted, calendarRefresh) {
+        value = if (agenda.granted) CalendarRepository.eventsFrom(context, minute.toLocalDate().minusDays(PAST_DAYS.toLong()), PAST_DAYS).values.flatten() else emptyList()
+    }
+    val calendarPast = remember(minute.toLocalDate(), pastEvents, notes) {
+        pastDays(notes.tasks, notes.parcels, pastEvents, withToday = true)
+    }
     val briefing = remember(minute, weather.forecast, agenda.today, agenda.tomorrow, notes) {
         Briefing.build(
             minute, weather.forecast, agenda.today, agenda.tomorrow, notes.openItems,
@@ -313,6 +320,7 @@ fun HomeScreen(
             )
             HomeCard.DAY -> CalendarCard(
                 groups = calendar,
+                past = calendarPast,
                 today = minute.toLocalDate(),
                 habits = notes.habits,
                 onOpenAll = {

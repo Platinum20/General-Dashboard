@@ -101,7 +101,7 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * La Cronologia di YouTube (1.479, Antonio: Video non è più una pagina con le schede; questa è una riga in fondo a
+ * La Cronologia di YouTube (1.481, Antonio: Video non è più una pagina con le schede; questa è una riga in fondo a
  * Media): i video guardati qui, poi quelli della tua cronologia di YouTube.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -244,7 +244,7 @@ internal fun channelLines(channels: List<YtChannel>, recent: List<YtVideo>): Lis
 }
 
 /**
- * La pagina di un canale come su YouTube (1.479, Antonio: "esattamente come YouTube", non solo gli ultimi video):
+ * La pagina di un canale come su YouTube (1.481, Antonio: "esattamente come YouTube", non solo gli ultimi video):
  * copertina, foto, nome, iscritti, descrizione, Iscriviti, poi le schede Video, Shorts, Live e Playlist che il canale
  * ha. Ci si arriva dalle storie di Media, dal canale sotto ogni video e dalla pagina del video.
  */
@@ -526,7 +526,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
         // all'altro; ma il canale sta subito sotto il titolo, anche quando il titolo è su una riga (Antonio, 2026-11-11).
         Box {
             Box(Modifier.alpha(0f).clearAndSetSemantics { }) { VideoCardText(" ", " ", null, null, fixed = true) }
-            // Un tocco sulla riga del canale apre la sua pagina (1.479), ovunque ci sia un video.
+            // Un tocco sulla riga del canale apre la sua pagina (1.481), ovunque ci sia un video.
             val inApp = LocalInAppNav.current
             val onChannel = inApp?.openRoute?.takeIf { video.channelId.isNotBlank() }?.let { open ->
                 { open(com.platinum20.dashboard.Routes.youtubeChannel(YtChannel(video.channelId, video.channel, video.channelAvatar))) }

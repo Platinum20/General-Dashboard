@@ -35,6 +35,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -158,31 +163,55 @@ internal fun CalendarCard(
     today: LocalDate,
     onOpenAll: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
+    /** I giorni passati ([pastDays]): ci si arriva tenendo premuto e trascinando in giù. */
+    past: List<DueDay> = emptyList(),
 ) {
-    val inApp = LocalInAppNav.current
     val open = rememberDueOpen()
-    val actions = rememberRowActions { inApp?.openEvent?.invoke(it) }
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
-    // Il mese in corso ha il suo segno in cima alla card, come nella pagina (1.447: niente più totale nel titolo).
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
-    val all = timelineEntries(pending, today)
-    val todayCount = all.count { it.second.day == today && !it.first.past }
+    // Il passato a parte, così da oggi in giù le righe restano quelle di sempre.
+    // Le cose da spuntare non stanno nei giorni: hanno la loro sezione in fondo alla card (Antonio, 2026-11-11).
+    val all = remember(past, pending, today) { timelineEntries(past.withoutTicks(), today) + timelineEntries(pending.withoutTicks(), today) }
+    val todo = remember(pending, today) { cardTodo(pending, today) }
+    val days = remember(all, today) { cardDays(all.map { it.second.day to it.first.past }, today) }
+    // Tenendo premuto e trascinando si va avanti e indietro di un giorno alla volta (Antonio, 2026-11-11).
+    // Lasciata ferma per un po' torna da sola a oggi, e lasciando la Home riparte da oggi.
+    var shift by remember { mutableIntStateOf(0) }
+    var touched by remember { mutableIntStateOf(0) }
+    LaunchedEffect(shift, touched) {
+        if (shift != 0) {
+            delay(CARD_BACK_MS)
+            shift = 0
+        }
+    }
+    val window = days.window(shift)
     // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
-    val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
-    val shown = all.take(todayCount + later)
-    // Le abitudini sono una riga sola in fondo a OGGI, come nella pagina (punto 19): il tocco apre il fumetto per segnarle.
-    val habitAt = if (habits.isNotEmpty()) todayCount else -1
-    val habitRow = TimelineEntry(
-        key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null,
-    )
-    fun <T> withHabit(list: List<T>, item: T): List<T> =
-        if (habitAt < 0) list else list.toMutableList().apply { add(habitAt.coerceAtMost(size), item) }
-    val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
+    val anchor = window.anchor ?: today
+    val month = java.time.YearMonth.from(anchor)
+    val more = all.drop(window.to).count { (_, row) -> row.day?.let { it.isAfter(anchor) && java.time.YearMonth.from(it) == month } == true }
+    val shown = all.subList(window.from, window.to)
+    // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle),
+    // poi "Da fare · N" che si apre sul posto con tutte le cose da spuntare (Antonio, 2026-11-11, scelta A).
+    var todoOpen by rememberSaveable { mutableStateOf(false) }
+    val extraAt = window.todayEnd?.let { it - window.from } ?: -1
+    val extras = buildList<Triple<TimelineEntry, (() -> Unit)?, () -> Unit>> {
+        if (habits.isNotEmpty()) add(Triple(
+            TimelineEntry(key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null),
+            null, { ActionBubble.show(*habitsBubble(habits, today)) },
+        ))
+        if (todo.isNotEmpty()) {
+            add(Triple(todoEntry(todo), null, { todoOpen = !todoOpen }))
+            if (todoOpen) todo.forEach { (entry, row) -> add(Triple(entry, row.task?.let { tickTask(it.id) }, { open(row) })) }
+        }
+    }
+    fun <T> withExtras(list: List<T>, items: List<T>): List<T> =
+        if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
+    val monthName = anchor.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
         // Senza titolo né mese: si apre direttamente su OGGI, una riga in meno (Antonio, 2026-11-10).
         null,
-        withHabit(shown.map { it.first }, habitRow),
+        withExtras(shown.map { it.first }, extras.map { it.first }),
         onOpenAll,
         empty = "Niente in programma.",
         // La card si allarga fino a diventare la pagina Calendario (e ci torna chiudendola).
@@ -190,15 +219,24 @@ internal fun CalendarCard(
             .captureTarget(CaptureMode.EVENT).captureTarget(CaptureMode.NOTE),
         // Anche le cose fatte: toccando di nuovo la spunta tornano da fare.
         // Si spuntano solo le cose senza data: promemoria e date passano da soli, come gli eventi (1.376).
-        ticks = withHabit(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, null),
-        // Toccando una riga si apre proprio quella cosa; il resto della card apre il calendario intero.
-        rows = withHabit(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
-        // Tenendo premuta una riga: le sue azioni, come nella pagina intera.
-        rowLongs = withHabit(shown.map { (_, row) -> { actions(row) } }, { ActionBubble.show(*habitsBubble(habits, today)) }),
+        ticks = withExtras(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, extras.map { it.second }),
+        // Toccando una riga si apre proprio quella cosa (le sue azioni sono nel suo "Altro"); il resto della card apre il calendario intero.
+        rows = withExtras(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, extras.map { it.third }),
+        // Tenere premuto è solo per scorrere i giorni (Antonio): lasciando senza muovere si apre il calendario intero.
         onLongOpen = onOpenAll,
+        onScrub = { steps ->
+            touched++
+            val next = days.clamp(shift + steps)
+            val moved = next != shift
+            shift = next
+            moved
+        },
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
     )
 }
+
+/** Quanto resta spostata la card Calendario prima di tornare da sola a oggi. */
+private const val CARD_BACK_MS = 20_000L
 
 /**
  * Che cosa apre il tocco su una riga del calendario, uguale in Home e nella pagina intera: la scheda della cosa,
@@ -250,14 +288,29 @@ fun TimelineCard(
     footer: String? = null,
     /** Accanto al titolo, a destra; se c'è vince su [count]. */
     titleTrailing: (@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)? = null,
+    /**
+     * Tenendo premuto e trascinando: quanti giorni avanti (+) o indietro (-); true se si è mossa davvero.
+     * Con questo tenere premuto non apre più le azioni delle righe: lasciando senza muovere vale [onLongOpen].
+     */
+    onScrub: ((Int) -> Boolean)? = null,
 ) {
     val haptic = rememberHaptic()
+    val scrub by androidx.compose.runtime.rememberUpdatedState(onScrub)
+    val longOpen by androidx.compose.runtime.rememberUpdatedState(onLongOpen)
+    val stepPx = with(androidx.compose.ui.platform.LocalDensity.current) { SCRUB_STEP.toPx() }
     // Il titolo dentro la card, non più un'etichetta fuori (1.404, punto 7 B).
     CanvasCard(modifier.fillMaxWidth()) {
         if (title != null) CardTitle(title, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
-        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
+        Column(Modifier.then(
+            if (onScrub == null) Modifier else Modifier.holdToScroll(
+                stepPx,
+                onHold = { haptic(Haptic.LONG_PRESS) },
+                onStep = { steps -> if (scrub?.invoke(steps) == true) haptic(Haptic.TICK) },
+                onRelease = { longOpen?.invoke() },
+            ),
+        ).combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.takeIf { onScrub == null }?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,
@@ -269,7 +322,7 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
+                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = if (onScrub != null) null else rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
             }
             footer?.let { text ->
                 Text(
@@ -284,6 +337,53 @@ fun TimelineCard(
                 )
             }
         }
+    }
+}
+
+/** Quanto dito per un giorno, trascinando la card Calendario tenuta premuta. */
+private val SCRUB_STEP = 36.dp
+
+/**
+ * Tieni premuto, poi trascina: i giorni scorrono a scatti ([DayDrag]). Il gesto si prende tutto solo dopo la
+ * pressione lunga, così prima il dito scorre la Home come sempre; una volta preso, né la Home né le righe
+ * ricevono più nulla (nemmeno il tocco al rilascio).
+ */
+private fun Modifier.holdToScroll(
+    stepPx: Float,
+    onHold: () -> Unit,
+    onStep: (Int) -> Unit,
+    onRelease: () -> Unit,
+): Modifier = pointerInput(stepPx) {
+    awaitEachGesture {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        val slop = viewConfiguration.touchSlop
+        // null = è passato il tempo della pressione lunga con il dito fermo.
+        val ended = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+            var gone: Boolean? = null
+            while (gone == null) {
+                val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id }
+                if (change == null || !change.pressed || change.isConsumed ||
+                    (change.position - down.position).getDistance() > slop
+                ) gone = true
+            }
+            gone
+        }
+        if (ended != null) return@awaitEachGesture
+        onHold()
+        val drag = DayDrag(stepPx)
+        var moved = false
+        var total = 0f
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            val change = event.changes.firstOrNull { it.id == down.id }
+            event.changes.forEach { it.consume() }
+            if (change == null || !change.pressed) break
+            val dy = change.position.y - change.previousPosition.y
+            total += dy
+            if (!moved && kotlin.math.abs(total) > slop) moved = true
+            if (moved) drag.move(dy).takeIf { it != 0 }?.let(onStep)
+        }
+        if (!moved) onRelease()
     }
 }
 

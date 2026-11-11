@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.479.0
+## 1.481.0
 **Media è un feed unico**
 - Video e Musica non sono più pagine a parte: tutto sta in Media, in una lista sola
 - In cima le storie dei canali e degli artisti che segui, dal più recente; l'anello blu vuol dire che hanno pubblicato dopo la tua ultima visita
@@ -12,6 +12,17 @@
 - Dalla ricerca artisti, album e playlist si aprono nella loro pagina
 - Pagina canale come su YouTube: copertina, iscritti, descrizione, Iscriviti e le schede Video, Shorts, Live e Playlist
 - Toccando il canale sotto un video si apre la sua pagina
+## 1.480.0
+**Card Calendario: tieni premuto e scorri i giorni**
+- Nella card Calendario della Home tieni premuto e trascina su o giù: vai avanti e indietro di un giorno alla volta, anche nei giorni passati
+- Lasciata ferma per 20 secondi torna da sola a oggi
+- Tenere premuto sulla card serve solo a scorrere: le azioni delle righe sono nel menu "Altro" della scheda (Condividi, Rimanda a domani)
+- Le cose da spuntare escono dai giorni: dentro OGGI c'è la riga "Da fare · 3", un tocco e si aprono sotto per spuntarle. Uguale nella card e nel calendario intero
+
+## 1.479.0
+**Un solo avviso quando copi**
+- Copiando il numero di un documento o un link compare solo l'avviso di Android, senza il nostro fumetto doppio
+- Su Android 12 e precedenti, dove il sistema non avvisa, resta il fumetto di vetro
 
 ## 1.478.0
 **Media rifatta: Musica e Video**

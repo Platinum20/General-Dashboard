@@ -423,7 +423,7 @@ object Routes {
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
     const val YOUTUBE_LIKED = "media/liked"
-    /** Un artista, un album o una playlist di Spotify come pagina sua (1.479: Musica non è più una pagina a parte). */
+    /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
     const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
     fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
         "media/spotify/item/${i.kind.name}/${Uri.encode(i.id)}?title=${Uri.encode(i.title)}&subtitle=${Uri.encode(i.subtitle)}&image=${Uri.encode(i.image)}"
@@ -1304,7 +1304,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.RADIO) {
                 ListenScreen(onBack = { navController.popBackStack() })
             }
-            // "I tuoi podcast" (1.479): una riga in fondo a Media.
+            // "I tuoi podcast" (1.481): una riga in fondo a Media.
             composable(Routes.PODCAST) {
                 com.platinum20.dashboard.ui.screens.PodcastsScreen(onBack = { navController.popBackStack() })
             }
@@ -1382,7 +1382,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onOpenChannel = { navController.navigate(Routes.youtubeChannel(it)) },
                 )
             }
-            // Cronologia (1.479): una riga in fondo a Media, non più una scheda di Video.
+            // Cronologia (1.481): una riga in fondo a Media, non più una scheda di Video.
             composable(Routes.YOUTUBE_FEED) {
                 com.platinum20.dashboard.ui.screens.YouTubeHistoryScreen(
                     onBack = { navController.popBackStack() },
@@ -1415,7 +1415,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // "Brani che ti piacciono" (1.479): una riga in fondo a Media, con playlist e album salvati.
+            // "Brani che ti piacciono" (1.481): una riga in fondo a Media, con playlist e album salvati.
             composable(Routes.SPOTIFY_FEED) {
                 com.platinum20.dashboard.ui.screens.MusicLibraryScreen(
                     onBack = { navController.popBackStack() },

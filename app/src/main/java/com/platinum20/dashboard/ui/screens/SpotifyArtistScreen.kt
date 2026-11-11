@@ -54,7 +54,7 @@ import com.platinum20.dashboard.media.spotify.SpotifyArtist
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 
 /**
- * La pagina di un artista (1.479, Antonio: "se vado su Pink Floyd dev'essere come Spotify"): la foto grande col nome
+ * La pagina di un artista (1.481, Antonio: "se vado su Pink Floyd dev'essere come Spotify"): la foto grande col nome
  * sopra, follower e generi, il tasto play, i Popolari numerati (cinque, poi "Altri"), la Discografia divisa in Album e
  * Singoli e EP, e dove appare. Ci si arriva dalle storie in cima a Media, dalla ricerca e dal nome nel player.
  */

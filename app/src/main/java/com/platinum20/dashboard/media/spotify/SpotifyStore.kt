@@ -86,7 +86,7 @@ object SpotifyStore {
     }
 
     private val _artists = MutableStateFlow(Loadable<List<SpArtistLatest>>())
-    /** Gli artisti che segui con la loro ultima uscita: le storie in cima a Media (1.479). */
+    /** Gli artisti che segui con la loro ultima uscita: le storie in cima a Media (1.481). */
     val artists: StateFlow<Loadable<List<SpArtistLatest>>> = _artists.asStateFlow()
 
     private val _artistPages = MutableStateFlow<Map<String, Loadable<SpArtistPage>>>(emptyMap())

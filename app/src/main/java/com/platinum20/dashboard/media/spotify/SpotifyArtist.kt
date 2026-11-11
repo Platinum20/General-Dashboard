@@ -8,7 +8,7 @@ import java.time.LocalDate
 data class SpArtistLatest(val artist: SpItem, val latest: LocalDate?)
 
 /**
- * La pagina di un artista (1.479, Antonio: "come su Spotify"): foto grande, i brani popolari, la discografia
+ * La pagina di un artista (1.481, Antonio: "come su Spotify"): foto grande, i brani popolari, la discografia
  * divisa in album e singoli, dove appare. Spotify non dà più alle app personali i "brani più ascoltati":
  * i popolari sono i primi brani della ricerca per artista, che Spotify ordina per ascolti.
  */

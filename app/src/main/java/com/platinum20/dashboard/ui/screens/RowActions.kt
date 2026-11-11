@@ -41,23 +41,13 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
     fun offerUndo(removed: List<TaskItem>, message: String) {
         if (removed.isNotEmpty()) offerUndo(message) { NotesStore.restoreTasks(removed) }
     }
-    fun share(text: String) {
-        val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
-            .putExtra(android.content.Intent.EXTRA_TEXT, text)
-        context.startActivity(android.content.Intent.createChooser(send, null))
-    }
+    fun share(text: String) = shareText(context, text)
     fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
         if (!t.tickable) null else BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
             haptic(Haptic.CONFIRM)
             NotesStore.toggleTask(t.id)
         },
-        t.dueAt?.takeIf { !t.done }?.let { due ->
-            BubbleAction(Icons.Outlined.Update, "Rimanda a domani") {
-                val zone = ZoneId.systemDefault()
-                val time = java.time.Instant.ofEpochMilli(due).atZone(zone).toLocalTime()
-                NotesStore.snoozeTask(t.id, LocalDate.now().plusDays(1).atTime(time).atZone(zone).toInstant().toEpochMilli())
-            }
-        },
+        snoozeAction(t),
         BubbleAction(Icons.Outlined.Share, "Condividi") { share(t.text) },
         BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
             NotesStore.deleteTask(t.id)
@@ -69,9 +59,7 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
             row.task != null -> taskActions(row.task)
             row.event != null -> listOf(
                 BubbleAction(Icons.Outlined.Event, "Apri", detail = row.event.title) { openEvent(row.event) },
-                BubbleAction(Icons.Outlined.Share, "Condividi") {
-                    share(row.event.title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(java.time.Instant.ofEpochMilli(row.event.begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now()))
-                },
+                BubbleAction(Icons.Outlined.Share, "Condividi") { share(eventShareText(row.event)) },
             )
             row.parcel != null -> listOf(
                 BubbleAction(Icons.Outlined.LocalShipping, "Apri", detail = row.parcel.title) { openItem(ItemKind.PARCEL, row.parcel.id) },
@@ -103,5 +91,29 @@ internal fun rememberRowActions(onOpenEvent: (CalendarEvent) -> Unit = {}): (Due
             row.note != null -> noteActions(row.note)
             else -> dueActions(row)
         }
+    }
+}
+
+/** Manda un testo con il foglio di condivisione del telefono. */
+internal fun shareText(context: android.content.Context, text: String) {
+    val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+        .putExtra(android.content.Intent.EXTRA_TEXT, text)
+    context.startActivity(android.content.Intent.createChooser(send, null))
+}
+
+/** Come si condivide un evento: il nome e il giorno ("Cena · Domani"). */
+internal fun eventShareText(e: CalendarEvent): String = eventShareText(e.title, e.begin)
+
+internal fun eventShareText(title: String, begin: Long): String =
+    title + " · " + com.platinum20.dashboard.today.Upcoming.dayLabel(
+        java.time.Instant.ofEpochMilli(begin).atZone(ZoneId.systemDefault()).toLocalDate(), LocalDate.now(),
+    )
+
+/** "Rimanda a domani" per una cosa con data non ancora fatta: stessa ora, domani. Uguale nel fumetto e nella scheda. */
+internal fun snoozeAction(t: TaskItem): BubbleAction? = t.dueAt?.takeIf { !t.done }?.let { due ->
+    BubbleAction(Icons.Outlined.Update, "Rimanda a domani") {
+        val zone = ZoneId.systemDefault()
+        val time = java.time.Instant.ofEpochMilli(due).atZone(zone).toLocalTime()
+        NotesStore.snoozeTask(t.id, LocalDate.now().plusDays(1).atTime(time).atZone(zone).toInstant().toEpochMilli())
     }
 }

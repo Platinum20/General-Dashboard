@@ -25,7 +25,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-/** 1.479 (Antonio): Media è un feed unico con le storie dei canali e degli artisti in cima, e la pagina artista. */
+/** 1.481 (Antonio): Media è un feed unico con le storie dei canali e degli artisti in cima, e la pagina artista. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class MediaOneFeedTest {

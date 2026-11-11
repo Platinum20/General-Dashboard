@@ -96,7 +96,7 @@ data class YtStoryboard(
 class YtChannelPage(val videos: List<YtVideo>, val tab: ListLinkHandler, val next: Page?)
 
 /**
- * La testata di un canale come su YouTube (1.479): copertina, foto, iscritti, descrizione e le schede che ha
+ * La testata di un canale come su YouTube (1.481): copertina, foto, iscritti, descrizione e le schede che ha
  * (Video, Shorts, Live, Playlist), per filtro di NewPipe ([ChannelTabs]).
  */
 class YtChannelInfo(
