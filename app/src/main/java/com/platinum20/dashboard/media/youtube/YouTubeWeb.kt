@@ -41,10 +41,18 @@ object YouTubeWeb {
     /** Una pagina della Home: [next] è il segno di YouTube per chiedere i video dopo (null = finiti). */
     class FeedPage(val videos: List<YtVideo>, val next: String?)
 
+    /**
+     * I video dell'ultima pagina Iscrizioni letta (1.486): i feed RSS dei canali non dicono la durata né la foto del
+     * canale, questa pagina sì; [YouTubeStore] le copia sui video del feed.
+     */
+    @Volatile var lastFeed: List<YtVideo> = emptyList()
+        private set
+
     /** Canali seguiti: elenco delle iscrizioni più i canali dei video nel feed Iscrizioni. */
     suspend fun subscriptions(context: Context): List<YtChannel> {
         val channels = page(context, "/feed/channels", requireLogin = true)
         val feed = runCatching { page(context, "/feed/subscriptions", requireLogin = true) }.getOrNull()
+        lastFeed = feed?.videos.orEmpty()
         val fromFeed = feed?.videos.orEmpty()
             .filter { it.channelId.isNotBlank() }
             .map { YtChannel(it.channelId, it.channel, "") }

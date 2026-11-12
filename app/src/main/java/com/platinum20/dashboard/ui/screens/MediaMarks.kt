@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
@@ -126,5 +129,56 @@ fun BoxScope.MediaMarkOverlay(mark: MediaMark?, compact: Boolean = false, inset:
                 .background(badge, MaterialTheme.shapes.extraSmall)
                 .padding(horizontal = if (compact) 3.dp else 5.dp, vertical = 1.dp),
         )
+    }
+}
+
+/**
+ * La tessera unica di Media (1.486, Antonio: "la musica quadrata, i video rettangolari, per il resto uguali"): stessa
+ * altezza di copertina [height], simbolo e durata sopra, poi titolo su due righe e autore con la data tutta a destra.
+ * [wide] = video (16:9), se no quadrata; [round] per artisti e radio.
+ */
+@Composable
+internal fun MediaTile(
+    height: Dp,
+    wide: Boolean,
+    image: String,
+    title: String,
+    author: String?,
+    date: String?,
+    mark: MediaMark?,
+    /** Il tocco: `Modifier.clickable { }` o `tapOrSave(...)` (tenendo premuto si salva). */
+    click: Modifier,
+    round: Boolean = false,
+    overlay: @Composable BoxScope.() -> Unit = {},
+) {
+    val width = if (wide) height * 16f / 9f else height
+    val shape = if (round) CircleShape else MaterialTheme.shapes.medium
+    androidx.compose.foundation.layout.Column(
+        Modifier
+            .width(width)
+            .bouncyPress(0.96f)
+            .then(click),
+        horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
+    ) {
+        CaptionedCover(title, author, centered = round, trailing = date) {
+            Box(
+                Modifier.width(width).height(height).clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                mark?.let {
+                    Icon(MediaMarks.icon(it.type), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (image.isNotBlank()) {
+                    coil3.compose.AsyncImage(
+                        model = image,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+                if (round) MediaMarkOverlay(mark, inset = height * 0.1f) else MediaMarkOverlay(mark)
+                overlay()
+            }
+        }
     }
 }

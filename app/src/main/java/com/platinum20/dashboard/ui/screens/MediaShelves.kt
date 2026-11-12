@@ -87,12 +87,14 @@ internal fun CaptionedCover(
     titleLines: Int = 2,
     centered: Boolean = false,
     textModifier: Modifier = Modifier,
+    /** Quando è uscito, sulla riga dell'autore ma tutto a destra (1.486, Antonio). */
+    trailing: String? = null,
     cover: @Composable () -> Unit,
 ) {
     val align = if (centered) TextAlign.Center else TextAlign.Start
     cover()
     @Composable
-    fun texts(title: String, subtitle: String?, fixed: Boolean) = Column {
+    fun texts(title: String, subtitle: String?, fixed: Boolean, trailing: String? = null) = Column {
         // Un filo di margine: gli angoli arrotondati della tessera non tagliano le lettere.
         Text(
             title,
@@ -103,21 +105,30 @@ internal fun CaptionedCover(
             textAlign = align,
             modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 6.dp),
         )
-        if (subtitle != null) Text(
-            subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            minLines = 1,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = align,
-            modifier = textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 4.dp),
-        )
+        if (subtitle != null) Row(textModifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 2.dp, bottom = 4.dp)) {
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                minLines = 1,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = align,
+                modifier = Modifier.weight(1f),
+            )
+            if (!trailing.isNullOrBlank()) Text(
+                trailing,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
     }
     // Altezza fissa (titolo su [titleLines] righe + autore): la tessera tiene sempre quello spazio, invisibile,
     // ma l'autore sta subito sotto il titolo. Titolo su una riga → autore sulla seconda, terza vuota (Antonio, 2026-11-11).
     Box {
         Box(Modifier.alpha(0f).clearAndSetSemantics { }) { texts(" ", subtitle?.let { " " }, fixed = true) }
-        texts(title, subtitle, fixed = false)
+        texts(title, subtitle ?: trailing?.let { "" }, fixed = false, trailing = trailing)
     }
 }
