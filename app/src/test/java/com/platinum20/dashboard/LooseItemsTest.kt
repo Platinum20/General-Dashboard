@@ -13,7 +13,7 @@ import com.platinum20.dashboard.ui.screens.DueRow
 import com.platinum20.dashboard.ui.screens.LooseKind
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.looseItems
-import com.platinum20.dashboard.ui.screens.looseTitle
+import com.platinum20.dashboard.ui.screens.looseCount
 import com.platinum20.dashboard.ui.screens.withoutLoose
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -63,17 +63,16 @@ class LooseItemsTest {
         val groups = dueDays(tasks, emptyList(), emptyList(), now = now, zone = zone, withToday = true, notes = notes)
         val items = looseItems(groups, notes, today)
         assertEquals(
-            listOf("task-1", "note-14", "note-13", "note-10", "note-11", "note-12", "task-2"),
+            listOf("task-1", "note-14", "note-13", "note-12", "task-2"),
             items.map { it.key },
         )
         assertEquals(LooseKind.PHOTO, items[2].kind)
         assertEquals("Foto · scade a marzo", items[2].line)
-        assertEquals(LooseKind.MEDIA, items[3].kind)
-        assertEquals("Veritasium", items[3].line)
-        assertEquals("Da leggere · Il Post", items[4].line)
+        // Video e articoli salvati non sono in Per dopo: stanno in Media e News.
+        assertTrue(items.none { it.key == "note-10" || it.key == "note-11" })
         assertTrue(items.last().done)
         // Ogni riga ha al massimo una riga sotto.
         assertTrue(items.all { it.line == null || '\n' !in it.line!! })
-        assertEquals("Senza scadenza · 7", looseTitle(items.size))
+        assertEquals("5", looseCount(items.size))
     }
 }

@@ -97,6 +97,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.remember
@@ -307,6 +308,8 @@ fun MediaScreen(
                     }
                 }
             }
+            // Salvati (1.490): video, brani, radio e podcast messi da parte per dopo, non più nella Home.
+            item(key = "saved") { SavedMediaRow(onOpenRoute) }
             // Novità (1.485, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
             // poi il segno ULTIMA VISITA e il resto con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
@@ -582,6 +585,34 @@ private fun QueueLine(next: String, more: Int, onClick: () -> Unit) {
             modifier = Modifier.weight(1f),
         )
         Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = "Apri la coda", modifier = Modifier.size(18.dp))
+    }
+}
+
+/** "Salvati": le cose messe da parte, con la stessa tessera di Continua; tenendo premuto si tolgono. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun SavedMediaRow(onOpenRoute: (String) -> Unit) {
+    val context = LocalContext.current
+    com.platinum20.dashboard.notes.NotesStore.init(context)
+    val data by com.platinum20.dashboard.notes.NotesStore.data.collectAsState()
+    val saved = remember(data.notes) { com.platinum20.dashboard.capture.SavedLinks.later(data.notes) }
+    if (saved.isEmpty()) return
+    Column {
+        SectionHeader("Salvati · ${saved.size}", Modifier.padding(horizontal = 16.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            itemsIndexed(saved, key = { _, l -> "${l.item.kind}-${l.item.key}" }) { _, entry ->
+                val item = entry.item
+                val type = MediaMarks.type(item.kind)
+                MediaTile(
+                    coverTileWidth(), wide = type == MediaType.VIDEO, image = item.image, title = item.title, author = LaterText.subtitle(item),
+                    date = null, mark = MediaMarks.of(item.kind, item.durationMs), round = type == MediaType.RADIO,
+                    click = Modifier.combinedClickable(
+                        onClick = { openResumeItem(context, item) { onOpenRoute(it) } },
+                        onLongClick = { forgetSaved(entry.note) },
+                    ),
+                )
+            }
+        }
     }
 }
 
