@@ -166,8 +166,9 @@ internal fun dueDays(
             // Le cose spuntate oggi restano in Oggi, segnate fatte (Antonio).
             tasks.filter { t -> t.done && dayOf(t.doneAt ?: t.dueAt ?: t.createdAt) == today }.sortedBy { it.doneAt ?: 0L }
                 .forEach { t -> add(DueRow("task-${t.id}", today, t.doneAt ?: nowMs, task = t)) }
-            // Le note fissate per prime, poi dalla più nuova.
-            notes.sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
+            // Le note fissate per prime, poi dalla più nuova. Video, brani e articoli salvati non ci sono:
+            // stanno in Media ("Più tardi") e in News ("Da leggere") (1.482, Antonio scelta B).
+            notes.filterNot(com.platinum20.dashboard.capture.SavedLinks::livesElsewhere).sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
                 .forEach { n -> add(DueRow("note-${n.id}", today, Long.MAX_VALUE, note = n)) }
         }
         return buildList {
@@ -403,7 +404,7 @@ internal fun timelineEntries(
         g.rows.mapIndexed { i, r ->
             val (kind, text) = when {
                 r.today -> com.platinum20.dashboard.today.BriefKind.FREE to "Oggi"
-                r.note != null -> com.platinum20.dashboard.today.BriefKind.FREE to r.note.title.ifEmpty { "Nota" }
+                r.note != null -> com.platinum20.dashboard.today.BriefKind.FREE to r.note.title.ifEmpty { if (r.note.photo.isNotEmpty()) "Foto" else "Nota" }
                 // In ritardo da un altro giorno: quel giorno al posto dell'ora ("Ieri  bolletta").
                 r.task != null && r.overdueFrom != null && r.overdueFrom != today -> com.platinum20.dashboard.today.BriefKind.TASK to
                     (com.platinum20.dashboard.today.Upcoming.dayLabel(r.overdueFrom, today) + "  " + r.task.text)
@@ -449,8 +450,10 @@ internal fun timelineEntries(
                 },
                 trip = r.event?.let { tripStops(it, today, zone) },
                 detail = r.task?.takeIf { it.allDay && !g.past && day != null }
-                    ?.let { com.platinum20.dashboard.notes.WhenText.dateLine(it.yearsAtNext(today, zone), day!!, today) },
-                image = r.note?.let { n -> com.platinum20.dashboard.capture.SavedLinks.find(n.text)?.image?.takeIf { it.isNotBlank() } ?: n.photo.takeIf { it.isNotEmpty() } },
+                    ?.let { com.platinum20.dashboard.notes.WhenText.dateLine(it.yearsAtNext(today, zone), day!!, today) }
+                    ?: r.note?.let(::photoLine),
+                // Nel calendario restano solo le foto (1.482): i video e gli articoli salvati stanno in Media e in News.
+                image = r.note?.photo?.takeIf { it.isNotEmpty() },
             ) to r
         }
     }
@@ -601,6 +604,16 @@ internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int
     val month = java.time.YearMonth.from(today)
     val more = days.drop(shown).count { it != null && it.isAfter(today) && java.time.YearMonth.from(it) == month }
     return shown to more
+}
+
+/**
+ * La riga sotto una nota con foto (1.482): "Foto", e se nel testo c'è altro oltre al titolo il suo inizio
+ * ("Foto · scade a marzo 2028"). Una riga sola.
+ */
+internal fun photoLine(note: com.platinum20.dashboard.notes.Note): String? {
+    if (note.photo.isEmpty()) return null
+    val more = note.text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.drop(1).firstOrNull()
+    return if (more == null) "Foto" else "Foto · $more"
 }
 
 /** I giorni senza le cose da spuntare: stanno tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11, scelta A). */

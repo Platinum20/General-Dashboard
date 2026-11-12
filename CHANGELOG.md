@@ -1,10 +1,19 @@
 # Changelog
 
-## 1.482.0
+## 1.484.0
 **Card Calendario: niente più scorrimento dei giorni**
 - Tolto il "tieni premuto e trascina" sulla card Calendario: la card mostra di nuovo oggi e domani
 - Tenendo premuta la card, anche sopra una riga, si apre il calendario intero
 - Restano le azioni nel menu "Altro" delle schede e la riga "Da fare" dentro OGGI
+
+## 1.483.0
+**Ogni cosa salvata al suo posto**
+- Video, brani, radio e podcast salvati non stanno più nel calendario: li trovi in Media, nella fila "Più tardi" subito dopo Continua
+- Anche un link di YouTube incollato col + diventa un video in Più tardi
+- Gli articoli salvati stanno in cima a News, in "Da leggere"; quando ne apri uno esce dalla lista (con Annulla)
+- Nel calendario restano solo le note e le foto, con la foto più grande e la riga "Foto" sotto
+- Tieni premuto su una cosa in Più tardi o Da leggere per toglierla
+- Il tasto dice "Leggi dopo" o "Salva per più tardi", e il pallino vola a News o a Media
 
 ## 1.481.0
 **Media è un feed unico**

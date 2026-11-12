@@ -88,7 +88,7 @@ private fun NewsStory.metaLine(): String = sourcesLine + (newest?.let { "  ·  "
 internal fun storyActions(context: Context, story: NewsStory, onMarkRead: () -> Unit): Array<BubbleAction> {
     val lead = story.headline
     return arrayOf(
-        BubbleAction(Icons.Outlined.BookmarkAdd, "Salva nelle note", lead.source.name) { SavedLinks.save(context, lead.savedLink()) },
+        BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo", lead.source.name) { SavedLinks.save(context, lead.savedLink()) },
         BubbleAction(Icons.Outlined.Headphones, "Ascolta", "Con la voce di lettura") { listenArticle(context, lead) },
         BubbleAction(Icons.Outlined.DoneAll, "Segna come letta") {
             NewsHistory.init(context)

@@ -281,6 +281,8 @@ fun MediaScreen(
                     }
                 }
             }
+            // Più tardi (1.482): quello che hai salvato da guardare o ascoltare, prima stava nel calendario.
+            item(key = "later") { LaterShelf(onOpenRoute) }
             // Novità: un feed solo, video ed episodi insieme; sotto ULTIMA VISITA il resto, sbiadito, con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
                 item(key = "feed-h") { SectionHeader("Novità", Modifier.padding(horizontal = 16.dp)) }
@@ -601,7 +603,7 @@ internal fun openResumeItem(
     openRoute(com.platinum20.dashboard.media.MediaLauncher.start(context, item, autoplay))
 }
 
-private fun ResumeItem.icon(): ImageVector = when (kind) {
+internal fun ResumeItem.icon(): ImageVector = when (kind) {
     ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
     ResumeKind.YOUTUBE -> Icons.Outlined.OndemandVideo
     ResumeKind.MUSIC -> Icons.Outlined.MusicNote
@@ -610,7 +612,7 @@ private fun ResumeItem.icon(): ImageVector = when (kind) {
     ResumeKind.PODCAST -> Icons.Outlined.Mic
 }
 
-private fun ResumeItem.accent(): TileAccent = when (kind) {
+internal fun ResumeItem.accent(): TileAccent = when (kind) {
     ResumeKind.VIDEO -> TileAccent.BLUE
     ResumeKind.YOUTUBE -> TileAccent.ORANGE
     ResumeKind.MUSIC, ResumeKind.SPOTIFY -> TileAccent.GREEN

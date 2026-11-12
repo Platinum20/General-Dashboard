@@ -116,8 +116,8 @@ fun NewsScreen(
 
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    // Gli indici fissi della lista: 0 = Ascolta, poi le nuove, poi (se non ce ne sono) la riga "niente di nuovo", poi il segno.
-    val markerIndex = if (since != null && !feed.isEmpty) 1 + feed.fresh.size + (if (feed.fresh.isEmpty()) 1 else 0) else null
+    // Gli indici fissi della lista: 0 = Ascolta, 1 = Da leggere, poi le nuove, poi (se non ce ne sono) la riga "niente di nuovo", poi il segno.
+    val markerIndex = if (since != null && !feed.isEmpty) 2 + feed.fresh.size + (if (feed.fresh.isEmpty()) 1 else 0) else null
     val markerNow by rememberUpdatedState(markerIndex)
     LaunchedEffect(Unit) {
         // Ritoccare News: dal fondo si torna al segno, dal segno (o sopra) in cima.
@@ -171,6 +171,9 @@ fun NewsScreen(
                     item(key = "listen") {
                         ListenBlock(feed, since, Modifier.padding(bottom = 12.dp))
                     }
+                    // Da leggere (1.482): gli articoli salvati, prima stavano nel calendario. Sempre un elemento
+                    // della lista (vuoto se non c'è niente), così gli indici fissi sotto non cambiano.
+                    item(key = "toread") { ToReadBlock(Modifier.padding(bottom = 8.dp)) }
                     itemsIndexed(feed.fresh, key = { _, s -> "n:" + s.key }) { index, story ->
                         Column(Modifier.animateItem()) {
                             val actions = { ActionBubble.show(*storyActions(context, story) { NewsHistory.settle(story.items.map { it.link }) }) }
