@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.493.0
+**WindTre: l'accesso torna a funzionare**
+- La lettura nascosta di WindTre scarica di nuovo le immagini della pagina: senza, il controllo anti-robot del sito poteva bloccare l'accesso
+- Quando rifai l'accesso a WindTre si parte da zero: via i cookie e i dati vecchi del sito che potevano far fallire la pagina di accesso
+
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**
 - Le storie in cima non ci sono più: in alto resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa

@@ -398,6 +398,8 @@ private fun WindTreLogin(onClose: () -> Unit) {
     var canGoBack by remember { mutableStateOf(false) }
     val webView = remember {
         WebView(context).also { view ->
+            // Accesso da capo: niente resti della sessione di prima (cookie scaduti o segnati).
+            if (!SimStore.linked.value) WindTreLink.freshLogin(context)
             WindTreLink.prepare(view, context) { canGoBack = view.canGoBack() }
             SimStore.beginSession()
             view.loadUrl(WindTreLink.HOME)

@@ -122,9 +122,9 @@ object WindTreLink {
         try {
             withContext(Dispatchers.Main) {
                 val view = WebView(context.applicationContext)
+                // Immagini lasciate accese: senza, il controllo anti-robot di WindTre segnava la sessione
+                // e poi l'accesso non passava più (1.492).
                 prepare(view, context)
-                // Nessuno la guarda: niente immagini da scaricare (meno rete e batteria a ogni giro).
-                view.settings.blockNetworkImage = true
                 SimStore.beginSession()
                 view.loadUrl(HOME)
                 withTimeoutOrNull(READ_MS) {
@@ -143,17 +143,32 @@ object WindTreLink {
         return (SimStore.status.value?.at ?: 0) > before
     }
 
-    /** Toglie la sessione WindTre dal telefono. */
-    fun forget(context: Context) {
+    /**
+     * Prima di un accesso nuovo: via cookie, sessionStorage salvato e dati del sito di WindTre, così un
+     * cookie vecchio o segnato dal controllo anti-robot non blocca la pagina di accesso.
+     */
+    fun freshLogin(context: Context) {
+        clearCookies()
+        WindTreSession.clear(context)
+        runCatching { ORIGINS.forEach { android.webkit.WebStorage.getInstance().deleteOrigin(it) } }
+    }
+
+    private val ORIGINS = listOf("https://ac.windtre.it", "https://www.windtre.it", "https://apigw.windtre.it", "https://login.windtre.it")
+
+    private fun clearCookies() {
         val cookies = CookieManager.getInstance()
-        listOf("https://ac.windtre.it", "https://www.windtre.it", "https://apigw.windtre.it").forEach { url ->
+        ORIGINS.forEach { url ->
             cookies.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.forEach { name ->
                 cookies.setCookie(url, "$name=; Max-Age=0")
                 cookies.setCookie(url, "$name=; Max-Age=0; Domain=.windtre.it; Path=/")
             }
         }
         cookies.flush()
-        WindTreSession.clear(context)
+    }
+
+    /** Toglie la sessione WindTre dal telefono. */
+    fun forget(context: Context) {
+        freshLogin(context)
         SimStore.unlink()
     }
 }
