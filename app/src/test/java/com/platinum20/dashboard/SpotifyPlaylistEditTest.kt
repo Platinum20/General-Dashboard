@@ -57,4 +57,14 @@ class SpotifyPlaylistEditTest {
         assertEquals(SpotifyPlaylists.MAX_CHIPS, SpotifyPlaylists.ordered(all, null).size)
         assertEquals("p1", SpotifyPlaylists.ordered(all, "sparita").first().id)
     }
+
+    @Test
+    fun appenaCreataVaInCima() {
+        val before = mapOf("spotify:playlist:a" to 100L, "spotify:playlist:b" to 200L)
+        val after = SpotifyPlaylists.touch(before, "spotify:playlist:nuova", 300L)
+        assertEquals("spotify:playlist:nuova", after.maxByOrNull { it.value }!!.key)
+        val many = (1..80).fold(emptyMap<String, Long>()) { m, i -> SpotifyPlaylists.touch(m, "p$i", i.toLong()) }
+        assertEquals(SpotifyPlaylists.MAX_TOUCHED, many.size)
+        assertTrue("p80" in many && "p1" !in many)
+    }
 }

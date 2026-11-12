@@ -215,6 +215,31 @@ object SpotifyStore {
     fun refreshPlaylists(force: Boolean = false) =
         load(_playlists, force, FeedCache.spItems("sp-playlist.json")) { token -> SpotifyApi.playlists(token) }
 
+    private const val TOUCHED_FILE = "sp-playlists-touched.json"
+    private var touchedLoaded = false
+    private val _touched = MutableStateFlow<Map<String, Long>>(emptyMap())
+
+    /** Playlist create o riempite da Canvas → quando: nella fila Musica valgono come un ascolto (1.501). */
+    val touched: StateFlow<Map<String, Long>> = _touched.asStateFlow()
+
+    fun loadTouched() {
+        if (touchedLoaded) return
+        touchedLoaded = true
+        scope.launch {
+            val saved = runCatching {
+                DiskCache.read(TOUCHED_FILE)?.let { raw -> org.json.JSONObject(raw).let { o -> o.keys().asSequence().associateWith { o.getLong(it) } } }
+            }.getOrNull().orEmpty()
+            _touched.update { saved + it }
+        }
+    }
+
+    private fun touch(playlist: SpItem) {
+        loadTouched()
+        _touched.update { SpotifyPlaylists.touch(it, playlist.uri, System.currentTimeMillis()) }
+        val text = org.json.JSONObject(_touched.value as Map<*, *>).toString()
+        scope.launch { DiskCache.write(TOUCHED_FILE, text) }
+    }
+
     /** L'ultima playlist dove hai messo un brano: la prima chip la prossima volta. */
     var lastPlaylist: String? = null
         private set
@@ -237,6 +262,7 @@ object SpotifyStore {
         if (result.error != null) return result.error
         if (result.data == false) return "È già in ${playlist.title}"
         lastPlaylist = playlist.id
+        touch(playlist)
         _children.update { it - playlist.id }
         refreshPlaylists(force = true)
         return "Aggiunto a ${playlist.title}"
@@ -251,6 +277,7 @@ object SpotifyStore {
         }
         val made = result.data ?: return Result.failure(IllegalStateException(result.error ?: "Spotify non risponde, riprova"))
         lastPlaylist = made.id
+        touch(made)
         refreshPlaylists(force = true)
         return Result.success(made)
     }
@@ -374,6 +401,7 @@ object SpotifyStore {
         _artistPages.value = emptyMap()
         _seenReleases.value = emptySet()
         _playback.value = null
+        _touched.value = emptyMap()
     }
 
     private fun fresh(state: Loadable<*>, maxAge: Long = MAX_AGE) = state.data != null && System.currentTimeMillis() - state.loadedAt < maxAge

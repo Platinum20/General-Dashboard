@@ -71,8 +71,11 @@ internal fun rememberHeardAt(): Map<String, Long> {
     val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
     val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
     val played by SpotifyStore.played.collectAsState()
-    return remember(history, watched, played) {
-        MediaMerge.heardAt(history, watched.mapValues { it.value.watchedAt }, played.map { (t, at) -> t.uri to at.toEpochMilli() })
+    // Le playlist appena create o riempite contano come ascoltate in quel momento (1.501).
+    remember { SpotifyStore.loadTouched() }
+    val touched by SpotifyStore.touched.collectAsState()
+    return remember(history, watched, played, touched) {
+        MediaMerge.heardAt(history, watched.mapValues { it.value.watchedAt }, played.map { (t, at) -> t.uri to at.toEpochMilli() } + touched.toList())
     }
 }
 
