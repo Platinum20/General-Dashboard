@@ -87,6 +87,7 @@ class CalendarCardOverlapTest {
     fun laCardDopoNonCopreIlCalendario() {
         var full by mutableStateOf(false)
         var page by mutableStateOf(false)
+        val list = androidx.compose.foundation.lazy.LazyListState()
         compose.setContent {
             val d = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(d.density, 1.3f)) {
@@ -95,10 +96,11 @@ class CalendarCardOverlapTest {
                         androidx.compose.animation.AnimatedContent(page, label = "pagina") { onPage ->
                             CompositionLocalProvider(LocalSharedScope provides this@SharedTransitionLayout, LocalRouteScope provides this) {
                                 if (onPage) Box(Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).fillMaxSize())
-                                else LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    items(listOf("cal", "sim"), key = { it }) { key ->
+                                else LazyColumn(Modifier.fillMaxSize(), state = list, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    items(listOf("top", "cal", "sim", "docs"), key = { it }) { key ->
                                         Box(Modifier.animateItem(placementSpec = null)) {
-                                            if (key == "cal") TimelineCard(
+                                            if (key == "top" || key == "docs") Box(Modifier.fillMaxWidth().height(300.dp).background(androidx.compose.ui.graphics.Color.Blue))
+                                            else if (key == "cal") TimelineCard(
                                                 null, entries(full), onOpen = {}, empty = "Niente",
                                                 modifier = Modifier.testTag("cal").sharedItem(SharedKeys.CALENDAR, rounded = true),
                                                 footer = "Altre 3 a novembre",
@@ -150,5 +152,20 @@ class CalendarCardOverlapTest {
         full = false
         compose.mainClock.advanceTimeBy(1_000)
         check("interrotto")
+        // Come nella foto di Antonio: la Home scorsa, il Calendario in cima tagliato a metà, poi la card cresce.
+        compose.mainClock.autoAdvance = true
+        compose.runOnIdle { kotlinx.coroutines.runBlocking { list.scrollToItem(1, 400) } }
+        check("scorsa")
+        full = true
+        compose.mainClock.advanceTimeBy(1_000)
+        check("scorsacresce")
+        full = false
+        compose.mainClock.advanceTimeBy(1_000)
+        check("scorsacala")
+        compose.runOnIdle { kotlinx.coroutines.runBlocking { list.scrollToItem(2, 200) } }
+        full = true
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.runOnIdle { kotlinx.coroutines.runBlocking { list.scrollBy(-300f) } }
+        check("fuorischermo")
     }
 }
