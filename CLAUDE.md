@@ -118,7 +118,7 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   video every 3, capped so the bottom is reachable; no Shorts), `RadioRow`, then fixed `ListRow`s (merged in 1.485, see below)
   + I tuoi podcast (`Routes.PODCAST` = `PodcastsScreen`). Spotify artist/album/playlist = route `Routes.SPOTIFY_ITEM` → `SpotifyItemScreen`; artists open
   `ArtistScreen` (SpotifyArtistScreen.kt, "come Spotify": photo header, Popolari = artist search tracks since top-tracks is closed to
-  personal apps (`SpotifyArtist.popular`), Discografia Album/Singoli e EP, Appare in; data `SpotifyApi.artistPage` → `SpotifyStore.loadArtist`).
+  personal apps (`SpotifyArtist.popular`), Discografia Album/Singoli e EP/Raccolte = ALL releases (1.494: `allReleases` pages of 10 in parallel, pure `SpotifyArtist.nextOffsets`/`releases`/`everything`, `SpReleaseGroup`), title "Discografia" opens in-place `DiscographyScreen` (full vertical list, chips), Appare in (max 200); data `SpotifyApi.artistPage` → `SpotifyStore.loadArtist`).
   Search opens artists/albums/playlists in their page. Channel page `YouTubeChannelScreen` = like YouTube (banner, avatar, iscritti,
   description, Iscriviti via `YtRatings.toggleSubscribe`, tabs from `YtResolver.channelInfo` → `YouTubeStore.channelInfo`; Video = paged
   `channelVideos`, Shorts grid/Live/Playlist = `loadChannelTab`); tapping the channel row of any `VideoCard` opens it (LocalInAppNav).

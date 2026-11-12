@@ -4,6 +4,11 @@
 **YouTube: i video ripartono anche col volume a zero**
 - Col telefono silenzioso i video di YouTube dicevano "Video non riproducibile": i sottotitoli accesi da soli bloccavano il video. Ora si caricano nel modo giusto
 - Se un sottotitolo non va, il video riparte senza invece di fermarsi
+**Artisti: tutta la discografia**
+- Nella pagina di un artista la Discografia ora ha tutto quello che ha pubblicato, non solo le prime uscite: album, singoli e EP, raccolte, dalla più nuova
+- Tocca il titolo "Discografia" (o l'ultima tessera della fila) per l'elenco intero, una riga per uscita col tipo e l'anno, con i chip per vedere solo album, singoli, raccolte o dove appare
+- Ogni uscita si apre con i suoi brani, come prima
+- Anche "Appare in" mostra molte più uscite
 
 ## 1.493.0
 **Media: titoli e tastini invertiti, copertine dove mancavano**
