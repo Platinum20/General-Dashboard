@@ -35,6 +35,10 @@ import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.MediaMerge
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.capture.SavedLink
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Bookmark
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyStore
@@ -56,6 +60,24 @@ internal sealed interface MixedEntry {
     }
 }
 
+/** Quando hai ascoltato o guardato l'ultima volta ogni cosa (1.488): per mettere le liste miste nell'ordine di ascolto. */
+@Composable
+internal fun rememberHeardAt(): Map<String, Long> {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.media.MediaHistory.init(context); com.platinum20.dashboard.media.youtube.YtHistory.init(context) }
+    val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
+    val played by SpotifyStore.played.collectAsState()
+    return remember(history, watched, played) {
+        MediaMerge.heardAt(history, watched.mapValues { it.value.watchedAt }, played.map { (t, at) -> t.uri to at.toEpochMilli() })
+    }
+}
+
+internal val MixedEntry.timeKey: String get() = when (this) {
+    is MixedEntry.Track -> item.uri
+    is MixedEntry.Video -> video.id
+}
+
 /** Una voce nella coda unica: i brani suonano con Spotify, i video col player di YouTube, uno dopo l'altro. */
 internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
     is MixedEntry.Track -> ResumeItem(ResumeKind.SPOTIFY, item.uri, item.title, item.subtitle, item.image, durationMs = item.durationMs, at = now)
@@ -63,47 +85,54 @@ internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
 }
 
 /**
- * "Mi piace" (1.485, Antonio: le cose che in Spotify e YouTube fanno lo stesso stanno in una voce sola): i brani che
- * ti piacciono e i video con il Mi piace insieme, a turno dai più recenti; "Riproduci tutto" li mette nella coda unica.
+ * "Brani che ti piacciono" o "Video che ti piacciono" (1.488, Antonio: "dividi brani da video"): una pagina per parte,
+ * in ordine di ascolto; "Riproduci tutto" li mette nella coda unica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
+fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
     YtFavorites.init(context)
     val library by SpotifyStore.library.collectAsState()
     val liked by YouTubeStore.liked.collectAsState()
     val mine by YtFavorites.items.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshLibrary()
-        YouTubeStore.refreshLiked(context)
+    LaunchedEffect(videosOnly) {
+        if (videosOnly) YouTubeStore.refreshLiked(context) else SpotifyStore.refreshLibrary()
     }
     val tracks = library.data?.liked.orEmpty()
     val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
-    val entries = MediaMerge.alternate(tracks.map { MixedEntry.Track(it) }, videos.map { MixedEntry.Video(it) })
+    val heard = rememberHeardAt()
+    val entries = MediaMerge.byRecency(if (videosOnly) videos.map { MixedEntry.Video(it) } else tracks.map { MixedEntry.Track(it) }) { heard[it.timeKey] }
+    val source = if (videosOnly) liked else library
     val state = Loadable(
-        data = entries.takeIf { library.data != null || liked.data != null || mine.isNotEmpty() },
-        loading = library.loading || liked.loading,
-        error = if (library.data == null && liked.data == null) library.error ?: liked.error else null,
+        data = entries.takeIf { source.data != null || (videosOnly && mine.isNotEmpty()) },
+        loading = source.loading,
+        error = if (source.data == null) source.error else null,
     )
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Mi piace", subtitle = countLine(tracks.size, "brani", videos.size, "video"), scrollBehavior = bar, onBack = onBack) },
+        topBar = {
+            TopLevelBar(
+                title = if (videosOnly) "Video che ti piacciono" else "Brani che ti piacciono",
+                subtitle = if (videosOnly) countLine(0, "", videos.size, "video") else countLine(tracks.size, "brani", 0, ""),
+                scrollBehavior = bar, onBack = onBack,
+            )
+        },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Nessun brano o video con il Mi piace") {
+            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace") {
                 if (entries.isNotEmpty()) item(key = "play") {
                     CanvasButton("Riproduci tutto", onClick = {
                         val now = System.currentTimeMillis()
-                        CanvasPlayer.playList(context, entries.map { it.resume(now) })
+                        CanvasPlayer.playList(context, entries.map { it.resume(now).let { r -> if (videosOnly) r else r.copy(link = LIKED_LINK) } })
                     }, primary = true)
                 }
                 items(entries, key = { it.key }) { entry ->
                     when (entry) {
-                        is MixedEntry.Track -> ItemRow(entry.item, onClick = { playTracks(context, tracks, entry.item) })
-                        is MixedEntry.Video -> VideoRow(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
+                        is MixedEntry.Track -> TrackLine(entry.item, onClick = { playTracks(context, tracks, entry.item, LIKED_LINK) })
+                        is MixedEntry.Video -> VideoLine(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
                     }
                 }
             }
@@ -112,43 +141,31 @@ fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
 }
 
 /**
- * "Playlist" (1.485): le playlist di Spotify e di YouTube e gli album salvati in una lista sola; ognuna si apre nella
- * sua pagina.
+ * "Playlist" (1.488, Antonio: quelle di YouTube no): le playlist di Spotify e gli album salvati, dall'ultimo ascoltato;
+ * ognuna si apre nella sua pagina.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, onOpenYouTube: (YtPlaylist) -> Unit) {
+fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
     val spotify by SpotifyStore.playlists.collectAsState()
     val library by SpotifyStore.library.collectAsState()
-    val youtube by YouTubeStore.playlists.collectAsState()
     LaunchedEffect(Unit) {
         SpotifyStore.refreshPlaylists()
         SpotifyStore.refreshLibrary()
-        YouTubeStore.refreshPlaylists(context)
     }
-    val fromSpotify = spotify.data.orEmpty() + library.data?.albums.orEmpty()
-    val fromYouTube = youtube.data.orEmpty()
-    val entries: List<Any> = MediaMerge.alternate(fromSpotify, fromYouTube)
-    val state = Loadable(
-        data = entries.takeIf { spotify.data != null || youtube.data != null },
-        loading = spotify.loading || youtube.loading,
-        error = if (spotify.data == null && youtube.data == null) spotify.error ?: youtube.error else null,
-    )
+    val heard = rememberHeardAt()
+    val entries = MediaMerge.byRecency((spotify.data.orEmpty() + library.data?.albums.orEmpty()).distinctBy { it.uri }) { heard[it.uri] }
+    val state = Loadable(data = entries.takeIf { spotify.data != null }, loading = spotify.loading, error = if (spotify.data == null) spotify.error else null)
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Playlist", subtitle = "Spotify e YouTube, album salvati", scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Playlist", subtitle = "Playlist e album salvati", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             FeedList(state, empty = "Nessuna playlist") {
-                items(entries, key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
-                    when (e) {
-                        is SpItem -> ItemRow(e, onClick = { onOpenSpotify(e) })
-                        is YtPlaylist -> PlaylistLine(e, onClick = { onOpenYouTube(e) }, padded = false)
-                    }
-                }
+                items(entries, key = { "s-" + it.uri }) { e -> TrackLine(e, onClick = { onOpenSpotify(e) }) }
             }
         }
     }
@@ -158,80 +175,6 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, on
 internal fun countLine(a: Int, aName: String, b: Int, bName: String): String =
     listOfNotNull(a.takeIf { it > 0 }?.let { "$it $aName" }, b.takeIf { it > 0 }?.let { "$it $bName" }).joinToString(" · ")
 
-/** Quante tessere al massimo in una fila di Media prima di "Tutti": il resto è nella pagina. */
-private const val ROW_MAX = 20
-
-/**
- * "Album e playlist" sotto Per te (1.486, Antonio: "una riga sua"): le playlist di Spotify e di YouTube e gli album
- * salvati, a turno; il titolo e l'ultima tessera aprono la pagina con tutte.
- */
-@Composable
-internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
-    val context = LocalContext.current
-    val spotify by SpotifyStore.playlists.collectAsState()
-    val library by SpotifyStore.library.collectAsState()
-    val youtube by YouTubeStore.playlists.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshPlaylists()
-        YouTubeStore.refreshPlaylists(context)
-    }
-    val all: List<Any> = MediaMerge.alternate(spotify.data.orEmpty() + library.data?.albums.orEmpty(), youtube.data.orEmpty())
-    if (all.isEmpty()) return
-    val tile = coverTileWidth()
-    val open = { onOpenRoute(com.platinum20.dashboard.Routes.SPOTIFY_FEED) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OpenableHeader("Album e playlist", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(all.take(ROW_MAX), key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
-                when (e) {
-                    is SpItem -> MediaTile(
-                        tile, wide = false, image = e.image, title = e.title, author = e.subtitle.substringBefore(" · "), date = null,
-                        mark = MediaMarks.of(e), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e)) },
-                    )
-                    is YtPlaylist -> MediaTile(
-                        tile, wide = true, image = e.thumbnail, title = e.title,
-                        author = if (e.count > 0) "YouTube · ${e.count} video" else "YouTube", date = null,
-                        mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.youtubePlaylist(e)) },
-                    )
-                }
-            }
-            if (all.size > ROW_MAX) item(key = "albums-all") { AllTile(tile, "Tutte", "${all.size} in tutto", open) }
-        }
-    }
-}
-
-/** "Mi piace" sotto Per te (1.486): brani e video che ti piacciono, a turno; un tocco li fa partire. */
-@Composable
-internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
-    val context = LocalContext.current
-    YtFavorites.init(context)
-    val library by SpotifyStore.library.collectAsState()
-    val liked by YouTubeStore.liked.collectAsState()
-    val mine by YtFavorites.items.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshLiked(context) }
-    val tracks = library.data?.liked.orEmpty()
-    val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
-    val all = MediaMerge.alternate(tracks.map { MixedEntry.Track(it) }, videos.map { MixedEntry.Video(it) })
-    if (all.isEmpty()) return
-    val tile = coverTileWidth()
-    val open = { onOpenRoute(com.platinum20.dashboard.Routes.YOUTUBE_LIKED) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OpenableHeader("Mi piace", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(all.take(ROW_MAX), key = { it.key }) { e ->
-                when (e) {
-                    is MixedEntry.Track -> MediaTile(
-                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle, date = null,
-                        mark = MediaMarks.of(e.item),
-                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.item) }) { playTracks(context, tracks, e.item) },
-                    )
-                    is MixedEntry.Video -> VideoTile(e.video, tile) { onPlayVideo(e.video.watchUrl) }
-                }
-            }
-            if (all.size > ROW_MAX) item(key = "liked-all") { AllTile(tile, "Tutti", countLine(tracks.size, "brani", videos.size, "video"), open) }
-        }
-    }
-}
 
 /**
  * La pagina di un mix (1.486, Antonio: "prima la pagina con Riproduci, come le playlist"): la copertina, Riproduci e i
@@ -249,7 +192,9 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
         SpotifyStore.refreshLibrary()
     }
     val today = remember { java.time.LocalDate.now() }
-    val mix = remember(home.data, library.data) { mixesOf(home.data, library.data, today).firstOrNull { it.id == mixId } }
+    val made by com.platinum20.dashboard.media.spotify.MadeStore.mixes.collectAsState()
+    LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.MadeStore.refresh(context) }
+    val mix = remember(home.data, library.data, made) { mixesOf(home.data, library.data, today, made).firstOrNull { it.id == mixId } }
     val tracks = mix?.tracks.orEmpty()
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
@@ -257,7 +202,7 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
         topBar = {
             TopLevelBar(
                 title = mix?.title ?: "Mix",
-                subtitle = listOfNotNull("Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
+                subtitle = listOfNotNull(mix?.badge ?: "Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
                 scrollBehavior = bar,
                 onBack = onBack,
             )
@@ -273,39 +218,237 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             Text(mix.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                             Spacer(Modifier.height(8.dp))
-                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null) }, primary = true)
+                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null, mix?.let(::mixLink).orEmpty()) }, primary = true)
                         }
                     }
                 }
-                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track) }) }
+                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track, mix?.let(::mixLink).orEmpty()) }) }
             }
         }
     }
 }
 
 /**
- * "Tutte le novità" (1.486, Antonio: in fondo alla fila, il resto in verticale come prima): i video grandi e gli
- * episodi dal più nuovo, con il segno ULTIMA VISITA.
+ * "Scopri" dei video (1.488, Antonio: "la home sarebbe novità, scopri, la stessa cosa"): in cima i video nuovi delle
+ * iscrizioni dall'ultima visita, poi la Home di YouTube che arrivando in fondo carica altri consigliati, senza fine.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
-    val rows = com.platinum20.dashboard.media.MediaFeedNow.rows
+    val context = LocalContext.current
+    val subs by YouTubeStore.subscriptions.collectAsState()
+    val home by YouTubeStore.home.collectAsState()
+    val ended by YouTubeStore.homeEnded.collectAsState()
+    val hideLive by com.platinum20.dashboard.settings.AppSettings.hideLive.collectAsState()
+    val hideMembers by com.platinum20.dashboard.settings.AppSettings.hideMembers.collectAsState()
+    LaunchedEffect(Unit) {
+        YouTubeStore.refreshSubscriptions(context)
+        YouTubeStore.refreshHome(context)
+    }
+    val since = com.platinum20.dashboard.media.MediaFeedNow.since
+    val fresh = remember(subs.data, since, hideLive, hideMembers) {
+        pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
+            .filter { com.platinum20.dashboard.media.MediaFresh.isNew(it.published, since) }
+            .sortedByDescending { it.published }
+    }
+    val tips = remember(home.data, fresh, hideLive, hideMembers) {
+        val shown = fresh.map { it.id }.toSet()
+        pickFeed(home.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos.filter { it.id !in shown }
+    }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Novità", subtitle = MediaShelves.title("Video ed episodi", rows.fresh.size), scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Scopri", subtitle = MediaShelves.title("Video", fresh.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        @Composable
-        fun Entry(entry: com.platinum20.dashboard.media.FeedEntry) = when (entry) {
-            is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
-            is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeLine(entry.episode)
-        }
+        val count = fresh.size + tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = rows.fresh + rows.older), empty = "Nessuna novità") {
-                items(rows.fresh, key = { "f-" + it.key }) { Entry(it) }
-                if (rows.fresh.isNotEmpty() && rows.older.isNotEmpty()) item(key = "marker") { NewsVisitMarker("Ultima visita") }
-                items(rows.older, key = { "o-" + it.key }) { Entry(it) }
+            FeedList(Loadable(data = fresh + tips, loading = (home.loading || subs.loading) && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora") {
+                if (fresh.isNotEmpty()) {
+                    item(key = "fresh-h") { SectionHeader("Nuovi dalle iscrizioni") }
+                    items(fresh, key = { "f-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                }
+                if (tips.isNotEmpty()) {
+                    item(key = "tips-h") { SectionHeader("Per te su YouTube") }
+                    items(tips, key = { "t-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                }
+                if (!ended && home.data != null) item(key = "more") {
+                    // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
+                    LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * "Scopri" della musica (1.488, Antonio: la prima idea): le nuove uscite degli artisti che segui, poi per ogni tuo genere
+ * gli artisti che non ascolti ancora e le sue playlist. Tutte file orizzontali; un tocco apre la pagina.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
+    val context = LocalContext.current
+    SpotifyAuth.init(context)
+    val releases by SpotifyStore.releases.collectAsState()
+    val seen by SpotifyStore.seenReleases.collectAsState()
+    val discover by SpotifyStore.discover.collectAsState()
+    LaunchedEffect(Unit) {
+        SpotifyStore.refreshReleases()
+        SpotifyStore.refreshListened()
+        SpotifyStore.refreshDiscover()
+        com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
+    }
+    // Simili da Last.fm (1.491): artisti che non ascolti ancora e brani rimasti fuori da Discover Weekly.
+    val similarArtists by com.platinum20.dashboard.media.spotify.MadeStore.similarArtists.collectAsState()
+    val similarTracks by com.platinum20.dashboard.media.spotify.MadeStore.similarTracks.collectAsState()
+    remember { com.platinum20.dashboard.media.lastfm.LastFm.init(context) }
+    val lastFmKey by com.platinum20.dashboard.media.lastfm.LastFm.key.collectAsState()
+    val today = remember { java.time.LocalDate.now() }
+    val fresh = MediaShelves.freshFirst(releases.data.orEmpty()) { it.item.id !in seen }
+    val rows = discover.data.orEmpty()
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Scopri", subtitle = "Musica dai tuoi ascolti", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        val tile = coverTileWidth()
+        val empty = fresh.isEmpty() && rows.isEmpty() && similarArtists.isEmpty() && similarTracks.isEmpty()
+        androidx.compose.foundation.lazy.LazyColumn(
+            Modifier.fillMaxSize().padding(inner),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            if (empty && (releases.loading || discover.loading)) item(key = "loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), label = "Cerco musica nuova") }
+            if (empty && !releases.loading && !discover.loading) item(key = "empty") {
+                Text(
+                    discover.error ?: "Ascolta un po' di musica: Scopri parte da lì",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+            if (fresh.isNotEmpty()) item(key = "releases") {
+                DiscoverRow("Nuove uscite", "Degli artisti che segui") {
+                    items(fresh, key = { "r-" + it.item.id }) { release ->
+                        MediaTile(
+                            tile, wide = false, image = release.item.image, title = release.item.title,
+                            author = release.item.subtitle.substringBefore(" · "), date = com.platinum20.dashboard.media.spotify.NewReleases.ago(release.released, today),
+                            mark = MediaMarks.of(release.item),
+                            click = Modifier.clickable {
+                                SpotifyStore.markReleaseSeen(release.item.id)
+                                onOpen(release.item)
+                            },
+                        ) { if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd)) }
+                    }
+                }
+            }
+            if (similarArtists.isNotEmpty()) item(key = "sim-artists") {
+                DiscoverRow("Artisti simili", "A quelli che ascolti di più") {
+                    items(similarArtists, key = { "sa-" + it.uri }) { artist ->
+                        MediaTile(
+                            tile, wide = false, image = artist.image, title = artist.title, author = "Artista",
+                            date = null, mark = MediaMarks.of(artist), click = Modifier.clickable { onOpen(artist) }, round = true,
+                        )
+                    }
+                }
+            }
+            if (similarTracks.isNotEmpty()) item(key = "sim-tracks") {
+                DiscoverRow("Brani simili", "Ai tuoi preferiti, che non hai ancora sentito") {
+                    items(similarTracks, key = { "st-" + it.uri }) { track ->
+                        MediaTile(
+                            tile, wide = false, image = track.image, title = track.title, author = track.subtitle.substringBefore(" · "),
+                            date = null, mark = MediaMarks.of(track),
+                            click = Modifier.clickable { playTracks(context, similarTracks, track) },
+                        )
+                    }
+                }
+            }
+            if (lastFmKey.isBlank()) item(key = "lastfm") {
+                Text(
+                    "Per artisti e brani simili, Discover Weekly e i Daily Mix metti la chiave di Last.fm in Impostazioni › Media",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+            items(rows, key = { "d-" + it.title }) { row ->
+                DiscoverRow(row.title, row.why) {
+                    items(row.items, key = { "i-" + it.uri }) { item ->
+                        MediaTile(
+                            tile, wide = false, image = item.image, title = item.title,
+                            author = if (item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST) "Artista" else item.subtitle.substringBefore(" · "),
+                            date = null, mark = MediaMarks.of(item), click = Modifier.clickable { onOpen(item) },
+                            round = item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Una fila di Scopri: titolo, il perché sotto, le tessere di lato. */
+@Composable
+private fun DiscoverRow(title: String, why: String, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            SectionHeader(title)
+            Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+        }
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), content = content)
+    }
+}
+
+/** Le cose salvate per dopo di una fila di Media (1.490): i video per Video, il resto per Musica; dalla più recente. */
+@Composable
+internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.capture.SavedLinks.Later> {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.notes.NotesStore.init(context) }
+    val data by com.platinum20.dashboard.notes.NotesStore.data.collectAsState()
+    return remember(data.notes, video) {
+        com.platinum20.dashboard.capture.SavedLinks.later(data.notes).filter { com.platinum20.dashboard.capture.SavedLinks.isVideo(it.item) == video }
+    }
+}
+
+/**
+ * La tessera "Salvati · N", prima di tutte nella sua fila (1.490, Antonio: le cose salvate per dopo stanno in Media, e
+ * la tessera sparisce quando non c'è niente). Stessa forma della fila: quadrata in Musica, larga in Video.
+ */
+@Composable
+internal fun SavedTile(height: androidx.compose.ui.unit.Dp, count: Int, wide: Boolean, onClick: () -> Unit) {
+    MediaTile(height, wide = wide, image = "", title = "Salvati · $count", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
+        androidx.compose.material3.Icon(
+            androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp),
+        )
+    }
+}
+
+/**
+ * "Salvati" (1.490): le cose salvate per dopo, una sotto l'altra dalla più recente. Un tocco la apre ferma, tenendo
+ * premuto la togli (con Annulla). Vuota, si torna indietro.
+ */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
+    val context = LocalContext.current
+    val saved = rememberSavedMedia(video)
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Salvati", subtitle = if (video) "Video da vedere dopo" else "Musica e podcast per dopo", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            FeedList(Loadable(data = saved), empty = "Niente di salvato") {
+                items(saved, key = { "s-" + it.note.id }) { l ->
+                    MediaLine(
+                        wide = video, image = l.item.image, title = l.item.title, author = LaterText.subtitle(l.item),
+                        mark = MediaMarks.of(l.item.kind, l.item.durationMs),
+                        click = Modifier.combinedClickable(
+                            onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
+                            onLongClick = { com.platinum20.dashboard.capture.SavedLinks.forget(l.note, "Tolto: ${l.item.title}") },
+                        ),
+                        round = l.item.kind == ResumeKind.RADIO,
+                    )
+                }
             }
         }
     }

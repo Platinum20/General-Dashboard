@@ -158,6 +158,9 @@ object SavedLinks {
         .mapNotNull { note -> ((find(note.text) as? SavedLink.Media)?.item ?: pastedYoutube(note))?.let { Later(note, it) } }
         .distinctBy { "${it.item.kind}:${it.item.key}" }
 
+    /** Le cose salvate per dopo da vedere (video) o da ascoltare (il resto): Media le divide nelle sue due file (1.490). */
+    fun isVideo(item: ResumeItem): Boolean = item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO
+
     /** Gli articoli salvati da leggere, dal più recente: anche loro in "Senza scadenza". */
     fun toRead(notes: List<Note>): List<ToRead> = notes
         .sortedByDescending { it.createdAt }
@@ -249,8 +252,8 @@ object SavedLinks {
                 "Salvato per dopo: ${link.title}",
                 undo = { NotesStore.deleteNote(id) },
                 icon = Icons.Rounded.BookmarkAdded,
-                // Il pallino vola alla card Calendario della Home, dove stanno le cose senza scadenza (2026-11-12).
-                target = CaptureTargets.HOME_TAB,
+                // Articoli nella card Calendario della Home; video, brani e radio in Media, in "Salvati" (1.490).
+                target = if (link is SavedLink.Article) CaptureTargets.HOME_TAB else CaptureTargets.MEDIA_TAB,
             ),
         )
     }

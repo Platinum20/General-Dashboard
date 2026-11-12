@@ -36,9 +36,23 @@ class MediaMarksTest {
 
 /** 1.485 (Antonio): Mi piace, Cronologia e Playlist mostrano Spotify e YouTube insieme. */
 class MediaMergeTest {
-    @Test fun aTurnoPoiIlResto() {
-        assertEquals(listOf("s1", "y1", "s2", "y2", "s3"), com.platinum20.dashboard.media.MediaMerge.alternate(listOf("s1", "s2", "s3"), listOf("y1", "y2")))
-        assertEquals(listOf("y1"), com.platinum20.dashboard.media.MediaMerge.alternate(emptyList(), listOf("y1")))
+    @Test fun nellOrdineDiAscoltoNonATurno() {
+        val at = mapOf("y1" to 30L, "s2" to 50L, "s1" to 10L)
+        // Prima chi ha un ascolto, dal più recente; poi il resto nell'ordine di arrivo, senza alternare.
+        assertEquals(
+            listOf("s2", "y1", "s1", "s3", "y2"),
+            com.platinum20.dashboard.media.MediaMerge.byRecency(listOf("s1", "s2", "s3", "y1", "y2")) { at[it] },
+        )
+    }
+
+    @Test fun oreDiAscoltoDaOgniFonte() {
+        val history = listOf(
+            com.platinum20.dashboard.media.ResumeItem(com.platinum20.dashboard.media.ResumeKind.SPOTIFY, "spotify:track:a", "A", at = 5, link = "spotify:album:x"),
+        )
+        val map = com.platinum20.dashboard.media.MediaMerge.heardAt(history, mapOf("vid" to 7L), listOf("spotify:track:a" to 9L))
+        assertEquals(9L, map["spotify:track:a"])
+        assertEquals(5L, map["spotify:album:x"])
+        assertEquals(7L, map["vid"])
     }
 
     @Test fun rigaDeiConti() {

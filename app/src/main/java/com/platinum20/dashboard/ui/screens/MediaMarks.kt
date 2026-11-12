@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
@@ -180,5 +182,83 @@ internal fun MediaTile(
                 overlay()
             }
         }
+    }
+}
+
+/** Altezza di [MediaLine]: la copertina di un video 16:9 larga [MEDIA_LINE_SLOT] e quella quadrata della musica. */
+internal val MEDIA_LINE_HEIGHT = 72.dp
+internal val MEDIA_LINE_SLOT = 128.dp
+
+/**
+ * La riga unica delle liste di Media dove musica e video stanno insieme (1.488, Antonio: "che abbiano tutti lo stesso
+ * aspetto", e "nelle cose verticali basta che siano uguali"): stessa altezza, nessun bordo, la stessa copertina 16:9 per
+ * musica e video (quadrata/rettangolare solo nelle file orizzontali), così il testo parte sempre dallo stesso punto.
+ * [wide] resta per chi la chiama: dice solo se è un video.
+ */
+@Composable
+internal fun MediaLine(
+    wide: Boolean,
+    image: String,
+    title: String,
+    author: String?,
+    mark: MediaMark?,
+    click: Modifier,
+    round: Boolean = false,
+    overlay: @Composable BoxScope.() -> Unit = {},
+) {
+    val shape = if (round) CircleShape else MaterialTheme.shapes.medium
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().height(MEDIA_LINE_HEIGHT).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).then(click),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(MEDIA_LINE_SLOT).height(MEDIA_LINE_HEIGHT), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.width(if (round) MEDIA_LINE_HEIGHT else MEDIA_LINE_SLOT).height(MEDIA_LINE_HEIGHT)
+                    .clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                mark?.let { Icon(MediaMarks.icon(it.type), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (image.isNotBlank()) {
+                    coil3.compose.AsyncImage(
+                        model = image,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+                if (round) MediaMarkOverlay(mark, compact = true, inset = MEDIA_LINE_HEIGHT * 0.1f) else MediaMarkOverlay(mark, compact = true, inset = 4.dp)
+                overlay()
+            }
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+        androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            author?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Il tastino quadrato "Scopri" a destra del titolo di una fila di Media (1.488, Antonio: "dei tastini quadrati tutto a
+ * destra"): Musica apre Scopri della musica, Video la Home di YouTube.
+ */
+@Composable
+internal fun DiscoverButton(onClick: () -> Unit) {
+    androidx.compose.material3.OutlinedIconButton(
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        border = cardBorder(),
+        colors = androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
+        modifier = Modifier.size(40.dp).bouncyPress(0.9f),
+    ) {
+        Icon(Icons.Outlined.Explore, contentDescription = "Scopri", modifier = Modifier.size(20.dp))
     }
 }

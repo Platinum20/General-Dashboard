@@ -198,8 +198,10 @@ fun PodcastsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     remember { PodcastStore.init(context) }
     val podcastNow by PodcastStore.now.collectAsState()
-    var podcast by remember { mutableStateOf<Podcast?>(null) }
-    BackHandler(enabled = podcast != null) { podcast = null }
+    // Aperta da una tessera di Per te (1.488): parte già sul podcast toccato, indietro torna a Media.
+    val opened = remember { PodcastOpen.take() }
+    var podcast by remember { mutableStateOf(opened) }
+    BackHandler(enabled = podcast != null && opened == null) { podcast = null }
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
@@ -208,7 +210,7 @@ fun PodcastsScreen(onBack: () -> Unit) {
                 title = podcast?.title ?: "I tuoi podcast",
                 subtitle = podcast?.let { p -> p.author.ifBlank { if (p.fromSpotify) "Da Spotify" else "Podcast" } } ?: "Podcast",
                 scrollBehavior = barScroll,
-                onBack = { if (podcast != null) podcast = null else onBack() },
+                onBack = { if (podcast != null && opened == null) podcast = null else onBack() },
             )
         },
     ) { inner ->
@@ -221,43 +223,124 @@ fun PodcastsScreen(onBack: () -> Unit) {
         }
     }
 }
+/** Il podcast da aprire subito in "I tuoi podcast", toccato in Per te (1.488). */
+internal object PodcastOpen {
+    private var pending: Podcast? = null
+    fun set(p: Podcast?) { pending = p }
+    fun take(): Podcast? = pending.also { pending = null }
+}
+
 /**
- * "Per te" (1.481, Antonio: i mix per primi): i mix fatti dai tuoi ascolti, poi le uscite degli artisti che segui
- * (col pallino finché non le apri), in una fila sola. Si carica da sola; senza niente non si disegna.
+ * La fila "Musica", già "Per te" (1.488, Antonio: "ordinato in base all'ultima volta che l'ho ascoltato, qualunque cosa sia"): mix, playlist e
+ * album salvati di Spotify e i podcast che segui in una fila sola, a sinistra l'ultima cosa ascoltata; niente ultime
+ * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit) {
+    val saved = rememberSavedMedia(video = false)
     val context = LocalContext.current
+    remember { PodcastStore.init(context) }
+    val followedHere by PodcastStore.followed.collectAsState()
+    val spotifyShows by PodcastStore.spotify.collectAsState()
     val homeState by SpotifyStore.home.collectAsState()
     val libraryState by SpotifyStore.library.collectAsState()
-    val releases by SpotifyStore.releases.collectAsState()
-    val seen by SpotifyStore.seenReleases.collectAsState()
+    val playlists by SpotifyStore.playlists.collectAsState()
+    val listened by SpotifyStore.listened.collectAsState()
+    val made by com.platinum20.dashboard.media.spotify.MadeStore.mixes.collectAsState()
+    LaunchedEffect(Unit) {
+        SpotifyStore.refreshPlaylists()
+        SpotifyStore.refreshListened()
+        com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
+    }
+    val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val heard = rememberHeardAt()
     val home = homeState.data
     val library = libraryState.data
     val today = remember { LocalDate.now() }
-    val mixes = remember(home, library, today) { mixesOf(home, library, today) }
-    val list = MediaShelves.freshFirst(releases.data.orEmpty()) { it.item.id !in seen }
-    if (mixes.isEmpty() && list.isEmpty()) return
-    val tile = coverTileWidth()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Per te", Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
-            itemsIndexed(mixes, key = { _, m -> "mix-${m.id}" }) { _, mix -> MixTile(mix, tile) { onOpenMix(mix) } }
-            itemsIndexed(list, key = { _, r -> "release-${r.item.id}" }) { _, release ->
-                MediaTile(
-                    tile, wide = false, image = release.item.image, title = release.item.title,
-                    author = release.item.subtitle.substringBefore(" · "), date = NewReleases.ago(release.released, today),
-                    mark = MediaMarks.of(release.item),
-                    click = Modifier.clickable {
-                        SpotifyStore.markReleaseSeen(release.item.id)
-                        onOpen(release.item)
-                    },
-                ) { if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd)) }
+    val podcasts = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
+    val entries = remember(home, library, playlists.data, podcasts, heard, history, listened.data, made) {
+        // Anche gli ultimi artisti ascoltati (1.488, Antonio: "non tutti, tipo 3"), al loro posto nel tempo.
+        val artists = listened.data.orEmpty().sortedByDescending { it.at }.distinctBy { it.artist.id }.take(PER_TE_ARTISTS)
+        val podcastAt = history.filter { it.kind == ResumeKind.PODCAST && it.feed.isNotBlank() }
+            .groupBy { it.feed }.mapValues { (_, l) -> l.maxOf { it.at } }
+        val all = mixesOf(home, library, today, made).map { PerTe.Mix(it) } +
+            (playlists.data.orEmpty() + library?.albums.orEmpty()).distinctBy { it.uri }.map { PerTe.Item(it) } +
+            podcasts.map { PerTe.Show(it) } +
+            artists.map { PerTe.Artist(it.artist, it.at.toEpochMilli()) } +
+            // I brani che ti piacciono sono una tessera come una playlist (1.488, Antonio: "dentro Musica").
+            listOfNotNull(library?.liked?.takeIf { it.isNotEmpty() }?.let { PerTe.Liked(it.size, it.first().image) })
+        com.platinum20.dashboard.media.MediaMerge.byRecency(all) { e ->
+            when (e) {
+                is PerTe.Mix -> heard[mixLink(e.mix)]
+                is PerTe.Item -> heard[e.item.uri]
+                is PerTe.Show -> podcastAt[e.podcast.feedUrl]
+                is PerTe.Artist -> e.at
+                is PerTe.Liked -> heard[LIKED_LINK]
             }
         }
     }
+    val tile = coverTileWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Musica", Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
+            items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
+                when (e) {
+                    // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
+                    is PerTe.Mix -> MixTile(e.mix, tile) { onOpenMix(e.mix) }
+                    is PerTe.Item -> MediaTile(
+                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "),
+                        date = null, mark = MediaMarks.of(e.item), click = Modifier.clickable { onOpen(e.item) },
+                    )
+                    is PerTe.Liked -> MediaTile(
+                        tile, wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", date = null,
+                        mark = null, click = Modifier.clickable(onClick = onOpenLiked),
+                    ) {
+                        Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                    }
+                    is PerTe.Artist -> MediaTile(
+                        tile, wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", date = null,
+                        mark = null, click = Modifier.clickable { onOpen(e.artist) }, round = true,
+                    )
+                    is PerTe.Show -> MediaTile(
+                        tile, wide = false, image = e.podcast.artwork, title = e.podcast.title,
+                        author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, date = null,
+                        mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { onOpenPodcast(e.podcast) },
+                    )
+                }
+            }
+            item(key = "podcast-all") {
+                AllTile(tile, "I tuoi podcast", if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno") { onOpenPodcast(null) }
+            }
+            // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio).
+            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", onOpenRadio) }
+        }
+    }
 }
+
+/** Una tessera di Per te: un mix, una playlist o un album di Spotify, un podcast che segui. */
+internal sealed interface PerTe {
+    val key: String
+    data class Mix(val mix: SpMix) : PerTe { override val key get() = "mix-" + mix.id }
+    data class Item(val item: SpItem) : PerTe { override val key get() = "sp-" + item.uri }
+    data class Show(val podcast: Podcast) : PerTe { override val key get() = "pod-" + podcast.feedUrl }
+    data class Artist(val artist: SpItem, val at: Long) : PerTe { override val key get() = "art-" + artist.uri }
+    data class Liked(val count: Int, val image: String) : PerTe { override val key get() = "liked" }
+}
+
+/** Il "da dove" dei brani che ti piacciono, quando partono dalla loro pagina (1.488). */
+internal const val LIKED_LINK = "spotify:collection:tracks"
+
+/** Il "da dove" dei brani di un mix in Riprendi (1.488): così Per te sa quando l'hai ascoltato. */
+internal fun mixLink(mix: SpMix): String = "mix:" + mix.id
+
+/** Quanti degli ultimi artisti ascoltati in Per te. */
+private const val PER_TE_ARTISTS = 3
+
+/** Quante tessere in Per te prima delle due fisse in fondo. */
+private const val PER_TE_MAX = 24
+
 /** Il pallino blu di una cosa nuova sulla copertina. */
 @Composable
 internal fun NewDot(modifier: Modifier) {
@@ -392,12 +475,13 @@ internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
 private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
     MediaTile(
         tile, wide = false, image = mix.image, title = mix.title, author = mix.subtitle, date = null,
-        mark = MediaMark(MediaType.MUSIC, MediaMarks.clock(mix.tracks.sumOf { it.durationMs })),
+        mark = MediaMark(MediaType.MUSIC),
         click = Modifier.clickable(onClick = onClick),
     ) {
         Text(
-            "Mix",
+            mix.badge,
             style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -410,21 +494,22 @@ private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
 }
 
 /** I mix di oggi (gli stessi in Per te e nella pagina del mix): dai tuoi artisti e brani preferiti. */
-internal fun mixesOf(home: SpHome?, library: SpLibrary?, today: LocalDate): List<SpMix> =
-    SpotifyMixes.build(
+internal fun mixesOf(home: SpHome?, library: SpLibrary?, today: LocalDate, made: List<SpMix> = emptyList()): List<SpMix> =
+    // Prima le nostre playlist (Release Radar, Discover Weekly, Daily Mix, Top 50, radio: 1.491), poi i "Mix di".
+    made + SpotifyMixes.build(
         home?.topArtists.orEmpty(),
         home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
         today.toEpochDay(),
     )
 
 /** Brani di una fila (o di un mix) nella coda unica, da [startAt] in poi. */
-internal fun playTracks(context: android.content.Context, row: List<SpItem>, startAt: SpItem?) {
+internal fun playTracks(context: android.content.Context, row: List<SpItem>, startAt: SpItem?, link: String = "") {
     val tracks = row.filter { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
     if (tracks.isEmpty()) return
     val items = tracks.map {
         com.platinum20.dashboard.media.ResumeItem(
             ResumeKind.SPOTIFY, it.uri, it.title, it.subtitle, it.image,
-            at = System.currentTimeMillis(),
+            at = System.currentTimeMillis(), link = link,
         )
     }
     val start = startAt?.let { s -> tracks.indexOfFirst { it.uri == s.uri } }?.coerceAtLeast(0) ?: 0
@@ -472,6 +557,14 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
         }
     }
 }
+
+/** Un brano, album o playlist di Spotify nelle liste che mescolano musica e video (1.488): la riga [MediaLine]. */
+@Composable
+internal fun TrackLine(item: SpItem, onClick: () -> Unit) = MediaLine(
+    wide = false, image = item.image, title = item.title, author = item.subtitle, mark = MediaMarks.of(item),
+    click = if (item.kind == SpKind.TRACK || item.kind == SpKind.EPISODE) Modifier.tapOrSave({ SavedLinks.spotify(item) }, onClick) else Modifier.clickable(onClick = onClick),
+    round = item.kind == SpKind.ARTIST,
+)
 
 @Composable
 internal fun ItemRow(item: SpItem, onClick: () -> Unit) {
