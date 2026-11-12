@@ -42,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -202,6 +203,7 @@ fun MediaScreen(
     val feed = remember(subVideos, latestEpisodes.data, tips, since, listened) {
         com.platinum20.dashboard.media.MediaFeed.build(subVideos, latestEpisodes.data.orEmpty(), tips, since, listened)
     }
+    SideEffect { com.platinum20.dashboard.media.MediaFeedNow.rows = feed }
     remember { com.platinum20.dashboard.media.youtube.YtHistory.init(context) }
     val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
     val heard by com.platinum20.dashboard.media.spotify.SpotifyStore.listened.collectAsState()
@@ -291,22 +293,25 @@ fun MediaScreen(
                 )
             }
             // Per te (1.481, Antonio): prima i mix, poi le uscite.
-            if (spotifyOn) item(key = "perte") { PerTeRow(onOpen = { onOpenRoute(Routes.spotifyItem(it)) }) }
+            if (spotifyOn) item(key = "perte") { PerTeRow(onOpen = { onOpenRoute(Routes.spotifyItem(it)) }, onOpenMix = { onOpenRoute(Routes.mix(it.id)) }) }
+            // Sotto Per te una riga per album e playlist e una per Mi piace (1.486, Antonio), Spotify e YouTube insieme.
+            if (spotifyOn || youTubeOn) {
+                item(key = "albums") { AlbumsRow(onOpenRoute) }
+                item(key = "liked") { LikedRow(onOpenRoute, onPlayVideo) }
+            }
             if (continueList.isNotEmpty()) {
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
                 item(key = "continue") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { i, item -> ContinueTile(item, first = i == 0, onClick = { openResume(item) }) }
+                        itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
                     }
                 }
             }
-            // Più tardi (1.483): quello che hai salvato da guardare o ascoltare, prima stava nel calendario.
-            item(key = "later") { LaterShelf(onOpenRoute) }
             // Novità (1.485, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
             // poi il segno ULTIMA VISITA e il resto con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
                 item(key = "feed-h") { SectionHeader(MediaShelves.title("Novità", feed.fresh.size), Modifier.padding(horizontal = 16.dp)) }
-                item(key = "feed") { NewsRow(feed, onPlayVideo) }
+                item(key = "feed") { NewsRow(feed, onPlayVideo, onOpenAll = { onOpenRoute(Routes.MEDIA_NEWS) }) }
             }
             item(key = "radio") { RadioRow(onOpenAll = { onOpenRoute(Routes.RADIO) }) }
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
@@ -314,13 +319,8 @@ fun MediaScreen(
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     // Spotify e YouTube nelle stesse voci (1.485, Antonio): Mi piace, Cronologia, Playlist mostrano tutti e due.
                     if (spotifyOn || youTubeOn) {
-                        val songs = library.data?.liked?.size ?: 0
-                        ListRow(
-                            Icons.Filled.Favorite, TileAccent.NEUTRAL, "Mi piace",
-                            if (songs > 0) "$songs brani e i video che ti sono piaciuti" else "Brani e video che ti sono piaciuti",
-                        ) { onOpenRoute(Routes.YOUTUBE_LIKED) }
+                        // Mi piace e Album e playlist sono righe loro sotto Per te (1.486): qui resta la Cronologia.
                         ListRow(Icons.Outlined.History, TileAccent.NEUTRAL, "Cronologia", "Video e brani, dal più recente") { onOpenRoute(Routes.YOUTUBE_FEED) }
-                        ListRow(Icons.AutoMirrored.Outlined.QueueMusic, TileAccent.NEUTRAL, "Playlist", "Spotify e YouTube, album salvati") { onOpenRoute(Routes.SPOTIFY_FEED) }
                     }
                     if (!spotifyOn) {
                         ListRow(Icons.Outlined.GraphicEq, TileAccent.NEUTRAL, "Collega Spotify", "Mix, uscite e la tua musica qui") {
@@ -383,23 +383,34 @@ private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>,
     }
 }
 
-/** Le Novità in una fila: video larghi, episodi quadrati della stessa altezza, il segno dell'ultima visita in mezzo. */
+/**
+ * Le Novità in una fila: video rettangolari, episodi quadrati, tutti alti uguali; il segno dell'ultima visita in mezzo,
+ * poche vecchie e in fondo "Tutte le novità" (1.486, Antonio) che apre l'elenco intero in verticale.
+ */
 @Composable
-private fun NewsRow(feed: com.platinum20.dashboard.media.MediaFeedRows, onPlayVideo: (String) -> Unit) {
-    val height = NEWS_COVER
+private fun NewsRow(feed: com.platinum20.dashboard.media.MediaFeedRows, onPlayVideo: (String) -> Unit, onOpenAll: () -> Unit) {
+    val height = coverTileWidth()
+    val older = feed.older.take(com.platinum20.dashboard.media.MediaFeed.ROW_OLDER)
     @Composable
     fun Entry(entry: com.platinum20.dashboard.media.FeedEntry) = when (entry) {
-        is com.platinum20.dashboard.media.FeedEntry.Video -> VideoTile(entry.video, height * 16f / 9f) { onPlayVideo(entry.video.watchUrl) }
+        is com.platinum20.dashboard.media.FeedEntry.Video -> VideoTile(entry.video, height) { onPlayVideo(entry.video.watchUrl) }
         is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeTile(entry.episode, height)
     }
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(feed.fresh, key = { "f-" + it.key }) { Entry(it) }
-        if (feed.fresh.isNotEmpty() && feed.older.isNotEmpty()) item(key = "feed-marker") { VisitMarkTile(height) }
-        items(feed.older, key = { "o-" + it.key }) { Entry(it) }
+        if (feed.fresh.isNotEmpty() && older.isNotEmpty()) item(key = "feed-marker") { VisitMarkTile(height) }
+        items(older, key = { "o-" + it.key }) { Entry(it) }
+        item(key = "feed-all") { AllTile(height, "Tutte le novità", "${feed.fresh.size + feed.older.size} in tutto", onOpenAll) }
     }
 }
 
-private val NEWS_COVER = 140.dp
+/** L'ultima tessera di una fila: apre la pagina con tutto (stessa altezza delle copertine). */
+@Composable
+internal fun AllTile(height: androidx.compose.ui.unit.Dp, title: String, line: String, onClick: () -> Unit) {
+    MediaTile(height, wide = false, image = "", title = title, author = line, date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
+        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(32.dp))
+    }
+}
 
 /** ULTIMA VISITA nella fila: una riga blu in piedi, alta come le copertine, con la scritta sotto. */
 @Composable
@@ -420,20 +431,15 @@ private fun VisitMarkTile(height: androidx.compose.ui.unit.Dp) {
     }
 }
 
-/** Un episodio nella fila delle Novità: copertina quadrata con simbolo e durata, titolo, podcast e quando. */
+/** Un episodio nella fila delle Novità: copertina quadrata con simbolo e durata, titolo, podcast e quando a destra. */
 @Composable
-private fun EpisodeTile(episode: com.platinum20.dashboard.media.podcast.Episode, size: androidx.compose.ui.unit.Dp) {
-    Column(Modifier.width(size).bouncyPress(0.96f).clickable { PodcastStore.play(episode) }) {
-        CaptionedCover(episode.title, com.platinum20.dashboard.media.MediaStories.episodeLine(episode, System.currentTimeMillis())) {
-            Box(Modifier.size(size).clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.Mic, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (episode.image.isNotBlank()) {
-                    AsyncImage(model = episode.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                }
-                MediaMarkOverlay(MediaMark(MediaType.PODCAST, MediaMarks.minutes(episode.durationSec * 1000)))
-            }
-        }
-    }
+internal fun EpisodeTile(episode: com.platinum20.dashboard.media.podcast.Episode, size: androidx.compose.ui.unit.Dp) {
+    MediaTile(
+        size, wide = false, image = episode.image, title = episode.title, author = episode.podcastTitle,
+        date = com.platinum20.dashboard.media.MediaStories.episodeAgo(episode, System.currentTimeMillis()),
+        mark = MediaMark(MediaType.PODCAST, MediaMarks.minutes(episode.durationSec * 1000)),
+        click = Modifier.clickable { PodcastStore.play(episode) },
+    )
 }
 
 /**
@@ -579,44 +585,21 @@ private fun QueueLine(next: String, more: Int, onClick: () -> Unit) {
     }
 }
 
-/** "Continua": anteprima grande con la barra di dove eri, titolo e fonte. */
+/** "Continua": la stessa tessera delle altre file (1.486), video rettangolari e il resto quadrato, con la barra di dove eri. */
 @Composable
-private fun ContinueTile(item: ResumeItem, first: Boolean, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .width(168.dp)
-            .clip(MaterialTheme.shapes.large)
-            .bouncyPress()
-            .tapOrSave({ SavedLink.Media(item) }, onClick)
+private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
+    val type = MediaMarks.type(item.kind)
+    MediaTile(
+        coverTileWidth(), wide = type == MediaType.VIDEO, image = item.image, title = item.title, author = item.subtitle,
+        date = null, mark = MediaMarks.of(item.kind, item.durationMs), round = type == MediaType.RADIO,
+        click = Modifier.tapOrSave({ SavedLink.Media(item) }, onClick),
     ) {
-        CaptionedCover(
-            item.title,
-            // Quanto manca lo dice la barra sulla copertina (1.475): sotto resta solo chi lo pubblica.
-            item.subtitle,
-            titleLines = MediaShelves.TITLE_LINES,
-            textModifier = Modifier.padding(horizontal = 4.dp),
-        ) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(94.dp)
-                    .clip(MaterialTheme.shapes.large)
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                IconTile(item.icon(), item.accent())
-                if (item.image.isNotBlank()) {
-                    AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-                }
-                MediaMarkOverlay(MediaMarks.of(item.kind, item.durationMs), inset = 6.dp)
-                if (item.unfinished && item.durationMs > 0) {
-                    LinearProgressIndicator(
-                        progress = { item.progress },
-                        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
-                        drawStopIndicator = {},
-                    )
-                }
-            }
+        if (item.unfinished && item.durationMs > 0) {
+            LinearProgressIndicator(
+                progress = { item.progress },
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp),
+                drawStopIndicator = {},
+            )
         }
     }
 }

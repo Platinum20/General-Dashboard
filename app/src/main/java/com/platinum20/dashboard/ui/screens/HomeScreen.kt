@@ -315,6 +315,7 @@ fun HomeScreen(
                 groups = calendar,
                 today = minute.toLocalDate(),
                 habits = notes.habits,
+                notes = notes.notes,
                 onOpenAll = {
                     haptic(Haptic.TICK)
                     onOpenNotes()

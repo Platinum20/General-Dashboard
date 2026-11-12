@@ -264,8 +264,6 @@ fun NotesScreen(
     val shiftsExpired by com.platinum20.dashboard.shifts.ShiftStore.expired.collectAsStateWithLifecycle()
     // La riga Abitudini dentro OGGI: chiusa dice quante ne hai fatte, aperta mostra le abitudini una per una.
     var habitsOpen by rememberSaveable { mutableStateOf(false) }
-    // La riga "Da fare" dentro OGGI: chiusa dice quante restano, aperta mostra le cose da spuntare.
-    var todoOpen by rememberSaveable { mutableStateOf(false) }
     // Quanto c'è sotto "OGGI" nella linea del tempo: sotto serve spazio perché oggi stia in cima allo schermo.
     var below by remember(filter) { mutableStateOf<Int?>(null) }
     var startedAtNow by remember { mutableStateOf(false) }
@@ -307,11 +305,11 @@ fun NotesScreen(
         val onTaskDeleted: (TaskItem) -> Unit = { offerUndo(listOf(it), "Promemoria eliminato") }
         val done = data.tasks.filter { it.done }
         val today = LocalDate.now()
+        // Le cose senza scadenza (da fare, note, foto, cose salvate) non stanno qui: sono in fondo alla card
+        // Calendario della Home (Antonio, 2026-11-12). Qui solo le cose con un giorno.
+        val groups = remember(past, timeline, filter) { (past + timeline).withoutLoose().only(filter) }
         // Oggi c'è sempre (almeno la sua riga): vuoto = solo quella riga e niente altro.
-        val empty = timeline.sumOf { it.rows.size } <= 1 && past.isEmpty() && data.habits.isEmpty() && done.isEmpty()
-        // Le cose da spuntare non stanno nei giorni: tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11, scelta A).
-        val groups = remember(past, timeline, filter) { (past + timeline).withoutTicks().only(filter) }
-        val todo = remember(timeline, today) { cardTodo(timeline, today) }
+        val empty = groups.sumOf { it.rows.size } <= 1 && data.habits.isEmpty()
         // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
         // (mesi di eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
         val entries = remember(groups, today) {
@@ -332,9 +330,8 @@ fun NotesScreen(
         // Le abitudini si fanno oggi (1.357): una riga dentro OGGI, prima dei giorni dopo. In fondo alla linea non ci si
         // arrivava mai, perché scorrendo il calendario carica un anno dopo l'altro.
         val showHabits = filter == null && data.habits.isNotEmpty() && nowAt >= 0
-        val showTodo = filter == null && todo.isNotEmpty() && nowAt >= 0
-        val habitsAt = if (showHabits || showTodo) habitsIndex(entries.map { it.second.day to it.first.past }, nowAt, today) else entries.size
-        val habitCount = (if (showHabits) 1 else 0) + (if (showTodo) 1 + (if (todoOpen) todo.size else 0) else 0)
+        val habitsAt = if (showHabits) habitsIndex(entries.map { it.second.day to it.first.past }, nowAt, today) else entries.size
+        val habitCount = if (showHabits) 1 else 0
         val lastItem = timelineIndex + entries.lastIndex + habitCount
         // La lista nasce già su OGGI (1.357): niente salto né dissolvenza dopo. Sotto c'è spazio quanto lo schermo
         // finché non si misura quanto c'è davvero dopo OGGI, così il primo fotogramma è già quello giusto.
@@ -412,7 +409,7 @@ fun NotesScreen(
                     Box(Modifier.padding(bottom = 4.dp)) { EmptyHint(
                         "Tocca + e scrivi come parli: Canvas capisce da solo se c'è una data. \"venerdì alle 18 palestra\", " +
                             "\"compleanno di Marta 12 marzo\" o un pacco Amazon finiscono nel loro giorno; " +
-                            "un'idea senza data resta in Oggi finché non la togli."
+                            "un'idea senza data va in fondo alla card Calendario della Home."
                     ) }
                 }
             }
@@ -505,25 +502,6 @@ fun NotesScreen(
                             haptic(Haptic.TICK)
                             ActionBubble.show(*habitsBubble(data.habits, today))
                         }
-                    }
-                }
-                if (showTodo) {
-                    item(key = "todo-row") {
-                        TimelineRow(
-                            todoEntry(todo), top = true, bottom = true,
-                            onClick = { haptic(Haptic.TICK); todoOpen = !todoOpen },
-                            modifier = Modifier.animateItem().captureTarget(CaptureMode.TASK),
-                        )
-                    }
-                    if (todoOpen) items(todo.size, key = { "todo-" + todo[it].first.key }, contentType = { "timeline" }) { i ->
-                        val (entry, row) = todo[i]
-                        TimelineRow(
-                            entry, top = true, bottom = true,
-                            onClick = { openRow(row) },
-                            onLongClick = { rowActions(row) },
-                            onIcon = row.task?.let { task -> { NotesStore.toggleTask(task.id) } },
-                            modifier = Modifier.animateItem(fadeInSpec = Motion.settle(), placementSpec = Motion.settle(), fadeOutSpec = Motion.settle()),
-                        )
                     }
                 }
                 items(entries.size - habitsAt, key = { entryKeys[it + habitsAt] }, contentType = { "timeline" }) { drawEntry(it + habitsAt) }

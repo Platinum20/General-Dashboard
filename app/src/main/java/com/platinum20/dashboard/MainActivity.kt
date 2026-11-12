@@ -423,6 +423,11 @@ object Routes {
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
     const val YOUTUBE_LIKED = "media/liked"
+    /** Un mix di Per te come pagina sua, con Riproduci (1.486). */
+    const val MEDIA_MIX = "media/mix/{id}"
+    fun mix(id: String) = "media/mix/${Uri.encode(id)}"
+    /** Tutte le novità in verticale, dall'ultima tessera della fila (1.486). */
+    const val MEDIA_NEWS = "media/news"
     /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
     const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
     fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
@@ -1408,6 +1413,18 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     ),
                     onBack = { navController.popBackStack() },
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.MEDIA_MIX, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                com.platinum20.dashboard.ui.screens.MixScreen(
+                    mixId = entry.arguments?.getString("id").orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Routes.MEDIA_NEWS) {
+                com.platinum20.dashboard.ui.screens.MediaNewsScreen(
+                    onBack = { navController.popBackStack() },
+                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
             // Mi piace (1.485): brani di Spotify e video di YouTube insieme.
