@@ -167,7 +167,7 @@ internal fun CalendarCard(
     val all = remember(pending, today) { timelineEntries(pending.withoutLoose(), today) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
-    val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
+    val (later, _) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
     val shown = all.take(todayCount + later)
     // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle).
     val extraAt = todayCount
@@ -179,10 +179,9 @@ internal fun CalendarCard(
     }
     fun <T> withExtras(list: List<T>, items: List<T>): List<T> =
         if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
-    val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
-        // Senza titolo né mese: si apre direttamente su OGGI, una riga in meno (Antonio, 2026-11-10).
-        null,
+        // Il nome in cima come le altre card (Antonio, 2026-11-12: prima era senza titolo), poi OGGI.
+        "Calendario",
         withExtras(shown.map { it.first }, extras.map { it.first }),
         onOpenAll,
         empty = "Niente in programma.",
@@ -197,7 +196,9 @@ internal fun CalendarCard(
         // Tenendo premuto, ovunque sulla card: il calendario intero (lo scorrimento dei giorni non è piaciuto, 1.482).
         // Le azioni di una riga stanno nel suo "Altro".
         onLongOpen = onOpenAll,
-        footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
+        // Niente più "Altre N a novembre" in fondo (Antonio, 2026-11-12): quante cose ci sono da oggi a fine mese,
+        // a destra del titolo come in Per dopo.
+        count = calendarMonthCount(all.map { it.second }, today).takeIf { it > 0 }?.toString(),
     )
 }
 

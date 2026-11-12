@@ -606,6 +606,12 @@ internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int
     return shown to more
 }
 
+/** Il numero a destra del titolo della card Calendario: le cose da oggi a fine mese (non la riga OGGI). */
+internal fun calendarMonthCount(rows: List<DueRow>, today: LocalDate): Int {
+    val month = java.time.YearMonth.from(today)
+    return rows.count { r -> !r.today && r.day != null && !r.day.isBefore(today) && java.time.YearMonth.from(r.day) == month }
+}
+
 /**
  * La riga sotto una nota con foto (1.482): "Foto", e se nel testo c'è altro oltre al titolo il suo inizio
  * ("Foto · scade a marzo 2028"). Una riga sola.
@@ -665,6 +671,21 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
     }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
     return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }
 }
+
+/**
+ * L'archivio di Per dopo (Antonio, 2026-11-12): le cose da fare spuntate, dalla più recente. Nella card restano solo
+ * quelle da fare; queste si vedono toccando la card.
+ */
+internal fun archivedItems(tasks: List<TaskItem>): List<LooseItem> = tasks
+    .filter { it.tickable && it.done }
+    .sortedByDescending { it.doneAt ?: it.createdAt }
+    .map { t ->
+        val row = DueRow("task-${t.id}", null, Long.MAX_VALUE, task = t)
+        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row)
+    }
+
+/** La card mostra solo le cose ancora da fare: le spuntate stanno nell'archivio. */
+internal fun List<LooseItem>.pending(): List<LooseItem> = filterNot { it.done }
 
 /** Il numero a destra del titolo della card "Per dopo". */
 internal fun looseCount(count: Int): String = count.toString()
