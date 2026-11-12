@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.484.0
+**Card Calendario: niente più scorrimento dei giorni**
+- Tolto il "tieni premuto e trascina" sulla card Calendario: la card mostra di nuovo oggi e domani
+- Tenendo premuta la card, anche sopra una riga, si apre il calendario intero
+- Restano le azioni nel menu "Altro" delle schede e la riga "Da fare" dentro OGGI
+
 ## 1.483.0
 **Ogni cosa salvata al suo posto**
 - Video, brani, radio e podcast salvati non stanno più nel calendario: li trovi in Media, nella fila "Più tardi" subito dopo Continua
