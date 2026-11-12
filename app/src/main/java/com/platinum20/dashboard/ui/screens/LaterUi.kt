@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
