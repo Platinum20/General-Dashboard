@@ -4,6 +4,7 @@
 **Media: Scopri al bordo destro, Cronologia solo video**
 - Il tastino Scopri sta sulla stessa riga del titolo, tutto a destra, in Musica e in Video
 - La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
+- Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre toccando il titolo "Video"
 
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**
