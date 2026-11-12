@@ -15,6 +15,7 @@ import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.looseItems
 import com.platinum20.dashboard.ui.screens.looseCount
 import com.platinum20.dashboard.ui.screens.archivedItems
+import com.platinum20.dashboard.ui.screens.calendarMonthCount
 import com.platinum20.dashboard.ui.screens.pending
 import com.platinum20.dashboard.ui.screens.LooseItem
 import com.platinum20.dashboard.ui.screens.withoutLoose
@@ -90,5 +91,17 @@ class LooseItemsTest {
         assertEquals(listOf("task-3", "task-2"), archivedItems(tasks).map { it.key })
         val card = listOf(LooseItem("a", LooseKind.TODO, "A"), LooseItem("b", LooseKind.TODO, "B", done = true))
         assertEquals(listOf("a"), card.pending().map { it.key })
+    }
+
+    @Test fun ilNumeroDelCalendarioContaFinoAFineMese() {
+        val rows = listOf(
+            DueRow("today", today, Long.MIN_VALUE, today = true),
+            DueRow("a", today, 1L),
+            DueRow("b", today.plusDays(1), 2L),
+            DueRow("c", today.withDayOfMonth(30), 3L),
+            DueRow("d", today.plusMonths(1), 4L),
+            DueRow("e", today.minusDays(1), 5L),
+        )
+        assertEquals(3, calendarMonthCount(rows, today))
     }
 }

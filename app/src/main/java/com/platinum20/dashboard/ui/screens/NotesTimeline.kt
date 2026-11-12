@@ -606,6 +606,12 @@ internal fun calendarCardCut(days: List<LocalDate?>, today: LocalDate): Pair<Int
     return shown to more
 }
 
+/** Il numero a destra del titolo della card Calendario: le cose da oggi a fine mese (non la riga OGGI). */
+internal fun calendarMonthCount(rows: List<DueRow>, today: LocalDate): Int {
+    val month = java.time.YearMonth.from(today)
+    return rows.count { r -> !r.today && r.day != null && !r.day.isBefore(today) && java.time.YearMonth.from(r.day) == month }
+}
+
 /**
  * La riga sotto una nota con foto (1.482): "Foto", e se nel testo c'è altro oltre al titolo il suo inizio
  * ("Foto · scade a marzo 2028"). Una riga sola.
