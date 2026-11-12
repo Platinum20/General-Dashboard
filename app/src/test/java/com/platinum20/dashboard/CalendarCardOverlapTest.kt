@@ -133,6 +133,7 @@ class CalendarCardOverlapTest {
         full = false
         compose.mainClock.advanceTimeBy(1_000)
         check("dinuovo")
+        compose.mainClock.autoAdvance = false
         // Calendario aperto e chiuso; mentre torna arrivano i dati e la card cresce.
         page = true
         compose.mainClock.advanceTimeBy(1_000)
