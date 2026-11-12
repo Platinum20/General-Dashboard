@@ -91,6 +91,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -313,7 +316,8 @@ internal fun rememberPerTe(): Pair<List<PerTe>, List<Podcast>> {
         val podcastAt = history.filter { it.kind == ResumeKind.PODCAST && it.feed.isNotBlank() }
             .groupBy { it.feed }.mapValues { (_, l) -> l.maxOf { it.at } }
         val all = mixesOf(home, library, today, made).map { PerTe.Mix(it) } +
-            (playlists.data.orEmpty() + library?.albums.orEmpty()).distinctBy { it.uri }.map { PerTe.Item(it) } +
+            // Solo raccolte, mai singoli brani (1.496, Antonio: "mix album playlist ecc, niente ultimi brani ascoltati").
+            (playlists.data.orEmpty() + library?.albums.orEmpty()).filter { it.kind != SpKind.TRACK }.distinctBy { it.uri }.map { PerTe.Item(it) } +
             podcasts.map { PerTe.Show(it) } +
             artists.map { PerTe.Artist(it.artist, it.at.toEpochMilli()) } +
             // I brani che ti piacciono sono una tessera come una playlist (1.488, Antonio: "dentro Musica").
@@ -492,27 +496,54 @@ internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** Un mix: la foto dell'artista con la scritta Mix sopra, la durata di tutti i brani in basso a destra. */
+/**
+ * Un mix con una copertina sua (1.497, Antonio: "migliora le copertine dei mix"): un mosaico delle copertine dei brani,
+ * sfumato nel colore del mix, e il nome grande in basso. Ogni mix ha il suo colore, sempre lo stesso.
+ */
 @Composable
 private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
+    val art = remember(mix.id, mix.tracks) { MixArt.images(mix) }
+    val color = Color(MixArt.color(mix))
     MediaTile(
-        tile, wide = false, image = mix.image, title = mix.title, author = mix.subtitle, date = null,
-        mark = MediaMark(MediaType.MUSIC),
+        tile, wide = false, image = if (art.size < 4) art.firstOrNull() ?: mix.image else "", title = mix.title, author = mix.subtitle, date = null,
+        mark = null,
         click = Modifier.tapOrSave({ SavedLinks.mix(mix.id, mix.title, mix.subtitle, mix.image) }, onClick),
     ) {
-        Text(
-            mix.badge,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(8.dp)
-                .clip(MaterialTheme.shapes.small)
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .padding(horizontal = 8.dp, vertical = 2.dp),
+        if (art.size >= 4) CoverMosaic(art, Modifier.matchParentSize())
+        Box(
+            Modifier.matchParentSize().background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    0f to color.copy(alpha = 0.15f), 0.45f to color.copy(alpha = 0.55f), 1f to color.copy(alpha = 0.95f),
+                ),
+            ),
         )
+        Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
+            Text(
+                mix.badge.uppercase(),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp),
+                color = Color.White.copy(alpha = 0.85f), maxLines = 1,
+            )
+            Text(
+                MixArt.name(mix),
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold, lineHeight = 22.sp),
+                color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
+}
+
+/** La copertina dei mix, pura per i test: quali immagini, che colore, che nome scritto sopra. */
+internal object MixArt {
+    /** Colori scuri, così la scritta bianca si legge sempre. */
+    val PALETTE = longArrayOf(0xFF6E3A8E, 0xFF1F6F62, 0xFF9C3F32, 0xFF2D4F8F, 0xFF7A5F1A, 0xFF93305F, 0xFF3D5A2A, 0xFF5A3A2A)
+
+    fun images(mix: SpMix): List<String> = mix.tracks.map { it.image }.filter { it.isNotBlank() }.distinct().take(4)
+
+    /** Lo stesso mix ha sempre lo stesso colore: dal tipo (badge) e dal nome. */
+    fun color(mix: SpMix): Long = PALETTE[Math.floorMod((mix.badge + "|" + mix.title).hashCode(), PALETTE.size)]
+
+    /** Sulla copertina il nome senza ripetere l'etichetta: "Daily Mix 2" resta, "Mix di Daft Punk" diventa "Daft Punk". */
+    fun name(mix: SpMix): String = mix.title.removePrefix("Mix di ").removePrefix("Radio di ").ifBlank { mix.title }
 }
 
 /** I mix di oggi (gli stessi in Per te e nella pagina del mix): dai tuoi artisti e brani preferiti. */
