@@ -666,5 +666,20 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
     return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }
 }
 
+/**
+ * L'archivio di Per dopo (Antonio, 2026-11-12): le cose da fare spuntate, dalla più recente. Nella card restano solo
+ * quelle da fare; queste si vedono toccando la card.
+ */
+internal fun archivedItems(tasks: List<TaskItem>): List<LooseItem> = tasks
+    .filter { it.tickable && it.done }
+    .sortedByDescending { it.doneAt ?: it.createdAt }
+    .map { t ->
+        val row = DueRow("task-${t.id}", null, Long.MAX_VALUE, task = t)
+        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row)
+    }
+
+/** La card mostra solo le cose ancora da fare: le spuntate stanno nell'archivio. */
+internal fun List<LooseItem>.pending(): List<LooseItem> = filterNot { it.done }
+
 /** Il numero a destra del titolo della card "Per dopo". */
 internal fun looseCount(count: Int): String = count.toString()

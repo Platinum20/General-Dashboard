@@ -14,6 +14,9 @@ import com.platinum20.dashboard.ui.screens.LooseKind
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.looseItems
 import com.platinum20.dashboard.ui.screens.looseCount
+import com.platinum20.dashboard.ui.screens.archivedItems
+import com.platinum20.dashboard.ui.screens.pending
+import com.platinum20.dashboard.ui.screens.LooseItem
 import com.platinum20.dashboard.ui.screens.withoutLoose
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -74,5 +77,18 @@ class LooseItemsTest {
         // Ogni riga ha al massimo una riga sotto.
         assertTrue(items.all { it.line == null || '\n' !in it.line!! })
         assertEquals("5", looseCount(items.size))
+    }
+
+    @Test fun leCoseFatteVannoInArchivio() {
+        val tasks = listOf(
+            TaskItem(1, "Latte", createdAt = 1),
+            TaskItem(2, "Chiamare Luca", createdAt = 2, done = true, doneAt = 100),
+            TaskItem(3, "Banca", createdAt = 3, done = true, doneAt = 200),
+            TaskItem(4, "Dentista", createdAt = 4, dueAt = 5L, done = true, doneAt = 300),
+        )
+        // Solo le cose senza data spuntate, dalla più recente; quelle con data passano da sole.
+        assertEquals(listOf("task-3", "task-2"), archivedItems(tasks).map { it.key })
+        val card = listOf(LooseItem("a", LooseKind.TODO, "A"), LooseItem("b", LooseKind.TODO, "B", done = true))
+        assertEquals(listOf("a"), card.pending().map { it.key })
     }
 }

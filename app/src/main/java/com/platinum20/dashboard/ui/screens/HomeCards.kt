@@ -181,8 +181,8 @@ internal fun CalendarCard(
         if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
     val monthName = today.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ITALIAN)
     TimelineCard(
-        // Senza titolo né mese: si apre direttamente su OGGI, una riga in meno (Antonio, 2026-11-10).
-        null,
+        // Il nome in cima come le altre card (Antonio, 2026-11-12: prima era senza titolo), poi OGGI.
+        "Calendario",
         withExtras(shown.map { it.first }, extras.map { it.first }),
         onOpenAll,
         empty = "Niente in programma.",

@@ -388,6 +388,8 @@ object Routes {
     const val WEATHER_PLACE = "home/weather/place"
     const val CUSTOMIZE = "home/customize"
     const val SIM = "home/sim"
+    /** L'archivio di Per dopo (1.493): le cose fatte, si apre toccando la card. */
+    const val LATER_ARCHIVE = "home/later/archive"
     /** Un documento fotografato con la graffetta (dalla card Documenti della Home). */
     const val DOCUMENT = "home/document/{id}"
     fun document(id: Long) = "home/document/$id"
@@ -1558,6 +1560,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPickPlace = { navController.navigate(Routes.WEATHER_PLACE) },
                 )
                 }
+            }
+            composable(Routes.LATER_ARCHIVE) {
+                com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SIM) {
                 CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {

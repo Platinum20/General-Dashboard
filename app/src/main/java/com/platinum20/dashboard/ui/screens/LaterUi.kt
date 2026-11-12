@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
@@ -66,15 +68,18 @@ internal object LaterText {
  * Ogni riga ha a sinistra la spunta (cose da fare) o l'immagine, il nome e al massimo una riga sotto.
  */
 @Composable
-internal fun LaterCard(items: List<LooseItem>) {
-    if (items.isEmpty()) return
+internal fun LaterCard(items: List<LooseItem>, onOpenArchive: () -> Unit) {
     val open = rememberDueOpen()
     val haptic = rememberHaptic()
-    CanvasCard(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE)) {
+    // Solo le cose ancora da fare (Antonio, 2026-11-12); toccando la card, fuori dalle righe, si apre l'archivio.
+    CanvasCard(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE), onClick = onOpenArchive) {
         CardTitle("Per dopo", trailing = {
-            Text(looseCount(items.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
+            if (items.isNotEmpty()) Text(looseCount(items.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+            if (items.isEmpty()) {
+                Text("Tutto fatto.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            }
             items.forEach { item ->
                 val onClick = {
                     haptic(Haptic.TICK)
@@ -140,6 +145,41 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
 private fun looseIcon(item: LooseItem) = when (item.kind) {
     LooseKind.PARCEL -> Icons.Outlined.Inventory2
     else -> Icons.AutoMirrored.Outlined.StickyNote2
+}
+
+/**
+ * L'archivio di Per dopo: le cose fatte, dalla più recente. Toccando il cerchio pieno tornano da fare (e quindi
+ * nella card); toccando la riga si apre la sua scheda.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun LaterArchiveScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    NotesStore.init(context)
+    val data by NotesStore.data.collectAsState()
+    val items = remember(data.tasks) { archivedItems(data.tasks) }
+    val open = rememberDueOpen()
+    val haptic = rememberHaptic()
+    val bar = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
+    androidx.compose.material3.Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Archivio", subtitle = if (items.isEmpty()) "Per dopo" else "Per dopo · ${items.size} fatte", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner)) {
+            if (items.isEmpty()) item {
+                Text("Qui finiscono le cose che spunti.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+            }
+            items(items.size, key = { items[it].key }) { i ->
+                val item = items[i]
+                LooseRow(
+                    item,
+                    onClick = { haptic(Haptic.TICK); item.row?.let(open) },
+                    onLongClick = { haptic(Haptic.TICK); item.row?.let(open) },
+                    onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
+                )
+            }
+        }
+    }
 }
 
 /** Tenendo premuta una cosa salvata (Media, News): il fumetto "Togli dai salvati". */
