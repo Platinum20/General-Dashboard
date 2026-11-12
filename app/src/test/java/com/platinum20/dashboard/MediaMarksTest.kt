@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** 1.482 (Antonio): su ogni copertina il simbolo del tipo in alto a sinistra e la durata in basso a destra. */
+/** 1.484 (Antonio): su ogni copertina il simbolo del tipo in alto a sinistra e la durata in basso a destra. */
 class MediaMarksTest {
     private fun sp(kind: SpKind, ms: Long = 0) = SpItem("x", "spotify:x", kind, "T", "S", "", durationMs = ms)
 
@@ -34,7 +34,7 @@ class MediaMarksTest {
     }
 }
 
-/** 1.482 (Antonio): Mi piace, Cronologia e Playlist mostrano Spotify e YouTube insieme. */
+/** 1.484 (Antonio): Mi piace, Cronologia e Playlist mostrano Spotify e YouTube insieme. */
 class MediaMergeTest {
     @Test fun aTurnoPoiIlResto() {
         assertEquals(listOf("s1", "y1", "s2", "y2", "s3"), com.platinum20.dashboard.media.MediaMerge.alternate(listOf("s1", "s2", "s3"), listOf("y1", "y2")))

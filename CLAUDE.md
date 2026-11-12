@@ -42,6 +42,7 @@ create something it lists, so the next thread doesn't have to explore.
 - `ui/screens/LiquidGlass.kt` (API 33+ glass), Haze below. Glass only on overlays outside NavHost.
 - `ui/screens/SearchField.kt` `CanvasSearchField` = the only search field (Cerca, Località): filled pill, no border, built-in animated clear X (1.452); search results have no RowDivider. `search/SearchRecents.kt` = last 5 queries under Cerca's empty field (+ "Prova" shortcuts in SearchScreen).
 - `ui/screens/PullToSearch.kt` (pull down = "Cerca ovunque"; also on Media subpages, prefiltered via `SearchFilter.forRoute` + `Routes.search(filter)`), `SearchScreen.kt` + `search/EverywhereSearch.kt`. Media subpages have no search fields or header buttons.
+- `ui/screens/LaterUi.kt` (1.483, Antonio scelta B "ognuno al suo posto"): saved things stay notes in NotesStore but are NOT in the calendar (`dueDays` drops `SavedLinks.livesElsewhere`): media (`SavedLinks.later`, incl. pasted YouTube links `pastedYoutube`) = `LaterShelf` "Più tardi" in Media after Continua; articles (`SavedLinks.toRead`) = `ToReadBlock` "Da leggere" at the top of News (fixed list index 1; opening one removes it with undo). Calendar keeps notes + photo notes (36 dp square thumb, `photoLine`). Save bubble wording `SavedLinks.saveLabel`; dot flies to `CaptureTargets.NEWS_TAB`/`MEDIA_TAB`.
 - `ui/screens/SwipeAway.kt`: "drag sideways to close" (rule + `Modifier.swipeAway` + X), shared by mini player and save bubble.
 - `ui/screens/Pickers.kt` (date/time/task edit dialogs), `SaveToNotesLayer.kt`/`SaveOnLongPress.kt`
   (long-press bubble: "Salva nelle note", "Aggiungi alla coda"; also holds the shared `BottomBubble`
@@ -114,14 +115,14 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   `refreshReleases` pass, cache `FeedCache.spArtists`) by latest post, blue ring = after `VideoVisit` (now entered/left by Media);
   tap = `Routes.youtubeChannel` / `Routes.spotifyItem`), hero/queue, `PerTeRow` (MusicScreen.kt: mixes FIRST, then releases), Continua,
   "Novità" (`MediaFeed.build`: subscription videos + podcast episodes newest first, ULTIMA VISITA marker, older faded with a recommended
-  video every 3, capped so the bottom is reachable; no Shorts), `RadioRow`, then fixed `ListRow`s (merged in 1.482, see below)
+  video every 3, capped so the bottom is reachable; no Shorts), `RadioRow`, then fixed `ListRow`s (merged in 1.484, see below)
   + I tuoi podcast (`Routes.PODCAST` = `PodcastsScreen`). Spotify artist/album/playlist = route `Routes.SPOTIFY_ITEM` → `SpotifyItemScreen`; artists open
   `ArtistScreen` (SpotifyArtistScreen.kt, "come Spotify": photo header, Popolari = artist search tracks since top-tracks is closed to
   personal apps (`SpotifyArtist.popular`), Discografia Album/Singoli e EP, Appare in; data `SpotifyApi.artistPage` → `SpotifyStore.loadArtist`).
   Search opens artists/albums/playlists in their page. Channel page `YouTubeChannelScreen` = like YouTube (banner, avatar, iscritti,
   description, Iscriviti via `YtRatings.toggleSubscribe`, tabs from `YtResolver.channelInfo` → `YouTubeStore.channelInfo`; Video = paged
   `channelVideos`, Shorts grid/Live/Playlist = `loadChannelTab`); tapping the channel row of any `VideoCard` opens it (LocalInAppNav).
-  1.482 (Antonio): `ui/screens/MediaMarks.kt` = type symbol top-left + duration bottom-right on EVERY media cover (`MediaMarkOverlay`,
+  1.484 (Antonio): `ui/screens/MediaMarks.kt` = type symbol top-left + duration bottom-right on EVERY media cover (`MediaMarkOverlay`,
   `Cover(mark=)`, VideoCard/VideoRow/VideoTile, Continua, queue, Novità; radio = LIVE). Stories = most recently WATCHED channels
   (`YtWatched.channelId`, name fallback) + LISTENED artists (`SpotifyStore.listened` from recently-played, photos via `artistPhoto`),
   then followed; missing channel photos from `YouTubeStore.channelInfo`; `MediaStories.imageUrl` fixes "//" URLs. Novità = ONE

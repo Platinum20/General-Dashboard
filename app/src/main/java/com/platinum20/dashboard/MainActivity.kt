@@ -911,6 +911,7 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
     val targetKey = when (dest.route) {
         Routes.HOME -> CaptureTargets.HOME_TAB
         Routes.MEDIA -> CaptureTargets.MEDIA_TAB
+        Routes.NEWS -> CaptureTargets.NEWS_TAB
         else -> null
     }
     val bump = remember { Animatable(1f) }
@@ -1409,14 +1410,14 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // Mi piace (1.482): brani di Spotify e video di YouTube insieme.
+            // Mi piace (1.484): brani di Spotify e video di YouTube insieme.
             composable(Routes.YOUTUBE_LIKED) {
                 com.platinum20.dashboard.ui.screens.MediaLikedScreen(
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // Playlist (1.482): quelle di Spotify e di YouTube e gli album salvati.
+            // Playlist (1.484): quelle di Spotify e di YouTube e gli album salvati.
             composable(Routes.SPOTIFY_FEED) {
                 com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
                     onBack = { navController.popBackStack() },

@@ -300,7 +300,9 @@ fun MediaScreen(
                     }
                 }
             }
-            // Novità (1.482, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
+            // Più tardi (1.483): quello che hai salvato da guardare o ascoltare, prima stava nel calendario.
+            item(key = "later") { LaterShelf(onOpenRoute) }
+            // Novità (1.484, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
             // poi il segno ULTIMA VISITA e il resto con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
                 item(key = "feed-h") { SectionHeader(MediaShelves.title("Novità", feed.fresh.size), Modifier.padding(horizontal = 16.dp)) }
@@ -310,7 +312,7 @@ fun MediaScreen(
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Spotify e YouTube nelle stesse voci (1.482, Antonio): Mi piace, Cronologia, Playlist mostrano tutti e due.
+                    // Spotify e YouTube nelle stesse voci (1.484, Antonio): Mi piace, Cronologia, Playlist mostrano tutti e due.
                     if (spotifyOn || youTubeOn) {
                         val songs = library.data?.liked?.size ?: 0
                         ListRow(
@@ -630,7 +632,7 @@ internal fun openResumeItem(
     openRoute(com.platinum20.dashboard.media.MediaLauncher.start(context, item, autoplay))
 }
 
-private fun ResumeItem.icon(): ImageVector = when (kind) {
+internal fun ResumeItem.icon(): ImageVector = when (kind) {
     ResumeKind.VIDEO -> Icons.Outlined.PlayCircle
     ResumeKind.YOUTUBE -> Icons.Outlined.OndemandVideo
     ResumeKind.MUSIC -> Icons.Outlined.MusicNote
@@ -639,7 +641,7 @@ private fun ResumeItem.icon(): ImageVector = when (kind) {
     ResumeKind.PODCAST -> Icons.Outlined.Mic
 }
 
-private fun ResumeItem.accent(): TileAccent = when (kind) {
+internal fun ResumeItem.accent(): TileAccent = when (kind) {
     ResumeKind.VIDEO -> TileAccent.BLUE
     ResumeKind.YOUTUBE -> TileAccent.ORANGE
     ResumeKind.MUSIC, ResumeKind.SPOTIFY -> TileAccent.GREEN

@@ -17,7 +17,7 @@ data class YtWatched(
     val positionMs: Long,
     val durationMs: Long,
     val watchedAt: Long,
-    /** Il canale, per le storie in cima a Media (1.482: chi hai guardato per ultimo); vuoto nei vecchi salvataggi. */
+    /** Il canale, per le storie in cima a Media (1.484: chi hai guardato per ultimo); vuoto nei vecchi salvataggi. */
     val channelId: String = "",
 ) {
     /** Quanto ne hai visto, da 0 a 1. */

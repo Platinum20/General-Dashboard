@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.482.0
+## 1.484.0
 **Media come una sezione sola**
 - Su ogni copertina, in alto a sinistra, un simbolo dice cos'è: musica, video, podcast o radio; in basso a destra la durata (LIVE per le radio)
 - Le storie in cima sono chi hai guardato e ascoltato per ultimo, canali YouTube e artisti Spotify insieme; poi quelli che segui
@@ -8,6 +8,15 @@
 - Novità scorre di lato, non più in giù: prima le nuove, poi il segno Ultima visita e il resto
 - Le anteprime sotto Ultima visita non sono più sbiadite (sul tema scuro sembravano spente)
 - In fondo a Media tre voci per Spotify e YouTube insieme: Mi piace (brani e video, con Riproduci tutto), Cronologia (video e brani dal più recente), Playlist (di tutti e due, più gli album salvati)
+
+## 1.483.0
+**Ogni cosa salvata al suo posto**
+- Video, brani, radio e podcast salvati non stanno più nel calendario: li trovi in Media, nella fila "Più tardi" subito dopo Continua
+- Anche un link di YouTube incollato col + diventa un video in Più tardi
+- Gli articoli salvati stanno in cima a News, in "Da leggere"; quando ne apri uno esce dalla lista (con Annulla)
+- Nel calendario restano solo le note e le foto, con la foto più grande e la riga "Foto" sotto
+- Tieni premuto su una cosa in Più tardi o Da leggere per toglierla
+- Il tasto dice "Leggi dopo" o "Salva per più tardi", e il pallino vola a News o a Media
 
 ## 1.481.0
 **Media è un feed unico**

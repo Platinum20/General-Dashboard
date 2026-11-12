@@ -542,7 +542,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
 }
 
 /**
- * Un video in una fila orizzontale (1.482, Antonio: le liste lunghe scorrono di lato): l'anteprima con simbolo e durata,
+ * Un video in una fila orizzontale (1.484, Antonio: le liste lunghe scorrono di lato): l'anteprima con simbolo e durata,
  * sotto il titolo su due righe e il canale con quando è uscito.
  */
 @Composable
@@ -658,7 +658,7 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
     val watched = local.values.sortedByDescending { it.watchedAt }
     val ids = watched.map { it.id }.toSet()
     val fromYouTube = web.data.orEmpty().filter { it.id !in ids }
-    // Anche i brani di Spotify (1.482, Antonio: una Cronologia sola): insieme ai video, dal più recente.
+    // Anche i brani di Spotify (1.484, Antonio: una Cronologia sola): insieme ai video, dal più recente.
     val played by com.platinum20.dashboard.media.spotify.SpotifyStore.played.collectAsState()
     LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.SpotifyStore.refreshListened() }
     val recent: List<Pair<Any, Long>> = (watched.map { it to it.watchedAt } + played.map { (track, at) -> track to at.toEpochMilli() })

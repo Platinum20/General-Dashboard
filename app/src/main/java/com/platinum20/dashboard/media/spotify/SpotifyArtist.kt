@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
-/** Un artista che hai ascoltato e quando l'ultima volta (storie in cima a Media, 1.482: il più recente per primo). */
+/** Un artista che hai ascoltato e quando l'ultima volta (storie in cima a Media, 1.484: il più recente per primo). */
 data class SpListened(val artist: SpItem, val at: java.time.Instant)
 
 /** Un artista che segui con la data della sua ultima uscita (per le storie in cima a Media). */
@@ -92,7 +92,7 @@ object SpotifyArtist {
             SpotifyApi.parseItem(first)?.let { SpListened(it, at) }
         }.groupBy { it.artist.id }.map { (_, l) -> l.maxBy { it.at } }.sortedByDescending { it.at }
 
-    /** I brani di `me/player/recently-played` con l'ora dell'ascolto, dal più recente (Cronologia di Media, 1.482). */
+    /** I brani di `me/player/recently-played` con l'ora dell'ascolto, dal più recente (Cronologia di Media, 1.484). */
     fun played(json: JSONObject?): List<Pair<SpItem, java.time.Instant>> =
         json?.optJSONArray("items").objects().mapNotNull { item ->
             val at = runCatching { java.time.Instant.parse(item.optString("played_at")) }.getOrNull() ?: return@mapNotNull null

@@ -28,7 +28,7 @@ data class MediaStory(
 }
 
 /**
- * Le storie (1.482, Antonio: "chi ho guardato per ultimo", "quello che ho ascoltato più di recente come primo"):
+ * Le storie (1.484, Antonio: "chi ho guardato per ultimo", "quello che ho ascoltato più di recente come primo"):
  * i canali dei video che hai visto e gli artisti che hai ascoltato, dal più recente. Dopo, se c'è posto, i canali e gli
  * artisti che segui, da chi ha pubblicato per ultimo. L'anello blu resta "ha pubblicato dopo l'ultima visita"; un
  * artista ha solo il giorno dell'uscita e conta come mezzanotte.
@@ -106,7 +106,7 @@ object MediaStories {
         }
     }
 
-    /** Sotto un episodio nel feed: "Il Post · 3 h fa" (la durata è sulla copertina, 1.482). */
+    /** Sotto un episodio nel feed: "Il Post · 3 h fa" (la durata è sulla copertina, 1.484). */
     fun episodeLine(episode: Episode, now: Long): String {
         val ago = episode.publishedAt.takeIf { it > 0 }?.let { at ->
             val hours = (now - at) / 3_600_000L
@@ -181,7 +181,7 @@ object MediaFeed {
     }
 }
 
-/** Spotify e YouTube nella stessa lista (1.482, Antonio: "un unico menu che mostra entrambe le cose"). */
+/** Spotify e YouTube nella stessa lista (1.484, Antonio: "un unico menu che mostra entrambe le cose"). */
 object MediaMerge {
     /**
      * Due liste già dalla più recente, senza date da confrontare (i Mi piace): una voce per parte, a turno, finché una
