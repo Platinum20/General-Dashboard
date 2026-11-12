@@ -1,9 +1,11 @@
 # Changelog
 
-## 1.490.0
-**Sottotitoli da soli col volume a zero**
-- Se abbassi il volume del telefono a zero mentre guardi un video di YouTube, i sottotitoli si accendono da soli (prima quelli del video, l'italiano se c'è)
-- Quando alzi di nuovo il volume si spengono; se li avevi scelti tu restano come li hai lasciati
+## 1.491.0
+**Creators Pro resta collegato**
+- I turni non chiedono più di rientrare dopo un riavvio del telefono o dell'app: Canvas tiene da parte la sessione di Creators Pro e la rimette ogni volta
+- Un rifiuto passeggero del sito non conta più come accesso scaduto: lo si dice solo se il sito chiede davvero di rientrare
+- Anche col telefono fermo Canvas rilegge i turni ogni mezz'ora, così la sessione resta in uso e non scade di notte
+- Se l'accesso risulta scaduto, Canvas riprova da solo ogni ora e torna collegato appena il sito lo riprende
 
 ## 1.489.0
 **Card Calendario: niente più card sopra**

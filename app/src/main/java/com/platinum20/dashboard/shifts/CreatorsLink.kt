@@ -12,6 +12,7 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
+import com.platinum20.dashboard.net.WebSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -83,7 +84,7 @@ object CreatorsLink {
             window.WebSocket = Hooked;
           }
         })();
-    """.trimIndent()
+    """.trimIndent() + "\n" + WebSession.snapshotScript("CanvasShift")
 
     /**
      * La pagina mostra una creator alla volta, i turni di Antonio sono su tutte: con la sessione della
@@ -156,6 +157,9 @@ object CreatorsLink {
 
         @JavascriptInterface
         fun text(text: String) = ShiftStore.pageText(text)
+
+        @JavascriptInterface
+        fun storage(origin: String, json: String) = CreatorsSession.offer(origin, json)
     }
 
     /**
@@ -204,10 +208,17 @@ object CreatorsLink {
         view.settings.domStorageEnabled = true
         view.settings.userAgentString = browserUserAgent(WebSettings.getDefaultUserAgent(context))
         CookieManager.getInstance().setAcceptCookie(true)
+        // Come WindTre: cookie di sessione e sessionStorage dell'ultima lettura buona tornano al loro posto.
+        if (ShiftStore.linked.value) CreatorsSession.restore(context)
+        val keep = if (ShiftStore.linked.value) CreatorsSession.storageScript(context) else null
         CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
         view.addJavascriptInterface(Bridge, "CanvasShift")
         val early = WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
-        if (early) WebViewCompat.addDocumentStartJavaScript(view, script, setOf("https://*.creatorspro.com", "https://creatorspro.com"))
+        val sites = setOf("https://*.creatorspro.com", "https://creatorspro.com")
+        if (early) {
+            keep?.let { WebViewCompat.addDocumentStartJavaScript(view, it, sites) }
+            WebViewCompat.addDocumentStartJavaScript(view, script, sites)
+        }
         view.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: android.webkit.WebResourceRequest): android.webkit.WebResourceResponse? {
                 ShiftStore.seen(request.url.toString())
@@ -215,7 +226,7 @@ object CreatorsLink {
             }
 
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
-                if (!early) view.evaluateJavascript(script, null)
+                if (!early) { keep?.let { view.evaluateJavascript(it, null) }; view.evaluateJavascript(script, null) }
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -242,12 +253,20 @@ object CreatorsLink {
 
     fun isLoginPage(url: String?) = url != null && Regex("(?i)/(login|signin|sign-in|auth|register)").containsMatchIn(url)
 
+    /**
+     * Scaduto solo se la rilettura non ha portato niente E il sito l'ha detto (pagina d'accesso o un
+     * 401 durante questa rilettura). Un 401 da solo non basta: spesso è il token breve che la pagina
+     * rinnova da sola un attimo dopo, e prima si dichiarava scaduto un accesso ancora buono.
+     */
+    internal fun isExpired(gotData: Boolean, onLogin: Boolean, refused: Boolean) = !gotData && (onLogin || refused)
+
     /** Rilettura nascosta: riapre la timeline con la sessione già fatta. False se non è arrivato niente. */
     suspend fun refresh(context: Context): Boolean {
         ShiftStore.init(context)
         if (!ShiftStore.linked.value || ShiftStore.refreshing.value) return false
         ShiftStore.setRefreshing(true)
         val before = ShiftStore.readAt.value
+        val asked = System.currentTimeMillis()
         try {
             withContext(Dispatchers.Main) {
                 val view = WebView(context.applicationContext)
@@ -259,13 +278,15 @@ object CreatorsLink {
                     // La pagina ha letto la sua creator: ora tutte le altre, con la stessa sessione.
                     if (ShiftStore.readAt.value != before) {
                         delay(1_500)
-                        val asked = System.currentTimeMillis()
+                        val pulledAt = System.currentTimeMillis()
                         pull(view)
-                        while (pullEndedAt < asked) delay(400)
+                        while (pullEndedAt < pulledAt) delay(400)
                         delay(1_500)
                     }
                 }
-                if (ShiftStore.readAt.value == before && isLoginPage(lastUrl ?: view.url)) ShiftStore.setExpired(true)
+                val got = ShiftStore.readAt.value != before
+                if (isExpired(got, isLoginPage(lastUrl ?: view.url), ShiftStore.refusedAt >= asked)) ShiftStore.setExpired(true)
+                if (got) CreatorsSession.save(context)
                 CookieManager.getInstance().flush()
                 view.stopLoading()
                 view.destroy()
@@ -276,7 +297,7 @@ object CreatorsLink {
         return ShiftStore.readAt.value > before
     }
 
-    fun forget() {
+    fun forget(context: Context) {
         val cookies = CookieManager.getInstance()
         listOf("https://creatorspro.com", "https://app.creatorspro.com", "https://www.creatorspro.com").forEach { url ->
             cookies.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }?.forEach { name ->
@@ -289,6 +310,7 @@ object CreatorsLink {
             android.webkit.WebStorage.getInstance().deleteOrigin("https://creatorspro.com")
             android.webkit.WebStorage.getInstance().deleteOrigin("https://app.creatorspro.com")
         }
+        CreatorsSession.clear(context)
         ShiftStore.unlink()
     }
 }
