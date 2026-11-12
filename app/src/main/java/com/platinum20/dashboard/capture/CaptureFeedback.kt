@@ -82,6 +82,7 @@ internal object CaptureTargets {
     const val NOTES_TAB = "tab:notes"
     const val HOME_TAB = "tab:home"
     const val MEDIA_TAB = "tab:media"
+    const val NEWS_TAB = "tab:news"
 
     fun arrived(key: String) {
         arrivals[key] = (arrivals[key] ?: 0) + 1
