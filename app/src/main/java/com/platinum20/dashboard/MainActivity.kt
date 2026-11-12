@@ -298,6 +298,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Un solo caricatore di immagini che sa anche fare i fotogrammi dei video del telefono (1.493).
+        coil3.SingletonImageLoader.setSafe { ctx ->
+            coil3.ImageLoader.Builder(ctx).components { add(coil3.video.VideoFrameDecoder.Factory()) }.build()
+        }
         AppSettings.init(this)
         WebFetcher.init(this)
         DiskCache.init(this)

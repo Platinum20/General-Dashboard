@@ -172,3 +172,11 @@ object Resume {
         return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
     }
 }
+
+/**
+ * La copertina da mostrare (1.493, Antonio: i video del telefono erano un quadrato grigio): per un video del telefono
+ * senza immagine è il file stesso, e Coil ne tira fuori un fotogramma (VideoFrameDecoder, registrato in MainActivity).
+ * I video da link restano senza: per un fotogramma bisognerebbe scaricarli.
+ */
+fun ResumeItem.coverImage(): String =
+    image.ifBlank { if (kind == ResumeKind.VIDEO && (key.startsWith("content://") || key.startsWith("file://"))) key else "" }
