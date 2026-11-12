@@ -38,7 +38,7 @@ fun ListenScreen(onBack: () -> Unit) {
             TopLevelBar(
                 title = "Radio",
                 scrollBehavior = barScroll,
-                subtitle = "Le tue e le più ascoltate in Italia",
+                subtitle = "Le tue e le più ascoltate",
                 onBack = onBack,
             )
         },
