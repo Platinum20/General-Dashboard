@@ -188,9 +188,33 @@ object YouTubeApi {
      * La descrizione come l'ha scritta l'autore: l'API ufficiale dà in `snippet.description` sempre la
      * lingua originale (le traduzioni stanno a parte in `localized`). 1 unità di quota. Null se non c'è.
      */
-    suspend fun originalDescription(token: String, id: String): String? {
+    suspend fun originalDescription(token: String, id: String): String? = original(token, id)?.second
+
+    /** Titolo e descrizione nella lingua del video: `snippet` (non `localized`) non è mai tradotto. */
+    suspend fun original(token: String, id: String): Pair<String?, String?>? {
         val item = get(token, "videos", mapOf("part" to "snippet", "id" to id)).optJSONArray("items")?.optJSONObject(0)
-        return item?.optJSONObject("snippet")?.optString("description")?.trim()?.takeIf { it.isNotBlank() }
+        val snippet = item?.optJSONObject("snippet") ?: return null
+        val text = { key: String -> snippet.optString(key).trim().takeIf { it.isNotBlank() } }
+        return text("title") to text("description")
+    }
+
+    /**
+     * Il titolo originale senza account: l'oEmbed pubblico, chiesto senza lingua, non passa per la
+     * traduzione automatica dei titoli di YouTube.
+     */
+    suspend fun oembedTitle(id: String): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val url = java.net.URL("https://www.youtube.com/oembed?format=json&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D$id")
+            val c = url.openConnection() as java.net.HttpURLConnection
+            c.connectTimeout = 8_000
+            c.readTimeout = 8_000
+            try {
+                if (c.responseCode != 200) return@runCatching null
+                org.json.JSONObject(c.inputStream.bufferedReader().readText()).optString("title").trim().takeIf { it.isNotBlank() }
+            } finally {
+                c.disconnect()
+            }
+        }.getOrNull()
     }
 
     /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
