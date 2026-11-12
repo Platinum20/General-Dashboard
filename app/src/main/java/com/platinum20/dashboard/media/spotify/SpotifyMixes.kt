@@ -10,6 +10,8 @@ data class SpMix(
     val subtitle: String,
     val image: String,
     val tracks: List<SpItem>,
+    /** L'etichetta sulla copertina: "Mix", il genere di un Daily Mix, "Radio", "Top 50" (1.491). */
+    val badge: String = "Mix",
 )
 
 /**

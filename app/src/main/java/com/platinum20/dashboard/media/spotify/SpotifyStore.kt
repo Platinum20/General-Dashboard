@@ -302,6 +302,7 @@ object SpotifyStore {
 
     fun clear() {
         FeedCache.clear("sp-")
+        MadeStore.clear()
         _home.value = Loadable()
         _playlists.value = Loadable()
         _library.value = Loadable()
