@@ -150,8 +150,8 @@ object SavedLinks {
     }
 
     /**
-     * Video, brani, radio e podcast salvati per dopo e i link di YouTube incollati, dal più recente: in fondo alla card
-     * Calendario della Home, "Senza scadenza" (2026-11-12). Restano note (sincronia con YouTube, Zaino del treno).
+     * Video, brani, radio e podcast salvati per dopo e i link di YouTube incollati, dal più recente: "Salvati" in Media
+     * (1.490, Antonio: ognuno nella sua sezione). Restano note (sincronia con YouTube, Zaino del treno).
      */
     fun later(notes: List<Note>): List<Later> = notes
         .sortedByDescending { it.createdAt }
@@ -161,13 +161,13 @@ object SavedLinks {
     /** Le cose salvate per dopo da vedere (video) o da ascoltare (il resto): Media le divide nelle sue due file (1.490). */
     fun isVideo(item: ResumeItem): Boolean = item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO
 
-    /** Gli articoli salvati da leggere, dal più recente: anche loro in "Senza scadenza". */
+    /** Gli articoli salvati da leggere, dal più recente: "Salvati" in cima a News (1.490). */
     fun toRead(notes: List<Note>): List<ToRead> = notes
         .sortedByDescending { it.createdAt }
         .mapNotNull { note -> (find(note.text) as? SavedLink.Article)?.let { ToRead(note, it) } }
         .distinctBy { identity(it.article) }
 
-    /** Le note salvate per dopo: in "Senza scadenza" con la loro anteprima, non come note semplici. */
+    /** Le note salvate per dopo: stanno in Media o in News, non nella card Per dopo né nel calendario. */
     fun livesElsewhere(note: Note): Boolean = find(note.text) != null || pastedYoutube(note) != null
 
     /** Le righe di una nota senza l'indirizzo che la riapre (per le anteprime). */
@@ -227,7 +227,7 @@ object SavedLinks {
 
     /** Le parole del tasto: "Leggi dopo" per gli articoli, "Salva per più tardi" per il resto. */
     fun saveLabel(link: SavedLink, saved: Boolean): String = when {
-        saved -> "Togli dalle cose salvate"
+        saved -> "Togli dai salvati"
         link is SavedLink.Article -> "Leggi dopo"
         else -> "Salva per più tardi"
     }
@@ -252,8 +252,8 @@ object SavedLinks {
                 "Salvato per dopo: ${link.title}",
                 undo = { NotesStore.deleteNote(id) },
                 icon = Icons.Rounded.BookmarkAdded,
-                // Articoli nella card Calendario della Home; video, brani e radio in Media, in "Salvati" (1.490).
-                target = if (link is SavedLink.Article) CaptureTargets.HOME_TAB else CaptureTargets.MEDIA_TAB,
+                // Il pallino vola dove la cosa sta (1.490): News per gli articoli, Media per il resto.
+                target = if (link is SavedLink.Article) CaptureTargets.NEWS_TAB else CaptureTargets.MEDIA_TAB,
             ),
         )
     }
