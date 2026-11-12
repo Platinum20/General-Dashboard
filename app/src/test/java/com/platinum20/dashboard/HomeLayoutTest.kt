@@ -11,9 +11,15 @@ class HomeLayoutTest {
 
     @Test fun ordineNuovo() {
         assertEquals(
-            listOf("Adesso", "Media", "Calendario", "SIM", "Documenti", "Dalla posta", "News"),
+            listOf("Adesso", "Media", "Calendario", "Per dopo", "SIM", "Documenti", "Dalla posta", "News"),
             HomeLayout.DEFAULT.order.map { it.label },
         )
+    }
+
+    @Test fun perDopoArrivaSottoIlCalendario() {
+        // Chi aveva già un ordine salvato trova "Per dopo" subito dopo il Calendario (1.490).
+        val layout = HomeLayout.read("DAY,WEATHER,RESUME,SIM,DOCS,MAIL,RECAP", "", HomeLayout.VERSION)
+        assertEquals(listOf(HomeCard.DAY, HomeCard.LATER, HomeCard.WEATHER), layout.order.take(3))
     }
 
     @Test fun daVersioneVecchiaOrdinePredefinito() {
