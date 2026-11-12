@@ -242,8 +242,8 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
     val radioLogos = rememberRadioLogos()
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Il titolo apre la versione completa, in verticale (1.492, Antonio); il tastino Scopri resta a destra.
-        OpenableHeader("Musica", onOpenAll, Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
+        // Il titolo apre Scopri, il tastino a destra la fila intera in verticale (1.493, Antonio: "invertire la funzione").
+        OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
             if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }

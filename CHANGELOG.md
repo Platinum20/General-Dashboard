@@ -1,10 +1,10 @@
 # Changelog
 
 ## 1.493.0
-**Media: Scopri al bordo destro, Cronologia solo video**
-- Il tastino Scopri sta sulla stessa riga del titolo, tutto a destra, in Musica e in Video
+**Media: titoli e tastini invertiti, copertine dove mancavano**
+- In Musica e in Video il titolo apre Scopri; il tastino tutto a destra, sulla stessa riga, ora ha l'icona della cronologia e apre la lista intera: tutta la tua musica in verticale, o la cronologia dei video
 - La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
-- Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre toccando il titolo "Video"
+- Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre col tastino accanto al titolo
 - "I tuoi podcast" e "Radio" hanno le copertine dei tuoi podcast e i loghi delle tue radio, non più un quadrato grigio
 - I video del telefono mostrano un fotogramma del video come copertina
 

@@ -276,11 +276,10 @@ fun MediaScreen(
             }
             // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
             if (continueList.isNotEmpty() || youTubeOn || savedVideos.isNotEmpty()) {
-                // Il tastino Scopri apre la Home di YouTube con in cima i nuovi delle iscrizioni (1.488, Antonio).
                 item(key = "continue-h") {
-                    // Il titolo apre tutta la cronologia (1.492, Antonio: "continua ... che aprisse la cronologia").
-                    OpenableHeader("Video", { onOpenRoute(Routes.YOUTUBE_FEED) }, Modifier.padding(horizontal = 16.dp)) {
-                        if (youTubeOn) DiscoverButton { onOpenRoute(Routes.MEDIA_NEWS) }
+                    // Il titolo apre Scopri (la Home di YouTube), il tastino a destra la cronologia (1.493, Antonio).
+                    OpenableHeader("Video", { onOpenRoute(if (youTubeOn) Routes.MEDIA_NEWS else Routes.YOUTUBE_FEED) }, Modifier.padding(horizontal = 16.dp)) {
+                        HistoryButton { onOpenRoute(Routes.YOUTUBE_FEED) }
                     }
                 }
                 item(key = "continue") {
