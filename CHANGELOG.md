@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.489.0
+**Card Calendario: niente più card sopra**
+- La card SIM (o quella dopo) non copre più il fondo della card Calendario quando questa cambia altezza
+- Con il carattere grande del telefono gli orari di turni ed eventi hanno di nuovo il loro spazio e non si accavallano
+
 ## 1.487.0
 **Le cose senza scadenza in fondo alla card Calendario**
 - In fondo alla card Calendario della Home c'è "Senza scadenza": le cose da fare, le note, le foto, i pacchi senza data e quello che hai salvato per dopo (video, brani, radio, podcast e articoli), tutte insieme e tutte visibili

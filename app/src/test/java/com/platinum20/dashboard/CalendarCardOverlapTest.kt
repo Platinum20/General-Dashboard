@@ -46,16 +46,14 @@ import java.time.ZoneId
 
 /**
  * La card Calendario in Home non deve mai finire sotto la card dopo (Antonio, 2026-11-12: la SIM copriva
- * il turno di notte). Stessa struttura della Home: elementi condivisi, animateItem, testo grande.
+ * il turno di notte). Stessa struttura della Home: elementi condivisi, apertura del calendario, Home scorsa, testo grande.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @RunWith(AndroidJUnit4::class)
-@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-night-xxhdpi")
 class CalendarCardOverlapTest {
     @get:Rule
     val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
-    private val outDir = java.io.File(System.getProperty("tour.dir") ?: "build/tour", "calendario-card").apply { mkdirs() }
 
     private val zone = ZoneId.systemDefault()
     private val today = LocalDate.now(zone)
@@ -78,12 +76,6 @@ class CalendarCardOverlapTest {
         }
     }
 
-    @org.junit.Before
-    fun hardware() {
-        System.setProperty("robolectric.pixelCopyRenderMode", "hardware")
-        System.setProperty("robolectric.screenshot.hwrdr.native", "true")
-    }
-
     @Test
     fun laCardDopoNonCopreIlCalendario() {
         var full by mutableStateOf(false)
@@ -99,7 +91,7 @@ class CalendarCardOverlapTest {
                                 if (onPage) Box(Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).fillMaxSize())
                                 else LazyColumn(Modifier.fillMaxSize(), state = list, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     items(listOf("top", "cal", "sim", "docs"), key = { it }) { key ->
-                                        Box(Modifier.animateItem(placementSpec = null)) {
+                                        Box {
                                             if (key == "top" || key == "docs") Box(Modifier.fillMaxWidth().height(300.dp).background(androidx.compose.ui.graphics.Color.Blue))
                                             else if (key == "cal") TimelineCard(
                                                 null, entries(full), onOpen = {}, empty = "Niente",
@@ -119,14 +111,6 @@ class CalendarCardOverlapTest {
             compose.waitForIdle()
             val cal = compose.onNodeWithTag("cal").getUnclippedBoundsInRoot()
             val sim = compose.onNodeWithTag("sim").getUnclippedBoundsInRoot()
-            println("CARDPROBE $step cal=$cal sim=$sim")
-            val view = compose.activity.window.decorView
-            val bitmap = android.graphics.Bitmap.createBitmap(view.width, view.height, android.graphics.Bitmap.Config.ARGB_8888)
-            runCatching {
-                android.view.PixelCopy.request(compose.activity.window, bitmap, {}, android.os.Handler(android.os.Looper.getMainLooper()))
-                org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            }
-            java.io.File(outDir, "$step.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             assertTrue("$step: Calendario finisce a ${cal.bottom}, la SIM comincia a ${sim.top}", cal.bottom <= sim.top)
         }
         check("prima")

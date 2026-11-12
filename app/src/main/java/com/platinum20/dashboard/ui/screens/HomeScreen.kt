@@ -386,9 +386,10 @@ fun HomeScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Le card nell'ordine scelto in Personalizza. Quelle che compaiono o spariscono sfumano; niente scivolata di
-            // posto: quando il Calendario cambia altezza la card sotto restava a metà strada sopra di lui (Antonio, 2026-11-11).
-            items(cards, key = { it.name }) { Box(Modifier.animateItem(placementSpec = null)) { cardContent(it) } }
+            // Le card nell'ordine scelto in Personalizza, senza animazioni della lista: anche solo la sfumata (1.472)
+            // lasciava la SIM sopra il fondo del Calendario quando questo cambiava altezza (Antonio, 2026-11-11 e 11-12).
+            // Le card entrano già con la loro cascata ([entrance]).
+            items(cards, key = { it.name }) { cardContent(it) }
             item(key = "invites") {
                 InvitesRow(
                     invites = Invites.pending(
