@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.482.0
+**Card Calendario: niente più scorrimento dei giorni**
+- Tolto il "tieni premuto e trascina" sulla card Calendario: la card mostra di nuovo oggi e domani
+- Tenendo premuta la card, anche sopra una riga, si apre il calendario intero
+- Restano le azioni nel menu "Altro" delle schede e la riga "Da fare" dentro OGGI
+
 ## 1.481.0
 **Media è un feed unico**
 - Video e Musica non sono più pagine a parte: tutto sta in Media, in una lista sola
