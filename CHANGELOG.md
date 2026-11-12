@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.490.0
+**Sottotitoli da soli col volume a zero**
+- Se abbassi il volume del telefono a zero mentre guardi un video di YouTube, i sottotitoli si accendono da soli (prima quelli del video, l'italiano se c'è)
+- Quando alzi di nuovo il volume si spengono; se li avevi scelti tu restano come li hai lasciati
+
 ## 1.489.0
 **Card Calendario: niente più card sopra**
 - La card SIM (o quella dopo) non copre più il fondo della card Calendario quando questa cambia altezza
