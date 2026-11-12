@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
@@ -258,6 +259,6 @@ internal fun DiscoverButton(onClick: () -> Unit) {
         colors = androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
         modifier = Modifier.size(40.dp).bouncyPress(0.9f),
     ) {
-        Icon(androidx.compose.material.icons.Icons.Outlined.Explore, contentDescription = "Scopri", modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.Explore, contentDescription = "Scopri", modifier = Modifier.size(20.dp))
     }
 }
