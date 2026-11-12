@@ -71,6 +71,7 @@ internal object LaterText {
 internal fun LaterCard(items: List<LooseItem>, onOpenArchive: () -> Unit) {
     val open = rememberDueOpen()
     val haptic = rememberHaptic()
+    val rowActions = rememberRowActions()
     // Solo le cose ancora da fare (Antonio, 2026-11-12); toccando la card, fuori dalle righe, si apre l'archivio.
     CanvasCard(Modifier.fillMaxWidth().captureTarget(CaptureMode.NOTE), onClick = onOpenArchive) {
         CardTitle("Per dopo", trailing = {
@@ -89,8 +90,8 @@ internal fun LaterCard(items: List<LooseItem>, onOpenArchive: () -> Unit) {
                 LooseRow(
                     item,
                     onClick = onClick,
-                    // Tenendo premuto: la sua scheda, come il tocco (le azioni stanno nel suo "Altro").
-                    onLongClick = onClick,
+                    // Tenendo premuto: il fumetto con le sue azioni, come nel Calendario (Antonio, 2026-11-12).
+                    onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
                     onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
                 )
             }
