@@ -135,10 +135,12 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   Mix tap = `Routes.mix(id)` → `MixScreen` (mixes from `mixesOf`). Novità row = fresh + `MediaFeed.ROW_OLDER` older + "Tutte le novità"
   → `Routes.MEDIA_NEWS` = `MediaNewsScreen` (reads `MediaFeedNow.rows`). Durations: `YouTubeStore.withFeedDetails` (RSS lacks them,
   copied from `YouTubeWeb.lastFeed`) + `YtVideo.withKnownDuration()` (YtHistory). VideoCard date at the right of the channel row.
-  1.488 (Antonio): NO stories row any more (`MediaStories` pure code kept, unused). Media = hero/queue, then ONLY three rows: "Musica" (`PerTeRow`),
-  "Video" (Continua, videos only, last tile "Vedi tutta la cronologia" → Routes.YOUTUBE_FEED; no other Cronologia entry), Novità.
-  `MediaNewsScreen` rebuilds ALL rows (`maxOlder = Int.MAX_VALUE`, `MediaFeedNow.since/listened`) and scrolls forever via
-  `YouTubeStore.loadMoreSubscriptions` (continuation `YouTubeWeb.lastFeedNext` of /feed/subscriptions through `homeMore`).
+  1.490 (Antonio): NO stories row (`MediaStories` pure code kept, unused), NO Novità row. Media = hero/queue, then ONLY two rows:
+  "Musica" (`PerTeRow`) and "Video" (Continua, videos only, last tile "Vedi tutta la cronologia" → Routes.YOUTUBE_FEED). Each header
+  has ONE square `DiscoverButton` (MediaMarks.kt) on the right: Musica → `Routes.MUSIC_DISCOVER` = `MusicDiscoverScreen`
+  (MediaLibraryScreens.kt: releases + `SpotifyStore.discover` rows from `SpotifyDiscover` = genres of top artists → `genre:` artist
+  search minus known + genre playlists; related/recommendations APIs are closed to personal apps), Video → `Routes.MEDIA_NEWS` =
+  `MediaNewsScreen` "Scopri" (fresh subscriptions since `MediaFeedNow.since`, then YouTube Home paged by `loadMoreHome`).
   The "Musica" row (`PerTeRow`) = music "Continua": `PerTe` entries (mixes, Spotify playlists + saved albums, followed podcasts, last 3
   `SpotifyStore.listened` artists, `PerTe.Liked` tile → `Routes.LIKED_TRACKS`, timed by `LIKED_LINK`) sorted by last listen (`MediaMerge.byRecency` + `heardAt` via `rememberHeardAt()`; mixes record
   `link = mixLink(mix)` through `playTracks(link=)`), NO new releases; ends with "I tuoi podcast" AllTile (`PodcastOpen`) + "Radio"

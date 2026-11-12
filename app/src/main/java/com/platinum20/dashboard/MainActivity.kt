@@ -430,6 +430,8 @@ object Routes {
     fun mix(id: String) = "media/mix/${Uri.encode(id)}"
     /** Tutte le novità in verticale, dall'ultima tessera della fila (1.486). */
     const val MEDIA_NEWS = "media/news"
+    /** Scopri della musica (1.488): il tastino a destra del titolo Musica. */
+    const val MUSIC_DISCOVER = "media/discover"
     /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
     const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
     fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
@@ -1427,6 +1429,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.MediaNewsScreen(
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.MUSIC_DISCOVER) {
+                com.platinum20.dashboard.ui.screens.MusicDiscoverScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpen = { navController.navigate(Routes.spotifyItem(it)) },
                 )
             }
             // Mi piace (1.488): i video da una parte, i brani dall'altra.

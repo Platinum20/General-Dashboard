@@ -223,52 +223,137 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
 }
 
 /**
- * "Tutte le novità" (1.486, Antonio: in fondo alla fila, il resto in verticale come prima): i video grandi e gli
- * episodi dal più nuovo, con il segno ULTIMA VISITA.
+ * "Scopri" dei video (1.488, Antonio: "la home sarebbe novità, scopri, la stessa cosa"): in cima i video nuovi delle
+ * iscrizioni dall'ultima visita, poi la Home di YouTube che arrivando in fondo carica altri consigliati, senza fine.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
-    // Tutte, non solo le prime della fila (1.488, Antonio: "non è infinito"): arrivando in fondo si caricano i video più
-    // vecchi delle iscrizioni, come su YouTube.
     val subs by YouTubeStore.subscriptions.collectAsState()
-    val more by YouTubeStore.subscriptionsMore.collectAsState()
-    val ended by YouTubeStore.subscriptionsEnded.collectAsState()
-    val recommended by YouTubeStore.home.collectAsState()
-    val episodes by com.platinum20.dashboard.media.podcast.PodcastStore.latest.collectAsState()
+    val home by YouTubeStore.home.collectAsState()
+    val ended by YouTubeStore.homeEnded.collectAsState()
     val hideLive by com.platinum20.dashboard.settings.AppSettings.hideLive.collectAsState()
     val hideMembers by com.platinum20.dashboard.settings.AppSettings.hideMembers.collectAsState()
+    LaunchedEffect(Unit) {
+        YouTubeStore.refreshSubscriptions(context)
+        YouTubeStore.refreshHome(context)
+    }
     val since = com.platinum20.dashboard.media.MediaFeedNow.since
-    val listened = com.platinum20.dashboard.media.MediaFeedNow.listened
-    val rows = remember(subs.data, more, recommended.data, episodes.data, since, listened, hideLive, hideMembers) {
-        val videos = pickFeed(subs.data.orEmpty() + more, hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
-        val tips = pickFeed(recommended.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
-        com.platinum20.dashboard.media.MediaFeed.build(videos, episodes.data.orEmpty(), tips, since, listened, maxOlder = Int.MAX_VALUE)
+    val fresh = remember(subs.data, since, hideLive, hideMembers) {
+        pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
+            .filter { com.platinum20.dashboard.media.MediaFresh.isNew(it.published, since) }
+            .sortedByDescending { it.published }
+    }
+    val tips = remember(home.data, fresh, hideLive, hideMembers) {
+        val shown = fresh.map { it.id }.toSet()
+        pickFeed(home.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos.filter { it.id !in shown }
     }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Novità", subtitle = MediaShelves.title("Video ed episodi", rows.fresh.size), scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Scopri", subtitle = MediaShelves.title("Video", fresh.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        @Composable
-        fun Entry(entry: com.platinum20.dashboard.media.FeedEntry) = when (entry) {
-            is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
-            is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeLine(entry.episode)
-        }
-        val count = rows.fresh.size + rows.older.size
+        val count = fresh.size + tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = rows.fresh + rows.older, loading = subs.loading && count == 0), empty = "Nessuna novità") {
-                items(rows.fresh, key = { "f-" + it.key }) { Entry(it) }
-                if (rows.fresh.isNotEmpty() && rows.older.isNotEmpty()) item(key = "marker") { NewsVisitMarker("Ultima visita") }
-                items(rows.older, key = { "o-" + it.key }) { Entry(it) }
-                if (!ended && subs.data != null) item(key = "more") {
-                    // Composto solo vicino al fondo della lista: lì parte la pagina dopo.
-                    LaunchedEffect(count) { YouTubeStore.loadMoreSubscriptions(context) }
+            FeedList(Loadable(data = fresh + tips, loading = (home.loading || subs.loading) && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora") {
+                if (fresh.isNotEmpty()) {
+                    item(key = "fresh-h") { SectionHeader("Nuovi dalle iscrizioni") }
+                    items(fresh, key = { "f-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                }
+                if (tips.isNotEmpty()) {
+                    item(key = "tips-h") { SectionHeader("Per te su YouTube") }
+                    items(tips, key = { "t-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                }
+                if (!ended && home.data != null) item(key = "more") {
+                    // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
+                    LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
                     androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
                 }
             }
         }
+    }
+}
+
+/**
+ * "Scopri" della musica (1.488, Antonio: la prima idea): le nuove uscite degli artisti che segui, poi per ogni tuo genere
+ * gli artisti che non ascolti ancora e le sue playlist. Tutte file orizzontali; un tocco apre la pagina.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
+    val context = LocalContext.current
+    SpotifyAuth.init(context)
+    val releases by SpotifyStore.releases.collectAsState()
+    val seen by SpotifyStore.seenReleases.collectAsState()
+    val discover by SpotifyStore.discover.collectAsState()
+    LaunchedEffect(Unit) {
+        SpotifyStore.refreshReleases()
+        SpotifyStore.refreshListened()
+        SpotifyStore.refreshDiscover()
+    }
+    val today = remember { java.time.LocalDate.now() }
+    val fresh = MediaShelves.freshFirst(releases.data.orEmpty()) { it.item.id !in seen }
+    val rows = discover.data.orEmpty()
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Scopri", subtitle = "Musica dai tuoi ascolti", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        val tile = coverTileWidth()
+        val empty = fresh.isEmpty() && rows.isEmpty()
+        androidx.compose.foundation.lazy.LazyColumn(
+            Modifier.fillMaxSize().padding(inner),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            if (empty && (releases.loading || discover.loading)) item(key = "loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), label = "Cerco musica nuova") }
+            if (empty && !releases.loading && !discover.loading) item(key = "empty") {
+                Text(
+                    discover.error ?: "Ascolta un po' di musica: Scopri parte da lì",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+            if (fresh.isNotEmpty()) item(key = "releases") {
+                DiscoverRow("Nuove uscite", "Degli artisti che segui") {
+                    items(fresh, key = { "r-" + it.item.id }) { release ->
+                        MediaTile(
+                            tile, wide = false, image = release.item.image, title = release.item.title,
+                            author = release.item.subtitle.substringBefore(" · "), date = com.platinum20.dashboard.media.spotify.NewReleases.ago(release.released, today),
+                            mark = MediaMarks.of(release.item),
+                            click = Modifier.clickable {
+                                SpotifyStore.markReleaseSeen(release.item.id)
+                                onOpen(release.item)
+                            },
+                        ) { if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd)) }
+                    }
+                }
+            }
+            items(rows, key = { "d-" + it.title }) { row ->
+                DiscoverRow(row.title, row.why) {
+                    items(row.items, key = { "i-" + it.uri }) { item ->
+                        MediaTile(
+                            tile, wide = false, image = item.image, title = item.title,
+                            author = if (item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST) "Artista" else item.subtitle.substringBefore(" · "),
+                            date = null, mark = MediaMarks.of(item), click = Modifier.clickable { onOpen(item) },
+                            round = item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Una fila di Scopri: titolo, il perché sotto, le tessere di lato. */
+@Composable
+private fun DiscoverRow(title: String, why: String, content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(horizontal = 16.dp)) {
+            SectionHeader(title)
+            Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+        }
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), content = content)
     }
 }
 

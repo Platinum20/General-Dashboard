@@ -1,19 +1,16 @@
 # Changelog
 
 ## 1.490.0
-**Media: una fila per la musica e una per i video**
-- Le storie in cima non ci sono più
-- Media ha tre file: Musica, Video e Novità
-- "Musica" è la tua musica in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, i brani che ti piacciono, un podcast o uno degli ultimi 3 artisti ascoltati; niente ultime uscite. In fondo ci sono "I tuoi podcast" e il tasto Radio (la Radio non è più una sezione: le tue radio sono in cima alla sua pagina)
-- "Video" sono i video che hai iniziato, dal più recente; in fondo "Vedi tutta la cronologia"
-- In cima resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa
-- Le Novità dei video restano come prima; "Tutte le novità" ora non finisce mai: arrivando in fondo carica i video più vecchi delle iscrizioni, come su YouTube
-- I brani che ti piacciono sono una tessera dentro Musica, con la loro pagina e Riproduci tutto; i video che ti piacciono non sono più in Media
-- Le playlist di YouTube non ci sono più in Media
+**Media: due file, Musica e Video, ognuna col suo Scopri**
+- Le storie in cima non ci sono più: in alto resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa
+- "Musica" è la tua musica in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, i brani che ti piacciono, un podcast o uno degli ultimi 3 artisti ascoltati. In fondo ci sono "I tuoi podcast" e il tasto Radio (le tue radio sono in cima alla sua pagina)
+- Il tastino Scopri a destra di "Musica" apre la musica nuova: le uscite degli artisti che segui, poi per i tuoi generi gli artisti che non ascolti ancora e le playlist
+- "Video" sono i video che hai iniziato, dal più recente, con in fondo "Vedi tutta la cronologia"; il suo tastino Scopri apre i nuovi delle iscrizioni e sotto la Home di YouTube, che carica altri video senza fine
+- La fila Novità, Mi piace come fila, i video che ti piacciono e le playlist di YouTube non sono più in Media
 - Gli elenchi non alternano più Spotify e YouTube: vanno solo in ordine di tempo
-- Nella Cronologia, dove musica e video stanno insieme, ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina, testo allineato
+- Nella Cronologia ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina per musica e video
 - Sui mix non c'è più la durata
-=======
+
 ## 1.489.0
 **Card Calendario: niente più card sopra**
 - La card SIM (o quella dopo) non copre più il fondo della card Calendario quando questa cambia altezza

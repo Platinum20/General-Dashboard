@@ -267,11 +267,17 @@ fun MediaScreen(
                     },
                     onOpenRadio = { onOpenRoute(Routes.RADIO) },
                     onOpenLiked = { onOpenRoute(Routes.LIKED_TRACKS) },
+                    onDiscover = { onOpenRoute(Routes.MUSIC_DISCOVER) },
                 )
             }
             // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
             if (continueList.isNotEmpty() || youTubeOn) {
-                item(key = "continue-h") { SectionHeader("Video", Modifier.padding(horizontal = 16.dp)) }
+                // Il tastino Scopri apre la Home di YouTube con in cima i nuovi delle iscrizioni (1.488, Antonio).
+                item(key = "continue-h") {
+                    SectionHeader("Video", Modifier.padding(horizontal = 16.dp)) {
+                        if (youTubeOn) DiscoverButton { onOpenRoute(Routes.MEDIA_NEWS) }
+                    }
+                }
                 item(key = "continue") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
@@ -279,12 +285,7 @@ fun MediaScreen(
                     }
                 }
             }
-            // Novità (1.485, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
-            // poi il segno ULTIMA VISITA e il resto con qualche consigliato.
-            if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
-                item(key = "feed-h") { SectionHeader(MediaShelves.title("Novità", feed.fresh.size), Modifier.padding(horizontal = 16.dp)) }
-                item(key = "feed") { NewsRow(feed, onPlayVideo, onOpenAll = { onOpenRoute(Routes.MEDIA_NEWS) }) }
-            }
+            // Niente più fila Novità (1.488, Antonio): i nuovi delle iscrizioni sono in Scopri dei Video.
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

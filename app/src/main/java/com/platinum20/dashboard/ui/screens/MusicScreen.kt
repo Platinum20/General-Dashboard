@@ -236,7 +236,7 @@ internal object PodcastOpen {
  * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit) {
     val context = LocalContext.current
     remember { PodcastStore.init(context) }
     val followedHere by PodcastStore.followed.collectAsState()
@@ -278,7 +278,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
     }
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Musica", Modifier.padding(horizontal = 16.dp))
+        SectionHeader("Musica", Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
