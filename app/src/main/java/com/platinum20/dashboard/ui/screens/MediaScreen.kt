@@ -203,7 +203,11 @@ fun MediaScreen(
     val feed = remember(subVideos, latestEpisodes.data, tips, since, listened) {
         com.platinum20.dashboard.media.MediaFeed.build(subVideos, latestEpisodes.data.orEmpty(), tips, since, listened)
     }
-    SideEffect { com.platinum20.dashboard.media.MediaFeedNow.rows = feed }
+    SideEffect {
+        com.platinum20.dashboard.media.MediaFeedNow.rows = feed
+        com.platinum20.dashboard.media.MediaFeedNow.since = since
+        com.platinum20.dashboard.media.MediaFeedNow.listened = listened
+    }
     // Le storie in cima sono tolte (1.488, Antonio): musica e video sono due file, le storie non servono più.
     val freshVideos = com.platinum20.dashboard.media.MediaFresh.newVideos(subVideos, since)
     val freshEpisodes = remember(latestEpisodes.data, history) { newEpisodes(latestEpisodes.data.orEmpty(), history).size }

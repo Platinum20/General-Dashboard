@@ -229,7 +229,23 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
-    val rows = com.platinum20.dashboard.media.MediaFeedNow.rows
+    val context = LocalContext.current
+    // Tutte, non solo le prime della fila (1.488, Antonio: "non è infinito"): arrivando in fondo si caricano i video più
+    // vecchi delle iscrizioni, come su YouTube.
+    val subs by YouTubeStore.subscriptions.collectAsState()
+    val more by YouTubeStore.subscriptionsMore.collectAsState()
+    val ended by YouTubeStore.subscriptionsEnded.collectAsState()
+    val recommended by YouTubeStore.home.collectAsState()
+    val episodes by com.platinum20.dashboard.media.podcast.PodcastStore.latest.collectAsState()
+    val hideLive by com.platinum20.dashboard.settings.AppSettings.hideLive.collectAsState()
+    val hideMembers by com.platinum20.dashboard.settings.AppSettings.hideMembers.collectAsState()
+    val since = com.platinum20.dashboard.media.MediaFeedNow.since
+    val listened = com.platinum20.dashboard.media.MediaFeedNow.listened
+    val rows = remember(subs.data, more, recommended.data, episodes.data, since, listened, hideLive, hideMembers) {
+        val videos = pickFeed(subs.data.orEmpty() + more, hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
+        val tips = pickFeed(recommended.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
+        com.platinum20.dashboard.media.MediaFeed.build(videos, episodes.data.orEmpty(), tips, since, listened, maxOlder = Int.MAX_VALUE)
+    }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
@@ -240,11 +256,17 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
             is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
             is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeLine(entry.episode)
         }
+        val count = rows.fresh.size + rows.older.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = rows.fresh + rows.older), empty = "Nessuna novità") {
+            FeedList(Loadable(data = rows.fresh + rows.older, loading = subs.loading && count == 0), empty = "Nessuna novità") {
                 items(rows.fresh, key = { "f-" + it.key }) { Entry(it) }
                 if (rows.fresh.isNotEmpty() && rows.older.isNotEmpty()) item(key = "marker") { NewsVisitMarker("Ultima visita") }
                 items(rows.older, key = { "o-" + it.key }) { Entry(it) }
+                if (!ended && subs.data != null) item(key = "more") {
+                    // Composto solo vicino al fondo della lista: lì parte la pagina dopo.
+                    LaunchedEffect(count) { YouTubeStore.loadMoreSubscriptions(context) }
+                    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+                }
             }
         }
     }

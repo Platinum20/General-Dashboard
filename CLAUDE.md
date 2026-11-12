@@ -137,6 +137,8 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   copied from `YouTubeWeb.lastFeed`) + `YtVideo.withKnownDuration()` (YtHistory). VideoCard date at the right of the channel row.
   1.488 (Antonio): NO stories row any more (`MediaStories` pure code kept, unused). Media = hero/queue, then ONLY three rows: "Musica" (`PerTeRow`),
   "Video" (Continua, videos only, last tile "Vedi tutta la cronologia" → Routes.YOUTUBE_FEED; no other Cronologia entry), Novità.
+  `MediaNewsScreen` rebuilds ALL rows (`maxOlder = Int.MAX_VALUE`, `MediaFeedNow.since/listened`) and scrolls forever via
+  `YouTubeStore.loadMoreSubscriptions` (continuation `YouTubeWeb.lastFeedNext` of /feed/subscriptions through `homeMore`).
   The "Musica" row (`PerTeRow`) = music "Continua": `PerTe` entries (mixes, Spotify playlists + saved albums, followed podcasts, last 3
   `SpotifyStore.listened` artists, `PerTe.Liked` tile → `Routes.LIKED_TRACKS`, timed by `LIKED_LINK`) sorted by last listen (`MediaMerge.byRecency` + `heardAt` via `rememberHeardAt()`; mixes record
   `link = mixLink(mix)` through `playTracks(link=)`), NO new releases; ends with "I tuoi podcast" AllTile (`PodcastOpen`) + "Radio"

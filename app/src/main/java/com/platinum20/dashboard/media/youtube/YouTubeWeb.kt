@@ -48,11 +48,16 @@ object YouTubeWeb {
     @Volatile var lastFeed: List<YtVideo> = emptyList()
         private set
 
+    /** Il segno per i video più vecchi della pagina Iscrizioni (1.488): "Tutte le novità" scorre senza fine. */
+    @Volatile var lastFeedNext: String? = null
+        private set
+
     /** Canali seguiti: elenco delle iscrizioni più i canali dei video nel feed Iscrizioni. */
     suspend fun subscriptions(context: Context): List<YtChannel> {
         val channels = page(context, "/feed/channels", requireLogin = true)
         val feed = runCatching { page(context, "/feed/subscriptions", requireLogin = true) }.getOrNull()
         lastFeed = feed?.videos.orEmpty()
+        lastFeedNext = feed?.next
         val fromFeed = feed?.videos.orEmpty()
             .filter { it.channelId.isNotBlank() }
             .map { YtChannel(it.channelId, it.channel, "") }

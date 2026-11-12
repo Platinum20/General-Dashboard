@@ -218,4 +218,7 @@ object MediaMerge {
  */
 object MediaFeedNow {
     var rows by androidx.compose.runtime.mutableStateOf(MediaFeedRows(emptyList(), emptyList()))
+    /** L'inizio della visita e gli episodi già ascoltati: la pagina ricostruisce tutte le novità con gli stessi. */
+    var since by androidx.compose.runtime.mutableStateOf(0L)
+    var listened by androidx.compose.runtime.mutableStateOf(emptySet<String>())
 }
