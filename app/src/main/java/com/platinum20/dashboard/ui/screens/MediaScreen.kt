@@ -307,8 +307,6 @@ fun MediaScreen(
                     }
                 }
             }
-            // Più tardi (1.483): quello che hai salvato da guardare o ascoltare, prima stava nel calendario.
-            item(key = "later") { LaterShelf(onOpenRoute) }
             // Novità (1.485, Antonio: niente liste lunghe in verticale): una fila che scorre di lato, prima le nuove,
             // poi il segno ULTIMA VISITA e il resto con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {

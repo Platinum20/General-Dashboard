@@ -66,6 +66,6 @@ class LaterPlacesTest {
     @Test fun paroleDelTasto() {
         val a = SavedLink.Article("u", "s", "t")
         assertEquals("Leggi dopo", SavedLinks.saveLabel(a, saved = false))
-        assertEquals("Togli da Più tardi", SavedLinks.saveLabel(SavedLink.Media(ResumeItem(ResumeKind.RADIO, "r", "R", at = 1)), saved = true))
+        assertEquals("Togli dalle cose salvate", SavedLinks.saveLabel(SavedLink.Media(ResumeItem(ResumeKind.RADIO, "r", "R", at = 1)), saved = true))
     }
 }

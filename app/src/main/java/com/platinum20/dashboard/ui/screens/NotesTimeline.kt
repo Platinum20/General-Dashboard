@@ -166,8 +166,8 @@ internal fun dueDays(
             // Le cose spuntate oggi restano in Oggi, segnate fatte (Antonio).
             tasks.filter { t -> t.done && dayOf(t.doneAt ?: t.dueAt ?: t.createdAt) == today }.sortedBy { it.doneAt ?: 0L }
                 .forEach { t -> add(DueRow("task-${t.id}", today, t.doneAt ?: nowMs, task = t)) }
-            // Le note fissate per prime, poi dalla più nuova. Video, brani e articoli salvati non ci sono:
-            // stanno in Media ("Più tardi") e in News ("Da leggere") (1.482, Antonio scelta B).
+            // Le note fissate per prime, poi dalla più nuova. Video, brani e articoli salvati non ci sono come note:
+            // [looseItems] li mette in "Senza scadenza" con la loro anteprima (2026-11-12).
             notes.filterNot(com.platinum20.dashboard.capture.SavedLinks::livesElsewhere).sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
                 .forEach { n -> add(DueRow("note-${n.id}", today, Long.MAX_VALUE, note = n)) }
         }
@@ -616,25 +616,65 @@ internal fun photoLine(note: com.platinum20.dashboard.notes.Note): String? {
     return if (more == null) "Foto" else "Foto · $more"
 }
 
-/** I giorni senza le cose da spuntare: stanno tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11, scelta A). */
-internal fun List<DueDay>.withoutTicks(): List<DueDay> =
-    map { g -> g.copy(rows = g.rows.filterNot { it.task?.tickable == true }) }.filter { it.rows.isNotEmpty() }
+/**
+ * Una cosa senza scadenza (Antonio, 2026-11-12): le cose da fare, le note, le foto, i pacchi senza data e quello
+ * salvato per dopo (video, brani, articoli). Non stanno nei giorni del calendario: tutte insieme in fondo alla card
+ * Calendario della Home.
+ */
+internal fun isLoose(row: DueRow): Boolean =
+    row.note != null || row.task?.tickable == true || (row.parcel != null && row.parcel.expected == null)
+
+/** I giorni senza le cose senza scadenza: stanno in fondo alla card della Home. OGGI resta sempre. */
+internal fun List<DueDay>.withoutLoose(): List<DueDay> =
+    map { g -> g.copy(rows = g.rows.filterNot(::isLoose)) }.filter { it.rows.isNotEmpty() }
+
+internal enum class LooseKind { TODO, NOTE, PHOTO, MEDIA, ARTICLE, PARCEL }
+
+/** Una riga della sezione "Senza scadenza": a sinistra la spunta o l'immagine, il nome, al massimo una riga sotto. */
+internal data class LooseItem(
+    val key: String,
+    val kind: LooseKind,
+    val title: String,
+    val line: String? = null,
+    /** Indirizzo dell'anteprima o percorso della foto; vuoto = l'icona del tipo. */
+    val image: String = "",
+    val done: Boolean = false,
+    val row: DueRow? = null,
+    val later: com.platinum20.dashboard.capture.SavedLinks.Later? = null,
+    val toRead: com.platinum20.dashboard.capture.SavedLinks.ToRead? = null,
+)
 
 /**
- * Le righe che si aprono sotto "Da fare": tutte le cose da spuntare (quelle fatte oggi restano, spuntate,
- * per poterle rimettere), senza giorno sulla riga. Uguali nella card della Home e nella pagina.
+ * Tutte le cose senza scadenza, nessuna nascosta: prima quelle da fare, poi i pacchi in arrivo, le note fissate,
+ * poi note, foto e cose salvate dalla più nuova; in fondo le cose spuntate oggi (per poterle rimettere).
  */
-internal fun cardTodo(groups: List<DueDay>, today: LocalDate): List<Pair<TimelineEntry, DueRow>> {
-    val rows = groups.filter { it.day == today && !it.past && !it.late }.flatMap { g -> g.rows.filter { it.task?.tickable == true } }
-    if (rows.isEmpty()) return emptyList()
-    return timelineEntries(listOf(DueDay(today, false, rows)), today)
-        .map { (e, r) -> e.copy(dayLabel = null, dayNumber = null, month = null) to r }
+internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboard.notes.Note>, today: LocalDate): List<LooseItem> {
+    val rows = groups.filter { it.day == today && !it.past && !it.late }.flatMap { g -> g.rows.filter(::isLoose) }.distinctBy { it.key }
+    val todo = rows.filter { it.task != null }.map { r ->
+        LooseItem(r.key, LooseKind.TODO, r.task!!.text, r.task.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = r.task.done, row = r)
+    }
+    val parcels = rows.filter { it.parcel != null }.map { r ->
+        val p = r.parcel!!
+        LooseItem(r.key, LooseKind.PARCEL, p.title, listOf("Pacco", p.code.takeIf { it.isNotBlank() }?.let { p.carrier.label }).filterNotNull().joinToString(" · "), row = r)
+    }
+    val saved = com.platinum20.dashboard.capture.SavedLinks
+    val dated = buildList<Pair<Pair<Boolean, Long>, LooseItem>> {
+        rows.mapNotNull { r -> r.note?.let { r to it } }.forEach { (r, n) ->
+            val photo = n.photo.isNotEmpty()
+            val more = n.body.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
+            add((n.pinned to n.createdAt) to LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
+                if (photo) photoLine(n) else more, image = n.photo, row = r))
+        }
+        saved.later(notes).forEach { l ->
+            add((false to l.note.createdAt) to LooseItem("note-${l.note.id}", LooseKind.MEDIA, l.item.title, LaterText.subtitle(l.item), l.item.image, later = l))
+        }
+        saved.toRead(notes).forEach { t ->
+            add((false to t.note.createdAt) to LooseItem("note-${t.note.id}", LooseKind.ARTICLE, t.article.title.ifBlank { "Articolo" },
+                listOf("Da leggere", t.article.source).filter { it.isNotBlank() }.joinToString(" · "), t.article.image, toRead = t))
+        }
+    }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
+    return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }
 }
 
-/** La riga "Da fare" dentro OGGI: quante restano; un tocco apre (o chiude) le cose da spuntare sotto. */
-internal fun todoLine(open: Int): String = if (open == 0) "Da fare · tutto fatto" else "Da fare · $open"
-
-internal fun todoEntry(todo: List<Pair<TimelineEntry, DueRow>>): TimelineEntry = TimelineEntry(
-    key = "todo", kind = com.platinum20.dashboard.today.BriefKind.TASK,
-    text = todoLine(todo.count { !it.first.done }), dayLabel = null,
-)
+/** Il titolo della sezione in fondo alla card: "Senza scadenza · 7". */
+internal fun looseTitle(count: Int): String = "Senza scadenza · $count"
