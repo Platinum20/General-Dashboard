@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.501.0
+**Musica: la playlist nuova va subito in cima**
+- Una playlist appena creata compare per prima nella fila Musica e nell'elenco completo, anche se non l'hai ancora ascoltata
+- Anche quando aggiungi un brano a una playlist, quella torna all'inizio
+
 ## 1.500.0
 **Musica: crea playlist e aggiungi brani**
 - Tieni premuto un brano di Spotify (in una lista, in una playlist o nel player) e scegli "Aggiungi a una playlist": compaiono le tue playlist, tocca quella giusta. La prima è l'ultima che hai usato

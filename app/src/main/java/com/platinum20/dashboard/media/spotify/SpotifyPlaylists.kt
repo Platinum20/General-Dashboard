@@ -35,4 +35,14 @@ object SpotifyPlaylists {
         val last = playlists.firstOrNull { it.id == lastUsed } ?: return playlists.take(MAX_CHIPS)
         return (listOf(last) + playlists.filter { it.id != lastUsed }).take(MAX_CHIPS)
     }
+
+    /** Quante playlist toccate si ricordano: bastano per la fila Musica. */
+    const val MAX_TOUCHED = 50
+
+    /**
+     * Una playlist appena creata o riempita conta come ascoltata adesso (Antonio: "una playlist appena creata deve
+     * finire all'inizio, anche se non l'ho mai ascoltata"). Tiene le [MAX_TOUCHED] più recenti.
+     */
+    fun touch(touched: Map<String, Long>, uri: String, at: Long): Map<String, Long> =
+        (touched + (uri to at)).entries.sortedByDescending { it.value }.take(MAX_TOUCHED).associate { it.key to it.value }
 }
