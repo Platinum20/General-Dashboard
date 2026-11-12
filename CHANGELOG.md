@@ -25,6 +25,11 @@
 - Se abbassi il volume del telefono a zero mentre guardi un video di YouTube, i sottotitoli si accendono da soli (prima quelli del video, l'italiano se c'è)
 - Quando alzi di nuovo il volume si spengono; se li avevi scelti tu restano come li hai lasciati
 
+**Batteria**
+- Con l'app chiusa e niente che suona, il riproduttore di Spotify si spegne dopo 5 minuti e si riaccende da solo quando premi play (anche dalla notifica) o riapri l'app
+- In pausa Spotify non controlla più lo stato ogni secondo, ma ogni 15
+- I turni di Creators Pro si rileggono una volta all'ora invece di ogni quarto d'ora, e le letture nascoste di WindTre e Creators Pro non scaricano più immagini
+
 ## 1.491.0
 **Creators Pro resta collegato**
 - I turni non chiedono più di rientrare dopo un riavvio del telefono o dell'app: Canvas tiene da parte la sessione di Creators Pro e la rimette ogni volta
