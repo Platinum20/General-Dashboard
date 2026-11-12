@@ -204,12 +204,12 @@ fun MediaScreen(
     }
     remember { com.platinum20.dashboard.media.youtube.YtHistory.init(context) }
     val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
-    val listened by com.platinum20.dashboard.media.spotify.SpotifyStore.listened.collectAsState()
+    val heard by com.platinum20.dashboard.media.spotify.SpotifyStore.listened.collectAsState()
     val channelInfos by YouTubeStore.channelInfo.collectAsState()
-    val baseStories = remember(watched, listened.data, channels.data, subs.data, artists.data, since, youTubeOn, spotifyOn) {
+    val baseStories = remember(watched, heard.data, channels.data, subs.data, artists.data, since, youTubeOn, spotifyOn) {
         com.platinum20.dashboard.media.MediaStories.build(
             if (youTubeOn) watched.values.toList() else emptyList(),
-            if (spotifyOn) listened.data.orEmpty() else emptyList(),
+            if (spotifyOn) heard.data.orEmpty() else emptyList(),
             if (youTubeOn) channels.data.orEmpty() else emptyList(),
             subs.data.orEmpty(),
             if (spotifyOn) artists.data.orEmpty() else emptyList(),

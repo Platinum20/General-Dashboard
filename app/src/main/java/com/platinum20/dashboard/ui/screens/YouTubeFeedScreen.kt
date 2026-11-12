@@ -391,7 +391,7 @@ fun YouTubeChannelScreen(
                             Box(Modifier.padding(horizontal = 16.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
                         }
                     }
-                    items(data?.playlists.orEmpty(), key = { "p-" + it.id }) { p -> PlaylistLine(p) { onOpenPlaylist(p) } }
+                    items(data?.playlists.orEmpty(), key = { "p-" + it.id }) { p -> PlaylistLine(p, onClick = { onOpenPlaylist(p) }) }
                 }
             }
         }
