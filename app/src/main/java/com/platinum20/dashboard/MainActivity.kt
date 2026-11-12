@@ -1410,17 +1410,19 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
+            // Mi piace (1.485): brani di Spotify e video di YouTube insieme.
             composable(Routes.YOUTUBE_LIKED) {
-                com.platinum20.dashboard.ui.screens.YouTubeLikedScreen(
+                com.platinum20.dashboard.ui.screens.MediaLikedScreen(
                     onBack = { navController.popBackStack() },
-                    onPlay = { navController.navigate(Routes.youtubeWatch(it)) },
+                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // "Brani che ti piacciono" (1.481): una riga in fondo a Media, con playlist e album salvati.
+            // Playlist (1.485): quelle di Spotify e di YouTube e gli album salvati.
             composable(Routes.SPOTIFY_FEED) {
-                com.platinum20.dashboard.ui.screens.MusicLibraryScreen(
+                com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
                     onBack = { navController.popBackStack() },
-                    onOpenItem = { navController.navigate(Routes.spotifyItem(it)) },
+                    onOpenSpotify = { navController.navigate(Routes.spotifyItem(it)) },
+                    onOpenYouTube = { navController.navigate(Routes.youtubePlaylist(it)) },
                 )
             }
             composable(

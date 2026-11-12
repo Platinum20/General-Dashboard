@@ -119,6 +119,12 @@ object SpotifyApi {
             .objects().mapNotNull { it.optJSONObject("track")?.toItem() }
             .distinctBy { it.id }
 
+    /** Gli ultimi 50 ascolti così come arrivano, con l'ora: servono alle storie di Media ([SpotifyArtist.listened]). */
+    suspend fun recentlyPlayedRaw(token: String): JSONObject? = request(token, "me/player/recently-played?limit=50")
+
+    /** La foto di un artista (gli artisti dentro un brano non ce l'hanno). */
+    suspend fun artistPhoto(token: String, artistId: String): String = SpotifyArtist.photo(request(token, "artists/$artistId"))
+
     suspend fun topTracks(token: String): List<SpItem> =
         request(token, "me/top/tracks?time_range=short_term&limit=30")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
 

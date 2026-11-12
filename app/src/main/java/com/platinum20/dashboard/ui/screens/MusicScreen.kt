@@ -187,54 +187,6 @@ internal fun SpotifyNotices() {
 }
 
 /**
- * "Brani che ti piacciono" (1.481, una riga in fondo a Media): i brani salvati, un tocco e parte da lì; sotto le
- * playlist e gli album salvati, che si aprono.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MusicLibraryScreen(onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
-    val context = LocalContext.current
-    SpotifyAuth.init(context)
-    SpotifyNotices()
-    val libraryState by SpotifyStore.library.collectAsState()
-    val playlistsState by SpotifyStore.playlists.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshLibrary()
-        SpotifyStore.refreshPlaylists()
-    }
-    val liked = libraryState.data?.liked.orEmpty()
-    val saved = playlistsState.data.orEmpty() + libraryState.data?.albums.orEmpty()
-    val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = "Brani che ti piacciono",
-                subtitle = if (liked.isEmpty()) "Spotify" else "${liked.size} brani",
-                scrollBehavior = barScroll,
-                onBack = onBack,
-            )
-        },
-    ) { inner ->
-        val state = Loadable(
-            data = (liked + saved).takeIf { it.isNotEmpty() || libraryState.data != null },
-            loading = libraryState.loading || playlistsState.loading,
-            error = libraryState.error,
-        )
-        Column(Modifier.fillMaxSize().padding(inner)) { FeedList(state, empty = "Nessun brano salvato") {
-            if (liked.isNotEmpty()) item(key = "play") {
-                CanvasButton("Riproduci", onClick = { playTracks(context, liked, null) }, primary = true)
-            }
-            items(liked, key = { "liked-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, liked, track) }) }
-            if (saved.isNotEmpty()) {
-                item(key = "saved-h") { SectionHeader("Playlist e album") }
-                items(saved, key = { "saved-" + it.uri }) { item -> ItemRow(item, onClick = { onOpenItem(item) }) }
-            }
-        } }
-    }
-}
-
-/**
  * "I tuoi podcast" (1.481, Antonio: una riga in fondo a Media, non un titolo da toccare): quelli che segui, un tocco
  * apre gli episodi qui dentro.
  */
@@ -307,7 +259,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit) {
                 ) {
                     CaptionedCover(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today)) {
                         Box {
-                            Cover(release.item.image, MaterialTheme.shapes.medium, tile)
+                            Cover(release.item.image, MaterialTheme.shapes.medium, tile, MediaMarks.of(release.item))
                             if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd))
                         }
                     }
@@ -346,7 +298,7 @@ internal fun RadioRow(onOpenAll: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     CaptionedCover(station.name, if (track.isNotBlank()) "In onda: $track" else genre, centered = true) {
-                        Cover(station.logo, CircleShape, tile)
+                        Cover(station.logo, CircleShape, tile, MediaMark(MediaType.RADIO, MediaMarks.LIVE))
                     }
                 }
             }
@@ -398,7 +350,7 @@ private fun PodcastLine(podcast: Podcast, onOpen: (Podcast) -> Unit) {
         Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).bouncyPress(0.97f).clickable { onOpen(podcast) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Cover(podcast.artwork, MaterialTheme.shapes.medium, 56.dp)
+        Cover(podcast.artwork, MaterialTheme.shapes.medium, 56.dp, MediaMark(MediaType.PODCAST))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(podcast.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -440,7 +392,7 @@ internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
         horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
     ) {
         CaptionedCover(item.title, if (round) "Artista" else item.subtitle, centered = round) {
-            Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile)
+            Cover(item.image, if (round) CircleShape else MaterialTheme.shapes.medium, tile, MediaMarks.of(item))
         }
     }
 }
@@ -456,7 +408,7 @@ private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
     ) {
         CaptionedCover(mix.title, mix.subtitle) {
             Box {
-                Cover(mix.image, MaterialTheme.shapes.medium, tile)
+                Cover(mix.image, MaterialTheme.shapes.medium, tile, MediaMark(MediaType.MUSIC))
                 Text(
                     "Mix",
                     style = MaterialTheme.typography.labelLarge,
@@ -498,7 +450,7 @@ private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpIt
     FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto") {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96.dp)
+                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96.dp, MediaMarks.of(parent))
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(parent.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -540,7 +492,7 @@ internal fun ItemRow(item: SpItem, onClick: () -> Unit) {
             .tapOrSave({ SavedLinks.spotify(item) }, onClick),
     ) {
         Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56.dp)
+            Cover(item.image, if (item.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.small, 56.dp, MediaMarks.of(item))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -557,7 +509,7 @@ internal fun ItemRow(item: SpItem, onClick: () -> Unit) {
 }
 
 @Composable
-internal fun Cover(url: String, shape: Shape, size: Dp) {
+internal fun Cover(url: String, shape: Shape, size: Dp, mark: MediaMark? = null) {
     Box(
         Modifier
             .size(size)
@@ -569,6 +521,8 @@ internal fun Cover(url: String, shape: Shape, size: Dp) {
         if (url.isNotBlank()) {
             AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(size))
         }
+        val compact = size < 80.dp
+        if (shape == CircleShape) MediaMarkOverlay(mark, compact, inset = size * 0.1f) else MediaMarkOverlay(mark, compact)
     }
 }
 

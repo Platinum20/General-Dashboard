@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.485.0
+**Media come una sezione sola**
+- Su ogni copertina, in alto a sinistra, un simbolo dice cos'è: musica, video, podcast o radio; in basso a destra la durata (LIVE per le radio)
+- Le storie in cima sono chi hai guardato e ascoltato per ultimo, canali YouTube e artisti Spotify insieme; poi quelli che segui
+- Le foto delle storie si vedono: quando mancano si prendono dalla pagina del canale o dell'artista
+- Novità scorre di lato, non più in giù: prima le nuove, poi il segno Ultima visita e il resto
+- Le anteprime sotto Ultima visita non sono più sbiadite (sul tema scuro sembravano spente)
+- In fondo a Media tre voci per Spotify e YouTube insieme: Mi piace (brani e video, con Riproduci tutto), Cronologia (video e brani dal più recente), Playlist (di tutti e due, più gli album salvati)
+
 ## 1.484.0
 **Card Calendario: niente più scorrimento dei giorni**
 - Tolto il "tieni premuto e trascina" sulla card Calendario: la card mostra di nuovo oggi e domani

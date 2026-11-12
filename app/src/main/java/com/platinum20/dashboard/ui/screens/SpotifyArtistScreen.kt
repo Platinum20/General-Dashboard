@@ -190,7 +190,7 @@ private fun PopularRow(rank: Int, track: SpItem, artistName: String, onClick: ()
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(28.dp),
         )
-        Cover(track.image, MaterialTheme.shapes.small, 48.dp)
+        Cover(track.image, MaterialTheme.shapes.small, 48.dp, MediaMark(MediaType.MUSIC))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(track.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -232,7 +232,7 @@ private fun ReleaseCovers(list: List<SpItem>, onOpen: (SpItem) -> Unit, showArti
             Column(Modifier.width(tile).bouncyPress(0.96f).clickable { onOpen(album) }) {
                 val year = album.subtitle.substringAfterLast(" · ", "")
                 CaptionedCover(album.title, if (showArtist) album.subtitle.substringBefore(" · ") else year) {
-                    Cover(album.image, MaterialTheme.shapes.medium, tile)
+                    Cover(album.image, MaterialTheme.shapes.medium, tile, MediaMarks.of(album))
                 }
             }
         }

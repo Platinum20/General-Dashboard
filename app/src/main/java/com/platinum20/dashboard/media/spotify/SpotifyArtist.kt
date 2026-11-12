@@ -4,6 +4,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
 
+/** Un artista che hai ascoltato e quando l'ultima volta (storie in cima a Media, 1.485: il più recente per primo). */
+data class SpListened(val artist: SpItem, val at: java.time.Instant)
+
 /** Un artista che segui con la data della sua ultima uscita (per le storie in cima a Media). */
 data class SpArtistLatest(val artist: SpItem, val latest: LocalDate?)
 
@@ -76,6 +79,25 @@ object SpotifyArtist {
         val after = artists.optJSONObject("cursors")?.optString("after")?.takeIf { it.isNotBlank() && it != "null" }
         return items to after
     }
+
+    /**
+     * Gli artisti di `me/player/recently-played`, dal più recente: solo il primo artista di ogni brano (gli ospiti
+     * riempirebbero le storie), ognuno una volta con l'ultimo ascolto. La foto qui non c'è: la mette [SpotifyStore].
+     */
+    fun listened(json: JSONObject?): List<SpListened> =
+        json?.optJSONArray("items").objects().mapNotNull { item ->
+            val at = runCatching { java.time.Instant.parse(item.optString("played_at")) }.getOrNull() ?: return@mapNotNull null
+            val first = item.optJSONObject("track")?.optJSONArray("artists")?.optJSONObject(0) ?: return@mapNotNull null
+            if (!first.has("type")) first.put("type", "artist")
+            SpotifyApi.parseItem(first)?.let { SpListened(it, at) }
+        }.groupBy { it.artist.id }.map { (_, l) -> l.maxBy { it.at } }.sortedByDescending { it.at }
+
+    /** I brani di `me/player/recently-played` con l'ora dell'ascolto, dal più recente (Cronologia di Media, 1.485). */
+    fun played(json: JSONObject?): List<Pair<SpItem, java.time.Instant>> =
+        json?.optJSONArray("items").objects().mapNotNull { item ->
+            val at = runCatching { java.time.Instant.parse(item.optString("played_at")) }.getOrNull() ?: return@mapNotNull null
+            item.optJSONObject("track")?.let { SpotifyApi.parseItem(it) }?.let { it to at }
+        }
 
     /** "1,2 Mln di follower", "15.300 follower"; vuoto se non si sa. */
     fun followersLine(n: Long): String = when {

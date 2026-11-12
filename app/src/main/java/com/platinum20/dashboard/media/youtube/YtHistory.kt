@@ -17,6 +17,8 @@ data class YtWatched(
     val positionMs: Long,
     val durationMs: Long,
     val watchedAt: Long,
+    /** Il canale, per le storie in cima a Media (1.485: chi hai guardato per ultimo); vuoto nei vecchi salvataggi. */
+    val channelId: String = "",
 ) {
     /** Quanto ne hai visto, da 0 a 1. */
     val progress: Float get() = if (durationMs <= 0) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
@@ -44,7 +46,7 @@ object YtHistory {
             (0 until array.length()).map { array.getJSONObject(it) }.associate { o ->
                 o.getString("id") to YtWatched(
                     o.getString("id"), o.optString("title"), o.optString("channel"), o.optString("avatar"),
-                    o.optLong("pos"), o.optLong("dur"), o.optLong("at"),
+                    o.optLong("pos"), o.optLong("dur"), o.optLong("at"), o.optString("cid"),
                 )
             }
         }.getOrDefault(emptyMap())
@@ -91,7 +93,7 @@ object YtHistory {
             val durationMs = known?.durationMs?.takeIf { it > 0 } ?: (v.durationSec * 1000L)
             val positionMs = if (durationMs > 0) durationMs * v.watchedPercent.coerceIn(0, 100) / 100 else 0L
             if (known == null) {
-                out[v.id] = YtWatched(v.id, v.title, v.channel, v.channelAvatar, positionMs, durationMs, now - index * 1_000L)
+                out[v.id] = YtWatched(v.id, v.title, v.channel, v.channelAvatar, positionMs, durationMs, now - index * 1_000L, v.channelId)
             } else if (positionMs > known.positionMs) {
                 out[v.id] = known.copy(positionMs = positionMs, durationMs = durationMs)
             }
@@ -128,7 +130,7 @@ object YtHistory {
         _items.value.values.forEach { w ->
             array.put(
                 JSONObject().put("id", w.id).put("title", w.title).put("channel", w.channel).put("avatar", w.channelAvatar)
-                    .put("pos", w.positionMs).put("dur", w.durationMs).put("at", w.watchedAt)
+                    .put("pos", w.positionMs).put("dur", w.durationMs).put("at", w.watchedAt).put("cid", w.channelId)
             )
         }
         p.edit().putString(KEY, array.toString()).apply()
