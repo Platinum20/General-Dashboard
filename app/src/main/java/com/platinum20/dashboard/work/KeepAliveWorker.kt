@@ -48,8 +48,8 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
         if (SimStore.linked.value && SimStore.isStale(within = SimStore.KEEP_MS)) {
             runCatching { WindTreLink.refresh(app) }
         }
-        // Creators Pro: una rilettura ogni mezz'ora tiene il token in uso, così il sito non chiude la sessione di notte.
-        if (ShiftStore.linked.value && !ShiftStore.expired.value && ShiftStore.readAt.value < System.currentTimeMillis() - SHIFT_KEEP_MS) {
+        // Creators Pro: una rilettura all'ora tiene il token in uso, così il sito non chiude la sessione di notte.
+        if (ShiftStore.linked.value && !ShiftStore.expired.value && ShiftWorker.due(ShiftStore.readAt.value, System.currentTimeMillis())) {
             runCatching { CreatorsLink.refresh(app) }
         }
         return Result.success()
@@ -62,11 +62,8 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val OLD = "revolut_keepalive"
         private const val PREFS = "keepalive"
         private const val KEY_ASKED = "batteryAsked"
-        /** La sveglia: sotto i 15 minuti Android la allunga comunque a riposo. */
-        const val ALARM_MS = 15 * 60 * 1000L
-
-        /** Ogni quanto rileggere i turni dal giro, se nessun altro l'ha fatto. */
-        private const val SHIFT_KEEP_MS = 30 * 60 * 1000L
+        /** La sveglia a riposo: ogni mezz'ora (era 15 minuti); le letture vere sono una all'ora. */
+        const val ALARM_MS = 30 * 60 * 1000L
 
         private fun anyLinked() = SimStore.linked.value || ShiftStore.linked.value
 

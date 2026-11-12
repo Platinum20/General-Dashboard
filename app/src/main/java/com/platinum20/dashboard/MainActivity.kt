@@ -313,6 +313,9 @@ class MainActivity : ComponentActivity() {
         com.platinum20.dashboard.media.youtube.YtSync.start(this)
         lifecycle.addObserver(androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_START) com.platinum20.dashboard.media.youtube.YtSync.foreground(this)
+            // Spotify pronto mentre l'app è aperta; chiusa e in silenzio, il suo riproduttore si spegne (batteria).
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_START) com.platinum20.dashboard.media.spotify.SpotifyPlayer.setBackground(this, false)
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) com.platinum20.dashboard.media.spotify.SpotifyPlayer.setBackground(this, true)
         })
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
