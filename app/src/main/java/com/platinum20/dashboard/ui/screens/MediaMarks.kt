@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -178,6 +179,66 @@ internal fun MediaTile(
                 }
                 if (round) MediaMarkOverlay(mark, inset = height * 0.1f) else MediaMarkOverlay(mark)
                 overlay()
+            }
+        }
+    }
+}
+
+/** Altezza di [MediaLine]: la copertina di un video 16:9 larga [MEDIA_LINE_SLOT] e quella quadrata della musica. */
+internal val MEDIA_LINE_HEIGHT = 72.dp
+internal val MEDIA_LINE_SLOT = 128.dp
+
+/**
+ * La riga unica delle liste di Media dove musica e video stanno insieme (1.488, Antonio: "che abbiano tutti lo stesso
+ * aspetto"): stessa altezza, nessun bordo, copertina in uno spazio fisso (quadrata e al centro per la musica, 16:9 per
+ * i video) così il testo parte sempre dallo stesso punto; titolo su due righe, sotto l'autore.
+ */
+@Composable
+internal fun MediaLine(
+    wide: Boolean,
+    image: String,
+    title: String,
+    author: String?,
+    mark: MediaMark?,
+    click: Modifier,
+    round: Boolean = false,
+    overlay: @Composable BoxScope.() -> Unit = {},
+) {
+    val shape = if (round) CircleShape else MaterialTheme.shapes.medium
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().height(MEDIA_LINE_HEIGHT).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).then(click),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.width(MEDIA_LINE_SLOT).height(MEDIA_LINE_HEIGHT), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.width(if (wide) MEDIA_LINE_SLOT else MEDIA_LINE_HEIGHT).height(MEDIA_LINE_HEIGHT)
+                    .clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                mark?.let { Icon(MediaMarks.icon(it.type), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                if (image.isNotBlank()) {
+                    coil3.compose.AsyncImage(
+                        model = image,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
+                if (round) MediaMarkOverlay(mark, compact = true, inset = MEDIA_LINE_HEIGHT * 0.1f) else MediaMarkOverlay(mark, compact = true, inset = 4.dp)
+                overlay()
+            }
+        }
+        androidx.compose.foundation.layout.Spacer(Modifier.width(12.dp))
+        androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            author?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
             }
         }
     }

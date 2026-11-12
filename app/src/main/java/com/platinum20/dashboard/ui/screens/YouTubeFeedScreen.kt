@@ -424,6 +424,13 @@ private fun ChannelNote(text: String) {
     Text(text, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(24.dp))
 }
 
+/** Una playlist di YouTube nelle liste miste (1.488): la stessa riga [MediaLine] di album e playlist di Spotify. */
+@Composable
+internal fun PlaylistMediaLine(p: YtPlaylist, onClick: () -> Unit) = MediaLine(
+    wide = true, image = p.thumbnail, title = p.title, author = if (p.count > 0) "YouTube · ${p.count} video" else "YouTube",
+    mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable(onClick = onClick),
+)
+
 /** Una playlist del canale: miniatura, titolo, quanti video. */
 @Composable
 internal fun PlaylistLine(p: YtPlaylist, onClick: () -> Unit, padded: Boolean = true) {
@@ -551,6 +558,17 @@ internal fun VideoTile(video: YtVideo, height: Dp, onClick: () -> Unit) {
     MediaTile(
         height = height, wide = true, image = v.thumbnail.replace("/mqdefault.jpg", "/hqdefault.jpg"),
         title = v.title, author = v.channel, date = videoDate(v),
+        mark = MediaMark(MediaType.VIDEO, videoBadgeText(v)),
+        click = Modifier.tapOrSave({ SavedLinks.youtube(v) }, onClick),
+    ) { WatchedBar(v, Modifier.align(Alignment.BottomCenter)) }
+}
+
+/** Un video in una lista che mescola musica e video (1.488): la stessa riga [MediaLine] dei brani. */
+@Composable
+internal fun VideoLine(video: YtVideo, onClick: () -> Unit, author: String? = null) {
+    val v = video.withKnownDuration()
+    MediaLine(
+        wide = true, image = v.thumbnail, title = v.title, author = author ?: listOfNotNull(v.channel.takeIf { it.isNotBlank() }, videoDate(v)).joinToString(" · "),
         mark = MediaMark(MediaType.VIDEO, videoBadgeText(v)),
         click = Modifier.tapOrSave({ SavedLinks.youtube(v) }, onClick),
     ) { WatchedBar(v, Modifier.align(Alignment.BottomCenter)) }
@@ -741,7 +759,7 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                 items(recent, key = { (e, at) -> if (e is YtWatched) "l" + e.id else "s" + (e as com.platinum20.dashboard.media.spotify.SpItem).uri + at }) { (e, _) ->
                     if (e is com.platinum20.dashboard.media.spotify.SpItem) {
                         val tracks = played.map { it.first }
-                        ItemRow(e, onClick = { playTracks(context, tracks, e) })
+                        TrackLine(e, onClick = { playTracks(context, tracks, e) })
                     } else {
                         val w = e as YtWatched
                         val video = YtVideo(
@@ -749,13 +767,13 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                             durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
                             uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
                         )
-                        VideoRow(video, onClick = { onPlay(video.watchUrl) })
+                        VideoLine(video, onClick = { onPlay(video.watchUrl) })
                     }
                 }
             }
             if (fromYouTube.isNotEmpty()) {
                 item(key = "web-h") { SectionHeader("Dalla tua cronologia di YouTube") }
-                items(fromYouTube, key = { "w" + it.id }) { VideoRow(it, onClick = { onPlay(it.watchUrl) }) }
+                items(fromYouTube, key = { "w" + it.id }) { VideoLine(it, onClick = { onPlay(it.watchUrl) }) }
             }
         }
     }

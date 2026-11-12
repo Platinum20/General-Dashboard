@@ -179,7 +179,6 @@ fun MediaScreen(
     val latestEpisodes by PodcastStore.latest.collectAsState()
     val followedHere by PodcastStore.followed.collectAsState()
     val spotifyShows by PodcastStore.spotify.collectAsState()
-    val followedCount = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows).size }
     LaunchedEffect(youTubeOn) {
         if (youTubeOn) {
             YouTubeStore.refreshSubscriptions(context)
@@ -243,7 +242,10 @@ fun MediaScreen(
                 title = "Media",
                 subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(freshVideos, freshEpisodes) ?: "Video, musica e podcast",
                 scrollBehavior = scrollBehavior,
-            )
+            ) {
+                // La Cronologia (1.488, Antonio: "in alto a destra come un tastino da premere"): video e brani insieme.
+                if (spotifyOn || youTubeOn) RoundIconButton(Icons.Outlined.History, "Cronologia") { onOpenRoute(Routes.YOUTUBE_FEED) }
+            }
         },
     ) { inner ->
         LazyColumn(
@@ -293,7 +295,16 @@ fun MediaScreen(
                 )
             }
             // Per te (1.481, Antonio): prima i mix, poi le uscite.
-            if (spotifyOn) item(key = "perte") { PerTeRow(onOpen = { onOpenRoute(Routes.spotifyItem(it)) }, onOpenMix = { onOpenRoute(Routes.mix(it.id)) }) }
+            item(key = "perte") {
+                PerTeRow(
+                    onOpen = { onOpenRoute(Routes.spotifyItem(it)) },
+                    onOpenMix = { onOpenRoute(Routes.mix(it.id)) },
+                    onOpenPodcast = {
+                        PodcastOpen.set(it)
+                        onOpenRoute(Routes.PODCAST)
+                    },
+                )
+            }
             // Sotto Per te una riga per album e playlist e una per Mi piace (1.486, Antonio), Spotify e YouTube insieme.
             if (spotifyOn || youTubeOn) {
                 item(key = "albums") { AlbumsRow(onOpenRoute) }
@@ -317,11 +328,7 @@ fun MediaScreen(
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Spotify e YouTube nelle stesse voci (1.485, Antonio): Mi piace, Cronologia, Playlist mostrano tutti e due.
-                    if (spotifyOn || youTubeOn) {
-                        // Mi piace e Album e playlist sono righe loro sotto Per te (1.486): qui resta la Cronologia.
-                        ListRow(Icons.Outlined.History, TileAccent.NEUTRAL, "Cronologia", "Video e brani, dal più recente") { onOpenRoute(Routes.YOUTUBE_FEED) }
-                    }
+                    // Cronologia è il tastino in alto a destra e I tuoi podcast sono in Per te (1.488, Antonio).
                     if (!spotifyOn) {
                         ListRow(Icons.Outlined.GraphicEq, TileAccent.NEUTRAL, "Collega Spotify", "Mix, uscite e la tua musica qui") {
                             onOpenRoute(Routes.login(MediaService.SPOTIFY))
@@ -332,10 +339,6 @@ fun MediaScreen(
                             onOpenRoute(Routes.login(MediaService.YOUTUBE))
                         }
                     }
-                    ListRow(
-                        Icons.Outlined.Mic, TileAccent.NEUTRAL, "I tuoi podcast",
-                        if (followedCount > 0) "$followedCount che segui" else "Scegline qualcuno da seguire",
-                    ) { onOpenRoute(Routes.PODCAST) }
                 }
             }
         }

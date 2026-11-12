@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.488.0
+**Media: podcast in Per te, Cronologia in alto e liste in ordine di ascolto**
+- I podcast che segui sono in Per te, dal più ascoltato di recente; l'ultima tessera apre "I tuoi podcast"
+- La Cronologia è un tastino in alto a destra di Media, non più una riga in fondo
+- Mi piace, Album e playlist e le loro pagine non alternano più Spotify e YouTube: sono nell'ordine in cui li hai ascoltati o guardati
+- Nelle liste dove musica e video stanno insieme (Mi piace, Playlist, Cronologia) ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, copertina quadrata per la musica e rettangolare per i video, testo allineato
+- Sui mix non c'è più la durata
+
 ## 1.487.0
 **Le cose senza scadenza in fondo alla card Calendario**
 - In fondo alla card Calendario della Home c'è "Senza scadenza": le cose da fare, le note, le foto, i pacchi senza data e quello che hai salvato per dopo (video, brani, radio, podcast e articoli), tutte insieme e tutte visibili

@@ -56,6 +56,27 @@ internal sealed interface MixedEntry {
     }
 }
 
+/** Quando hai ascoltato o guardato l'ultima volta ogni cosa (1.488): per mettere le liste miste nell'ordine di ascolto. */
+@Composable
+internal fun rememberHeardAt(): Map<String, Long> {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.media.MediaHistory.init(context); com.platinum20.dashboard.media.youtube.YtHistory.init(context) }
+    val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
+    val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
+    val played by SpotifyStore.played.collectAsState()
+    return remember(history, watched, played) {
+        MediaMerge.heardAt(history, watched.mapValues { it.value.watchedAt }, played.map { (t, at) -> t.uri to at.toEpochMilli() })
+    }
+}
+
+internal val MixedEntry.timeKey: String get() = when (this) {
+    is MixedEntry.Track -> item.uri
+    is MixedEntry.Video -> video.id
+}
+
+/** La chiave per [rememberHeardAt] di una voce di Album e playlist. */
+internal fun playlistKey(e: Any): String = if (e is SpItem) e.uri else (e as YtPlaylist).id
+
 /** Una voce nella coda unica: i brani suonano con Spotify, i video col player di YouTube, uno dopo l'altro. */
 internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
     is MixedEntry.Track -> ResumeItem(ResumeKind.SPOTIFY, item.uri, item.title, item.subtitle, item.image, durationMs = item.durationMs, at = now)
@@ -64,7 +85,7 @@ internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
 
 /**
  * "Mi piace" (1.485, Antonio: le cose che in Spotify e YouTube fanno lo stesso stanno in una voce sola): i brani che
- * ti piacciono e i video con il Mi piace insieme, a turno dai più recenti; "Riproduci tutto" li mette nella coda unica.
+ * ti piacciono e i video con il Mi piace insieme, in ordine di ascolto (1.488); "Riproduci tutto" li mette nella coda unica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +102,8 @@ fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     }
     val tracks = library.data?.liked.orEmpty()
     val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
-    val entries = MediaMerge.alternate(tracks.map { MixedEntry.Track(it) }, videos.map { MixedEntry.Video(it) })
+    val heard = rememberHeardAt()
+    val entries = MediaMerge.byRecency(tracks.map { MixedEntry.Track(it) } + videos.map { MixedEntry.Video(it) }) { heard[it.timeKey] }
     val state = Loadable(
         data = entries.takeIf { library.data != null || liked.data != null || mine.isNotEmpty() },
         loading = library.loading || liked.loading,
@@ -102,8 +124,8 @@ fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
                 }
                 items(entries, key = { it.key }) { entry ->
                     when (entry) {
-                        is MixedEntry.Track -> ItemRow(entry.item, onClick = { playTracks(context, tracks, entry.item) })
-                        is MixedEntry.Video -> VideoRow(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
+                        is MixedEntry.Track -> TrackLine(entry.item, onClick = { playTracks(context, tracks, entry.item) })
+                        is MixedEntry.Video -> VideoLine(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
                     }
                 }
             }
@@ -130,7 +152,8 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, on
     }
     val fromSpotify = spotify.data.orEmpty() + library.data?.albums.orEmpty()
     val fromYouTube = youtube.data.orEmpty()
-    val entries: List<Any> = MediaMerge.alternate(fromSpotify, fromYouTube)
+    val heard = rememberHeardAt()
+    val entries: List<Any> = MediaMerge.byRecency(fromSpotify + fromYouTube) { heard[playlistKey(it)] }
     val state = Loadable(
         data = entries.takeIf { spotify.data != null || youtube.data != null },
         loading = spotify.loading || youtube.loading,
@@ -145,8 +168,8 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, on
             FeedList(state, empty = "Nessuna playlist") {
                 items(entries, key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
                     when (e) {
-                        is SpItem -> ItemRow(e, onClick = { onOpenSpotify(e) })
-                        is YtPlaylist -> PlaylistLine(e, onClick = { onOpenYouTube(e) }, padded = false)
+                        is SpItem -> TrackLine(e, onClick = { onOpenSpotify(e) })
+                        is YtPlaylist -> PlaylistMediaLine(e, onClick = { onOpenYouTube(e) })
                     }
                 }
             }
@@ -163,7 +186,7 @@ private const val ROW_MAX = 20
 
 /**
  * "Album e playlist" sotto Per te (1.486, Antonio: "una riga sua"): le playlist di Spotify e di YouTube e gli album
- * salvati, a turno; il titolo e l'ultima tessera aprono la pagina con tutte.
+ * salvati, in ordine di ascolto; il titolo e l'ultima tessera aprono la pagina con tutte.
  */
 @Composable
 internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
@@ -175,7 +198,8 @@ internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
         SpotifyStore.refreshPlaylists()
         YouTubeStore.refreshPlaylists(context)
     }
-    val all: List<Any> = MediaMerge.alternate(spotify.data.orEmpty() + library.data?.albums.orEmpty(), youtube.data.orEmpty())
+    val heard = rememberHeardAt()
+    val all: List<Any> = MediaMerge.byRecency(spotify.data.orEmpty() + library.data?.albums.orEmpty() + youtube.data.orEmpty()) { heard[playlistKey(it)] }
     if (all.isEmpty()) return
     val tile = coverTileWidth()
     val open = { onOpenRoute(com.platinum20.dashboard.Routes.SPOTIFY_FEED) }
@@ -200,7 +224,7 @@ internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
     }
 }
 
-/** "Mi piace" sotto Per te (1.486): brani e video che ti piacciono, a turno; un tocco li fa partire. */
+/** "Mi piace" sotto Per te (1.486): brani e video che ti piacciono, in ordine di ascolto; un tocco li fa partire. */
 @Composable
 internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
@@ -211,7 +235,8 @@ internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Un
     LaunchedEffect(Unit) { YouTubeStore.refreshLiked(context) }
     val tracks = library.data?.liked.orEmpty()
     val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
-    val all = MediaMerge.alternate(tracks.map { MixedEntry.Track(it) }, videos.map { MixedEntry.Video(it) })
+    val heard = rememberHeardAt()
+    val all = MediaMerge.byRecency(tracks.map { MixedEntry.Track(it) } + videos.map { MixedEntry.Video(it) }) { heard[it.timeKey] }
     if (all.isEmpty()) return
     val tile = coverTileWidth()
     val open = { onOpenRoute(com.platinum20.dashboard.Routes.YOUTUBE_LIKED) }
