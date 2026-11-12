@@ -156,7 +156,8 @@ fun MediaScreen(
     // Quando nulla suona, il blocco colorato è l'ultima cosa vista o ascoltata, di qualunque fonte:
     // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
     val hero = resumable.firstOrNull()?.takeIf { now == null }
-    val continueList = resumable.filter { it != hero }.take(12)
+    // In Continua solo i video (1.488, Antonio): la musica riparte da Per te.
+    val continueList = resumable.filter { it != hero && (it.kind == ResumeKind.YOUTUBE || it.kind == ResumeKind.VIDEO) }.take(12)
     // Aprendo Media si rilegge anche la cronologia di YouTube: "Riprendi" è l'ultima cosa vista, anche sul PC.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         Accounts.refresh()
@@ -303,12 +304,14 @@ fun MediaScreen(
                         PodcastOpen.set(it)
                         onOpenRoute(Routes.PODCAST)
                     },
+                    onOpenRadio = { onOpenRoute(Routes.RADIO) },
                 )
             }
             // Sotto Per te una riga per album e playlist e una per Mi piace (1.486, Antonio), Spotify e YouTube insieme.
             if (spotifyOn || youTubeOn) {
-                item(key = "albums") { AlbumsRow(onOpenRoute) }
-                item(key = "liked") { LikedRow(onOpenRoute, onPlayVideo) }
+                // Mi piace diviso in brani e video (1.488, Antonio); le playlist sono in Per te, quelle di YouTube non ci sono più.
+                item(key = "liked-tracks") { LikedRow(videos = false, onOpenRoute, onPlayVideo) }
+                item(key = "liked-videos") { LikedRow(videos = true, onOpenRoute, onPlayVideo) }
             }
             if (continueList.isNotEmpty()) {
                 item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
@@ -324,7 +327,6 @@ fun MediaScreen(
                 item(key = "feed-h") { SectionHeader(MediaShelves.title("Novità", feed.fresh.size), Modifier.padding(horizontal = 16.dp)) }
                 item(key = "feed") { NewsRow(feed, onPlayVideo, onOpenAll = { onOpenRoute(Routes.MEDIA_NEWS) }) }
             }
-            item(key = "radio") { RadioRow(onOpenAll = { onOpenRoute(Routes.RADIO) }) }
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

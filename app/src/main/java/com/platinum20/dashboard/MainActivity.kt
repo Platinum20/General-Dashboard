@@ -423,6 +423,8 @@ object Routes {
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
     const val YOUTUBE_LIKED = "media/liked"
+    /** I brani che ti piacciono (1.488): Mi piace diviso in brani e video. */
+    const val LIKED_TRACKS = "media/liked/tracks"
     /** Un mix di Per te come pagina sua, con Riproduci (1.486). */
     const val MEDIA_MIX = "media/mix/{id}"
     fun mix(id: String) = "media/mix/${Uri.encode(id)}"
@@ -1427,9 +1429,17 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // Mi piace (1.485): brani di Spotify e video di YouTube insieme.
+            // Mi piace (1.488): i video da una parte, i brani dall'altra.
             composable(Routes.YOUTUBE_LIKED) {
                 com.platinum20.dashboard.ui.screens.MediaLikedScreen(
+                    videosOnly = true,
+                    onBack = { navController.popBackStack() },
+                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.LIKED_TRACKS) {
+                com.platinum20.dashboard.ui.screens.MediaLikedScreen(
+                    videosOnly = false,
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
@@ -1439,7 +1449,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
                     onBack = { navController.popBackStack() },
                     onOpenSpotify = { navController.navigate(Routes.spotifyItem(it)) },
-                    onOpenYouTube = { navController.navigate(Routes.youtubePlaylist(it)) },
                 )
             }
             composable(

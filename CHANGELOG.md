@@ -1,11 +1,14 @@
 # Changelog
 
 ## 1.488.0
-**Media: podcast in Per te, Cronologia in alto e liste in ordine di ascolto**
-- I podcast che segui sono in Per te, dal più ascoltato di recente; l'ultima tessera apre "I tuoi podcast"
-- La Cronologia è un tastino in alto a destra di Media, non più una riga in fondo
-- Mi piace, Album e playlist e le loro pagine non alternano più Spotify e YouTube: sono nell'ordine in cui li hai ascoltati o guardati
-- Nelle liste dove musica e video stanno insieme (Mi piace, Playlist, Cronologia) ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina per musica e video, testo allineato
+**Media: Per te diventa il tuo "continua" della musica**
+- Per te è in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, un podcast o uno degli ultimi 3 artisti ascoltati; le ultime uscite non ci sono più
+- In fondo a Per te ci sono "I tuoi podcast" e il tasto Radio (la Radio non è più una sezione: le tue radio sono in cima alla sua pagina)
+- Mi piace è diviso in due: "Brani che ti piacciono" e "Video che ti piacciono", ognuno con la sua pagina
+- Le playlist di YouTube non ci sono più in Media
+- Continua mostra solo i video
+- La Cronologia è un tastino in alto a destra di Media
+- Nelle liste dove musica e video stanno insieme (Cronologia) ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina, testo allineato
 - Sui mix non c'è più la durata
 
 ## 1.487.0

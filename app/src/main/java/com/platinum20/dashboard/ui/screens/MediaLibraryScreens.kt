@@ -74,9 +74,6 @@ internal val MixedEntry.timeKey: String get() = when (this) {
     is MixedEntry.Video -> video.id
 }
 
-/** La chiave per [rememberHeardAt] di una voce di Album e playlist. */
-internal fun playlistKey(e: Any): String = if (e is SpItem) e.uri else (e as YtPlaylist).id
-
 /** Una voce nella coda unica: i brani suonano con Spotify, i video col player di YouTube, uno dopo l'altro. */
 internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
     is MixedEntry.Track -> ResumeItem(ResumeKind.SPOTIFY, item.uri, item.title, item.subtitle, item.image, durationMs = item.durationMs, at = now)
@@ -84,38 +81,44 @@ internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
 }
 
 /**
- * "Mi piace" (1.485, Antonio: le cose che in Spotify e YouTube fanno lo stesso stanno in una voce sola): i brani che
- * ti piacciono e i video con il Mi piace insieme, in ordine di ascolto (1.488); "Riproduci tutto" li mette nella coda unica.
+ * "Brani che ti piacciono" o "Video che ti piacciono" (1.488, Antonio: "dividi brani da video"): una pagina per parte,
+ * in ordine di ascolto; "Riproduci tutto" li mette nella coda unica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
+fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
     YtFavorites.init(context)
     val library by SpotifyStore.library.collectAsState()
     val liked by YouTubeStore.liked.collectAsState()
     val mine by YtFavorites.items.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshLibrary()
-        YouTubeStore.refreshLiked(context)
+    LaunchedEffect(videosOnly) {
+        if (videosOnly) YouTubeStore.refreshLiked(context) else SpotifyStore.refreshLibrary()
     }
     val tracks = library.data?.liked.orEmpty()
     val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
     val heard = rememberHeardAt()
-    val entries = MediaMerge.byRecency(tracks.map { MixedEntry.Track(it) } + videos.map { MixedEntry.Video(it) }) { heard[it.timeKey] }
+    val entries = MediaMerge.byRecency(if (videosOnly) videos.map { MixedEntry.Video(it) } else tracks.map { MixedEntry.Track(it) }) { heard[it.timeKey] }
+    val source = if (videosOnly) liked else library
     val state = Loadable(
-        data = entries.takeIf { library.data != null || liked.data != null || mine.isNotEmpty() },
-        loading = library.loading || liked.loading,
-        error = if (library.data == null && liked.data == null) library.error ?: liked.error else null,
+        data = entries.takeIf { source.data != null || (videosOnly && mine.isNotEmpty()) },
+        loading = source.loading,
+        error = if (source.data == null) source.error else null,
     )
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Mi piace", subtitle = countLine(tracks.size, "brani", videos.size, "video"), scrollBehavior = bar, onBack = onBack) },
+        topBar = {
+            TopLevelBar(
+                title = if (videosOnly) "Video che ti piacciono" else "Brani che ti piacciono",
+                subtitle = if (videosOnly) countLine(0, "", videos.size, "video") else countLine(tracks.size, "brani", 0, ""),
+                scrollBehavior = bar, onBack = onBack,
+            )
+        },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Nessun brano o video con il Mi piace") {
+            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace") {
                 if (entries.isNotEmpty()) item(key = "play") {
                     CanvasButton("Riproduci tutto", onClick = {
                         val now = System.currentTimeMillis()
@@ -134,44 +137,31 @@ fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
 }
 
 /**
- * "Playlist" (1.485): le playlist di Spotify e di YouTube e gli album salvati in una lista sola; ognuna si apre nella
- * sua pagina.
+ * "Playlist" (1.488, Antonio: quelle di YouTube no): le playlist di Spotify e gli album salvati, dall'ultimo ascoltato;
+ * ognuna si apre nella sua pagina.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, onOpenYouTube: (YtPlaylist) -> Unit) {
+fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
     val context = LocalContext.current
     SpotifyAuth.init(context)
     val spotify by SpotifyStore.playlists.collectAsState()
     val library by SpotifyStore.library.collectAsState()
-    val youtube by YouTubeStore.playlists.collectAsState()
     LaunchedEffect(Unit) {
         SpotifyStore.refreshPlaylists()
         SpotifyStore.refreshLibrary()
-        YouTubeStore.refreshPlaylists(context)
     }
-    val fromSpotify = spotify.data.orEmpty() + library.data?.albums.orEmpty()
-    val fromYouTube = youtube.data.orEmpty()
     val heard = rememberHeardAt()
-    val entries: List<Any> = MediaMerge.byRecency(fromSpotify + fromYouTube) { heard[playlistKey(it)] }
-    val state = Loadable(
-        data = entries.takeIf { spotify.data != null || youtube.data != null },
-        loading = spotify.loading || youtube.loading,
-        error = if (spotify.data == null && youtube.data == null) spotify.error ?: youtube.error else null,
-    )
+    val entries = MediaMerge.byRecency((spotify.data.orEmpty() + library.data?.albums.orEmpty()).distinctBy { it.uri }) { heard[it.uri] }
+    val state = Loadable(data = entries.takeIf { spotify.data != null }, loading = spotify.loading, error = if (spotify.data == null) spotify.error else null)
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Playlist", subtitle = "Spotify e YouTube, album salvati", scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Playlist", subtitle = "Playlist e album salvati", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
             FeedList(state, empty = "Nessuna playlist") {
-                items(entries, key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
-                    when (e) {
-                        is SpItem -> TrackLine(e, onClick = { onOpenSpotify(e) })
-                        is YtPlaylist -> PlaylistMediaLine(e, onClick = { onOpenYouTube(e) })
-                    }
-                }
+                items(entries, key = { "s-" + it.uri }) { e -> TrackLine(e, onClick = { onOpenSpotify(e) }) }
             }
         }
     }
@@ -185,63 +175,26 @@ internal fun countLine(a: Int, aName: String, b: Int, bName: String): String =
 private const val ROW_MAX = 20
 
 /**
- * "Album e playlist" sotto Per te (1.486, Antonio: "una riga sua"): le playlist di Spotify e di YouTube e gli album
- * salvati, in ordine di ascolto; il titolo e l'ultima tessera aprono la pagina con tutte.
+ * "Brani che ti piacciono" e "Video che ti piacciono" sotto Per te (1.488, Antonio: divisi), dall'ultimo ascoltato;
+ * un tocco li fa partire, il titolo e l'ultima tessera aprono la pagina.
  */
 @Composable
-internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
-    val context = LocalContext.current
-    val spotify by SpotifyStore.playlists.collectAsState()
-    val library by SpotifyStore.library.collectAsState()
-    val youtube by YouTubeStore.playlists.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshPlaylists()
-        YouTubeStore.refreshPlaylists(context)
-    }
-    val heard = rememberHeardAt()
-    val all: List<Any> = MediaMerge.byRecency(spotify.data.orEmpty() + library.data?.albums.orEmpty() + youtube.data.orEmpty()) { heard[playlistKey(it)] }
-    if (all.isEmpty()) return
-    val tile = coverTileWidth()
-    val open = { onOpenRoute(com.platinum20.dashboard.Routes.SPOTIFY_FEED) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OpenableHeader("Album e playlist", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(all.take(ROW_MAX), key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
-                when (e) {
-                    is SpItem -> MediaTile(
-                        tile, wide = false, image = e.image, title = e.title, author = e.subtitle.substringBefore(" · "), date = null,
-                        mark = MediaMarks.of(e), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e)) },
-                    )
-                    is YtPlaylist -> MediaTile(
-                        tile, wide = true, image = e.thumbnail, title = e.title,
-                        author = if (e.count > 0) "YouTube · ${e.count} video" else "YouTube", date = null,
-                        mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.youtubePlaylist(e)) },
-                    )
-                }
-            }
-            if (all.size > ROW_MAX) item(key = "albums-all") { AllTile(tile, "Tutte", "${all.size} in tutto", open) }
-        }
-    }
-}
-
-/** "Mi piace" sotto Per te (1.486): brani e video che ti piacciono, in ordine di ascolto; un tocco li fa partire. */
-@Composable
-internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
+internal fun LikedRow(videos: Boolean, onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
     YtFavorites.init(context)
     val library by SpotifyStore.library.collectAsState()
     val liked by YouTubeStore.liked.collectAsState()
     val mine by YtFavorites.items.collectAsState()
-    LaunchedEffect(Unit) { YouTubeStore.refreshLiked(context) }
+    LaunchedEffect(videos) { if (videos) YouTubeStore.refreshLiked(context) }
     val tracks = library.data?.liked.orEmpty()
-    val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
+    val likedVideos = (mine + liked.data.orEmpty()).distinctBy { it.id }
     val heard = rememberHeardAt()
-    val all = MediaMerge.byRecency(tracks.map { MixedEntry.Track(it) } + videos.map { MixedEntry.Video(it) }) { heard[it.timeKey] }
+    val all = MediaMerge.byRecency(if (videos) likedVideos.map { MixedEntry.Video(it) } else tracks.map { MixedEntry.Track(it) }) { heard[it.timeKey] }
     if (all.isEmpty()) return
     val tile = coverTileWidth()
-    val open = { onOpenRoute(com.platinum20.dashboard.Routes.YOUTUBE_LIKED) }
+    val open = { onOpenRoute(if (videos) com.platinum20.dashboard.Routes.YOUTUBE_LIKED else com.platinum20.dashboard.Routes.LIKED_TRACKS) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OpenableHeader("Mi piace", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
+        OpenableHeader(if (videos) "Video che ti piacciono" else "Brani che ti piacciono", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(all.take(ROW_MAX), key = { it.key }) { e ->
                 when (e) {
@@ -253,7 +206,7 @@ internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Un
                     is MixedEntry.Video -> VideoTile(e.video, tile) { onPlayVideo(e.video.watchUrl) }
                 }
             }
-            if (all.size > ROW_MAX) item(key = "liked-all") { AllTile(tile, "Tutti", countLine(tracks.size, "brani", videos.size, "video"), open) }
+            if (all.size > ROW_MAX) item(key = "liked-all") { AllTile(tile, "Tutti", if (videos) "${all.size} video" else "${all.size} brani", open) }
         }
     }
 }
@@ -298,11 +251,11 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             Text(mix.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                             Spacer(Modifier.height(8.dp))
-                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null) }, primary = true)
+                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null, mix?.let(::mixLink).orEmpty()) }, primary = true)
                         }
                     }
                 }
-                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track) }) }
+                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track, mix?.let(::mixLink).orEmpty()) }) }
             }
         }
     }

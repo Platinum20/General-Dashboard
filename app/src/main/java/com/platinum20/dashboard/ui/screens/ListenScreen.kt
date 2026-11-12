@@ -27,6 +27,9 @@ fun ListenScreen(onBack: () -> Unit) {
     RadioStore.init(context)
     val radio by RadioStore.now.collectAsState()
     val popular by RadioStore.popular.collectAsState()
+    // Da quando la Radio è un tasto in Per te (1.488) le tue radio stanno qui, sopra le più ascoltate.
+    val favorites by RadioStore.favorites.collectAsState()
+    val recent by RadioStore.recent.collectAsState()
     LaunchedEffect(Unit) { RadioStore.loadPopular() }
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
@@ -35,7 +38,7 @@ fun ListenScreen(onBack: () -> Unit) {
             TopLevelBar(
                 title = "Radio",
                 scrollBehavior = barScroll,
-                subtitle = "Le più ascoltate in Italia",
+                subtitle = "Le tue e le più ascoltate in Italia",
                 onBack = onBack,
             )
         },
@@ -45,7 +48,7 @@ fun ListenScreen(onBack: () -> Unit) {
             // Senza spazio fra gli elementi: le righe di una sezione formano una card sola (1.423); i titoli hanno il loro.
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 96.dp),
         ) {
-            radioSections(popular, emptyList(), emptyList(), radio)
+            radioSections(popular, favorites, recent, radio)
         }
     }
 }
