@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.498.0
+**Musica: crea playlist e aggiungi brani**
+- Tieni premuto un brano di Spotify (in una lista, in una playlist o nel player) e scegli "Aggiungi a una playlist": compaiono le tue playlist, tocca quella giusta. La prima è l'ultima che hai usato
+- Dallo stesso fumetto "Nuova playlist" ne crea una col brano già dentro: scrivi solo il nome. È privata
+- In Musica (il tastino con l'orologio) c'è "Nuova playlist" in cima, per crearne una vuota
+- Se un brano è già nella playlist te lo dice invece di metterlo due volte
+
 ## 1.497.0
 **Media: Video sono le tue iscrizioni, Musica solo raccolte**
 - La fila Video è il feed delle tue iscrizioni in orizzontale: i video nuovi dei canali che segui, dal più recente, e arrivando in fondo se ne caricano altri. Quelli iniziati restano in Riprendi e nella cronologia

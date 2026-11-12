@@ -1709,6 +1709,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     }
     SaveToNotesLayer()
     ActionBubbleLayer()
+    com.platinum20.dashboard.ui.screens.PlaylistNameLayer()
     WhatsNewLayer()
     CaptureFeedbackLayer(onNotes = currentRoute == Routes.NOTES)
     }

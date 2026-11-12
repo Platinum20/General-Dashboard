@@ -150,6 +150,42 @@ object SpotifyApi {
     suspend fun playlists(token: String): List<SpItem> =
         request(token, "me/playlists?limit=50")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
 
+    /**
+     * Le playlist dove si possono mettere brani: le tue e quelle collaborative. Spotify non lo dice nell'elemento,
+     * quindi serve l'id del profilo per confrontarlo col proprietario.
+     */
+    suspend fun editablePlaylists(token: String): List<SpItem> {
+        val me = request(token, "me")?.optString("id").orEmpty()
+        return SpotifyPlaylists.editable(request(token, "me/playlists?limit=50"), me)
+    }
+
+    /**
+     * Una playlist nuova, privata. Da febbraio 2026 si crea su "me/playlists"; se il server risponde ancora col
+     * vecchio indirizzo (404/405) si riprova con "users/<id>/playlists".
+     */
+    suspend fun createPlaylist(token: String, name: String): SpItem {
+        val body = JSONObject().put("name", name).put("public", false)
+        val json = try {
+            request(token, "me/playlists", "POST", body)
+        } catch (e: SpotifyApiException) {
+            if (e.code != 404 && e.code != 405) throw e
+            val me = request(token, "me")?.optString("id").orEmpty()
+            request(token, "users/$me/playlists", "POST", body)
+        }
+        return json?.toItem() ?: throw SpotifyApiException("Spotify non ha creato la playlist, riprova", 0)
+    }
+
+    /** Mette i brani in fondo alla playlist: "items" dal 2026, "tracks" prima (stessa regola della lettura). */
+    suspend fun addToPlaylist(token: String, playlistId: String, uris: List<String>) {
+        val body = JSONObject().put("uris", JSONArray(uris))
+        try {
+            request(token, "playlists/$playlistId/items", "POST", body)
+        } catch (e: SpotifyApiException) {
+            if (e.code != 404 && e.code != 405) throw e
+            request(token, "playlists/$playlistId/tracks", "POST", body)
+        }
+    }
+
     suspend fun likedTracks(token: String): List<SpItem> =
         request(token, "me/tracks?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("track")?.toItem() }
 

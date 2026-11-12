@@ -509,6 +509,13 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
                         click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) },
                     ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                 }
+                // Una playlist vuota da riempire: i brani si aggiungono tenendoli premuti (1.498).
+                item(key = "new-playlist") {
+                    MediaLine(
+                        wide = false, image = "", title = "Nuova playlist", author = "Poi tieni premuto un brano per aggiungerlo", mark = null,
+                        click = Modifier.clickable { PlaylistPicker.createEmpty() },
+                    ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                }
                 items(entries, key = { it.key }) { e ->
                     when (e) {
                         is PerTe.Mix -> MediaLine(
