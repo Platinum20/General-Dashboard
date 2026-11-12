@@ -291,9 +291,11 @@ internal fun rememberPerTe(): Pair<List<PerTe>, List<Podcast>> {
     val libraryState by SpotifyStore.library.collectAsState()
     val playlists by SpotifyStore.playlists.collectAsState()
     val listened by SpotifyStore.listened.collectAsState()
+    val made by com.platinum20.dashboard.media.spotify.MadeStore.mixes.collectAsState()
     LaunchedEffect(Unit) {
         SpotifyStore.refreshPlaylists()
         SpotifyStore.refreshListened()
+        com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
     }
     val history by com.platinum20.dashboard.media.MediaHistory.items.collectAsState()
     val heard = rememberHeardAt()
@@ -301,12 +303,12 @@ internal fun rememberPerTe(): Pair<List<PerTe>, List<Podcast>> {
     val library = libraryState.data
     val today = remember { LocalDate.now() }
     val podcasts = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
-    val entries = remember(home, library, playlists.data, podcasts, heard, history, listened.data) {
+    val entries = remember(home, library, playlists.data, podcasts, heard, history, listened.data, made) {
         // Anche gli ultimi artisti ascoltati (1.488, Antonio: "non tutti, tipo 3"), al loro posto nel tempo.
         val artists = listened.data.orEmpty().sortedByDescending { it.at }.distinctBy { it.artist.id }.take(PER_TE_ARTISTS)
         val podcastAt = history.filter { it.kind == ResumeKind.PODCAST && it.feed.isNotBlank() }
             .groupBy { it.feed }.mapValues { (_, l) -> l.maxOf { it.at } }
-        val all = mixesOf(home, library, today).map { PerTe.Mix(it) } +
+        val all = mixesOf(home, library, today, made).map { PerTe.Mix(it) } +
             (playlists.data.orEmpty() + library?.albums.orEmpty()).distinctBy { it.uri }.map { PerTe.Item(it) } +
             podcasts.map { PerTe.Show(it) } +
             artists.map { PerTe.Artist(it.artist, it.at.toEpochMilli()) } +
@@ -485,8 +487,9 @@ private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
         click = Modifier.tapOrSave({ SavedLinks.mix(mix.id, mix.title, mix.subtitle, mix.image) }, onClick),
     ) {
         Text(
-            "Mix",
+            mix.badge,
             style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -499,8 +502,9 @@ private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
 }
 
 /** I mix di oggi (gli stessi in Per te e nella pagina del mix): dai tuoi artisti e brani preferiti. */
-internal fun mixesOf(home: SpHome?, library: SpLibrary?, today: LocalDate): List<SpMix> =
-    SpotifyMixes.build(
+internal fun mixesOf(home: SpHome?, library: SpLibrary?, today: LocalDate, made: List<SpMix> = emptyList()): List<SpMix> =
+    // Prima le nostre playlist (Release Radar, Discover Weekly, Daily Mix, Top 50, radio: 1.491), poi i "Mix di".
+    made + SpotifyMixes.build(
         home?.topArtists.orEmpty(),
         home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
         today.toEpochDay(),

@@ -193,7 +193,9 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
         SpotifyStore.refreshLibrary()
     }
     val today = remember { java.time.LocalDate.now() }
-    val mix = remember(home.data, library.data) { mixesOf(home.data, library.data, today).firstOrNull { it.id == mixId } }
+    val made by com.platinum20.dashboard.media.spotify.MadeStore.mixes.collectAsState()
+    LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.MadeStore.refresh(context) }
+    val mix = remember(home.data, library.data, made) { mixesOf(home.data, library.data, today, made).firstOrNull { it.id == mixId } }
     val tracks = mix?.tracks.orEmpty()
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
@@ -201,7 +203,7 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
         topBar = {
             TopLevelBar(
                 title = mix?.title ?: "Mix",
-                subtitle = listOfNotNull("Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
+                subtitle = listOfNotNull(mix?.badge ?: "Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
                 scrollBehavior = bar,
                 onBack = onBack,
             )
@@ -296,7 +298,13 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
         SpotifyStore.refreshReleases()
         SpotifyStore.refreshListened()
         SpotifyStore.refreshDiscover()
+        com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
     }
+    // Simili da Last.fm (1.491): artisti che non ascolti ancora e brani rimasti fuori da Discover Weekly.
+    val similarArtists by com.platinum20.dashboard.media.spotify.MadeStore.similarArtists.collectAsState()
+    val similarTracks by com.platinum20.dashboard.media.spotify.MadeStore.similarTracks.collectAsState()
+    remember { com.platinum20.dashboard.media.lastfm.LastFm.init(context) }
+    val lastFmKey by com.platinum20.dashboard.media.lastfm.LastFm.key.collectAsState()
     val today = remember { java.time.LocalDate.now() }
     val fresh = MediaShelves.freshFirst(releases.data.orEmpty()) { it.item.id !in seen }
     val rows = discover.data.orEmpty()
@@ -306,7 +314,7 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
         topBar = { TopLevelBar(title = "Scopri", subtitle = "Musica dai tuoi ascolti", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         val tile = coverTileWidth()
-        val empty = fresh.isEmpty() && rows.isEmpty()
+        val empty = fresh.isEmpty() && rows.isEmpty() && similarArtists.isEmpty() && similarTracks.isEmpty()
         androidx.compose.foundation.lazy.LazyColumn(
             Modifier.fillMaxSize().padding(inner),
             contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
@@ -333,6 +341,34 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
                         ) { if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd)) }
                     }
                 }
+            }
+            if (similarArtists.isNotEmpty()) item(key = "sim-artists") {
+                DiscoverRow("Artisti simili", "A quelli che ascolti di più") {
+                    items(similarArtists, key = { "sa-" + it.uri }) { artist ->
+                        MediaTile(
+                            tile, wide = false, image = artist.image, title = artist.title, author = "Artista",
+                            date = null, mark = MediaMarks.of(artist), click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(artist) }) { onOpen(artist) }, round = true,
+                        )
+                    }
+                }
+            }
+            if (similarTracks.isNotEmpty()) item(key = "sim-tracks") {
+                DiscoverRow("Brani simili", "Ai tuoi preferiti, che non hai ancora sentito") {
+                    items(similarTracks, key = { "st-" + it.uri }) { track ->
+                        MediaTile(
+                            tile, wide = false, image = track.image, title = track.title, author = track.subtitle.substringBefore(" · "),
+                            date = null, mark = MediaMarks.of(track),
+                            click = Modifier.clickable { playTracks(context, similarTracks, track) },
+                        )
+                    }
+                }
+            }
+            if (lastFmKey.isBlank()) item(key = "lastfm") {
+                Text(
+                    "Per artisti e brani simili, Discover Weekly e i Daily Mix metti la chiave di Last.fm in Impostazioni › Media",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
             }
             items(rows, key = { "d-" + it.title }) { row ->
                 DiscoverRow(row.title, row.why) {
