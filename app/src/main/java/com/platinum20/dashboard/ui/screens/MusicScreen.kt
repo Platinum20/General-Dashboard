@@ -236,7 +236,8 @@ internal object PodcastOpen {
  * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit) {
+    val saved = rememberSavedMedia(video = false)
     val context = LocalContext.current
     remember { PodcastStore.init(context) }
     val followedHere by PodcastStore.followed.collectAsState()
@@ -280,6 +281,8 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader("Musica", Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
                     // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).

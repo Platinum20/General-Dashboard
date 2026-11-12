@@ -6,6 +6,7 @@
 - "Musica" è la tua musica in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, i brani che ti piacciono, un podcast o uno degli ultimi 3 artisti ascoltati. In fondo ci sono "I tuoi podcast" e il tasto Radio (le tue radio sono in cima alla sua pagina)
 - Il tastino Scopri a destra di "Musica" apre la musica nuova: le uscite degli artisti che segui, poi per i tuoi generi gli artisti che non ascolti ancora e le playlist
 - "Video" sono i video che hai iniziato, dal più recente, con in fondo "Vedi tutta la cronologia"; il suo tastino Scopri apre i nuovi delle iscrizioni e sotto la Home di YouTube, che carica altri video senza fine
+- Le cose salvate per dopo stanno in Media: la tessera "Salvati" è la prima della fila Musica (brani, radio e podcast) e della fila Video, e apre l'elenco dalla più recente (tenendo premuto la togli). Senza niente di salvato la tessera non c'è; nel Calendario restano solo gli articoli da leggere
 - La fila Novità, Mi piace come fila, i video che ti piacciono e le playlist di YouTube non sono più in Media
 - Gli elenchi non alternano più Spotify e YouTube: vanno solo in ordine di tempo
 - Nella Cronologia ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina per musica e video

@@ -63,17 +63,16 @@ class LooseItemsTest {
         val groups = dueDays(tasks, emptyList(), emptyList(), now = now, zone = zone, withToday = true, notes = notes)
         val items = looseItems(groups, notes, today)
         assertEquals(
-            listOf("task-1", "note-14", "note-13", "note-10", "note-11", "note-12", "task-2"),
+            // Il video salvato (note-10) sta in Media, non qui (1.490).
+            listOf("task-1", "note-14", "note-13", "note-11", "note-12", "task-2"),
             items.map { it.key },
         )
         assertEquals(LooseKind.PHOTO, items[2].kind)
         assertEquals("Foto · scade a marzo", items[2].line)
-        assertEquals(LooseKind.MEDIA, items[3].kind)
-        assertEquals("Veritasium", items[3].line)
-        assertEquals("Da leggere · Il Post", items[4].line)
+        assertEquals("Da leggere · Il Post", items[3].line)
         assertTrue(items.last().done)
         // Ogni riga ha al massimo una riga sotto.
         assertTrue(items.all { it.line == null || '\n' !in it.line!! })
-        assertEquals("Senza scadenza · 7", looseTitle(items.size))
+        assertEquals("Senza scadenza · 6", looseTitle(items.size))
     }
 }

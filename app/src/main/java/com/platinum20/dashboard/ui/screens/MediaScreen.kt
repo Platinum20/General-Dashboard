@@ -157,6 +157,7 @@ fun MediaScreen(
     // un tocco la fa ripartire dal punto esatto in cui era rimasta (la coda resta sotto).
     val hero = resumable.firstOrNull()?.takeIf { now == null }
     // In Continua solo i video (1.488, Antonio): la musica riparte da Per te.
+    val savedVideos = rememberSavedMedia(video = true)
     val continueList = resumable.filter { it != hero && (it.kind == ResumeKind.YOUTUBE || it.kind == ResumeKind.VIDEO) }.take(12)
     // Aprendo Media si rilegge anche la cronologia di YouTube: "Riprendi" è l'ultima cosa vista, anche sul PC.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
@@ -268,10 +269,11 @@ fun MediaScreen(
                     onOpenRadio = { onOpenRoute(Routes.RADIO) },
                     onOpenLiked = { onOpenRoute(Routes.LIKED_TRACKS) },
                     onDiscover = { onOpenRoute(Routes.MUSIC_DISCOVER) },
+                    onOpenSaved = { onOpenRoute(Routes.savedMedia(video = false)) },
                 )
             }
             // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
-            if (continueList.isNotEmpty() || youTubeOn) {
+            if (continueList.isNotEmpty() || youTubeOn || savedVideos.isNotEmpty()) {
                 // Il tastino Scopri apre la Home di YouTube con in cima i nuovi delle iscrizioni (1.488, Antonio).
                 item(key = "continue-h") {
                     SectionHeader("Video", Modifier.padding(horizontal = 16.dp)) {
@@ -280,6 +282,9 @@ fun MediaScreen(
                 }
                 item(key = "continue") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (savedVideos.isNotEmpty()) item(key = "saved") {
+                            SavedTile(coverTileWidth(), savedVideos.size, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
+                        }
                         itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
                         item(key = "history-all") { AllTile(coverTileWidth(), "Vedi tutta la cronologia", "Video e brani", onClick = { onOpenRoute(Routes.YOUTUBE_FEED) }) }
                     }

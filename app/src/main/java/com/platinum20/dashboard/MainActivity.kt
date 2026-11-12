@@ -430,6 +430,9 @@ object Routes {
     fun mix(id: String) = "media/mix/${Uri.encode(id)}"
     /** Tutte le novità in verticale, dall'ultima tessera della fila (1.486). */
     const val MEDIA_NEWS = "media/news"
+    /** Le cose salvate per dopo di una fila di Media (1.490): video o musica. */
+    const val SAVED_MEDIA = "media/saved/{kind}"
+    fun savedMedia(video: Boolean) = "media/saved/" + if (video) "video" else "musica"
     /** Scopri della musica (1.488): il tastino a destra del titolo Musica. */
     const val MUSIC_DISCOVER = "media/discover"
     /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
@@ -1429,6 +1432,13 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.MediaNewsScreen(
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.SAVED_MEDIA) { entry ->
+                com.platinum20.dashboard.ui.screens.SavedMediaScreen(
+                    video = entry.arguments?.getString("kind") == "video",
+                    onBack = { navController.popBackStack() },
+                    onOpenRoute = { navController.navigate(it) },
                 )
             }
             composable(Routes.MUSIC_DISCOVER) {

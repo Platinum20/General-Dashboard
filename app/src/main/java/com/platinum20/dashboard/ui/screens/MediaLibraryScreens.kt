@@ -35,6 +35,10 @@ import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.MediaMerge
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.capture.SavedLink
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.Bookmark
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyStore
@@ -354,6 +358,63 @@ private fun DiscoverRow(title: String, why: String, content: androidx.compose.fo
             Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
         }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), content = content)
+    }
+}
+
+/** Le cose salvate per dopo di una fila di Media (1.490): i video per Video, il resto per Musica; dalla più recente. */
+@Composable
+internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.capture.SavedLinks.Later> {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.notes.NotesStore.init(context) }
+    val data by com.platinum20.dashboard.notes.NotesStore.data.collectAsState()
+    return remember(data.notes, video) {
+        com.platinum20.dashboard.capture.SavedLinks.later(data.notes).filter { com.platinum20.dashboard.capture.SavedLinks.isVideo(it.item) == video }
+    }
+}
+
+/**
+ * La tessera "Salvati · N", prima di tutte nella sua fila (1.490, Antonio: le cose salvate per dopo stanno in Media, e
+ * la tessera sparisce quando non c'è niente). Stessa forma della fila: quadrata in Musica, larga in Video.
+ */
+@Composable
+internal fun SavedTile(height: androidx.compose.ui.unit.Dp, count: Int, wide: Boolean, onClick: () -> Unit) {
+    MediaTile(height, wide = wide, image = "", title = "Salvati · $count", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
+        androidx.compose.material3.Icon(
+            androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp),
+        )
+    }
+}
+
+/**
+ * "Salvati" (1.490): le cose salvate per dopo, una sotto l'altra dalla più recente. Un tocco la apre ferma, tenendo
+ * premuto la togli (con Annulla). Vuota, si torna indietro.
+ */
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
+    val context = LocalContext.current
+    val saved = rememberSavedMedia(video)
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Salvati", subtitle = if (video) "Video da vedere dopo" else "Musica e podcast per dopo", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            FeedList(Loadable(data = saved), empty = "Niente di salvato") {
+                items(saved, key = { "s-" + it.note.id }) { l ->
+                    MediaLine(
+                        wide = video, image = l.item.image, title = l.item.title, author = LaterText.subtitle(l.item),
+                        mark = MediaMarks.of(l.item.kind, l.item.durationMs),
+                        click = Modifier.combinedClickable(
+                            onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
+                            onLongClick = { com.platinum20.dashboard.capture.SavedLinks.forget(l.note, "Tolto: ${l.item.title}") },
+                        ),
+                        round = l.item.kind == ResumeKind.RADIO,
+                    )
+                }
+            }
+        }
     }
 }
 

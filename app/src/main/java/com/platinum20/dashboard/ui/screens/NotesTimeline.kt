@@ -665,9 +665,7 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
             add((n.pinned to n.createdAt) to LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
                 if (photo) photoLine(n) else more, image = n.photo, row = r))
         }
-        saved.later(notes).forEach { l ->
-            add((false to l.note.createdAt) to LooseItem("note-${l.note.id}", LooseKind.MEDIA, l.item.title, LaterText.subtitle(l.item), l.item.image, later = l))
-        }
+        // Video, brani, radio e podcast salvati stanno in Media, in "Salvati" (1.490, Antonio): qui solo gli articoli.
         saved.toRead(notes).forEach { t ->
             add((false to t.note.createdAt) to LooseItem("note-${t.note.id}", LooseKind.ARTICLE, t.article.title.ifBlank { "Articolo" },
                 listOf("Da leggere", t.article.source).filter { it.isNotBlank() }.joinToString(" · "), t.article.image, toRead = t))
