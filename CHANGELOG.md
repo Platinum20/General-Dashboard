@@ -8,6 +8,15 @@
 - Media non ha più la fila "Più tardi" e News non ha più "Da leggere": le cose salvate stanno solo nella card
 - Toccando un articolo si apre e esce dalla lista (con Annulla); tenendo premuta una cosa salvata la togli
 
+## 1.486.0
+**Media: tessere uguali e righe sue**
+- Toccando un mix si apre prima la sua pagina, con Riproduci e i brani
+- La durata c'è su tutti i video, anche quelli già iniziati e quelli che YouTube mandava senza
+- Sotto Per te due righe nuove: Album e playlist, e Mi piace (Spotify e YouTube insieme); il titolo apre la pagina intera
+- La data sta sulla riga del canale, tutta a destra
+- In fondo alla fila delle Novità c'è "Tutte le novità": apre l'elenco intero in verticale, con Ultima visita
+- Musica quadrata e video rettangolari, per il resto tutte le tessere sono uguali: stessa altezza, simbolo, durata, titolo e autore
+
 ## 1.485.0
 **Media come una sezione sola**
 - Su ogni copertina, in alto a sinistra, un simbolo dice cos'è: musica, video, podcast o radio; in basso a destra la durata (LIVE per le radio)

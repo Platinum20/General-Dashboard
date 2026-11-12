@@ -115,6 +115,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 import com.platinum20.dashboard.media.spotify.SpMix
+import com.platinum20.dashboard.media.spotify.SpHome
+import com.platinum20.dashboard.media.spotify.SpLibrary
 import com.platinum20.dashboard.media.spotify.SpotifyMixes
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
 import kotlinx.coroutines.delay
@@ -224,7 +226,7 @@ fun PodcastsScreen(onBack: () -> Unit) {
  * (col pallino finché non le apri), in una fila sola. Si carica da sola; senza niente non si disegna.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit) {
     val context = LocalContext.current
     val homeState by SpotifyStore.home.collectAsState()
     val libraryState by SpotifyStore.library.collectAsState()
@@ -233,37 +235,25 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit) {
     val home = homeState.data
     val library = libraryState.data
     val today = remember { LocalDate.now() }
-    val mixes = remember(home, library, today) {
-        SpotifyMixes.build(
-            home?.topArtists.orEmpty(),
-            home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
-            today.toEpochDay(),
-        )
-    }
+    val mixes = remember(home, library, today) { mixesOf(home, library, today) }
     val list = MediaShelves.freshFirst(releases.data.orEmpty()) { it.item.id !in seen }
     if (mixes.isEmpty() && list.isEmpty()) return
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader("Per te", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            itemsIndexed(mixes, key = { _, m -> "mix-${m.id}" }) { _, mix -> MixTile(mix, tile) { playTracks(context, mix.tracks, null) } }
+            // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
+            itemsIndexed(mixes, key = { _, m -> "mix-${m.id}" }) { _, mix -> MixTile(mix, tile) { onOpenMix(mix) } }
             itemsIndexed(list, key = { _, r -> "release-${r.item.id}" }) { _, release ->
-                Column(
-                    Modifier
-                        .width(tile)
-                        .bouncyPress(0.96f)
-                        .clickable {
-                            SpotifyStore.markReleaseSeen(release.item.id)
-                            onOpen(release.item)
-                        },
-                ) {
-                    CaptionedCover(release.item.title, release.item.subtitle.substringBefore(" · ") + " · " + NewReleases.ago(release.released, today)) {
-                        Box {
-                            Cover(release.item.image, MaterialTheme.shapes.medium, tile, MediaMarks.of(release.item))
-                            if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd))
-                        }
-                    }
-                }
+                MediaTile(
+                    tile, wide = false, image = release.item.image, title = release.item.title,
+                    author = release.item.subtitle.substringBefore(" · "), date = NewReleases.ago(release.released, today),
+                    mark = MediaMarks.of(release.item),
+                    click = Modifier.clickable {
+                        SpotifyStore.markReleaseSeen(release.item.id)
+                        onOpen(release.item)
+                    },
+                ) { if (release.item.id !in seen) NewDot(Modifier.align(Alignment.TopEnd)) }
             }
         }
     }
@@ -397,33 +387,35 @@ internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** Un mix: la foto dell'artista con la scritta Mix sopra. */
+/** Un mix: la foto dell'artista con la scritta Mix sopra, la durata di tutti i brani in basso a destra. */
 @Composable
 private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
-    Column(
-        Modifier
-            .width(tile)
-            .bouncyPress(0.96f)
-            .clickable(onClick = onClick),
+    MediaTile(
+        tile, wide = false, image = mix.image, title = mix.title, author = mix.subtitle, date = null,
+        mark = MediaMark(MediaType.MUSIC, MediaMarks.clock(mix.tracks.sumOf { it.durationMs })),
+        click = Modifier.clickable(onClick = onClick),
     ) {
-        CaptionedCover(mix.title, mix.subtitle) {
-            Box {
-                Cover(mix.image, MaterialTheme.shapes.medium, tile, MediaMark(MediaType.MUSIC))
-                Text(
-                    "Mix",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(8.dp)
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                )
-            }
-        }
+        Text(
+            "Mix",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(8.dp)
+                .clip(MaterialTheme.shapes.small)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }
+
+/** I mix di oggi (gli stessi in Per te e nella pagina del mix): dai tuoi artisti e brani preferiti. */
+internal fun mixesOf(home: SpHome?, library: SpLibrary?, today: LocalDate): List<SpMix> =
+    SpotifyMixes.build(
+        home?.topArtists.orEmpty(),
+        home?.topTracks.orEmpty() + library?.liked.orEmpty() + home?.recent.orEmpty(),
+        today.toEpochDay(),
+    )
 
 /** Brani di una fila (o di un mix) nella coda unica, da [startAt] in poi. */
 internal fun playTracks(context: android.content.Context, row: List<SpItem>, startAt: SpItem?) {

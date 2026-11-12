@@ -40,10 +40,28 @@ object YouTubeStore {
     /** "Guarda più tardi": c'è solo leggendo il sito, l'API ufficiale non lo espone. */
     val watchLater: StateFlow<Loadable<List<YtVideo>>> = _watchLater.asStateFlow()
 
+    /**
+     * Durata e foto del canale dalla pagina Iscrizioni (1.486, Antonio: "manca la durata su alcuni"): i video letti dai
+     * feed RSS non le hanno. Si tiene quello che c'è già, si riempie solo il vuoto.
+     */
+    internal fun withFeedDetails(videos: List<YtVideo>, feed: List<YtVideo>): List<YtVideo> {
+        if (feed.isEmpty()) return videos
+        val byId = feed.associateBy { it.id }
+        val avatars = feed.filter { it.channelId.isNotBlank() && it.channelAvatar.isNotBlank() }.associate { it.channelId to it.channelAvatar }
+        return videos.map { v ->
+            val f = byId[v.id]
+            v.copy(
+                durationSec = v.durationSec.takeIf { it > 0 } ?: f?.durationSec ?: 0,
+                channelAvatar = v.channelAvatar.ifBlank { f?.channelAvatar?.takeIf { it.isNotBlank() } ?: avatars[v.channelId].orEmpty() },
+                uploadedText = v.uploadedText.ifBlank { f?.uploadedText.orEmpty() },
+            )
+        }
+    }
+
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
         load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = {
             val channels = YouTubeWeb.subscriptions(it)
-            keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300)
+            withFeedDetails(keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300), YouTubeWeb.lastFeed)
         }) { token ->
             val channels = YouTubeApi.subscriptions(token)
             YouTubeApi.withDetails(token, keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300))

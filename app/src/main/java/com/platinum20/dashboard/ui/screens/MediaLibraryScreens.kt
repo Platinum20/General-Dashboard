@@ -1,6 +1,21 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -142,3 +157,180 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit, on
 /** "412 brani · 86 video"; una parte sola se l'altra è zero, vuoto se tutte e due. */
 internal fun countLine(a: Int, aName: String, b: Int, bName: String): String =
     listOfNotNull(a.takeIf { it > 0 }?.let { "$it $aName" }, b.takeIf { it > 0 }?.let { "$it $bName" }).joinToString(" · ")
+
+/** Quante tessere al massimo in una fila di Media prima di "Tutti": il resto è nella pagina. */
+private const val ROW_MAX = 20
+
+/**
+ * "Album e playlist" sotto Per te (1.486, Antonio: "una riga sua"): le playlist di Spotify e di YouTube e gli album
+ * salvati, a turno; il titolo e l'ultima tessera aprono la pagina con tutte.
+ */
+@Composable
+internal fun AlbumsRow(onOpenRoute: (String) -> Unit) {
+    val context = LocalContext.current
+    val spotify by SpotifyStore.playlists.collectAsState()
+    val library by SpotifyStore.library.collectAsState()
+    val youtube by YouTubeStore.playlists.collectAsState()
+    LaunchedEffect(Unit) {
+        SpotifyStore.refreshPlaylists()
+        YouTubeStore.refreshPlaylists(context)
+    }
+    val all: List<Any> = MediaMerge.alternate(spotify.data.orEmpty() + library.data?.albums.orEmpty(), youtube.data.orEmpty())
+    if (all.isEmpty()) return
+    val tile = coverTileWidth()
+    val open = { onOpenRoute(com.platinum20.dashboard.Routes.SPOTIFY_FEED) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OpenableHeader("Album e playlist", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(all.take(ROW_MAX), key = { e -> if (e is SpItem) "s-" + e.uri else "y-" + (e as YtPlaylist).id }) { e ->
+                when (e) {
+                    is SpItem -> MediaTile(
+                        tile, wide = false, image = e.image, title = e.title, author = e.subtitle.substringBefore(" · "), date = null,
+                        mark = MediaMarks.of(e), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e)) },
+                    )
+                    is YtPlaylist -> MediaTile(
+                        tile, wide = true, image = e.thumbnail, title = e.title,
+                        author = if (e.count > 0) "YouTube · ${e.count} video" else "YouTube", date = null,
+                        mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.youtubePlaylist(e)) },
+                    )
+                }
+            }
+            if (all.size > ROW_MAX) item(key = "albums-all") { AllTile(tile, "Tutte", "${all.size} in tutto", open) }
+        }
+    }
+}
+
+/** "Mi piace" sotto Per te (1.486): brani e video che ti piacciono, a turno; un tocco li fa partire. */
+@Composable
+internal fun LikedRow(onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
+    val context = LocalContext.current
+    YtFavorites.init(context)
+    val library by SpotifyStore.library.collectAsState()
+    val liked by YouTubeStore.liked.collectAsState()
+    val mine by YtFavorites.items.collectAsState()
+    LaunchedEffect(Unit) { YouTubeStore.refreshLiked(context) }
+    val tracks = library.data?.liked.orEmpty()
+    val videos = (mine + liked.data.orEmpty()).distinctBy { it.id }
+    val all = MediaMerge.alternate(tracks.map { MixedEntry.Track(it) }, videos.map { MixedEntry.Video(it) })
+    if (all.isEmpty()) return
+    val tile = coverTileWidth()
+    val open = { onOpenRoute(com.platinum20.dashboard.Routes.YOUTUBE_LIKED) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OpenableHeader("Mi piace", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(all.take(ROW_MAX), key = { it.key }) { e ->
+                when (e) {
+                    is MixedEntry.Track -> MediaTile(
+                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle, date = null,
+                        mark = MediaMarks.of(e.item),
+                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.item) }) { playTracks(context, tracks, e.item) },
+                    )
+                    is MixedEntry.Video -> VideoTile(e.video, tile) { onPlayVideo(e.video.watchUrl) }
+                }
+            }
+            if (all.size > ROW_MAX) item(key = "liked-all") { AllTile(tile, "Tutti", countLine(tracks.size, "brani", videos.size, "video"), open) }
+        }
+    }
+}
+
+/**
+ * La pagina di un mix (1.486, Antonio: "prima la pagina con Riproduci, come le playlist"): la copertina, Riproduci e i
+ * brani; un tocco su un brano fa partire il mix da lì.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MixScreen(mixId: String, onBack: () -> Unit) {
+    val context = LocalContext.current
+    SpotifyAuth.init(context)
+    val home by SpotifyStore.home.collectAsState()
+    val library by SpotifyStore.library.collectAsState()
+    LaunchedEffect(Unit) {
+        SpotifyStore.refreshHome()
+        SpotifyStore.refreshLibrary()
+    }
+    val today = remember { java.time.LocalDate.now() }
+    val mix = remember(home.data, library.data) { mixesOf(home.data, library.data, today).firstOrNull { it.id == mixId } }
+    val tracks = mix?.tracks.orEmpty()
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = {
+            TopLevelBar(
+                title = mix?.title ?: "Mix",
+                subtitle = listOfNotNull("Mix", "${tracks.size} brani".takeIf { tracks.isNotEmpty() }, MediaMarks.clock(tracks.sumOf { it.durationMs })).joinToString(" · "),
+                scrollBehavior = bar,
+                onBack = onBack,
+            )
+        },
+    ) { inner ->
+        val state = Loadable(data = tracks.takeIf { mix != null }, loading = home.loading || library.loading, error = home.error)
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            FeedList(state, empty = "Questo mix oggi non c'è più") {
+                if (mix != null) item(key = "head") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Cover(mix.image, MaterialTheme.shapes.medium, 96.dp, MediaMark(MediaType.MUSIC))
+                        Spacer(Modifier.width(16.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(mix.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                            Spacer(Modifier.height(8.dp))
+                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null) }, primary = true)
+                        }
+                    }
+                }
+                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track) }) }
+            }
+        }
+    }
+}
+
+/**
+ * "Tutte le novità" (1.486, Antonio: in fondo alla fila, il resto in verticale come prima): i video grandi e gli
+ * episodi dal più nuovo, con il segno ULTIMA VISITA.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
+    val rows = com.platinum20.dashboard.media.MediaFeedNow.rows
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Novità", subtitle = MediaShelves.title("Video ed episodi", rows.fresh.size), scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        @Composable
+        fun Entry(entry: com.platinum20.dashboard.media.FeedEntry) = when (entry) {
+            is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
+            is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeLine(entry.episode)
+        }
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            FeedList(Loadable(data = rows.fresh + rows.older), empty = "Nessuna novità") {
+                items(rows.fresh, key = { "f-" + it.key }) { Entry(it) }
+                if (rows.fresh.isNotEmpty() && rows.older.isNotEmpty()) item(key = "marker") { NewsVisitMarker("Ultima visita") }
+                items(rows.older, key = { "o-" + it.key }) { Entry(it) }
+            }
+        }
+    }
+}
+
+/** Un episodio nell'elenco delle novità: copertina quadrata con simbolo e durata, titolo, podcast e quando a destra. */
+@Composable
+private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode) {
+    Row(
+        Modifier.fillMaxWidth().bouncyPress(0.97f).clickable { com.platinum20.dashboard.media.podcast.PodcastStore.play(episode) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Cover(episode.image, MaterialTheme.shapes.medium, 96.dp, MediaMark(MediaType.PODCAST, MediaMarks.minutes(episode.durationSec * 1000)))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(episode.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Row {
+                Text(
+                    episode.podcastTitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                )
+                com.platinum20.dashboard.media.MediaStories.episodeAgo(episode, System.currentTimeMillis())?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
+    }
+}

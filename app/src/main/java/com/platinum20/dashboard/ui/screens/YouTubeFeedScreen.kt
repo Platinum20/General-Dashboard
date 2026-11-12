@@ -523,7 +523,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
     ) {
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
-            VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
+            VideoBadge(video.withKnownDuration(), Modifier.align(Alignment.BottomEnd).padding(8.dp))
             MediaMarkOverlay(MediaMark(MediaType.VIDEO), inset = 8.dp)
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
@@ -536,7 +536,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
             val onChannel = inApp?.openRoute?.takeIf { video.channelId.isNotBlank() }?.let { open ->
                 { open(com.platinum20.dashboard.Routes.youtubeChannel(YtChannel(video.channelId, video.channel, video.channelAvatar))) }
             }
-            VideoCardText(video.title, videoMeta(video), video.channelAvatar, video.channel, fixed = false, onChannel = onChannel)
+            VideoCardText(video.title, videoMeta(video, withDate = false), video.channelAvatar, video.channel, fixed = false, onChannel = onChannel, date = videoDate(video))
         }
     }
 }
@@ -546,22 +546,42 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
  * sotto il titolo su due righe e il canale con quando è uscito.
  */
 @Composable
-internal fun VideoTile(video: YtVideo, width: Dp, onClick: () -> Unit) {
-    Column(Modifier.width(width).bouncyPress(0.96f).tapOrSave({ SavedLinks.youtube(video) }, onClick)) {
-        CaptionedCover(video.title, listOfNotNull(video.channel.takeIf { it.isNotBlank() }, video.published?.let { relativeTime(it) }).joinToString(" · ")) {
-            Box(Modifier.clip(MaterialTheme.shapes.medium)) {
-                Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
-                VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
-                MediaMarkOverlay(MediaMark(MediaType.VIDEO))
-                WatchedBar(video, Modifier.align(Alignment.BottomCenter))
-            }
-        }
-    }
+internal fun VideoTile(video: YtVideo, height: Dp, onClick: () -> Unit) {
+    val v = video.withKnownDuration()
+    MediaTile(
+        height = height, wide = true, image = v.thumbnail.replace("/mqdefault.jpg", "/hqdefault.jpg"),
+        title = v.title, author = v.channel, date = videoDate(v),
+        mark = MediaMark(MediaType.VIDEO, videoBadgeText(v)),
+        click = Modifier.tapOrSave({ SavedLinks.youtube(v) }, onClick),
+    ) { WatchedBar(v, Modifier.align(Alignment.BottomCenter)) }
+}
+
+/** Quando è uscito: "3 ore fa", o il testo di YouTube se la data precisa manca; null se non si sa. */
+internal fun videoDate(video: YtVideo): String? =
+    video.published?.let { relativeTime(it) } ?: video.uploadedText.takeIf { it.isNotBlank() }
+
+/**
+ * La durata di un video; se il feed non la dice, quella salvata quando l'hai guardato (1.486, Antonio: "i video già
+ * iniziati non hanno la durata").
+ */
+internal fun YtVideo.withKnownDuration(): YtVideo {
+    if (durationSec > 0) return this
+    val ms = YtHistory.items.value[id]?.durationMs ?: 0L
+    return if (ms > 0) copy(durationSec = (ms / 1000).toInt()) else this
+}
+
+/** Il testo nell'angolo in basso a destra: in diretta, anteprima, Short o la durata; null se niente. */
+internal fun videoBadgeText(video: YtVideo): String? = when {
+    video.live -> "● IN DIRETTA"
+    video.upcoming -> com.platinum20.dashboard.media.youtube.YtPremiere.badge(video.startsAt)
+    video.isShort -> "SHORT"
+    video.durationSec > 0 -> formatDuration(video.durationSec * 1000L)
+    else -> null
 }
 
 /** Titolo e riga del canale di [VideoCard]; [fixed] = occupa sempre due righe di titolo. */
 @Composable
-private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean, onChannel: (() -> Unit)? = null) {
+private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean, onChannel: (() -> Unit)? = null, date: String? = null) {
     Column {
         Text(
             title,
@@ -586,6 +606,14 @@ private fun VideoCardText(title: String, meta: String, avatar: String?, channel:
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(top = 3.dp),
             )
+            // La data tutta a destra sulla riga del canale (1.486, Antonio).
+            if (!date.isNullOrBlank()) Text(
+                date,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 8.dp, top = 3.dp),
+            )
         }
     }
 }
@@ -603,7 +631,7 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
     ) {
         Box(Modifier.width(150.dp).clip(MaterialTheme.shapes.medium)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
-            VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+            VideoBadge(video.withKnownDuration(), Modifier.align(Alignment.BottomEnd).padding(4.dp))
             MediaMarkOverlay(MediaMark(MediaType.VIDEO), compact = true, inset = 4.dp)
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
@@ -622,10 +650,10 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
 }
 
 /** Canale, visualizzazioni e quando è uscito. */
-private fun videoMeta(video: YtVideo): String = listOfNotNull(
+private fun videoMeta(video: YtVideo, withDate: Boolean = true): String = listOfNotNull(
     video.channel.takeIf { it.isNotBlank() },
     video.views.takeIf { it >= 0 }?.let { "${compactCount(it)} visualizzazioni" },
-    video.published?.let { relativeTime(it) } ?: video.uploadedText.takeIf { it.isNotBlank() },
+    if (withDate) videoDate(video) else null,
 ).joinToString(" · ")
 
 /** Barra rossa sotto l'anteprima: quanto hai già visto (nell'app o su YouTube). */
