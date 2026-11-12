@@ -103,7 +103,7 @@ internal fun BoxScope.SaveToNotesLayer() {
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
         BubbleRow(
             icon = if (saved) Icons.Rounded.BookmarkRemove else Icons.Rounded.BookmarkAdd,
-            title = if (saved) "Rimuovi dalle note" else "Salva nelle note",
+            title = SavedLinks.saveLabel(link, saved),
             detail = listOf(link.title, link.subtitle).filter { it.isNotBlank() }.joinToString(" · "),
         ) {
             haptic(Haptic.CONFIRM)

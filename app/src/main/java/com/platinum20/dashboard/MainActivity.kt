@@ -911,6 +911,7 @@ private fun NavPill(dest: TopDestination, selected: Boolean, badge: Int, onClick
     val targetKey = when (dest.route) {
         Routes.HOME -> CaptureTargets.HOME_TAB
         Routes.MEDIA -> CaptureTargets.MEDIA_TAB
+        Routes.NEWS -> CaptureTargets.NEWS_TAB
         else -> null
     }
     val bump = remember { Animatable(1f) }

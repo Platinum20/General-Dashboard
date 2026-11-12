@@ -339,12 +339,12 @@ fun TimelineRow(
             )
             Spacer(Modifier.width(8.dp))
         } else if (entry.image != null) {
-            // La miniatura (video, foto) al posto dell'icona: si riconosce subito.
+            // La foto della nota al posto dell'icona, quadrata e grande quanto la riga (1.482): si riconosce subito.
             coil3.compose.AsyncImage(
                 model = entry.image.let { if (it.startsWith("/")) java.io.File(it) else it },
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier.padding(vertical = 3.dp).width(40.dp).height(24.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(4.dp)),
+                modifier = Modifier.padding(vertical = 4.dp).size(36.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp)),
             )
             Spacer(Modifier.width(10.dp))
         } else if (entry.time != null) {
