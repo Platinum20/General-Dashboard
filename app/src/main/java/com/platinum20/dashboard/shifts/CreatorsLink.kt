@@ -272,6 +272,8 @@ object CreatorsLink {
                 val view = WebView(context.applicationContext)
                 var lastUrl: String? = null
                 prepare(view, context) { lastUrl = it }
+                // Nessuno la guarda: niente immagini da scaricare (meno rete e batteria a ogni giro).
+                view.settings.blockNetworkImage = true
                 view.loadUrl(ShiftStore.timelineUrl ?: HOME)
                 withTimeoutOrNull(READ_MS) {
                     while (ShiftStore.readAt.value == before && !isLoginPage(lastUrl)) delay(400)

@@ -123,6 +123,8 @@ object WindTreLink {
             withContext(Dispatchers.Main) {
                 val view = WebView(context.applicationContext)
                 prepare(view, context)
+                // Nessuno la guarda: niente immagini da scaricare (meno rete e batteria a ogni giro).
+                view.settings.blockNetworkImage = true
                 SimStore.beginSession()
                 view.loadUrl(HOME)
                 withTimeoutOrNull(READ_MS) {
