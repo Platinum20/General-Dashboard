@@ -617,9 +617,9 @@ internal fun photoLine(note: com.platinum20.dashboard.notes.Note): String? {
 }
 
 /**
- * Una cosa senza scadenza (Antonio, 2026-11-12): le cose da fare, le note, le foto, i pacchi senza data e quello
- * salvato per dopo (video, brani, articoli). Non stanno nei giorni del calendario: tutte insieme in fondo alla card
- * Calendario della Home.
+ * Una cosa senza scadenza (Antonio, 2026-11-12): le cose da fare, le note, le foto e i pacchi senza data. Non stanno
+ * nei giorni del calendario: tutte insieme nella card "Per dopo" della Home (1.490). Video, brani e articoli salvati
+ * stanno in Media e News.
  */
 internal fun isLoose(row: DueRow): Boolean =
     row.note != null || row.task?.tickable == true || (row.parcel != null && row.parcel.expected == null)
@@ -628,9 +628,9 @@ internal fun isLoose(row: DueRow): Boolean =
 internal fun List<DueDay>.withoutLoose(): List<DueDay> =
     map { g -> g.copy(rows = g.rows.filterNot(::isLoose)) }.filter { it.rows.isNotEmpty() }
 
-internal enum class LooseKind { TODO, NOTE, PHOTO, MEDIA, ARTICLE, PARCEL }
+internal enum class LooseKind { TODO, NOTE, PHOTO, PARCEL }
 
-/** Una riga della sezione "Senza scadenza": a sinistra la spunta o l'immagine, il nome, al massimo una riga sotto. */
+/** Una riga della card "Per dopo": a sinistra la spunta o l'immagine, il nome, al massimo una riga sotto. */
 internal data class LooseItem(
     val key: String,
     val kind: LooseKind,
@@ -640,8 +640,6 @@ internal data class LooseItem(
     val image: String = "",
     val done: Boolean = false,
     val row: DueRow? = null,
-    val later: com.platinum20.dashboard.capture.SavedLinks.Later? = null,
-    val toRead: com.platinum20.dashboard.capture.SavedLinks.ToRead? = null,
 )
 
 /**
@@ -657,7 +655,6 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
         val p = r.parcel!!
         LooseItem(r.key, LooseKind.PARCEL, p.title, listOf("Pacco", p.code.takeIf { it.isNotBlank() }?.let { p.carrier.label }).filterNotNull().joinToString(" · "), row = r)
     }
-    val saved = com.platinum20.dashboard.capture.SavedLinks
     val dated = buildList<Pair<Pair<Boolean, Long>, LooseItem>> {
         rows.mapNotNull { r -> r.note?.let { r to it } }.forEach { (r, n) ->
             val photo = n.photo.isNotEmpty()
@@ -665,14 +662,9 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
             add((n.pinned to n.createdAt) to LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
                 if (photo) photoLine(n) else more, image = n.photo, row = r))
         }
-        // Video, brani, radio e podcast salvati stanno in Media, in "Salvati" (1.490, Antonio): qui solo gli articoli.
-        saved.toRead(notes).forEach { t ->
-            add((false to t.note.createdAt) to LooseItem("note-${t.note.id}", LooseKind.ARTICLE, t.article.title.ifBlank { "Articolo" },
-                listOf("Da leggere", t.article.source).filter { it.isNotBlank() }.joinToString(" · "), t.article.image, toRead = t))
-        }
     }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
     return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }
 }
 
-/** Il titolo della sezione in fondo alla card: "Senza scadenza · 7". */
-internal fun looseTitle(count: Int): String = "Senza scadenza · $count"
+/** Il numero a destra del titolo della card "Per dopo". */
+internal fun looseCount(count: Int): String = count.toString()

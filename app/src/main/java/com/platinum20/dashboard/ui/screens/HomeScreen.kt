@@ -252,6 +252,8 @@ fun HomeScreen(
     val gmailOAuth by GmailAuth.connected.collectAsStateWithLifecycle()
     val gmailImap by GmailImap.linked.collectAsStateWithLifecycle()
     val gmailConnected = gmailOAuth || gmailImap
+    // Le cose senza scadenza (da fare, note, foto, salvati): la card "Per dopo", fuori dal Calendario.
+    val loose = remember(calendar, notes, minute) { looseItems(calendar.filter { it.rows.isNotEmpty() }, notes.notes, minute.toLocalDate()) }
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
@@ -260,6 +262,8 @@ fun HomeScreen(
             HomeCard.RESUME -> resume != null || playingNow != null
             HomeCard.MAIL -> gmailConnected
             HomeCard.DOCS -> docs.isNotEmpty()
+            // Vuota non c'è: compare quando hai qualcosa per dopo.
+            HomeCard.LATER -> loose.isNotEmpty()
             // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
             HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
             else -> true
@@ -315,7 +319,6 @@ fun HomeScreen(
                 groups = calendar,
                 today = minute.toLocalDate(),
                 habits = notes.habits,
-                notes = notes.notes,
                 onOpenAll = {
                     haptic(Haptic.TICK)
                     onOpenNotes()
@@ -333,6 +336,7 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
+            HomeCard.LATER -> LaterCard(loose)
             HomeCard.SIM -> ContiCard(onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) })
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->
                 haptic(Haptic.TICK)

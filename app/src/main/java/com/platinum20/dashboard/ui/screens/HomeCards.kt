@@ -158,16 +158,13 @@ internal fun CalendarCard(
     today: LocalDate,
     onOpenAll: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
-    /** Tutte le note: quelle salvate per dopo (video, brani, articoli) vanno nella sezione Senza scadenza. */
-    notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
 ) {
     val open = rememberDueOpen()
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
-    // Le cose senza scadenza non stanno nei giorni: tutte in fondo alla card, "Senza scadenza" (Antonio, 2026-11-12).
+    // Le cose senza scadenza non stanno nei giorni: hanno la card "Per dopo" (LaterCard, Antonio 2026-11-12).
     val all = remember(pending, today) { timelineEntries(pending.withoutLoose(), today) }
-    val loose = remember(pending, notes, today) { looseItems(pending, notes, today) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
@@ -201,7 +198,6 @@ internal fun CalendarCard(
         // Le azioni di una riga stanno nel suo "Altro".
         onLongOpen = onOpenAll,
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
-        bottom = { LooseSection(loose, onOpenAll) },
     )
 }
 
