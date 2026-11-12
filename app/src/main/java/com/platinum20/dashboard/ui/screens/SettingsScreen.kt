@@ -165,9 +165,11 @@ internal object SettingsLines {
     const val SONG_ID_OFF = "Tocca per incollare il token AudD"
     const val SONG_ID_ON = "Tieni premuto + vicino alla musica"
     const val HIDE_MEMBERS = "Niente video solo per abbonati"
+    const val LASTFM_OFF = "Serve la chiave gratis di Last.fm"
+    const val LASTFM_ON = "Discover Weekly, Daily Mix, radio"
     /** Quanto ci sta accanto a un interruttore o a un valore breve ("Da attivare"). */
     const val MAX = 34
-    val all = listOf(SONG_ID_OFF, SONG_ID_ON, HIDE_MEMBERS)
+    val all = listOf(SONG_ID_OFF, SONG_ID_ON, HIDE_MEMBERS, LASTFM_OFF, LASTFM_ON)
 }
 
 /** Le righe del menu dicono com'è adesso, in una riga sola: così non serve aprirle per saperlo. */
@@ -386,7 +388,7 @@ fun SettingsPageScreen(
                             SponsorBlockRow { onOpenPage(SettingsPage.SPONSORBLOCK) }
                         }
                     }
-                    item { SettingsBlock("Altro") { SongIdSetting(); RowDivider(); AdBlockSettings() } }
+                    item { SettingsBlock("Altro") { SongIdSetting(); RowDivider(); LastFmSetting(); RowDivider(); AdBlockSettings() } }
                 }
                 SettingsPage.ALERTS -> item {
                     SettingsBlock("Cosa ti avvisa") {
@@ -571,6 +573,59 @@ private fun SpotifyKeyRow() {
                     Text("Ripristina")
                 }
             },
+        )
+    }
+}
+
+/**
+ * La chiave di Last.fm (1.491): da lì vengono i brani e gli artisti simili (Discover Weekly, Daily Mix, radio di un
+ * brano, Scopri) e le classifiche. Senza, resta il Release Radar. Si incolla qui e resta sul telefono.
+ */
+@Composable
+private fun LastFmSetting() {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.media.lastfm.LastFm.init(context) }
+    val key by com.platinum20.dashboard.media.lastfm.LastFm.key.collectAsState()
+    var editing by remember { mutableStateOf(false) }
+    SettingsItem(
+        icon = Icons.Outlined.MusicNote,
+        accent = TileAccent.BLUE,
+        title = "Musica simile",
+        subtitle = if (key.isBlank()) SettingsLines.LASTFM_OFF else SettingsLines.LASTFM_ON,
+        value = if (key.isBlank()) "Da attivare" else "Attiva",
+        showChevron = true,
+        onClick = { editing = true },
+    )
+    if (editing) {
+        var value by remember { mutableStateOf(key) }
+        CanvasDialog(
+            onDismissRequest = { editing = false },
+            title = { Text("Musica simile") },
+            text = {
+                Column {
+                    Text(
+                        "Incolla la API key di Last.fm (last.fm/api/account/create). Serve per Discover Weekly, i Daily Mix, " +
+                            "le radio dei brani, Scopri e le Top 50. Resta solo su questo telefono.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it },
+                        singleLine = true,
+                        label = { Text("API key") },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                ConfirmButton(onClick = {
+                    com.platinum20.dashboard.media.lastfm.LastFm.setKey(value)
+                    editing = false
+                    com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
+                }) { Text("Salva") }
+            },
+            dismissButton = { DismissButton(onClick = { editing = false }) { Text("Annulla") } },
         )
     }
 }

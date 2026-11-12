@@ -7,6 +7,7 @@ import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.Resume
 import com.platinum20.dashboard.media.MediaHistory
 import androidx.compose.material.icons.outlined.QueueMusic
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.ui.geometry.Offset
@@ -320,7 +321,17 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
             )
-            Artwork(current, Modifier.weight(1f, fill = false))
+            // Il testo (1.491): si apre e si chiude toccando la copertina o "Testo"; da solo col volume a zero (Antonio).
+            val lyrics = rememberLyrics(current)
+            var showLyrics by remember(current.title) { mutableStateOf(false) }
+            remember { com.platinum20.dashboard.media.MediaVolume.init(context) }
+            val muted by com.platinum20.dashboard.media.MediaVolume.muted.collectAsState()
+            LaunchedEffect(muted, lyrics != null) { if (lyrics != null) showLyrics = muted }
+            Artwork(
+                current, Modifier.weight(1f, fill = false),
+                lyrics = lyrics?.takeIf { showLyrics },
+                onTap = if (lyrics != null) ({ showLyrics = !showLyrics }) else null,
+            )
             Spacer(Modifier.height(24.dp))
             Column(Modifier.fillMaxWidth().widthIn(max = 420.dp)) {
                 SourcePill(current.source)
@@ -340,12 +351,18 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 // La coda unica (cosa viene dopo, di qualunque fonte): anche trascinando la pagina in su.
                 val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-                CanvasButton(
-                    if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo",
-                    onClick = onOpenQueue,
-                    icon = Icons.Outlined.QueueMusic,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
+                Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CanvasButton(
+                        if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo",
+                        onClick = onOpenQueue,
+                        icon = Icons.Outlined.QueueMusic,
+                    )
+                    if (lyrics != null) CanvasButton(
+                        if (showLyrics) "Copertina" else "Testo",
+                        onClick = { showLyrics = !showLyrics },
+                        icon = Icons.AutoMirrored.Outlined.Notes,
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 if (current.source == PlaySource.SPEECH) SpeechChapters()
                 // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
@@ -436,7 +453,8 @@ private fun SourcePill(source: PlaySource) {
 }
 
 @Composable
-private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
+private fun Artwork(now: Playing, modifier: Modifier = Modifier, lyrics: com.platinum20.dashboard.media.lyrics.SongLyrics? = null, onTap: (() -> Unit)? = null) {
+    val tap by rememberUpdatedState(onTap)
     Box(
         modifier
             .widthIn(max = 420.dp)
@@ -446,8 +464,11 @@ private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
             .clip(MaterialTheme.shapes.extraLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             // Tenendo premuta la copertina: "Salva nelle note", per riaprirla poi ferma.
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = { Playback.currentAsItem()?.let { SavedLinks.offer(SavedLink.Media(it)) } })
+            .pointerInput(onTap != null) {
+                detectTapGestures(
+                    onTap = { tap?.invoke() },
+                    onLongPress = { Playback.currentAsItem()?.let { SavedLinks.offer(SavedLink.Media(it)) } },
+                )
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -457,6 +478,7 @@ private fun Artwork(now: Playing, modifier: Modifier = Modifier) {
         else if (now.artwork.isNotBlank()) {
             AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
+        if (lyrics != null && !now.isVideo) LyricsPanel(now, lyrics)
         if (now.loading) LoadingPulse(size = 14.dp)
     }
 }

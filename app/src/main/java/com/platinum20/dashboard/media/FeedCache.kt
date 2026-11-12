@@ -1,6 +1,7 @@
 package com.platinum20.dashboard.media
 
 import com.platinum20.dashboard.media.spotify.SpArtistLatest
+import com.platinum20.dashboard.media.spotify.SpDiscoverRow
 import com.platinum20.dashboard.media.spotify.SpHome
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
@@ -120,6 +121,13 @@ object FeedCache {
         "sp-releases.json",
         { list -> list.toArray { item(it.item).put("d", it.released.toString()) } },
         { array -> array.objects { SpRelease(item(it), LocalDate.parse(it.getString("d"))) } },
+    )
+
+    /** Le file di "Scopri" della musica (1.488). */
+    val spDiscover = FeedCodec<List<SpDiscoverRow>>(
+        "sp-scopri.json",
+        { list -> list.toArray { JSONObject().put("t", it.title).put("w", it.why).put("i", items(it.items)) } },
+        { array -> array.objects { SpDiscoverRow(it.optString("t"), it.optString("w"), items(it.getJSONArray("i"))) } },
     )
 
     /** Gli artisti che segui con la data dell'ultima uscita (le storie di Media). */

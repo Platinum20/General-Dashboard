@@ -67,6 +67,46 @@ object YouTubeStore {
             YouTubeApi.withDetails(token, keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300))
         }
 
+    private val _subsMore = MutableStateFlow<List<YtVideo>>(emptyList())
+    /** I video più vecchi delle iscrizioni caricati arrivando in fondo a "Tutte le novità" (1.488). */
+    val subscriptionsMore: StateFlow<List<YtVideo>> = _subsMore.asStateFlow()
+    private val _subsEnded = MutableStateFlow(false)
+    /** Non ci sono altri video delle iscrizioni da caricare: in fondo niente più caricamento. */
+    val subscriptionsEnded: StateFlow<Boolean> = _subsEnded.asStateFlow()
+    private var subsNext: String? = null
+    private var subsStarted = false
+    private var loadingSubs = false
+
+    /**
+     * Altri video delle iscrizioni in fondo a "Tutte le novità", come scorrendo le Iscrizioni di YouTube (1.488,
+     * Antonio: "non è infinito"): si continua dalla pagina Iscrizioni letta dal sito, due pagine per volta.
+     */
+    fun loadMoreSubscriptions(context: Context) {
+        if (loadingSubs || _subsEnded.value) return
+        if (!subsStarted) {
+            subsStarted = true
+            subsNext = YouTubeWeb.lastFeedNext
+        }
+        val token = subsNext ?: run { _subsEnded.value = true; return }
+        loadingSubs = true
+        val app = context.applicationContext
+        scope.launch {
+            try {
+                val page = withTimeoutOrNull(90_000) { YouTubeWeb.homeMore(app, token) } ?: return@launch
+                subsNext = page.next
+                val known = (_subscriptions.value.data.orEmpty() + _subsMore.value).map { it.id }.toSet()
+                val fresh = page.videos.filter { it.id !in known }
+                _subsMore.update { it + fresh }
+                if (page.next == null || fresh.isEmpty()) _subsEnded.value = page.next == null
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Fine silenziosa: al prossimo arrivo in fondo si riprova.
+            } finally {
+                loadingSubs = false
+            }
+        }
+    }
+
     private val _channels = MutableStateFlow(Loadable<List<YtChannel>>())
     /** I canali a cui sei iscritto (scheda Canali di Video). */
     val channels: StateFlow<Loadable<List<YtChannel>>> = _channels.asStateFlow()
