@@ -328,7 +328,7 @@ class MainActivity : ComponentActivity() {
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
-                // WindTre: il giro che tiene vivo l'accesso (si accende solo se collegato).
+                // WindTre e Creators Pro: il giro che tiene vivo l'accesso (si accende solo se collegato).
                 com.platinum20.dashboard.settings.Leftovers.clean(app)
                 com.platinum20.dashboard.work.KeepAliveWorker.update(app)
                 com.platinum20.dashboard.shifts.ShiftStore.init(app)
