@@ -187,54 +187,6 @@ internal fun SpotifyNotices() {
 }
 
 /**
- * "Brani che ti piacciono" (1.481, una riga in fondo a Media): i brani salvati, un tocco e parte da lì; sotto le
- * playlist e gli album salvati, che si aprono.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MusicLibraryScreen(onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
-    val context = LocalContext.current
-    SpotifyAuth.init(context)
-    SpotifyNotices()
-    val libraryState by SpotifyStore.library.collectAsState()
-    val playlistsState by SpotifyStore.playlists.collectAsState()
-    LaunchedEffect(Unit) {
-        SpotifyStore.refreshLibrary()
-        SpotifyStore.refreshPlaylists()
-    }
-    val liked = libraryState.data?.liked.orEmpty()
-    val saved = playlistsState.data.orEmpty() + libraryState.data?.albums.orEmpty()
-    val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = "Brani che ti piacciono",
-                subtitle = if (liked.isEmpty()) "Spotify" else "${liked.size} brani",
-                scrollBehavior = barScroll,
-                onBack = onBack,
-            )
-        },
-    ) { inner ->
-        val state = Loadable(
-            data = (liked + saved).takeIf { it.isNotEmpty() || libraryState.data != null },
-            loading = libraryState.loading || playlistsState.loading,
-            error = libraryState.error,
-        )
-        Column(Modifier.fillMaxSize().padding(inner)) { FeedList(state, empty = "Nessun brano salvato") {
-            if (liked.isNotEmpty()) item(key = "play") {
-                CanvasButton("Riproduci", onClick = { playTracks(context, liked, null) }, primary = true)
-            }
-            items(liked, key = { "liked-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, liked, track) }) }
-            if (saved.isNotEmpty()) {
-                item(key = "saved-h") { SectionHeader("Playlist e album") }
-                items(saved, key = { "saved-" + it.uri }) { item -> ItemRow(item, onClick = { onOpenItem(item) }) }
-            }
-        } }
-    }
-}
-
-/**
  * "I tuoi podcast" (1.481, Antonio: una riga in fondo a Media, non un titolo da toccare): quelli che segui, un tocco
  * apre gli episodi qui dentro.
  */

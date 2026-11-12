@@ -89,6 +89,43 @@ object SpotifyStore {
     /** Gli artisti che segui con la loro ultima uscita: le storie in cima a Media (1.481). */
     val artists: StateFlow<Loadable<List<SpArtistLatest>>> = _artists.asStateFlow()
 
+    private val _listened = MutableStateFlow(Loadable<List<SpListened>>())
+    /** Gli artisti ascoltati di recente, dal più recente, con la foto: le storie di Media (1.482, Antonio). */
+    val listened: StateFlow<Loadable<List<SpListened>>> = _listened.asStateFlow()
+    private val photos = HashMap<String, String>()
+    private val _played = MutableStateFlow<List<Pair<SpItem, java.time.Instant>>>(emptyList())
+    /** Gli ultimi brani ascoltati con l'ora, dalla stessa richiesta delle storie: entrano nella Cronologia di Media. */
+    val played: StateFlow<List<Pair<SpItem, java.time.Instant>>> = _played.asStateFlow()
+
+    /**
+     * Gli ultimi ascolti e la foto di ogni artista: prima da quelli che segui e dai tuoi preferiti (già scaricati),
+     * poi una richiesta per artista che manca, a gruppi di 5. Al massimo [LISTENED_MAX] artisti.
+     */
+    fun refreshListened(force: Boolean = false) {
+        val state = _listened.value
+        if (state.loading || (!force && state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE)) return
+        _listened.update { it.copy(loading = true) }
+        scope.launch {
+            val result = call { token ->
+                val raw = SpotifyApi.recentlyPlayedRaw(token)
+                _played.value = SpotifyArtist.played(raw)
+                val list = SpotifyArtist.listened(raw).take(LISTENED_MAX)
+                val known = (_artists.value.data.orEmpty().map { it.artist } + _home.value.data?.topArtists.orEmpty())
+                known.forEach { if (it.image.isNotBlank()) photos[it.id] = it.image }
+                val missing = list.map { it.artist.id }.filter { it !in photos }
+                missing.chunked(5).forEach { group ->
+                    coroutineScope {
+                        group.map { id -> async { id to runCatching { SpotifyApi.artistPhoto(token, id) }.getOrDefault("") } }.awaitAll()
+                    }.forEach { (id, url) -> if (url.isNotBlank()) photos[id] = url }
+                }
+                list.map { l -> l.copy(artist = l.artist.copy(image = photos[l.artist.id] ?: l.artist.image)) }
+            }
+            _listened.value = if (result.data == null) result.copy(data = state.data) else result
+        }
+    }
+
+    private const val LISTENED_MAX = 20
+
     private val _artistPages = MutableStateFlow<Map<String, Loadable<SpArtistPage>>>(emptyMap())
     /** Le pagine degli artisti aperte, per id. */
     val artistPages: StateFlow<Map<String, Loadable<SpArtistPage>>> = _artistPages.asStateFlow()
@@ -247,6 +284,8 @@ object SpotifyStore {
         _search.value = Loadable()
         _releases.value = Loadable()
         _artists.value = Loadable()
+        _listened.value = Loadable()
+        _played.value = emptyList()
         _artistPages.value = emptyMap()
         _seenReleases.value = emptySet()
         _playback.value = null

@@ -442,7 +442,10 @@ object YtPlayer {
         lastSaved = now
         YtHistory.save(
             context,
-            YtWatched(stream.id, stream.title, stream.channel, stream.channelAvatar, p.currentPosition, p.duration, now),
+            YtWatched(
+                stream.id, stream.title, stream.channel, stream.channelAvatar, p.currentPosition, p.duration, now,
+                channelId = stream.channelUrl.substringAfter("/channel/", "").substringBefore('/').substringBefore('?'),
+            ),
         )
         // Anche nella cronologia di YouTube, così dal PC lo vedi come già visto.
         com.platinum20.dashboard.media.youtube.YtSync.watched(context, stream.id, p.currentPosition, p.duration, p.isPlaying)

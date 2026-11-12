@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.482.0
+**Media come una sezione sola**
+- Su ogni copertina, in alto a sinistra, un simbolo dice cos'è: musica, video, podcast o radio; in basso a destra la durata (LIVE per le radio)
+- Le storie in cima sono chi hai guardato e ascoltato per ultimo, canali YouTube e artisti Spotify insieme; poi quelli che segui
+- Le foto delle storie si vedono: quando mancano si prendono dalla pagina del canale o dell'artista
+- Novità scorre di lato, non più in giù: prima le nuove, poi il segno Ultima visita e il resto
+- Le anteprime sotto Ultima visita non sono più sbiadite (sul tema scuro sembravano spente)
+- In fondo a Media tre voci per Spotify e YouTube insieme: Mi piace (brani e video, con Riproduci tutto), Cronologia (video e brani dal più recente), Playlist (di tutti e due, più gli album salvati)
+
 ## 1.481.0
 **Media è un feed unico**
 - Video e Musica non sono più pagine a parte: tutto sta in Media, in una lista sola

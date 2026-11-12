@@ -33,3 +33,17 @@ class MediaMarksTest {
         assertEquals(MediaMark(MediaType.RADIO, "LIVE"), MediaMarks.of(ResumeKind.RADIO, 0))
     }
 }
+
+/** 1.482 (Antonio): Mi piace, Cronologia e Playlist mostrano Spotify e YouTube insieme. */
+class MediaMergeTest {
+    @Test fun aTurnoPoiIlResto() {
+        assertEquals(listOf("s1", "y1", "s2", "y2", "s3"), com.platinum20.dashboard.media.MediaMerge.alternate(listOf("s1", "s2", "s3"), listOf("y1", "y2")))
+        assertEquals(listOf("y1"), com.platinum20.dashboard.media.MediaMerge.alternate(emptyList(), listOf("y1")))
+    }
+
+    @Test fun rigaDeiConti() {
+        assertEquals("412 brani · 86 video", com.platinum20.dashboard.ui.screens.countLine(412, "brani", 86, "video"))
+        assertEquals("86 video", com.platinum20.dashboard.ui.screens.countLine(0, "brani", 86, "video"))
+        assertEquals("", com.platinum20.dashboard.ui.screens.countLine(0, "brani", 0, "video"))
+    }
+}

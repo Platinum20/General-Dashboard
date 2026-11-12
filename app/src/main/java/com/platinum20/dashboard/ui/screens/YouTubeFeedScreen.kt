@@ -78,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -111,7 +112,7 @@ fun YouTubeHistoryScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopLevelBar(title = "Cronologia", subtitle = "YouTube", scrollBehavior = barScroll, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Cronologia", subtitle = "Video e brani", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) { HistoryTab(onPlay) }
     }
@@ -425,9 +426,9 @@ private fun ChannelNote(text: String) {
 
 /** Una playlist del canale: miniatura, titolo, quanti video. */
 @Composable
-private fun PlaylistLine(p: YtPlaylist, onClick: () -> Unit) {
+internal fun PlaylistLine(p: YtPlaylist, onClick: () -> Unit, padded: Boolean = true) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).clickable(onClick = onClick),
+        Modifier.fillMaxWidth().padding(horizontal = if (padded) 16.dp else 0.dp).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.width(140.dp)) {
@@ -540,6 +541,24 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
     }
 }
 
+/**
+ * Un video in una fila orizzontale (1.482, Antonio: le liste lunghe scorrono di lato): l'anteprima con simbolo e durata,
+ * sotto il titolo su due righe e il canale con quando è uscito.
+ */
+@Composable
+internal fun VideoTile(video: YtVideo, width: Dp, onClick: () -> Unit) {
+    Column(Modifier.width(width).bouncyPress(0.96f).tapOrSave({ SavedLinks.youtube(video) }, onClick)) {
+        CaptionedCover(video.title, listOfNotNull(video.channel.takeIf { it.isNotBlank() }, video.published?.let { relativeTime(it) }).joinToString(" · ")) {
+            Box(Modifier.clip(MaterialTheme.shapes.medium)) {
+                Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
+                VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(6.dp))
+                MediaMarkOverlay(MediaMark(MediaType.VIDEO))
+                WatchedBar(video, Modifier.align(Alignment.BottomCenter))
+            }
+        }
+    }
+}
+
 /** Titolo e riga del canale di [VideoCard]; [fixed] = occupa sempre due righe di titolo. */
 @Composable
 private fun VideoCardText(title: String, meta: String, avatar: String?, channel: String?, fixed: Boolean, onChannel: (() -> Unit)? = null) {
@@ -639,7 +658,12 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
     val watched = local.values.sortedByDescending { it.watchedAt }
     val ids = watched.map { it.id }.toSet()
     val fromYouTube = web.data.orEmpty().filter { it.id !in ids }
-    val state = Loadable(data = watched.map { it.id } + fromYouTube.map { it.id }, loading = web.loading && watched.isEmpty())
+    // Anche i brani di Spotify (1.482, Antonio: una Cronologia sola): insieme ai video, dal più recente.
+    val played by com.platinum20.dashboard.media.spotify.SpotifyStore.played.collectAsState()
+    LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.SpotifyStore.refreshListened() }
+    val recent: List<Pair<Any, Long>> = (watched.map { it to it.watchedAt } + played.map { (track, at) -> track to at.toEpochMilli() })
+        .sortedByDescending { it.second }
+    val state = Loadable(data = recent.map { it.second } + fromYouTube.map { it.id }, loading = web.loading && recent.isEmpty())
     // Svuotare cancella anche i punti in cui eri: prima si chiede, poi per qualche secondo si può annullare.
     var confirmClear by remember { mutableStateOf(false) }
     var undo by remember { mutableStateOf<Pair<Map<String, YtWatched>, List<ResumeItem>>?>(null) }
@@ -679,20 +703,26 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
             }
         }
         FeedList(state, empty = "Ancora nessun video guardato") {
-            if (watched.isNotEmpty()) {
+            if (recent.isNotEmpty()) {
                 item(key = "local-h") {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) { SectionHeader("Guardati qui") }
-                        DangerButton(onClick = { confirmClear = true }) { Text("Svuota") }
+                        Box(Modifier.weight(1f)) { SectionHeader("Di recente") }
+                        if (watched.isNotEmpty()) DangerButton(onClick = { confirmClear = true }) { Text("Svuota") }
                     }
                 }
-                items(watched, key = { "l" + it.id }) { w ->
-                    val video = YtVideo(
-                        id = w.id, title = w.title, channel = w.channel, channelId = "", published = null,
-                        durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
-                        uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
-                    )
-                    VideoRow(video, onClick = { onPlay(video.watchUrl) })
+                items(recent, key = { (e, at) -> if (e is YtWatched) "l" + e.id else "s" + (e as com.platinum20.dashboard.media.spotify.SpItem).uri + at }) { (e, _) ->
+                    if (e is com.platinum20.dashboard.media.spotify.SpItem) {
+                        val tracks = played.map { it.first }
+                        ItemRow(e, onClick = { playTracks(context, tracks, e) })
+                    } else {
+                        val w = e as YtWatched
+                        val video = YtVideo(
+                            id = w.id, title = w.title, channel = w.channel, channelId = w.channelId, published = null,
+                            durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
+                            uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
+                        )
+                        VideoRow(video, onClick = { onPlay(video.watchUrl) })
+                    }
                 }
             }
             if (fromYouTube.isNotEmpty()) {
@@ -781,20 +811,3 @@ fun YouTubePlaylistScreen(playlist: YtPlaylist, onBack: () -> Unit, onPlay: (Str
     }
 }
 
-/** "Mi piace" come pagina sua (1.357): in cima quelli messi dal player dell'app, poi quelli del tuo account. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun YouTubeLikedScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
-    val context = LocalContext.current
-    val liked by YouTubeStore.liked.collectAsState()
-    com.platinum20.dashboard.media.youtube.YtFavorites.init(context)
-    val mine by com.platinum20.dashboard.media.youtube.YtFavorites.items.collectAsState()
-    val all = liked.copy(data = (mine + liked.data.orEmpty()).distinctBy { it.id }.takeIf { liked.data != null || mine.isNotEmpty() })
-    Scaffold(
-        topBar = { TopLevelBar(title = "Mi piace", subtitle = "YouTube", onBack = onBack) },
-    ) { inner ->
-        Column(Modifier.fillMaxSize().padding(inner)) {
-            SimpleVideos(all, "Nessun video con il Mi piace", onPlay) { YouTubeStore.refreshLiked(context) }
-        }
-    }
-}
