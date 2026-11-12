@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.493.0
+**Media: Scopri al bordo destro, Cronologia solo video**
+- Il tastino Scopri sta sulla stessa riga del titolo, tutto a destra, in Musica e in Video
+- La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
+
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**
 - Le storie in cima non ci sono più: in alto resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa

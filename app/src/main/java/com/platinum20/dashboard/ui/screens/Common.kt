@@ -726,7 +726,7 @@ fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modif
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false),
+            // Niente peso sul titolo: il peso sta tutto nello spazio prima del tastino, che così va al bordo destro (1.493).
         )
         Icon(
             Icons.AutoMirrored.Outlined.KeyboardArrowRight,

@@ -288,7 +288,7 @@ fun MediaScreen(
                             SavedTile(coverTileWidth(), savedVideos.size, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
                         itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
-                        item(key = "history-all") { AllTile(coverTileWidth(), "Vedi tutta la cronologia", "Video e brani", onClick = { onOpenRoute(Routes.YOUTUBE_FEED) }) }
+                        item(key = "history-all") { AllTile(coverTileWidth(), "Vedi tutta la cronologia", "I video guardati", onClick = { onOpenRoute(Routes.YOUTUBE_FEED) }) }
                     }
                 }
             }
