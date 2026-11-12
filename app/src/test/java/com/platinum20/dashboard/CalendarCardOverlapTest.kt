@@ -76,6 +76,12 @@ class CalendarCardOverlapTest {
         }
     }
 
+    @org.junit.Before
+    fun hardware() {
+        System.setProperty("robolectric.pixelCopyRenderMode", "hardware")
+        System.setProperty("robolectric.screenshot.hwrdr.native", "true")
+    }
+
     @Test
     fun laCardDopoNonCopreIlCalendario() {
         var full by mutableStateOf(false)
@@ -110,7 +116,10 @@ class CalendarCardOverlapTest {
             println("CARDPROBE $step cal=$cal sim=$sim")
             val view = compose.activity.window.decorView
             val bitmap = android.graphics.Bitmap.createBitmap(view.width, view.height, android.graphics.Bitmap.Config.ARGB_8888)
-            view.draw(android.graphics.Canvas(bitmap))
+            runCatching {
+                android.view.PixelCopy.request(compose.activity.window, bitmap, {}, android.os.Handler(android.os.Looper.getMainLooper()))
+                org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            }
             java.io.File(outDir, "$step.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
             assertTrue("$step: Calendario finisce a ${cal.bottom}, la SIM comincia a ${sim.top}", cal.bottom <= sim.top)
         }
