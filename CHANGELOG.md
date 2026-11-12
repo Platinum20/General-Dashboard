@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.498.0
+**Calendario e Per dopo: tocca la card, tieni premuta una cosa**
+- Toccando la card Calendario in Home, anche sul titolo, si apre il calendario intero, come Per dopo apre il suo archivio
+- Tenendo premuto un evento o una cosa nella card Calendario si apre il fumetto con le sue azioni rapide (apri, condividi, rimanda, elimina)
+- Lo stesso nella card Per dopo: tenendo premuta una cosa da fare, una nota o un pacco arrivano le sue azioni (fatto, fissa, condividi, elimina)
+
 ## 1.497.0
 **Media: Video sono le tue iscrizioni, Musica solo raccolte**
 - La fila Video è il feed delle tue iscrizioni in orizzontale: i video nuovi dei canali che segui, dal più recente, e arrivando in fondo se ne caricano altri. Quelli iniziati restano in Riprendi e nella cronologia
