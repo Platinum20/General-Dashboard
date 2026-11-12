@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.488.0
+## 1.490.0
 **Media: una fila per la musica e una per i video**
 - Le storie in cima non ci sono più
 - Media ha tre file: Musica, Video e Novità
@@ -12,6 +12,11 @@
 - Gli elenchi non alternano più Spotify e YouTube: vanno solo in ordine di tempo
 - Nella Cronologia, dove musica e video stanno insieme, ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina, testo allineato
 - Sui mix non c'è più la durata
+=======
+## 1.489.0
+**Card Calendario: niente più card sopra**
+- La card SIM (o quella dopo) non copre più il fondo della card Calendario quando questa cambia altezza
+- Con il carattere grande del telefono gli orari di turni ed eventi hanno di nuovo il loro spazio e non si accavallano
 
 ## 1.487.0
 **Le cose senza scadenza in fondo alla card Calendario**

@@ -61,6 +61,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.platinum20.dashboard.today.BriefKind
@@ -298,6 +300,7 @@ fun TimelineRow(
         // La linea del tempo a sinistra (1.465, Antonio, variante H): un turno o un evento con orario colora
         // il suo pezzo di linea, dall'inizio alla fine, invece di avere una lineetta sua.
         val trip = entry.trip
+        val tripLine = tripLine()
         TimelineGutter(
             Modifier.fillMaxHeight(),
             line,
@@ -310,8 +313,8 @@ fun TimelineRow(
             segment = trip?.let {
                 TripSegment(
                     color = dotColor,
-                    from = TRIP_PAD + (if (it.title != null) TRIP_LINE else 0.dp) + TRIP_LINE / 2,
-                    toBottom = TRIP_PAD + TRIP_LINE / 2,
+                    from = TRIP_PAD + (if (it.title != null) tripLine else 0.dp) + tripLine / 2,
+                    toBottom = TRIP_PAD + tripLine / 2,
                     progress = it.progress(System.currentTimeMillis()),
                 )
             },
@@ -389,6 +392,17 @@ private class TripSegment(val color: Color, val from: Dp, val toBottom: Dp, val 
 /** L'altezza delle righe di inizio e fine: stretta, come una riga di testo (Antonio, 2026-11-10). */
 private val TRIP_LINE = 20.dp
 
+/**
+ * [TRIP_LINE], ma mai più bassa del testo: con il carattere grande del telefono l'ora finiva sopra la riga
+ * dopo e l'ultima usciva dalla card (2026-11-12).
+ */
+@Composable
+private fun tripLine(): Dp {
+    val line = MaterialTheme.typography.bodyMedium.lineHeight
+    val text = if (line.isSpecified) with(LocalDensity.current) { line.toDp() } else TRIP_LINE
+    return maxOf(TRIP_LINE, text)
+}
+
 /** Larga quanto "123,45 €": gli importi fino a mille stanno tutti nella stessa colonna. */
 private val TRIP_PAD = 2.dp
 
@@ -411,9 +425,10 @@ internal fun TripBlock(
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
     val progress = trip.progress(System.currentTimeMillis())
+    val lineH = tripLine()
     Column(modifier.padding(vertical = TRIP_PAD)) {
         trip.title?.let {
-            Box(Modifier.height(TRIP_LINE), contentAlignment = Alignment.CenterStart) {
+            Box(Modifier.height(lineH), contentAlignment = Alignment.CenterStart) {
                 // Il nome dell'evento: toccando la riga vola sul titolo della scheda ([sharedItem]).
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)
             }
@@ -421,11 +436,11 @@ internal fun TripBlock(
         Row(Modifier.height(IntrinsicSize.Min)) {
             // La linea va dall'inizio alla fine anche quando in mezzo ci sono più righe (le creator).
             Box(
-                Modifier.width(if (rail) 16.dp else 0.dp).fillMaxHeight().heightIn(min = TRIP_LINE * 2 + trip.middleMinDp().dp).drawBehind {
+                Modifier.width(if (rail) 16.dp else 0.dp).fillMaxHeight().heightIn(min = lineH * 2 + trip.middleMinDp().dp).drawBehind {
                     if (!rail) return@drawBehind
                     val x = size.width / 2
-                    val top = TRIP_LINE.toPx() / 2
-                    val bottom = size.height - TRIP_LINE.toPx() / 2
+                    val top = lineH.toPx() / 2
+                    val bottom = size.height - lineH.toPx() / 2
                     val r = 4.dp.toPx()
                     val stroke = 2.dp.toPx()
                     drawLine(tint.copy(alpha = 0.55f), Offset(x, top + r), Offset(x, bottom - r), stroke)
@@ -436,7 +451,7 @@ internal fun TripBlock(
             )
             if (rail) Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                TripStop(trip.departAt, trip.from, text, if (trip.title == null) title else Modifier)
+                TripStop(trip.departAt, trip.from, text, lineH, if (trip.title == null) title else Modifier)
                 // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
                 Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
@@ -474,7 +489,7 @@ internal fun TripBlock(
                         }
                     }
                 }
-                TripStop(trip.arriveAt, trip.to, text)
+                TripStop(trip.arriveAt, trip.to, text, lineH)
             }
         }
     }
@@ -495,8 +510,8 @@ internal fun peopleLabel(people: Int) = when {
 }
 
 @Composable
-private fun TripStop(time: String, station: String, color: Color, title: Modifier = Modifier) {
-    Row(Modifier.height(TRIP_LINE), verticalAlignment = Alignment.CenterVertically) {
+private fun TripStop(time: String, station: String, color: Color, height: Dp, title: Modifier = Modifier) {
+    Row(Modifier.height(height), verticalAlignment = Alignment.CenterVertically) {
         Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
         if (station.isNotEmpty()) {
             Spacer(Modifier.width(10.dp))
