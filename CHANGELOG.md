@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.495.0
+## 1.496.0
 **YouTube: i video ripartono anche col volume a zero**
 - Col telefono silenzioso i video di YouTube dicevano "Video non riproducibile": i sottotitoli accesi da soli bloccavano il video. Ora si caricano nel modo giusto
 - Se un sottotitolo non va, il video riparte senza invece di fermarsi
+
+## 1.495.0
+**Per dopo con l'archivio, Calendario col suo nome**
+- La card Per dopo mostra solo le cose ancora da fare: quando ne spunti una sparisce dalla card e va nell'archivio
+- Toccando la card si apre l'archivio, con le cose fatte dalla più recente; toccando il cerchio una cosa torna da fare
+- La card Calendario ha il suo nome in cima, come le altre card, e a destra quante cose hai da oggi a fine mese: niente più "Altre N a novembre" in fondo
 
 ## 1.494.0
 **Artisti: tutta la discografia**
