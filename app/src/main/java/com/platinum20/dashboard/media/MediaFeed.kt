@@ -6,6 +6,8 @@ import com.platinum20.dashboard.media.spotify.SpListened
 import com.platinum20.dashboard.media.youtube.YtChannel
 import com.platinum20.dashboard.media.youtube.YtVideo
 import com.platinum20.dashboard.media.youtube.YtWatched
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import java.time.Instant
 import java.time.ZoneId
 
@@ -107,18 +109,19 @@ object MediaStories {
     }
 
     /** Sotto un episodio nel feed: "Il Post · 3 h fa" (la durata è sulla copertina, 1.485). */
-    fun episodeLine(episode: Episode, now: Long): String {
-        val ago = episode.publishedAt.takeIf { it > 0 }?.let { at ->
-            val hours = (now - at) / 3_600_000L
-            when {
-                hours < 1 -> "adesso"
-                hours < 24 -> "$hours h fa"
-                hours < 48 -> "ieri"
-                hours < 24 * 14 -> "${hours / 24} giorni fa"
-                else -> "${hours / 24 / 7} settimane fa"
-            }
+    fun episodeLine(episode: Episode, now: Long): String =
+        listOfNotNull(episode.podcastTitle.takeIf { it.isNotBlank() }, episodeAgo(episode, now)).joinToString(" · ")
+
+    /** Quando è uscito un episodio: "adesso", "3 h fa", "ieri", "4 giorni fa", "2 settimane fa"; null se non si sa. */
+    fun episodeAgo(episode: Episode, now: Long): String? = episode.publishedAt.takeIf { it > 0 }?.let { at ->
+        val hours = (now - at) / 3_600_000L
+        when {
+            hours < 1 -> "adesso"
+            hours < 24 -> "$hours h fa"
+            hours < 48 -> "ieri"
+            hours < 24 * 14 -> "${hours / 24} giorni fa"
+            else -> "${hours / 24 / 7} settimane fa"
         }
-        return listOfNotNull(episode.podcastTitle.takeIf { it.isNotBlank() }, ago).joinToString(" · ")
     }
 }
 
@@ -145,6 +148,8 @@ data class MediaFeedRows(val fresh: List<FeedEntry>, val older: List<FeedEntry>)
  */
 object MediaFeed {
     const val MAX_OLDER = 30
+    /** Nella fila di Media, dopo ULTIMA VISITA, solo le prime vecchie: il resto è in "Tutte le novità" (1.486). */
+    const val ROW_OLDER = 8
     const val EVERY = 3
 
     fun build(
@@ -196,4 +201,12 @@ object MediaMerge {
         return out
     }
 
+}
+
+/**
+ * Le Novità che Media ha appena costruito, per la pagina "Tutte le novità" (1.486): la si apre da Media, quindi sono
+ * sempre quelle che hai appena visto nella fila.
+ */
+object MediaFeedNow {
+    var rows by androidx.compose.runtime.mutableStateOf(MediaFeedRows(emptyList(), emptyList()))
 }
