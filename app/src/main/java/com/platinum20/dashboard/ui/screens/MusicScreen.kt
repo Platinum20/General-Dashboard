@@ -231,12 +231,12 @@ internal object PodcastOpen {
 }
 
 /**
- * "Per te" (1.488, Antonio: "ordinato in base all'ultima volta che l'ho ascoltato, qualunque cosa sia"): mix, playlist e
+ * La fila "Musica", già "Per te" (1.488, Antonio: "ordinato in base all'ultima volta che l'ho ascoltato, qualunque cosa sia"): mix, playlist e
  * album salvati di Spotify e i podcast che segui in una fila sola, a sinistra l'ultima cosa ascoltata; niente ultime
  * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit) {
     val context = LocalContext.current
     remember { PodcastStore.init(context) }
     val followedHere by PodcastStore.followed.collectAsState()
@@ -263,19 +263,22 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
         val all = mixesOf(home, library, today).map { PerTe.Mix(it) } +
             (playlists.data.orEmpty() + library?.albums.orEmpty()).distinctBy { it.uri }.map { PerTe.Item(it) } +
             podcasts.map { PerTe.Show(it) } +
-            artists.map { PerTe.Artist(it.artist, it.at.toEpochMilli()) }
+            artists.map { PerTe.Artist(it.artist, it.at.toEpochMilli()) } +
+            // I brani che ti piacciono sono una tessera come una playlist (1.488, Antonio: "dentro Musica").
+            listOfNotNull(library?.liked?.takeIf { it.isNotEmpty() }?.let { PerTe.Liked(it.size, it.first().image) })
         com.platinum20.dashboard.media.MediaMerge.byRecency(all) { e ->
             when (e) {
                 is PerTe.Mix -> heard[mixLink(e.mix)]
                 is PerTe.Item -> heard[e.item.uri]
                 is PerTe.Show -> podcastAt[e.podcast.feedUrl]
                 is PerTe.Artist -> e.at
+                is PerTe.Liked -> heard[LIKED_LINK]
             }
         }
     }
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Per te", Modifier.padding(horizontal = 16.dp))
+        SectionHeader("Musica", Modifier.padding(horizontal = 16.dp))
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
@@ -285,6 +288,12 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
                         tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "),
                         date = null, mark = MediaMarks.of(e.item), click = Modifier.clickable { onOpen(e.item) },
                     )
+                    is PerTe.Liked -> MediaTile(
+                        tile, wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", date = null,
+                        mark = null, click = Modifier.clickable(onClick = onOpenLiked),
+                    ) {
+                        Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                    }
                     is PerTe.Artist -> MediaTile(
                         tile, wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", date = null,
                         mark = null, click = Modifier.clickable { onOpen(e.artist) }, round = true,
@@ -312,7 +321,11 @@ internal sealed interface PerTe {
     data class Item(val item: SpItem) : PerTe { override val key get() = "sp-" + item.uri }
     data class Show(val podcast: Podcast) : PerTe { override val key get() = "pod-" + podcast.feedUrl }
     data class Artist(val artist: SpItem, val at: Long) : PerTe { override val key get() = "art-" + artist.uri }
+    data class Liked(val count: Int, val image: String) : PerTe { override val key get() = "liked" }
 }
+
+/** Il "da dove" dei brani che ti piacciono, quando partono dalla loro pagina (1.488). */
+internal const val LIKED_LINK = "spotify:collection:tracks"
 
 /** Il "da dove" dei brani di un mix in Riprendi (1.488): così Per te sa quando l'hai ascoltato. */
 internal fun mixLink(mix: SpMix): String = "mix:" + mix.id

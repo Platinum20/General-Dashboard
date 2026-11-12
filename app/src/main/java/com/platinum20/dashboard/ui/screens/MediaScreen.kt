@@ -204,31 +204,7 @@ fun MediaScreen(
         com.platinum20.dashboard.media.MediaFeed.build(subVideos, latestEpisodes.data.orEmpty(), tips, since, listened)
     }
     SideEffect { com.platinum20.dashboard.media.MediaFeedNow.rows = feed }
-    remember { com.platinum20.dashboard.media.youtube.YtHistory.init(context) }
-    val watched by com.platinum20.dashboard.media.youtube.YtHistory.items.collectAsState()
-    val heard by com.platinum20.dashboard.media.spotify.SpotifyStore.listened.collectAsState()
-    val channelInfos by YouTubeStore.channelInfo.collectAsState()
-    val baseStories = remember(watched, heard.data, channels.data, subs.data, artists.data, since, youTubeOn, spotifyOn) {
-        com.platinum20.dashboard.media.MediaStories.build(
-            if (youTubeOn) watched.values.toList() else emptyList(),
-            if (spotifyOn) heard.data.orEmpty() else emptyList(),
-            if (youTubeOn) channels.data.orEmpty() else emptyList(),
-            subs.data.orEmpty(),
-            if (spotifyOn) artists.data.orEmpty() else emptyList(),
-            since,
-        )
-    }
-    // Un canale senza foto (iscrizioni lette dal sito, vecchia cronologia): la foto si prende dalla sua pagina.
-    LaunchedEffect(baseStories.map { it.key }) {
-        baseStories.filter { it.kind == com.platinum20.dashboard.media.MediaStory.Kind.CHANNEL && it.image.isBlank() }.take(15)
-            .forEach { YouTubeStore.loadChannelInfo(com.platinum20.dashboard.media.youtube.YtChannel(it.id, it.title, "")) }
-    }
-    val stories = remember(baseStories, channelInfos) {
-        baseStories.map { st ->
-            if (st.image.isNotBlank()) st
-            else st.copy(image = com.platinum20.dashboard.media.MediaStories.imageUrl(channelInfos[st.id]?.data?.avatar.orEmpty()))
-        }
-    }
+    // Le storie in cima sono tolte (1.488, Antonio): musica e video sono due file, le storie non servono più.
     val freshVideos = com.platinum20.dashboard.media.MediaFresh.newVideos(subVideos, since)
     val freshEpisodes = remember(latestEpisodes.data, history) { newEpisodes(latestEpisodes.data.orEmpty(), history).size }
 
@@ -243,10 +219,7 @@ fun MediaScreen(
                 title = "Media",
                 subtitle = com.platinum20.dashboard.media.MediaFresh.mediaLine(freshVideos, freshEpisodes) ?: "Video, musica e podcast",
                 scrollBehavior = scrollBehavior,
-            ) {
-                // La Cronologia (1.488, Antonio: "in alto a destra come un tastino da premere"): video e brani insieme.
-                if (spotifyOn || youTubeOn) RoundIconButton(Icons.Outlined.History, "Cronologia") { onOpenRoute(Routes.YOUTUBE_FEED) }
-            }
+            )
         },
     ) { inner ->
         LazyColumn(
@@ -257,22 +230,6 @@ fun MediaScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (stories.isNotEmpty()) item(key = "stories") {
-                StoriesRow(stories) { story ->
-                    onOpenRoute(
-                        when (story.kind) {
-                            com.platinum20.dashboard.media.MediaStory.Kind.CHANNEL ->
-                                Routes.youtubeChannel(com.platinum20.dashboard.media.youtube.YtChannel(story.id, story.title, story.image))
-                            com.platinum20.dashboard.media.MediaStory.Kind.ARTIST -> Routes.spotifyItem(
-                                com.platinum20.dashboard.media.spotify.SpItem(
-                                    story.id, "spotify:artist:${story.id}", com.platinum20.dashboard.media.spotify.SpKind.ARTIST,
-                                    story.title, "Artista", story.image,
-                                ),
-                            )
-                        },
-                    )
-                }
-            }
             now?.let { playing ->
                 item(key = "now") {
                     MediaNowCard(
@@ -295,7 +252,7 @@ fun MediaScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
-            // Per te (1.481, Antonio): prima i mix, poi le uscite.
+            // "Musica" (1.488, Antonio): mix, album, playlist, podcast e artisti dall'ultimo ascoltato; in fondo la Radio.
             item(key = "perte") {
                 PerTeRow(
                     onOpen = { onOpenRoute(Routes.spotifyItem(it)) },
@@ -305,19 +262,16 @@ fun MediaScreen(
                         onOpenRoute(Routes.PODCAST)
                     },
                     onOpenRadio = { onOpenRoute(Routes.RADIO) },
+                    onOpenLiked = { onOpenRoute(Routes.LIKED_TRACKS) },
                 )
             }
-            // Sotto Per te una riga per album e playlist e una per Mi piace (1.486, Antonio), Spotify e YouTube insieme.
-            if (spotifyOn || youTubeOn) {
-                // Mi piace diviso in brani e video (1.488, Antonio); le playlist sono in Per te, quelle di YouTube non ci sono più.
-                item(key = "liked-tracks") { LikedRow(videos = false, onOpenRoute, onPlayVideo) }
-                item(key = "liked-videos") { LikedRow(videos = true, onOpenRoute, onPlayVideo) }
-            }
-            if (continueList.isNotEmpty()) {
-                item(key = "continue-h") { SectionHeader("Continua", Modifier.padding(horizontal = 16.dp)) }
+            // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
+            if (continueList.isNotEmpty() || youTubeOn) {
+                item(key = "continue-h") { SectionHeader("Video", Modifier.padding(horizontal = 16.dp)) }
                 item(key = "continue") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
+                        item(key = "history-all") { AllTile(coverTileWidth(), "Vedi tutta la cronologia", "Video e brani", onClick = { onOpenRoute(Routes.YOUTUBE_FEED) }) }
                     }
                 }
             }
@@ -330,7 +284,7 @@ fun MediaScreen(
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Cronologia è il tastino in alto a destra e I tuoi podcast sono in Per te (1.488, Antonio).
+                    // La Cronologia è in fondo alla fila Video e I tuoi podcast nella fila Musica (1.488, Antonio).
                     if (!spotifyOn) {
                         ListRow(Icons.Outlined.GraphicEq, TileAccent.NEUTRAL, "Collega Spotify", "Mix, uscite e la tua musica qui") {
                             onOpenRoute(Routes.login(MediaService.SPOTIFY))

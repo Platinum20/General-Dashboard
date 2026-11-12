@@ -1,14 +1,16 @@
 # Changelog
 
 ## 1.488.0
-**Media: Per te diventa il tuo "continua" della musica**
-- Per te è in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, un podcast o uno degli ultimi 3 artisti ascoltati; le ultime uscite non ci sono più
-- In fondo a Per te ci sono "I tuoi podcast" e il tasto Radio (la Radio non è più una sezione: le tue radio sono in cima alla sua pagina)
-- Mi piace è diviso in due: "Brani che ti piacciono" e "Video che ti piacciono", ognuno con la sua pagina
+**Media: una fila per la musica e una per i video**
+- Le storie in cima non ci sono più
+- Media ha tre file: Musica, Video e Novità
+- "Musica" è la tua musica in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, i brani che ti piacciono, un podcast o uno degli ultimi 3 artisti ascoltati; niente ultime uscite. In fondo ci sono "I tuoi podcast" e il tasto Radio (la Radio non è più una sezione: le tue radio sono in cima alla sua pagina)
+- "Video" sono i video che hai iniziato, dal più recente; in fondo "Vedi tutta la cronologia"
+- Le Novità dei video restano come prima, con "Tutte le novità"
+- I brani che ti piacciono sono una tessera dentro Musica, con la loro pagina e Riproduci tutto; i video che ti piacciono non sono più in Media
 - Le playlist di YouTube non ci sono più in Media
-- Continua mostra solo i video
-- La Cronologia è un tastino in alto a destra di Media
-- Nelle liste dove musica e video stanno insieme (Cronologia) ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina, testo allineato
+- Gli elenchi non alternano più Spotify e YouTube: vanno solo in ordine di tempo
+- Nella Cronologia, dove musica e video stanno insieme, ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina, testo allineato
 - Sui mix non c'è più la durata
 
 ## 1.487.0

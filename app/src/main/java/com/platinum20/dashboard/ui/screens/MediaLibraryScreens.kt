@@ -122,12 +122,12 @@ fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (Stri
                 if (entries.isNotEmpty()) item(key = "play") {
                     CanvasButton("Riproduci tutto", onClick = {
                         val now = System.currentTimeMillis()
-                        CanvasPlayer.playList(context, entries.map { it.resume(now) })
+                        CanvasPlayer.playList(context, entries.map { it.resume(now).let { r -> if (videosOnly) r else r.copy(link = LIKED_LINK) } })
                     }, primary = true)
                 }
                 items(entries, key = { it.key }) { entry ->
                     when (entry) {
-                        is MixedEntry.Track -> TrackLine(entry.item, onClick = { playTracks(context, tracks, entry.item) })
+                        is MixedEntry.Track -> TrackLine(entry.item, onClick = { playTracks(context, tracks, entry.item, LIKED_LINK) })
                         is MixedEntry.Video -> VideoLine(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
                     }
                 }
@@ -171,45 +171,6 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
 internal fun countLine(a: Int, aName: String, b: Int, bName: String): String =
     listOfNotNull(a.takeIf { it > 0 }?.let { "$it $aName" }, b.takeIf { it > 0 }?.let { "$it $bName" }).joinToString(" · ")
 
-/** Quante tessere al massimo in una fila di Media prima di "Tutti": il resto è nella pagina. */
-private const val ROW_MAX = 20
-
-/**
- * "Brani che ti piacciono" e "Video che ti piacciono" sotto Per te (1.488, Antonio: divisi), dall'ultimo ascoltato;
- * un tocco li fa partire, il titolo e l'ultima tessera aprono la pagina.
- */
-@Composable
-internal fun LikedRow(videos: Boolean, onOpenRoute: (String) -> Unit, onPlayVideo: (String) -> Unit) {
-    val context = LocalContext.current
-    YtFavorites.init(context)
-    val library by SpotifyStore.library.collectAsState()
-    val liked by YouTubeStore.liked.collectAsState()
-    val mine by YtFavorites.items.collectAsState()
-    LaunchedEffect(videos) { if (videos) YouTubeStore.refreshLiked(context) }
-    val tracks = library.data?.liked.orEmpty()
-    val likedVideos = (mine + liked.data.orEmpty()).distinctBy { it.id }
-    val heard = rememberHeardAt()
-    val all = MediaMerge.byRecency(if (videos) likedVideos.map { MixedEntry.Video(it) } else tracks.map { MixedEntry.Track(it) }) { heard[it.timeKey] }
-    if (all.isEmpty()) return
-    val tile = coverTileWidth()
-    val open = { onOpenRoute(if (videos) com.platinum20.dashboard.Routes.YOUTUBE_LIKED else com.platinum20.dashboard.Routes.LIKED_TRACKS) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OpenableHeader(if (videos) "Video che ti piacciono" else "Brani che ti piacciono", onOpen = open, modifier = Modifier.padding(horizontal = 16.dp))
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(all.take(ROW_MAX), key = { it.key }) { e ->
-                when (e) {
-                    is MixedEntry.Track -> MediaTile(
-                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle, date = null,
-                        mark = MediaMarks.of(e.item),
-                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.item) }) { playTracks(context, tracks, e.item) },
-                    )
-                    is MixedEntry.Video -> VideoTile(e.video, tile) { onPlayVideo(e.video.watchUrl) }
-                }
-            }
-            if (all.size > ROW_MAX) item(key = "liked-all") { AllTile(tile, "Tutti", if (videos) "${all.size} video" else "${all.size} brani", open) }
-        }
-    }
-}
 
 /**
  * La pagina di un mix (1.486, Antonio: "prima la pagina con Riproduci, come le playlist"): la copertina, Riproduci e i
