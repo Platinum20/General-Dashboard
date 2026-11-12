@@ -2,6 +2,7 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
@@ -98,6 +99,18 @@ internal fun BoxScope.SaveToNotesLayer() {
                 CaptureFeedback.tell(context, "In coda: ${media.title}", Icons.Rounded.QueueMusic)
             }
             RowDivider()
+            // Un brano di Spotify fa partire la sua radio: simili a lui, poi resta nella fila Musica (1.491).
+            com.platinum20.dashboard.media.spotify.MadeStore.seedOf(media)?.let { seed ->
+                BubbleRow(icon = Icons.Rounded.Radio, title = "Radio", detail = "Brani simili a ${media.title}") {
+                    haptic(Haptic.CONFIRM)
+                    SavedLinks.dismiss()
+                    CaptureFeedback.tell(context, "Preparo la radio di ${media.title}", Icons.Rounded.Radio)
+                    com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { error ->
+                        CaptureFeedback.tell(context, error)
+                    }
+                }
+                RowDivider()
+            }
         }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }

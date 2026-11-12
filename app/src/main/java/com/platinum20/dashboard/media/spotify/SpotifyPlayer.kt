@@ -32,7 +32,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  *
  * Il riproduttore si accende all'avvio dell'app (se Spotify è collegato) e resta pronto, così il
  * play non deve aspettare che si colleghi. Lo stato arriva dalla pagina a ogni cambio e una volta al
- * secondo (gli eventi dell'SDK a volte non arrivano).
+ * secondo mentre suona, ogni 15 in pausa (gli eventi dell'SDK a volte non arrivano).
+ * Con l'app chiusa e niente che suona, dopo [SLEEP_MS] la pagina si spegne ([setBackground]): prima
+ * restava accesa tutta la notte e consumava batteria; il play la riaccende da solo.
  */
 object SpotifyPlayer : ExternalBackend {
     private const val BASE_URL = "https://canvas.platinum20.app/spotify/"
@@ -42,6 +44,8 @@ object SpotifyPlayer : ExternalBackend {
     private var ready = CompletableDeferred<String>()
     private var playJob: Job? = null
     private var resumeCheck: Job? = null
+    private var sleepJob: Job? = null
+    private var inBackground = false
 
     /** La voce che il player unico ci ha chiesto di suonare (uri di Spotify). */
     private var target: String? = null
@@ -147,6 +151,11 @@ object SpotifyPlayer : ExternalBackend {
     }
 
     private fun restart(context: Context) {
+        shutDown()
+        start(context)
+    }
+
+    private fun shutDown() {
         webView?.run {
             stopLoading()
             loadUrl("about:blank")
@@ -154,7 +163,38 @@ object SpotifyPlayer : ExternalBackend {
         }
         webView = null
         if (ready.isCompleted) ready = CompletableDeferred()
-        start(context)
+    }
+
+    /**
+     * L'app va in secondo piano (false = torna davanti). Davanti il riproduttore si riaccende; dietro,
+     * se non suona per [SLEEP_MS], si spegne. Il brano resta in coda: il play lo rimanda da dov'era.
+     */
+    fun setBackground(context: Context, background: Boolean) {
+        inBackground = background
+        sleepJob?.cancel()
+        if (!background) {
+            if (SpotifyAuth.connected.value) start(context)
+            return
+        }
+        sleepJob = scope.launch {
+            while (true) {
+                delay(SLEEP_MS)
+                if (!inBackground) return@launch
+                val s = _state.value
+                if (webView != null && s?.playing != true && s?.loading != true) {
+                    sleep()
+                    return@launch
+                }
+            }
+        }
+    }
+
+    private fun sleep() {
+        playJob?.cancel()
+        resumeCheck?.cancel()
+        // Quel che c'era resta (target, posizione): il play vede il riproduttore spento e lo rimanda.
+        js("cp.disconnect()")
+        shutDown()
     }
 
     private fun js(script: String) {
@@ -197,7 +237,9 @@ object SpotifyPlayer : ExternalBackend {
             // In pausa basta ogni tanto.
             delay(if (last?.paused == true) WATCH_MS * 4 else WATCH_MS)
             if (target != uri) return
-            val fresh = last?.let { System.currentTimeMillis() - it.at < WATCH_MS } ?: false
+            // In pausa la pagina scrive più di rado: si guarda lo stesso intervallo, non si va in rete.
+            val window = if (last?.paused == true) PAUSED_POLL_MS + WATCH_MS else WATCH_MS
+            val fresh = last?.let { System.currentTimeMillis() - it.at < window } ?: false
             if (fresh) continue
             val token = SpotifyAuth.token() ?: continue
             val playback = runCatching { SpotifyApi.playback(token) }.getOrNull() ?: continue
@@ -354,6 +396,10 @@ object SpotifyPlayer : ExternalBackend {
     private const val RESUME_CHECK_MS = 3_000L
     /** Ogni quanto, se la pagina tace, si chiede a Spotify lo stato. */
     private const val WATCH_MS = 2_500L
+    /** In pausa la pagina manda lo stato ogni tanto, non ogni secondo (stesso valore nello script). */
+    private const val PAUSED_POLL_MS = 15_000L
+    /** Quanto resta acceso il riproduttore con l'app chiusa e niente che suona. */
+    private const val SLEEP_MS = 5 * 60_000L
     /** Il nome del nostro riproduttore tra i dispositivi di Spotify (lo stesso della pagina). */
     private const val DEVICE_NAME = "Canvas"
 
@@ -441,8 +487,22 @@ window.onSpotifyWebPlaybackSDKReady = function () {
     var linked = (t.linked_from && t.linked_from.uri) || '';
     CanvasSpotify.onState(t.uri || '', linked, !!s.paused, s.position || 0, s.duration || 0);
   }
-  player.addListener('player_state_changed', send);
-  setInterval(function () { player.getCurrentState().then(send); }, 1000);
+  // Mentre suona ogni secondo, in pausa ogni 15: la pagina non sveglia il telefono per niente.
+  var paused = true, timer = 0;
+  function next() { clearTimeout(timer); timer = setTimeout(poll, paused ? 15000 : 1000); }
+  function poll() {
+    player.getCurrentState().then(function (s) { paused = !s || !!s.paused; send(s); })
+      .catch(function () {})
+      .then(next);
+  }
+  player.addListener('player_state_changed', function (s) {
+    var was = paused;
+    paused = !s || !!s.paused;
+    send(s);
+    // Ripartito: le letture al secondo ricominciano subito, non fra 15 secondi.
+    if (was && !paused) next();
+  });
+  next();
   if (player.activateElement) player.activateElement();
   player.connect();
 };

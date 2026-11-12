@@ -313,6 +313,9 @@ class MainActivity : ComponentActivity() {
         com.platinum20.dashboard.media.youtube.YtSync.start(this)
         lifecycle.addObserver(androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_START) com.platinum20.dashboard.media.youtube.YtSync.foreground(this)
+            // Spotify pronto mentre l'app è aperta; chiusa e in silenzio, il suo riproduttore si spegne (batteria).
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_START) com.platinum20.dashboard.media.spotify.SpotifyPlayer.setBackground(this, false)
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) com.platinum20.dashboard.media.spotify.SpotifyPlayer.setBackground(this, true)
         })
         // Lavori in background: widget (solo se presente), notifica del mattino e controllo aggiornamenti.
         // Programmarli avvia WorkManager e il suo database: fuori dal thread principale, il primo frame arriva prima.
@@ -328,7 +331,7 @@ class MainActivity : ComponentActivity() {
                 UpdateCheckWorker.schedule(app)
                 com.platinum20.dashboard.mail.MailStore.init(app)
                 if (com.platinum20.dashboard.mail.MailStore.connected()) com.platinum20.dashboard.work.MailWorker.schedule(app)
-                // WindTre: il giro che tiene vivo l'accesso (si accende solo se collegato).
+                // WindTre e Creators Pro: il giro che tiene vivo l'accesso (si accende solo se collegato).
                 com.platinum20.dashboard.settings.Leftovers.clean(app)
                 com.platinum20.dashboard.work.KeepAliveWorker.update(app)
                 com.platinum20.dashboard.shifts.ShiftStore.init(app)
@@ -423,11 +426,18 @@ object Routes {
     fun youtubePlaylist(p: com.platinum20.dashboard.media.youtube.YtPlaylist) =
         "media/playlist/${Uri.encode(p.id)}?title=${Uri.encode(p.title)}&count=${p.count}"
     const val YOUTUBE_LIKED = "media/liked"
+    /** I brani che ti piacciono (1.488): Mi piace diviso in brani e video. */
+    const val LIKED_TRACKS = "media/liked/tracks"
     /** Un mix di Per te come pagina sua, con Riproduci (1.486). */
     const val MEDIA_MIX = "media/mix/{id}"
     fun mix(id: String) = "media/mix/${Uri.encode(id)}"
     /** Tutte le novità in verticale, dall'ultima tessera della fila (1.486). */
     const val MEDIA_NEWS = "media/news"
+    /** Le cose salvate per dopo di una fila di Media (1.490): video o musica. */
+    const val SAVED_MEDIA = "media/saved/{kind}"
+    fun savedMedia(video: Boolean) = "media/saved/" + if (video) "video" else "musica"
+    /** Scopri della musica (1.488): il tastino a destra del titolo Musica. */
+    const val MUSIC_DISCOVER = "media/discover"
     /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
     const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
     fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
@@ -1427,9 +1437,30 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
             }
-            // Mi piace (1.485): brani di Spotify e video di YouTube insieme.
+            composable(Routes.SAVED_MEDIA) { entry ->
+                com.platinum20.dashboard.ui.screens.SavedMediaScreen(
+                    video = entry.arguments?.getString("kind") == "video",
+                    onBack = { navController.popBackStack() },
+                    onOpenRoute = { navController.navigate(it) },
+                )
+            }
+            composable(Routes.MUSIC_DISCOVER) {
+                com.platinum20.dashboard.ui.screens.MusicDiscoverScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpen = { navController.navigate(Routes.spotifyItem(it)) },
+                )
+            }
+            // Mi piace (1.488): i video da una parte, i brani dall'altra.
             composable(Routes.YOUTUBE_LIKED) {
                 com.platinum20.dashboard.ui.screens.MediaLikedScreen(
+                    videosOnly = true,
+                    onBack = { navController.popBackStack() },
+                    onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
+                )
+            }
+            composable(Routes.LIKED_TRACKS) {
+                com.platinum20.dashboard.ui.screens.MediaLikedScreen(
+                    videosOnly = false,
                     onBack = { navController.popBackStack() },
                     onPlayVideo = { navController.navigate(Routes.youtubeWatch(it)) },
                 )
@@ -1439,7 +1470,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                 com.platinum20.dashboard.ui.screens.MediaPlaylistsScreen(
                     onBack = { navController.popBackStack() },
                     onOpenSpotify = { navController.navigate(Routes.spotifyItem(it)) },
-                    onOpenYouTube = { navController.navigate(Routes.youtubePlaylist(it)) },
                 )
             }
             composable(

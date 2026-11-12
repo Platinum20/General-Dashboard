@@ -126,6 +126,31 @@ object SpotifyStore {
 
     private const val LISTENED_MAX = 20
 
+    private val _discover = MutableStateFlow(Loadable<List<SpDiscoverRow>>())
+    /** "Scopri" della musica (1.488): per ogni tuo genere gli artisti che non ascolti ancora e le sue playlist. */
+    val discover: StateFlow<Loadable<List<SpDiscoverRow>>> = _discover.asStateFlow()
+
+    fun refreshDiscover(force: Boolean = false) = load(_discover, force, FeedCache.spDiscover, maxAge = RELEASES_MAX_AGE) { token ->
+        val genres = SpotifyDiscover.genres(SpotifyApi.topGenres(token))
+        val known = (SpotifyApi.topArtists(token) + _listened.value.data.orEmpty().map { it.artist })
+            .flatMap { listOf(it.id, it.title.lowercase()) }.toSet()
+        if (genres.isEmpty()) {
+            // Spotify non dice i generi: le playlist che parlano dei tuoi artisti più ascoltati.
+            _listened.value.data.orEmpty().map { it.artist }.distinctBy { it.id }.take(SpotifyDiscover.GENRES).mapNotNull { a ->
+                runCatching { SpotifyApi.searchKind(token, a.title, "playlist") }.getOrNull()?.takeIf { it.isNotEmpty() }
+                    ?.let { SpDiscoverRow("Perché ascolti ${a.title}", "Playlist con i suoi brani", it) }
+            }
+        } else genres.flatMap { (genre, artist) ->
+            val label = SpotifyDiscover.label(genre)
+            val artists = runCatching { SpotifyApi.searchKind(token, "genre:\"$genre\"", "artist", 20) }.getOrNull().orEmpty()
+            val playlists = runCatching { SpotifyApi.searchKind(token, genre, "playlist") }.getOrNull().orEmpty()
+            listOfNotNull(
+                SpotifyDiscover.newArtists(artists, known).takeIf { it.isNotEmpty() }?.let { SpDiscoverRow("Artisti simili: $label", "Perché ascolti $artist", it) },
+                playlists.takeIf { it.isNotEmpty() }?.let { SpDiscoverRow("Il tuo genere: $label", "Playlist da scoprire", it) },
+            )
+        }
+    }
+
     private val _artistPages = MutableStateFlow<Map<String, Loadable<SpArtistPage>>>(emptyMap())
     /** Le pagine degli artisti aperte, per id. */
     val artistPages: StateFlow<Map<String, Loadable<SpArtistPage>>> = _artistPages.asStateFlow()
@@ -277,6 +302,7 @@ object SpotifyStore {
 
     fun clear() {
         FeedCache.clear("sp-")
+        MadeStore.clear()
         _home.value = Loadable()
         _playlists.value = Loadable()
         _library.value = Loadable()

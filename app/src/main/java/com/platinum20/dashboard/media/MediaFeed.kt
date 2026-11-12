@@ -189,15 +189,24 @@ object MediaFeed {
 /** Spotify e YouTube nella stessa lista (1.485, Antonio: "un unico menu che mostra entrambe le cose"). */
 object MediaMerge {
     /**
-     * Due liste già dalla più recente, senza date da confrontare (i Mi piace): una voce per parte, a turno, finché una
-     * finisce; poi il resto dell'altra. Così le più recenti di tutte e due stanno in cima.
+     * Spotify e YouTube insieme nell'ordine in cui li hai ascoltati o guardati (1.488, Antonio: "non mischiati a turno"):
+     * prima ciò che ha un'ora [at], dal più recente; poi il resto nell'ordine in cui arriva.
      */
-    fun <T> alternate(a: List<T>, b: List<T>): List<T> {
-        val out = ArrayList<T>(a.size + b.size)
-        for (i in 0 until maxOf(a.size, b.size)) {
-            if (i < a.size) out += a[i]
-            if (i < b.size) out += b[i]
+    fun <T> byRecency(items: List<T>, at: (T) -> Long?): List<T> =
+        items.sortedByDescending { at(it) ?: Long.MIN_VALUE }
+
+    /** Le ore dell'ultimo ascolto per chiave: uri Spotify (brano e album/playlist da cui veniva) o id del video. */
+    fun heardAt(history: List<ResumeItem>, watched: Map<String, Long>, played: List<Pair<String, Long>>): Map<String, Long> {
+        val out = HashMap<String, Long>()
+        fun put(key: String, at: Long) {
+            if (key.isNotBlank() && at > (out[key] ?: Long.MIN_VALUE)) out[key] = at
         }
+        history.forEach {
+            put(it.key, it.at)
+            put(it.link, it.at)
+        }
+        watched.forEach { (id, at) -> put(id, at) }
+        played.forEach { (uri, at) -> put(uri, at) }
         return out
     }
 
@@ -209,4 +218,7 @@ object MediaMerge {
  */
 object MediaFeedNow {
     var rows by androidx.compose.runtime.mutableStateOf(MediaFeedRows(emptyList(), emptyList()))
+    /** L'inizio della visita e gli episodi già ascoltati: la pagina ricostruisce tutte le novità con gli stessi. */
+    var since by androidx.compose.runtime.mutableStateOf(0L)
+    var listened by androidx.compose.runtime.mutableStateOf(emptySet<String>())
 }

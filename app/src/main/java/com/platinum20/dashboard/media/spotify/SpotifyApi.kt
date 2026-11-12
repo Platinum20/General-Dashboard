@@ -131,6 +131,20 @@ object SpotifyApi {
     suspend fun topArtists(token: String): List<SpItem> =
         request(token, "me/top/artists?time_range=medium_term&limit=20")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
 
+    /** I generi dei tuoi artisti più ascoltati, ognuno col nome dell'artista: (genere, artista). Per "Scopri" (1.488). */
+    suspend fun topGenres(token: String): List<Pair<String, String>> =
+        request(token, "me/top/artists?time_range=medium_term&limit=20")?.optJSONArray("items").objects().flatMap { a ->
+            val g = a.optJSONArray("genres")
+            (0 until (g?.length() ?: 0)).map { g!!.optString(it) to a.optString("name") }
+        }
+
+    /** Una ricerca di un tipo solo (artist, playlist, album): per le file di "Scopri". */
+    suspend fun searchKind(token: String, query: String, type: String, limit: Int = 12): List<SpItem> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        return request(token, "search?q=$q&type=$type&limit=$limit&market=from_token")
+            ?.optJSONObject(type + "s")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
+    }
+
     suspend fun playlists(token: String): List<SpItem> =
         request(token, "me/playlists?limit=50")?.optJSONArray("items").objects().mapNotNull { it.toItem() }
 

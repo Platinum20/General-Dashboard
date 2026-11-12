@@ -158,6 +158,9 @@ object SavedLinks {
         .mapNotNull { note -> ((find(note.text) as? SavedLink.Media)?.item ?: pastedYoutube(note))?.let { Later(note, it) } }
         .distinctBy { "${it.item.kind}:${it.item.key}" }
 
+    /** Le cose salvate per dopo da vedere (video) o da ascoltare (il resto): Media le divide nelle sue due file (1.490). */
+    fun isVideo(item: ResumeItem): Boolean = item.kind == ResumeKind.YOUTUBE || item.kind == ResumeKind.VIDEO
+
     /** Gli articoli salvati da leggere, dal più recente: "Salvati" in cima a News (1.490). */
     fun toRead(notes: List<Note>): List<ToRead> = notes
         .sortedByDescending { it.createdAt }

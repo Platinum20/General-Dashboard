@@ -22,12 +22,14 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.platinum20.dashboard.shifts.CreatorsLink
+import com.platinum20.dashboard.shifts.ShiftStore
 import com.platinum20.dashboard.sim.SimStore
 import com.platinum20.dashboard.sim.WindTreLink
 import java.util.concurrent.TimeUnit
 
 /**
- * Tiene vivo l'accesso web di WindTre anche con l'app chiusa: il sito chiude la
+ * Tiene vivo l'accesso web di WindTre e Creators Pro anche con l'app chiusa: il sito chiude la
  * sessione dopo un po' che nessuno la usa. Due giri insieme: il lavoro periodico di Android (ogni
  * 15 minuti, ma di notte Doze lo rimanda di ore, ed era lì che la sessione scadeva) e una sveglia
  * "anche a riposo" ([KeepAliveAlarm]) che lo fa partire subito. Con Canvas fuori dall'ottimizzazione
@@ -38,12 +40,17 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
     override suspend fun doWork(): Result {
         val app = applicationContext
         SimStore.init(app)
+        ShiftStore.init(app)
         if (!anyLinked()) {
             update(app)
             return Result.success()
         }
         if (SimStore.linked.value && SimStore.isStale(within = SimStore.KEEP_MS)) {
             runCatching { WindTreLink.refresh(app) }
+        }
+        // Creators Pro: una rilettura all'ora tiene il token in uso, così il sito non chiude la sessione di notte.
+        if (ShiftStore.linked.value && !ShiftStore.expired.value && ShiftWorker.due(ShiftStore.readAt.value, System.currentTimeMillis())) {
+            runCatching { CreatorsLink.refresh(app) }
         }
         return Result.success()
     }
@@ -55,15 +62,16 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
         private const val OLD = "revolut_keepalive"
         private const val PREFS = "keepalive"
         private const val KEY_ASKED = "batteryAsked"
-        /** La sveglia: sotto i 15 minuti Android la allunga comunque a riposo. */
-        const val ALARM_MS = 15 * 60 * 1000L
+        /** La sveglia a riposo: ogni mezz'ora (era 15 minuti); le letture vere sono una all'ora. */
+        const val ALARM_MS = 30 * 60 * 1000L
 
-        private fun anyLinked() = SimStore.linked.value
+        private fun anyLinked() = SimStore.linked.value || ShiftStore.linked.value
 
         /** Accende o spegne il giro secondo cosa è collegato. */
         fun update(context: Context) {
             val app = context.applicationContext
             SimStore.init(app)
+            ShiftStore.init(app)
             val wm = WorkManager.getInstance(app)
             wm.cancelUniqueWork(OLD)
             if (anyLinked()) {
@@ -94,6 +102,8 @@ class KeepAliveWorker(context: Context, params: WorkerParameters) : CoroutineWor
          */
         @SuppressLint("BatteryLife")
         fun askBattery(activity: Activity) {
+            SimStore.init(activity)
+            ShiftStore.init(activity)
             if (!anyLinked()) return
             val prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             if (prefs.getBoolean(KEY_ASKED, false)) return
@@ -114,7 +124,8 @@ class KeepAliveAlarm : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val app = context.applicationContext
         SimStore.init(app)
-        if (!SimStore.linked.value) return
+        ShiftStore.init(app)
+        if (!SimStore.linked.value && !ShiftStore.linked.value) return
         if (intent.action == ACTION) KeepAliveWorker.runNow(app)
         arm(app)
     }

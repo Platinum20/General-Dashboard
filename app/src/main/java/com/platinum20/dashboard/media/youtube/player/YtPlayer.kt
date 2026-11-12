@@ -22,6 +22,7 @@ import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import com.platinum20.dashboard.media.MediaHistory
 import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.MediaVolume
 import com.platinum20.dashboard.media.youtube.YtHistory
 import com.platinum20.dashboard.media.youtube.YouTubeApi
 import com.platinum20.dashboard.media.youtube.YouTubeAuth
@@ -73,6 +74,10 @@ object YtPlayer {
     private var mode = Mode.AUTO
     /** Lingua dei sottotitoli scelta: resta accesa anche per i video successivi, se ce l'hanno. */
     private var subtitleLanguage: String? = null
+    /** Sottotitoli accesi da soli col volume a zero ([MuteCaptions]); spenti a mano durante lo zero. */
+    private var autoCaptions = false
+    private var declinedCaptions = false
+    private var watchingVolume = false
     private var lastSaved = 0L
     private var appContext: Context? = null
 
@@ -109,8 +114,10 @@ object YtPlayer {
      */
     fun setSubtitle(context: Context, subtitle: YtSubtitle?) {
         val stream = _now.value?.stream ?: return
+        autoCaptions = false
         if (subtitle == null) {
             subtitleLanguage = null
+            declinedCaptions = MediaVolume.muted.value
             restart(context, stream, mode, null)
             return
         }
@@ -147,8 +154,46 @@ object YtPlayer {
 
     /** I sottotitoli scelti, se il video li ha: prima quelli scritti a mano, poi gli automatici. */
     private fun pickSubtitle(stream: YtStream): YtSubtitle? {
-        val language = subtitleLanguage ?: return null
+        val language = subtitleLanguage ?: return autoSubtitle(stream)
         return stream.subtitles.filter { it.language.substringBefore('-') == language.substringBefore('-') }.minByOrNull { it.auto }
+    }
+
+    /** Col volume a zero, i sottotitoli da accendere da soli (anche sul video dopo, se si resta a zero). */
+    private fun autoSubtitle(stream: YtStream): YtSubtitle? {
+        if (!MediaVolume.muted.value || declinedCaptions) return null
+        return MuteCaptions.pick(stream.subtitles)?.also { autoCaptions = true }
+    }
+
+    /** Segue il volume del telefono: a zero accende i sottotitoli, quando risale li spegne. */
+    private fun watchVolume(context: Context) {
+        if (watchingVolume) return
+        watchingVolume = true
+        MediaVolume.init(context)
+        scope.launch { MediaVolume.muted.collect { onVolume(it) } }
+    }
+
+    private fun onVolume(muted: Boolean) {
+        val context = appContext ?: return
+        if (!muted) declinedCaptions = false
+        val now = _now.value ?: return
+        val stream = now.stream?.takeIf { !now.audioOnly } ?: return
+        when (MuteCaptions.step(muted, subtitleLanguage, autoCaptions, declinedCaptions, now.subtitle)) {
+            MuteCaptions.Step.ON -> {
+                val sub = MuteCaptions.pick(stream.subtitles) ?: return
+                scope.launch {
+                    prepareCaption(context, sub) ?: return@launch
+                    // Nel frattempo il volume è risalito, il video è cambiato o li ha scelti lui.
+                    if (!MediaVolume.muted.value || subtitleLanguage != null || _now.value?.stream?.id != stream.id) return@launch
+                    autoCaptions = true
+                    restart(context, stream, mode, sub)
+                }
+            }
+            MuteCaptions.Step.OFF -> {
+                autoCaptions = false
+                if (now.subtitle != null) restart(context, stream, mode, null)
+            }
+            MuteCaptions.Step.NONE -> Unit
+        }
     }
 
     fun loop(): Boolean = exo?.repeatMode == Player.REPEAT_MODE_ONE
@@ -225,6 +270,7 @@ object YtPlayer {
     internal suspend fun load(context: Context, p: ExoPlayer, id: String, audioOnly: Boolean, autoplay: Boolean, startMs: Long?): YtStream {
         val link = "https://www.youtube.com/watch?v=$id"
         appContext = context.applicationContext
+        watchVolume(context)
         _now.value = YtNow(link = link, stream = null, audioOnly = audioOnly)
         // Nello zaino del treno: si guarda dal file, senza rete e senza consumare la SIM.
         com.platinum20.dashboard.trips.TrainPackStore.init(context)

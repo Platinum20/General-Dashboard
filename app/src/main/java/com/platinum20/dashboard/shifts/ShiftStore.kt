@@ -83,6 +83,10 @@ object ShiftStore {
         _hasData.value = captures.isNotEmpty()
     }
 
+    /** L'ultima volta che l'API ha risposto 401 (non autorizzato). */
+    @Volatile var refusedAt = 0L
+        private set
+
     fun isStale(now: Long = System.currentTimeMillis()) = readAt.value < now - STALE_MS
 
     /** Le risposte di accesso non si tengono mai (password, token), né i dati del bonifico (IBAN, indirizzo). */
@@ -91,7 +95,8 @@ object ShiftStore {
     /** Una risposta della pagina (chiamato dalla pagina, su un thread qualsiasi). */
     fun capture(url: String, status: Int, body: String) {
         if (isPrivate(url) || NOISE.containsMatchIn(url)) return
-        if (status == 401 && _linked.value) { main.post { setExpired(true) }; return }
+        // Un 401 si ricorda e basta: decide [CreatorsLink.refresh] se l'accesso è davvero finito.
+        if (status == 401) { refusedAt = System.currentTimeMillis(); return }
         if (status !in 200..299) return
         if (ShiftPay.isPay(url)) return payCapture(url, body)
         val read = ShiftParse.read(body, myIds, url = url)
@@ -163,6 +168,8 @@ object ShiftStore {
             ?.apply()
         if (!_linked.value) setLinked(true)
         if (_expired.value) setExpired(false)
+        // Lettura buona: si tiene la sessione così com'è adesso, per le WebView che verranno.
+        appContext?.let { runCatching { CreatorsSession.save(it) } }
         // Il widget Calendario mostra anche i turni.
         appContext?.let { runCatching { com.platinum20.dashboard.widget.Widgets.refresh(it, com.platinum20.dashboard.widget.TasksWidget::class.java) } }
     }
@@ -172,6 +179,7 @@ object ShiftStore {
         appContext?.let { app ->
             app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("linked", value).apply()
             if (value) ShiftWorker.schedule(app) else ShiftWorker.cancel(app)
+            runCatching { com.platinum20.dashboard.work.KeepAliveWorker.update(app) }
         }
     }
 
@@ -193,7 +201,7 @@ object ShiftStore {
     /** Scollega: via i turni (sono di Creators Pro, senza collegamento non si tengono aggiornati). */
     fun unlink() {
         _linked.value = false
-        appContext?.let { ShiftWorker.cancel(it) }
+        appContext?.let { ShiftWorker.cancel(it); runCatching { com.platinum20.dashboard.work.KeepAliveWorker.update(it) } }
         _shifts.value = emptyList()
         _pay.value = emptyList()
         _payMonths.value = emptyList()
