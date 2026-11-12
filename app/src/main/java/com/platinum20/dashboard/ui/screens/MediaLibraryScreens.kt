@@ -28,7 +28,7 @@ import com.platinum20.dashboard.media.youtube.YtFavorites
 import com.platinum20.dashboard.media.youtube.YtPlaylist
 import com.platinum20.dashboard.media.youtube.YtVideo
 
-/** Una voce di una lista che mescola Spotify e YouTube (1.484). */
+/** Una voce di una lista che mescola Spotify e YouTube (1.485). */
 internal sealed interface MixedEntry {
     val key: String
 
@@ -48,7 +48,7 @@ internal fun MixedEntry.resume(now: Long): ResumeItem = when (this) {
 }
 
 /**
- * "Mi piace" (1.484, Antonio: le cose che in Spotify e YouTube fanno lo stesso stanno in una voce sola): i brani che
+ * "Mi piace" (1.485, Antonio: le cose che in Spotify e YouTube fanno lo stesso stanno in una voce sola): i brani che
  * ti piacciono e i video con il Mi piace insieme, a turno dai più recenti; "Riproduci tutto" li mette nella coda unica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +97,7 @@ fun MediaLikedScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
 }
 
 /**
- * "Playlist" (1.484): le playlist di Spotify e di YouTube e gli album salvati in una lista sola; ognuna si apre nella
+ * "Playlist" (1.485): le playlist di Spotify e di YouTube e gli album salvati in una lista sola; ognuna si apre nella
  * sua pagina.
  */
 @OptIn(ExperimentalMaterial3Api::class)

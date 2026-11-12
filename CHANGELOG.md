@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.484.0
+## 1.485.0
 **Media come una sezione sola**
 - Su ogni copertina, in alto a sinistra, un simbolo dice cos'è: musica, video, podcast o radio; in basso a destra la durata (LIVE per le radio)
 - Le storie in cima sono chi hai guardato e ascoltato per ultimo, canali YouTube e artisti Spotify insieme; poi quelli che segui

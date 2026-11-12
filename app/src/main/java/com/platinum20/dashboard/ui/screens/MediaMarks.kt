@@ -27,14 +27,14 @@ import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 
-/** Che cosa è una copertina (1.484, Antonio): musica, video, podcast o radio. */
+/** Che cosa è una copertina (1.485, Antonio): musica, video, podcast o radio. */
 enum class MediaType { MUSIC, VIDEO, PODCAST, RADIO }
 
 /** I segni sopra una copertina: il simbolo del tipo in alto a sinistra, la durata in basso a destra (vuota = niente). */
 data class MediaMark(val type: MediaType, val duration: String? = null)
 
 /**
- * Simbolo e durata su ogni copertina (1.484, Antonio: "ovunque appaia un media"): così in un feed che mescola Spotify,
+ * Simbolo e durata su ogni copertina (1.485, Antonio: "ovunque appaia un media"): così in un feed che mescola Spotify,
  * YouTube, podcast e radio si capisce a colpo d'occhio cosa parte. La radio non ha durata: dice LIVE.
  */
 object MediaMarks {

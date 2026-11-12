@@ -90,7 +90,7 @@ object SpotifyStore {
     val artists: StateFlow<Loadable<List<SpArtistLatest>>> = _artists.asStateFlow()
 
     private val _listened = MutableStateFlow(Loadable<List<SpListened>>())
-    /** Gli artisti ascoltati di recente, dal più recente, con la foto: le storie di Media (1.484, Antonio). */
+    /** Gli artisti ascoltati di recente, dal più recente, con la foto: le storie di Media (1.485, Antonio). */
     val listened: StateFlow<Loadable<List<SpListened>>> = _listened.asStateFlow()
     private val photos = HashMap<String, String>()
     private val _played = MutableStateFlow<List<Pair<SpItem, java.time.Instant>>>(emptyList())
