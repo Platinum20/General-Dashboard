@@ -112,7 +112,7 @@ internal fun BoxScope.SaveToNotesLayer() {
                 }
                 RowDivider()
                 // Nelle tue playlist, o in una nuova (1.498): il fumetto dopo mostra le playlist come chip.
-                BubbleRow(icon = Icons.Rounded.PlaylistAdd, title = "Aggiungi a una playlist", detail = "Le tue playlist di Spotify, o una nuova") {
+                BubbleRow(icon = Icons.Rounded.PlaylistAdd, title = "Aggiungi a una playlist", detail = "Una delle tue o una nuova") {
                     haptic(Haptic.CONFIRM)
                     SavedLinks.dismiss()
                     PlaylistPicker.open(context, seed)
