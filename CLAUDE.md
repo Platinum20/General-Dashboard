@@ -118,7 +118,7 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   video every 3, capped so the bottom is reachable; no Shorts), `RadioRow`, then fixed `ListRow`s (merged in 1.485, see below)
   + I tuoi podcast (`Routes.PODCAST` = `PodcastsScreen`). Spotify artist/album/playlist = route `Routes.SPOTIFY_ITEM` → `SpotifyItemScreen`; artists open
   `ArtistScreen` (SpotifyArtistScreen.kt, "come Spotify": photo header, Popolari = artist search tracks since top-tracks is closed to
-  personal apps (`SpotifyArtist.popular`), Discografia Album/Singoli e EP/Raccolte = ALL releases (1.493: `allReleases` pages of 10 in parallel, pure `SpotifyArtist.nextOffsets`/`releases`/`everything`, `SpReleaseGroup`), title "Discografia" opens in-place `DiscographyScreen` (full vertical list, chips), Appare in (max 200); data `SpotifyApi.artistPage` → `SpotifyStore.loadArtist`).
+  personal apps (`SpotifyArtist.popular`), Discografia Album/Singoli e EP/Raccolte = ALL releases (1.494: `allReleases` pages of 10 in parallel, pure `SpotifyArtist.nextOffsets`/`releases`/`everything`, `SpReleaseGroup`), title "Discografia" opens in-place `DiscographyScreen` (full vertical list, chips), Appare in (max 200); data `SpotifyApi.artistPage` → `SpotifyStore.loadArtist`).
   Search opens artists/albums/playlists in their page. Channel page `YouTubeChannelScreen` = like YouTube (banner, avatar, iscritti,
   description, Iscriviti via `YtRatings.toggleSubscribe`, tabs from `YtResolver.channelInfo` → `YouTubeStore.channelInfo`; Video = paged
   `channelVideos`, Shorts grid/Live/Playlist = `loadChannelTab`); tapping the channel row of any `VideoCard` opens it (LocalInAppNav).
@@ -135,9 +135,9 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   Mix tap = `Routes.mix(id)` → `MixScreen` (mixes from `mixesOf`). Novità row = fresh + `MediaFeed.ROW_OLDER` older + "Tutte le novità"
   → `Routes.MEDIA_NEWS` = `MediaNewsScreen` (reads `MediaFeedNow.rows`). Durations: `YouTubeStore.withFeedDetails` (RSS lacks them,
   copied from `YouTubeWeb.lastFeed`) + `YtVideo.withKnownDuration()` (YtHistory). VideoCard date at the right of the channel row.
-  1.492 (Antonio, shipped with the 1.490 design): titles are `OpenableHeader(trailing=)`: "Musica" → `Routes.MUSIC_ALL` = `MusicAllScreen` (MediaLibraryScreens.kt, same `rememberPerTe()` entries as the row, all `MediaLine`), "Video" → Routes.YOUTUBE_FEED; every media tile long press = save for later (`SavedLinks.spotify/mix`, `pageRoute`).
+  1.492 (Antonio, shipped with the 1.490 design): titles are `OpenableHeader(trailing=)`; since 1.493 (Antonio swapped them) title = Scopri (MUSIC_DISCOVER / MEDIA_NEWS) and the square `HistoryButton` (MediaMarks.kt, clock icon, ex DiscoverButton) on the right = full list: "Musica" → `Routes.MUSIC_ALL` = `MusicAllScreen` (MediaLibraryScreens.kt, same `rememberPerTe()` entries as the row, all `MediaLine`), "Video" → Routes.YOUTUBE_FEED (videos only); `AllTile(images=, type=)` = cover mosaic (podcasts, radio logos); `ResumeItem.coverImage()` = phone video frame via Coil VideoFrameDecoder (singleton in MainActivity); every media tile long press = save for later (`SavedLinks.spotify/mix`, `pageRoute`).
   1.490 (Antonio): NO stories row (`MediaStories` pure code kept, unused), NO Novità row. Media = hero/queue, then ONLY two rows:
-  "Musica" (`PerTeRow`) and "Video" (Continua, videos only, last tile "Vedi tutta la cronologia" → Routes.YOUTUBE_FEED). Each header
+  "Musica" (`PerTeRow`) and "Video" (Continua, videos only; title → Routes.YOUTUBE_FEED = videos-only Cronologia, no Cronologia tile since 1.493). Each header
   has ONE square `DiscoverButton` (MediaMarks.kt) on the right: Musica → `Routes.MUSIC_DISCOVER` = `MusicDiscoverScreen`
   (MediaLibraryScreens.kt: releases + `SpotifyStore.discover` rows from `SpotifyDiscover` = genres of top artists → `genre:` artist
   search minus known + genre playlists; related/recommendations APIs are closed to personal apps), Video → `Routes.MEDIA_NEWS` =

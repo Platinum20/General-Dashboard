@@ -264,7 +264,7 @@ object SpotifyApi {
     }
 
     /**
-     * Tutte le uscite di un gruppo (album, singoli, raccolte, dove appare), dalla più nuova (1.493, Antonio: "tutto
+     * Tutte le uscite di un gruppo (album, singoli, raccolte, dove appare), dalla più nuova (1.494, Antonio: "tutto
      * quello che hanno pubblicato"). Spotify le dà a pagine piccole: la prima dice quante sono, le altre si chiedono
      * insieme. Una pagina che non arriva manca e basta; col token scaduto si ferma tutto.
      */

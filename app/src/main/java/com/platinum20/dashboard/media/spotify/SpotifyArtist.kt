@@ -23,7 +23,7 @@ data class SpArtistPage(
     val followers: Long,
     val genres: List<String>,
     val popular: List<SpItem>,
-    /** Ogni gruppo è completo e va dal più nuovo (1.493). */
+    /** Ogni gruppo è completo e va dal più nuovo (1.494). */
     val albums: List<SpItem>,
     val singles: List<SpItem>,
     val compilations: List<SpItem> = emptyList(),

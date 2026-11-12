@@ -12,7 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Radio
@@ -248,10 +248,11 @@ internal fun MediaLine(
 
 /**
  * Il tastino quadrato "Scopri" a destra del titolo di una fila di Media (1.488, Antonio: "dei tastini quadrati tutto a
- * destra"): Musica apre Scopri della musica, Video la Home di YouTube.
+ * destra"). Dal 1.493 (Antonio: "invertire la funzione") apre la lista intera: Musica tutta in verticale, Video la cronologia;
+ * il titolo apre Scopri.
  */
 @Composable
-internal fun DiscoverButton(onClick: () -> Unit) {
+internal fun HistoryButton(onClick: () -> Unit) {
     androidx.compose.material3.OutlinedIconButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.medium,
@@ -259,6 +260,6 @@ internal fun DiscoverButton(onClick: () -> Unit) {
         colors = androidx.compose.material3.IconButtonDefaults.outlinedIconButtonColors(containerColor = MaterialTheme.colorScheme.card),
         modifier = Modifier.size(40.dp).bouncyPress(0.9f),
     ) {
-        Icon(Icons.Outlined.Explore, contentDescription = "Scopri", modifier = Modifier.size(20.dp))
+        Icon(Icons.Outlined.History, contentDescription = "Cronologia", modifier = Modifier.size(20.dp))
     }
 }

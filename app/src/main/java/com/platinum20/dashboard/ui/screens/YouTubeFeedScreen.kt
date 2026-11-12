@@ -112,7 +112,7 @@ fun YouTubeHistoryScreen(onBack: () -> Unit, onPlay: (String) -> Unit) {
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopLevelBar(title = "Cronologia", subtitle = "Video e brani", scrollBehavior = barScroll, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Cronologia", subtitle = "I video che hai guardato", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) { HistoryTab(onPlay) }
     }
@@ -704,11 +704,8 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
     val watched = local.values.sortedByDescending { it.watchedAt }
     val ids = watched.map { it.id }.toSet()
     val fromYouTube = web.data.orEmpty().filter { it.id !in ids }
-    // Anche i brani di Spotify (1.485, Antonio: una Cronologia sola): insieme ai video, dal più recente.
-    val played by com.platinum20.dashboard.media.spotify.SpotifyStore.played.collectAsState()
-    LaunchedEffect(Unit) { com.platinum20.dashboard.media.spotify.SpotifyStore.refreshListened() }
-    val recent: List<Pair<Any, Long>> = (watched.map { it to it.watchedAt } + played.map { (track, at) -> track to at.toEpochMilli() })
-        .sortedByDescending { it.second }
+    // Solo video (1.493, Antonio): la Cronologia si apre da Video; la musica ascoltata è già nella fila Musica.
+    val recent: List<Pair<Any, Long>> = watched.map { it to it.watchedAt }
     val state = Loadable(data = recent.map { it.second } + fromYouTube.map { it.id }, loading = web.loading && recent.isEmpty())
     // Svuotare cancella anche i punti in cui eri: prima si chiede, poi per qualche secondo si può annullare.
     var confirmClear by remember { mutableStateOf(false) }
@@ -756,11 +753,8 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                         if (watched.isNotEmpty()) DangerButton(onClick = { confirmClear = true }) { Text("Svuota") }
                     }
                 }
-                items(recent, key = { (e, at) -> if (e is YtWatched) "l" + e.id else "s" + (e as com.platinum20.dashboard.media.spotify.SpItem).uri + at }) { (e, _) ->
-                    if (e is com.platinum20.dashboard.media.spotify.SpItem) {
-                        val tracks = played.map { it.first }
-                        TrackLine(e, onClick = { playTracks(context, tracks, e) })
-                    } else {
+                items(recent, key = { (e, _) -> "l" + (e as YtWatched).id }) { (e, _) ->
+                    run {
                         val w = e as YtWatched
                         val video = YtVideo(
                             id = w.id, title = w.title, channel = w.channel, channelId = w.channelId, published = null,

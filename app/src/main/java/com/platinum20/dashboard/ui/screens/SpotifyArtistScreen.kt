@@ -63,7 +63,7 @@ import com.platinum20.dashboard.media.spotify.SpotifyStore
 /**
  * La pagina di un artista (1.481, Antonio: "se vado su Pink Floyd dev'essere come Spotify"): la foto grande col nome
  * sopra, follower e generi, il tasto play, i Popolari numerati (cinque, poi "Altri"), la Discografia divisa in Album e
- * Singoli e EP, Raccolte (tutte, 1.493), e dove appare; il titolo Discografia apre l'elenco intero. Ci si arriva dalle storie in cima a Media, dalla ricerca e dal nome nel player.
+ * Singoli e EP, Raccolte (tutte, 1.494), e dove appare; il titolo Discografia apre l'elenco intero. Ci si arriva dalle storie in cima a Media, dalla ricerca e dal nome nel player.
  */
 @Composable
 internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
@@ -203,7 +203,7 @@ private fun ArtistTitle(text: String, onOpen: (() -> Unit)? = null) {
 private val OWN_GROUPS = listOf(SpReleaseGroup.ALBUM, SpReleaseGroup.SINGLE, SpReleaseGroup.COMPILATION)
 
 /**
- * "Tutta la discografia" (1.493, Antonio: "tutto quello che hanno pubblicato, anche gli album, tutto quanto"):
+ * "Tutta la discografia" (1.494, Antonio: "tutto quello che hanno pubblicato, anche gli album, tutto quanto"):
  * ogni uscita dalla più nuova, una riga ciascuna (copertina, titolo, tipo · anno), i chip per restringere a un gruppo.
  * Toccata un'uscita si apre la sua pagina con i brani.
  */
@@ -328,7 +328,7 @@ private fun ReleaseCovers(list: List<SpItem>, onOpen: (SpItem) -> Unit, showArti
                 }
             }
         }
-        if (onAll != null && list.size > ALL_AFTER) item(key = "all") { AllTile(tile, "Tutta la discografia", releasesLine(list.size), onAll) }
+        if (onAll != null && list.size > ALL_AFTER) item(key = "all") { AllTile(tile, "Tutta la discografia", releasesLine(list.size), images = list.take(4).map { it.image }, onClick = onAll) }
     }
 }
 

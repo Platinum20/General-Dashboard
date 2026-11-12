@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.493.0
+## 1.494.0
 **Artisti: tutta la discografia**
 - Nella pagina di un artista la Discografia ora ha tutto quello che ha pubblicato, non solo le prime uscite: album, singoli e EP, raccolte, dalla più nuova
 - Tocca il titolo "Discografia" (o l'ultima tessera della fila) per l'elenco intero, una riga per uscita col tipo e l'anno, con i chip per vedere solo album, singoli, raccolte o dove appare
 - Ogni uscita si apre con i suoi brani, come prima
 - Anche "Appare in" mostra molte più uscite
+
+## 1.493.0
+**Media: titoli e tastini invertiti, copertine dove mancavano**
+- In Musica e in Video il titolo apre Scopri; il tastino tutto a destra, sulla stessa riga, ora ha l'icona della cronologia e apre la lista intera: tutta la tua musica in verticale, o la cronologia dei video
+- La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
+- Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre col tastino accanto al titolo
+- "I tuoi podcast" e "Radio" hanno le copertine dei tuoi podcast e i loghi delle tue radio, non più un quadrato grigio
+- I video del telefono mostrano un fotogramma del video come copertina
 
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**

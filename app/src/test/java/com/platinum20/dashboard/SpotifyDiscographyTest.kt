@@ -15,7 +15,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.time.LocalDate
 
-/** 1.493 (Antonio): la pagina artista mostra tutta la discografia, non solo le prime uscite. */
+/** 1.494 (Antonio): la pagina artista mostra tutta la discografia, non solo le prime uscite. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class SpotifyDiscographyTest {
