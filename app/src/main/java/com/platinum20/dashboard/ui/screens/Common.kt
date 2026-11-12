@@ -707,7 +707,7 @@ fun SectionHeader(
  * e le azioni, la freccia dice già "si apre"), così si distingue da un'etichetta grigia come "Continua".
  */
 @Composable
-fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modifier, trailing: @Composable RowScope.() -> Unit = {}) {
     val haptic = rememberHaptic()
     val color = MaterialTheme.colorScheme.onSurface
     Row(
@@ -734,6 +734,9 @@ fun OpenableHeader(title: String, onOpen: () -> Unit, modifier: Modifier = Modif
             tint = color,
             modifier = Modifier.size(18.dp),
         )
+        // A destra un tastino (Scopri in Media, 1.492): il titolo si apre lo stesso.
+        Spacer(Modifier.weight(1f))
+        trailing()
     }
 }
 

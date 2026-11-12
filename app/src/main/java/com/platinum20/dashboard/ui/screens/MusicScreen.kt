@@ -236,8 +236,53 @@ internal object PodcastOpen {
  * uscite. In fondo "I tuoi podcast" e il tasto Radio.
  */
 @Composable
-internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit) {
+internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit, onOpenAll: () -> Unit) {
     val saved = rememberSavedMedia(video = false)
+    val (entries, podcasts) = rememberPerTe()
+    val tile = coverTileWidth()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Il titolo apre la versione completa, in verticale (1.492, Antonio); il tastino Scopri resta a destra.
+        OpenableHeader("Musica", onOpenAll, Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
+        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
+            items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
+                when (e) {
+                    // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
+                    is PerTe.Mix -> MixTile(e.mix, tile) { onOpenMix(e.mix) }
+                    is PerTe.Item -> MediaTile(
+                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "),
+                        date = null, mark = MediaMarks.of(e.item), click = Modifier.tapOrSave({ SavedLinks.spotify(e.item) }) { onOpen(e.item) },
+                    )
+                    is PerTe.Liked -> MediaTile(
+                        tile, wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", date = null,
+                        mark = null, click = Modifier.clickable(onClick = onOpenLiked),
+                    ) {
+                        Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                    }
+                    is PerTe.Artist -> MediaTile(
+                        tile, wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", date = null,
+                        mark = null, click = Modifier.tapOrSave({ SavedLinks.spotify(e.artist) }) { onOpen(e.artist) }, round = true,
+                    )
+                    is PerTe.Show -> MediaTile(
+                        tile, wide = false, image = e.podcast.artwork, title = e.podcast.title,
+                        author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, date = null,
+                        mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { onOpenPodcast(e.podcast) },
+                    )
+                }
+            }
+            item(key = "podcast-all") {
+                AllTile(tile, "I tuoi podcast", if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno") { onOpenPodcast(null) }
+            }
+            // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio).
+            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", onOpenRadio) }
+        }
+    }
+}
+
+/** Le voci di Per te dalla più ascoltata di recente, e i podcast che segui: la fila e la pagina completa leggono le stesse (1.492). */
+@Composable
+internal fun rememberPerTe(): Pair<List<PerTe>, List<Podcast>> {
     val context = LocalContext.current
     remember { PodcastStore.init(context) }
     val followedHere by PodcastStore.followed.collectAsState()
@@ -277,44 +322,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
             }
         }
     }
-    val tile = coverTileWidth()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader("Musica", Modifier.padding(horizontal = 16.dp)) { DiscoverButton(onDiscover) }
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
-            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
-            items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
-                when (e) {
-                    // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
-                    is PerTe.Mix -> MixTile(e.mix, tile) { onOpenMix(e.mix) }
-                    is PerTe.Item -> MediaTile(
-                        tile, wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "),
-                        date = null, mark = MediaMarks.of(e.item), click = Modifier.clickable { onOpen(e.item) },
-                    )
-                    is PerTe.Liked -> MediaTile(
-                        tile, wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", date = null,
-                        mark = null, click = Modifier.clickable(onClick = onOpenLiked),
-                    ) {
-                        Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
-                    }
-                    is PerTe.Artist -> MediaTile(
-                        tile, wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", date = null,
-                        mark = null, click = Modifier.clickable { onOpen(e.artist) }, round = true,
-                    )
-                    is PerTe.Show -> MediaTile(
-                        tile, wide = false, image = e.podcast.artwork, title = e.podcast.title,
-                        author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, date = null,
-                        mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { onOpenPodcast(e.podcast) },
-                    )
-                }
-            }
-            item(key = "podcast-all") {
-                AllTile(tile, "I tuoi podcast", if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno") { onOpenPodcast(null) }
-            }
-            // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio).
-            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", onOpenRadio) }
-        }
-    }
+    return entries to podcasts
 }
 
 /** Una tessera di Per te: un mix, una playlist o un album di Spotify, un podcast che segui. */
@@ -474,7 +482,7 @@ private fun MixTile(mix: SpMix, tile: Dp, onClick: () -> Unit) {
     MediaTile(
         tile, wide = false, image = mix.image, title = mix.title, author = mix.subtitle, date = null,
         mark = MediaMark(MediaType.MUSIC),
-        click = Modifier.clickable(onClick = onClick),
+        click = Modifier.tapOrSave({ SavedLinks.mix(mix.id, mix.title, mix.subtitle, mix.image) }, onClick),
     ) {
         Text(
             "Mix",

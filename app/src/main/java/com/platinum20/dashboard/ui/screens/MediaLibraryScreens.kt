@@ -325,7 +325,7 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
                             tile, wide = false, image = release.item.image, title = release.item.title,
                             author = release.item.subtitle.substringBefore(" · "), date = com.platinum20.dashboard.media.spotify.NewReleases.ago(release.released, today),
                             mark = MediaMarks.of(release.item),
-                            click = Modifier.clickable {
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(release.item) }) {
                                 SpotifyStore.markReleaseSeen(release.item.id)
                                 onOpen(release.item)
                             },
@@ -339,7 +339,7 @@ fun MusicDiscoverScreen(onBack: () -> Unit, onOpen: (SpItem) -> Unit) {
                         MediaTile(
                             tile, wide = false, image = item.image, title = item.title,
                             author = if (item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST) "Artista" else item.subtitle.substringBefore(" · "),
-                            date = null, mark = MediaMarks.of(item), click = Modifier.clickable { onOpen(item) },
+                            date = null, mark = MediaMarks.of(item), click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(item) }) { onOpen(item) },
                             round = item.kind == com.platinum20.dashboard.media.spotify.SpKind.ARTIST,
                         )
                     }
@@ -436,6 +436,85 @@ private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode)
                 )
                 com.platinum20.dashboard.media.MediaStories.episodeAgo(episode, System.currentTimeMillis())?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * La fila Musica per intero, in verticale (1.492, Antonio: "cliccando sul titolo ... la versione completa che scorre
+ * verticalmente"): le stesse voci nello stesso ordine, senza il limite della fila, tutte con la stessa riga `MediaLine`.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
+    val saved = rememberSavedMedia(video = false)
+    val (entries, podcasts) = rememberPerTe()
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val openPodcast: (com.platinum20.dashboard.media.podcast.Podcast?) -> Unit = {
+        PodcastOpen.set(it)
+        onOpenRoute(com.platinum20.dashboard.Routes.PODCAST)
+    }
+    Scaffold(
+        modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
+        topBar = { TopLevelBar(title = "Musica", subtitle = "Dall'ultima che hai ascoltato", scrollBehavior = bar, onBack = onBack) },
+    ) { inner ->
+        Column(Modifier.fillMaxSize().padding(inner)) {
+            FeedList(Loadable(data = Unit), empty = "") {
+                if (saved.isNotEmpty()) item(key = "saved") {
+                    MediaLine(
+                        wide = false, image = "", title = "Salvati", author = "${saved.size} da ascoltare dopo", mark = null,
+                        click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) },
+                    ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                }
+                items(entries, key = { it.key }) { e ->
+                    when (e) {
+                        is PerTe.Mix -> MediaLine(
+                            wide = false, image = e.mix.image, title = e.mix.title, author = "Mix · " + e.mix.subtitle, mark = MediaMark(MediaType.MUSIC),
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.mix(e.mix.id, e.mix.title, e.mix.subtitle, e.mix.image) }) {
+                                onOpenRoute(com.platinum20.dashboard.Routes.mix(e.mix.id))
+                            },
+                        )
+                        is PerTe.Item -> MediaLine(
+                            wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "), mark = MediaMarks.of(e.item),
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.item) }) {
+                                onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.item))
+                            },
+                        )
+                        is PerTe.Liked -> MediaLine(
+                            wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", mark = null,
+                            click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.LIKED_TRACKS) },
+                        ) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        is PerTe.Artist -> MediaLine(
+                            wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", mark = null, round = true,
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.artist) }) {
+                                onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.artist))
+                            },
+                        )
+                        is PerTe.Show -> MediaLine(
+                            wide = false, image = e.podcast.artwork, title = e.podcast.title,
+                            author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, mark = MediaMark(MediaType.PODCAST),
+                            click = Modifier.clickable { openPodcast(e.podcast) },
+                        )
+                    }
+                }
+                item(key = "podcast-all") {
+                    MediaLine(
+                        wide = false, image = "", title = "I tuoi podcast",
+                        author = if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno", mark = MediaMark(MediaType.PODCAST),
+                        click = Modifier.clickable { openPodcast(null) },
+                    )
+                }
+                item(key = "radio-all") {
+                    MediaLine(
+                        wide = false, image = "", title = "Radio", author = "Preferite e più ascoltate", mark = MediaMark(MediaType.RADIO),
+                        click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.RADIO) },
+                    )
                 }
             }
         }
