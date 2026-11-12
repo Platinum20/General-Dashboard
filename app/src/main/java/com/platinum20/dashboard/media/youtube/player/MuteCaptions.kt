@@ -19,8 +19,11 @@ object MuteCaptions {
         else -> Step.NONE
     }
 
-    /** Quali accendere: prima quelli del video (non tradotti), l'italiano prima dell'inglese, scritti a mano prima degli automatici. */
+    /**
+     * Quali accendere: quelli nella lingua originale del video (Antonio, 1.498), scritti a mano prima
+     * degli automatici; mai una traduzione di YouTube se c'è altro.
+     */
     fun pick(subtitles: List<YtSubtitle>): YtSubtitle? = subtitles.minWithOrNull(
-        compareBy<YtSubtitle>({ "tlang=" in it.url }, { !it.language.lowercase().startsWith("it") }, { it.auto }),
+        compareBy<YtSubtitle>({ !it.original }, { "tlang=" in it.url }, { it.auto }),
     )
 }

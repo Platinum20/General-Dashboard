@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.498.0
+**YouTube: sottotitoli e titoli nella lingua del video**
+- Quando i sottotitoli si accendono da soli (volume a zero) il video non diventa più nero un attimo: continua senza ricaricarsi
+- I sottotitoli di default sono nella lingua originale del video: prima quelli scritti dal canale, poi quelli automatici. Mai l'italiano tradotto, a meno che il video non sia in italiano
+- Tra i sottotitoli c'è sempre anche la lingua originale, segnata «(originale)», oltre a italiano e inglese
+- Titolo e descrizione del video sono quelli originali, non la traduzione automatica di YouTube
+
 ## 1.497.0
 **Media: Video sono le tue iscrizioni, Musica solo raccolte**
 - La fila Video è il feed delle tue iscrizioni in orizzontale: i video nuovi dei canali che segui, dal più recente, e arrivando in fondo se ne caricano altri. Quelli iniziati restano in Riprendi e nella cronologia

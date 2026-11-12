@@ -76,6 +76,13 @@ object YtPlayer {
     /** Sottotitoli accesi da soli col volume a zero ([MuteCaptions]); spenti a mano durante lo zero. */
     private var autoCaptions = false
     private var declinedCaptions = false
+    /**
+     * Sottotitoli già dentro la sorgente del video, anche se nascosti: accenderli o spegnerli è solo
+     * una scelta di traccia, senza ricaricare il video (prima diventava nero un attimo, 1.498).
+     */
+    private var embedded: YtSubtitle? = null
+    /** Il file dei sottotitoli ha dato errore: per questo video niente testo nella sorgente. */
+    private var captionsBroken: String? = null
     private var watchingVolume = false
     private var lastSaved = 0L
     private var appContext: Context? = null
@@ -117,7 +124,12 @@ object YtPlayer {
         if (subtitle == null) {
             subtitleLanguage = null
             declinedCaptions = MediaVolume.muted.value
-            restart(context, stream, mode, null)
+            showText(null)
+            return
+        }
+        if (subtitle.url == embedded?.url) {
+            subtitleLanguage = subtitle.language
+            showText(subtitle)
             return
         }
         scope.launch {
@@ -184,15 +196,26 @@ object YtPlayer {
                     // Nel frattempo il volume è risalito, il video è cambiato o li ha scelti lui.
                     if (!MediaVolume.muted.value || subtitleLanguage != null || _now.value?.stream?.id != stream.id) return@launch
                     autoCaptions = true
-                    restart(context, stream, mode, sub)
+                    if (sub.url == embedded?.url) showText(sub) else restart(context, stream, mode, sub)
                 }
             }
             MuteCaptions.Step.OFF -> {
                 autoCaptions = false
-                if (now.subtitle != null) restart(context, stream, mode, null)
+                if (now.subtitle != null) showText(null)
             }
             MuteCaptions.Step.NONE -> Unit
         }
+    }
+
+    /** Mostra o nasconde i sottotitoli già nella sorgente: il video non si ferma né si ricarica. */
+    private fun showText(subtitle: YtSubtitle?) {
+        val p = exo ?: return
+        val on = subtitle != null && subtitle.url == embedded?.url
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+            .setPreferredTextLanguage(embedded?.language)
+            .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !on)
+            .build()
+        _now.value = _now.value?.copy(subtitle = subtitle?.language?.takeIf { on })
     }
 
     fun loop(): Boolean = exo?.repeatMode == Player.REPEAT_MODE_ONE
@@ -294,30 +317,40 @@ object YtPlayer {
         }
         val auto = preferredHeight(context) == 0 && stream.dashManifest != null
         YtHistory.init(context)
-        if (!audioOnly) pickSubtitle(stream)?.let { sub -> prepareCaption(context, sub) }
+        captionsBroken = null
+        if (!audioOnly) {
+            pickSubtitle(stream)?.let { sub -> prepareCaption(context, sub) }
+            // Quelli originali si scaricano subito (poco testo) così col volume a zero si accendono al volo.
+            MuteCaptions.pick(stream.subtitles)?.let { sub ->
+                kotlinx.coroutines.withTimeoutOrNull(2_500) { prepareCaption(context, sub) }
+            }
+        }
         // Si riparte da dove eri rimasto (i video; la musica dall'inizio), se non è chiesto un punto preciso.
         val from = startMs?.takeIf { it > 0 } ?: if (audioOnly) 0 else YtHistory.resumeMs(stream.id)
         start(context, stream, if (auto) Mode.AUTO else Mode.FIXED, positionMs = from, play = autoplay, subtitle = pickSubtitle(stream), player = p)
         remember(p)
         SponsorBlock.attach(context, stream.id, live = stream.hlsUrl != null)
-        if (!audioOnly) originalDescription(stream.id)
+        originalTexts(stream.id)
         return stream
     }
 
     /**
-     * YouTube a volte manda la descrizione tradotta (anche in inglese): Antonio la vuole sempre nella
-     * lingua originale. Col suo YouTube collegato si prende quella dell'API ufficiale e si sostituisce.
+     * YouTube a volte manda titolo e descrizione tradotti in italiano (o in inglese): Antonio li vuole
+     * sempre nella lingua originale. Col suo YouTube collegato si prendono quelli dell'API ufficiale;
+     * senza, il titolo dall'oEmbed pubblico. Si sostituiscono appena arrivano.
      */
-    private fun originalDescription(id: String) {
+    private fun originalTexts(id: String) {
         val context = appContext ?: return
         YouTubeAuth.init(context)
-        if (!YouTubeAuth.connected.value) return
         scope.launch {
-            val token = YouTubeAuth.token(context) ?: return@launch
-            val original = runCatching { YouTubeApi.originalDescription(token, id) }.getOrNull() ?: return@launch
+            val token = if (YouTubeAuth.connected.value) YouTubeAuth.token(context) else null
+            val api = token?.let { runCatching { YouTubeApi.original(it, id) }.getOrNull() }
+            val title = api?.first ?: YouTubeApi.oembedTitle(id)
+            val description = api?.second
             val now = _now.value ?: return@launch
-            val stream = now.stream?.takeIf { it.id == id && it.description != original } ?: return@launch
-            _now.value = now.copy(stream = stream.copy(description = original))
+            val stream = now.stream?.takeIf { it.id == id } ?: return@launch
+            val fixed = YtText.original(stream, title, description)
+            if (fixed != stream) _now.value = now.copy(stream = fixed)
         }
     }
 
@@ -345,7 +378,8 @@ object YtPlayer {
         val stream = _now.value?.stream ?: return false
         val position = p.currentPosition
         // Prima si toglie il sottotitolo: un testo che non va non deve mai fermare il video.
-        if (_now.value?.subtitle != null) {
+        if (embedded != null) {
+            captionsBroken = stream.id
             autoCaptions = false
             declinedCaptions = true
             subtitleLanguage = null
@@ -368,6 +402,9 @@ object YtPlayer {
     /** Suona altro: i dettagli del video non servono più. */
     internal fun detach() {
         SponsorBlock.detach()
+        embedded = null
+        // Il testo spento resta del video di YouTube: gli altri (video del telefono) scelgono da soli.
+        exo?.let { p -> p.trackSelectionParameters = p.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false).build() }
         _now.value = null
     }
 
@@ -432,18 +469,25 @@ object YtPlayer {
             else -> ProgressiveMediaSource.Factory(factory(stream.audioUrl!!)).createMediaSource(item(stream.audioUrl))
         }
         // Solo il file già scaricato: un sottotitolo che non si carica non deve fermare il video.
-        val caption = subtitle?.let { captionFiles[it.url] }?.takeIf { !audioOnly }
-        val source = if (subtitle == null || caption == null) video else MergingMediaSource(video, captionSource(context, caption, subtitle.language))
+        val shown = subtitle?.takeIf { captionFiles[it.url] != null }
+        // Nella sorgente va quello da mostrare, se no quello originale pronto (nascosto) per accenderlo al volo.
+        val inside = (shown ?: MuteCaptions.pick(stream.subtitles)?.takeIf { captionFiles[it.url] != null })
+            ?.takeIf { !audioOnly && captionsBroken != stream.id }
+        val caption = inside?.let { captionFiles[it.url] }
+        embedded = inside?.takeIf { caption != null }
+        val source = if (inside == null || caption == null) video else MergingMediaSource(video, captionSource(context, caption, inside.language))
+        val on = shown != null && shown.url == embedded?.url
         _now.value = YtNow(
             link = _now.value?.link ?: stream.id,
             stream = stream,
             loading = true,
-            subtitle = subtitle?.language?.takeIf { caption != null },
+            subtitle = shown?.language?.takeIf { on },
             audioOnly = audioOnly,
         )
         player.apply {
             trackSelectionParameters = trackSelectionParameters.buildUpon()
-                .setPreferredTextLanguage(subtitle?.language?.takeIf { caption != null })
+                .setPreferredTextLanguage(embedded?.language)
+                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !on)
                 // In solo audio il player non scarica il video.
                 .setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, audioOnly)
                 .build()
