@@ -1,10 +1,18 @@
 # Changelog
 
-## 1.493.0
+## 1.494.0
 **Per dopo con l'archivio, Calendario col suo nome**
 - La card Per dopo mostra solo le cose ancora da fare: quando ne spunti una sparisce dalla card e va nell'archivio
 - Toccando la card si apre l'archivio, con le cose fatte dalla più recente; toccando il cerchio una cosa torna da fare
 - La card Calendario ha il suo nome in cima, come le altre card, e a destra quante cose hai da oggi a fine mese: niente più "Altre N a novembre" in fondo
+
+## 1.493.0
+**Media: titoli e tastini invertiti, copertine dove mancavano**
+- In Musica e in Video il titolo apre Scopri; il tastino tutto a destra, sulla stessa riga, ora ha l'icona della cronologia e apre la lista intera: tutta la tua musica in verticale, o la cronologia dei video
+- La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
+- Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre col tastino accanto al titolo
+- "I tuoi podcast" e "Radio" hanno le copertine dei tuoi podcast e i loghi delle tue radio, non più un quadrato grigio
+- I video del telefono mostrano un fotogramma del video come copertina
 
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**

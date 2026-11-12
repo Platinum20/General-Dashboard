@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.coverImage
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -441,7 +442,7 @@ fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -
             FeedList(Loadable(data = saved), empty = "Niente di salvato") {
                 items(saved, key = { "s-" + it.note.id }) { l ->
                     MediaLine(
-                        wide = video, image = l.item.image, title = l.item.title, author = LaterText.subtitle(l.item),
+                        wide = video, image = l.item.coverImage(), title = l.item.title, author = LaterText.subtitle(l.item),
                         mark = MediaMarks.of(l.item.kind, l.item.durationMs),
                         click = Modifier.combinedClickable(
                             onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
