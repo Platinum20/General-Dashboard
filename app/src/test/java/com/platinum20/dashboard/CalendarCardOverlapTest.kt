@@ -68,7 +68,7 @@ class CalendarCardOverlapTest {
         val visit = CalendarEvent(3, "Psichiatra", at(today, 18, 30), at(today, 19, 30), false, "", 0xFF39B6E5.toInt())
         add(TimelineEntry("e3", BriefKind.EVENT, visit.title, null, color = visit.color, trip = tripStops(visit, today, zone)))
         add(TimelineEntry("s1", BriefKind.EVENT, "Turno su Debora e Chiara", null, color = 0xFF6D5DF6.toInt(), trip = tripStops(shift(-5, today), today, zone)))
-        add(TimelineEntry("n1", BriefKind.NOTE, "Foto", null, detail = "Foto · Ciao", image = "/nessuna/foto.jpg"))
+        add(TimelineEntry("n1", BriefKind.FREE, "Foto", null, detail = "Foto · Ciao", image = "/nessuna/foto.jpg"))
         add(TimelineEntry("todo", BriefKind.TASK, "Da fare · 1", null))
         if (full) {
             add(TimelineEntry("d1", BriefKind.DATE, "Claude Pro termina", "Domani"))
