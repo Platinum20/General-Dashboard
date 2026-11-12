@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.494.0
+**YouTube: i video ripartono anche col volume a zero**
+- Col telefono silenzioso i video di YouTube dicevano "Video non riproducibile": i sottotitoli accesi da soli bloccavano il video. Ora si caricano nel modo giusto
+- Se un sottotitolo non va, il video riparte senza invece di fermarsi
+
 ## 1.493.0
 **Media: titoli e tastini invertiti, copertine dove mancavano**
 - In Musica e in Video il titolo apre Scopri; il tastino tutto a destra, sulla stessa riga, ora ha l'icona della cronologia e apre la lista intera: tutta la tua musica in verticale, o la cronologia dei video

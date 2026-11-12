@@ -15,7 +15,6 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.dash.DashMediaSource
 import androidx.media3.exoplayer.dash.manifest.DashManifestParser
-import androidx.media3.exoplayer.source.SingleSampleMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MergingMediaSource
@@ -322,10 +321,37 @@ object YtPlayer {
         }
     }
 
+    /**
+     * Il file .vtt come traccia di testo. Dal Media3 1.4 il testo va letto mentre si estrae (cue già pronte): la vecchia
+     * SingleSampleMediaSource con text/vtt fa fermare tutto il video ("Video non riproducibile", 1.493). Si fa come
+     * DefaultMediaSourceFactory: un SubtitleExtractor sopra il file.
+     */
+    private fun captionSource(context: Context, caption: Uri, language: String): androidx.media3.exoplayer.source.MediaSource {
+        val format = androidx.media3.common.Format.Builder()
+            .setSampleMimeType(MimeTypes.TEXT_VTT)
+            .setLanguage(language)
+            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            .build()
+        val parsers = androidx.media3.extractor.text.DefaultSubtitleParserFactory()
+        val extractors = androidx.media3.extractor.ExtractorsFactory {
+            arrayOf(androidx.media3.extractor.text.SubtitleExtractor(parsers.create(format), format))
+        }
+        return ProgressiveMediaSource.Factory(DefaultDataSource.Factory(context), extractors)
+            .createMediaSource(MediaItem.fromUri(caption))
+    }
+
     /** Il motore ha dato errore: si prova il modo successivo di scaricare lo stesso video. */
     internal fun retry(context: Context, p: ExoPlayer): Boolean {
         val stream = _now.value?.stream ?: return false
         val position = p.currentPosition
+        // Prima si toglie il sottotitolo: un testo che non va non deve mai fermare il video.
+        if (_now.value?.subtitle != null) {
+            autoCaptions = false
+            declinedCaptions = true
+            subtitleLanguage = null
+            start(context, stream, mode, positionMs = position, subtitle = null)
+            return true
+        }
         // Se l'automatico non va si passa alla qualità fissa, poi al flusso unico video+audio.
         return if (mode == Mode.AUTO && stream.videoUrl != null && stream.audioUrl != null) {
             start(context, stream, Mode.FIXED, positionMs = position, subtitle = pickSubtitle(stream))
@@ -407,19 +433,7 @@ object YtPlayer {
         }
         // Solo il file già scaricato: un sottotitolo che non si carica non deve fermare il video.
         val caption = subtitle?.let { captionFiles[it.url] }?.takeIf { !audioOnly }
-        val source = if (subtitle == null || caption == null) video else MergingMediaSource(
-            video,
-            SingleSampleMediaSource.Factory(DefaultDataSource.Factory(context))
-                .setTreatLoadErrorsAsEndOfStream(true)
-                .createMediaSource(
-                MediaItem.SubtitleConfiguration.Builder(caption)
-                    .setMimeType(MimeTypes.TEXT_VTT)
-                    .setLanguage(subtitle.language)
-                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                    .build(),
-                C.TIME_UNSET,
-            ),
-        )
+        val source = if (subtitle == null || caption == null) video else MergingMediaSource(video, captionSource(context, caption, subtitle.language))
         _now.value = YtNow(
             link = _now.value?.link ?: stream.id,
             stream = stream,
