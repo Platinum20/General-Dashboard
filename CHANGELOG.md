@@ -14,6 +14,17 @@
 - Toccando il titolo "Musica" si apre la fila intera, in verticale; il titolo "Video" apre tutta la cronologia
 - Qualunque cosa di Media si salva per dopo tenendola premuta: brani, album, playlist, mix, artisti, episodi e video
 
+**Musica: Release Radar, Daily Mix, radio e testi**
+- Nella fila Musica arrivano le playlist fatte per te: Release Radar (si rifà ogni venerdì con le uscite degli artisti che segui e che ascolti di più), Discover Weekly (ogni lunedì 30 brani simili ai tuoi che non hai ancora sentito), Daily Mix 1-5 (uno per genere, i tuoi brani più qualche simile) e Top 50 Italia e Top 50 mondo. Stanno in fila come i mix, per ultimo ascolto
+- Tenendo premuto un brano di Spotify c'è "Radio": parte una radio di brani simili, e la ritrovi nella fila Musica
+- Nel player i testi sincronizzati: tocca la copertina o "Testo", la riga cantata è in chiaro e toccandone una vai a quel punto. Col volume a zero il testo si apre da solo e si chiude quando lo rialzi
+- Scopri ha due file nuove: Artisti simili e Brani simili
+- Per brani e artisti simili, Discover Weekly, Daily Mix e Top 50 serve una chiave gratuita di Last.fm: Impostazioni > Media > Musica simile (il Release Radar funziona anche senza)
+
+**Video: sottotitoli col volume a zero**
+- Se abbassi il volume del telefono a zero mentre guardi un video di YouTube, i sottotitoli si accendono da soli (prima quelli del video, l'italiano se c'è)
+- Quando alzi di nuovo il volume si spengono; se li avevi scelti tu restano come li hai lasciati
+
 ## 1.491.0
 **Creators Pro resta collegato**
 - I turni non chiedono più di rientrare dopo un riavvio del telefono o dell'app: Canvas tiene da parte la sessione di Creators Pro e la rimette ogni volta
