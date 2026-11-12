@@ -158,31 +158,27 @@ internal fun CalendarCard(
     today: LocalDate,
     onOpenAll: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
+    /** Tutte le note: quelle salvate per dopo (video, brani, articoli) vanno nella sezione Senza scadenza. */
+    notes: List<com.platinum20.dashboard.notes.Note> = emptyList(),
 ) {
     val open = rememberDueOpen()
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
-    // Le cose da spuntare non stanno nei giorni: tutte nella riga "Da fare" dentro OGGI (Antonio, 2026-11-11).
-    val all = remember(pending, today) { timelineEntries(pending.withoutTicks(), today) }
-    val todo = remember(pending, today) { cardTodo(pending, today) }
+    // Le cose senza scadenza non stanno nei giorni: tutte in fondo alla card, "Senza scadenza" (Antonio, 2026-11-12).
+    val all = remember(pending, today) { timelineEntries(pending.withoutLoose(), today) }
+    val loose = remember(pending, notes, today) { looseItems(pending, notes, today) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, more) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)
     val shown = all.take(todayCount + later)
-    // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle),
-    // poi "Da fare · N" che si apre sul posto con tutte le cose da spuntare (Antonio, 2026-11-11, scelta A).
-    var todoOpen by rememberSaveable { mutableStateOf(false) }
+    // In fondo a OGGI, come nella pagina: le abitudini in una riga (punto 19, il tocco apre il fumetto per segnarle).
     val extraAt = todayCount
     val extras = buildList<Triple<TimelineEntry, (() -> Unit)?, () -> Unit>> {
         if (habits.isNotEmpty()) add(Triple(
             TimelineEntry(key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null),
             null, { ActionBubble.show(*habitsBubble(habits, today)) },
         ))
-        if (todo.isNotEmpty()) {
-            add(Triple(todoEntry(todo), null, { todoOpen = !todoOpen }))
-            if (todoOpen) todo.forEach { (entry, row) -> add(Triple(entry, row.task?.let { tickTask(it.id) }, { open(row) })) }
-        }
     }
     fun <T> withExtras(list: List<T>, items: List<T>): List<T> =
         if (extraAt < 0) list else list.toMutableList().apply { addAll(extraAt.coerceAtMost(size), items) }
@@ -205,6 +201,7 @@ internal fun CalendarCard(
         // Le azioni di una riga stanno nel suo "Altro".
         onLongOpen = onOpenAll,
         footer = if (more > 0) (if (more == 1) "Un'altra cosa a $monthName" else "Altre $more a $monthName") else null,
+        bottom = { LooseSection(loose, onOpenAll) },
     )
 }
 
@@ -258,6 +255,8 @@ fun TimelineCard(
     footer: String? = null,
     /** Accanto al titolo, a destra; se c'è vince su [count]. */
     titleTrailing: (@Composable androidx.compose.foundation.layout.RowScope.() -> Unit)? = null,
+    /** In fondo alla card, sotto le righe: la sezione Senza scadenza del Calendario. */
+    bottom: (@Composable () -> Unit)? = null,
 ) {
     val haptic = rememberHaptic()
     // Il titolo dentro la card, non più un'etichetta fuori (1.404, punto 7 B).
@@ -292,6 +291,7 @@ fun TimelineCard(
                 )
             }
         }
+        bottom?.invoke()
     }
 }
 

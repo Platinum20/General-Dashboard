@@ -1,0 +1,79 @@
+package com.platinum20.dashboard
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.platinum20.dashboard.capture.SavedLink
+import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.ResumeItem
+import com.platinum20.dashboard.media.ResumeKind
+import com.platinum20.dashboard.notes.Note
+import com.platinum20.dashboard.notes.Parcel
+import com.platinum20.dashboard.notes.TaskItem
+import com.platinum20.dashboard.ui.screens.DueDay
+import com.platinum20.dashboard.ui.screens.DueRow
+import com.platinum20.dashboard.ui.screens.LooseKind
+import com.platinum20.dashboard.ui.screens.dueDays
+import com.platinum20.dashboard.ui.screens.looseItems
+import com.platinum20.dashboard.ui.screens.looseTitle
+import com.platinum20.dashboard.ui.screens.withoutLoose
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+
+/** 2026-11-12 (Antonio): tutte le cose senza scadenza in fondo alla card Calendario, fuori dai giorni. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
+class LooseItemsTest {
+    private val zone = ZoneId.of("Europe/Rome")
+    private val now = LocalDateTime.of(2026, 11, 12, 10, 0)
+    private val today = now.toLocalDate()
+
+    @Test fun leCoseSenzaDataEsconoDaiGiorni() {
+        val groups = listOf(
+            DueDay(today, false, listOf(
+                DueRow("today", today, Long.MIN_VALUE, today = true),
+                DueRow("task-1", today, Long.MAX_VALUE, task = TaskItem(1, "Comprare il latte")),
+                DueRow("task-2", today, 5L, task = TaskItem(2, "Dentista", dueAt = 5L)),
+                DueRow("note-3", today, Long.MAX_VALUE, note = Note(3, "Idea")),
+                DueRow("parcel-4", today, Long.MAX_VALUE, parcel = Parcel(4, "Scarpe")),
+                DueRow("parcel-5", today, 6L, parcel = Parcel(5, "Libro", expected = today)),
+            )),
+        )
+        assertEquals(listOf("today", "task-2", "parcel-5"), groups.withoutLoose().single().rows.map { it.key })
+    }
+
+    @Test fun tuttoInsiemeNellOrdineGiusto() {
+        val video = SavedLinks.noteText(SavedLink.Media(ResumeItem(ResumeKind.YOUTUBE, "AAAAAAAAAAA", "Motore a razzo", "Veritasium", "img", at = 1)))
+        val article = SavedLinks.noteText(SavedLink.Article("https://ilpost.it/a", "Il Post", "Il ponte"))
+        val notes = listOf(
+            Note(10, video, createdAt = 300),
+            Note(11, article, createdAt = 200),
+            Note(12, "Idea regalo per Marta", createdAt = 100),
+            Note(13, "Scontrino\nscade a marzo", createdAt = 400, photo = "/f.jpg"),
+            Note(14, "Codice del cancello", createdAt = 50, pinned = true),
+        )
+        val tasks = listOf(
+            TaskItem(1, "Comprare il latte", createdAt = 1),
+            TaskItem(2, "Chiamare Luca", createdAt = 2, done = true, doneAt = now.atZone(zone).toInstant().toEpochMilli() - 1000),
+        )
+        val groups = dueDays(tasks, emptyList(), emptyList(), now = now, zone = zone, withToday = true, notes = notes)
+        val items = looseItems(groups, notes, today)
+        assertEquals(
+            listOf("task-1", "note-14", "note-13", "note-10", "note-11", "note-12", "task-2"),
+            items.map { it.key },
+        )
+        assertEquals(LooseKind.PHOTO, items[2].kind)
+        assertEquals("Foto · scade a marzo", items[2].line)
+        assertEquals(LooseKind.MEDIA, items[3].kind)
+        assertEquals("Veritasium", items[3].line)
+        assertEquals("Da leggere · Il Post", items[4].line)
+        assertTrue(items.last().done)
+        // Ogni riga ha al massimo una riga sotto.
+        assertTrue(items.all { it.line == null || '\n' !in it.line!! })
+        assertEquals("Senza scadenza · 7", looseTitle(items.size))
+    }
+}
