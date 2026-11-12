@@ -215,6 +215,65 @@ object SpotifyStore {
     fun refreshPlaylists(force: Boolean = false) =
         load(_playlists, force, FeedCache.spItems("sp-playlist.json")) { token -> SpotifyApi.playlists(token) }
 
+    /** L'ultima playlist dove hai messo un brano: la prima chip la prossima volta. */
+    var lastPlaylist: String? = null
+        private set
+
+    /** Le playlist dove si può scrivere (le tue e le collaborative), lette ogni volta: sono poche e cambiano. */
+    suspend fun editablePlaylists(): Loadable<List<SpItem>> = modifyCall { token -> SpotifyApi.editablePlaylists(token) }
+
+    /**
+     * Mette [track] in [playlist]. Risponde col testo da mostrare: "Aggiunto a …", "È già in …" o l'errore.
+     * Dopo, la pagina della playlist e l'elenco si rileggono, così il brano si vede subito.
+     */
+    suspend fun addToPlaylist(playlist: SpItem, track: SpItem): String {
+        if (SpotifyPlaylists.alreadyIn(_children.value[playlist.id]?.data, track.uri)) return "È già in ${playlist.title}"
+        val result = modifyCall { token ->
+            // Senza i brani in memoria si leggono (i primi 100): Spotify altrimenti lo mette due volte.
+            val known = runCatching { SpotifyApi.children(token, playlist) }.getOrNull()
+            if (SpotifyPlaylists.alreadyIn(known, track.uri)) false
+            else true.also { SpotifyApi.addToPlaylist(token, playlist.id, listOf(track.uri)) }
+        }
+        if (result.error != null) return result.error
+        if (result.data == false) return "È già in ${playlist.title}"
+        lastPlaylist = playlist.id
+        _children.update { it - playlist.id }
+        refreshPlaylists(force = true)
+        return "Aggiunto a ${playlist.title}"
+    }
+
+    /** Una playlist nuova chiamata [name], con [track] dentro se c'è. Risponde la playlist o l'errore. */
+    suspend fun createPlaylist(name: String, track: SpItem?): Result<SpItem> {
+        val result = modifyCall { token ->
+            val made = SpotifyApi.createPlaylist(token, name)
+            if (track != null) SpotifyApi.addToPlaylist(token, made.id, listOf(track.uri))
+            made
+        }
+        val made = result.data ?: return Result.failure(IllegalStateException(result.error ?: "Spotify non risponde, riprova"))
+        lastPlaylist = made.id
+        refreshPlaylists(force = true)
+        return Result.success(made)
+    }
+
+    /**
+     * Come [call], ma un 403 qui vuol dire quasi sempre che l'accesso è vecchio e non ha il permesso di
+     * modificare le playlist: lo dice, con dove rientrare.
+     */
+    private suspend fun <T> modifyCall(block: suspend (String) -> T): Loadable<T> = try {
+        val token = SpotifyAuth.token() ?: return Loadable(error = "Ricollega Spotify da Impostazioni › Account")
+        val data = try {
+            block(token)
+        } catch (e: SpotifyApiException) {
+            if (e.code != 401) throw e
+            block(SpotifyAuth.token(forceRefresh = true) ?: throw e)
+        }
+        Loadable(data = data, loadedAt = System.currentTimeMillis())
+    } catch (e: SpotifyApiException) {
+        Loadable(error = if (e.code == 403) "Spotify non dà il permesso: rientra da Impostazioni › Account › Spotify" else e.message.orEmpty())
+    } catch (e: Exception) {
+        Loadable(error = e.userMessage("Spotify non è raggiungibile, riprova tra poco."))
+    }
+
     fun refreshLibrary(force: Boolean = false) = load(_library, force, FeedCache.spLibrary) { token ->
         coroutineScope {
             val liked = async { SpotifyApi.likedTracks(token) }

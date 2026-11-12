@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
@@ -108,6 +109,13 @@ internal fun BoxScope.SaveToNotesLayer() {
                     com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { error ->
                         CaptureFeedback.tell(context, error)
                     }
+                }
+                RowDivider()
+                // Nelle tue playlist, o in una nuova (1.500): il fumetto dopo mostra le playlist come chip.
+                BubbleRow(icon = Icons.Rounded.PlaylistAdd, title = "Aggiungi a una playlist", detail = "Una delle tue o una nuova") {
+                    haptic(Haptic.CONFIRM)
+                    SavedLinks.dismiss()
+                    PlaylistPicker.open(context, seed)
                 }
                 RowDivider()
             }

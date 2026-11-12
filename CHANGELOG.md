@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.500.0
+**Musica: crea playlist e aggiungi brani**
+- Tieni premuto un brano di Spotify (in una lista, in una playlist o nel player) e scegli "Aggiungi a una playlist": compaiono le tue playlist, tocca quella giusta. La prima è l'ultima che hai usato
+- Dallo stesso fumetto "Nuova playlist" ne crea una col brano già dentro: scrivi solo il nome. È privata
+- In Musica (il tastino con l'orologio) c'è "Nuova playlist" in cima, per crearne una vuota
+- Se un brano è già nella playlist te lo dice invece di metterlo due volte
 ## 1.499.0
 **YouTube: sottotitoli e titoli nella lingua del video**
 - Quando i sottotitoli si accendono da soli (volume a zero) il video non diventa più nero un attimo: continua senza ricaricarsi

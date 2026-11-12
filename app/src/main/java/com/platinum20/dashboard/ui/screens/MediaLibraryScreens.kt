@@ -40,6 +40,7 @@ import com.platinum20.dashboard.capture.SavedLink
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.filled.Favorite
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
@@ -508,6 +509,13 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
                         wide = false, image = "", title = "Salvati", author = "${saved.size} da ascoltare dopo", mark = null,
                         click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) },
                     ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                }
+                // Una playlist vuota da riempire: i brani si aggiungono tenendoli premuti (1.500).
+                item(key = "new-playlist") {
+                    MediaLine(
+                        wide = false, image = "", title = "Nuova playlist", author = "Poi tieni premuto un brano per aggiungerlo", mark = null,
+                        click = Modifier.clickable { PlaylistPicker.createEmpty() },
+                    ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                 }
                 items(entries, key = { it.key }) { e ->
                     when (e) {
