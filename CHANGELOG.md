@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.494.0
+**Artisti: tutta la discografia**
+- Nella pagina di un artista la Discografia ora ha tutto quello che ha pubblicato, non solo le prime uscite: album, singoli e EP, raccolte, dalla più nuova
+- Tocca il titolo "Discografia" (o l'ultima tessera della fila) per l'elenco intero, una riga per uscita col tipo e l'anno, con i chip per vedere solo album, singoli, raccolte o dove appare
+- Ogni uscita si apre con i suoi brani, come prima
+- Anche "Appare in" mostra molte più uscite
+
 ## 1.493.0
 **Media: titoli e tastini invertiti, copertine dove mancavano**
 - In Musica e in Video il titolo apre Scopri; il tastino tutto a destra, sulla stessa riga, ora ha l'icona della cronologia e apre la lista intera: tutta la tua musica in verticale, o la cronologia dei video
