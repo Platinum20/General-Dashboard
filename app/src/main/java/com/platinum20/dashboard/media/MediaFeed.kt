@@ -74,9 +74,8 @@ object MediaStories {
         }
     }
 
-    /** Sotto un episodio nel feed: "Il Post · 38 min · 3 h fa" (una riga sola). */
+    /** Sotto un episodio nel feed: "Il Post · 3 h fa" (la durata è sulla copertina, 1.482). */
     fun episodeLine(episode: Episode, now: Long): String {
-        val minutes = (episode.durationSec / 60).takeIf { it > 0 }?.let { "$it min" }
         val ago = episode.publishedAt.takeIf { it > 0 }?.let { at ->
             val hours = (now - at) / 3_600_000L
             when {
@@ -87,7 +86,7 @@ object MediaStories {
                 else -> "${hours / 24 / 7} settimane fa"
             }
         }
-        return listOfNotNull(episode.podcastTitle.takeIf { it.isNotBlank() }, minutes, ago).joinToString(" · ")
+        return listOfNotNull(episode.podcastTitle.takeIf { it.isNotBlank() }, ago).joinToString(" · ")
     }
 }
 

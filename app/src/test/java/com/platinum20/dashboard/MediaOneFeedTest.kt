@@ -100,7 +100,7 @@ class MediaOneFeedTest {
 
     @Test fun rigaDellEpisodio() {
         val line = MediaStories.episodeLine(episode("e1", now.minusSeconds(3 * 3600)), now.toEpochMilli())
-        assertEquals("Il Post · 38 min · 3 h fa", line)
+        assertEquals("Il Post · 3 h fa", line)
     }
 
     private fun track(id: String, title: String, vararg artistIds: String) = JSONObject()

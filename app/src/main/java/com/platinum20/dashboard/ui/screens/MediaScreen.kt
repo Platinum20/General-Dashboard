@@ -281,15 +281,15 @@ fun MediaScreen(
                     }
                 }
             }
-            // Novità: un feed solo, video ed episodi insieme; sotto ULTIMA VISITA il resto, sbiadito, con qualche consigliato.
+            // Novità: un feed solo, video ed episodi insieme; sotto ULTIMA VISITA il resto, con qualche consigliato.
             if (feed.fresh.isNotEmpty() || feed.older.isNotEmpty()) {
                 item(key = "feed-h") { SectionHeader("Novità", Modifier.padding(horizontal = 16.dp)) }
             }
-            items(feed.fresh, key = { "f-" + it.key }) { entry -> FeedRow(entry, faded = false, onPlayVideo) }
+            items(feed.fresh, key = { "f-" + it.key }) { entry -> FeedRow(entry, onPlayVideo) }
             if (feed.fresh.isNotEmpty() && feed.older.isNotEmpty()) item(key = "feed-marker") {
                 NewsVisitMarker("Ultima visita", Modifier.padding(horizontal = 16.dp))
             }
-            items(feed.older, key = { "o-" + it.key }) { entry -> FeedRow(entry, faded = feed.fresh.isNotEmpty(), onPlayVideo) }
+            items(feed.older, key = { "o-" + it.key }) { entry -> FeedRow(entry, onPlayVideo) }
             item(key = "radio") { RadioRow(onOpenAll = { onOpenRoute(Routes.RADIO) }) }
             // In fondo le righe fisse (1.481): quello che è tuo e non è una novità.
             item(key = "rows") {
@@ -366,8 +366,9 @@ private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>,
 
 /** Una voce delle Novità: un video grande come nelle Iscrizioni, o un episodio in una riga con il tasto play. */
 @Composable
-private fun FeedRow(entry: com.platinum20.dashboard.media.FeedEntry, faded: Boolean, onPlayVideo: (String) -> Unit) {
-    Box(Modifier.padding(horizontal = 16.dp).alpha(if (faded) FADED_ALPHA else 1f)) {
+private fun FeedRow(entry: com.platinum20.dashboard.media.FeedEntry, onPlayVideo: (String) -> Unit) {
+    // Niente sbiadito (1.482, Antonio): sul tema scuro le anteprime sotto ULTIMA VISITA sembravano spente; divide il segno.
+    Box(Modifier.padding(horizontal = 16.dp)) {
         when (entry) {
             is com.platinum20.dashboard.media.FeedEntry.Video -> VideoCard(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
             is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeRow(entry.episode)
@@ -387,6 +388,7 @@ private fun EpisodeRow(episode: com.platinum20.dashboard.media.podcast.Episode) 
             if (episode.image.isNotBlank()) {
                 AsyncImage(model = episode.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
             }
+            MediaMarkOverlay(MediaMark(MediaType.PODCAST, MediaMarks.minutes(episode.durationSec * 1000)), compact = true, inset = 4.dp)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -578,6 +580,7 @@ private fun ContinueTile(item: ResumeItem, first: Boolean, onClick: () -> Unit) 
                 if (item.image.isNotBlank()) {
                     AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                 }
+                MediaMarkOverlay(MediaMarks.of(item.kind, item.durationMs), inset = 6.dp)
                 if (item.unfinished && item.durationMs > 0) {
                     LinearProgressIndicator(
                         progress = { item.progress },

@@ -121,6 +121,7 @@ private fun QueueCover(item: ResumeItem, width: Dp, modifier: Modifier = Modifie
         if (item.image.isNotBlank()) {
             AsyncImage(model = item.image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
+        MediaMarkOverlay(MediaMarks.of(item.kind, item.durationMs), compact = width < 80.dp)
     }
 }
 

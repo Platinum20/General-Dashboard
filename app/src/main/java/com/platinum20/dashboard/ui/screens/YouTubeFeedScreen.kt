@@ -430,7 +430,10 @@ private fun PlaylistLine(p: YtPlaylist, onClick: () -> Unit) {
         Modifier.fillMaxWidth().padding(horizontal = 16.dp).bouncyPress(0.97f).clip(MaterialTheme.shapes.medium).clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Thumbnail(p.thumbnail, Modifier.width(140.dp), large = false)
+        Box(Modifier.width(140.dp)) {
+            Thumbnail(p.thumbnail, Modifier.fillMaxWidth(), large = false)
+            MediaMarkOverlay(MediaMark(MediaType.VIDEO, if (p.count > 0) "${p.count}" else null), compact = true, inset = 4.dp)
+        }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(p.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -520,6 +523,7 @@ fun VideoCard(video: YtVideo, onClick: () -> Unit, first: Boolean = true) {
         Box(Modifier.clip(MaterialTheme.shapes.large)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth(), large = true)
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(8.dp))
+            MediaMarkOverlay(MediaMark(MediaType.VIDEO), inset = 8.dp)
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
         // Altezza fissa (1.442): sempre lo spazio di due righe di titolo + canale, la lista non salta da un video
@@ -581,6 +585,7 @@ fun VideoRow(video: YtVideo, onClick: () -> Unit) {
         Box(Modifier.width(150.dp).clip(MaterialTheme.shapes.medium)) {
             Thumbnail(video.thumbnail, Modifier.fillMaxWidth())
             VideoBadge(video, Modifier.align(Alignment.BottomEnd).padding(4.dp))
+            MediaMarkOverlay(MediaMark(MediaType.VIDEO), compact = true, inset = 4.dp)
             WatchedBar(video, Modifier.align(Alignment.BottomCenter))
         }
         Spacer(Modifier.width(12.dp))
