@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.492.0
+**Media: due file, Musica e Video, ognuna col suo Scopri**
+- Le storie in cima non ci sono più: in alto resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa
+- "Musica" è la tua musica in ordine di ultimo ascolto: a sinistra l'ultima cosa che hai sentito, che sia un mix, una playlist, un album, i brani che ti piacciono, un podcast o uno degli ultimi 3 artisti ascoltati. In fondo ci sono "I tuoi podcast" e il tasto Radio (le tue radio sono in cima alla sua pagina)
+- Il tastino Scopri a destra di "Musica" apre la musica nuova: le uscite degli artisti che segui, poi per i tuoi generi gli artisti che non ascolti ancora e le playlist
+- "Video" sono i video che hai iniziato, dal più recente, con in fondo "Vedi tutta la cronologia"; il suo tastino Scopri apre i nuovi delle iscrizioni e sotto la Home di YouTube, che carica altri video senza fine
+- Le cose salvate per dopo stanno in Media: la tessera "Salvati" è la prima della fila Musica (brani, radio e podcast) e della fila Video, e apre l'elenco dalla più recente (tenendo premuto la togli). Senza niente di salvato la tessera non c'è
+- La fila Novità, Mi piace come fila, i video che ti piacciono e le playlist di YouTube non sono più in Media
+- Gli elenchi non alternano più Spotify e YouTube: vanno solo in ordine di tempo
+- Nella Cronologia ogni riga ha lo stesso aspetto: stessa altezza, niente bordo, la stessa copertina per musica e video
+- Sui mix non c'è più la durata
+- Toccando il titolo "Musica" si apre la fila intera, in verticale; il titolo "Video" apre tutta la cronologia
+- Qualunque cosa di Media si salva per dopo tenendola premuta: brani, album, playlist, mix, artisti, episodi e video
+
+**Musica: Release Radar, Daily Mix, radio e testi**
+- Nella fila Musica arrivano le playlist fatte per te: Release Radar (si rifà ogni venerdì con le uscite degli artisti che segui e che ascolti di più), Discover Weekly (ogni lunedì 30 brani simili ai tuoi che non hai ancora sentito), Daily Mix 1-5 (uno per genere, i tuoi brani più qualche simile) e Top 50 Italia e Top 50 mondo. Stanno in fila come i mix, per ultimo ascolto
+- Tenendo premuto un brano di Spotify c'è "Radio": parte una radio di brani simili, e la ritrovi nella fila Musica
+- Nel player i testi sincronizzati: tocca la copertina o "Testo", la riga cantata è in chiaro e toccandone una vai a quel punto. Col volume a zero il testo si apre da solo e si chiude quando lo rialzi
+- Scopri ha due file nuove: Artisti simili e Brani simili
+- Per brani e artisti simili, Discover Weekly, Daily Mix e Top 50 serve una chiave gratuita di Last.fm: Impostazioni > Media > Musica simile (il Release Radar funziona anche senza)
+
+**Video: sottotitoli col volume a zero**
+- Se abbassi il volume del telefono a zero mentre guardi un video di YouTube, i sottotitoli si accendono da soli (prima quelli del video, l'italiano se c'è)
+- Quando alzi di nuovo il volume si spengono; se li avevi scelti tu restano come li hai lasciati
+
+**Batteria**
+- Con l'app chiusa e niente che suona, il riproduttore di Spotify si spegne dopo 5 minuti e si riaccende da solo quando premi play (anche dalla notifica) o riapri l'app
+- In pausa Spotify non controlla più lo stato ogni secondo, ma ogni 15
+- I turni di Creators Pro si rileggono una volta all'ora invece di ogni quarto d'ora, e le letture nascoste di WindTre e Creators Pro non scaricano più immagini
+
+**Per dopo, una card sua**
+- Le cose senza scadenza escono dalla card Calendario e hanno una card tutta loro in Home, "Per dopo": cose da fare, note, foto e pacchi senza data
+- La card sta subito sotto il Calendario, sparisce quando è vuota e si sposta o si nasconde da Personalizza
+- Gli articoli salvati sono in cima a News, in "Salvati"; video, brani e podcast salvati sono in Media
+
 ## 1.491.0
 **Creators Pro resta collegato**
 - I turni non chiedono più di rientrare dopo un riavvio del telefono o dell'app: Canvas tiene da parte la sessione di Creators Pro e la rimette ogni volta

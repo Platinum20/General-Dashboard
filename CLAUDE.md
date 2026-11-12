@@ -135,6 +135,7 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   Mix tap = `Routes.mix(id)` → `MixScreen` (mixes from `mixesOf`). Novità row = fresh + `MediaFeed.ROW_OLDER` older + "Tutte le novità"
   → `Routes.MEDIA_NEWS` = `MediaNewsScreen` (reads `MediaFeedNow.rows`). Durations: `YouTubeStore.withFeedDetails` (RSS lacks them,
   copied from `YouTubeWeb.lastFeed`) + `YtVideo.withKnownDuration()` (YtHistory). VideoCard date at the right of the channel row.
+  1.492 (Antonio, shipped with the 1.490 design): titles are `OpenableHeader(trailing=)`: "Musica" → `Routes.MUSIC_ALL` = `MusicAllScreen` (MediaLibraryScreens.kt, same `rememberPerTe()` entries as the row, all `MediaLine`), "Video" → Routes.YOUTUBE_FEED; every media tile long press = save for later (`SavedLinks.spotify/mix`, `pageRoute`).
   1.490 (Antonio): NO stories row (`MediaStories` pure code kept, unused), NO Novità row. Media = hero/queue, then ONLY two rows:
   "Musica" (`PerTeRow`) and "Video" (Continua, videos only, last tile "Vedi tutta la cronologia" → Routes.YOUTUBE_FEED). Each header
   has ONE square `DiscoverButton` (MediaMarks.kt) on the right: Musica → `Routes.MUSIC_DISCOVER` = `MusicDiscoverScreen`

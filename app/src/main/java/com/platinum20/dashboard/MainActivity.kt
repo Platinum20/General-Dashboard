@@ -438,6 +438,8 @@ object Routes {
     fun savedMedia(video: Boolean) = "media/saved/" + if (video) "video" else "musica"
     /** Scopri della musica (1.488): il tastino a destra del titolo Musica. */
     const val MUSIC_DISCOVER = "media/discover"
+    /** Tutta la fila Musica in verticale, dal titolo (1.492). */
+    const val MUSIC_ALL = "media/music"
     /** Un artista, un album o una playlist di Spotify come pagina sua (1.481: Musica non è più una pagina a parte). */
     const val SPOTIFY_ITEM = "media/spotify/item/{kind}/{id}?title={title}&subtitle={subtitle}&image={image}"
     fun spotifyItem(i: com.platinum20.dashboard.media.spotify.SpItem) =
@@ -1440,6 +1442,12 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             composable(Routes.SAVED_MEDIA) { entry ->
                 com.platinum20.dashboard.ui.screens.SavedMediaScreen(
                     video = entry.arguments?.getString("kind") == "video",
+                    onBack = { navController.popBackStack() },
+                    onOpenRoute = { navController.navigate(it) },
+                )
+            }
+            composable(Routes.MUSIC_ALL) {
+                com.platinum20.dashboard.ui.screens.MusicAllScreen(
                     onBack = { navController.popBackStack() },
                     onOpenRoute = { navController.navigate(it) },
                 )

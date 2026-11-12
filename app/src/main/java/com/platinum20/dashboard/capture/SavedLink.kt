@@ -97,9 +97,37 @@ object SavedLinks {
         }.getOrNull()
     }
 
-    /** Un brano di Spotify (album e playlist non si riaprono fermi: solo i brani). */
-    fun spotify(item: SpItem): SavedLink? = item.takeIf { it.kind == SpKind.TRACK }?.let {
-        SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, it.uri, it.title, it.subtitle, it.image, at = System.currentTimeMillis()))
+    /**
+     * Qualunque cosa di Spotify (1.490, Antonio: "qualunque cosa di media si possa salvare"): un brano si riapre fermo,
+     * un album, una playlist, un artista o un podcast nella sua pagina.
+     */
+    fun spotify(item: SpItem): SavedLink? = item.takeIf { it.uri.isNotBlank() }?.let {
+        SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, it.uri, it.title, it.subtitle, it.image, durationMs = it.durationMs, at = System.currentTimeMillis()))
+    }
+
+    /** Un mix fatto da Canvas: si riapre nella sua pagina con Riproduci. */
+    fun mix(id: String, title: String, subtitle: String, image: String): SavedLink =
+        SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, MIX_PREFIX + id, title, subtitle, image, at = System.currentTimeMillis()))
+
+    private const val MIX_PREFIX = "mix:"
+
+    /**
+     * Dove si apre una cosa di Spotify salvata che non è un brano: la pagina del mix, dell'album, della playlist,
+     * dell'artista o del podcast; null per i brani e gli episodi, che si aprono fermi nel player.
+     */
+    fun pageRoute(item: ResumeItem): String? {
+        if (item.kind != ResumeKind.SPOTIFY) return null
+        if (item.key.startsWith(MIX_PREFIX)) return Routes.mix(item.key.removePrefix(MIX_PREFIX))
+        val parts = item.key.split(":")
+        if (parts.size != 3 || parts[0] != "spotify") return null
+        val kind = when (parts[1]) {
+            "album" -> SpKind.ALBUM
+            "playlist" -> SpKind.PLAYLIST
+            "artist" -> SpKind.ARTIST
+            "show" -> SpKind.SHOW
+            else -> return null
+        }
+        return Routes.spotifyItem(SpItem(parts[2], item.key, kind, item.title, item.subtitle, item.image))
     }
 
     fun youtube(video: YtVideo): SavedLink = SavedLink.Media(
@@ -261,7 +289,8 @@ object SavedLinks {
     /** Riapre la cosa salvata: i media fermi, in attesa del play. */
     fun open(context: Context, link: SavedLink, openRoute: (String) -> Unit) {
         when (link) {
-            is SavedLink.Media -> openResumeItem(context, link.item, autoplay = false, openRoute = openRoute)
+            is SavedLink.Media -> pageRoute(link.item)?.let(openRoute)
+                ?: openResumeItem(context, link.item, autoplay = false, openRoute = openRoute)
             is SavedLink.Article -> openRoute(Routes.reader(link.url, link.source, link.title))
         }
     }

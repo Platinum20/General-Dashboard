@@ -27,3 +27,21 @@ class SpotifyDiscoverTest {
         assertEquals("Post punk", SpotifyDiscover.label("post-punk"))
     }
 }
+
+/** 1.490 (Antonio): qualunque cosa di media si salva; album, playlist, artisti e mix si riaprono nella loro pagina. */
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class SavedAnythingTest {
+    private fun item(key: String) = com.platinum20.dashboard.media.ResumeItem(com.platinum20.dashboard.media.ResumeKind.SPOTIFY, key, "T", "S", "", at = 1)
+
+    @Test fun albumEMixApronoLaPagina() {
+        val links = com.platinum20.dashboard.capture.SavedLinks
+        assertEquals(true, links.pageRoute(item("spotify:album:abc"))?.startsWith("media/spotify/"))
+        assertEquals("media/mix/m1", links.pageRoute(item("mix:m1")))
+        assertEquals(null, links.pageRoute(item("spotify:track:abc")))
+    }
+
+    @Test fun ancheGliAlbumSiSalvano() {
+        val album = SpItem("a", "spotify:album:a", SpKind.ALBUM, "Disco", "Artista", "")
+        assertEquals("spotify:album:a", (com.platinum20.dashboard.capture.SavedLinks.spotify(album) as com.platinum20.dashboard.capture.SavedLink.Media).item.key)
+    }
+}

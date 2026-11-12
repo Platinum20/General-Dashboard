@@ -270,13 +270,15 @@ fun MediaScreen(
                     onOpenLiked = { onOpenRoute(Routes.LIKED_TRACKS) },
                     onDiscover = { onOpenRoute(Routes.MUSIC_DISCOVER) },
                     onOpenSaved = { onOpenRoute(Routes.savedMedia(video = false)) },
+                    onOpenAll = { onOpenRoute(Routes.MUSIC_ALL) },
                 )
             }
             // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
             if (continueList.isNotEmpty() || youTubeOn || savedVideos.isNotEmpty()) {
                 // Il tastino Scopri apre la Home di YouTube con in cima i nuovi delle iscrizioni (1.488, Antonio).
                 item(key = "continue-h") {
-                    SectionHeader("Video", Modifier.padding(horizontal = 16.dp)) {
+                    // Il titolo apre tutta la cronologia (1.492, Antonio: "continua ... che aprisse la cronologia").
+                    OpenableHeader("Video", { onOpenRoute(Routes.YOUTUBE_FEED) }, Modifier.padding(horizontal = 16.dp)) {
                         if (youTubeOn) DiscoverButton { onOpenRoute(Routes.MEDIA_NEWS) }
                     }
                 }
