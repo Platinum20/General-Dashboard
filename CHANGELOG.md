@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.493.0
+**Artisti: tutta la discografia**
+- Nella pagina di un artista la Discografia ora ha tutto quello che ha pubblicato, non solo le prime uscite: album, singoli e EP, raccolte, dalla più nuova
+- Tocca il titolo "Discografia" (o l'ultima tessera della fila) per l'elenco intero, una riga per uscita col tipo e l'anno, con i chip per vedere solo album, singoli, raccolte o dove appare
+- Ogni uscita si apre con i suoi brani, come prima
+- Anche "Appare in" mostra molte più uscite
+
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**
 - Le storie in cima non ci sono più: in alto resta "Riprendi" con l'ultima cosa ascoltata o guardata, e sotto la coda quando c'è qualcosa

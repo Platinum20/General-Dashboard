@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -224,7 +226,7 @@ object SpotifyApi {
         return list.distinctBy { it.id }.take(NewReleases.MAX_ARTISTS)
     }
 
-    /** La pagina di un artista: scheda, popolari (dalla ricerca), album, singoli e dove appare, insieme. */
+    /** La pagina di un artista: scheda, popolari (dalla ricerca), tutta la discografia e dove appare, insieme. */
     suspend fun artistPage(token: String, artist: SpItem): SpArtistPage = coroutineScope {
         // Con l'accesso scaduto si ferma tutto (e si riprova col token nuovo); le altre parti mancanti restano vuote.
         val info = async {
@@ -238,12 +240,13 @@ object SpotifyApi {
         val searches = (0..1).map { page ->
             async { runCatching { request(token, "search?q=$name&type=track&limit=10&offset=${page * 10}&market=from_token") }.getOrNull() }
         }
-        fun albums(group: String) = async {
-            runCatching { request(token, "artists/${artist.id}/albums?include_groups=$group&limit=10&market=from_token") }.getOrNull()
-        }
-        val albums = albums("album")
-        val singles = albums("single")
-        val appears = albums("appears_on")
+        // Le richieste in volo insieme, per tutti i gruppi: abbastanza veloce senza farsi rispondere 429.
+        val gate = Semaphore(SpotifyArtist.PARALLEL)
+        fun group(group: String, max: Int) = async { allReleases(token, artist.id, group, max, gate) }
+        val albums = group("album", SpotifyArtist.RELEASES_MAX)
+        val singles = group("single", SpotifyArtist.RELEASES_MAX)
+        val compilations = group("compilation", SpotifyArtist.RELEASES_MAX)
+        val appears = group("appears_on", SpotifyArtist.APPEARS_MAX)
         val json = info.await()
         SpArtistPage(
             artist = json?.let { parseItem(it) } ?: artist,
@@ -251,10 +254,33 @@ object SpotifyApi {
             followers = SpotifyArtist.followers(json),
             genres = SpotifyArtist.genres(json),
             popular = SpotifyArtist.popular(searches.awaitAll(), artist.id),
-            albums = SpotifyArtist.albums(albums.await()),
-            singles = SpotifyArtist.albums(singles.await()),
-            appearsOn = SpotifyArtist.albums(appears.await()),
+            albums = albums.await().map { it.first },
+            singles = singles.await().map { it.first },
+            compilations = compilations.await().map { it.first },
+            appearsOn = appears.await().map { it.first },
+            released = listOf(albums, singles, compilations, appears).flatMap { it.await() }
+                .mapNotNull { (item, day) -> day?.let { item.id to it } }.toMap(),
         )
+    }
+
+    /**
+     * Tutte le uscite di un gruppo (album, singoli, raccolte, dove appare), dalla più nuova (1.493, Antonio: "tutto
+     * quello che hanno pubblicato"). Spotify le dà a pagine piccole: la prima dice quante sono, le altre si chiedono
+     * insieme. Una pagina che non arriva manca e basta; col token scaduto si ferma tutto.
+     */
+    private suspend fun allReleases(token: String, artistId: String, group: String, max: Int, gate: Semaphore): List<Pair<SpItem, java.time.LocalDate?>> = coroutineScope {
+        suspend fun page(offset: Int): JSONObject? = gate.withPermit {
+            try {
+                request(token, "artists/$artistId/albums?include_groups=$group&limit=${SpotifyArtist.PAGE}&offset=$offset&market=from_token")
+            } catch (e: SpotifyApiException) {
+                if (e.code == 401) throw e else null
+            } catch (e: IOException) {
+                null
+            }
+        }
+        val first = page(0) ?: return@coroutineScope emptyList()
+        val rest = SpotifyArtist.nextOffsets(first.optInt("total"), SpotifyArtist.PAGE, max).map { async { page(it) } }
+        SpotifyArtist.releases(listOf(first) + rest.awaitAll())
     }
 
     suspend fun search(token: String, query: String): List<SpItem> {
