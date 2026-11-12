@@ -136,7 +136,7 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   → `Routes.MEDIA_NEWS` = `MediaNewsScreen` (reads `MediaFeedNow.rows`). Durations: `YouTubeStore.withFeedDetails` (RSS lacks them,
   copied from `YouTubeWeb.lastFeed`) + `YtVideo.withKnownDuration()` (YtHistory). VideoCard date at the right of the channel row.
   1.488 (Antonio): mixed Spotify+YouTube lists are NEVER alternated: `MediaMerge.byRecency` + `heardAt` (MediaHistory/YtHistory/
-  `SpotifyStore.played`, via `rememberHeardAt()` in MediaLibraryScreens.kt), unheard last; vertical mixed lists use ONE row
+  `SpotifyStore.played`, via `rememberHeardAt()` in MediaLibraryScreens.kt), unheard last; vertical mixed lists use ONE row (same 16:9 cover for music AND video: square vs wide only in horizontal rows, Antonio)
   `MediaLine` (MediaMarks.kt; `TrackLine` MusicScreen, `VideoLine`/`PlaylistMediaLine` YouTubeFeedScreen). Per te ends with followed
   podcasts + "I tuoi podcast" AllTile (`PodcastOpen` opens one directly); Cronologia = `RoundIconButton` in the Media TopLevelBar
   actions (no bottom Cronologia/podcast rows). Mixes: no duration mark.

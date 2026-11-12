@@ -190,8 +190,9 @@ internal val MEDIA_LINE_SLOT = 128.dp
 
 /**
  * La riga unica delle liste di Media dove musica e video stanno insieme (1.488, Antonio: "che abbiano tutti lo stesso
- * aspetto"): stessa altezza, nessun bordo, copertina in uno spazio fisso (quadrata e al centro per la musica, 16:9 per
- * i video) così il testo parte sempre dallo stesso punto; titolo su due righe, sotto l'autore.
+ * aspetto", e "nelle cose verticali basta che siano uguali"): stessa altezza, nessun bordo, la stessa copertina 16:9 per
+ * musica e video (quadrata/rettangolare solo nelle file orizzontali), così il testo parte sempre dallo stesso punto.
+ * [wide] resta per chi la chiama: dice solo se è un video.
  */
 @Composable
 internal fun MediaLine(
@@ -211,7 +212,7 @@ internal fun MediaLine(
     ) {
         Box(Modifier.width(MEDIA_LINE_SLOT).height(MEDIA_LINE_HEIGHT), contentAlignment = Alignment.Center) {
             Box(
-                Modifier.width(if (wide) MEDIA_LINE_SLOT else MEDIA_LINE_HEIGHT).height(MEDIA_LINE_HEIGHT)
+                Modifier.width(if (round) MEDIA_LINE_HEIGHT else MEDIA_LINE_SLOT).height(MEDIA_LINE_HEIGHT)
                     .clip(shape).background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
