@@ -19,6 +19,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -50,13 +56,14 @@ import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.media.spotify.SpArtistPage
 import com.platinum20.dashboard.media.spotify.SpItem
+import com.platinum20.dashboard.media.spotify.SpReleaseGroup
 import com.platinum20.dashboard.media.spotify.SpotifyArtist
 import com.platinum20.dashboard.media.spotify.SpotifyStore
 
 /**
  * La pagina di un artista (1.481, Antonio: "se vado su Pink Floyd dev'essere come Spotify"): la foto grande col nome
  * sopra, follower e generi, il tasto play, i Popolari numerati (cinque, poi "Altri"), la Discografia divisa in Album e
- * Singoli e EP, e dove appare. Ci si arriva dalle storie in cima a Media, dalla ricerca e dal nome nel player.
+ * Singoli e EP, Raccolte (tutte, 1.494), e dove appare; il titolo Discografia apre l'elenco intero. Ci si arriva dalle storie in cima a Media, dalla ricerca e dal nome nel player.
  */
 @Composable
 internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
@@ -66,8 +73,14 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     val state = pages[artist.id] ?: Loadable(loading = true)
     val page = state.data
     var showAll by rememberSaveable { mutableStateOf(false) }
-    var singles by rememberSaveable { mutableIntStateOf(0) }
+    var group by rememberSaveable { mutableIntStateOf(0) }
+    var everything by rememberSaveable { mutableStateOf(false) }
     val popular = page?.popular.orEmpty()
+    if (everything && page != null) {
+        BackHandler { everything = false }
+        DiscographyScreen(page, onBack = { everything = false }, onOpenItem = onOpenItem)
+        return
+    }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             item(key = "head") { ArtistHeader(page?.photo?.ifBlank { null } ?: artist.image, page?.artist?.title ?: artist.title) }
@@ -112,17 +125,20 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
                     }
                 }
             }
-            if (page != null && (page.albums.isNotEmpty() || page.singles.isNotEmpty())) {
-                item(key = "disc-h") { ArtistTitle("Discografia") }
+            val groups = page?.let { p -> OWN_GROUPS.filter { it.of(p).isNotEmpty() } }.orEmpty()
+            if (page != null && groups.isNotEmpty()) {
+                // Il titolo apre l'elenco intero; la fila mostra tutto il gruppo scelto, dal più nuovo.
+                item(key = "disc-h") { ArtistTitle("Discografia", onOpen = { everything = true }) }
                 item(key = "disc-chips") {
                     Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (page.albums.isNotEmpty()) CanvasChip(selected = singles == 0 || page.singles.isEmpty(), onClick = { singles = 0 }, label = "Album")
-                        if (page.singles.isNotEmpty()) CanvasChip(selected = singles == 1 || page.albums.isEmpty(), onClick = { singles = 1 }, label = "Singoli e EP")
+                        groups.forEach { g ->
+                            CanvasChip(selected = g == groups.getOrElse(group) { groups[0] }, onClick = { group = groups.indexOf(g) }, label = g.label)
+                        }
                     }
                 }
                 item(key = "disc") {
-                    val list = if ((singles == 1 && page.singles.isNotEmpty()) || page.albums.isEmpty()) page.singles else page.albums
-                    ReleaseCovers(list, onOpenItem)
+                    val chosen = groups.getOrElse(group) { groups[0] }
+                    ReleaseCovers(chosen.of(page), onOpenItem, onAll = { everything = true })
                 }
             }
             if (page != null && page.appearsOn.isNotEmpty()) {
@@ -164,13 +180,86 @@ private fun ArtistHeader(photo: String, name: String) {
     }
 }
 
+/** Il titolo di un blocco; con [onOpen] è inchiostro + freccia e si tocca per aprire la pagina intera. */
 @Composable
-private fun ArtistTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
-    )
+private fun ArtistTitle(text: String, onOpen: (() -> Unit)? = null) {
+    val haptic = rememberHaptic()
+    Row(
+        Modifier
+            .padding(start = 12.dp, end = 12.dp, top = 12.dp)
+            .clip(MaterialTheme.shapes.small)
+            .then(if (onOpen != null) Modifier.clickable { haptic(Haptic.TICK); onOpen() } else Modifier)
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+        if (onOpen != null) {
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = "Apri", modifier = Modifier.size(24.dp))
+        }
+    }
+}
+
+/** I gruppi dell'artista stesso (le sue uscite); "Appare in" ha la sua fila sotto. */
+private val OWN_GROUPS = listOf(SpReleaseGroup.ALBUM, SpReleaseGroup.SINGLE, SpReleaseGroup.COMPILATION)
+
+/**
+ * "Tutta la discografia" (1.494, Antonio: "tutto quello che hanno pubblicato, anche gli album, tutto quanto"):
+ * ogni uscita dalla più nuova, una riga ciascuna (copertina, titolo, tipo · anno), i chip per restringere a un gruppo.
+ * Toccata un'uscita si apre la sua pagina con i brani.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DiscographyScreen(page: SpArtistPage, onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
+    var only by rememberSaveable { mutableStateOf<SpReleaseGroup?>(null) }
+    val groups = SpReleaseGroup.entries.filter { it.of(page).isNotEmpty() }
+    val rows = if (only == SpReleaseGroup.APPEARS) page.appearsOn.map { it to SpReleaseGroup.APPEARS } else SpotifyArtist.everything(page, only)
+    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        TopLevelBar(
+            title = page.artist.title,
+            subtitle = "Discografia · " + releasesLine(SpotifyArtist.everything(page).size),
+            onBack = onBack,
+            scrollBehavior = scroll,
+        )
+        LazyColumn(
+            Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection),
+            contentPadding = PaddingValues(bottom = 120.dp),
+        ) {
+            if (groups.size > 1) item(key = "chips") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { CanvasChip(selected = only == null, onClick = { only = null }, label = "Tutto") }
+                    items(groups) { g -> CanvasChip(selected = only == g, onClick = { only = g }, label = g.label) }
+                }
+            }
+            items(rows, key = { (item, g) -> g.name + item.uri }) { (item, g) ->
+                ReleaseRow(item, g, page.released[item.id]?.year) { onOpenItem(item) }
+            }
+        }
+    }
+}
+
+/** "1 uscita", "42 uscite". */
+internal fun releasesLine(n: Int): String = if (n == 1) "1 uscita" else "$n uscite"
+
+/** Una riga dell'elenco intero: copertina a sinistra, titolo, sotto "Album · 1973" (o l'artista, per "Appare in"). */
+@Composable
+private fun ReleaseRow(item: SpItem, group: SpReleaseGroup, year: Int?, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .tapOrSave({ SavedLinks.spotify(item) }, onClick)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Cover(item.image, MaterialTheme.shapes.small, 56.dp, MediaMarks.of(item))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val line = if (group == SpReleaseGroup.APPEARS) item.subtitle else listOfNotNull(group.one, year?.toString()).joinToString(" · ")
+            Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }
 
 /** Un brano popolare: il numero a sinistra, copertina e titolo, la durata a destra. */
@@ -225,9 +314,12 @@ internal fun duration(ms: Long): String {
 
 /** Album o singoli in fila: copertina, titolo, sotto l'anno (o l'artista, per "Appare in"). */
 @Composable
-private fun ReleaseCovers(list: List<SpItem>, onOpen: (SpItem) -> Unit, showArtist: Boolean = false) {
+private fun ReleaseCovers(list: List<SpItem>, onOpen: (SpItem) -> Unit, showArtist: Boolean = false, onAll: (() -> Unit)? = null) {
     val tile = coverTileWidth()
-    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    // Il gruppo cambia coi chip: la fila riparte dall'inizio, dalla più nuova.
+    val state = rememberLazyListState()
+    LaunchedEffect(list) { state.scrollToItem(0) }
+    LazyRow(state = state, contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(list, key = { "rel-" + it.uri }) { album ->
             Column(Modifier.width(tile).bouncyPress(0.96f).clickable { onOpen(album) }) {
                 val year = album.subtitle.substringAfterLast(" · ", "")
@@ -236,5 +328,9 @@ private fun ReleaseCovers(list: List<SpItem>, onOpen: (SpItem) -> Unit, showArti
                 }
             }
         }
+        if (onAll != null && list.size > ALL_AFTER) item(key = "all") { AllTile(tile, "Tutta la discografia", releasesLine(list.size), images = list.take(4).map { it.image }, onClick = onAll) }
     }
 }
+
+/** Con poche uscite la fila basta da sola; oltre, in fondo c'è la discografia intera. */
+private const val ALL_AFTER = 6

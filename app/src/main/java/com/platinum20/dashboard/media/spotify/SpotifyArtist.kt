@@ -23,15 +23,67 @@ data class SpArtistPage(
     val followers: Long,
     val genres: List<String>,
     val popular: List<SpItem>,
+    /** Ogni gruppo è completo e va dal più nuovo (1.494). */
     val albums: List<SpItem>,
     val singles: List<SpItem>,
+    val compilations: List<SpItem> = emptyList(),
     val appearsOn: List<SpItem>,
+    /** Il giorno d'uscita di ogni uscita sopra (per id): mette in ordine l'elenco intero. */
+    val released: Map<String, LocalDate> = emptyMap(),
 )
+
+/** I gruppi della discografia, nell'ordine dei chip; [label] è anche il tipo scritto sotto il titolo nell'elenco intero. */
+enum class SpReleaseGroup(val label: String, val one: String) {
+    ALBUM("Album", "Album"),
+    SINGLE("Singoli e EP", "Singolo"),
+    COMPILATION("Raccolte", "Raccolta"),
+    APPEARS("Appare in", "Appare in");
+
+    fun of(page: SpArtistPage): List<SpItem> = when (this) {
+        ALBUM -> page.albums
+        SINGLE -> page.singles
+        COMPILATION -> page.compilations
+        APPEARS -> page.appearsOn
+    }
+}
 
 object SpotifyArtist {
     /** Quanti brani popolari si vedono prima di "Altri". */
     const val POPULAR_SHORT = 5
     const val POPULAR_MAX = 10
+
+    /** Le pagine di `artists/{id}/albums` sono da 10 per le app personali (2026). */
+    const val PAGE = 10
+    /** Oltre non serve: nessun artista vero ne ha di più, e ogni pagina è una richiesta. */
+    const val RELEASES_MAX = 500
+    /** "Appare in" per i grandi nomi sono migliaia di raccolte altrui: le più recenti bastano. */
+    const val APPEARS_MAX = 200
+    const val PARALLEL = 4
+
+    /** Gli offset delle pagine dopo la prima: [total] uscite, al massimo [max]. */
+    fun nextOffsets(total: Int, page: Int, max: Int): List<Int> =
+        (page until minOf(total, max) step page).toList()
+
+    /**
+     * Le pagine di `artists/{id}/albums` messe insieme: dalla più nuova (Spotify non lo garantisce tra pagine e
+     * gruppi), ognuna una volta, senza la stessa uscita ripetuta per un altro mercato (stesso titolo, stessa data).
+     */
+    fun releases(pages: List<JSONObject?>): List<Pair<SpItem, LocalDate?>> =
+        pages.asSequence()
+            .flatMap { it?.optJSONArray("items").objects().asSequence() }
+            .mapNotNull { json -> SpotifyApi.parseItem(json)?.let { it to json.optString("release_date") } }
+            .distinctBy { (item, _) -> item.id }
+            .distinctBy { (item, day) -> item.title.lowercase().trim() + "|" + day }
+            .map { (item, day) -> item to date(day) }
+            .sortedByDescending { (_, day) -> day ?: LocalDate.MIN }
+            .toList()
+
+    /** Tutta la discografia in un elenco solo, dalla più nuova, col gruppo di ognuna ("Tutta la discografia"). */
+    fun everything(page: SpArtistPage, only: SpReleaseGroup? = null): List<Pair<SpItem, SpReleaseGroup>> =
+        SpReleaseGroup.entries.filter { it != SpReleaseGroup.APPEARS && (only == null || it == only) }
+            .flatMap { g -> g.of(page).map { it to g } }
+            .distinctBy { it.first.id }
+            .sortedByDescending { (item, _) -> page.released[item.id] ?: LocalDate.MIN }
 
     /** La foto più grande di un artista (Spotify le dà dalla più grande). */
     fun photo(json: JSONObject?): String =
