@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** 1.498 (Antonio): brani nelle playlist e playlist nuove; si propongono solo quelle dove Spotify fa scrivere. */
+/** 1.500 (Antonio): brani nelle playlist e playlist nuove; si propongono solo quelle dove Spotify fa scrivere. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class SpotifyPlaylistEditTest {

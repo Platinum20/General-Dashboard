@@ -25,12 +25,18 @@ class MuteCaptionsTest {
     }
 
     @Test
-    fun picksOwnItalianFirst() {
+    fun picksOriginalLanguageFirst() {
         val itTr = YtSubtitle("it", "Italiano (tradotti)", "u?a=1&tlang=it", auto = true)
         val en = YtSubtitle("en", "Inglese", "u?en", auto = false)
         val itAuto = YtSubtitle("it", "Italiano (automatici)", "u?it", auto = true)
+        val jaAuto = YtSubtitle("ja", "Giapponese (originale, automatici)", "u?ja", auto = true, original = true)
+        val ja = YtSubtitle("ja", "Giapponese (originale)", "u?jam", auto = false, original = true)
+        // Mai l'italiano solo perché è italiano: vince l'originale, scritto a mano prima dell'automatico.
+        assertEquals(jaAuto, MuteCaptions.pick(listOf(itTr, en, itAuto, jaAuto)))
+        assertEquals(ja, MuteCaptions.pick(listOf(itAuto, jaAuto, ja)))
+        // Senza lingua originale nota: mai una traduzione, prima quelli scritti a mano.
         assertEquals(en, MuteCaptions.pick(listOf(itTr, en)))
-        assertEquals(itAuto, MuteCaptions.pick(listOf(en, itAuto)))
+        assertEquals(en, MuteCaptions.pick(listOf(en, itAuto)))
         assertNull(MuteCaptions.pick(emptyList()))
     }
 }

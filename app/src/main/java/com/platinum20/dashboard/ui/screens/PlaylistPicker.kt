@@ -32,7 +32,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 /**
- * Mettere un brano in una playlist di Spotify, o crearne una (1.498). Tieni premuto un brano › "Aggiungi a una
+ * Mettere un brano in una playlist di Spotify, o crearne una (1.500). Tieni premuto un brano › "Aggiungi a una
  * playlist": sale il fumetto con le tue playlist come chip e "Nuova playlist"; il nome si scrive nel dialogo di
  * [PlaylistNameLayer], disegnato una volta sola sopra tutte le schermate.
  */

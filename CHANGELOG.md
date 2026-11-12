@@ -1,11 +1,23 @@
 # Changelog
 
-## 1.498.0
+## 1.500.0
 **Musica: crea playlist e aggiungi brani**
 - Tieni premuto un brano di Spotify (in una lista, in una playlist o nel player) e scegli "Aggiungi a una playlist": compaiono le tue playlist, tocca quella giusta. La prima è l'ultima che hai usato
 - Dallo stesso fumetto "Nuova playlist" ne crea una col brano già dentro: scrivi solo il nome. È privata
 - In Musica (il tastino con l'orologio) c'è "Nuova playlist" in cima, per crearne una vuota
 - Se un brano è già nella playlist te lo dice invece di metterlo due volte
+## 1.499.0
+**YouTube: sottotitoli e titoli nella lingua del video**
+- Quando i sottotitoli si accendono da soli (volume a zero) il video non diventa più nero un attimo: continua senza ricaricarsi
+- I sottotitoli di default sono nella lingua originale del video: prima quelli scritti dal canale, poi quelli automatici. Mai l'italiano tradotto, a meno che il video non sia in italiano
+- Tra i sottotitoli c'è sempre anche la lingua originale, segnata «(originale)», oltre a italiano e inglese
+- Titolo e descrizione del video sono quelli originali, non la traduzione automatica di YouTube
+
+## 1.498.0
+**Calendario e Per dopo: tocca la card, tieni premuta una cosa**
+- Toccando la card Calendario in Home, anche sul titolo, si apre il calendario intero, come Per dopo apre il suo archivio
+- Tenendo premuto un evento o una cosa nella card Calendario si apre il fumetto con le sue azioni rapide (apri, condividi, rimanda, elimina)
+- Lo stesso nella card Per dopo: tenendo premuta una cosa da fare, una nota o un pacco arrivano le sue azioni (fatto, fissa, condividi, elimina)
 
 ## 1.497.0
 **Media: Video sono le tue iscrizioni, Musica solo raccolte**

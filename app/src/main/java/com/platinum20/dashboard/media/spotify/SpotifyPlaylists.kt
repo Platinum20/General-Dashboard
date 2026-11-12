@@ -2,7 +2,7 @@ package com.platinum20.dashboard.media.spotify
 
 import org.json.JSONObject
 
-/** Le regole pure per creare playlist e metterci brani (1.498, Antonio: "aggiungere i brani alle playlist e creare playlist"). */
+/** Le regole pure per creare playlist e metterci brani (1.500, Antonio: "aggiungere i brani alle playlist e creare playlist"). */
 object SpotifyPlaylists {
     /** Quante playlist entrano come chip nel fumetto: oltre, il fumetto diventerebbe una pagina. */
     const val MAX_CHIPS = 12

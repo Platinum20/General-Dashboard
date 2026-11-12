@@ -94,13 +94,26 @@ object YtText {
     val subtitleLanguages = listOf("it" to "Italiano", "en" to "Inglese")
 
     /**
-     * Sottotitoli da offrire: solo italiano e inglese. Se il video non ne ha in una delle due,
-     * YouTube li traduce da un'altra traccia (tlang), segnati «(tradotti)».
+     * Sottotitoli da offrire: prima quelli nella lingua originale del video (Antonio, 1.498: di default
+     * sempre l'originale, mai una traduzione), poi italiano e inglese. Se il video non ne ha in una delle
+     * due, YouTube li traduce dalla traccia originale (tlang), segnati «(tradotti)».
+     * [original] = lingua dell'audio originale; se manca si deduce dall'unica traccia automatica (la
+     * trascrizione di YouTube è sempre nella lingua parlata).
      */
-    fun pickSubtitles(all: List<YtSubtitle>): List<YtSubtitle> {
-        val source = all.minByOrNull { it.auto }
-        return subtitleLanguages.flatMap { (code, name) ->
-            val own = all.filter { it.language.substringBefore('-').lowercase() == code }
+    fun pickSubtitles(all: List<YtSubtitle>, original: String? = null): List<YtSubtitle> {
+        val base = { lang: String -> lang.substringBefore('-').lowercase() }
+        val orig = original?.takeIf { it.isNotBlank() }?.let(base)
+            ?: all.filter { it.auto }.map { base(it.language) }.distinct().singleOrNull()
+        val originals = all.filter { orig != null && base(it.language) == orig }
+            .sortedBy { it.auto }
+            .distinctBy { it.auto }
+            .map {
+                val name = languageName(orig!!)
+                it.copy(label = if (it.auto) "$name (originale, automatici)" else "$name (originale)", original = true)
+            }
+        val source = originals.firstOrNull() ?: all.minByOrNull { it.auto }
+        val others = subtitleLanguages.filter { (code, _) -> code != orig }.flatMap { (code, name) ->
+            val own = all.filter { base(it.language) == code }
                 .sortedBy { it.auto }
                 .distinctBy { it.auto }
                 .map { it.copy(label = if (it.auto) "$name (automatici)" else name) }
@@ -108,5 +121,19 @@ object YtText {
                 listOfNotNull(source?.let { YtSubtitle(code, "$name (tradotti)", it.url + "&tlang=$code", auto = true) })
             }
         }
+        return originals + others
     }
+
+    /** Nome della lingua in italiano, con la maiuscola ("Giapponese"). */
+    fun languageName(code: String): String {
+        subtitleLanguages.firstOrNull { it.first == code }?.let { return it.second }
+        val name = java.util.Locale.forLanguageTag(code).getDisplayLanguage(java.util.Locale.ITALIAN)
+        return name.ifBlank { code }.replaceFirstChar { it.titlecase(java.util.Locale.ITALIAN) }
+    }
+
+    /** Il video con titolo e descrizione originali al posto di quelli tradotti (null o vuoti = si tiene quello che c'è). */
+    fun original(stream: YtStream, title: String?, description: String?): YtStream = stream.copy(
+        title = title?.takeIf { it.isNotBlank() } ?: stream.title,
+        description = description?.takeIf { it.isNotBlank() } ?: stream.description,
+    )
 }

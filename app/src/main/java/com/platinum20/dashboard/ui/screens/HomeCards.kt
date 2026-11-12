@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -160,6 +159,9 @@ internal fun CalendarCard(
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
 ) {
     val open = rememberDueOpen()
+    val inApp = LocalInAppNav.current
+    // Tenendo premuta una riga: il fumetto con le sue azioni, uguale alla pagina intera (Antonio, 2026-11-12).
+    val rowActions = rememberRowActions { e -> inApp?.openEvent?.invoke(e) }
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
@@ -193,9 +195,10 @@ internal fun CalendarCard(
         ticks = withExtras(shown.map { (_, row) -> row.task?.takeIf { it.tickable }?.let { tickTask(it.id) } }, extras.map { it.second }),
         // Toccando una riga si apre proprio quella cosa (le sue azioni sono nel suo "Altro"); il resto della card apre il calendario intero.
         rows = withExtras(shown.map { (_, row) -> { if (row.today) onOpenAll() else open(row) } }, extras.map { it.third }),
-        // Tenendo premuto, ovunque sulla card: il calendario intero (lo scorrimento dei giorni non è piaciuto, 1.482).
-        // Le azioni di una riga stanno nel suo "Altro".
+        // Tenendo premuto fuori dalle righe (o su OGGI): il calendario intero (lo scorrimento dei giorni non è piaciuto, 1.482).
         onLongOpen = onOpenAll,
+        // Tenendo premuta una cosa: il fumetto delle sue azioni (Antonio, 2026-11-12); le abitudini aprono il loro.
+        rowLongs = withExtras(shown.map { (_, row) -> if (row.today) null else ({ rowActions(row) }) }, extras.map { it.third }),
         // Niente più "Altre N a novembre" in fondo (Antonio, 2026-11-12): quante cose ci sono da oggi a fine mese,
         // a destra del titolo come in Per dopo.
         count = calendarMonthCount(all.map { it.second }, today).takeIf { it > 0 }?.toString(),
@@ -257,11 +260,13 @@ fun TimelineCard(
 ) {
     val haptic = rememberHaptic()
     // Il titolo dentro la card, non più un'etichetta fuori (1.404, punto 7 B).
-    CanvasCard(modifier.fillMaxWidth()) {
+    // Toccando la card ovunque, anche sul titolo, si apre la sezione (come Per dopo, Antonio 2026-11-12).
+    val longOpen = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }
+    CanvasCard(modifier.fillMaxWidth(), onClick = onOpen, onLongClick = longOpen) {
         if (title != null) CardTitle(title, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
-        Column(Modifier.combinedClickable(onClick = onOpen, onLongClick = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }).padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
+        Column(Modifier.padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,

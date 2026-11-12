@@ -1,8 +1,10 @@
 package com.platinum20.dashboard
 
+import com.platinum20.dashboard.media.youtube.player.YtStream
 import com.platinum20.dashboard.media.youtube.player.YtSubtitle
 import com.platinum20.dashboard.media.youtube.player.YtText
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.OffsetDateTime
 
@@ -61,5 +63,31 @@ class YtTextTest {
         assertEquals(listOf("Italiano (tradotti)", "Inglese", "Inglese (automatici)"), picked.map { it.label })
         assertEquals("u/de&tlang=it", picked.first().url)
         assertEquals(emptyList<YtSubtitle>(), YtText.pickSubtitles(emptyList()))
+    }
+
+    @Test fun sottotitoliNellaLinguaOriginalePrima() {
+        val all = listOf(
+            YtSubtitle("de", "de", "u/de", auto = false),
+            YtSubtitle("ja", "ja", "u/ja-a", auto = true),
+            YtSubtitle("en", "en", "u/en", auto = false),
+        )
+        // La trascrizione automatica dice la lingua parlata: giapponese.
+        val picked = YtText.pickSubtitles(all)
+        assertEquals(listOf("ja", "it", "en"), picked.map { it.language })
+        assertEquals("Giapponese (originale, automatici)", picked.first().label)
+        assertTrue(picked.first().original)
+        assertEquals("u/ja-a&tlang=it", picked[1].url)
+        // Video inglese: l'inglese originale non si ripete in fondo.
+        val english = YtText.pickSubtitles(all, original = "en-US")
+        assertEquals(listOf("Inglese (originale)", "Italiano (tradotti)"), english.map { it.label })
+        assertEquals("u/en&tlang=it", english[1].url)
+    }
+
+    @Test fun titoloOriginaleAlPostoDelTradotto() {
+        val s = YtStream(id = "x", title = "Titolo tradotto", channel = "c", thumbnail = "", videoUrl = null, audioUrl = "a", muxedUrl = null, hlsUrl = null, height = 0, description = "Descrizione tradotta")
+        val fixed = YtText.original(s, "Original title", null)
+        assertEquals("Original title", fixed.title)
+        assertEquals("Descrizione tradotta", fixed.description)
+        assertEquals(s, YtText.original(s, " ", ""))
     }
 }
