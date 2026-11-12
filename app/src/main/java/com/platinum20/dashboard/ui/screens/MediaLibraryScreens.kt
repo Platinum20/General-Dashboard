@@ -40,6 +40,7 @@ import com.platinum20.dashboard.capture.SavedLink
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.rounded.Bookmark
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.filled.Favorite
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpotifyAuth
