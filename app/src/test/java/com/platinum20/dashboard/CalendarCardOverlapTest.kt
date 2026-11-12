@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -85,21 +86,23 @@ class CalendarCardOverlapTest {
     @Test
     fun laCardDopoNonCopreIlCalendario() {
         var full by mutableStateOf(false)
+        var page by mutableStateOf(false)
         compose.setContent {
             val d = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(d.density, 1.3f)) {
                 GeneralDashboardTheme(AppTheme.CANVAS) {
                     SharedTransitionLayout(Modifier.fillMaxSize()) {
-                        AnimatedVisibility(visible = true) {
+                        androidx.compose.animation.AnimatedContent(page, label = "pagina") { onPage ->
                             CompositionLocalProvider(LocalSharedScope provides this@SharedTransitionLayout, LocalRouteScope provides this) {
-                                LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                if (onPage) Box(Modifier.sharedItem(SharedKeys.CALENDAR, rounded = true).fillMaxSize())
+                                else LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     items(listOf("cal", "sim"), key = { it }) { key ->
                                         Box(Modifier.animateItem(placementSpec = null)) {
                                             if (key == "cal") TimelineCard(
                                                 null, entries(full), onOpen = {}, empty = "Niente",
                                                 modifier = Modifier.testTag("cal").sharedItem(SharedKeys.CALENDAR, rounded = true),
                                                 footer = "Altre 3 a novembre",
-                                            ) else Box(Modifier.testTag("sim").sharedItem(SharedKeys.SIM, rounded = true).fillMaxWidth().height(200.dp))
+                                            ) else Box(Modifier.testTag("sim").sharedItem(SharedKeys.SIM, rounded = true).fillMaxWidth().height(200.dp).background(androidx.compose.ui.graphics.Color.Red))
                                         }
                                     }
                                 }
@@ -130,5 +133,21 @@ class CalendarCardOverlapTest {
         full = false
         compose.mainClock.advanceTimeBy(1_000)
         check("dinuovo")
+        // Calendario aperto e chiuso; mentre torna arrivano i dati e la card cresce.
+        page = true
+        compose.mainClock.advanceTimeBy(1_000)
+        page = false
+        compose.mainClock.advanceTimeBy(120)
+        full = true
+        compose.mainClock.advanceTimeBy(2_000)
+        check("ritorno")
+        // Indietro interrotto a metà, poi la card si accorcia.
+        page = true
+        compose.mainClock.advanceTimeBy(150)
+        page = false
+        compose.mainClock.advanceTimeBy(2_000)
+        full = false
+        compose.mainClock.advanceTimeBy(1_000)
+        check("interrotto")
     }
 }
