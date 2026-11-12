@@ -489,6 +489,9 @@ private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode)
 fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
     val saved = rememberSavedMedia(video = false)
     val (entries, podcasts) = rememberPerTe()
+    val context = LocalContext.current
+    val played by SpotifyStore.played.collectAsState()
+    LaunchedEffect(Unit) { SpotifyStore.refreshListened() }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val openPodcast: (com.platinum20.dashboard.media.podcast.Podcast?) -> Unit = {
         PodcastOpen.set(it)
@@ -553,6 +556,13 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
                         wide = false, image = "", title = "Radio", author = "Preferite e più ascoltate", mark = MediaMark(MediaType.RADIO),
                         click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.RADIO) },
                     )
+                }
+                // I brani ascoltati stanno qui, nella cronologia della musica, non nella fila (1.496, Antonio).
+                if (played.isNotEmpty()) {
+                    item(key = "played-h") { SectionHeader("Ascoltati di recente") }
+                    items(played, key = { (t, at) -> "p-" + t.uri + at.toEpochMilli() }) { (track, _) ->
+                        TrackLine(track, onClick = { playTracks(context, played.map { it.first }, track) })
+                    }
                 }
             }
         }

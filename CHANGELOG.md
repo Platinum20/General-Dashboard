@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.497.0
+**Media: Video sono le tue iscrizioni, Musica solo raccolte**
+- La fila Video è il feed delle tue iscrizioni in orizzontale: i video nuovi dei canali che segui, dal più recente, e arrivando in fondo se ne caricano altri. Quelli iniziati restano in Riprendi e nella cronologia
+- La fila Musica ha solo raccolte: mix, album, playlist, i brani che ti piacciono, podcast, artisti e radio. I singoli brani ascoltati sono nella cronologia della musica, il tastino con l'orologio
+- I mix hanno copertine nuove: un mosaico dei loro brani nel colore del mix, con il nome grande sopra. Ogni mix ha sempre il suo colore
+
 ## 1.496.0
 **YouTube: i video ripartono anche col volume a zero**
 - Col telefono silenzioso i video di YouTube dicevano "Video non riproducibile": i sottotitoli accesi da soli bloccavano il video. Ora si caricano nel modo giusto

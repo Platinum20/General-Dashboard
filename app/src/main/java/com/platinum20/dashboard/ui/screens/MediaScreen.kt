@@ -159,7 +159,6 @@ fun MediaScreen(
     val hero = resumable.firstOrNull()?.takeIf { now == null }
     // In Continua solo i video (1.488, Antonio): la musica riparte da Per te.
     val savedVideos = rememberSavedMedia(video = true)
-    val continueList = resumable.filter { it != hero && (it.kind == ResumeKind.YOUTUBE || it.kind == ResumeKind.VIDEO) }.take(12)
     // Aprendo Media si rilegge anche la cronologia di YouTube: "Riprendi" è l'ultima cosa vista, anche sul PC.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         Accounts.refresh()
@@ -200,6 +199,12 @@ fun MediaScreen(
     LaunchedEffect(Unit) { PodcastStore.loadLatest() }
     // Nel feed niente Short (verticali, non stanno tra i video grandi); le live solo se non le escludi.
     val subVideos = if (youTubeOn) pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos else emptyList()
+    val subsMore by YouTubeStore.subscriptionsMore.collectAsState()
+    val subsEnded by YouTubeStore.subscriptionsEnded.collectAsState()
+    val subsRow = remember(subVideos, subsMore) {
+        (MediaShelves.newestFirst(subVideos) + pickFeed(subsMore, hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos)
+            .distinctBy { it.id }
+    }
     val tips = if (youTubeOn) pickFeed(recommended.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos else emptyList()
     val listened = remember(history) { history.filter { it.kind == ResumeKind.PODCAST }.map { it.key }.toSet() }
     val feed = remember(subVideos, latestEpisodes.data, tips, since, listened) {
@@ -274,8 +279,9 @@ fun MediaScreen(
                     onOpenAll = { onOpenRoute(Routes.MUSIC_ALL) },
                 )
             }
-            // "Video" (1.488, Antonio): i video iniziati, dal più recente; in fondo tutta la cronologia (non c'è più altrove).
-            if (continueList.isNotEmpty() || youTubeOn || savedVideos.isNotEmpty()) {
+            // "Video" (1.496, Antonio: "il feed iscrizioni ma orizzontale"): i video dei canali a cui sei iscritto, dal più
+            // nuovo, che continuano a caricarsi arrivando in fondo. I video iniziati restano in Riprendi e nella cronologia.
+            if (youTubeOn || savedVideos.isNotEmpty()) {
                 item(key = "continue-h") {
                     // Il titolo apre Scopri (la Home di YouTube), il tastino a destra la cronologia (1.493, Antonio).
                     OpenableHeader("Video", { onOpenRoute(if (youTubeOn) Routes.MEDIA_NEWS else Routes.YOUTUBE_FEED) }, Modifier.padding(horizontal = 16.dp)) {
@@ -287,8 +293,11 @@ fun MediaScreen(
                         if (savedVideos.isNotEmpty()) item(key = "saved") {
                             SavedTile(coverTileWidth(), savedVideos.size, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
-                        itemsIndexed(continueList, key = { _, r -> "${r.kind}-${r.key}" }) { _, item -> ContinueTile(item, onClick = { openResume(item) }) }
-                        // Niente tessera Cronologia in fondo (1.493, Antonio): si apre toccando il titolo Video.
+                        items(subsRow, key = { "sub-" + it.id }) { v -> VideoTile(v, coverTileWidth()) { onPlayVideo(v.watchUrl) } }
+                        if (youTubeOn && subsRow.isNotEmpty() && !subsEnded) item(key = "subs-more") {
+                            LaunchedEffect(subsRow.size) { YouTubeStore.loadMoreSubscriptions(context) }
+                            Placeholder(coverTileWidth() * 16f / 9f, coverTileWidth(), shape = MaterialTheme.shapes.medium)
+                        }
                     }
                 }
             }
@@ -403,7 +412,7 @@ internal fun AllTile(
 
 /** Quattro copertine in un quadrato 2×2, come le playlist di Spotify. */
 @Composable
-private fun CoverMosaic(images: List<String>, modifier: Modifier) {
+internal fun CoverMosaic(images: List<String>, modifier: Modifier) {
     Column(modifier) {
         images.chunked(2).forEach { row ->
             Row(Modifier.weight(1f).fillMaxWidth()) {
