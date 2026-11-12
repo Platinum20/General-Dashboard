@@ -1,5 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
+import com.platinum20.dashboard.media.coverImage
 import com.platinum20.dashboard.capture.SavedLink
 import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.Routes
@@ -371,15 +372,47 @@ private fun NewsRow(feed: com.platinum20.dashboard.media.MediaFeedRows, onPlayVi
         items(feed.fresh, key = { "f-" + it.key }) { Entry(it) }
         if (feed.fresh.isNotEmpty() && older.isNotEmpty()) item(key = "feed-marker") { VisitMarkTile(height) }
         items(older, key = { "o-" + it.key }) { Entry(it) }
-        item(key = "feed-all") { AllTile(height, "Tutte le novità", "${feed.fresh.size + feed.older.size} in tutto", onOpenAll) }
+        item(key = "feed-all") { AllTile(height, "Tutte le novità", "${feed.fresh.size + feed.older.size} in tutto", onClick = onOpenAll) }
     }
 }
 
 /** L'ultima tessera di una fila: apre la pagina con tutto (stessa altezza delle copertine). */
 @Composable
-internal fun AllTile(height: androidx.compose.ui.unit.Dp, title: String, line: String, onClick: () -> Unit) {
-    MediaTile(height, wide = false, image = "", title = title, author = line, date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
-        Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(32.dp))
+internal fun AllTile(
+    height: androidx.compose.ui.unit.Dp,
+    title: String,
+    line: String,
+    /** Le copertine di quello che c'è dentro (1.493, Antonio: "sono senza art"): una sola riempie, da 4 in su un mosaico. */
+    images: List<String> = emptyList(),
+    type: MediaType? = null,
+    onClick: () -> Unit,
+) {
+    val art = images.filter { it.isNotBlank() }.distinct()
+    MediaTile(
+        height, wide = false, image = if (art.size in 1..3) art.first() else "", title = title, author = line, date = null,
+        mark = type?.let { MediaMark(it) }, click = Modifier.clickable(onClick = onClick),
+    ) {
+        when {
+            art.size >= 4 -> CoverMosaic(art.take(4), Modifier.matchParentSize())
+            art.isEmpty() && type == null -> Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(32.dp),
+            )
+        }
+        if (art.size >= 4) MediaMarkOverlay(type?.let { MediaMark(it) })
+    }
+}
+
+/** Quattro copertine in un quadrato 2×2, come le playlist di Spotify. */
+@Composable
+private fun CoverMosaic(images: List<String>, modifier: Modifier) {
+    Column(modifier) {
+        images.chunked(2).forEach { row ->
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                row.forEach { url ->
+                    AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxHeight())
+                }
+            }
+        }
     }
 }
 
@@ -561,7 +594,7 @@ private fun QueueLine(next: String, more: Int, onClick: () -> Unit) {
 private fun ContinueTile(item: ResumeItem, onClick: () -> Unit) {
     val type = MediaMarks.type(item.kind)
     MediaTile(
-        coverTileWidth(), wide = type == MediaType.VIDEO, image = item.image, title = item.title, author = item.subtitle,
+        coverTileWidth(), wide = type == MediaType.VIDEO, image = item.coverImage(), title = item.title, author = item.subtitle,
         date = null, mark = MediaMarks.of(item.kind, item.durationMs), round = type == MediaType.RADIO,
         click = Modifier.tapOrSave({ SavedLink.Media(item) }, onClick),
     ) {
@@ -611,9 +644,9 @@ private val ResumeItem.listened: Boolean
 private fun ResumeThumb(item: ResumeItem, size: Int) {
     Box(Modifier.size(size.dp).clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center) {
         IconTile(item.icon(), item.accent(), size = size.dp, iconSize = (size / 2).dp)
-        if (item.image.isNotBlank()) {
+        if (item.coverImage().isNotBlank()) {
             AsyncImage(
-                model = item.image,
+                model = item.coverImage(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(size.dp),

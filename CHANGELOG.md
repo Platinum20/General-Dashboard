@@ -5,6 +5,8 @@
 - Il tastino Scopri sta sulla stessa riga del titolo, tutto a destra, in Musica e in Video
 - La Cronologia che si apre da Video mostra solo i video che hai guardato, senza i brani di Spotify
 - Tolta la tessera "Vedi tutta la cronologia" in fondo alla fila Video: la cronologia si apre toccando il titolo "Video"
+- "I tuoi podcast" e "Radio" hanno le copertine dei tuoi podcast e i loghi delle tue radio, non più un quadrato grigio
+- I video del telefono mostrano un fotogramma del video come copertina
 
 ## 1.492.0
 **Media: due file, Musica e Video, ognuna col suo Scopri**

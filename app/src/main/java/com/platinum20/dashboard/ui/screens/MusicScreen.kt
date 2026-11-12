@@ -239,6 +239,7 @@ internal object PodcastOpen {
 internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOpenPodcast: (Podcast?) -> Unit, onOpenRadio: () -> Unit, onOpenLiked: () -> Unit, onDiscover: () -> Unit, onOpenSaved: () -> Unit, onOpenAll: () -> Unit) {
     val saved = rememberSavedMedia(video = false)
     val (entries, podcasts) = rememberPerTe()
+    val radioLogos = rememberRadioLogos()
     val tile = coverTileWidth()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Il titolo apre la versione completa, in verticale (1.492, Antonio); il tastino Scopri resta a destra.
@@ -272,10 +273,13 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
                 }
             }
             item(key = "podcast-all") {
-                AllTile(tile, "I tuoi podcast", if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno") { onOpenPodcast(null) }
+                AllTile(
+                    tile, "I tuoi podcast", if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno",
+                    onClick = { onOpenPodcast(null) }, images = podcasts.map { it.artwork }, type = MediaType.PODCAST,
+                )
             }
-            // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio).
-            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", onOpenRadio) }
+            // Radio è un tasto in fondo a Per te, non più una sezione (1.488, Antonio); coi loghi delle tue radio (1.493).
+            item(key = "radio-all") { AllTile(tile, "Radio", "Preferite e più ascoltate", images = radioLogos, type = MediaType.RADIO, onClick = onOpenRadio) }
         }
     }
 }
@@ -325,6 +329,16 @@ internal fun rememberPerTe(): Pair<List<PerTe>, List<Podcast>> {
         }
     }
     return entries to podcasts
+}
+
+/** I loghi delle radio preferite e ascoltate di recente, per la copertina della tessera Radio (1.493). */
+@Composable
+private fun rememberRadioLogos(): List<String> {
+    val context = LocalContext.current
+    remember { com.platinum20.dashboard.media.radio.RadioStore.init(context) }
+    val favorites by com.platinum20.dashboard.media.radio.RadioStore.favorites.collectAsState()
+    val recent by com.platinum20.dashboard.media.radio.RadioStore.recent.collectAsState()
+    return remember(favorites, recent) { (favorites + recent).map { it.logo }.filter { it.isNotBlank() }.distinct() }
 }
 
 /** Una tessera di Per te: un mix, una playlist o un album di Spotify, un podcast che segui. */
