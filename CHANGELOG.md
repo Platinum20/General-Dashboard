@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.526.0
+**Media chiede molto meno a Spotify**
+- Aprire Media non scarica più le nuove uscite di tutti gli artisti che segui (una richiesta per artista): arrivano solo in Scopri e nel Release Radar, una volta al giorno
+- I tuoi ascolti si rileggono al massimo ogni ora e la libreria ogni sei ore, invece che ogni dieci minuti; quello che cambi dall'app si aggiorna subito
+- Le foto degli artisti ascoltati: solo le tre che si vedono nella fila Musica
+- Le Top 50 si rifanno una volta a settimana invece che ogni giorno
+
 ## 1.525.0
 **Pagina dell'artista leggera: niente più blocchi di Spotify**
 - Aprire un artista ora chiede a Spotify 6 cose invece di decine (per un grande nome anche più di 50): l'artista, i popolari e i primi 10 di album, singoli, raccolte e "Appare in"

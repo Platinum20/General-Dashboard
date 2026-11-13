@@ -105,7 +105,8 @@ object MadeStore {
 
         val day = today.toString()
         if (dailyKey != day) runCatching { buildDaily(token, home, pool, today) }.onSuccess { dailyKey = day; publish(); save() }
-        if (LastFm.ready && chartsKey != day) runCatching { buildCharts(token) }.onSuccess { chartsKey = day; publish(); save() }
+        // Le classifiche una volta a settimana (1.526): ogni volta sono fino a 100 ricerche su Spotify.
+        if (LastFm.ready && chartsKey != monday) runCatching { buildCharts(token) }.onSuccess { chartsKey = monday; publish(); save() }
     }
 
     private suspend fun buildRadar(token: String, home: SpHome, today: LocalDate) {
