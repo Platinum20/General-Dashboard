@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.513.0
+## 1.515.0
 **Impostazioni del video rifatte**
 - La rotella sul video apre un fumetto di vetro con quattro righe: Qualità, Velocità, Sottotitoli e Ripeti. Ogni riga dice già com'è impostata
 - Tocchi una riga e sotto compaiono le sue scelte, tutte su una fila che scorre di lato; si riapre sull'ultima che hai cambiato

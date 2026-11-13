@@ -79,7 +79,7 @@ import com.platinum20.dashboard.media.youtube.player.YtQuality
 import com.platinum20.dashboard.media.youtube.player.YtSubtitle
 
 /**
- * Le impostazioni del video (1.513, Antonio ha scelto la proposta A): un fumetto di vetro con quattro righe Canvas
+ * Le impostazioni del video (1.515, Antonio ha scelto la proposta A): un fumetto di vetro con quattro righe Canvas
  * (Qualità, Velocità, Sottotitoli, Ripeti). Una riga alla volta si apre e mostra le sue scelte su UNA fila che scorre
  * di lato (niente tasti su due righe). In verticale sta in basso e il video resta in vista; in orizzontale sta a destra.
  */
