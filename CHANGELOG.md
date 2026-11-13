@@ -1,11 +1,33 @@
 # Changelog
 
-## 1.503.0
+## 1.508.0
 **Mini player a linguetta: non copre più la pagina**
 - Lancia il mini player a destra o a sinistra: si ritira in una linguetta tonda sul bordo, con la copertina e l'anello del tempo che scorre
 - Anche scorrendo una pagina il mini player si ritira da solo nella linguetta
 - Tocca la linguetta (o tirala verso il centro) per riaprirlo
 - Per chiuderlo portalo giù, sotto lo schermo: una calamita lo prende con una vibrazione e lasciandolo si chiude
+
+## 1.507.0
+**Musica: gestisci le tue playlist**
+- Nella pagina di una tua playlist, il tasto "…" accanto a Riproduci apre: Modifica, Riordina e togli brani, Elimina
+- Modifica: nome, descrizione e privata o pubblica, salvati anche su Spotify
+- Riordina: trascini un brano dalla maniglia; toccandolo lo togli o lo porti in cima o in fondo, con "Annulla"
+- Elimina playlist, con "Annulla" se ci ripensi; le playlist di altri che segui si possono togliere dalla libreria
+- Sotto il titolo ora c'è anche la descrizione della playlist
+
+## 1.506.0
+**Media: la coda dentro la card in alto**
+- Niente più sezione "In coda" sotto Riprendi: la card in alto si allunga con "Dopo: <prossimo> · altri N", come quando suona qualcosa
+- Un tocco su quella riga apre la coda intera, per musica e video allo stesso modo
+
+## 1.505.0
+**Archivio di Per dopo: tieni premuta una cosa fatta**
+- Nell'archivio di Per dopo, tenendo premuta una cosa già fatta si apre il fumetto in basso con le sue azioni: rimettila da fare, condividila o eliminala
+
+## 1.503.0
+**Media: video in grande nella fila Video**
+- La fila Video usa le schede grandi della lista verticale: anteprima larga quasi quanto lo schermo, titolo su due righe, canale e data sotto; la scheda successiva spunta a destra
+- La tessera Salvati mostra le copertine di quello che hai salvato, con il segnalibro nell'angolo
 
 ## 1.502.0
 **Spotify riparte quando non risponde**

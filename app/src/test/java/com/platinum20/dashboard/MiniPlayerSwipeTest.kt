@@ -23,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Il mini player lanciato di lato si ritira nella linguetta sul bordo (1.503), anche mentre lo si sposta
+ * Il mini player lanciato di lato si ritira nella linguetta sul bordo (1.508), anche mentre lo si sposta
  * su e giù; meno di così torna al suo posto. Si chiude solo portandolo giù, sotto lo schermo (calamita).
  */
 @RunWith(RobolectricTestRunner::class)

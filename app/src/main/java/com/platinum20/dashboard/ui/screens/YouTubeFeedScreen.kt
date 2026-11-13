@@ -494,7 +494,12 @@ private fun PlaylistVideos(playlist: YtPlaylist, onPlay: (String) -> Unit) {
 }
 
 @Composable
-fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() -> Unit) {
+fun <T> FeedList(
+    state: Loadable<T>,
+    empty: String,
+    listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    content: LazyListScope.() -> Unit,
+) {
     val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
     when {
         state.data == null && state.loading -> PlaceholderList(Modifier.padding(top = 12.dp), label = "Carico i video")
@@ -502,6 +507,7 @@ fun <T> FeedList(state: Loadable<T>, empty: String, content: LazyListScope.() ->
             Text(state.error, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.error)
         }
         else -> LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {

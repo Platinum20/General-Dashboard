@@ -79,7 +79,7 @@ import kotlin.math.roundToInt
  * podcast): una barra di vetro larga quanto la barra in basso con il +, con copertina (o il video
  * stesso), titolo, indietro, play/pausa, avanti e il tempo che scorre. Si trascina e si aggancia solo
  * in alto o in basso (sopra la barra delle sezioni); un tocco apre il player grande.
- * Dal 1.503 ([MiniTuck]): lanciato di lato (o scorrendo una pagina) si ritira in una linguetta sul bordo,
+ * Dal 1.508 ([MiniTuck]): lanciato di lato (o scorrendo una pagina) si ritira in una linguetta sul bordo,
  * che si riapre con un tocco o tirandola; si chiude portandolo giù, sotto lo schermo, dove la calamita lo prende.
  */
 @Composable

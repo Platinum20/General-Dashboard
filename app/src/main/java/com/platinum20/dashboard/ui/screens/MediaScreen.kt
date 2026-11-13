@@ -253,11 +253,17 @@ fun MediaScreen(
             }
             hero?.let { last ->
                 item(key = "resume") {
-                    MediaResumeCard(last, onClick = { openResume(last) }, modifier = Modifier.padding(horizontal = 16.dp))
+                    // La coda sta sempre nel blocco in alto (1.504, Antonio): niente sezione "In coda" a parte.
+                    MediaResumeCard(
+                        last, onClick = { openResume(last) }, modifier = Modifier.padding(horizontal = 16.dp),
+                        next = queue.upcoming.firstOrNull()?.item?.title,
+                        more = (queue.upcoming.size - 1).coerceAtLeast(0),
+                        onQueue = { queueOpen = true },
+                    )
                 }
             }
-            // La coda sta nel blocco quando qualcosa suona; da ferma, sotto "Riprendi".
-            if (now == null && queue.upcoming.isNotEmpty()) item(key = "queue") {
+            // Solo se non c'è niente da riprendere la coda resta da sola, per non perderla.
+            if (now == null && hero == null && queue.upcoming.isNotEmpty()) item(key = "queue") {
                 QueuePeek(
                     onOpenQueue = { queueOpen = true },
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -289,14 +295,19 @@ fun MediaScreen(
                     }
                 }
                 item(key = "continue") {
+                    // Schede grandi come nella lista verticale (1.503, Antonio), una per volta con la successiva che spunta.
+                    val big = bigVideoWidth()
+                    val bigHeight = big * 9f / 16f
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (savedVideos.isNotEmpty()) item(key = "saved") {
-                            SavedTile(coverTileWidth(), savedVideos.size, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
+                            SavedTile(bigHeight, savedVideos, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
-                        items(subsRow, key = { "sub-" + it.id }) { v -> VideoTile(v, coverTileWidth()) { onPlayVideo(v.watchUrl) } }
+                        items(subsRow, key = { "sub-" + it.id }) { v ->
+                            androidx.compose.foundation.layout.Box(Modifier.width(big)) { VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                        }
                         if (youTubeOn && subsRow.isNotEmpty() && !subsEnded) item(key = "subs-more") {
                             LaunchedEffect(subsRow.size) { YouTubeStore.loadMoreSubscriptions(context) }
-                            Placeholder(coverTileWidth() * 16f / 9f, coverTileWidth(), shape = MaterialTheme.shapes.medium)
+                            Placeholder(big, bigHeight, shape = MaterialTheme.shapes.large)
                         }
                     }
                 }
@@ -498,8 +509,18 @@ internal fun MediaNowCard(
 
 /** La stessa card quando nulla suona: si riprende dal punto esatto in cui eri rimasto. */
 @Composable
-internal fun MediaResumeCard(item: ResumeItem, onClick: () -> Unit, modifier: Modifier = Modifier, hero: Boolean = true) {
+internal fun MediaResumeCard(
+    item: ResumeItem,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    hero: Boolean = true,
+    /** Come in [MediaNowCard]: "Dopo: titolo · altri N" in fondo al blocco, un tocco apre la coda. */
+    next: String? = null,
+    more: Int = 0,
+    onQueue: (() -> Unit)? = null,
+) {
     MediaRowCard(
+        footer = if (next != null && onQueue != null) ({ QueueLine(next, more, onQueue) }) else null,
         hero = hero,
         label = if (item.unfinished) "Riprendi" else if (item.listened) "Ascolta di nuovo" else "Guarda di nuovo",
         title = item.title,

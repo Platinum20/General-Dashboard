@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.ui.screens
 
 /**
- * Le regole del mini player a linguetta (1.503, Antonio): lanciato a destra o a sinistra (o appena una
+ * Le regole del mini player a linguetta (1.508, Antonio): lanciato a destra o a sinistra (o appena una
  * pagina scorre) si ritira in una linguetta tonda sul bordo, così non copre la pagina; si chiude solo
  * portandolo giù, sotto lo schermo, dove una calamita lo prende con una vibrazione. Pure, provate nei test.
  */

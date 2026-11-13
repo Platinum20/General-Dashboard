@@ -8,7 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.503: lancio di lato = linguetta, giù sotto lo schermo = calamita che chiude, scorrendo si ritira. */
+/** 1.508: lancio di lato = linguetta, giù sotto lo schermo = calamita che chiude, scorrendo si ritira. */
 class MiniTuckTest {
     private val w = 1_000f
 

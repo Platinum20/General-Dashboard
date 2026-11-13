@@ -282,6 +282,94 @@ object SpotifyStore {
         return Result.success(made)
     }
 
+    // --- Gestire una playlist (1.507) ---
+
+    /** Il tuo id di Spotify, letto una volta: decide quali playlist si possono cambiare. */
+    private var myId: String? = null
+
+    /** I dettagli già letti, per pagina: dopo una modifica restano quelli nuovi anche se Spotify tarda. */
+    private val infos = HashMap<String, SpPlaylistInfo>()
+
+    /** Dettagli della playlist e se è tua (o collaborativa): null se Spotify non li dà (playlist di altri). */
+    suspend fun playlistInfo(playlistId: String): Pair<SpPlaylistInfo, Boolean>? {
+        val result = modifyCall { token ->
+            val me = myId ?: SpotifyApi.myId(token).also { if (it.isNotBlank()) myId = it }
+            val info = infos[playlistId] ?: SpotifyApi.playlistInfo(token, playlistId)
+            info?.let { it to SpotifyPlaylists.canEdit(it, me) }
+        }
+        result.data?.first?.let { infos[playlistId] = it }
+        return result.data
+    }
+
+    /** È nella tua libreria (si può togliere): le tue, quelle che segui. */
+    fun inLibrary(playlistId: String): Boolean = _playlists.value.data.orEmpty().any { it.id == playlistId }
+
+    /** Nome, descrizione e privata nuovi; risponde null se è andata, altrimenti l'errore da mostrare. */
+    suspend fun updatePlaylist(before: SpPlaylistInfo, name: String, description: String, public: Boolean): String? {
+        val body = SpotifyPlaylists.changes(before, name, description, public) ?: return null
+        val result = modifyCall { token -> SpotifyApi.updatePlaylist(token, before.id, body) }
+        if (result.error != null) return result.error
+        val after = before.copy(
+            name = body.optString("name", before.name),
+            description = if (body.has("description")) body.getString("description") else before.description,
+            public = if (body.has("public")) body.getBoolean("public") else before.public,
+        )
+        infos[before.id] = after
+        // Il nome nuovo si vede subito nella fila Musica e nel titolo della pagina.
+        _playlists.update { l -> l.copy(data = l.data?.map { if (it.id == before.id) it.copy(title = after.name) else it }) }
+        return null
+    }
+
+    /** Toglie la playlist dalla tua libreria: per Spotify è "eliminare". Null = fatto. */
+    suspend fun deletePlaylist(playlist: SpItem): String? {
+        val result = modifyCall { token -> SpotifyApi.unfollowPlaylist(token, playlist.id) }
+        if (result.error != null) return result.error
+        _playlists.update { l -> l.copy(data = l.data?.filterNot { it.id == playlist.id }) }
+        if (lastPlaylist == playlist.id) lastPlaylist = null
+        return null
+    }
+
+    /** "Annulla" dopo [deletePlaylist]: torna com'era, al suo posto nella fila. */
+    suspend fun restorePlaylist(playlist: SpItem): String? {
+        val result = modifyCall { token -> SpotifyApi.followPlaylist(token, playlist.id) }
+        if (result.error != null) return result.error
+        _playlists.update { l -> l.copy(data = l.data?.let { d -> if (d.any { it.id == playlist.id }) d else listOf(playlist) + d }) }
+        refreshPlaylists(force = true)
+        return null
+    }
+
+    private fun setTracks(playlistId: String, tracks: List<SpItem>) {
+        _children.update { m -> m + (playlistId to (m[playlistId] ?: Loadable()).copy(data = tracks)) }
+    }
+
+    /** Toglie [track] da [playlist]; la riga sparisce subito, torna se Spotify dice di no. Null = fatto. */
+    suspend fun removeFromPlaylist(playlist: SpItem, track: SpItem): String? {
+        val before = _children.value[playlist.id]?.data.orEmpty()
+        setTracks(playlist.id, SpotifyPlaylists.without(before, track.uri))
+        val result = modifyCall { token -> SpotifyApi.removeFromPlaylist(token, playlist.id, track.uri) }
+        if (result.error != null) setTracks(playlist.id, before)
+        return result.error
+    }
+
+    /** "Annulla" dopo [removeFromPlaylist]: il brano torna alla riga [at]. */
+    suspend fun putBack(playlist: SpItem, track: SpItem, at: Int): String? {
+        val now = _children.value[playlist.id]?.data.orEmpty()
+        setTracks(playlist.id, SpotifyPlaylists.restored(now, track, at))
+        val result = modifyCall { token -> SpotifyApi.insertInPlaylist(token, playlist.id, track.uri, at) }
+        if (result.error != null) setTracks(playlist.id, now)
+        return result.error
+    }
+
+    /** La riga [from] va al posto [to]: in pagina subito, su Spotify dopo; se non riesce torna dov'era. */
+    suspend fun moveInPlaylist(playlist: SpItem, from: Int, to: Int): String? {
+        val before = _children.value[playlist.id]?.data.orEmpty()
+        if (from == to || from !in before.indices || to !in before.indices) return null
+        setTracks(playlist.id, SpotifyPlaylists.moved(before, from, to))
+        val result = modifyCall { token -> SpotifyApi.moveInPlaylist(token, playlist.id, from, SpotifyPlaylists.insertBefore(from, to)) }
+        if (result.error != null) setTracks(playlist.id, before)
+        return result.error
+    }
+
     /**
      * Come [call], ma un 403 qui vuol dire quasi sempre che l'accesso è vecchio e non ha il permesso di
      * modificare le playlist: lo dice, con dove rientrare.
@@ -402,6 +490,8 @@ object SpotifyStore {
         _seenReleases.value = emptySet()
         _playback.value = null
         _touched.value = emptyMap()
+        myId = null
+        infos.clear()
     }
 
     private fun fresh(state: Loadable<*>, maxAge: Long = MAX_AGE) = state.data != null && System.currentTimeMillis() - state.loadedAt < maxAge
