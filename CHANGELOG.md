@@ -1,10 +1,14 @@
 # Changelog
 
-## 1.522.0
+## 1.523.0
 **Spotify non si fa più bloccare per ore**
 - L'app chiedeva troppe cose a Spotify (soprattutto lo stato del brano ogni pochi secondi, anche a schermo spento) e Spotify la bloccava per ore: per questo "riprova tra 8 ore"
 - Ora lo stato si chiede di rado, le liste fatte in casa (Release Radar, Top 50, mix) si rifanno al massimo ogni mezz'ora e c'è un tetto alle richieste, con il play sempre davanti a tutto
 - Se Spotify chiede di aspettare, l'app se lo ricorda anche chiusa e non insiste (insistere allungava il blocco)
+
+## 1.522.0
+**Mini player: la linguetta si aggancia in alto o in basso**
+- Spostata su o giù, la linguetta ora si ferma solo in alto o in basso, a sinistra o a destra, come il mini player normale: niente più posizioni a metà bordo
 
 ## 1.521.0
 **Mini player: entra ed esce dal bordo, e si nasconde solo quando vuoi tu**

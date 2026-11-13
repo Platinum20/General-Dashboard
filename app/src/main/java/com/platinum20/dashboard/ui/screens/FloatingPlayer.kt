@@ -236,7 +236,8 @@ fun FloatingPlayer(
                                 val toRight = MiniTuck.tabSide(center, v.x, maxW)
                                 val newLeft = if (toRight) maxW - tabPx else 0f
                                 val baseY = MiniDock.tabFrac * tabRange
-                                val frac = ((baseY + tabDy.value) / tabRange).coerceIn(0f, 1f)
+                                // Solo in alto o in basso, come la barra (1.522, Antonio): niente posizioni a metà bordo.
+                                val frac = MiniTuck.tabCorner((baseY + tabDy.value) / tabRange, v.y / tabRange)
                                 // Stesso punto sullo schermo, misurato dal nuovo posto: poi scivola lì.
                                 val nx = oldLeft + tabDx.value - newLeft
                                 val ny = baseY + tabDy.value - frac * tabRange
