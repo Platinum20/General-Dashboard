@@ -149,7 +149,7 @@ object SeekStack {
  * con una vibrazione ogni [TICK_MS] e l'anteprima del fotogramma. Pure, così si prova.
  */
 object SeekSwipe {
-    /** Tutta la larghezza del video = tre minuti (1.526, Antonio: un minuto era troppo lento). */
+    /** Tutta la larghezza del video = tre minuti (1.527, Antonio: un minuto era troppo lento). */
     const val SPAN_MS = 180_000L
 
     /** L'ombra dei testi sopra il video al posto della bolla scura. */
@@ -228,7 +228,7 @@ internal fun SeekPreview(
         Text(
             label,
             color = Color.White,
-            // Solo il testo, senza bolla (Antonio, 1.526): l'ombra basta a leggerlo sul video.
+            // Solo il testo, senza bolla (Antonio, 1.527): l'ombra basta a leggerlo sul video.
             style = MaterialTheme.typography.labelLarge.copy(shadow = SeekSwipe.textShadow),
             // Col nome del capitolo può essere lunga: una riga sola, tagliata.
             maxLines = 1,

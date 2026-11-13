@@ -714,7 +714,7 @@ private fun VideoArea(
         if (slowSeek && loadingNow && !firstLoad && swipeAt == null) LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
 
         // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …). Solo il testo, senza bolla
-        // (Antonio, 1.526): un'ombra lo tiene leggibile anche sulle scene chiare.
+        // (Antonio, 1.527): un'ombra lo tiene leggibile anche sulle scene chiare.
         if (seekFlash != 0) {
             Box(
                 Modifier
