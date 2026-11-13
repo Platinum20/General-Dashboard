@@ -65,4 +65,12 @@ class MiniTuckTest {
         assertEquals(76f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 210f, density = 3f, tucked = false), 0f)
         assertEquals(0f, MiniDock.bottomReserveDp(playing = true, atTop = false, tucked = true), 0f)
     }
+
+    @Test
+    fun laLinguettaSiAgganciaSoloInAltoOInBasso() {
+        assertEquals(0f, MiniTuck.tabCorner(0.3f, 0f), 0f)
+        assertEquals(1f, MiniTuck.tabCorner(0.7f, 0f), 0f)
+        assertEquals(0f, MiniTuck.tabCorner(0.8f, -2f), 0f)
+        assertEquals(1f, MiniTuck.tabCorner(0.2f, 2f), 0f)
+    }
 }

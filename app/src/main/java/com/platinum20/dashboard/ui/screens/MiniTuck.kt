@@ -47,4 +47,15 @@ object MiniTuck {
         vx < -1_500f -> false
         else -> centerX > width / 2f
     }
+
+    /**
+     * Dove si aggancia la linguetta lungo il bordo: solo in alto (0) o in basso (1), come la barra (1.522).
+     * Uno scatto su o giù decide; altrimenti la metà dello schermo dove l'hai lasciata.
+     */
+    fun tabCorner(frac: Float, vFracPerSec: Float): Float = when {
+        vFracPerSec < -0.6f -> 0f
+        vFracPerSec > 0.6f -> 1f
+        frac < 0.5f -> 0f
+        else -> 1f
+    }
 }
