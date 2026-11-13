@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.503.0
+**Mini player a linguetta: non copre più la pagina**
+- Lancia il mini player a destra o a sinistra: si ritira in una linguetta tonda sul bordo, con la copertina e l'anello del tempo che scorre
+- Anche scorrendo una pagina il mini player si ritira da solo nella linguetta
+- Tocca la linguetta (o tirala verso il centro) per riaprirlo
+- Per chiuderlo portalo giù, sotto lo schermo: una calamita lo prende con una vibrazione e lasciandolo si chiude
+
 ## 1.502.0
 **Spotify riparte quando non risponde**
 - Se il riproduttore di Spotify si blocca ("non si avvia, riprova"), al play si riaccende da solo e il brano parte, senza chiudere l'app
