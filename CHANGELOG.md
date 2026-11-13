@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.510.0
+**Aggiornamenti: ora arrivano davvero da soli**
+- L'aggiornamento automatico non partiva mai: Canvas si credeva sempre "in uso" per colpa del lettore delle notifiche. Ora si installa da sola quando non la stai usando e non sta suonando niente
+- Se resta occupata per più di un'ora ti arriva comunque l'avviso "tocca per aggiornare"
+- Dopo l'installazione il file scaricato viene cancellato: decine di MB liberati sul telefono
+
 ## 1.509.0
 **Salvati: tieni premuto per metterli in coda**
 - Nei Salvati di Media, tenendo premuto un video, un brano o un episodio si apre il fumetto: Riproduci, Riproduci dopo, Aggiungi alla coda, Togli dai salvati
