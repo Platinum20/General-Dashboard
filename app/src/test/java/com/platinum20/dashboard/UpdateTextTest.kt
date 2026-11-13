@@ -38,4 +38,25 @@ class UpdateTextTest {
         assertEquals("ieri", UpdateText.whenLabel("2026-11-09T20:00:00Z", LocalDate.of(2026, 11, 10), zone))
         assertEquals("oggi", UpdateText.whenLabel("2026-11-10T08:00:00Z", LocalDate.of(2026, 11, 10), zone))
     }
+
+    @Test fun versioneCorta() {
+        assertEquals("1.507", UpdateText.short("1.507.0"))
+        assertEquals("1.507.1", UpdateText.short("1.507.1"))
+    }
+
+    @Test fun dataComeNelCalendario() {
+        assertEquals("oggi 04:17", UpdateText.releaseWhen("2026-11-10T04:17:00Z", now, zone))
+        assertEquals("ieri 23:51", UpdateText.releaseWhen("2026-11-09T23:51:00Z", now, zone))
+        assertEquals("3 nov", UpdateText.releaseWhen("2026-11-03T10:00:00Z", now, zone))
+    }
+
+    @Test fun segnoInstallata() {
+        val v = listOf("1.507.0", "1.503.0", "1.502.0", "1.501.0", "1.500.0")
+        assertEquals(3, UpdateText.newCount(v, "1.501.0"))
+        assertEquals(3, UpdateText.installedIndex(v, "1.501.0"))
+        assertEquals(0, UpdateText.installedIndex(v, "1.507.0"))
+        // Una build di prova non pubblicata: il segno va prima della prima più vecchia.
+        assertEquals(1, UpdateText.installedIndex(v, "1.504.0"))
+        assertEquals(0, UpdateText.installedIndex(v, "1.509.0"))
+    }
 }

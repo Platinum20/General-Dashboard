@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.514.0
+**Aggiornamenti: le versioni su una linea del tempo**
+- In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
+- Sotto, le versioni su una linea come nel Calendario: il segno INSTALLATA separa le nuove da quelle che hai già, più chiare
+- Numeri corti (1.514) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
+- Le note delle versioni uscite insieme a un'altra non si perdono più: compaiono dentro quella successiva
+
 ## 1.513.0
 **Mini player: linguetta sistemata**
 - La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
