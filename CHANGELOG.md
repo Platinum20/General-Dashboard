@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.510.0
+**Mini player: linguetta sistemata**
+- La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
+- Riaprendola, il mini player torna sempre al suo posto (prima a volte restava a metà, mezzo fuori)
+- Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto
+- Vibrazioni più chiare: una quando lo porti oltre metà di lato (lasciandolo va nella linguetta), una quando la calamita lo prende, una alla chiusura e alla riapertura; la linguetta si schiaccia un po' al tocco
+
 ## 1.509.0
 **Salvati: tieni premuto per metterli in coda**
 - Nei Salvati di Media, tenendo premuto un video, un brano o un episodio si apre il fumetto: Riproduci, Riproduci dopo, Aggiungi alla coda, Togli dai salvati

@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -109,12 +110,10 @@ fun FloatingPlayer(
         return
     }
 
-    // Ritirato, la linguetta tocca il bordo dello schermo: niente margine ai lati, se no la sua parte
-    // esterna starebbe fuori dal riquadro e non prenderebbe i tocchi.
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            .padding(horizontal = if (MiniDock.tucked) 0.dp else 16.dp, vertical = 6.dp)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         val density = LocalDensity.current
         val maxH = constraints.maxHeight.toFloat()
@@ -139,6 +138,8 @@ fun FloatingPlayer(
         val x = remember { Animatable(0f) }
         // La calamita in fondo: quando lo prende scatta un po' giù da solo.
         var magnet by remember { mutableStateOf(false) }
+        // Portato oltre metà di lato: lasciandolo va nella linguetta (vibra come la calamita).
+        var tuckArmed by remember { mutableStateOf(false) }
         val pull = remember { Animatable(0f) }
         var closing by remember { mutableStateOf(false) }
         val tucked = MiniDock.tucked
@@ -156,16 +157,18 @@ fun FloatingPlayer(
             }
         }
         // Riaperta dalla linguetta: rientra dal suo lato e salta fuori.
+        // Solo [tucked] come chiave: con altre chiavi l'effetto si riavviava a metà e la barra restava mezza fuori.
         var reopened by remember { mutableStateOf(false) }
-        LaunchedEffect(tucked, reopened) {
-            if (!tucked && reopened) {
-                reopened = false
-                x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.5f)
-                launch { x.animateTo(0f, Motion.lively()) }
-                appear.snapTo(0.6f)
-                appear.animateTo(1f, Motion.lively())
-            }
+        LaunchedEffect(tucked) {
+            if (tucked || !reopened) return@LaunchedEffect
+            reopened = false
+            x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.35f)
+            appear.snapTo(0.7f)
+            launch { appear.animateTo(1f, Motion.lively()) }
+            x.animateTo(0f, Motion.lively())
         }
+        // Rientrando in pagina dopo un ritiro (anche dallo scorrimento) la barra non resta mai spostata di lato.
+        LaunchedEffect(tucked) { if (tucked) { magnet = false; pull.snapTo(0f) } }
 
         if (tucked) {
             val guess = with(density) { 70.dp.toPx() }
@@ -176,7 +179,7 @@ fun FloatingPlayer(
                 yPx = { y.value * (maxH - bar).coerceAtLeast(1f) + bar / 2f },
                 maxW = maxW,
                 onOpen = {
-                    view.haptic(Haptic.SNAP)
+                    view.haptic(Haptic.CONFIRM)
                     reopened = true
                     MiniDock.tucked = false
                 },
@@ -230,12 +233,14 @@ fun FloatingPlayer(
                         onDragCancel = {
                             dragging = false
                             magnet = false
+                            tuckArmed = false
                             scope.launch { pull.animateTo(0f, Motion.lively()) }
                             scope.launch { x.animateTo(0f, Motion.gesture()) }
                             scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
                         },
                         onDragEnd = {
                             dragging = false
+                            tuckArmed = false
                             val velocity = tracker.calculateVelocity()
                             val vx = velocity.x
                             when (MiniTuck.release(magnet, dx, vx, velocity.y, maxW)) {
@@ -250,11 +255,12 @@ fun FloatingPlayer(
                                     }
                                 }
                                 MiniTuck.Release.TUCK_LEFT, MiniTuck.Release.TUCK_RIGHT -> {
-                                    view.haptic(Haptic.SNAP)
+                                    view.haptic(Haptic.CONFIRM)
                                     val dir = if (dx >= 0) 1f else -1f
                                     scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
                                     scope.launch {
-                                        x.animateTo(dir * maxW * 1.1f, Motion.fling(maxW * 1.1f - kotlin.math.abs(x.value), vx))
+                                        // Fino al bordo, alla velocità del dito: lì salta fuori la linguetta.
+                                        x.animateTo(dir * maxW * 0.9f, Motion.fling(maxW * 0.9f - kotlin.math.abs(x.value), vx))
                                         MiniDock.tuckRight = dir > 0f
                                         MiniDock.tucked = true
                                     }
@@ -284,6 +290,11 @@ fun FloatingPlayer(
                         // Di lato e su e giù insieme: si decide solo lasciandola.
                         dx += amount.x
                         curY = (curY + amount.y / range).coerceIn(-0.03f, bottom)
+                        val side = SwipeAway.armed(dx, maxW)
+                        if (side != tuckArmed && !magnet) {
+                            tuckArmed = side
+                            view.haptic(if (side) Haptic.THRESHOLD else Haptic.TICK)
+                        }
                         val held = MiniTuck.magnet((curY - 1f).coerceAtLeast(0f) * range, density.density)
                         if (held != magnet) {
                             magnet = held
@@ -329,7 +340,7 @@ fun FloatingPlayer(
 }
 
 /**
- * La linguetta sul bordo: la copertina tonda con l'anello del tempo che scorre, mezza dentro lo schermo.
+ * La linguetta sul bordo: la copertina tonda con l'anello del tempo che scorre, tutta dentro lo schermo.
  * Un tocco o tirarla verso il centro riapre il mini player.
  */
 @Composable
@@ -344,10 +355,13 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
     val open by androidx.compose.runtime.rememberUpdatedState(onOpen)
     val show = remember { Animatable(0f) }
     LaunchedEffect(Unit) { show.animateTo(1f, Motion.lively()) }
-    val tabW = 58.dp
+    // Tonda e tutta dentro lo schermo, allineata al bordo della barra: niente mezza fuori (Antonio, 1.509).
+    val tabW = 56.dp
     val tabH = 56.dp
-    val shape = if (right) androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
-    else androidx.compose.foundation.shape.RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+    val shape = CircleShape
+    val press = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val pressed by press.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(if (pressed) 0.92f else 1f, Motion.lively(), label = "tab")
     // I tocchi su un riquadro semplice (senza vetro né scala), il disegno dentro.
     Box(
         Modifier
@@ -372,7 +386,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
                 }
             }
             // Un vero clic (non solo un tocco a mano): così lo apre anche TalkBack.
-            .clickable(interactionSource = null, indication = null, onClickLabel = "Riapri") { open() },
+            .clickable(interactionSource = press, indication = null, onClickLabel = "Riapri") { open() },
     ) {
     Surface(
         shape = shape,
@@ -381,17 +395,13 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                scaleX = 0.6f + 0.4f * show.value
-                scaleY = 0.6f + 0.4f * show.value
+                scaleX = (0.4f + 0.6f * show.value) * pressScale
+                scaleY = (0.4f + 0.6f * show.value) * pressScale
                 alpha = show.value.coerceIn(0f, 1f)
-                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (right) 1f else 0f, 0.5f)
             }
             .glass(shape),
     ) {
-        Box(
-            Modifier.padding(start = if (right) 7.dp else 0.dp, end = if (right) 0.dp else 7.dp),
-            contentAlignment = if (right) Alignment.CenterStart else Alignment.CenterEnd,
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
                 Box(
                     Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
