@@ -79,9 +79,11 @@ internal object PlaylistPicker {
     }
 }
 
-/** Il dialogo "Nuova playlist": un campo per il nome e Crea. Va messo una volta, accanto agli altri fumetti. */
+/** Il dialogo "Nuova playlist" (e "Modifica playlist"): un campo per il nome e Crea. Va messo una volta, accanto agli altri fumetti. */
 @Composable
 internal fun PlaylistNameLayer() {
+    // Lo stesso posto disegna anche "Modifica playlist" (1.502): niente da aggiungere in MainActivity.
+    PlaylistEditLayer()
     val naming = PlaylistPicker.naming ?: return
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
