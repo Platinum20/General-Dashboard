@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.512.0
+**Aggiornamenti: le versioni su una linea del tempo**
+- In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
+- Sotto, le versioni su una linea come nel Calendario: il segno INSTALLATA separa le nuove da quelle che hai già, più chiare
+- Numeri corti (1.512) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
+- Le note delle versioni uscite insieme a un'altra non si perdono più: compaiono dentro quella successiva
+
 ## 1.511.0
 **Spotify parte subito, senza bloccarsi**
 - Se tocchi un brano e dopo pochi secondi non suona ancora, l'app lo rimanda da sola; se serve riaccende anche il riproduttore. Prima restava fermo finché non toccavi di nuovo
