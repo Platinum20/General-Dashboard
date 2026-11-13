@@ -10,10 +10,19 @@ class SpotifyLimit(private val clock: () -> Long = System::currentTimeMillis) {
     @Volatile
     private var until = 0L
 
+    /** Dove ricordare l'attesa: riaprendo l'app non si torna a bussare (ogni 429 in più la allunga). */
+    var onChange: ((Long) -> Unit)? = null
+
+    /** L'attesa salvata l'ultima volta (già passata = niente). */
+    fun restore(savedUntil: Long) {
+        until = maxOf(until, savedUntil)
+    }
+
     /** Spotify ha risposto 429 con questa intestazione Retry-After (secondi). */
     fun hit(retryAfter: String?) {
         val wait = retryAfterMs(retryAfter)
         until = maxOf(until, clock() + wait)
+        onChange?.invoke(until)
     }
 
     /** Millisecondi ancora da aspettare prima di poter chiedere di nuovo (0 = via libera). */
@@ -39,5 +48,36 @@ class SpotifyLimit(private val clock: () -> Long = System::currentTimeMillis) {
             }
             return "Spotify chiede di aspettare: troppe richieste, riprova tra $wait"
         }
+    }
+}
+
+/**
+ * Quante chiamate si fanno in [windowMs]: Spotify conta le richieste dell'app in una finestra di 30
+ * secondi e, se si esagera, blocca tutto per ore (anche il play). Le chiamate di contorno (liste,
+ * Release Radar, foto degli artisti) hanno un tetto più basso, così il play trova sempre posto.
+ */
+class CallBudget(
+    private val windowMs: Long = 30_000,
+    private val max: Int = 40,
+    private val backgroundMax: Int = 20,
+) {
+    private val all = ArrayDeque<Long>()
+    private val background = ArrayDeque<Long>()
+
+    /** 0 = via libera (la chiamata è contata); altrimenti quanti millisecondi aspettare prima di riprovare. */
+    @Synchronized
+    fun reserve(now: Long, isBackground: Boolean): Long {
+        while (all.isNotEmpty() && now - all.first() >= windowMs) all.removeFirst()
+        while (background.isNotEmpty() && now - background.first() >= windowMs) background.removeFirst()
+        if (all.size >= max) return windowMs - (now - all.first())
+        if (isBackground && background.size >= backgroundMax) return windowMs - (now - background.first())
+        all.addLast(now)
+        if (isBackground) background.addLast(now)
+        return 0
+    }
+
+    companion object {
+        /** I comandi del riproduttore (play, pausa, stato) passano davanti a tutto il resto. */
+        fun isBackground(path: String): Boolean = !path.startsWith("me/player")
     }
 }

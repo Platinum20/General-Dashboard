@@ -39,3 +39,40 @@ class SpotifyLimitTest {
         assertTrue(SpotifyLimit.message(3 * 3600_000L).endsWith("tra 3 ore"))
     }
 }
+
+class SpotifyCallBudgetTest {
+    @Test
+    fun backgroundCallsLeaveRoomForThePlayer() {
+        val budget = com.platinum20.dashboard.media.spotify.CallBudget(windowMs = 30_000, max = 4, backgroundMax = 2)
+        assertEquals(0L, budget.reserve(0, true))
+        assertEquals(0L, budget.reserve(1_000, true))
+        // Il terzo di contorno aspetta che il primo esca dalla finestra.
+        assertEquals(28_000L, budget.reserve(2_000, true))
+        // Il play passa lo stesso.
+        assertEquals(0L, budget.reserve(2_000, false))
+        assertEquals(0L, budget.reserve(3_000, false))
+        // Pieno per tutti.
+        assertEquals(26_000L, budget.reserve(4_000, false))
+        // Passata la finestra si riparte.
+        assertEquals(0L, budget.reserve(31_000, true))
+    }
+
+    @Test
+    fun playerPathsArePriority() {
+        assertEquals(false, com.platinum20.dashboard.media.spotify.CallBudget.isBackground("me/player/play?device_id=x"))
+        assertEquals(true, com.platinum20.dashboard.media.spotify.CallBudget.isBackground("search?q=x"))
+    }
+
+    @Test
+    fun savedWaitSurvivesRestart() {
+        var now = 0L
+        val limit = SpotifyLimit { now }
+        var saved = 0L
+        limit.onChange = { saved = it }
+        limit.hit("3600")
+        assertEquals(3_600_000L, saved)
+        val again = SpotifyLimit { now }
+        again.restore(saved)
+        assertEquals(3_600_000L, again.left())
+    }
+}
