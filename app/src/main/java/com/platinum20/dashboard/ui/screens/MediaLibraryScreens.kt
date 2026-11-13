@@ -15,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
@@ -419,14 +421,30 @@ internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.c
  * la tessera sparisce quando non c'è niente). Stessa forma della fila: quadrata in Musica, larga in Video.
  */
 @Composable
-internal fun SavedTile(height: androidx.compose.ui.unit.Dp, count: Int, wide: Boolean, onClick: () -> Unit) {
-    MediaTile(height, wide = wide, image = "", title = "Salvati · $count", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
-        androidx.compose.material3.Icon(
+internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, wide: Boolean, onClick: () -> Unit) {
+    // Le copertine di quello che hai salvato (1.503, Antonio: "metti un'icona per salvati"): una riempie, da 4 un
+    // mosaico; sopra, dove le altre hanno il tipo, il segnalibro. Senza copertine resta il segnalibro grande.
+    val art = savedArt(saved.map { it.item.coverImage() })
+    MediaTile(height, wide = wide, image = if (art.size in 1..3) art.first() else "", title = "Salvati · ${saved.size}", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {
+        if (art.size >= 4) CoverMosaic(art.take(4), Modifier.matchParentSize())
+        if (art.isEmpty()) androidx.compose.material3.Icon(
             androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null,
             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp),
-        )
+        ) else Box(
+            Modifier.align(Alignment.TopStart).padding(6.dp).size(22.dp)
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.66f), androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = "Salvati",
+                tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp),
+            )
+        }
     }
 }
+
+/** Le copertine utili per la tessera Salvati: senza vuote e senza doppioni, nell'ordine dei salvati. */
+internal fun savedArt(images: List<String>): List<String> = images.filter { it.isNotBlank() }.distinct()
 
 /**
  * "Salvati" (1.490): le cose salvate per dopo, una sotto l'altra dalla più recente. Un tocco la apre ferma, tenendo
