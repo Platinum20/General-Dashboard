@@ -420,6 +420,15 @@ object YtResolver {
             ?.let { YtStoryboard(it.urls, it.frameWidth, it.frameHeight, it.framesPerPageX, it.framesPerPageY, it.totalCount, it.durationPerFrame) }
     }.getOrNull()
 
+    /** Il canale di un video, letto dalla sua pagina: per "Vai al canale" quando la tessera non lo conosce (1.518). */
+    suspend fun channelOf(videoId: String): com.platinum20.dashboard.media.youtube.YtChannel? = withContext(Dispatchers.IO) {
+        val info = streamInfo(videoId)
+        val id = channelId(info.uploaderUrl.orEmpty()) ?: return@withContext null
+        com.platinum20.dashboard.media.youtube.YtChannel(
+            id, info.uploaderName.orEmpty(), info.uploaderAvatars.maxByOrNull { it.height }?.url.orEmpty(),
+        )
+    }
+
     /**
      * Il controllo "non sei un bot" di YouTube su reti condivise (4G) spesso passa al secondo colpo:
      * un solo nuovo tentativo poco dopo, poi l'errore. Mai a raffica, se no il blocco si allunga.

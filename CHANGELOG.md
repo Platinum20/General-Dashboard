@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.520.0
+**Tieni premuto: Vai all'artista e Vai al canale**
+- Tenendo premuto un brano o un album di Spotify c'è "Vai all'artista", che apre la sua pagina nell'app
+- Tenendo premuto un video di YouTube c'è "Vai al canale", che apre la pagina del canale
+- Funziona nelle file di Media, nei Salvati, nella coda, nella ricerca e nella cronologia
+
 ## 1.519.0
 **Cerca: artisti e canali tra i risultati**
 - Cercando un nome ora compaiono in cima anche gli artisti di Spotify e i canali di YouTube, con gli iscritti

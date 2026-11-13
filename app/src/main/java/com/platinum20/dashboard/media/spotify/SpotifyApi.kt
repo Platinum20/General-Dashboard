@@ -468,6 +468,17 @@ object SpotifyApi {
     fun parseArtistAlbums(json: JSONObject?): List<SpItem> =
         json?.optJSONArray("items").objects().mapNotNull { it.toItem() }
 
+    /**
+     * Il primo artista di un brano o di un album ([kind] "track" o "album"), per "Vai all'artista" del tieni premuto (1.518):
+     * le tessere conoscono solo l'uri, l'artista si chiede a Spotify al tocco.
+     */
+    suspend fun firstArtist(token: String, kind: String, id: String): SpItem? =
+        firstArtistOf(request(token, "${kind}s/$id"))
+
+    /** Il primo artista dentro un brano o un album come arriva dalle API. */
+    fun firstArtistOf(json: JSONObject?): SpItem? =
+        json?.optJSONArray("artists").objects().firstNotNullOfOrNull { it.toItem()?.takeIf { a -> a.kind == SpKind.ARTIST } }
+
     /** Un elemento singolo come arriva dalle API (brano, album, playlist…), o null se non si riconosce. */
     fun parseItem(json: JSONObject): SpItem? = json.toItem()
 

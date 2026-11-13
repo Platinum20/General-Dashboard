@@ -226,6 +226,7 @@ internal fun savedMediaActions(context: android.content.Context, later: SavedLin
                 }
             },
             seed?.let { BubbleAction(Icons.Rounded.PlaylistAdd, "Aggiungi a una playlist", detail = "Una delle tue o una nuova") { PlaylistPicker.open(context, it) } },
+            goToCreatorAction(context, item, openRoute),
             forgetAction(later.note, item.title),
         ).toTypedArray(),
     )
