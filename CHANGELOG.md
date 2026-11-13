@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.529.0
+**Artista e Radio col nuovo aspetto**
+- Artista: come album e playlist, la foto tonda al centro, il nome, follower e generi sotto, poi Casuale · Riproduci · Altro; i Popolari sono righe col numero, il titolo e la durata
+- Album: il nome dell'artista sotto il titolo si tocca e apre la sua pagina
+- Radio: in cima le tue radio in loghi tondi, poi "In onda adesso" con quello che trasmette la radio che suona, poi i generi da toccare per restringere le più ascoltate in Italia
+- Tenendo premuta una radio ora c'è anche "Svegliami con questa radio", all'ora della sveglia che hai già scelto
+
 ## 1.528.0
 **Nuovo aspetto per tredici zone dell'app**
 - Home: in Adesso ci sono le prossime sei ore; le cose da sistemare (accessi scaduti, agenda) sono una riga arancione sotto il titolo invece che in fondo

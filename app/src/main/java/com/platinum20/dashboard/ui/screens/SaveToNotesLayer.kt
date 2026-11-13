@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -319,6 +320,27 @@ private fun MediaPageRows(media: ResumeItem, done: () -> Unit) {
                 haptic(Haptic.CONFIRM)
                 done()
                 com.platinum20.dashboard.media.radio.RadioStore.toggleFavorite(station)
+            }
+            RowDivider()
+            // Sveglia con questa radio (1.529, pagina Radio scelta C): all'ora già scelta, Annulla rimette com'era.
+            // Letta dai prefs prima: senza, la sveglia salvata verrebbe sovrascritta da quella vuota.
+            remember { com.platinum20.dashboard.media.radio.RadioAlarm.init(context) }
+            val alarm by com.platinum20.dashboard.media.radio.RadioAlarm.settings.collectAsStateWithLifecycle()
+            val already = alarm.enabled && alarm.station?.id == station.id
+            BubbleRow(
+                icon = Icons.Rounded.Alarm,
+                title = if (already) "Ti sveglia questa radio" else "Svegliami con questa radio",
+                detail = (if (alarm.weekdaysOnly) "Dal lunedì al venerdì alle " else "Ogni giorno alle ") + alarm.timeLabel,
+            ) {
+                haptic(Haptic.CONFIRM)
+                done()
+                if (!already) {
+                    val before = alarm
+                    com.platinum20.dashboard.media.radio.RadioAlarm.update(context, alarm.copy(enabled = true, station = station))
+                    CaptureFeedback.tell(context, "Sveglia alle ${alarm.timeLabel} con ${station.name}", Icons.Rounded.Alarm) {
+                        com.platinum20.dashboard.media.radio.RadioAlarm.update(context, before)
+                    }
+                }
             }
             RowDivider()
         } else Unit
