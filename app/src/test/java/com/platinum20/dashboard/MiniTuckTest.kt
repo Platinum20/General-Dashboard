@@ -36,27 +36,27 @@ class MiniTuckTest {
 
     @Test
     fun calamitaSoloOltreLaSoglia() {
-        assertFalse(MiniTuck.magnet(MiniTuck.MAGNET_DP * 3f - 1f, 3f))
-        assertTrue(MiniTuck.magnet(MiniTuck.MAGNET_DP * 3f + 1f, 3f))
+        assertFalse(MiniTuck.magnet(MiniTuck.MAGNET_DP * 3f - 1f, MiniTuck.MAGNET_DP * 3f))
+        assertTrue(MiniTuck.magnet(MiniTuck.MAGNET_DP * 3f + 1f, MiniTuck.MAGNET_DP * 3f))
     }
 
     @Test
-    fun scorrendoGiuSiAccumulaTornandoSuSiAzzera() {
-        var t = 0f
-        t = MiniTuck.scrolled(t, -40f)
-        t = MiniTuck.scrolled(t, -40f)
-        assertEquals(80f, t, 0f)
-        assertFalse(MiniTuck.scrollTucks(t, 2f))
-        t = MiniTuck.scrolled(t, -40f)
-        assertTrue(MiniTuck.scrollTucks(t, 2f))
-        assertEquals(0f, MiniTuck.scrolled(t, 10f), 0f)
+    fun senzaBarraLaSogliaStaNelloSpazioDisponibile() {
+        // Con la barra sotto: soglia piena.
+        assertEquals(MiniTuck.MAGNET_DP * 3f, MiniTuck.threshold(400f * 3f, 3f), 0f)
+        // Senza barra (60 dp fino al bordo): si raggiunge prima del bordo.
+        val t = MiniTuck.threshold(60f * 3f, 3f)
+        assertTrue(t < 60f * 3f)
+        // Mai meno del minimo, anche senza spazio.
+        assertEquals(MiniTuck.MIN_MAGNET_DP * 3f, MiniTuck.threshold(0f, 3f), 0f)
     }
 
     @Test
-    fun laLinguettaSiTiraVersoIlCentro() {
-        assertTrue(MiniTuck.pulledOut(-100f, right = true, density = 2f))
-        assertFalse(MiniTuck.pulledOut(100f, right = true, density = 2f))
-        assertTrue(MiniTuck.pulledOut(100f, right = false, density = 2f))
+    fun laLinguettaVaSulBordoPiuVicinoOLanciato() {
+        assertTrue(MiniTuck.tabSide(800f, 0f, 1_000f))
+        assertFalse(MiniTuck.tabSide(300f, 0f, 1_000f))
+        assertFalse(MiniTuck.tabSide(800f, -3_000f, 1_000f))
+        assertTrue(MiniTuck.tabSide(100f, 3_000f, 1_000f))
     }
 
     @Test

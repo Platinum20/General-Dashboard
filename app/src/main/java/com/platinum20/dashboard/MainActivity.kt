@@ -1288,8 +1288,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
-        val miniTuck = com.platinum20.dashboard.ui.screens.rememberMiniTuckOnScroll()
-        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection).nestedScroll(miniTuck)) {
+        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
         // Gli elementi condivisi fra le pagine (riga → scheda, card Calendario → pagina): vedi SharedItems.kt.
         androidx.compose.animation.SharedTransitionLayout(Modifier.fillMaxSize()) {
         CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalSharedScope provides this) {
@@ -1703,6 +1702,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
     }
     // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.517: fuori dallo Scaffold, che disegna la barra sopra il suo contenuto).
+    // Fuori dallo Scaffold manca il suo colore del testo: senza, il titolo veniva scuro su scuro (1.521).
+    CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
     FloatingPlayer(
         currentRoute = currentRoute,
         onExpand = { playing ->
@@ -1712,6 +1713,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         modifier = Modifier.padding(scaffoldPadding),
     )
+    }
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
     com.platinum20.dashboard.ui.screens.QueueLayer()

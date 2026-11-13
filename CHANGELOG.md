@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.521.0
+**Mini player: entra ed esce dal bordo, e si nasconde solo quando vuoi tu**
+- Lanciato di lato, la linguetta tonda entra scivolando dal bordo invece di comparire sul posto
+- Toccandola rientra nel bordo e il mini player ne esce scorrendo fino al suo posto
+- La linguetta ora si trascina: su e giù lungo il bordo (anche in alto), direttamente sull'altro bordo, o giù sulla X rossa per chiudere
+- Scorrendo le pagine il mini player non si ritira più da solo: va nel bordo solo se lo lanci tu
+- Nelle pagine senza barra in basso ora si chiude: basta portarlo fino al fondo dello schermo, dove compare la X rossa (con la barra la X sta sopra la barra, sul fondo)
+- Sistemato il titolo del mini player, che nella 1.517 era scuro su scuro e quasi illeggibile
+
 ## 1.520.0
 **Tieni premuto: Vai all'artista e Vai al canale**
 - Tenendo premuto un brano o un album di Spotify c'è "Vai all'artista", che apre la sua pagina nell'app
