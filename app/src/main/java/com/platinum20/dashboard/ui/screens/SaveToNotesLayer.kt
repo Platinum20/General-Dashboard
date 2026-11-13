@@ -14,6 +14,7 @@ import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -287,7 +288,8 @@ private fun MediaPageRows(media: ResumeItem, done: () -> Unit) {
             }
             RowDivider()
         }
-        ResumeKind.RADIO -> media.station?.let { station ->
+        ResumeKind.RADIO -> if (media.station != null) {
+            val station = media.station
             val favorites by com.platinum20.dashboard.media.radio.RadioStore.favorites.collectAsStateWithLifecycle()
             val fav = favorites.any { it.id == station.id }
             BubbleRow(
@@ -300,8 +302,9 @@ private fun MediaPageRows(media: ResumeItem, done: () -> Unit) {
                 com.platinum20.dashboard.media.radio.RadioStore.toggleFavorite(station)
             }
             RowDivider()
-        }
-        ResumeKind.PODCAST -> media.feed.takeIf { it.isNotBlank() }?.let { feed ->
+        } else Unit
+        ResumeKind.PODCAST -> if (media.feed.isNotBlank()) {
+            val feed = media.feed
             val followed by com.platinum20.dashboard.media.podcast.PodcastStore.followed.collectAsStateWithLifecycle()
             val podcast = followed.firstOrNull { it.feedUrl == feed }
                 ?: com.platinum20.dashboard.media.podcast.Podcast(feed, media.subtitle, "", feed, media.image)
@@ -316,7 +319,7 @@ private fun MediaPageRows(media: ResumeItem, done: () -> Unit) {
                 com.platinum20.dashboard.media.podcast.PodcastStore.toggleFollow(podcast)
             }
             RowDivider()
-        }
+        } else Unit
         else -> Unit
     }
 }
