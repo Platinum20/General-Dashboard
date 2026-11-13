@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
@@ -370,7 +371,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
             }
             .pointerInput(right) {
                 var dx = 0f
-                androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+                detectHorizontalDragGestures(
                     onDragStart = { dx = 0f },
                     onDragEnd = { if (MiniTuck.pulledOut(dx, right, density.density)) open() },
                 ) { change, amount ->
