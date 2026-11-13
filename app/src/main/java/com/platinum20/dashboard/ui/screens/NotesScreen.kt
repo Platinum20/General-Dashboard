@@ -1016,7 +1016,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         bottomBar = {
             // Il mini player sta sopra tutte le pagine: qui i tasti salgono sopra di lui invece di finirci sotto.
             val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
-            val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density)
+            val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier

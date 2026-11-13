@@ -34,6 +34,12 @@ object MiniDock {
     /** In alto o in basso: resta dove l'hai lasciato anche dopo aver aperto il player grande. */
     var atTop: Boolean = false
 
+    /** Ritirato nella linguetta sul bordo ([MiniTuck]): allora non copre la pagina e non serve spazio in fondo. */
+    var tucked by mutableStateOf(false)
+
+    /** Da che lato sta la linguetta: a destra all'inizio, poi dove l'hai lanciato. */
+    var tuckRight by mutableStateOf(true)
+
     /** Il video sta volando verso il mini player: intanto il mini player resta invisibile. */
     var docking by mutableStateOf(false)
 
@@ -53,8 +59,8 @@ object MiniDock {
      * Quanto spazio lasciare in fondo, in dp, a una pagina senza barra delle sezioni (editor delle note)
      * perché il mini player in basso non copra i suoi tasti: niente se non suona nulla o se sta in alto.
      */
-    fun bottomRoom(playing: Boolean, atTop: Boolean, barHeight: Float, density: Float): Float =
-        if (!playing || atTop) 0f else (if (barHeight > 0f) barHeight / density else BAR_GUESS) + 6f
+    fun bottomRoom(playing: Boolean, atTop: Boolean, barHeight: Float, density: Float, tucked: Boolean = false): Float =
+        if (!playing || atTop || tucked) 0f else (if (barHeight > 0f) barHeight / density else BAR_GUESS) + 6f
 
     /** Dove sta la miniatura del video nel mini player, in px. */
     fun thumb(frame: Rect, barHeight: Float, atTop: Boolean, density: Float): Rect {
@@ -69,7 +75,7 @@ object MiniDock {
      * Quanto lasciare libero in fondo a una barra fissa (es. "Controlla e aggiorna") perché il mini
      * player in basso non la copra: la barra stimata più il suo margine, in dp.
      */
-    fun bottomReserveDp(playing: Boolean, atTop: Boolean): Float = if (playing && !atTop) BAR_GUESS + 6f else 0f
+    fun bottomReserveDp(playing: Boolean, atTop: Boolean, tucked: Boolean = false): Float = if (playing && !atTop && !tucked) BAR_GUESS + 6f else 0f
 
     /** La miniatura adesso, o null se il mini player non è mai stato misurato. */
     fun target(density: Float): Rect? = frame?.let { thumb(it, barHeight, atTop, density) }
@@ -110,5 +116,5 @@ object MiniDock {
 @Composable
 fun miniPlayerRoom(): Dp {
     val playing by Playback.now.collectAsStateWithLifecycle()
-    return MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density).dp
+    return MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked).dp
 }
