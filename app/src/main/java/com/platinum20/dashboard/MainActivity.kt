@@ -1286,7 +1286,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         val pullSearch = rememberPullToSearch(enabled = showBottomBar || pageFilter != null) {
             navController.navigate(Routes.search(pageFilter)) { launchSingleTop = true }
         }
-        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection)) {
+        val miniTuck = com.platinum20.dashboard.ui.screens.rememberMiniTuckOnScroll()
+        Box(Modifier.fillMaxSize().nestedScroll(pullSearch.connection).nestedScroll(miniTuck)) {
         // Gli elementi condivisi fra le pagine (riga → scheda, card Calendario → pagina): vedi SharedItems.kt.
         androidx.compose.animation.SharedTransitionLayout(Modifier.fillMaxSize()) {
         CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalSharedScope provides this) {

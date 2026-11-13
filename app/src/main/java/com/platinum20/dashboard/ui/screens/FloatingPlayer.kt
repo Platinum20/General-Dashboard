@@ -3,7 +3,9 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
@@ -32,6 +34,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.collectAsState
@@ -73,7 +78,9 @@ import kotlin.math.roundToInt
  * Mini player unico sopra tutta l'app, per qualunque cosa suoni (YouTube, musica, Spotify, radio,
  * podcast): una barra di vetro larga quanto la barra in basso con il +, con copertina (o il video
  * stesso), titolo, indietro, play/pausa, avanti e il tempo che scorre. Si trascina e si aggancia solo
- * in alto o in basso (sopra la barra delle sezioni), si chiude lanciandola di lato; un tocco apre il player grande.
+ * in alto o in basso (sopra la barra delle sezioni); un tocco apre il player grande.
+ * Dal 1.508 ([MiniTuck]): lanciato di lato (o scorrendo una pagina) si ritira in una linguetta sul bordo,
+ * che si riapre con un tocco o tirandola; si chiude portandolo giù, sotto lo schermo, dove la calamita lo prende.
  */
 @Composable
 fun FloatingPlayer(
@@ -94,17 +101,22 @@ fun FloatingPlayer(
             .onGloballyPositioned { MiniDock.frame = it.boundsInRoot() }
     )
     val playing by Playback.now.collectAsState()
-    val now = shown ?: playing ?: return
-    // Sulle schermate dei player la barra non serve: c'è già il player grande.
-    // Solo il player: la coda ("media/player/queue") lo tiene, così si vede cosa suona mentre la sistemi.
-    if (currentRoute == com.platinum20.dashboard.Routes.PLAYER) return
-    if (currentRoute?.startsWith("media/watch") == true) return
+    val now = shown ?: playing
+    // Finito tutto, o dal player grande: si riparte dalla barra intera (il video ci vola dentro).
+    val onPlayer = currentRoute == com.platinum20.dashboard.Routes.PLAYER || currentRoute?.startsWith("media/watch") == true
+    if (now == null || onPlayer) {
+        SideEffect { MiniDock.tucked = false }
+        return
+    }
 
+    // Ritirato, la linguetta tocca il bordo dello schermo: niente margine ai lati, se no la sua parte
+    // esterna starebbe fuori dal riquadro e non prenderebbe i tocchi.
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = if (MiniDock.tucked) 0.dp else 16.dp, vertical = 6.dp)
     ) {
+        val density = LocalDensity.current
         val maxH = constraints.maxHeight.toFloat()
         var barH by remember { mutableIntStateOf(0) }
         val range = (maxH - barH).coerceAtLeast(1f)
@@ -123,57 +135,58 @@ fun FloatingPlayer(
         val appear = remember { Animatable(if (MiniDock.docking) 1f else 0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, Motion.lively()) }
         val pressScale by animateFloatAsState(if (dragging) 0.97f else 1f, Motion.lively(), label = "drag")
-        // Per chiudere: si porta di lato, come una notifica. Il dito la muove liberamente (di lato e
-        // su e giù insieme), sotto compare la X dal lato che si scopre; oltre metà larghezza lasciandola si chiude.
         val maxW = constraints.maxWidth.toFloat().coerceAtLeast(1f)
         val x = remember { Animatable(0f) }
-        val closeAt = maxW * 0.5f
-        val reveal = (kotlin.math.abs(x.value) / closeAt).coerceIn(0f, 1f)
-        var closeArmed by remember { mutableStateOf(false) }
+        // La calamita in fondo: quando lo prende scatta un po' giù da solo.
+        var magnet by remember { mutableStateOf(false) }
+        val pull = remember { Animatable(0f) }
         var closing by remember { mutableStateOf(false) }
+        val tucked = MiniDock.tucked
         // Se dopo la chiusura qualcosa suona ancora (es. Spotify non risponde) la barra rientra.
         LaunchedEffect(closing) {
             if (closing) {
                 kotlinx.coroutines.delay(1_500)
                 closing = false
+                magnet = false
+                pull.snapTo(0f)
                 x.snapTo(0f)
+                y.snapTo(if (atTop) 0f else 1f)
                 appear.snapTo(0f)
                 appear.animateTo(1f, Motion.lively())
             }
         }
-
-        // La X dietro la barra, dal lato che si scopre: cresce e diventa rossa quando lasciando si chiude.
-        if (reveal > 0f && barH > 0) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(with(LocalDensity.current) { barH.toDp() })
-                    .offset { IntOffset(0, (y.value * range).roundToInt()) },
-                contentAlignment = if (x.value > 0) Alignment.CenterStart else Alignment.CenterEnd,
-            ) {
-                Box(
-                    Modifier
-                        .padding(horizontal = 12.dp)
-                        .size(44.dp)
-                        .graphicsLayer {
-                            val sc = 0.6f + 0.4f * reveal
-                            scaleX = sc
-                            scaleY = sc
-                            alpha = reveal
-                        }
-                        .clip(CircleShape)
-                        .background(if (closeArmed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = if (closeArmed) "Lascia per chiudere" else null,
-                        tint = if (closeArmed) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.graphicsLayer { rotationZ = 90f * (1f - reveal) },
-                    )
-                }
+        // Riaperta dalla linguetta: rientra dal suo lato e salta fuori.
+        var reopened by remember { mutableStateOf(false) }
+        LaunchedEffect(tucked, reopened) {
+            if (!tucked && reopened) {
+                reopened = false
+                x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.5f)
+                launch { x.animateTo(0f, Motion.lively()) }
+                appear.snapTo(0.6f)
+                appear.animateTo(1f, Motion.lively())
             }
         }
+
+        if (tucked) {
+            val guess = with(density) { 70.dp.toPx() }
+            val bar = if (barH > 0) barH.toFloat() else guess
+            MiniTab(
+                now = now,
+                right = MiniDock.tuckRight,
+                yPx = { y.value * (maxH - bar).coerceAtLeast(1f) + bar / 2f },
+                maxW = maxW,
+                onOpen = {
+                    view.haptic(Haptic.SNAP)
+                    reopened = true
+                    MiniDock.tucked = false
+                },
+            )
+            return@BoxWithConstraints
+        }
+
+        // La calamita, in fondo al centro: compare man mano che lo porti giù e diventa rossa quando lo prende.
+        val below = (y.value - 1f).coerceAtLeast(0f) * range
+        val near = (below / (MiniTuck.MAGNET_DP * density.density)).coerceIn(0f, 1f)
 
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
@@ -181,9 +194,9 @@ fun FloatingPlayer(
             border = cardBorder(),
             modifier = Modifier
                 .fillMaxWidth()
-                .offset { IntOffset(x.value.roundToInt(), (y.value * range).roundToInt()) }
+                .offset { IntOffset(x.value.roundToInt(), (y.value * range + pull.value).roundToInt()) }
                 .graphicsLayer {
-                    val sc = (0.8f + 0.2f * appear.value) * pressScale
+                    val sc = (0.8f + 0.2f * appear.value) * pressScale * (1f - 0.12f * (pull.value / (MiniTuck.PULL_DP * density.density)).coerceIn(0f, 1f))
                     scaleX = sc
                     scaleY = sc
                     // Sbiadisce allontanandosi di lato.
@@ -202,6 +215,8 @@ fun FloatingPlayer(
                     // Il dito si misura sullo schermo, non sulla barra (che si muove con lui):
                     // sulla barra la velocità risulterebbe sempre quasi zero e il lancio non partirebbe.
                     var travelled = androidx.compose.ui.geometry.Offset.Zero
+                    // Fin dove si può portare giù: oltre la calamita, sotto lo schermo.
+                    val bottom = 1f + 2f * MiniTuck.MAGNET_DP * density.density / range
                     detectDragGestures(
                         onDragStart = {
                             view.haptic(Haptic.GRAB)
@@ -214,7 +229,8 @@ fun FloatingPlayer(
                         },
                         onDragCancel = {
                             dragging = false
-                            closeArmed = false
+                            magnet = false
+                            scope.launch { pull.animateTo(0f, Motion.lively()) }
                             scope.launch { x.animateTo(0f, Motion.gesture()) }
                             scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
                         },
@@ -222,33 +238,43 @@ fun FloatingPlayer(
                             dragging = false
                             val velocity = tracker.calculateVelocity()
                             val vx = velocity.x
-                            // Chiude solo se portata oltre metà, o lanciata forte di lato quando è già ben avviata.
-                            val fling = SwipeAway.fling(dx, vx, velocity.y, maxW)
-                            if (closeArmed || fling) {
-                                closeArmed = false
-                                closing = true
-                                view.haptic(Haptic.CONFIRM)
-                                val dir = if (dx >= 0) 1f else -1f
-                                scope.launch {
-                                    x.animateTo(dir * maxW * 1.2f, Motion.fling(maxW * 1.2f - kotlin.math.abs(x.value), vx))
-                                    onClose?.invoke() ?: Playback.stop()
+                            when (MiniTuck.release(magnet, dx, vx, velocity.y, maxW)) {
+                                MiniTuck.Release.CLOSE -> {
+                                    closing = true
+                                    view.haptic(Haptic.CONFIRM)
+                                    // Giù, fuori dallo schermo, tirato dalla calamita.
+                                    val out = 1f + (maxH + barH) / range
+                                    scope.launch {
+                                        y.animateTo(out, Motion.fling((out - y.value) * range, velocity.y.coerceAtLeast(0f)))
+                                        onClose?.invoke() ?: Playback.stop()
+                                    }
                                 }
-                                scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
-                            } else {
-                                scope.launch { x.animateTo(0f, Motion.gesture(), initialVelocity = vx) }
-                                // In alto o in basso: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
-                                val v = velocity.y / range
-                                val moved = curY - start
-                                val top = when {
-                                    v < -0.6f -> true
-                                    v > 0.6f -> false
-                                    moved < -0.1f -> true
-                                    moved > 0.1f -> false
-                                    else -> curY < 0.5f
+                                MiniTuck.Release.TUCK_LEFT, MiniTuck.Release.TUCK_RIGHT -> {
+                                    view.haptic(Haptic.SNAP)
+                                    val dir = if (dx >= 0) 1f else -1f
+                                    scope.launch { y.animateTo(if (atTop) 0f else 1f, Motion.gesture()) }
+                                    scope.launch {
+                                        x.animateTo(dir * maxW * 1.1f, Motion.fling(maxW * 1.1f - kotlin.math.abs(x.value), vx))
+                                        MiniDock.tuckRight = dir > 0f
+                                        MiniDock.tucked = true
+                                    }
                                 }
-                                view.haptic(Haptic.SNAP)
-                                if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Motion.gesture(), initialVelocity = v) }
-                                atTop = top
+                                MiniTuck.Release.STAY -> {
+                                    scope.launch { x.animateTo(0f, Motion.gesture(), initialVelocity = vx) }
+                                    // In alto o in basso: uno scatto o un piccolo spostamento verso l'altro lato basta per mandarla lì.
+                                    val v = velocity.y / range
+                                    val moved = curY.coerceAtMost(1f) - start
+                                    val top = when {
+                                        v < -0.6f -> true
+                                        v > 0.6f -> false
+                                        moved < -0.1f -> true
+                                        moved > 0.1f -> false
+                                        else -> curY < 0.5f
+                                    }
+                                    view.haptic(Haptic.SNAP)
+                                    if (top == atTop) scope.launch { y.animateTo(if (top) 0f else 1f, Motion.gesture(), initialVelocity = v) }
+                                    atTop = top
+                                }
                             }
                         },
                     ) { change, amount ->
@@ -257,11 +283,13 @@ fun FloatingPlayer(
                         tracker.addPosition(change.uptimeMillis, travelled)
                         // Di lato e su e giù insieme: si decide solo lasciandola.
                         dx += amount.x
-                        curY = (curY + amount.y / range).coerceIn(-0.03f, 1.03f)
-                        val armed = kotlin.math.abs(dx) > closeAt
-                        if (armed != closeArmed) {
-                            closeArmed = armed
-                            view.haptic(if (armed) Haptic.THRESHOLD else Haptic.TICK)
+                        curY = (curY + amount.y / range).coerceIn(-0.03f, bottom)
+                        val held = MiniTuck.magnet((curY - 1f).coerceAtLeast(0f) * range, density.density)
+                        if (held != magnet) {
+                            magnet = held
+                            // La calamita: vibra e lo tira giù di scatto; risalendo lo lascia andare.
+                            view.haptic(if (held) Haptic.THRESHOLD else Haptic.TICK)
+                            scope.launch { pull.animateTo(if (held) MiniTuck.PULL_DP * density.density else 0f, Motion.lively()) }
                         }
                         val nx = dx
                         val ny = curY
@@ -272,6 +300,122 @@ fun FloatingPlayer(
         ) {
             MiniPlayer(now, onExpand = { onExpand(now) })
         }
+
+        if (near > 0f && barH > 0) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset { IntOffset(0, (barH / 2f + MiniTuck.PULL_DP * density.density).roundToInt()) }
+                    .size(44.dp)
+                    .graphicsLayer {
+                        val sc = 0.6f + 0.4f * near + if (magnet) 0.15f else 0f
+                        scaleX = sc
+                        scaleY = sc
+                        alpha = near
+                    }
+                    .clip(CircleShape)
+                    .background(if (magnet) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = if (magnet) "Lascia per chiudere" else null,
+                    tint = if (magnet) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.graphicsLayer { rotationZ = 90f * (1f - near) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * La linguetta sul bordo: la copertina tonda con l'anello del tempo che scorre, mezza dentro lo schermo.
+ * Un tocco o tirarla verso il centro riapre il mini player.
+ */
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
+    now: Playing,
+    right: Boolean,
+    yPx: () -> Float,
+    maxW: Float,
+    onOpen: () -> Unit,
+) {
+    val density = LocalDensity.current
+    val open by androidx.compose.runtime.rememberUpdatedState(onOpen)
+    val show = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { show.animateTo(1f, Motion.lively()) }
+    val tabW = 58.dp
+    val tabH = 56.dp
+    val shape = if (right) androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+    else androidx.compose.foundation.shape.RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+    // I tocchi su un riquadro semplice (senza vetro né scala), il disegno dentro.
+    Box(
+        Modifier
+            .size(tabW, tabH)
+            .offset {
+                val w = with(density) { tabW.toPx() }
+                val h = with(density) { tabH.toPx() }
+                val left = if (right) maxW - w else 0f
+                IntOffset(left.roundToInt(), (yPx() - h / 2f).roundToInt())
+            }
+            .semantics(mergeDescendants = true) {
+                contentDescription = "Mini player: ${now.title}. Tocca per riaprirlo"
+            }
+            .pointerInput(right) {
+                var dx = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dx = 0f },
+                    onDragEnd = { if (MiniTuck.pulledOut(dx, right, density.density)) open() },
+                ) { change, amount ->
+                    change.consume()
+                    dx += amount
+                }
+            }
+            // Un vero clic (non solo un tocco a mano): così lo apre anche TalkBack.
+            .clickable(interactionSource = null, indication = null, onClickLabel = "Riapri") { open() },
+    ) {
+    Surface(
+        shape = shape,
+        color = Color.Transparent,
+        border = cardBorder(),
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = 0.6f + 0.4f * show.value
+                scaleY = 0.6f + 0.4f * show.value
+                alpha = show.value.coerceIn(0f, 1f)
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (right) 1f else 0f, 0.5f)
+            }
+            .glass(shape),
+    ) {
+        Box(
+            Modifier.padding(start = if (right) 7.dp else 0.dp, end = if (right) 0.dp else 7.dp),
+            contentAlignment = if (right) Alignment.CenterStart else Alignment.CenterEnd,
+        ) {
+            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(sourceIcon(now.source), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                    if (now.source == PlaySource.SPEECH) SpeechCover(Modifier.fillMaxSize())
+                    else if (now.artwork.isNotBlank()) {
+                        AsyncImage(model = now.artwork, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                    }
+                }
+                // L'anello: il tempo che scorre (pieno in diretta), blu = sta suonando.
+                val position = livePosition(now)
+                androidx.compose.material3.CircularProgressIndicator(
+                    progress = { if (now.live) 1f else if (now.durationMs > 0) (position.toFloat() / now.durationMs).coerceIn(0f, 1f) else 0f },
+                    modifier = Modifier.fillMaxSize(),
+                    strokeWidth = 3.dp,
+                    color = if (now.playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    gapSize = 0.dp,
+                )
+            }
+        }
+    }
     }
 }
 

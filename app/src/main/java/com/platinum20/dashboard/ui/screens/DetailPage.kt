@@ -105,7 +105,7 @@ internal fun DetailPage(
             if (left != null || extra.isNotEmpty()) {
                 // Come nell'editor delle note: i tasti salgono sopra il mini player invece di finirci sotto.
                 val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
-                val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density)
+                val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
