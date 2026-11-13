@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.518.0
+**Mini player: entra ed esce dal bordo, e si nasconde solo quando vuoi tu**
+- Lanciato di lato, la linguetta tonda entra scivolando dal bordo invece di comparire sul posto
+- Toccandola (o tirandola verso il centro) rientra nel bordo e il mini player ne esce scorrendo fino al suo posto
+- Scorrendo le pagine il mini player non si ritira più da solo: va nel bordo solo se lo lanci tu
+
 ## 1.517.0
 **Mini player: portato giù passa davvero sopra la barra**
 - Trascinandolo verso il basso per chiuderlo ora il mini player scorre davanti alla barra in basso, non più dietro

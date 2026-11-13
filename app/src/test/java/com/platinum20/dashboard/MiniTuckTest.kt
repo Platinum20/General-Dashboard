@@ -41,18 +41,6 @@ class MiniTuckTest {
     }
 
     @Test
-    fun scorrendoGiuSiAccumulaTornandoSuSiAzzera() {
-        var t = 0f
-        t = MiniTuck.scrolled(t, -40f)
-        t = MiniTuck.scrolled(t, -40f)
-        assertEquals(80f, t, 0f)
-        assertFalse(MiniTuck.scrollTucks(t, 2f))
-        t = MiniTuck.scrolled(t, -40f)
-        assertTrue(MiniTuck.scrollTucks(t, 2f))
-        assertEquals(0f, MiniTuck.scrolled(t, 10f), 0f)
-    }
-
-    @Test
     fun laLinguettaSiTiraVersoIlCentro() {
         assertTrue(MiniTuck.pulledOut(-100f, right = true, density = 2f))
         assertFalse(MiniTuck.pulledOut(100f, right = true, density = 2f))

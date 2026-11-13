@@ -162,8 +162,9 @@ fun FloatingPlayer(
         LaunchedEffect(tucked) {
             if (tucked || !reopened) return@LaunchedEffect
             reopened = false
-            x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.35f)
-            appear.snapTo(0.7f)
+            // Esce dal bordo dove si era nascosto, scorrendo fino al suo posto (1.518).
+            x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.9f)
+            appear.snapTo(0.85f)
             launch { appear.animateTo(1f, Motion.lively()) }
             x.animateTo(0f, Motion.lively())
         }
@@ -355,8 +356,20 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
 ) {
     val density = LocalDensity.current
     val open by androidx.compose.runtime.rememberUpdatedState(onOpen)
+    // Entra scivolando dal bordo e, riaprendo, ci rientra prima che la barra ne esca (1.518).
     val show = remember { Animatable(0f) }
     LaunchedEffect(Unit) { show.animateTo(1f, Motion.lively()) }
+    val tabScope = androidx.compose.runtime.rememberCoroutineScope()
+    var leaving by remember { mutableStateOf(false) }
+    val leave: () -> Unit = {
+        if (!leaving) {
+            leaving = true
+            tabScope.launch {
+                show.animateTo(0f, Motion.settle())
+                open()
+            }
+        }
+    }
     // Tonda e tutta dentro lo schermo, allineata al bordo della barra: niente mezza fuori (Antonio, 1.513).
     val tabW = 56.dp
     val tabH = 56.dp
@@ -381,14 +394,14 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
                 var dx = 0f
                 detectHorizontalDragGestures(
                     onDragStart = { dx = 0f },
-                    onDragEnd = { if (MiniTuck.pulledOut(dx, right, density.density)) open() },
+                    onDragEnd = { if (MiniTuck.pulledOut(dx, right, density.density)) leave() },
                 ) { change, amount ->
                     change.consume()
                     dx += amount
                 }
             }
             // Un vero clic (non solo un tocco a mano): così lo apre anche TalkBack.
-            .clickable(interactionSource = press, indication = null, onClickLabel = "Riapri") { open() },
+            .clickable(interactionSource = press, indication = null, onClickLabel = "Riapri") { leave() },
     ) {
     Surface(
         shape = shape,
@@ -397,8 +410,10 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                scaleX = (0.4f + 0.6f * show.value) * pressScale
-                scaleY = (0.4f + 0.6f * show.value) * pressScale
+                // Fuori dal bordo quando show = 0: scivola dentro e fuori dal suo lato.
+                translationX = (1f - show.value) * size.width * 1.2f * (if (right) 1f else -1f)
+                scaleX = (0.7f + 0.3f * show.value) * pressScale
+                scaleY = (0.7f + 0.3f * show.value) * pressScale
                 alpha = show.value.coerceIn(0f, 1f)
             }
             .glass(shape),
