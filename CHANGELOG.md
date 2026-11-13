@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.504.0
+## 1.505.0
 **Archivio di Per dopo: tieni premuta una cosa fatta**
 - Nell'archivio di Per dopo, tenendo premuta una cosa già fatta si apre il fumetto in basso con le sue azioni: rimettila da fare, condividila o eliminala
 
