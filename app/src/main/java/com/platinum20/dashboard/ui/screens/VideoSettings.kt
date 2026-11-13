@@ -143,6 +143,8 @@ internal fun VideoSettingsLayer() {
             )
         }
         val swipe = rememberSwipeAwayState()
+        // Chiuso portandolo di lato resta fuori schermo: a ogni apertura torna al suo posto, se no non si vede più.
+        LaunchedEffect(visible) { if (visible) swipe.reset() }
         AnimatedVisibility(
             visible,
             enter = fadeIn(Motion.settle()) + scaleIn(Motion.lively(), initialScale = 0.92f) +

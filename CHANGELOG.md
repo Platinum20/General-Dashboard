@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.524.0
+**Impostazioni del video: si riaprono sempre**
+- Se chiudevi il fumetto delle impostazioni portandolo di lato, poi la rotella non lo faceva più comparire. Ora torna al suo posto ogni volta che lo apri
+
 ## 1.523.0
 **Spotify non si fa più bloccare per ore**
 - L'app chiedeva troppe cose a Spotify (soprattutto lo stato del brano ogni pochi secondi, anche a schermo spento) e Spotify la bloccava per ore: per questo "riprova tra 8 ore"
