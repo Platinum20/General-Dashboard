@@ -1,5 +1,9 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.runtime.setValue
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -87,7 +91,41 @@ import com.platinum20.dashboard.settings.AppSettings
 import kotlinx.coroutines.flow.first
 
 /** Il testo del lettore: la dimensione più piccola, fissa (Antonio non vuole il tasto "Aa"). */
-private const val TEXT_SCALE = 0.9f
+/**
+ * La grandezza del testo nel lettore (1.528): si cambia pizzicando l'articolo e resta per i prossimi.
+ * 0.9 = quella di prima; da 0.75 a 1.4.
+ */
+internal object ReaderText {
+    const val DEFAULT = 0.9f
+    const val MIN = 0.75f
+    const val MAX = 1.4f
+    private const val PREFS = "reader_text"
+    var scale by androidx.compose.runtime.mutableFloatStateOf(DEFAULT)
+        private set
+    private var prefs: android.content.SharedPreferences? = null
+
+    fun init(context: android.content.Context) {
+        if (prefs != null) return
+        prefs = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).also { scale = it.getFloat("scale", DEFAULT) }
+    }
+
+    /** Pura: la nuova grandezza dopo un pizzico di [zoom], dentro i limiti. */
+    fun zoomed(current: Float, zoom: Float): Float = (current * zoom).coerceIn(MIN, MAX)
+
+    fun set(value: Float) {
+        scale = value.coerceIn(MIN, MAX)
+        prefs?.edit()?.putFloat("scale", scale)?.apply()
+    }
+
+    /** "4 min alla fine" mentre leggi, "N min di lettura" all'inizio, "letto" in fondo. Pura, per i test. */
+    fun left(totalMinutes: Int, fraction: Float): String = when {
+        fraction >= 0.98f -> "letto"
+        fraction <= 0.02f -> "$totalMinutes min di lettura"
+        else -> "${kotlin.math.ceil(totalMinutes * (1 - fraction)).toInt().coerceAtLeast(1)} min alla fine"
+    }
+}
+
+private val TEXT_SCALE: Float get() = ReaderText.scale
 
 /** La prima immagine dell'articolo, per l'anteprima nelle note. */
 internal fun ReaderArticle.coverImage(): String? =
@@ -134,14 +172,16 @@ fun ReaderScreen(
     val news by NewsStore.result.collectAsStateWithLifecycle()
     val item = remember(news, url) { news?.items?.firstOrNull { it.link == url } }
     val words = remember(loaded) { loaded?.spokenParagraphs()?.sumOf { p -> p.split(' ').count { it.isNotBlank() } } }
+    // Dove eri arrivato: uscendo a metà, la volta dopo si riparte da lì.
+    val scroll = rememberScrollState()
+    ReaderText.init(context)
+    // Quanto manca alla fine, che scende mentre leggi (1.528, Antonio scelta B).
+    val fraction by remember { androidx.compose.runtime.derivedStateOf { if (scroll.maxValue in 1 until Int.MAX_VALUE) scroll.value / scroll.maxValue.toFloat() else 0f } }
     val meta = listOfNotNull(
         sourceName.ifBlank { null },
         item?.publishedAt?.let(::relativeTime),
-        words?.let { "${NewsStories.readingMinutes(it)} min di lettura" },
+        words?.let { ReaderText.left(NewsStories.readingMinutes(it), (fraction * 20).toInt() / 20f) },
     ).joinToString(" · ").ifBlank { "Articolo" }
-
-    // Dove eri arrivato: uscendo a metà, la volta dopo si riparte da lì.
-    val scroll = rememberScrollState()
     ReadingSpots.init(context)
     val isLoaded by rememberUpdatedState(loaded != null)
     LaunchedEffect(loaded != null) {
@@ -193,7 +233,24 @@ fun ReaderScreen(
                 listOf(0.95f, 0.9f, 0.97f, 0.6f, 0.92f, 0.88f, 0.4f).forEach { PlaceholderLine(it, 14.dp) }
             }
             is ReaderUiState.Loaded -> {
-                ArticleBody(s.article, onOpenLink)
+                // Pizzica per ingrandire o rimpicciolire il testo (1.528): con un dito solo la pagina scorre come sempre.
+                Column(Modifier.pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        do {
+                            val event = awaitPointerEvent()
+                            if (event.changes.count { it.pressed } >= 2) {
+                                val zoom = event.calculateZoom()
+                                if (zoom != 1f) {
+                                    ReaderText.set(ReaderText.zoomed(ReaderText.scale, zoom))
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
+                }) {
+                    ArticleBody(s.article, onOpenLink)
+                }
                 ArticleEnd(url, onOpenArticle, onOpenNext)
             }
             ReaderUiState.NoText -> ReaderMessage(

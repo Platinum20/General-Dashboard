@@ -54,3 +54,15 @@ class PodcastHeroTest {
         assertEquals(null, h.pick(listOf(ep("a", 1)), mapOf("a" to 3_600_000L)))
     }
 }
+
+class ReaderTextTest {
+    @Test
+    fun minutesLeftAndZoomLimits() {
+        val r = com.platinum20.dashboard.ui.screens.ReaderText
+        assertEquals("6 min di lettura", r.left(6, 0f))
+        assertEquals("3 min alla fine", r.left(6, 0.5f))
+        assertEquals("letto", r.left(6, 1f))
+        assertEquals(r.MAX, r.zoomed(1.3f, 2f))
+        assertEquals(r.MIN, r.zoomed(0.8f, 0.5f))
+    }
+}
