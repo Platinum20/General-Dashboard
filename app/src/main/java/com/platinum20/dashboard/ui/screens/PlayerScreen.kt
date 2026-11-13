@@ -157,7 +157,8 @@ fun PlayerScreen(
             AudioPlayer(onBack, onOpenQueue)
         }
         QueuePopup(open = queueOpen, onClose = { queueOpen = false })
-        VideoSettingsPopup()
+        // Il fumetto delle impostazioni sta fuori dal NavHost (vetro): uscendo dal player si chiude.
+        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { VideoSettings.open = false } }
     }
 }
 
