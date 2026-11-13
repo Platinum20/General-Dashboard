@@ -3,10 +3,18 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.AddCircleOutline
+import androidx.compose.material.icons.rounded.RemoveCircleOutline
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.ThumbUpOffAlt
+import androidx.compose.material.icons.rounded.ThumbUp
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.media.CanvasPlayer
+import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -128,6 +136,9 @@ internal fun BoxScope.SaveToNotesLayer() {
                 RowDivider()
             }
         }
+        // Le azioni della sua pagina, senza aprirla (Antonio, 2026-11-13): Mi piace e Condividi per un video,
+        // i preferiti per una radio, Segui per il podcast dell'episodio.
+        if (media != null) MediaPageRows(media) { SavedLinks.dismiss() }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
         BubbleRow(
@@ -253,5 +264,70 @@ internal fun BubbleRow(icon: ImageVector, title: String, detail: String = "", da
                 )
             }
         }
+    }
+}
+
+/** Le righe del fumetto che fanno quello che fanno i tasti della pagina del media. [done] chiude il fumetto. */
+@Composable
+private fun MediaPageRows(media: ResumeItem, done: () -> Unit) {
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    when (media.kind) {
+        ResumeKind.YOUTUBE -> {
+            val liked by com.platinum20.dashboard.media.youtube.YtFavorites.items.collectAsStateWithLifecycle()
+            val isLiked = liked.any { it.id == media.key }
+            BubbleRow(
+                icon = if (isLiked) Icons.Rounded.ThumbUp else Icons.Rounded.ThumbUpOffAlt,
+                title = if (isLiked) "Togli Mi piace" else "Mi piace",
+            ) {
+                haptic(Haptic.CONFIRM)
+                done()
+                com.platinum20.dashboard.media.youtube.YtFavorites.toggle(
+                    context,
+                    com.platinum20.dashboard.media.youtube.YtVideo(
+                        media.key, media.title, media.subtitle, "", null, durationSec = (media.durationMs / 1000).toInt(),
+                    ),
+                )
+            }
+            RowDivider()
+            BubbleRow(icon = Icons.Rounded.Share, title = "Condividi", detail = "Il link del video") {
+                done()
+                runCatching { shareText(context, "https://youtu.be/${media.key}") }
+            }
+            RowDivider()
+        }
+        ResumeKind.RADIO -> if (media.station != null) {
+            val station = media.station
+            val favorites by com.platinum20.dashboard.media.radio.RadioStore.favorites.collectAsStateWithLifecycle()
+            val fav = favorites.any { it.id == station.id }
+            BubbleRow(
+                icon = if (fav) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                title = if (fav) "Togli dai preferiti" else "Aggiungi ai preferiti",
+                detail = station.name,
+            ) {
+                haptic(Haptic.CONFIRM)
+                done()
+                com.platinum20.dashboard.media.radio.RadioStore.toggleFavorite(station)
+            }
+            RowDivider()
+        } else Unit
+        ResumeKind.PODCAST -> if (media.feed.isNotBlank()) {
+            val feed = media.feed
+            val followed by com.platinum20.dashboard.media.podcast.PodcastStore.followed.collectAsStateWithLifecycle()
+            val podcast = followed.firstOrNull { it.feedUrl == feed }
+                ?: com.platinum20.dashboard.media.podcast.Podcast(feed, media.subtitle, "", feed, media.image)
+            val following = followed.any { it.feedUrl == feed }
+            BubbleRow(
+                icon = if (following) Icons.Rounded.RemoveCircleOutline else Icons.Rounded.AddCircleOutline,
+                title = if (following) "Non seguire più" else "Segui il podcast",
+                detail = media.subtitle,
+            ) {
+                haptic(Haptic.CONFIRM)
+                done()
+                com.platinum20.dashboard.media.podcast.PodcastStore.toggleFollow(podcast)
+            }
+            RowDivider()
+        } else Unit
+        else -> Unit
     }
 }

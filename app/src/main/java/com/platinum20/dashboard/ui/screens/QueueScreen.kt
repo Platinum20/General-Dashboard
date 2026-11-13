@@ -1,7 +1,6 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +31,8 @@ import androidx.compose.material.icons.outlined.QueueMusic
 import androidx.compose.material.icons.outlined.Radio
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.VerticalAlignTop
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -324,20 +325,34 @@ internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
 @Composable
 private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, handle: Modifier? = null) {
     val context = LocalContext.current
+    val haptic = rememberHaptic()
     val swipe = rememberSwipeAwayState()
+    fun removeWithUndo() {
+        val index = CanvasPlayer.queue.value.entries.indexOfFirst { it.id == entry.id }
+        CanvasPlayer.remove(entry.id)
+        CaptureFeedback.tell(context, "Tolto dalla coda", Icons.Outlined.RemoveCircleOutline, "Annulla") {
+            CanvasPlayer.restore(entry, index)
+        }
+    }
     Box(modifier) {
         SwipeAwayMark(swipe)
         QueueRow(
             entry,
-            modifier = Modifier.swipeAway(swipe) {
-                val index = CanvasPlayer.queue.value.entries.indexOfFirst { it.id == entry.id }
-                CanvasPlayer.remove(entry.id)
-                CaptureFeedback.tell(context, "Tolto dalla coda", Icons.Outlined.RemoveCircleOutline, "Annulla") {
-                    CanvasPlayer.restore(entry, index)
-                }
-            },
+            modifier = Modifier.swipeAway(swipe) { removeWithUndo() },
             handle = handle,
             onTap = { CanvasPlayer.jump(entry.id) },
+            // Tenendo premuta una voce: quello che fanno tocco, maniglia e gesto di lato, in un fumetto (2026-11-13).
+            onLongClick = {
+                haptic(Haptic.LONG_PRESS)
+                val first = CanvasPlayer.queue.value.upcoming.firstOrNull()
+                ActionBubble.show(*listOfNotNull(
+                    BubbleAction(Icons.Rounded.PlayArrow, "Riproduci ora", detail = entry.item.title) { CanvasPlayer.jump(entry.id) },
+                    first?.takeIf { it.id != entry.id }?.let { top ->
+                        BubbleAction(Icons.Rounded.VerticalAlignTop, "Subito dopo", detail = "In cima alla coda") { CanvasPlayer.moveTo(entry.id, top.id) }
+                    },
+                    BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli dalla coda", danger = true) { removeWithUndo() },
+                ).toTypedArray())
+            },
         )
     }
 }
@@ -346,6 +361,7 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
  * Riga Canvas della coda: a sinistra la miniatura (sempre larga uguale, così i titoli sono in colonna),
  * al centro titolo e una riga (autore · durata), a destra la maniglia per spostarla.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun QueueRow(
     entry: QueueEntry,
@@ -353,6 +369,7 @@ private fun QueueRow(
     /** La maniglia per trascinare la riga (nella coda intera). */
     handle: Modifier? = null,
     onTap: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val item = entry.item
     Row(
@@ -360,7 +377,7 @@ private fun QueueRow(
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
             .background(MaterialTheme.colorScheme.background)
-            .clickable(onClick = onTap)
+            .combinedClickable(onClick = onTap, onLongClick = onLongClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

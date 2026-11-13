@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
@@ -90,6 +91,8 @@ internal fun storyActions(context: Context, story: NewsStory, onMarkRead: () -> 
     return arrayOf(
         BubbleAction(Icons.Outlined.BookmarkAdd, "Leggi dopo", lead.source.name) { SavedLinks.save(context, lead.savedLink()) },
         BubbleAction(Icons.Outlined.Headphones, "Ascolta", "Con la voce di lettura") { listenArticle(context, lead) },
+        // Come nell'"Altro" dell'articolo, senza aprirlo (2026-11-13).
+        BubbleAction(Icons.Outlined.Share, "Condividi il link", lead.source.name) { runCatching { shareText(context, lead.link) } },
         BubbleAction(Icons.Outlined.DoneAll, "Segna come letta") {
             NewsHistory.init(context)
             story.items.forEach { NewsHistory.markRead(it.link) }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.516.0
+**Tieni premuto: le azioni di ogni cosa, senza aprirla**
+- Eventi del calendario: oltre ad Apri e Condividi ora ci sono Modifica, Elimina, Biglietto e Ascolta lo zaino
+- Pacchi: Traccia la spedizione e Condividi
+- Documenti nella Home: Copia il numero, Condividi PDF, Salva PDF ed Elimina
+- Card SIM: Aggiorna adesso e Condividi i dati letti
+- Notizie: Condividi il link
+- Video: Mi piace e Condividi; radio: Aggiungi ai preferiti; episodi: Segui il podcast
+- Coda: tenendo premuta una voce, Riproduci ora, Subito dopo e Togli dalla coda
+
 ## 1.515.0
 **Impostazioni del video rifatte**
 - La rotella sul video apre un fumetto di vetro con quattro righe: Qualità, Velocità, Sottotitoli e Ripeti. Ogni riga dice già com'è impostata

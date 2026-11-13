@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Rotate90DegreesCw
 import androidx.compose.material.icons.outlined.CropFree
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Badge
@@ -82,10 +83,38 @@ internal fun docLine(doc: Document, today: LocalDate = LocalDate.now()): String 
     return listOfNotNull(doc.number, expiry).joinToString(" · ").ifEmpty { if (doc.back == null) "Solo fronte" else "Fronte e retro" }
 }
 
+/**
+ * Tenendo premuto un documento nella Home: le azioni della sua scheda senza entrarci (Antonio, 2026-11-13).
+ * Elimina chiede conferma: con il documento vanno via anche le foto.
+ */
+internal fun docActions(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document, open: () -> Unit): Array<BubbleAction> =
+    listOfNotNull(
+        BubbleAction(Icons.Outlined.Badge, "Apri", detail = doc.title, onClick = open),
+        doc.number?.takeIf { it.isNotBlank() }?.let { number ->
+            BubbleAction(Icons.Outlined.ContentCopy, "Copia il numero", detail = number) {
+                Clip.copy(context, "Numero del documento", number, "Numero copiato")
+            }
+        },
+        BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportDocPdf(context, scope, doc, save = false) },
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            BubbleAction(Icons.Outlined.Download, "Salva PDF in Download") { exportDocPdf(context, scope, doc, save = true) }
+        } else null,
+        BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
+            ActionBubble.show(
+                BubbleAction(Icons.Outlined.Delete, "Elimina ${doc.title}", detail = "Con le sue foto", danger = true) {
+                    DocumentsStore.delete(doc.id)
+                },
+            )
+        },
+    ).toTypedArray()
+
 /** Card "Documenti" della Home: compare solo quando c'è almeno un documento fotografato con la graffetta. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun DocumentsCard(onOpen: (Long) -> Unit) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val haptic = rememberHaptic()
     DocumentsStore.init(context)
     val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
     CardSection(title = "Documenti") {
@@ -95,7 +124,10 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clickable { onOpen(doc.id) }
+                    .combinedClickable(onClick = { onOpen(doc.id) }, onLongClick = {
+                        haptic(Haptic.LONG_PRESS)
+                        ActionBubble.show(*docActions(context, scope, doc) { onOpen(doc.id) })
+                    })
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -128,6 +160,28 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
                 else Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
             }
         }
+    }
+}
+
+/** Il PDF del documento (fronte e retro su un A4): da condividere o da salvare in Download. Uguale nella scheda e nel fumetto. */
+internal fun exportDocPdf(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, doc: Document, save: Boolean) {
+    scope.launch {
+        if (save) {
+            val ok = DocumentsStore.savePdf(context, doc)
+            CaptureFeedback.tell(context, if (ok) "${doc.pdfName} salvato in Download" else "Non riesco a salvare il PDF", Icons.Outlined.PictureAsPdf)
+            return@launch
+        }
+        runCatching {
+            val file = DocumentsStore.pdf(context, doc)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .putExtra(Intent.EXTRA_SUBJECT, doc.title)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            // Il ClipData fa arrivare il permesso di lettura anche a chi riceve dal menu di condivisione.
+            send.clipData = android.content.ClipData.newUri(context.contentResolver, doc.pdfName, uri)
+            context.startActivity(Intent.createChooser(send, doc.pdfName).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+        }.onFailure { CaptureFeedback.tell(context, "Non riesco a creare il PDF", Icons.Outlined.PictureAsPdf) }
     }
 }
 
@@ -183,26 +237,7 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
         }
         return
     }
-    fun exportPdf(save: Boolean) {
-        scope.launch {
-            if (save) {
-                val ok = DocumentsStore.savePdf(context, doc)
-                CaptureFeedback.tell(context, if (ok) "${doc.pdfName} salvato in Download" else "Non riesco a salvare il PDF", Icons.Outlined.PictureAsPdf)
-                return@launch
-            }
-            runCatching {
-                val file = DocumentsStore.pdf(context, doc)
-                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
-                    .putExtra(Intent.EXTRA_STREAM, uri)
-                    .putExtra(Intent.EXTRA_SUBJECT, doc.title)
-                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                // Il ClipData fa arrivare il permesso di lettura anche a chi riceve dal menu di condivisione.
-                send.clipData = android.content.ClipData.newUri(context.contentResolver, doc.pdfName, uri)
-                context.startActivity(Intent.createChooser(send, doc.pdfName).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-            }.onFailure { CaptureFeedback.tell(context, "Non riesco a creare il PDF", Icons.Outlined.PictureAsPdf) }
-        }
-    }
+    fun exportPdf(save: Boolean) = exportDocPdf(context, scope, doc, save)
     val more = buildList {
         add(BubbleAction(Icons.Outlined.Share, "Condividi PDF", "Fronte e retro su un foglio A4") { exportPdf(save = false) })
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
