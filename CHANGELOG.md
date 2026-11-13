@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.504.0
+**Media: la coda dentro la card in alto**
+- Niente più sezione "In coda" sotto Riprendi: la card in alto si allunga con "Dopo: <prossimo> · altri N", come quando suona qualcosa
+- Un tocco su quella riga apre la coda intera, per musica e video allo stesso modo
+
 ## 1.503.0
 **Media: video in grande nella fila Video**
 - La fila Video usa le schede grandi della lista verticale: anteprima larga quasi quanto lo schermo, titolo su due righe, canale e data sotto; la scheda successiva spunta a destra
