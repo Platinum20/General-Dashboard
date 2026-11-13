@@ -80,3 +80,15 @@ class AccountTilesTest {
         assertEquals("Collega", t.last().line)
     }
 }
+
+class MailLooksTest {
+    @Test
+    fun initialAndMoment() {
+        assertEquals("C", com.platinum20.dashboard.ui.screens.senderInitial(" comune di Torino"))
+        assertEquals("@", com.platinum20.dashboard.ui.screens.senderInitial(""))
+        val now = LocalDateTime.of(2026, 11, 13, 15, 0)
+        assertEquals("Oggi 10:40", com.platinum20.dashboard.ui.screens.mailMoment(now.withHour(10).withMinute(40), now))
+        assertEquals("Ieri 9:05", com.platinum20.dashboard.ui.screens.mailMoment(now.minusDays(1).withHour(9).withMinute(5), now))
+        assertEquals("Martedì 10:40", com.platinum20.dashboard.ui.screens.mailMoment(LocalDateTime.of(2026, 11, 10, 10, 40), now))
+    }
+}

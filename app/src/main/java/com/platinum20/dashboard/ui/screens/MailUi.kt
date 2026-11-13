@@ -1,5 +1,13 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.ui.unit.sp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -130,7 +138,14 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
     }
     if (mail.isEmpty() && !consent) return
 
-    CardSection(title = if (mail.isNotEmpty()) "Dalla posta · ${mail.size}" else "Dalla posta") {
+    // Al massimo due in Home (1.528, Antonio scelta B); il numero di tutte a destra del titolo.
+    CardSection(title = "Dalla posta", trailing = {
+        if (mail.isNotEmpty()) Text(
+            if (mail.size == 1) "1 importante" else "${mail.size} importanti",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }) {
         Column {
             // La stessa riga di stato di WindTre (1.402), con "Rientra" lì.
             StatusLine(
@@ -142,11 +157,29 @@ fun FromMailCard(onOpenMail: (String) -> Unit) {
                     if (imap) askPassword = true else connect.start()
                 },
             )
-            mail.forEachIndexed { index, m ->
+            mail.take(MAX_HOME_MAIL).forEachIndexed { index, m ->
                 if (index > 0 || consent) RowDivider()
                 MailRow(m, onClick = { haptic(Haptic.TICK); onOpenMail(m.id) })
             }
         }
+    }
+}
+
+/** Quante mail importanti si vedono nella card in Home. */
+internal const val MAX_HOME_MAIL = 2
+
+/** L'iniziale del mittente nel tondo a sinistra della riga (1.528). */
+internal fun senderInitial(from: String): String =
+    from.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "@"
+
+/** Il tondo con l'iniziale del mittente: la colonna di sinistra della riga Canvas. */
+@Composable
+private fun SenderDot(from: String) {
+    Box(
+        Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(senderInitial(from), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -156,6 +189,8 @@ private fun MailRow(m: MailMessage, onClick: () -> Unit) {
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        SenderDot(m.from)
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(m.from, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -375,68 +410,73 @@ internal fun GmailAccountRows() {
     }
 }
 
-/** Una mail letta in Canvas: mittente, oggetto e testo, senza aprire Gmail. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Una mail letta in Canvas (1.528, Antonio scelta B), sulla pagina di dettaglio: l'oggetto come titolo, il
+ * mittente sotto, il testo. In basso "Letta" la toglie dalla Home; "Altro" copia il testo.
+ */
 @Composable
 fun MailScreen(id: String, onBack: () -> Unit) {
     val context = LocalContext.current
     MailStore.init(context)
     val mail = remember(id) { MailStore.find(id) }
-    // Aperta: esce dalla card di Oggi.
-    LaunchedEffect(id) { MailStore.markSeen(id) }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = mail?.from ?: "Posta",
-                subtitle = mail?.let { relativeTime(Instant.ofEpochMilli(it.at)) },
-                onBack = onBack,
-                scrollBehavior = scrollBehavior,
-            )
+    val when_ = mail?.let { java.time.Instant.ofEpochMilli(it.at).atZone(java.time.ZoneId.systemDefault()) }
+    DetailPage(
+        onBack = onBack,
+        onEdit = null,
+        onDelete = null,
+        meta = when_?.let { mailMoment(it.toLocalDateTime(), java.time.LocalDateTime.now()) } ?: "Posta",
+        primary = mail?.let {
+            DetailAction(Icons.Outlined.DoneAll, "Letta") {
+                MailStore.markSeen(id)
+                onBack()
+            }
         },
-    ) { inner ->
-        LazyColumn(
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = inner.calculateTopPadding() + 8.dp,
-                bottom = inner.calculateBottomPadding() + 24.dp + miniPlayerRoom(),
-            ),
-        ) {
-            if (mail == null) {
-                item {
-                    Text(
-                        "Questa mail non è più tra le importanti da leggere.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        more = listOfNotNull(
+            mail?.let { m ->
+                BubbleAction(Icons.Outlined.ContentCopy, "Copia il testo") {
+                    Clip.copy(context, "Mail", m.body.ifEmpty { m.snippet }, "Testo copiato")
                 }
-                return@LazyColumn
-            }
-            item {
-                Text(mail.subject, style = MaterialTheme.typography.titleLarge)
+            },
+        ),
+    ) {
+        if (mail == null) {
+            DetailMissing(Icons.Outlined.MailOutline, "Questa mail non è più tra le importanti da leggere.")
+            return@DetailPage
+        }
+        Text(
+            mail.subject.ifBlank { "(senza oggetto)" },
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
+            SenderDot(mail.from)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(mail.from, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (mail.fromAddress.isNotEmpty()) {
-                    Text(
-                        mail.fromAddress,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-                Spacer(Modifier.height(16.dp))
-            }
-            // Paragrafo per paragrafo: le mail lunghe scorrono senza comporre tutto il testo in una volta.
-            val paragraphs = mail.body.ifEmpty { mail.snippet }.split("\n\n")
-            items(paragraphs.size) { i ->
-                SelectionContainer {
-                    Text(
-                        paragraphs[i],
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(bottom = 12.dp),
-                    )
+                    Text(mail.fromAddress, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
+        SelectionContainer {
+            Text(
+                mail.body.ifEmpty { mail.snippet },
+                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+    }
+}
+
+/** "Oggi 10:40", "Ieri 18:02", "Martedì 10:40", "3 novembre": quando è arrivata, sopra il titolo. Pura. */
+internal fun mailMoment(at: java.time.LocalDateTime, now: java.time.LocalDateTime): String {
+    val days = java.time.temporal.ChronoUnit.DAYS.between(at.toLocalDate(), now.toLocalDate())
+    val time = at.format(java.time.format.DateTimeFormatter.ofPattern("H:mm"))
+    return when {
+        days == 0L -> "Oggi $time"
+        days == 1L -> "Ieri $time"
+        days in 2..6 -> at.format(java.time.format.DateTimeFormatter.ofPattern("EEEE", java.util.Locale.ITALIAN)).replaceFirstChar { it.uppercase() } + " " + time
+        else -> at.format(java.time.format.DateTimeFormatter.ofPattern("d MMMM", java.util.Locale.ITALIAN))
     }
 }
