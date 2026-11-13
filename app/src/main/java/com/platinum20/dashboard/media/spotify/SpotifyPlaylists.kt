@@ -124,7 +124,7 @@ object SpotifyPlaylists {
     fun restored(tracks: List<SpItem>, track: SpItem, at: Int): List<SpItem> =
         tracks.toMutableList().apply { add(at.coerceIn(0, size), track) }
 
-    /** "spotify:playlist:abc" → "abc": la cosa tenuta premuta è una playlist (1.511). */
+    /** "spotify:playlist:abc" → "abc": la cosa tenuta premuta è una playlist (1.512). */
     fun playlistId(uri: String): String? =
         uri.split(":").takeIf { it.size == 3 && it[0] == "spotify" && it[1] == "playlist" && it[2].isNotBlank() }?.get(2)
 }

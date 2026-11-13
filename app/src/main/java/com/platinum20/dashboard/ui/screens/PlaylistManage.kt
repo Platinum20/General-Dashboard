@@ -227,7 +227,7 @@ internal fun PlaylistEditLayer() {
 }
 
 /**
- * Le righe di una playlist nel fumetto del tieni premuto (1.511, Antonio: "anche tenendo premuto sulle playlist devono
+ * Le righe di una playlist nel fumetto del tieni premuto (1.512, Antonio: "anche tenendo premuto sulle playlist devono
  * uscire modifica, eccetera, elimina"): Riproduci sempre; Modifica, Riordina ed Elimina appena si sa se è tua.
  */
 @Composable

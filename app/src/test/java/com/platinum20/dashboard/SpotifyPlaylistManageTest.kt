@@ -80,7 +80,7 @@ class SpotifyPlaylistManageTest {
     }
 }
 
-/** 1.511 (Antonio): tenendo premuta una playlist escono le sue azioni: si riconosce dall'indirizzo. */
+/** 1.512 (Antonio): tenendo premuta una playlist escono le sue azioni: si riconosce dall'indirizzo. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class SpotifyPlaylistLongPressTest {
