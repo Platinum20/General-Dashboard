@@ -33,6 +33,7 @@ create something it lists, so the next thread doesn't have to explore.
   for swipe-outs at the finger's speed. `bouncyPress` (Common.kt, pure `PressRule`) presses after 80 ms still, innermost only.
 - `ui/screens/SharedItems.kt`: shared elements (`Modifier.sharedItem(key)`, `LocalSharedScope` = SharedTransitionLayout around
   the NavHost, `LocalRouteScope` provided only in HOME/NOTES/NOTE_ITEM): row title → ItemDetail title, Calendar card → page. Row titles are keyed per list (`SharedRows`: `TimelineRow(sharedScope=)` HOME/PAGE, detail reads `SharedRows.origin`) so they never fly between two lists (1.363 jump fix).
+  `media/GoToCreator.kt` + `ui/screens/GoToCreatorUi.kt` (1.518) = "Vai all'artista" (Spotify track/album → first artist via `SpotifyStore.firstArtist`) / "Vai al canale" (YouTube: known feeds/history, else `YtResolver.channelOf`) in the save bubble, saved media and queue long press.
   `RowActions.kt` = `rememberRowActions()` long-press bubble for any calendar row (Home card + page; 1.513: events get Biglietto/zaino/Modifica/Elimina, parcels Traccia/Condividi). RULE (Antonio 1.513): anything with a page/menu of actions gets the same actions on long press (docs card `docActions`, SIM card, news `storyActions`, media bubble `MediaPageRows`, queue rows). `Timeline.kt` `RowFlash`
   (row lights up after tick/save; tick waits `TICK_MS` in place; `FlashNewRows`; the + dot lands on a fresh row), `softStopAtNow`.
   `GestureHints.kt` = one-time gesture hints. `Placeholder`/`PlaceholderList` (Common.kt) instead of spinners.

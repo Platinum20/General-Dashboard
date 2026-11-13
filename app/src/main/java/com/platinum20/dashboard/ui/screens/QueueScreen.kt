@@ -326,6 +326,7 @@ internal fun QueuePeek(onOpenQueue: () -> Unit, modifier: Modifier = Modifier) {
 private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, handle: Modifier? = null) {
     val context = LocalContext.current
     val haptic = rememberHaptic()
+    val inApp = LocalInAppNav.current
     val swipe = rememberSwipeAwayState()
     fun removeWithUndo() {
         val index = CanvasPlayer.queue.value.entries.indexOfFirst { it.id == entry.id }
@@ -350,6 +351,7 @@ private fun SwipeQueueRow(entry: QueueEntry, modifier: Modifier = Modifier, hand
                     first?.takeIf { it.id != entry.id }?.let { top ->
                         BubbleAction(Icons.Rounded.VerticalAlignTop, "Subito dopo", detail = "In cima alla coda") { CanvasPlayer.moveTo(entry.id, top.id) }
                     },
+                    goToCreatorAction(context, entry.item, inApp?.openRoute),
                     BubbleAction(Icons.Outlined.RemoveCircleOutline, "Togli dalla coda", danger = true) { removeWithUndo() },
                 ).toTypedArray())
             },

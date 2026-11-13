@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.518.0
+**Tieni premuto: Vai all'artista e Vai al canale**
+- Tenendo premuto un brano o un album di Spotify c'è "Vai all'artista", che apre la sua pagina nell'app
+- Tenendo premuto un video di YouTube c'è "Vai al canale", che apre la pagina del canale
+- Funziona nelle file di Media, nei Salvati, nella coda, nella ricerca e nella cronologia
+
 ## 1.517.0
 **Mini player: portato giù passa davvero sopra la barra**
 - Trascinandolo verso il basso per chiuderlo ora il mini player scorre davanti alla barra in basso, non più dietro
