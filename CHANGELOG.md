@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.511.0
+**Spotify parte subito, senza bloccarsi**
+- Se tocchi un brano e dopo pochi secondi non suona ancora, l'app lo rimanda da sola; se serve riaccende anche il riproduttore. Prima restava fermo finché non toccavi di nuovo
+- Il riproduttore bloccato si riaccende prima: si aspettano 6 secondi invece di 10
+
 ## 1.510.0
 **Aggiornamenti: ora arrivano davvero da soli**
 - L'aggiornamento automatico non partiva mai: Canvas si credeva sempre "in uso" per colpa del lettore delle notifiche. Ora si installa da sola quando non la stai usando e non sta suonando niente
