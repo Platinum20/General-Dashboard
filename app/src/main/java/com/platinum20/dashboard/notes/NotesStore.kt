@@ -624,6 +624,11 @@ object NotesStore {
         return note
     }
 
+    /** Mette (o cambia) la foto di una nota, dall'editor (1.528). */
+    fun setNotePhoto(id: Long, photo: String) = update { d ->
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(photo = photo, updatedAt = System.currentTimeMillis()) else it })
+    }
+
     fun togglePin(id: Long) = update { d ->
         d.copy(notes = d.notes.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
     }

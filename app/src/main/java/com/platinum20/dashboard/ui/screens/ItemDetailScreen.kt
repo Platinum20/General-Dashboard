@@ -237,8 +237,21 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
         }
         // Si modifica tutto qui, senza dialogo (Antonio): il titolo si scrive, le righe si toccano.
         EditableDetailTitle("$kind-$id", detail.title, kind.dot(), sharedKey = SharedKeys.item(kind, id)) { title -> rename(kind, id, data, title) }
-        CanvasCard(Modifier.fillMaxWidth()) {
-            detail.lines.forEachIndexed { i, line ->
+        // Il quando nel blocco colorato (1.528, Antonio scelta B): quanto manca sopra, la data grande; toccandolo si cambia.
+        val whenLine = detail.lines.firstOrNull { it.kind == LineKind.WHEN }?.takeIf { it.text != "Senza data" }
+        val statusLine = detail.lines.firstOrNull { it.kind == LineKind.STATUS }
+        if (whenLine != null) {
+            val edit = lineEdit(kind, id, data, LineKind.WHEN) as? LineEdit.Tap
+            WhenHeroCard(
+                WhenText3(statusLine?.text.orEmpty(), whenLine.text, ""),
+                onClick = edit?.let { e -> { picker = e.picker ?: run { e.onClick(); null } } },
+                // Tieni premuto: le scelte del quando nel fumetto, come ogni riga (regola della pressione lunga).
+                onLongClick = edit?.onClear?.let { clear -> { ActionBubble.show(BubbleAction(Icons.Outlined.EventBusy, "Togli la data", danger = true, onClick = clear)) } },
+            )
+        }
+        val rest = if (whenLine != null) detail.lines.filter { it.kind != LineKind.WHEN && it.kind != LineKind.STATUS } else detail.lines
+        if (rest.isNotEmpty()) CanvasCard(Modifier.fillMaxWidth()) {
+            rest.forEachIndexed { i, line ->
                 if (i > 0) RowDivider()
                 when (val edit = lineEdit(kind, id, data, line.kind)) {
                     null -> DetailRow(line.kind.icon(), line.text)

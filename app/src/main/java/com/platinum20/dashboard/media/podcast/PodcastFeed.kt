@@ -222,6 +222,19 @@ object PodcastProgress {
     }
 }
 
+/**
+ * La puntata da mettere nel blocco colorato della pagina del podcast (1.528, Antonio scelta B): quella lasciata a
+ * metà se c'è, se no la più nuova non ancora ascoltata. Null quando sono state ascoltate tutte.
+ */
+object PodcastHero {
+    fun pick(episodes: List<Episode>, positions: Map<String, Long>): Episode? {
+        fun saved(e: Episode) = positions[e.id] ?: 0L
+        fun finished(e: Episode) = e.durationSec > 0 && saved(e) >= e.durationSec * 1000 - 30_000
+        val started = episodes.firstOrNull { PodcastProgress.resumeAt(saved(it), it.durationSec * 1000) > 0 && !finished(it) }
+        return started ?: episodes.sortedByDescending { it.publishedAt }.firstOrNull { !finished(it) }
+    }
+}
+
 /** Quando è uscito un episodio, detto come lo direbbe una persona. */
 object EpisodeDate {
     private val months = listOf("gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic")

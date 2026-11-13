@@ -75,4 +75,11 @@ object SimUsage {
         val arr = JSONArray(text ?: return emptyList())
         (0 until arr.length()).map { arr.getJSONObject(it).let { o -> SimReading(o.getLong("at"), o.getDouble("left")) } }
     }.getOrDefault(emptyList())
+
+    /**
+     * Quanto hai usato ogni giorno (GB), dalla differenza tra due letture vicine: il grafico della pagina SIM
+     * (1.528). Un giorno in cui i giga salgono è un rinnovo: conta zero, non un consumo negativo.
+     */
+    fun dailyUse(history: List<SimReading>): List<Double> =
+        history.sortedBy { it.at }.zipWithNext { a, b -> (a.left - b.left).coerceAtLeast(0.0) }
 }

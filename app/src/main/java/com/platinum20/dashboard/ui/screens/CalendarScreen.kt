@@ -273,47 +273,59 @@ fun EventDetailScreen(
             val notes = com.platinum20.dashboard.calendar.Trips.cleanDescription(current.description)
             val tint = if (current.color != 0) Color(current.color) else MaterialTheme.colorScheme.primary
             DetailTitle(if (shift != null) RowText.shift(shift.title) ?: "Turno" else com.platinum20.dashboard.calendar.Trips.title(current.title), tint)
+            // Il quando nel blocco colorato (1.528, Antonio scelta B): "Tra 2 ore", l'ora grande, il giorno e la durata.
+            val nowMs by androidx.compose.runtime.produceState(System.currentTimeMillis()) {
+                while (true) {
+                    kotlinx.coroutines.delay(30_000L)
+                    value = System.currentTimeMillis()
+                }
+            }
+            WhenHeroCard(WhenHero.of(from, to, current.allDay, nowMs, zone))
             CanvasCard(Modifier.fillMaxWidth()) {
-                // Ogni evento con inizio e fine come il viaggio sulla linea del tempo: inizio, linea, fine (Antonio).
-                val stops = if (current.allDay) null else tripStops(
+                // I treni tengono il viaggio sulla linea del tempo: partenza, linea, arrivo (Antonio).
+                val stops = if (current.allDay || trip == null) null else tripStops(
                     CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
-                    LocalDate.now(), zone, labels = trip == null,
+                    LocalDate.now(), zone, labels = false,
                 )
+                // Il primo divisore della card cade se sopra non c'è il viaggio.
+                var first = stops == null
                 if (stops != null) {
-                    val day = Instant.ofEpochMilli(from).atZone(zone).toLocalDate().format(agendaDayFormat).replaceFirstChar { it.uppercase() }
-                    DetailRow(Icons.Outlined.Schedule, day)
-                    TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, bottom = 8.dp))
-                } else {
-                    DetailRow(Icons.Outlined.Schedule, eventWhen(from, to, current.allDay, zone))
+                    TripBlock(stops, tint, past = false, modifier = Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 12.dp, bottom = 8.dp))
+                }
+                @Composable
+                fun Sep() {
+                    if (!first) RowDivider()
+                    first = false
                 }
                 if (shift != null) {
-                    ShiftWhoRows(shift)
+                    Sep()
+                    DetailRow(peopleIcon(shift.mates.size + 1), com.platinum20.dashboard.shifts.ShiftParse.company(shift.mates), maxLines = Int.MAX_VALUE)
                 } else {
                     ticket.forEach { (label, value) ->
-                        RowDivider()
+                        Sep()
                         DetailRow(Icons.Outlined.Train, "$label $value")
                     }
                     // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
                     // Per un treno "Non si ripete" non dice niente: si mostra solo se si ripete davvero.
                     val repeat = com.platinum20.dashboard.notes.WhenText.repeatOfRule(current.rrule)
                     if (!train || repeat != null) {
-                        RowDivider()
+                        Sep()
                         DetailRow(Icons.Outlined.Repeat, repeat ?: com.platinum20.dashboard.notes.WhenText.repeat(null))
                     }
-                    RowDivider()
+                    Sep()
                     DetailRow(Icons.Outlined.Notifications, com.platinum20.dashboard.notes.WhenText.alert(current.reminders))
                     // La stazione di partenza è già nel viaggio.
                     if (current.location.isNotBlank() && !current.location.trim().equals(trip?.from, ignoreCase = true)) {
-                        RowDivider()
+                        Sep()
                         DetailRow(Icons.Outlined.Place, current.location)
                     }
                     // Con i dati del biglietto già sopra, le note del treno non dicono altro.
                     if (notes.isNotBlank() && ticketAll.isEmpty()) {
-                        RowDivider()
+                        Sep()
                         DetailRow(Icons.AutoMirrored.Outlined.Notes, notes, maxLines = Int.MAX_VALUE)
                     }
                     if (current.calendarName.isNotBlank()) {
-                        RowDivider()
+                        Sep()
                         DetailRow(Icons.Outlined.CalendarMonth, current.calendarName)
                     }
                 }

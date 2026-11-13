@@ -110,6 +110,10 @@ import com.platinum20.dashboard.notes.DateIdeas
 import com.platinum20.dashboard.notes.ReceiptReader
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.compose.material.icons.outlined.Mic
+import androidx.compose.material.icons.outlined.Stop
+import androidx.compose.material.icons.outlined.AddPhotoAlternate
 import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
 import com.platinum20.dashboard.notes.HabitIdea
 import com.platinum20.dashboard.notes.HabitIdeas
@@ -957,6 +961,40 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
         onDispose { if (!deleted) NotesStore.saveNote(id, text) }
     }
 
+    val scope = rememberCoroutineScope()
+    // La foto dalla barra (1.528): la nota si salva se è nuova, poi la foto le si attacca.
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) scope.launch {
+            val kept = com.platinum20.dashboard.capture.PhotoAttach.keep(context, uri) ?: return@launch
+            val noteId = id ?: NotesStore.saveNote(null, text.ifBlank { "Foto" })
+            if (noteId != null) {
+                id = noteId
+                NotesStore.setNotePhoto(noteId, kept)
+            }
+        }
+    }
+    // La dettatura dalla barra: tocca il microfono, parla, ritocca per fermare; il testo va in fondo alla nota.
+    val dictation = remember { com.platinum20.dashboard.capture.Dictation(context) }
+    DisposableEffect(Unit) { onDispose { dictation.cancel() } }
+    fun startDictation() {
+        haptic(Haptic.TOGGLE_ON)
+        dictation.start { heard ->
+            if (!heard.isNullOrBlank()) {
+                text = NoteText.append(text, heard)
+                id = NotesStore.saveNote(id, text) ?: id
+            }
+        }
+        dictation.lock()
+    }
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startDictation() }
+    fun dictate() {
+        when {
+            dictation.listening -> { haptic(Haptic.TOGGLE_OFF); dictation.release() }
+            !dictation.hasPermission() -> micPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            else -> startDictation()
+        }
+    }
+
     fun more() {
         haptic(Haptic.LONG_PRESS)
         ActionBubble.show(
@@ -1017,19 +1055,14 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             // Il mini player sta sopra tutte le pagine: qui i tasti salgono sopra di lui invece di finirci sotto.
             val playing by com.platinum20.dashboard.media.Playback.now.collectAsStateWithLifecycle()
             val miniRoom = MiniDock.bottomRoom(playing != null, MiniDock.atTop, MiniDock.barHeight, LocalDensity.current.density, MiniDock.tucked)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .imePadding()
-                    .padding(bottom = miniRoom.dp)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                RoundIconButton(
-                    if (checkMode) Icons.AutoMirrored.Outlined.Notes else Icons.Outlined.ChecklistIcon,
-                    if (checkMode) "Torna al testo" else "Fai una lista",
-                ) {
+            // Una sola barra in basso (1.528, Antonio scelta B), come quella del "+": a sinistra lista, foto e
+            // dettatura, al centro le parole, a destra "Altro".
+            NoteEditorBar(
+                checkMode = checkMode,
+                listening = dictation.listening,
+                stats = if (dictation.listening) dictation.partial.ifBlank { "Ti ascolto…" } else
+                    (if (checkMode) Checklist.progressLabel(text) else NoteText.stats(text)).orEmpty(),
+                onList = {
                     haptic(Haptic.TOGGLE_ON)
                     if (checkMode) {
                         checkMode = false
@@ -1038,17 +1071,16 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         id = NotesStore.saveNote(id, text) ?: id
                         checkMode = true
                     }
-                }
-                Text(
-                    (if (checkMode) Checklist.progressLabel(text) else NoteText.stats(text)).orEmpty(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f),
-                )
-                RoundIconButton(Icons.Outlined.MoreHoriz, "Altro") { more() }
-            }
+                },
+                onPhoto = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                onMic = { dictate() },
+                onMore = { more() },
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(bottom = miniRoom.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         },
     ) { inner ->
         if (checkMode) {
@@ -1077,7 +1109,8 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                 .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             if (photo.isNotEmpty()) {
-                NotePhoto(photo, Modifier.padding(bottom = 16.dp).fillMaxWidth().heightIn(max = 360.dp), crop = false)
+                // La foto della nota in cima, grande (1.528).
+                NotePhoto(photo, Modifier.padding(bottom = 16.dp).fillMaxWidth().heightIn(max = 360.dp).clip(MaterialTheme.shapes.large), crop = false)
             }
             BasicTextField(
                 value = text,
@@ -1107,6 +1140,55 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .heightIn(min = 320.dp)
                     .autoFocus(enabled = noteId == null),
             )
+        }
+    }
+}
+
+/**
+ * La barra dell'editor delle note (1.528): una pillola sola con lista, foto e dettatura a sinistra, le parole al
+ * centro (o quello che sta capendo mentre detti) e "Altro" a destra.
+ */
+@Composable
+private fun NoteEditorBar(
+    checkMode: Boolean,
+    listening: Boolean,
+    stats: String,
+    onList: () -> Unit,
+    onPhoto: () -> Unit,
+    onMic: () -> Unit,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+            IconButton(onClick = onList) {
+                Icon(
+                    if (checkMode) Icons.AutoMirrored.Outlined.Notes else Icons.Outlined.ChecklistIcon,
+                    contentDescription = if (checkMode) "Torna al testo" else "Fai una lista",
+                )
+            }
+            IconButton(onClick = onPhoto) { Icon(Icons.Outlined.AddPhotoAlternate, contentDescription = "Aggiungi una foto") }
+            IconButton(onClick = onMic) {
+                Icon(
+                    if (listening) Icons.Outlined.Stop else Icons.Outlined.Mic,
+                    contentDescription = if (listening) "Ferma la dettatura" else "Detta",
+                    tint = if (listening) MaterialTheme.colorScheme.primary else androidx.compose.material3.LocalContentColor.current,
+                )
+            }
+            Text(
+                stats,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (listening) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onMore) { Icon(Icons.Outlined.MoreHoriz, contentDescription = "Altro") }
         }
     }
 }

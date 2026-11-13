@@ -47,4 +47,16 @@ object NoteText {
 
     /** Sulla linea del tempo, dopo il titolo: "2/5" per le liste, niente per il testo normale. */
     fun badge(text: String): String? = Checklist.progress(text)?.let { (done, total) -> "$done/$total" }
+
+    /** Aggiunge in fondo alla nota il testo dettato (1.528): a capo se l'ultima riga ha già qualcosa. */
+    fun append(text: String, heard: String): String {
+        val add = heard.trim().replaceFirstChar { it.uppercase() }
+        if (add.isEmpty()) return text
+        return when {
+            text.isBlank() -> add
+            text.endsWith("\n") -> text + add
+            text.endsWith(" ") -> text + add
+            else -> "$text $add"
+        }
+    }
 }

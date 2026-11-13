@@ -114,8 +114,70 @@ internal fun PodcastPage(podcast: Podcast, now: PodcastNow?) {
                 }
             }
         }
-        items(state.data.orEmpty(), key = { "ep-${it.id}" }) { episode ->
+        // Prima la puntata da ascoltare, nel blocco colorato (1.528, Antonio scelta B): un tocco e parte.
+        val episodes = state.data.orEmpty()
+        val hero = com.platinum20.dashboard.media.podcast.PodcastHero.pick(episodes, positions)
+        if (hero != null) item(key = "hero-${hero.id}") {
+            EpisodeHero(hero, now, positions[hero.id] ?: 0)
+        }
+        if (episodes.any { it.id != hero?.id }) item(key = "eps-title") { SectionHeader("Puntate") }
+        items(episodes.filter { it.id != hero?.id }, key = { "ep-${it.id}" }) { episode ->
             EpisodeRow(episode, now, positions[episode.id] ?: 0, showPodcast = false)
+        }
+    }
+}
+
+/** La puntata in evidenza: data (o "da riprendere") piccola sopra, titolo, quanto dura e il tasto per farla partire. */
+@Composable
+private fun EpisodeHero(episode: Episode, now: PodcastNow?, savedMs: Long) {
+    val playing = now?.episode?.id == episode.id
+    val durationMs = episode.durationSec * 1000
+    val started = PodcastProgress.resumeAt(savedMs, durationMs) > 0
+    val today = remember { ZonedDateTime.now() }
+    val haptic = rememberHaptic()
+    val play = {
+        haptic(Haptic.CONFIRM)
+        if (playing) PodcastStore.togglePause() else PodcastStore.play(episode)
+    }
+    CanvasCard(
+        modifier = Modifier.fillMaxWidth().bouncyPress(0.98f),
+        onClick = play,
+        onLongClick = { com.platinum20.dashboard.capture.SavedLinks.offer(episodeLink(episode, PodcastProgress.resumeAt(savedMs, durationMs))) },
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    ) {
+        val soft = androidx.compose.material3.LocalContentColor.current.copy(alpha = 0.72f)
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Text(
+                (if (started) "Da riprendere" else "Nuova · " + EpisodeDate.label(episode.publishedAt, today)).trimEnd(' ', '·').uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = soft,
+                maxLines = 1,
+            )
+            Text(
+                episode.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                Text(
+                    PodcastProgress.label(episode.durationSec, if (started) savedMs else 0),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = soft,
+                    modifier = Modifier.weight(1f),
+                )
+                RoundIconButton(
+                    if (playing && now?.playing == true) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    if (playing && now?.playing == true) "Pausa" else "Ascolta",
+                    onClick = play,
+                )
+            }
         }
     }
 }

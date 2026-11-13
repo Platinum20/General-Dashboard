@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -330,6 +332,61 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
             ) {
                 Crossfade(mode, animationSpec = tween(Motion.EXIT_MS), label = "tipo") { shown ->
                     Icon(shown.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * La riga che verrà salvata, sopra la barra del "+" (1.528, Antonio scelta B): stessa forma delle righe del
+ * Calendario (ora a sinistra, nome, una riga sotto) e dove andrà. Vale anche mentre si detta.
+ */
+@Composable
+internal fun CapturePreviewBubble(text: String, modifier: Modifier = Modifier) {
+    val row = remember(text) { com.platinum20.dashboard.capture.CapturePreview.of(text) }
+    // L'ultima riga resta mentre la bolla sparisce, così non si svuota a metà animazione.
+    var last by remember { mutableStateOf(row) }
+    if (row != null) last = row
+    AnimatedVisibility(
+        visible = row != null,
+        enter = fadeIn(Motion.lively()) + expandVertically(Motion.lively(), expandFrom = Alignment.Bottom),
+        exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkVertically(Motion.settle(), shrinkTowards = Alignment.Bottom),
+        modifier = modifier,
+    ) {
+        val shown = last ?: return@AnimatedVisibility
+        val shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+        androidx.compose.material3.Surface(
+            shape = shape,
+            color = androidx.compose.ui.graphics.Color.Transparent,
+            border = cardBorder(),
+            modifier = Modifier.fillMaxWidth().glass(shape),
+        ) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Text(
+                    shown.destination.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                    Box(Modifier.width(48.dp)) {
+                        if (shown.left.isNotEmpty()) {
+                            Text(shown.left, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        } else {
+                            Icon(shown.mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text(shown.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            shown.detail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

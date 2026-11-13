@@ -67,13 +67,7 @@ fun rememberTicketCodes(event: EventDetail?): List<ImageBitmap> {
 fun TicketSheet(codes: List<ImageBitmap>, onClose: () -> Unit) {
     val activityWindow = LocalContext.current.findActivity()?.window
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
-        DisposableEffect(dialogWindow, activityWindow) {
-            val windows = listOfNotNull(dialogWindow, activityWindow)
-            val before = windows.map { it.attributes.screenBrightness }
-            windows.forEach { it.brightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL) }
-            onDispose { windows.zip(before).forEach { (w, b) -> w.brightness(b) } }
-        }
+        FullBrightness(activityWindow)
         Box(
             Modifier
                 .fillMaxSize()
@@ -114,6 +108,21 @@ fun TicketSheet(codes: List<ImageBitmap>, onClose: () -> Unit) {
                 )
             }
         }
+    }
+}
+
+/**
+ * Schermo alla luminosità massima finché il dialogo che la chiama resta aperto (biglietto, documento "Mostra"):
+ * da chiamare dentro il contenuto di un [Dialog].
+ */
+@Composable
+internal fun FullBrightness(activityWindow: Window? = LocalContext.current.findActivity()?.window) {
+    val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+    DisposableEffect(dialogWindow, activityWindow) {
+        val windows = listOfNotNull(dialogWindow, activityWindow)
+        val before = windows.map { it.attributes.screenBrightness }
+        windows.forEach { it.brightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_FULL) }
+        onDispose { windows.zip(before).forEach { (w, b) -> w.brightness(b) } }
     }
 }
 

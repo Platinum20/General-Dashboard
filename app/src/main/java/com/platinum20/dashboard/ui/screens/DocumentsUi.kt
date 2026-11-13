@@ -1,5 +1,12 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
+import androidx.compose.material.icons.outlined.Fullscreen
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,6 +23,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -117,47 +126,50 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
     val haptic = rememberHaptic()
     DocumentsStore.init(context)
     val docs by DocumentsStore.docs.collectAsStateWithLifecycle()
-    CardSection(title = "Documenti") {
-        // Prima quelli che scadono prima; senza scadenza in fondo.
-        docs.sortedBy { it.expiry ?: LocalDate.MAX }.forEachIndexed { i, doc ->
-            if (i > 0) RowDivider()
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .combinedClickable(onClick = { onOpen(doc.id) }, onLongClick = {
-                        haptic(Haptic.LONG_PRESS)
-                        ActionBubble.show(*docActions(context, scope, doc) { onOpen(doc.id) })
-                    })
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                coil3.compose.AsyncImage(
-                    model = File(doc.front),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    // La miniatura vola fino alla foto del fronte nella pagina del documento (1.357).
-                    modifier = Modifier
-                        .size(width = 52.dp, height = 34.dp)
-                        .sharedItem(SharedKeys.document(doc.id))
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(doc.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    val soon = doc.expiry?.let { ChronoUnit.DAYS.between(LocalDate.now(), it) <= 60 } == true
+    // Le tessere in fila come nel portafoglio (1.528, Antonio scelta B): foto, nome, anno di scadenza.
+    CardSection(title = "Documenti", trailing = {
+        Text("${docs.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // Prima quelli che scadono prima; senza scadenza in fondo.
+            docs.sortedBy { it.expiry ?: LocalDate.MAX }.forEach { doc ->
+                val soon = doc.expiry?.let { ChronoUnit.DAYS.between(LocalDate.now(), it) <= 60 } == true
+                Column(
+                    Modifier
+                        .width(112.dp)
+                        .bouncyPress(0.96f)
+                        .combinedClickable(onClick = { onOpen(doc.id) }, onLongClick = {
+                            haptic(Haptic.LONG_PRESS)
+                            ActionBubble.show(*docActions(context, scope, doc) { onOpen(doc.id) })
+                        }),
+                ) {
+                    coil3.compose.AsyncImage(
+                        model = File(doc.front),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        // La miniatura vola fino alla foto del fronte nella pagina del documento (1.357).
+                        modifier = Modifier
+                            .size(width = 112.dp, height = 72.dp)
+                            .sharedItem(SharedKeys.document(doc.id))
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(doc.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        docLine(doc),
-                        style = MaterialTheme.typography.bodySmall,
+                        doc.expiry?.let { if (soon) "scade " + it.format(docDate) else "scade " + it.year } ?: "senza scadenza",
+                        style = MaterialTheme.typography.labelMedium,
                         color = if (soon) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                // Col numero, a destra il tasto che lo copia (Antonio, 2026-11-11): la riga lo tronca spesso.
-                val number = doc.number?.takeIf { it.isNotBlank() }
-                if (number != null) CopyCodeButton(number)
-                else Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.outline)
             }
         }
     }
@@ -259,6 +271,8 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
             DocumentsStore.delete(id)
         },
         meta = "Documento",
+        // "Mostra" (1.528): la foto a tutto schermo con la luminosità al massimo, per farla vedere a chi la chiede.
+        primary = DetailAction(Icons.Outlined.Fullscreen, "Mostra") { zoom = doc.front },
         more = more,
     ) {
         EditableDetailTitle(doc.id, doc.title, MaterialTheme.colorScheme.primary) { DocumentsStore.rename(id, it) }
@@ -269,13 +283,16 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
                 cut?.let { BubbleAction(Icons.Outlined.CropFree, "Foto intera", "Togli il ritaglio") { DocumentsStore.useFull(id, back) } },
             ).toTypedArray())
         }
-        // Il pulsante per ruotare sta sulla foto, sempre visibile (Antonio, 2026-11-11): un quarto di giro a ogni tocco.
-        DocPhoto(doc.front, "Fronte", Modifier.sharedItem(SharedKeys.document(doc.id)), onLongClick = { sideActions(back = false) },
-            onRotate = { scope.launch { DocumentsStore.turn(context, id, back = false) } }) { zoom = doc.front }
-        doc.back?.let { back ->
-            DocPhoto(back, "Retro", onLongClick = { sideActions(back = true) },
-                onRotate = { scope.launch { DocumentsStore.turn(context, id, back = true) } }) { zoom = back }
-        }
+        // Come nel portafoglio (1.528, Antonio scelta B): il fronte davanti, il retro che spunta dietro; tocca il
+        // retro (o scorri) e si scambiano. Il pulsante per ruotare resta sulla foto davanti.
+        DocWallet(
+            front = doc.front,
+            back = doc.back,
+            frontModifier = Modifier.sharedItem(SharedKeys.document(doc.id)),
+            onLongClick = { back -> sideActions(back) },
+            onRotate = { back -> scope.launch { DocumentsStore.turn(context, id, back) } },
+            onOpen = { path -> zoom = path },
+        )
         DetailFieldRow(
             doc.id, Icons.Outlined.Numbers, doc.number.orEmpty(), "Numero del documento",
             onCommit = { DocumentsStore.setNumber(id, it) },
@@ -296,35 +313,110 @@ internal fun DocumentScreen(id: Long, onBack: () -> Unit) {
     }
     zoom?.let { path ->
         // A tutto schermo su nero, per mostrarlo o leggerlo: si chiude toccando.
+        // Luminosità al massimo mentre è aperta; tocca per passare all'altro lato, Indietro per chiudere.
         Dialog(onDismissRequest = { zoom = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-            Box(Modifier.fillMaxSize().background(Color.Black).clickable { zoom = null }, contentAlignment = Alignment.Center) {
-                coil3.compose.AsyncImage(model = File(path), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth())
+            FullBrightness()
+            val other = if (path == doc.front) doc.back else doc.front
+            Box(
+                Modifier.fillMaxSize().background(Color.Black).clickable { zoom = if (other != null && path == doc.front) other else null },
+                contentAlignment = Alignment.Center,
+            ) {
+                coil3.compose.AsyncImage(model = File(path), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().padding(12.dp))
             }
         }
     }
 }
 
-/** Tocca per vederla grande; il pulsante in basso la ruota; tieni premuto per ruotarla o tornare alla foto intera. */
+/**
+ * Fronte e retro come due tessere nel portafoglio (1.528): quella davanti grande, l'altra dietro più piccola e
+ * sbiadita che spunta in basso. Tocca quella dietro o scorri su/giù e si scambiano; tocca quella davanti per vederla
+ * grande; tieni premuto per ruotarla o tornare alla foto intera.
+ */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun DocPhoto(path: String, label: String, photo: Modifier = Modifier, onLongClick: () -> Unit, onRotate: () -> Unit, onClick: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Box {
-        coil3.compose.AsyncImage(
-            model = File(path),
-            contentDescription = label,
-            contentScale = ContentScale.Fit,
-            modifier = photo
+private fun DocWallet(
+    front: String,
+    back: String?,
+    frontModifier: Modifier,
+    onLongClick: (back: Boolean) -> Unit,
+    onRotate: (back: Boolean) -> Unit,
+    onOpen: (String) -> Unit,
+) {
+    var backOnTop by remember(back) { mutableStateOf(false) }
+    val haptic = rememberHaptic()
+    val swap: () -> Unit = {
+        if (back != null) {
+            haptic(Haptic.TICK)
+            backOnTop = !backOnTop
+        }
+    }
+    // 0 = fronte davanti, 1 = retro davanti: le due tessere si scambiano di posto con la stessa molla.
+    val t by animateFloatAsState(if (backOnTop) 1f else 0f, Motion.settle(), label = "wallet")
+    val peek = 44.dp
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, bottom = if (back != null) peek else 0.dp)
+            .pointerInput(back) {
+                var drag = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { drag = 0f },
+                    onDragEnd = { if (kotlin.math.abs(drag) > 40.dp.toPx()) swap() },
+                ) { _, dy -> drag += dy }
+            },
+    ) {
+        @Composable
+        fun Side(path: String, isBack: Boolean, depth: Float) {
+            // depth 0 = davanti, 1 = dietro.
+            val mod = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 120.dp, max = 320.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+                .graphicsLayer {
+                    val s = 1f - 0.06f * depth
+                    scaleX = s
+                    scaleY = s
+                    translationY = peek.toPx() * depth
+                    alpha = 1f - 0.45f * depth
+                }
+                .zIndex(1f - depth)
+            Box(mod) {
+                coil3.compose.AsyncImage(
+                    model = File(path),
+                    contentDescription = if (isBack) "Retro" else "Fronte",
+                    contentScale = ContentScale.Fit,
+                    modifier = (if (isBack) Modifier else frontModifier)
+                        .fillMaxWidth()
+                        .heightIn(min = 140.dp, max = 300.dp)
+                        .clip(MaterialTheme.shapes.large)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .combinedClickable(
+                            onClick = { if (depth > 0.5f) swap() else onOpen(path) },
+                            onLongClick = { onLongClick(isBack) },
+                        ),
+                )
+                if (depth < 0.5f) Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
+                    RoundIconButton(Icons.Outlined.Rotate90DegreesCw, if (isBack) "Ruota retro" else "Ruota fronte", onClick = { onRotate(isBack) })
+                }
+            }
+        }
+        if (back != null) {
+            // Prima si disegna quella dietro.
+            if (t < 0.5f) {
+                Side(back, isBack = true, depth = 1f - t)
+                Side(front, isBack = false, depth = t)
+            } else {
+                Side(front, isBack = false, depth = t)
+                Side(back, isBack = true, depth = 1f - t)
+            }
+        } else {
+            Side(front, isBack = false, depth = 0f)
+        }
+    }
+    if (back != null) {
+        Text(
+            if (backOnTop) "Retro · tocca dietro per il fronte" else "Fronte · tocca dietro per il retro",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
         )
-        Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
-            RoundIconButton(Icons.Outlined.Rotate90DegreesCw, "Ruota ${label.lowercase()}", onClick = onRotate)
-        }
-        }
     }
 }

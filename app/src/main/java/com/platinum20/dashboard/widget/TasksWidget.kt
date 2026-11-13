@@ -78,10 +78,15 @@ class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
         }
 
         private fun rowView(context: Context, row: AgendaRow, openCalendar: PendingIntent): RemoteViews = when (row) {
+            // Come la linea del tempo dell'app (1.528, Antonio scelta B): OGGI nel colore di "adesso", gli altri giorni in inchiostro.
             is AgendaRow.Day -> RemoteViews(context.packageName, R.layout.widget_row_day).apply {
-                setTextViewText(R.id.day_text, row.label)
+                val today = row.label == AgendaRows.TODAY
+                setTextViewText(R.id.day_text, if (today) row.label.uppercase() else row.label)
+                val color = context.getColor(if (today) R.color.widget_accent else R.color.widget_text)
+                setTextColor(R.id.day_text, color)
+                setInt(R.id.day_dot, "setColorFilter", color)
             }
-            is AgendaRow.Note -> RemoteViews(context.packageName, R.layout.widget_row_note).apply {
+            is AgendaRow.Note -> RemoteViews(context.packageName, R.layout.widget_row_cal_note).apply {
                 setTextViewText(R.id.note_text, row.text)
                 setOnClickPendingIntent(R.id.note_text, openCalendar)
             }

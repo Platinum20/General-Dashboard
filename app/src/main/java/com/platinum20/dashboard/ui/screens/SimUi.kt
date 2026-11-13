@@ -263,7 +263,7 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             val s = status
-            // Il blocco colorato della pagina: solo i giga (punto 46). Quando è stato letto sta una volta sola, sotto il titolo.
+            // Il blocco colorato (1.528, Antonio scelta B): l'anello dei giga rimasti e la risposta "ti bastano?".
             CanvasCard(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -274,65 +274,32 @@ fun SimScreen(onBack: () -> Unit, bottomPadding: PaddingValues = PaddingValues()
                     if (s == null) {
                         Text(if (refreshing) "Sto leggendo i dati…" else "Ancora nessun dato da WindTre", style = MaterialTheme.typography.titleMedium)
                     } else {
-                        SimGigaHero(s, SimUsage.verdict(s, history, LocalDate.now()))
+                        SimRingHero(s, SimUsage.verdict(s, history, LocalDate.now()))
                     }
                 }
             }
-            // Il resto in righe, come Impostazioni: niente barre per ciò che è illimitato.
+            // Il resto in righe Canvas: icona, nome, valore a destra; niente barre per ciò che è illimitato.
             if (s != null) {
                 val rows = simPageRows(s)
                 if (rows.isNotEmpty()) CanvasCard {
-                    Column {
-                        rows.forEachIndexed { i, (name, value) ->
-                            if (i > 0) RowDivider()
+                    Column(Modifier.padding(vertical = 4.dp)) {
+                        rows.forEach { (name, value) ->
                             Row(
-                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 9.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                IconTile(simRowIcon(name), TileAccent.NEUTRAL, size = 36.dp, iconSize = 19.dp)
+                                Spacer(Modifier.width(12.dp))
                                 Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                                 RollingText(value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
                 }
+                SimUsageChart(SimUsage.dailyUse(history))
             }
         }
         }
-    }
-}
-
-/** L'eroe della pagina SIM: l'offerta, i giga grandi e la barra di quanto resta. */
-@Composable
-private fun SimGigaHero(s: SimStatus, verdict: GigaVerdict?) {
-    val soft = LocalContentColor.current.copy(alpha = 0.7f)
-    val barColor = MaterialTheme.colorScheme.onPrimaryContainer
-    Text(
-        (s.offer ?: "WindTre").uppercase(Locale.ITALIAN),
-        style = MaterialTheme.typography.labelMedium,
-        color = soft,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
-    Spacer(Modifier.height(6.dp))
-    val data = s.data
-    RollingText(
-        data?.let { if (it.unlimited) "Giga illimitati" else gbLabel(it.left) } ?: "–",
-        style = MaterialTheme.typography.displaySmall,
-        fontWeight = FontWeight.SemiBold,
-    )
-    data?.total?.takeIf { !data.unlimited }?.let {
-        Text("rimasti di " + gbLabel(it), style = MaterialTheme.typography.bodyMedium, color = soft)
-    }
-    if (data != null && !data.unlimited) {
-        Spacer(Modifier.height(12.dp))
-        SimBar(data.fraction ?: 0f, barColor, barColor.copy(alpha = 0.18f), height = 6.dp)
-    }
-    // La domanda della pagina (punto 47): bastano fino al rinnovo? Sotto la barra, col perché in una riga.
-    verdict?.let { v ->
-        val (answer, why) = gigaVerdictText(v)
-        Spacer(Modifier.height(14.dp))
-        Text(answer, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text(why, style = MaterialTheme.typography.bodyMedium, color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

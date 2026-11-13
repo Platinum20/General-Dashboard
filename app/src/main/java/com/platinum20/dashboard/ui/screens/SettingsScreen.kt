@@ -250,7 +250,8 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Impostazioni", scrollBehavior = scrollBehavior, onBack = onBack) },
+        // La versione nella riga sopra il titolo (1.528): si vede senza scendere in fondo.
+        topBar = { TopLevelBar(title = "Impostazioni", subtitle = "Versione ${BuildConfig.VERSION_NAME}", scrollBehavior = scrollBehavior, onBack = onBack) },
     ) { inner ->
         LazyColumn(
             contentPadding = PaddingValues(
@@ -261,6 +262,37 @@ fun SettingsScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
+            // Gli account in cima (1.528, Antonio scelta B): una tessera per collegamento con lo stato vero; quella da
+            // sistemare è arancione e il tocco fa rientrare subito.
+            item(key = "accounts") {
+                val shiftsExpired by ShiftStore.expired.collectAsState()
+                val gmailRejected by GmailImap.rejected.collectAsState()
+                val gmailConsent by GmailAuth.needsConsent.collectAsState()
+                val simStatus by SimStore.status.collectAsState()
+                val inApp = LocalInAppNav.current
+                val tiles = AccountTiles.build(
+                    spotify = spotifyOfficial || MediaService.SPOTIFY in loggedIn,
+                    youtube = youTubeOfficial || MediaService.YOUTUBE in loggedIn,
+                    gmail = gmailImap || gmailApi,
+                    gmailBroken = (gmailImap && gmailRejected) || (!gmailImap && gmailApi && gmailConsent),
+                    sim = simLinked,
+                    simStale = simStatus != null && SimStore.isStale(within = 3 * SimStore.STALE_MS),
+                    shifts = shiftsLinked,
+                    shiftsExpired = shiftsExpired,
+                )
+                Column {
+                    SectionHeader("Account")
+                    Spacer(Modifier.height(4.dp))
+                    AccountTilesRow(tiles) { tile ->
+                        haptic(Haptic.TICK)
+                        when (tile.target) {
+                            AccountTarget.SIM -> inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.SIM)
+                            AccountTarget.SHIFTS -> inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.SHIFTS)
+                            AccountTarget.ACCOUNTS -> onOpenPage(SettingsPage.ACCOUNTS)
+                        }
+                    }
+                }
+            }
             item(key = "look") {
                 SettingsBlock("Aspetto") {
                     ThemePicker(theme) { option ->
@@ -300,18 +332,6 @@ fun SettingsScreen(
                             radio = alarm.timeLabel.takeIf { alarm.enabled },
                             updates = updates && canNotify,
                         )) { onOpenPage(SettingsPage.ALERTS) }
-                    RowDivider()
-                    MenuRow(Icons.Outlined.AccountCircle, TileAccent.GREEN, "Account",
-                        SettingsSummary.accounts(MediaService.entries.filter { service ->
-                            service in loggedIn || when (service) {
-                                MediaService.YOUTUBE -> youTubeOfficial
-                                MediaService.SPOTIFY -> spotifyOfficial
-                            }
-                        }.map { it.label } + listOfNotNull(
-                            "Gmail".takeIf { gmailImap || gmailApi },
-                            "WindTre".takeIf { simLinked },
-                            "Creators Pro".takeIf { shiftsLinked },
-                        ))) { onOpenPage(SettingsPage.ACCOUNTS) }
                 }
             }
             item(key = "data") {

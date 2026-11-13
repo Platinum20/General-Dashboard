@@ -197,6 +197,19 @@ feature (`*Test.kt`). Test class names must be unique across the package. `Scree
 `YouTubeTour`, `MediaClickTour`, `LiveChecks`, `YouTubeNativeCheck` run only with
 `-Ptour=true` / `-Plive=true` (not in normal CI).
 
+**1.528 redesign (Antonio, mockups /mnt/project-files/redesign-zone/, all options B; SIM Home card stays A = bars)**:
+`ui/screens/WeatherBits.kt` (pure `WeatherChart`, `HourStrip` in the Home Adesso card, `TempCurve` in the Meteo hero, `DetailTiles`);
+`InvitesRow` = orange line at the TOP of Home (only when something needs doing); `SimRing.kt` (`SimRingHero`, `SimUsageChart` from
+pure `SimUsage.dailyUse`); Documenti `DocWallet` (front/back stacked, swap by tap/swipe) + "Mostra" = `FullBrightness()` (TicketQrUi.kt,
+shared with the ticket) and a tiles row in the Home card; `WhenHero.kt` (pure `WhenHero.of/countdown/span/duration` + `WhenHeroCard`) =
+first block of the event page and ItemDetail (WHEN+STATUS lines move into it); note editor `NoteEditorBar` (list, photo via
+`NotesStore.setNotePhoto`, in-editor `Dictation` → `NoteText.append`, stats, Altro); `capture/CapturePreview.kt` + `CapturePreviewBubble`
+(CaptureComposerLayer.kt, drawn in `CanvasNavBar` above the bar while writing or dictating); album/playlist header centered
+(`SpotifyPlaylists.headerLine/clock`, Casuale, `NumberedTrackRow` for albums); `PodcastHero.pick` + `EpisodeHero` on top of `PodcastPage`;
+reader `ReaderText` (pinch scale saved, `left` = "N min alla fine" in the meta line); Settings `AccountTiles.kt` row on top (Account menu row
+removed, version in the subtitle); `MailScreen` on `DetailPage` ("Letta" = `markSeen`, opening no longer marks it), Home card max
+`MAX_HOME_MAIL` = 2; widget Calendario rows on a rail (`widget_rail`, `widget_row_cal_note`; News keeps `widget_row_note`).
+
 ## Conventions
 
 - UI text and code comments in Italian. Comments are short KDoc saying *why*, like the existing ones.
