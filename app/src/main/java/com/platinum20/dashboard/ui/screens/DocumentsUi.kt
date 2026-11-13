@@ -101,7 +101,7 @@ internal fun docActions(context: android.content.Context, scope: kotlinx.corouti
         } else null,
         BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
             ActionBubble.show(
-                BubbleAction(Icons.Outlined.Delete, "Elimina ${doc.title}", detail = "Con le sue foto e la scadenza nel calendario", danger = true) {
+                BubbleAction(Icons.Outlined.Delete, "Elimina ${doc.title}", detail = "Con le sue foto", danger = true) {
                     DocumentsStore.delete(doc.id)
                 },
             )

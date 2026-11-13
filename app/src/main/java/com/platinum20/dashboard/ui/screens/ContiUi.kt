@@ -59,7 +59,7 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
                         if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
                     }
                 },
-                BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", detail = "Per correggere un numero sbagliato") {
+                BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", detail = "Se un numero è sbagliato") {
                     shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText())
                 },
             )

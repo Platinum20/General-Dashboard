@@ -103,7 +103,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                         ActionBubble.show(
                             BubbleAction(
                                 Icons.Outlined.Delete, "Elimina l'evento",
-                                detail = "Sparisce anche dal calendario del telefono", danger = true,
+                                detail = "Anche dal telefono", danger = true,
                             ) {
                                 scope.launch {
                                     if (CalendarRepository.delete(context, e.eventId)) haptic(Haptic.CONFIRM)
