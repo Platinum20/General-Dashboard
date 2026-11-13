@@ -713,17 +713,17 @@ private fun VideoArea(
         }
         if (slowSeek && loadingNow && !firstLoad && swipeAt == null) LoadingPulse(Modifier.align(Alignment.Center), color = Color.White)
 
-        // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …).
+        // Il segno del doppio tocco sul lato toccato: i secondi sommati (+10, +20, …). Solo il testo, senza bolla
+        // (Antonio, 1.526): un'ombra lo tiene leggibile anche sulle scene chiare.
         if (seekFlash != 0) {
             Box(
                 Modifier
                     .align(if (seekFlash > 0) Alignment.CenterEnd else Alignment.CenterStart)
                     .fillMaxHeight()
-                    .fillMaxWidth(0.35f)
-                    .background(Color.White.copy(alpha = 0.12f), CircleShape),
+                    .fillMaxWidth(0.35f),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(if (seekFlash > 0) "+$seekFlash s" else "−${-seekFlash} s", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text(if (seekFlash > 0) "+$seekFlash s" else "−${-seekFlash} s", color = Color.White, style = MaterialTheme.typography.titleMedium.copy(shadow = SeekSwipe.textShadow))
             }
         }
 

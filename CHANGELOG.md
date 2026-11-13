@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.526.0
+**Video: salti più rapidi e senza bolle**
+- Trascinando il dito di lato sul video ora ti sposti tre volte più veloce: tutta la larghezza vale tre minuti invece di uno
+- Con il doppio tocco e mentre trascini si vede solo il testo (+10 s, il tempo), senza la bolla scura dietro
+
 ## 1.525.0
 **Pagina dell'artista leggera: niente più blocchi di Spotify**
 - Aprire un artista ora chiede a Spotify 6 cose invece di decine (per un grande nome anche più di 50): l'artista, i popolari e i primi 10 di album, singoli, raccolte e "Appare in"
