@@ -20,4 +20,14 @@ class RadioGenreTest {
         assertEquals("RR", RadioGenre.initials("Rai Radio 1"))
         assertEquals("R", RadioGenre.initials(""))
     }
+
+    @Test fun primoGenere() {
+        assertEquals("Notizie", RadioGenre.primary("news talk"))
+        assertNull(RadioGenre.primary("xyz"))
+    }
+
+    @Test fun chipDalPiuFrequente() = assertEquals(
+        listOf("Pop", "Notizie"),
+        RadioGenre.chips(listOf("pop", "pop,rock", "news", "news talk", "pop", "jazz", "xyz")),
+    )
 }

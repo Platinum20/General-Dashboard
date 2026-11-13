@@ -56,29 +56,76 @@ import com.platinum20.dashboard.media.radio.RadioNow
 import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.radio.RadioStore
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextAlign
 
-/** La parte radio della pagina unica "Radio e podcast": preferite, recenti e le più ascoltate in Italia. */
+/**
+ * La pagina Radio (1.529, Antonio scelta B/C): in cima le tue radio come loghi tondi (preferite, poi le ultime
+ * ascoltate), "In onda adesso" con quello che sta trasmettendo la radio che suona, poi i generi in chip che
+ * restringono le più ascoltate in Italia. Tieni premuta una radio per preferita, sveglia, salva.
+ */
 internal fun LazyListScope.radioSections(
     popular: Loadable<List<RadioStation>>,
     favorites: List<RadioStation>,
     recent: List<RadioStation>,
     now: RadioNow?,
+    genre: String?,
+    onGenre: (String?) -> Unit,
 ) {
-    stationSection("Radio preferite", favorites, now)
-    stationSection("Radio ascoltate di recente", recent.filter { r -> favorites.none { it.id == r.id } }, now)
+    val mine = (favorites + recent).distinctBy { it.id }
+    if (mine.isNotEmpty()) item(key = "mine") { MyStations(mine, now) }
+    now?.let { playing ->
+        item(key = "onair-header") { SectionTitle("In onda adesso") }
+        item(key = "onair-${playing.station.id}") { StationRow(playing.station, playing, first = true, last = true) }
+    }
     val top = popular.data.orEmpty()
-    if (top.isNotEmpty()) {
-        item(key = "popular-header") { SectionTitle("Le radio più ascoltate in Italia") }
-        itemsIndexed(top, key = { _, s -> "list-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == top.lastIndex) }
+    val genres = RadioGenre.chips(top.map { it.tags })
+    if (genres.isNotEmpty()) {
+        item(key = "genre-header") { SectionTitle("Per genere") }
+        item(key = "genre-chips") {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                genres.forEach { g -> CanvasChip(selected = g == genre, onClick = { onGenre(if (g == genre) null else g) }, label = g) }
+            }
+        }
+    }
+    val shown = if (genre == null) top else top.filter { RadioGenre.primary(it.tags) == genre }
+    if (shown.isNotEmpty()) {
+        item(key = "popular-header") { SectionTitle(if (genre == null) "Le più ascoltate in Italia" else "$genre in Italia") }
+        itemsIndexed(shown, key = { _, s -> "list-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == shown.lastIndex) }
     } else if (popular.loading) item(key = "popular-loading") {
         PlaceholderList(rows = 4, label = "Carico le radio")
     }
 }
 
-private fun LazyListScope.stationSection(title: String, stations: List<RadioStation>, now: RadioNow?) {
-    if (stations.isEmpty()) return
-    item(key = "header-$title") { SectionTitle(title) }
-    itemsIndexed(stations, key = { _, s -> "$title-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == stations.lastIndex) }
+/** Le tue radio in loghi tondi, la preferita prima; quella che suona ha il nome blu. */
+@Composable
+private fun MyStations(stations: List<RadioStation>, now: RadioNow?) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        stations.forEach { station ->
+            val playing = now?.station?.id == station.id
+            Column(
+                Modifier.width(72.dp).bouncyPress(0.94f).clip(MaterialTheme.shapes.medium)
+                    .tapOrSave({ SavedLinks.radio(station) }) { RadioStore.play(station) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                StationLogo(station, 64, CircleShape)
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    station.name,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -104,15 +151,17 @@ private fun StationRow(station: RadioStation, now: RadioNow?, first: Boolean, la
             Column(Modifier.weight(1f)) {
                 Text(station.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    // Il genere in italiano, non i tag in inglese con i kbps (punto 42).
-                    RadioGenre.of(station.tags) ?: "Radio",
+                    // Il genere in italiano, non i tag in inglese con i kbps (punto 42); mentre suona, cosa trasmette.
+                    now?.track?.takeIf { playing && it.isNotBlank() } ?: RadioGenre.of(station.tags) ?: "Radio",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = {
+            if (playing) {
+                Text("LIVE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 12.dp))
+            } else IconButton(onClick = {
                 haptic(if (favorite) Haptic.TICK else Haptic.CONFIRM)
                 RadioStore.toggleFavorite(station)
             }) {
@@ -127,11 +176,11 @@ private fun StationRow(station: RadioStation, now: RadioNow?, first: Boolean, la
 }
 
 @Composable
-fun StationLogo(station: RadioStation, sizeDp: Int) {
+fun StationLogo(station: RadioStation, sizeDp: Int, shape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium) {
     Box(
         Modifier
             .size(sizeDp.dp)
-            .clip(MaterialTheme.shapes.medium)
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {

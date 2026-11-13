@@ -32,6 +32,16 @@ object RadioGenre {
         return found.joinToString(" e ").replaceFirstChar { it.uppercase() }
     }
 
+    /** Il primo genere riconosciuto ("Notizie", "Pop"): quello dei chip "Per genere" della pagina Radio (1.529). */
+    fun primary(tags: String): String? = of(tags)?.substringBefore(" e ")?.replaceFirstChar { it.uppercase() }
+
+    /** I generi delle radio date, dal più frequente; al massimo [max], solo quelli con almeno due radio. */
+    fun chips(tags: List<String>, max: Int = 8): List<String> =
+        tags.mapNotNull(::primary).groupingBy { it }.eachCount()
+            .filter { it.value >= 2 }
+            .entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .take(max).map { it.key }
+
     /** Le iniziali per il logo che manca: "Radio 24" → "R2", "Rai Radio 1" → "RR". */
     fun initials(name: String): String {
         val words = name.split(' ', '-', '.').filter { it.isNotBlank() }
