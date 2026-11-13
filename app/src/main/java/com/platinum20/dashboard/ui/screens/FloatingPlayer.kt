@@ -3,6 +3,7 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -379,7 +380,8 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
                     dx += amount
                 }
             }
-            .pointerInput(Unit) { detectTapGestures(onTap = { open() }) },
+            // Un vero clic (non solo un tocco a mano): così lo apre anche TalkBack.
+            .clickable(interactionSource = null, indication = null, onClickLabel = "Riapri") { open() },
     ) {
         Box(
             Modifier.padding(start = if (right) 7.dp else 0.dp, end = if (right) 0.dp else 7.dp),
