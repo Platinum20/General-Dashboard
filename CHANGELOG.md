@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.509.0
+**Aggiornamenti: ora arrivano davvero da soli**
+- L'aggiornamento automatico non partiva mai: Canvas si credeva sempre "in uso" per colpa del lettore delle notifiche. Ora si installa da sola quando non la stai usando e non sta suonando niente
+- Se resta occupata per più di un'ora ti arriva comunque l'avviso "tocca per aggiornare"
+- Dopo l'installazione il file scaricato viene cancellato: decine di MB liberati sul telefono
+
 ## 1.508.0
 **Mini player a linguetta: non copre più la pagina**
 - Lancia il mini player a destra o a sinistra: si ritira in una linguetta tonda sul bordo, con la copertina e l'anello del tempo che scorre

@@ -51,16 +51,22 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
 
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val tries = if (prefs.getString(KEY_TRIED, null) == latest.version) prefs.getInt(KEY_TRIES, 0) else 0
+        val now = System.currentTimeMillis()
+        if (prefs.getString(KEY_SEEN, null) != latest.version) {
+            prefs.edit().putString(KEY_SEEN, latest.version).putLong(KEY_SEEN_AT, now).apply()
+        }
         val step = step(
             silent = ApkInstaller.canInstallSilently(context),
             inUse = inUse(),
             waitWifi = HeavyDownloads.blocked(context),
             tries = tries,
             notified = prefs.getString(KEY_NOTIFIED, null) == latest.version,
+            waitedMinutes = (now - prefs.getLong(KEY_SEEN_AT, now)) / 60_000,
         )
         when (step) {
             Step.NOTHING, Step.WAIT -> Unit
             Step.NOTIFY -> notifyManual(context, latest.version, latest.notes)
+            Step.NOTIFY_WAITING -> notifyManual(context, latest.version, latest.notes, keepTrying = true)
             Step.INSTALL -> {
                 prefs.edit().putString(KEY_TRIED, latest.version).putInt(KEY_TRIES, tries + 1).apply()
                 runCatching {
@@ -76,10 +82,11 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
     private fun inUse(): Boolean {
         val info = ActivityManager.RunningAppProcessInfo()
         ActivityManager.getMyMemoryState(info)
-        return info.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
+        return inUse(info.importance, com.platinum20.dashboard.media.Playback.now.value?.playing == true)
     }
 
-    enum class Step { NOTHING, WAIT, INSTALL, NOTIFY }
+    /** NOTIFY_WAITING = avvisa ma continua a provare in silenzio quando Canvas si libera. */
+    enum class Step { NOTHING, WAIT, INSTALL, NOTIFY, NOTIFY_WAITING }
 
     companion object {
         private const val WORK = "update_check"
@@ -91,24 +98,53 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
         private const val KEY_NOTIFIED = "notified_version"
         private const val KEY_TRIED = "auto_version"
         private const val KEY_TRIES = "auto_tries"
+        private const val KEY_SEEN = "seen_version"
+        private const val KEY_SEEN_AT = "seen_at"
         internal const val MAX_TRIES = 3
+
+        /**
+         * Dopo quanto aspettare che Canvas si liberi prima di avvisare comunque: con il player o
+         * un servizio sempre attivo "in uso" può durare per sempre, e l'aggiornamento non arrivava mai.
+         */
+        internal const val WAIT_NOTIFY_MINUTES = 60L
+
+        /**
+         * Solo schermo visibile o audio che suona contano come "in uso". Prima bastava
+         * importance <= VISIBLE, ma il lettore di notifiche (sempre collegato da Android) tiene
+         * Canvas a FOREGROUND_SERVICE tutto il giorno: l'aggiornamento automatico non partiva mai.
+         */
+        internal fun inUse(importance: Int, playing: Boolean): Boolean =
+            playing ||
+                importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND ||
+                importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
 
         /**
          * Cosa fare con una versione nuova. Si installa da sola se Android lo permette e Canvas
          * non è in uso (altrimenti si riprova al giro dopo); dopo [MAX_TRIES] tentativi falliti,
          * o senza installazione silenziosa, resta la notifica di sempre, una volta sola.
          */
-        internal fun step(silent: Boolean, inUse: Boolean, waitWifi: Boolean, tries: Int, notified: Boolean): Step = when {
-            silent && tries < MAX_TRIES -> if (inUse || waitWifi) Step.WAIT else Step.INSTALL
+        internal fun step(
+            silent: Boolean,
+            inUse: Boolean,
+            waitWifi: Boolean,
+            tries: Int,
+            notified: Boolean,
+            waitedMinutes: Long = 0,
+        ): Step = when {
+            silent && tries < MAX_TRIES -> when {
+                !inUse && !waitWifi -> Step.INSTALL
+                !notified && waitedMinutes >= WAIT_NOTIFY_MINUTES -> Step.NOTIFY_WAITING
+                else -> Step.WAIT
+            }
             notified -> Step.NOTHING
             else -> Step.NOTIFY
         }
 
         /** L'avviso "tocca per aggiornare", una volta per versione. */
-        fun notifyManual(context: Context, version: String, notes: String = "") {
+        fun notifyManual(context: Context, version: String, notes: String = "", keepTrying: Boolean = false) {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             // Se in silenzio non è andata, non la riscarichiamo a ogni giro.
-            prefs.edit().putString(KEY_TRIED, version).putInt(KEY_TRIES, MAX_TRIES).apply()
+            if (!keepTrying) prefs.edit().putString(KEY_TRIED, version).putInt(KEY_TRIES, MAX_TRIES).apply()
             if (!MorningWorker.canNotify(context)) return
             if (prefs.getString(KEY_NOTIFIED, null) == version) return
             // Le prime righe del changelog, senza titoli e simboli del Markdown.

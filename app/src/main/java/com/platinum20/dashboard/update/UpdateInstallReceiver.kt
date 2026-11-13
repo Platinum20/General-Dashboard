@@ -12,6 +12,8 @@ class UpdateInstallReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            // L'APK appena installato non serve più: decine di MB liberati (il changelog resta).
+            runCatching { java.io.File(context.cacheDir, "updates").deleteRecursively() }
             UpdateCheckWorker.installed(context)
             return
         }
