@@ -4,7 +4,7 @@
 **Mini player: linguetta sistemata**
 - La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
 - Riaprendola, il mini player torna sempre al suo posto (prima a volte restava a metà, mezzo fuori)
-- Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto
+- Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto, e in fondo compare una X rossa (anche lei sopra la barra) che cresce quando la calamita lo prende
 - Vibrazioni più chiare: una quando lo porti oltre metà di lato (lasciandolo va nella linguetta), una quando la calamita lo prende, una alla chiusura e alla riapertura; la linguetta si schiaccia un po' al tocco
 
 ## 1.509.0

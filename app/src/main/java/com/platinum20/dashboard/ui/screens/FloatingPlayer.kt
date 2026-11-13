@@ -187,7 +187,8 @@ fun FloatingPlayer(
             return@BoxWithConstraints
         }
 
-        // La calamita, in fondo al centro: compare man mano che lo porti giù e diventa rossa quando lo prende.
+        // La X rossa in fondo al centro, sopra la barra delle sezioni (il mini player si disegna sopra lo Scaffold):
+        // compare man mano che lo porti giù e cresce quando la calamita lo prende.
         val below = (y.value - 1f).coerceAtLeast(0f) * range
         val near = (below / (MiniTuck.MAGNET_DP * density.density)).coerceIn(0f, 1f)
 
@@ -325,13 +326,14 @@ fun FloatingPlayer(
                         alpha = near
                     }
                     .clip(CircleShape)
-                    .background(if (magnet) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant),
+                    // Rossa da subito (rosso = elimina): dice che lì sotto si chiude; più piena quando la calamita lo prende.
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = if (magnet) 1f else 0.75f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Filled.Close,
-                    contentDescription = if (magnet) "Lascia per chiudere" else null,
-                    tint = if (magnet) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurfaceVariant,
+                    contentDescription = if (magnet) "Lascia per chiudere" else "Portalo qui per chiudere",
+                    tint = MaterialTheme.colorScheme.onError,
                     modifier = Modifier.graphicsLayer { rotationZ = 90f * (1f - near) },
                 )
             }
