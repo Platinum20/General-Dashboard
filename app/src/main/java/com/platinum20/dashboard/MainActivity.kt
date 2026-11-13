@@ -9,6 +9,7 @@ import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.songid.SongId
 import com.platinum20.dashboard.ui.screens.CaptureComposerVeil
 import com.platinum20.dashboard.ui.screens.CaptureComposerInput
+import com.platinum20.dashboard.ui.screens.CapturePreviewBubble
 import com.platinum20.dashboard.ui.screens.rememberComposerSend
 import com.platinum20.dashboard.ui.screens.ItemDetailScreen
 import com.platinum20.dashboard.ui.screens.ItemKind
@@ -541,6 +542,15 @@ private fun CanvasNavBar(
     // Mentre si scrive la barra è il campo: sale con la tastiera.
     val insets = if (composing) WindowInsets.navigationBars.union(WindowInsets.ime) else WindowInsets.navigationBars
     Column(Modifier.fillMaxWidth().windowInsetsPadding(insets)) {
+    // Sopra la barra, mentre si scrive o si detta: la riga che verrà salvata, com'è e dove va (1.528, Antonio scelta B).
+    CapturePreviewBubble(
+        when {
+            listening && !music -> partial
+            composing -> CaptureComposer.text.text
+            else -> ""
+        },
+        Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp),
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
