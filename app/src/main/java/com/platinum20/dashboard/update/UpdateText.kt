@@ -61,4 +61,28 @@ object UpdateText {
                 else -> d.format(day)
             }
         }
+
+    /** "1.507.0" → "1.507": lo ".0" finale non dice niente (1.509, linea del tempo). */
+    fun short(version: String): String = version.removeSuffix(".0")
+
+    /** La data di una versione come nel resto dell'app: "oggi 04:17", "ieri 00:51", "12 nov". */
+    fun releaseWhen(publishedAt: String, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): String? =
+        runCatching { java.time.OffsetDateTime.parse(publishedAt).atZoneSameInstant(zone) }.getOrNull()?.let { t ->
+            val today = now.atZone(zone).toLocalDate()
+            when (t.toLocalDate()) {
+                today -> "oggi " + t.format(hour)
+                today.minusDays(1) -> "ieri " + t.format(hour)
+                else -> t.format(day)
+            }
+        }
+
+    /** Quante versioni pubblicate sono più nuove di quella installata. */
+    fun newCount(versions: List<String>, installed: String): Int = versions.count { compareVersions(it, installed) > 0 }
+
+    /**
+     * Dove va il segno INSTALLATA nella lista (dalla più nuova): prima della versione installata,
+     * o della prima più vecchia se quella installata non è tra le release (build di prova).
+     */
+    fun installedIndex(versions: List<String>, installed: String): Int =
+        versions.indexOfFirst { compareVersions(it, installed) <= 0 }.let { if (it < 0) versions.size else it }
 }

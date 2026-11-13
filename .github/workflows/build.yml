@@ -96,9 +96,21 @@ jobs:
             exit 1
           fi
           VERSION="${{ steps.version.outputs.name }}"
-          # Prende le righe tra "## <versione>" e l'intestazione successiva.
-          awk -v v="$VERSION" '
-            /^## / { if (found) exit; if ($2 == v) { found = 1; next } }
+          # Prende le righe da "## <versione>" fino alla versione dell'ultima release pubblicata:
+          # le versioni saltate (build annullate perché ne è arrivata una dopo) entrano con il loro
+          # "## x.y.z" e il testo identico, invece di sparire dalla pagina Aggiornamenti.
+          PREV=$(gh release list --limit 20 --json tagName,isPrerelease,isDraft \
+            --jq '[.[] | select(.isPrerelease|not) | select(.isDraft|not)][0].tagName' 2>/dev/null | sed 's/^v//')
+          awk -v v="$VERSION" -v prev="$PREV" '
+            function older(a, b,   x, y, i) {
+              split(a, x, "."); split(b, y, ".")
+              for (i = 1; i <= 3; i++) { if (x[i] + 0 != y[i] + 0) return x[i] + 0 < y[i] + 0 }
+              return 1
+            }
+            /^## / {
+              if (found && (prev == "" || older($2, prev))) exit
+              if ($2 == v) { found = 1; next }
+            }
             found { print }
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "Nessuna nota per questa versione." > notes.md
