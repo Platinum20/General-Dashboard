@@ -7,6 +7,20 @@
 - In verticale sta in basso e il video resta in vista; in orizzontale sta a destra
 - Qualità: prima Automatica e le più comuni (1080p, 720p, 480p, 360p), poi le altre. Sottotitoli: prima la lingua originale, poi l'italiano
 
+## 1.514.0
+**Aggiornamenti: le versioni su una linea del tempo**
+- In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
+- Sotto, le versioni su una linea come nel Calendario: il segno INSTALLATA separa le nuove da quelle che hai già, più chiare
+- Numeri corti (1.514) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
+- Le note delle versioni uscite insieme a un'altra non si perdono più: compaiono dentro quella successiva
+
+## 1.513.0
+**Mini player: linguetta sistemata**
+- La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
+- Riaprendola, il mini player torna sempre al suo posto (prima a volte restava a metà, mezzo fuori)
+- Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto, e in fondo compare una X rossa (anche lei sopra la barra) che cresce quando la calamita lo prende
+- Vibrazioni più chiare: una quando lo porti oltre metà di lato (lasciandolo va nella linguetta), una quando la calamita lo prende, una alla chiusura e alla riapertura; la linguetta si schiaccia un po' al tocco
+
 ## 1.512.0
 **Musica: tieni premuta una playlist per gestirla**
 - Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina

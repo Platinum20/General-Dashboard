@@ -1,43 +1,23 @@
 package com.platinum20.dashboard.ui.screens
 
-import android.os.Build
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.CloudDownload
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.NewReleases
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Security
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
@@ -47,8 +27,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -60,13 +41,18 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.platinum20.dashboard.settings.AppSettings
 import com.platinum20.dashboard.update.GitHubRelease
 import com.platinum20.dashboard.update.UpdateStatus
+import com.platinum20.dashboard.update.UpdateText
 import com.platinum20.dashboard.update.UpdateUiState
 import com.platinum20.dashboard.update.UpdateViewModel
 import com.platinum20.dashboard.update.compareVersions
 import com.platinum20.dashboard.work.UpdateCheckWorker
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
+import java.time.Instant
 
+/**
+ * Aggiornamenti (1.510, Antonio ha scelto la bozza C): in alto il riquadro con lo stato e l'unico tasto,
+ * sotto le versioni su una linea come nel Calendario, con il segno INSTALLATA tra le nuove e quelle che hai.
+ * Le note sono quelle del CHANGELOG, parola per parola: cambia solo l'impaginazione.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdatesScreen(
@@ -74,7 +60,6 @@ fun UpdatesScreen(
     viewModel: UpdateViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val context = LocalContext.current
 
     // Sei già qui: l'avviso della nuova versione non serve più.
@@ -83,6 +68,19 @@ fun UpdatesScreen(
     // Tornando dalle impostazioni di sistema (permesso di installazione) riprendiamo da dove eravamo.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onResume() }
 
+    UpdatesContent(state, onBack, viewModel::checkAndUpdate, viewModel::openPermissionSettings)
+}
+
+/** La pagina senza ViewModel, così il giro fotografico la disegna con versioni finte. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun UpdatesContent(
+    state: UpdateUiState,
+    onBack: () -> Unit,
+    onUpdate: () -> Unit,
+    onGrantPermission: () -> Unit,
+) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -92,157 +90,191 @@ fun UpdatesScreen(
                 scrollBehavior = scrollBehavior,
             )
         },
-        bottomBar = {
-            UpdateBar(
-                state = state,
-                onUpdate = viewModel::checkAndUpdate,
-                onGrantPermission = viewModel::openPermissionSettings,
-            )
-        },
     ) { inner ->
+        val versions = state.releases.map { it.version }
+        val marker = UpdateText.installedIndex(versions, state.currentVersion)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
                 top = inner.calculateTopPadding() + 4.dp,
-                bottom = inner.calculateBottomPadding() + 16.dp + miniPlayerRoom(),
+                bottom = inner.calculateBottomPadding() + 24.dp + miniPlayerRoom(),
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { StatusCard(state) }
-
-            item {
-                SectionHeader("Changelog", Modifier.padding(top = 8.dp))
+            item(key = "hero") {
+                StatusHero(
+                    state = state,
+                    onUpdate = onUpdate,
+                    onGrantPermission = onGrantPermission,
+                )
             }
+            item { Spacer(Modifier.height(12.dp)) }
 
             when {
                 state.loadingReleases && state.releases.isEmpty() -> item {
                     PlaceholderList(rows = 3, thumb = false, label = "Leggo le versioni")
                 }
                 state.releasesError != null && state.releases.isEmpty() -> item {
-                    MessageCard(Icons.Outlined.ErrorOutline, state.releasesError!!)
+                    Text(
+                        state.releasesError!!,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(4.dp),
+                    )
                 }
                 state.releases.isEmpty() -> item {
-                    MessageCard(Icons.Outlined.NewReleases, "Nessuna versione pubblicata ancora.")
+                    Text(
+                        "Nessuna versione pubblicata ancora.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(4.dp),
+                    )
                 }
-                else -> items(state.releases, key = { it.tag }) { release ->
-                    ReleaseCard(release, state.currentVersion)
+                else -> itemsIndexed(state.releases, key = { _, r -> r.tag }) { i, release ->
+                    Column {
+                        if (i == marker) NewsVisitMarker("Installata")
+                        VersionRow(
+                            release = release,
+                            newer = compareVersions(release.version, state.currentVersion) > 0,
+                            older = compareVersions(release.version, state.currentVersion) < 0,
+                            last = i == state.releases.lastIndex,
+                        )
+                    }
                 }
             }
+            if (state.releases.isNotEmpty() && marker == state.releases.size) item { NewsVisitMarker("Installata") }
         }
     }
 }
 
+/** Il riquadro in alto: da dove a dove, quando ho controllato, e l'unico tasto della pagina. */
 @Composable
-private fun StatusCard(state: UpdateUiState) {
+private fun StatusHero(state: UpdateUiState, onUpdate: () -> Unit, onGrantPermission: () -> Unit) {
     val status = state.status
     val available = state.available
-    val (icon, title, text) = when {
-        status is UpdateStatus.Error -> Triple(Icons.Outlined.ErrorOutline, "Qualcosa non va", status.message)
-        status is UpdateStatus.NeedsPermission -> Triple(
-            Icons.Outlined.Security,
-            "Serve un permesso",
-            "Consenti a Canvas di installare app, poi torna qui: l'installazione parte da sola.",
-        )
-        status is UpdateStatus.Installing -> Triple(
-            Icons.Outlined.CloudDownload,
-            "Installazione avviata",
-            "Canvas si chiude e passa alla ${status.release.version}; la prima volta Android chiede conferma.",
-        )
-        status is UpdateStatus.Downloading -> Triple(
-            Icons.Outlined.CloudDownload,
-            "Download in corso",
-            "Sto scaricando la versione ${status.release.version}.",
-        )
-        available != null -> Triple(
-            Icons.Outlined.NewReleases,
-            "Nuova versione disponibile",
-            "La ${available.version} è pronta. Premi il tasto in basso per aggiornare.",
-        )
-        status is UpdateStatus.UpToDate -> Triple(
-            Icons.Outlined.CheckCircle,
-            "Sei aggiornato",
-            "Hai già l'ultima versione.",
-        )
-        else -> Triple(
-            Icons.Outlined.CheckCircle,
-            "Versione installata",
-            "Controlla se è uscito qualcosa di nuovo con il tasto in basso.",
-        )
+    val auto by AppSettings.updateNotify.collectAsState()
+    val installed = UpdateText.short(state.currentVersion)
+    val checked = state.checkedAt.takeIf { it > 0 }?.let { "controllato " + relativeTime(Instant.ofEpochMilli(it)) }
+    val autoLine = if (auto) "si aggiorna da sola" else "aggiornamento automatico spento"
+
+    val top: String
+    val title: String
+    val line: String?
+    when {
+        status is UpdateStatus.Error -> {
+            top = "Installata $installed · $autoLine"
+            title = "Qualcosa non va"
+            line = status.message
+        }
+        status is UpdateStatus.NeedsPermission -> {
+            top = "Installata $installed"
+            title = "Serve un permesso"
+            line = "Consenti a Canvas di installare app, poi torna qui: l'installazione parte da sola."
+        }
+        status is UpdateStatus.Installing -> {
+            top = "Installata $installed"
+            title = "Passo alla ${UpdateText.short(status.release.version)}"
+            line = "Canvas si chiude e si riapre aggiornata."
+        }
+        status is UpdateStatus.Downloading -> {
+            top = "Installata $installed"
+            title = "Scarico la ${UpdateText.short(status.release.version)}"
+            line = "${(status.progress * 100).toInt()}%"
+        }
+        available != null -> {
+            val n = UpdateText.newCount(state.releases.map { it.version }, state.currentVersion)
+            top = "Installata $installed · $autoLine"
+            title = "Pronta la ${UpdateText.short(available.version)}"
+            line = listOfNotNull(if (n == 1) "1 versione nuova" else "$n versioni nuove", checked).joinToString(" · ")
+        }
+        else -> {
+            top = listOfNotNull(checked?.replaceFirstChar { it.uppercase() }, autoLine).joinToString(" · ")
+            title = "Sei alla $installed"
+            line = when {
+                status is UpdateStatus.Checking || state.loadingReleases -> "Controllo se c'è una versione nuova"
+                state.releasesError != null -> state.releasesError
+                else -> "È l'ultima versione"
+            }
+        }
     }
-    val highlight = available != null || status is UpdateStatus.NeedsPermission
-    val isError = status is UpdateStatus.Error
 
     CanvasCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = when {
-                isError -> MaterialTheme.colorScheme.errorContainer
-                highlight -> MaterialTheme.colorScheme.tertiaryContainer
-                else -> MaterialTheme.colorScheme.primaryContainer
-            },
+            containerColor = if (status is UpdateStatus.Error) MaterialTheme.colorScheme.errorContainer
+            else MaterialTheme.colorScheme.primaryContainer,
         ),
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(title, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Installata: ${state.currentVersion}",
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
+        Column(Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Text(top, style = MaterialTheme.typography.labelMedium, maxLines = 1, modifier = Modifier.alpha(0.75f))
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            line?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 2.dp).alpha(0.75f))
             }
-            Spacer(Modifier.height(12.dp))
-            Text(text, style = MaterialTheme.typography.bodyMedium)
             if (status is UpdateStatus.Downloading) {
                 Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = { status.progress },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                LinearProgressIndicator(progress = { status.progress }, modifier = Modifier.fillMaxWidth())
+            }
+            // Il tasto c'è solo quando serve: già aggiornato, il controllo si fa da solo aprendo la pagina.
+            val button: Pair<String, () -> Unit>? = when {
+                status is UpdateStatus.NeedsPermission -> "Concedi il permesso" to onGrantPermission
+                status is UpdateStatus.Error -> "Riprova" to onUpdate
+                status is UpdateStatus.Downloading || status is UpdateStatus.Installing || status is UpdateStatus.Checking -> null
+                available != null -> "Aggiorna ora" to onUpdate
+                state.releasesError != null -> "Riprova" to onUpdate
+                else -> null
+            }
+            button?.let { (text, action) ->
+                Spacer(Modifier.height(14.dp))
+                CanvasButton(text = text, onClick = action, primary = true, modifier = Modifier.fillMaxWidth())
             }
         }
     }
 }
 
+/** Una versione sulla linea: pallino colorato se nuova, inchiostro se già tua; quelle prima della tua attenuate. */
 @Composable
-private fun ReleaseCard(release: GitHubRelease, currentVersion: String) {
-    val cmp = compareVersions(release.version, currentVersion)
-    CanvasCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
+private fun VersionRow(release: GitHubRelease, newer: Boolean, older: Boolean, last: Boolean) {
+    val rail = MaterialTheme.colorScheme.outlineVariant
+    val dot = if (newer) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                val x = 5.dp.toPx()
+                val y = 19.dp.toPx()
+                drawLine(rail, Offset(x, 0f), Offset(x, if (last) y else size.height), 2.dp.toPx())
+                drawCircle(dot, radius = 5.dp.toPx(), center = Offset(x, y))
+            }
+            .padding(start = 24.dp, top = 10.dp, bottom = 12.dp)
+            .alpha(if (older) 0.6f else 1f),
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Versione ${release.version}",
+                    UpdateText.short(release.version),
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
-                when {
-                    cmp == 0 -> Badge("Installata", MaterialTheme.colorScheme.secondaryContainer)
-                    cmp > 0 -> Badge("Nuova", MaterialTheme.colorScheme.tertiaryContainer)
+                UpdateText.releaseWhen(release.publishedAt)?.let {
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            formatDate(release.publishedAt)?.let {
-                Text(
-                    it,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             ReleaseNotes(release.notes)
         }
     }
 }
 
-/** Rende in modo semplice il Markdown delle note: titoli, elenchi puntati e testo. */
+/** Rende in modo semplice il Markdown delle note: titoli, grassetto, elenchi puntati e testo. */
 @Composable
 private fun ReleaseNotes(notes: String) {
     val lines = notes.lines().map { it.trimEnd() }.filter { it.isNotBlank() }
@@ -258,14 +290,20 @@ private fun ReleaseNotes(notes: String) {
         lines.forEach { raw ->
             val line = raw.trimStart()
             when {
+                // Le versioni uscite insieme a questa ("## 1.506.0"): il loro numero, corto come gli altri.
                 line.startsWith("#") -> Text(
-                    line.trimStart('#').trim(),
+                    UpdateText.short(line.trimStart('#').trim()),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                line.startsWith("**") -> Text(
+                    line.replace("**", ""),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 4.dp),
                 )
                 line.startsWith("- ") || line.startsWith("* ") -> Row {
-                    Text("•", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("•", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(8.dp))
                     Text(line.drop(2).replace("**", ""), style = MaterialTheme.typography.bodyMedium)
                 }
@@ -274,75 +312,3 @@ private fun ReleaseNotes(notes: String) {
         }
     }
 }
-
-@Composable
-private fun Badge(text: String, color: Color) {
-    Surface(shape = MaterialTheme.shapes.small, color = color) {
-        Text(
-            text,
-            style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        )
-    }
-}
-
-@Composable
-private fun MessageCard(icon: ImageVector, text: String) {
-    CanvasCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(12.dp))
-            Text(text, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun UpdateBar(
-    state: UpdateUiState,
-    onUpdate: () -> Unit,
-    onGrantPermission: () -> Unit,
-) {
-    val status = state.status
-    // Il mini player in basso coprirebbe il tasto, l'unico della pagina: si lascia il suo spazio.
-    val playing by com.platinum20.dashboard.media.Playback.now.collectAsState()
-    val reserve = MiniDock.bottomReserveDp(playing != null, MiniDock.atTop, MiniDock.tucked).dp
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(bottom = reserve)
-                .padding(16.dp),
-        ) {
-            when (status) {
-                is UpdateStatus.NeedsPermission -> Button(onClick = onGrantPermission, modifier = Modifier.fillMaxWidth()) {
-                    Text("Concedi il permesso")
-                }
-                is UpdateStatus.Checking -> Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                    LoadingPulse()
-                    Spacer(Modifier.width(12.dp))
-                    Text("Controllo in corso…")
-                }
-                is UpdateStatus.Downloading -> Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-                    Text("Download ${(status.progress * 100).toInt()}%")
-                }
-                else -> {
-                    val available = state.available
-                    Button(onClick = onUpdate, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Outlined.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (available != null) "Aggiorna alla ${available.version}" else "Controlla e aggiorna")
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun formatDate(iso: String): String? = runCatching {
-    OffsetDateTime.parse(iso).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-}.getOrNull()
