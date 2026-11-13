@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La linea verticale del widget Calendario, la stessa della linea del tempo dell'app (1.528). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_divider" />
+    <size android:width="2dp" android:height="2dp" />
+</shape>
