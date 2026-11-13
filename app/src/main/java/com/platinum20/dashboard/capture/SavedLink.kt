@@ -130,6 +130,12 @@ object SavedLinks {
         return Routes.spotifyItem(SpItem(parts[2], item.key, kind, item.title, item.subtitle, item.image))
     }
 
+    /**
+     * Una cosa salvata che entra nella coda così com'è: video di YouTube, brani, episodi, radio. Album, playlist,
+     * mix e artisti si aprono nella loro pagina (con Riproduci); i video del telefono restano fuori come nel fumetto.
+     */
+    fun queueable(item: ResumeItem): Boolean = item.kind != ResumeKind.VIDEO && pageRoute(item) == null
+
     fun youtube(video: YtVideo): SavedLink = SavedLink.Media(
         ResumeItem(
             ResumeKind.YOUTUBE, video.id, video.title, video.channel, "https://i.ytimg.com/vi/${video.id}/hqdefault.jpg",

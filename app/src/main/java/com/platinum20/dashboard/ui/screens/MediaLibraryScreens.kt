@@ -448,7 +448,7 @@ internal fun savedArt(images: List<String>): List<String> = images.filter { it.i
 
 /**
  * "Salvati" (1.490): le cose salvate per dopo, una sotto l'altra dalla più recente. Un tocco la apre ferma, tenendo
- * premuto la togli (con Annulla). Vuota, si torna indietro.
+ * premuto il fumetto dei media (riproduci, dopo, in coda, togli). Vuota, si torna indietro.
  */
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -468,7 +468,7 @@ fun SavedMediaScreen(video: Boolean, onBack: () -> Unit, onOpenRoute: (String) -
                         mark = MediaMarks.of(l.item.kind, l.item.durationMs),
                         click = Modifier.combinedClickable(
                             onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(l.item), onOpenRoute) },
-                            onLongClick = { com.platinum20.dashboard.capture.SavedLinks.forget(l.note, "Tolto: ${l.item.title}") },
+                            onLongClick = { savedMediaActions(context, l, onOpenRoute) },
                         ),
                         round = l.item.kind == ResumeKind.RADIO,
                     )

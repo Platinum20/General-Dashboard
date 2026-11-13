@@ -20,7 +20,14 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
+import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.rounded.BookmarkRemove
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,9 +45,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.platinum20.dashboard.capture.CaptureFeedback
 import com.platinum20.dashboard.capture.CaptureMode
 import com.platinum20.dashboard.capture.captureTarget
 import com.platinum20.dashboard.capture.SavedLinks
+import com.platinum20.dashboard.media.CanvasPlayer
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.notes.NotesStore
@@ -185,9 +194,51 @@ fun LaterArchiveScreen(onBack: () -> Unit) {
     }
 }
 
-/** Tenendo premuta una cosa salvata (Media, News): il fumetto "Togli dai salvati". */
-internal fun forgetSaved(note: com.platinum20.dashboard.notes.Note) {
-    ActionBubble.show(BubbleAction(Icons.Rounded.BookmarkRemove, "Togli dai salvati", danger = true, onClick = { SavedLinks.forget(note, "Tolto: ${note.title}") }))
+/** "Togli dai salvati", ultima riga di ogni fumetto delle cose salvate. */
+private fun forgetAction(note: com.platinum20.dashboard.notes.Note, title: String) =
+    BubbleAction(Icons.Rounded.BookmarkRemove, "Togli dai salvati", danger = true, onClick = { SavedLinks.forget(note, "Tolto: $title") })
+
+/**
+ * Tenendo premuto un video, un brano o un episodio salvato (Antonio, 2026-11-13): le stesse azioni degli altri media.
+ * Riproduci adesso, subito dopo quello che suona o in fondo alla coda; per i brani di Spotify anche Radio e playlist.
+ */
+internal fun savedMediaActions(context: android.content.Context, later: SavedLinks.Later, openRoute: (String) -> Unit) {
+    val item = later.item
+    val seed = com.platinum20.dashboard.media.spotify.MadeStore.seedOf(item)
+    val queue = SavedLinks.queueable(item)
+    ActionBubble.show(
+        *listOfNotNull(
+            BubbleAction(Icons.Rounded.PlayArrow, "Riproduci", detail = item.title) {
+                SavedLinks.pageRoute(item)?.let(openRoute) ?: openResumeItem(context, item, openRoute = openRoute)
+            },
+            if (!queue) null else BubbleAction(Icons.Rounded.PlaylistPlay, "Riproduci dopo", detail = "Subito dopo quello che suona") {
+                CanvasPlayer.addNext(item)
+                CaptureFeedback.tell(context, "Dopo questo: ${item.title}", Icons.Rounded.PlaylistPlay)
+            },
+            if (!queue) null else BubbleAction(Icons.Rounded.QueueMusic, "Aggiungi alla coda", detail = "In fondo") {
+                CanvasPlayer.add(item)
+                CaptureFeedback.tell(context, "In coda: ${item.title}", Icons.Rounded.QueueMusic)
+            },
+            seed?.let {
+                BubbleAction(Icons.Rounded.Radio, "Radio", detail = "Brani simili a ${item.title}") {
+                    CaptureFeedback.tell(context, "Preparo la radio di ${item.title}", Icons.Rounded.Radio)
+                    com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, it) { error -> CaptureFeedback.tell(context, error) }
+                }
+            },
+            seed?.let { BubbleAction(Icons.Rounded.PlaylistAdd, "Aggiungi a una playlist", detail = "Una delle tue o una nuova") { PlaylistPicker.open(context, it) } },
+            forgetAction(later.note, item.title),
+        ).toTypedArray(),
+    )
+}
+
+/** Tenendo premuto un articolo salvato: leggilo, mandalo a qualcuno o toglilo. */
+private fun savedArticleActions(context: android.content.Context, entry: SavedLinks.ToRead, read: () -> Unit) {
+    val title = entry.article.title.ifBlank { "Articolo" }
+    ActionBubble.show(
+        BubbleAction(Icons.AutoMirrored.Rounded.Article, "Leggi", detail = title, onClick = read),
+        BubbleAction(Icons.Rounded.Share, "Condividi") { shareText(context, entry.article.url) },
+        forgetAction(entry.note, title),
+    )
 }
 
 /**
@@ -203,6 +254,11 @@ internal fun SavedArticlesBlock(modifier: Modifier = Modifier) {
     val data by NotesStore.data.collectAsState()
     val toRead = remember(data.notes) { SavedLinks.toRead(data.notes) }
     if (toRead.isEmpty()) return
+    // Aprendolo esce dai salvati (l'hai letto), con Annulla nel fumetto.
+    val read: (SavedLinks.ToRead) -> Unit = { entry ->
+        SavedLinks.open(context, entry.article) { inApp?.openRoute?.invoke(it) }
+        SavedLinks.forget(entry.note, "Letto: tolto dai salvati")
+    }
     Column(modifier) {
         SectionHeader("Salvati · ${toRead.size}")
         toRead.forEach { entry ->
@@ -212,11 +268,8 @@ internal fun SavedArticlesBlock(modifier: Modifier = Modifier) {
                     .clip(MaterialTheme.shapes.medium)
                     .bouncyPress()
                     .combinedClickable(
-                        onClick = {
-                            SavedLinks.open(context, entry.article) { inApp?.openRoute?.invoke(it) }
-                            SavedLinks.forget(entry.note, "Letto: tolto dai salvati")
-                        },
-                        onLongClick = { forgetSaved(entry.note) },
+                        onClick = { read(entry) },
+                        onLongClick = { savedArticleActions(context, entry) { read(entry) } },
                     )
                     .padding(vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,

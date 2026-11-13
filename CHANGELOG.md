@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.508.0
+**Salvati: tieni premuto per metterli in coda**
+- Nei Salvati di Media, tenendo premuto un video, un brano o un episodio si apre il fumetto: Riproduci, Riproduci dopo, Aggiungi alla coda, Togli dai salvati
+- Per i brani di Spotify anche Radio e Aggiungi a una playlist; album, playlist e mix si aprono con Riproduci
+- Negli articoli salvati di News: Leggi, Condividi, Togli dai salvati
+
 ## 1.507.0
 **Musica: gestisci le tue playlist**
 - Nella pagina di una tua playlist, il tasto "…" accanto a Riproduci apre: Modifica, Riordina e togli brani, Elimina
