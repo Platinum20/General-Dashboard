@@ -66,3 +66,17 @@ class ReaderTextTest {
         assertEquals(r.MIN, r.zoomed(0.8f, 0.5f))
     }
 }
+
+class AccountTilesTest {
+    @Test
+    fun attentionFirstThenLinkedThenOff() {
+        val t = com.platinum20.dashboard.ui.screens.AccountTiles.build(
+            spotify = true, youtube = false, gmail = true, gmailBroken = false,
+            sim = true, simStale = false, shifts = true, shiftsExpired = true,
+        )
+        assertEquals("Creators Pro", t.first().name)
+        assertEquals("Rientra", t.first().line)
+        assertEquals("YouTube", t.last().name)
+        assertEquals("Collega", t.last().line)
+    }
+}
