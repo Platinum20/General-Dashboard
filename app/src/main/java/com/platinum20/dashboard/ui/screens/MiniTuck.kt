@@ -19,11 +19,11 @@ object MiniTuck {
 
     /**
      * Quanto va portato giù perché la calamita lo prenda: [MAGNET_DP], ma senza barra delle sezioni sotto il dito
-     * arriva presto al bordo dello schermo, quindi al massimo il 70% dello spazio che ha davanti (1.518: prima
+     * arriva presto al bordo dello schermo, quindi al massimo metà dello spazio che ha davanti (1.518: prima
      * nelle pagine senza barra non si chiudeva). [roomPx] = dal centro della barra al fondo dello schermo.
      */
     fun threshold(roomPx: Float, density: Float): Float =
-        minOf(MAGNET_DP * density, maxOf(MIN_MAGNET_DP * density, roomPx * 0.7f))
+        minOf(MAGNET_DP * density, maxOf(MIN_MAGNET_DP * density, roomPx * 0.5f))
 
     /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
     fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
