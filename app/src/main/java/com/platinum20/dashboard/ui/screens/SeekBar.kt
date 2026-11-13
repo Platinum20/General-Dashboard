@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -150,8 +149,11 @@ object SeekStack {
  * con una vibrazione ogni [TICK_MS] e l'anteprima del fotogramma. Pure, così si prova.
  */
 object SeekSwipe {
-    /** Tutta la larghezza del video = un minuto: abbastanza piano da trovare il punto giusto. */
-    const val SPAN_MS = 60_000L
+    /** Tutta la larghezza del video = tre minuti (1.527, Antonio: un minuto era troppo lento). */
+    const val SPAN_MS = 180_000L
+
+    /** L'ombra dei testi sopra il video al posto della bolla scura. */
+    val textShadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.7f), blurRadius = 10f)
     const val TICK_MS = 5_000L
 
     /** Parte solo lontano dai bordi a destra e sinistra: lì c'è il gesto Indietro del telefono. */
@@ -226,14 +228,13 @@ internal fun SeekPreview(
         Text(
             label,
             color = Color.White,
-            style = MaterialTheme.typography.labelLarge,
+            // Solo il testo, senza bolla (Antonio, 1.527): l'ombra basta a leggerlo sul video.
+            style = MaterialTheme.typography.labelLarge.copy(shadow = SeekSwipe.textShadow),
             // Col nome del capitolo può essere lunga: una riga sola, tagliata.
             maxLines = 1,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier
                 .widthIn(max = 260.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.55f))
                 .padding(horizontal = 10.dp, vertical = 4.dp),
         )
     }

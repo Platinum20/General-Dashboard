@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.527.0
+**Video: salti più rapidi e senza bolle**
+- Trascinando il dito di lato sul video ora ti sposti tre volte più veloce: tutta la larghezza vale tre minuti invece di uno
+- Con il doppio tocco e mentre trascini si vede solo il testo (+10 s, il tempo), senza la bolla scura dietro
+
 ## 1.526.0
 **Media chiede molto meno a Spotify**
 - Aprire Media non scarica più le nuove uscite di tutti gli artisti che segui (una richiesta per artista): arrivano solo in Scopri e nel Release Radar, una volta al giorno

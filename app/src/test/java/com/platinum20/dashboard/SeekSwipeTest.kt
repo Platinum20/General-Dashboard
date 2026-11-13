@@ -12,9 +12,9 @@ import org.junit.Test
 /** Scorrimento di lato sul video, anteprima dei fotogrammi e niente miniatura dopo un salto. */
 class SeekSwipeTest {
     @Test
-    fun tuttaLaLarghezzaEUnMinuto() {
-        assertEquals(70_000L, SeekSwipe.target(10_000, 1000f, 1000f, 600_000))
-        assertEquals(40_000L, SeekSwipe.target(10_000, 500f, 1000f, 600_000))
+    fun tuttaLaLarghezzaETreMinuti() {
+        assertEquals(190_000L, SeekSwipe.target(10_000, 1000f, 1000f, 600_000))
+        assertEquals(100_000L, SeekSwipe.target(10_000, 500f, 1000f, 600_000))
         assertEquals(0L, SeekSwipe.target(10_000, -1000f, 1000f, 600_000))
         assertEquals(30_000L, SeekSwipe.target(10_000, 1000f, 1000f, 30_000))
     }
