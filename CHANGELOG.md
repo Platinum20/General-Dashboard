@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.518.0
+
+**Capitoli sulla barra e coda di vetro**
+
+- Sulla barra del video di YouTube ci sono le tacche dei capitoli; trascinando, sotto l'anteprima compare anche il nome del capitolo.
+- Aprendo Commenti o Correlati spariscono insieme descrizione e capitoli.
+- La coda è di vetro: il video si vede sotto. In orizzontale è un fumetto a destra largo quanto le impostazioni del video.
+
 ## 1.517.0
 **Mini player: portato giù passa davvero sopra la barra**
 - Trascinandolo verso il basso per chiuderlo ora il mini player scorre davanti alla barra in basso, non più dietro

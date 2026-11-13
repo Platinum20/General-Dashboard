@@ -265,6 +265,17 @@ private fun NothingNext() {
  * a tutta altezza e, se c'è posto, si divide in due colonne: a sinistra cosa suona con la copertina grande,
  * a destra cosa viene dopo. Il video dietro resta a schermo intero.
  */
+/** La coda aperta: disegnata fuori dal NavHost (MainActivity) perché il vetro sfochi davvero il video sotto. */
+internal object QueueOpen {
+    var open by androidx.compose.runtime.mutableStateOf(false)
+}
+
+/** Il livello della coda in MainActivity, sopra pagine, barra e mini player (vetro, 1.518). */
+@Composable
+internal fun QueueLayer() {
+    QueuePopup(open = QueueOpen.open, onClose = { QueueOpen.open = false })
+}
+
 @Composable
 internal fun QueuePopup(open: Boolean, onClose: () -> Unit, bottomExtra: Dp = 0.dp) {
     val queue by CanvasPlayer.queue.collectAsState()
@@ -278,6 +289,8 @@ internal fun QueuePopup(open: Boolean, onClose: () -> Unit, bottomExtra: Dp = 0.
         fixedHeight = 0.78f,
         sideShare = 0.62f,
         sideMax = 680.dp,
+        // In orizzontale larga quanto le impostazioni del video (VideoSettingsLayer).
+        sideWidth = VideoSettings.SIDE_WIDTH,
     ) { sideways, width ->
         val listPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 24.dp + bottomExtra)
         when {
@@ -376,7 +389,7 @@ private fun QueueRow(
         modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.large)
-            .background(MaterialTheme.colorScheme.background)
+            // Niente fondo: la coda è di vetro e sotto si deve vedere.
             .combinedClickable(onClick = onTap, onLongClick = onLongClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
