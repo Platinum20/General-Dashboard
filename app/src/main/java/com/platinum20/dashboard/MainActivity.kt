@@ -1701,7 +1701,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Sotto la barra, che intanto è diventata il campo per scrivere.
         CaptureComposerVeil()
         }
-    // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.513).
+    }
+    // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.517: fuori dallo Scaffold, che disegna la barra sopra il suo contenuto).
     FloatingPlayer(
         currentRoute = currentRoute,
         onExpand = { playing ->
@@ -1711,7 +1712,6 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         modifier = Modifier.padding(scaffoldPadding),
     )
-    }
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
     ActionBubbleLayer()

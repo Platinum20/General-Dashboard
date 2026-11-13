@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.517.0
+**Mini player: portato giù passa davvero sopra la barra**
+- Trascinandolo verso il basso per chiuderlo ora il mini player scorre davanti alla barra in basso, non più dietro
+- Anche la X rossa che indica la chiusura compare sopra la barra
+
 ## 1.516.0
 **Tieni premuto: le azioni di ogni cosa, senza aprirla**
 - Eventi del calendario: oltre ad Apri e Condividi ora ci sono Modifica, Elimina, Biglietto e Ascolta lo zaino
