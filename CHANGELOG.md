@@ -1,9 +1,15 @@
 # Changelog
 
-## 1.502.0
+## 1.503.0
 **Media: video in grande nella fila Video**
 - La fila Video usa le schede grandi della lista verticale: anteprima larga quasi quanto lo schermo, titolo su due righe, canale e data sotto; la scheda successiva spunta a destra
 - La tessera Salvati mostra le copertine di quello che hai salvato, con il segnalibro nell'angolo
+
+## 1.502.0
+**Spotify riparte quando non risponde**
+- Se il riproduttore di Spotify si blocca ("non si avvia, riprova"), al play si riaccende da solo e il brano parte, senza chiudere l'app
+- Dopo un nuovo accesso a Spotify il riproduttore usa subito l'accesso nuovo
+- Se Spotify chiede di aspettare per troppe richieste, l'app smette di insistere e ti dice tra quanto riprovare
 
 ## 1.501.0
 **Musica: la playlist nuova va subito in cima**

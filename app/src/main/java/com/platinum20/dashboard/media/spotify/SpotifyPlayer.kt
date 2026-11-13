@@ -46,6 +46,10 @@ object SpotifyPlayer : ExternalBackend {
     private var resumeCheck: Job? = null
     private var sleepJob: Job? = null
     private var inBackground = false
+    /** Ogni pagina accesa ha il suo numero: quello che dice una pagina già spenta non conta più. */
+    private var page = 0
+    /** L'ultimo errore detto dalla pagina (accesso, Premium, WebView): il play non lo cancella. */
+    private var pageError: String? = null
 
     /** La voce che il player unico ci ha chiesto di suonare (uri di Spotify). */
     private var target: String? = null
@@ -145,7 +149,9 @@ object SpotifyPlayer : ExternalBackend {
         if (webView != null) return
         val app = context.applicationContext
         webView = createMediaWebView(MutableContextWrapper(app), MediaService.SPOTIFY, blockAds = false) { null }.also {
-            it.addJavascriptInterface(Bridge, "CanvasSpotify")
+            page++
+            pageError = null
+            it.addJavascriptInterface(Bridge(page), "CanvasSpotify")
             it.loadDataWithBaseURL(BASE_URL, PAGE, "text/html", "UTF-8", null)
         }
     }
@@ -153,6 +159,15 @@ object SpotifyPlayer : ExternalBackend {
     private fun restart(context: Context) {
         shutDown()
         start(context)
+    }
+
+    /**
+     * Nuovo accesso a Spotify: la pagina accesa aveva il token vecchio (o era ferma su "accesso non
+     * valido") e non si sarebbe ripresa da sola: si riaccende col token nuovo.
+     */
+    fun relinked() {
+        val context = appContext ?: return
+        if (webView != null) scope.launch { restart(context) }
     }
 
     private fun shutDown() {
@@ -251,10 +266,24 @@ object SpotifyPlayer : ExternalBackend {
     }
 
     private suspend fun send(uri: String, startMs: Long) {
-        val device = withTimeoutOrNull(20_000) { ready.await() }
-            ?: throw SpotifyApiException(_error.value ?: "Il riproduttore di Spotify non si avvia, riprova", 0)
+        val device = device()
         val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
         SpotifyApi.playOn(token, device, null, listOf(uri), null, startMs)
+    }
+
+    /**
+     * L'id del nostro riproduttore. Se la pagina non risponde la si riaccende una volta: prima il play
+     * aspettava una pagina bloccata (token vecchio, rete cambiata, "non pronto" mai rientrato) e diceva
+     * "non si avvia" a ogni brano finché non si chiudeva l'app.
+     */
+    private suspend fun device(): String {
+        val context = appContext
+        // La pagina ha già detto che qualcosa non va: inutile aspettarla, si riparte subito.
+        if (!ready.isCompleted && pageError != null && context != null) restart(context)
+        withTimeoutOrNull(FIRST_WAIT_MS) { ready.await() }?.let { return it }
+        if (context != null) restart(context)
+        return withTimeoutOrNull(SECOND_WAIT_MS) { ready.await() }
+            ?: throw SpotifyApiException(pageError ?: "Il riproduttore di Spotify non si avvia, riprova", 0)
     }
 
     private fun fail(message: String) {
@@ -400,6 +429,9 @@ object SpotifyPlayer : ExternalBackend {
     private const val PAUSED_POLL_MS = 15_000L
     /** Quanto resta acceso il riproduttore con l'app chiusa e niente che suona. */
     private const val SLEEP_MS = 5 * 60_000L
+    /** Quanto si aspetta la pagina prima di riaccenderla, e poi quanto la pagina riaccesa. */
+    private const val FIRST_WAIT_MS = 10_000L
+    private const val SECOND_WAIT_MS = 20_000L
     /** Il nome del nostro riproduttore tra i dispositivi di Spotify (lo stesso della pagina). */
     private const val DEVICE_NAME = "Canvas"
 
@@ -407,24 +439,30 @@ object SpotifyPlayer : ExternalBackend {
         ended(Reading("u", beforePaused, beforePos, duration, 0), Reading("u", nowPaused, nowPos, duration, gapMs))
 
     /** Ponte con la pagina nascosta: le chiamate arrivano su un thread dello script, non su quello principale. */
-    private object Bridge {
+    private class Bridge(private val gen: Int) {
+        /** Sul thread principale e solo se questa pagina è ancora quella accesa. */
+        private fun mine(block: () -> Unit) {
+            scope.launch { if (gen == page) block() }
+        }
+
         @JavascriptInterface
         fun token(): String = runBlocking { runCatching { SpotifyAuth.token() }.getOrNull() }.orEmpty()
 
         @JavascriptInterface
-        fun onReady(id: String) {
-            scope.launch { ready.complete(id) }
+        fun onReady(id: String) = mine {
+            pageError = null
+            // Riconnessa (anche con un altro id): vale l'ultimo.
+            if (ready.isCompleted) ready = CompletableDeferred()
+            ready.complete(id)
         }
 
         @JavascriptInterface
-        fun onNotReady() {
-            scope.launch { if (ready.isCompleted) ready = CompletableDeferred() }
-        }
+        fun onNotReady() = mine { if (ready.isCompleted) ready = CompletableDeferred() }
 
         @JavascriptInterface
         fun onState(uri: String, linked: String, paused: Boolean, position: Double, duration: Double) {
             val reading = Reading(uri, paused, position.toLong(), duration.toLong(), System.currentTimeMillis(), linked)
-            scope.launch { onReading(reading) }
+            mine { onReading(reading) }
         }
 
         @JavascriptInterface
@@ -435,7 +473,11 @@ object SpotifyPlayer : ExternalBackend {
                 "account_error" -> "Per ascoltare nell'app serve Spotify Premium"
                 else -> "Spotify: $message"
             }
-            scope.launch { if (target != null) fail(text) else _error.value = text }
+            mine {
+                // Gli errori del brano non dicono che la pagina è ferma; gli altri sì.
+                if (kind != "playback_error") pageError = text
+                if (target != null) fail(text) else _error.value = text
+            }
         }
     }
 

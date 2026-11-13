@@ -481,7 +481,7 @@ internal object CoverTiles {
     const val PEEK = 40
 
     /**
-     * Larghezza delle schede video grandi della fila Video (1.502, Antonio: "come la pagina verticale ma in
+     * Larghezza delle schede video grandi della fila Video (1.503, Antonio: "come la pagina verticale ma in
      * orizzontale"): quasi tutto lo schermo, col margine a sinistra, lo spazio e un pezzo della successiva a destra.
      */
     fun bigVideoWidth(screenDp: Int): Int = screenDp - EDGE - GAP - PEEK

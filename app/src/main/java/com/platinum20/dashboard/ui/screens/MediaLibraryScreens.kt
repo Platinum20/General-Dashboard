@@ -422,7 +422,7 @@ internal fun rememberSavedMedia(video: Boolean): List<com.platinum20.dashboard.c
  */
 @Composable
 internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>, wide: Boolean, onClick: () -> Unit) {
-    // Le copertine di quello che hai salvato (1.502, Antonio: "metti un'icona per salvati"): una riempie, da 4 un
+    // Le copertine di quello che hai salvato (1.503, Antonio: "metti un'icona per salvati"): una riempie, da 4 un
     // mosaico; sopra, dove le altre hanno il tipo, il segnalibro. Senza copertine resta il segnalibro grande.
     val art = savedArt(saved.map { it.item.coverImage() })
     MediaTile(height, wide = wide, image = if (art.size in 1..3) art.first() else "", title = "Salvati · ${saved.size}", author = "Per dopo", date = null, mark = null, click = Modifier.clickable(onClick = onClick)) {

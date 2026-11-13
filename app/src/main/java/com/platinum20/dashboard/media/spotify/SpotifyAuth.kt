@@ -122,6 +122,8 @@ object SpotifyAuth {
                         "code_verifier" to verifier,
                     )
                 )
+                // Il riproduttore nascosto aveva il token di prima: si riaccende col nuovo.
+                SpotifyPlayer.relinked()
             }.onFailure { _error.value = "Collegamento non riuscito. " + it.userMessage("Riprova tra poco.") }
         }
     }

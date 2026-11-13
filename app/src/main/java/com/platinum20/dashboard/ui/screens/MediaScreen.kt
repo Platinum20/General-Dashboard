@@ -289,7 +289,7 @@ fun MediaScreen(
                     }
                 }
                 item(key = "continue") {
-                    // Schede grandi come nella lista verticale (1.502, Antonio), una per volta con la successiva che spunta.
+                    // Schede grandi come nella lista verticale (1.503, Antonio), una per volta con la successiva che spunta.
                     val big = bigVideoWidth()
                     val bigHeight = big * 9f / 16f
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

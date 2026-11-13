@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -66,11 +67,33 @@ class PlaylistLockedException : IOException(
 object SpotifyApi {
     private const val BASE = "https://api.spotify.com/v1/"
 
+    /** L'attesa chiesta da Spotify dopo un 429, comune a tutte le chiamate. */
+    val limit = SpotifyLimit()
+
+    /**
+     * Al massimo poche chiamate insieme: le liste fatte in casa (Release Radar, Top 50, discografie)
+     * ne lanciavano decine in un colpo e Spotify rispondeva "troppe richieste" anche al play.
+     */
+    private val gate = Semaphore(4)
+
     private suspend fun request(
         token: String,
         path: String,
         method: String = "GET",
         body: JSONObject? = null,
+    ): JSONObject? {
+        limit.left().let { left ->
+            if (left > SpotifyLimit.SHORT_WAIT_MS) throw SpotifyApiException(SpotifyLimit.message(left), 429)
+            if (left > 0) delay(left)
+        }
+        return gate.withPermit { call(token, path, method, body) }
+    }
+
+    private suspend fun call(
+        token: String,
+        path: String,
+        method: String,
+        body: JSONObject?,
     ): JSONObject? = withContext(Dispatchers.IO) {
         val conn = (URL(BASE + path).openConnection() as HttpURLConnection).apply {
             requestMethod = method
@@ -89,6 +112,7 @@ object SpotifyApi {
             if (code == 204) return@withContext null
             val text = (if (code in 200..299) conn.inputStream else conn.errorStream)
                 ?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (code == 429) limit.hit(conn.getHeaderField("Retry-After"))
             if (code !in 200..299) {
                 val error = runCatching { JSONObject(text).getJSONObject("error") }.getOrNull()
                 val reason = error?.optString("reason").orEmpty()
@@ -98,7 +122,7 @@ object SpotifyApi {
                         code == 403 && reason == "PREMIUM_REQUIRED" -> "Per comandare la riproduzione serve Spotify Premium"
                         code == 403 -> "Spotify non permette questa richiesta alle app personali"
                         code == 404 && reason == "NO_ACTIVE_DEVICE" -> "Nessun dispositivo Spotify attivo"
-                        code == 429 -> "Troppe richieste a Spotify, riprova tra poco"
+                        code == 429 -> SpotifyLimit.message(limit.left())
                         else -> "Spotify non risponde ($code), riprova più tardi"
                     },
                     code,
