@@ -789,9 +789,11 @@ fun CardSection(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {},
+    /** Tenendo premuta la card: il fumetto con le azioni della sua pagina. */
+    onLongClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    CanvasCard(modifier.fillMaxWidth(), onClick = onClick) {
+    CanvasCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick) {
         CardTitle(title, trailing = trailing)
         content()
     }

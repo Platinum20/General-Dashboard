@@ -50,10 +50,13 @@ class TicketActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_EVENT = "event"
 
+        /** Lo stesso biglietto aperto da dentro l'app (tenendo premuta la riga del treno). */
+        fun intent(context: Context, eventId: Long): Intent = Intent(context, TicketActivity::class.java)
+            .putExtra(EXTRA_EVENT, eventId)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
         fun pending(context: Context, eventId: Long): PendingIntent {
-            val intent = Intent(context, TicketActivity::class.java)
-                .putExtra(EXTRA_EVENT, eventId)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            val intent = intent(context, eventId)
             return PendingIntent.getActivity(
                 context,
                 (eventId % 100_000).toInt(),

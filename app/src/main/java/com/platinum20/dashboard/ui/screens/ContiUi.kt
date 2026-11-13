@@ -3,6 +3,12 @@ package com.platinum20.dashboard.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.SimCard
+import com.platinum20.dashboard.capture.CaptureFeedback
+import kotlinx.coroutines.launch
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +36,7 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
     val status by SimStore.status.collectAsStateWithLifecycle()
     val linked by SimStore.linked.collectAsStateWithLifecycle()
     val haptic = rememberHaptic()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Si aggiorna da sola quando la Home è aperta e il dato ha più di un'ora.
     AutoRefresh(everyMs = SimStore.STALE_MS) { if (linked && SimStore.isStale()) WindTreLink.refresh(context) }
     val s = status
@@ -41,6 +48,22 @@ internal fun ContiCard(onOpenSim: () -> Unit) {
         onClick = { haptic(Haptic.TICK); onOpenSim() },
         // "Letto alle …" sulla riga del titolo, tutto a destra (1.460, Antonio): una riga in meno nella card.
         trailing = { link.line?.takeIf { s != null }?.let { SoftLine(it) } },
+        // Tenendo premuto: le azioni della pagina SIM senza entrarci (Antonio, 2026-11-13).
+        onLongClick = if (!linked) null else ({
+            haptic(Haptic.LONG_PRESS)
+            ActionBubble.show(
+                BubbleAction(Icons.Outlined.SimCard, "Apri", detail = "Giga, minuti e credito") { onOpenSim() },
+                BubbleAction(Icons.Outlined.Refresh, "Aggiorna adesso", detail = link.line.orEmpty()) {
+                    scope.launch {
+                        val ok = WindTreLink.refresh(context)
+                        if (!ok) CaptureFeedback.tell(context, "WindTre non ha risposto: rifai l'accesso da Impostazioni", Icons.Outlined.SimCard)
+                    }
+                },
+                BubbleAction(Icons.Outlined.Share, "Condividi i dati letti", detail = "Per correggere un numero sbagliato") {
+                    shareTextFile(context, "windtre-dati-letti.txt", SimStore.capturesText())
+                },
+            )
+        }),
     ) {
         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp)) {
             when {
