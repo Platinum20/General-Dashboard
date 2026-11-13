@@ -1,5 +1,8 @@
 package com.platinum20.dashboard.ui.screens
 
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.MoreHoriz
+import com.platinum20.dashboard.media.spotify.SpotifyPlaylists
 import com.platinum20.dashboard.media.podcast.Episode
 import com.platinum20.dashboard.media.podcast.Podcast
 import com.platinum20.dashboard.media.podcast.PodcastStore
@@ -146,7 +149,8 @@ fun SpotifyItemScreen(item: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> 
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
-                title = item.title,
+                // Dopo "Modifica" il nome nuovo si vede subito (1.507).
+                title = if (item.kind == SpKind.PLAYLIST) PlaylistManage.title(item) else item.title,
                 subtitle = when (item.kind) {
                     SpKind.ALBUM -> "Album"
                     SpKind.PLAYLIST -> "Playlist"
@@ -159,7 +163,7 @@ fun SpotifyItemScreen(item: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> 
         },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            ChildrenList(item, onOpen = onOpenItem, onPlay = { playSpotifyList(context, it, null) }, onPlayFrom = { child ->
+            ChildrenList(item, onGone = onBack, onOpen = onOpenItem, onPlay = { playSpotifyList(context, it, null) }, onPlayFrom = { child ->
                 // Da un album o una playlist si continua con i brani successivi, nella coda unica.
                 if (item.kind == SpKind.ALBUM || item.kind == SpKind.PLAYLIST || item.kind == SpKind.SHOW) {
                     playSpotifyList(context, item, child)
@@ -581,44 +585,143 @@ internal fun playTracks(context: android.content.Context, row: List<SpItem>, sta
     com.platinum20.dashboard.media.CanvasPlayer.playList(context, items, start)
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun ChildrenList(parent: SpItem, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit, onPlayFrom: (SpItem) -> Unit) {
+private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) -> Unit, onPlay: (SpItem) -> Unit, onPlayFrom: (SpItem) -> Unit) {
     val context = LocalContext.current
+    val view = androidx.compose.ui.platform.LocalView.current
     val all by SpotifyStore.children.collectAsState()
     val state = all[parent.id] ?: Loadable(loading = true)
     LaunchedEffect(parent.id) { SpotifyStore.loadChildren(parent) }
+    val isPlaylist = parent.kind == SpKind.PLAYLIST
+    // Le tue playlist si gestiscono da qui (1.507): serve sapere se è tua, e la sua descrizione.
+    LaunchedEffect(parent.id) { if (isPlaylist) PlaylistManage.load(parent.id) }
+    val info = PlaylistManage.infos[parent.id]?.first
+    val arranging = isPlaylist && PlaylistManage.arranging[parent.id] == true
+    androidx.activity.compose.BackHandler(enabled = arranging) { PlaylistManage.arranging.remove(parent.id) }
+    val tracks = state.data.orEmpty()
+    // Mentre si trascina la lista è quella in mano; Spotify riceve lo spostamento solo al rilascio.
+    var dragging by remember(parent.id) { mutableStateOf<List<SpItem>?>(null) }
+    var dragFrom by remember(parent.id) { mutableStateOf(-1) }
+    var dragKey by remember(parent.id) { mutableStateOf<String?>(null) }
+    val shown = dragging ?: tracks
+    val keys = remember(shown) { SpotifyPlaylists.keys(shown) }
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val reorder = rememberReorderState(listState, canMove = { arranging && it is String && it in keys }) { from, to ->
+        val list = dragging ?: tracks
+        val k = SpotifyPlaylists.keys(list)
+        val i = k.indexOf(from as String)
+        val j = k.indexOf(to as String)
+        if (i < 0 || j < 0) return@rememberReorderState
+        if (dragFrom < 0) {
+            dragFrom = i
+            dragKey = from
+        }
+        view.haptic(Haptic.TICK)
+        dragging = SpotifyPlaylists.moved(list, i, j)
+    }
+    LaunchedEffect(reorder.dragging) {
+        val moved = dragging
+        if (reorder.dragging != null || moved == null) return@LaunchedEffect
+        val to = SpotifyPlaylists.keys(moved).indexOf(dragKey)
+        if (dragFrom >= 0 && to >= 0) PlaylistManage.move(context, parent, dragFrom, to)
+        dragging = null
+        dragFrom = -1
+        dragKey = null
+    }
     // Con i dati (anche vuoti) l'avviso va sotto il titolo, così "Riproduci" resta lì sopra.
     val note = state.error?.takeIf { state.data != null }
-    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto") {
+    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96.dp, MediaMarks.of(parent))
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(parent.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        if (isPlaylist) PlaylistManage.title(parent) else parent.title,
+                        style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
                     Text(parent.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (parent.kind != SpKind.ARTIST) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (arranging) {
+                            CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true)
+                        } else if (parent.kind != SpKind.ARTIST) {
                             FilledTonalButton(onClick = { onPlay(parent) }) { Text("Riproduci") }
+                        }
+                        if (isPlaylist && !arranging && info != null) {
+                            RoundIconButton(Icons.Rounded.MoreHoriz, "Altro") {
+                                view.haptic(Haptic.CONFIRM)
+                                PlaylistManage.openMenu(context, parent, onGone)
+                            }
                         }
                     }
                 }
             }
+        }
+        info?.description?.takeIf { it.isNotBlank() }?.let { text ->
+            item(key = "description") {
+                Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        if (arranging) item(key = "arrange-hint") {
+            Text(
+                "Trascina un brano dalla maniglia per spostarlo; toccalo per toglierlo o portarlo in cima.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         note?.let { message ->
             item(key = "note") {
                 Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        items(state.data.orEmpty(), key = { it.uri + it.id }) { child ->
-            ItemRow(child, onClick = {
-                if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
-                    onPlayFrom(child)
-                } else {
-                    onOpen(child)
-                }
-            })
+        if (arranging) {
+            items(shown.size, key = { keys[it] }) { i ->
+                val child = shown[i]
+                val key = keys[i]
+                ArrangeRow(
+                    child,
+                    modifier = (if (reorder.isDragging(key)) Modifier else Modifier.animateItem()).reorderItem(reorder, key),
+                    handle = Modifier.reorderHandle(reorder, key) { view.haptic(Haptic.GRAB) },
+                    onClick = { PlaylistManage.trackMenu(context, parent, child, i, shown.size) },
+                )
+            }
+        } else {
+            items(shown.size, key = { keys[it] }) { i ->
+                val child = shown[i]
+                ItemRow(child, onClick = {
+                    if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
+                        onPlayFrom(child)
+                    } else {
+                        onOpen(child)
+                    }
+                })
+            }
+        }
+    }
+}
+
+/** Un brano mentre riordini la playlist (1.507): a destra la maniglia, un tocco apre Togli / In cima / In fondo. */
+@Composable
+private fun ArrangeRow(item: SpItem, modifier: Modifier, handle: Modifier, onClick: () -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.card,
+        border = cardBorder(),
+        modifier = modifier.fillMaxWidth().clip(MaterialTheme.shapes.large).clickable(onClick = onClick),
+    ) {
+        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Cover(item.image, MaterialTheme.shapes.small, 56.dp, MediaMarks.of(item))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Icon(
+                Icons.Rounded.DragHandle, contentDescription = "Sposta",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = handle.padding(8.dp).size(24.dp),
+            )
         }
     }
 }

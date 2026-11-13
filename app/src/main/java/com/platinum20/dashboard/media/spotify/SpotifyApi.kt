@@ -210,6 +210,73 @@ object SpotifyApi {
         }
     }
 
+    /** Il tuo id di Spotify: serve per sapere quali playlist sono tue. */
+    suspend fun myId(token: String): String = request(token, "me")?.optString("id").orEmpty()
+
+    /** Nome, descrizione, privata e proprietario di una playlist (1.507). */
+    suspend fun playlistInfo(token: String, playlistId: String): SpPlaylistInfo? =
+        SpotifyPlaylists.info(request(token, "playlists/$playlistId?fields=id,name,description,public,collaborative,owner(id)"))
+
+    /** Cambia nome, descrizione o privata: [body] viene da [SpotifyPlaylists.changes]. */
+    suspend fun updatePlaylist(token: String, playlistId: String, body: JSONObject) {
+        request(token, "playlists/$playlistId", "PUT", body)
+    }
+
+    /**
+     * "Elimina": Spotify non cancella mai davvero una playlist, la togli dalla tua libreria (anche se è tua). Prima
+     * il vecchio indirizzo "followers", poi quello del 2026 "me/library" se il primo non c'è più.
+     */
+    suspend fun unfollowPlaylist(token: String, playlistId: String) = withNewPath(
+        { request(token, "playlists/$playlistId/followers", "DELETE") },
+        { request(token, "me/library?uris=" + URLEncoder.encode("spotify:playlist:$playlistId", "UTF-8"), "DELETE") },
+    )
+
+    /** Per "Annulla": la playlist torna nella libreria. */
+    suspend fun followPlaylist(token: String, playlistId: String) = withNewPath(
+        { request(token, "playlists/$playlistId/followers", "PUT") },
+        { request(token, "me/library?uris=" + URLEncoder.encode("spotify:playlist:$playlistId", "UTF-8"), "PUT") },
+    )
+
+    /** Toglie il brano dalla playlist (tutte le volte che c'è). */
+    suspend fun removeFromPlaylist(token: String, playlistId: String, uri: String) {
+        val one = JSONArray().put(JSONObject().put("uri", uri))
+        withNewPath(
+            { request(token, "playlists/$playlistId/items", "DELETE", JSONObject().put("items", one)) },
+            { request(token, "playlists/$playlistId/tracks", "DELETE", JSONObject().put("tracks", one)) },
+        )
+    }
+
+    /** Rimette il brano al suo posto ([position] da 0), per "Annulla". */
+    suspend fun insertInPlaylist(token: String, playlistId: String, uri: String, position: Int) {
+        val body = JSONObject().put("uris", JSONArray(listOf(uri))).put("position", position)
+        withNewPath(
+            { request(token, "playlists/$playlistId/items", "POST", body) },
+            { request(token, "playlists/$playlistId/tracks", "POST", body) },
+        )
+    }
+
+    /** Sposta la riga [from] prima della riga [insertBefore] (vedi [SpotifyPlaylists.insertBefore]). */
+    suspend fun moveInPlaylist(token: String, playlistId: String, from: Int, insertBefore: Int) {
+        val body = JSONObject().put("range_start", from).put("insert_before", insertBefore).put("range_length", 1)
+        withNewPath(
+            { request(token, "playlists/$playlistId/items", "PUT", body) },
+            { request(token, "playlists/$playlistId/tracks", "PUT", body) },
+        )
+    }
+
+    /**
+     * Spotify ha cambiato indirizzi nel 2026 e non tutti rispondono a tutti: se il primo dice che non esiste
+     * (404/405/410) si prova l'altro. Gli altri errori (403 = permesso) passano così come sono.
+     */
+    private suspend fun withNewPath(first: suspend () -> Unit, second: suspend () -> Unit) {
+        try {
+            first()
+        } catch (e: SpotifyApiException) {
+            if (e.code != 404 && e.code != 405 && e.code != 410) throw e
+            second()
+        }
+    }
+
     suspend fun likedTracks(token: String): List<SpItem> =
         request(token, "me/tracks?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("track")?.toItem() }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.507.0
+**Musica: gestisci le tue playlist**
+- Nella pagina di una tua playlist, il tasto "…" accanto a Riproduci apre: Modifica, Riordina e togli brani, Elimina
+- Modifica: nome, descrizione e privata o pubblica, salvati anche su Spotify
+- Riordina: trascini un brano dalla maniglia; toccandolo lo togli o lo porti in cima o in fondo, con "Annulla"
+- Elimina playlist, con "Annulla" se ci ripensi; le playlist di altri che segui si possono togliere dalla libreria
+- Sotto il titolo ora c'è anche la descrizione della playlist
+
 ## 1.506.0
 **Media: la coda dentro la card in alto**
 - Niente più sezione "In coda" sotto Riprendi: la card in alto si allunga con "Dopo: <prossimo> · altri N", come quando suona qualcosa
