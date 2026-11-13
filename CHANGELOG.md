@@ -1,9 +1,13 @@
 # Changelog
 
-## 1.504.0
+## 1.506.0
 **Media: la coda dentro la card in alto**
 - Niente più sezione "In coda" sotto Riprendi: la card in alto si allunga con "Dopo: <prossimo> · altri N", come quando suona qualcosa
 - Un tocco su quella riga apre la coda intera, per musica e video allo stesso modo
+
+## 1.505.0
+**Archivio di Per dopo: tieni premuta una cosa fatta**
+- Nell'archivio di Per dopo, tenendo premuta una cosa già fatta si apre il fumetto in basso con le sue azioni: rimettila da fare, condividila o eliminala
 
 ## 1.503.0
 **Media: video in grande nella fila Video**
