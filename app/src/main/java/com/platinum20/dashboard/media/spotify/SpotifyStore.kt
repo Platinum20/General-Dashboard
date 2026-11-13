@@ -35,7 +35,15 @@ data class SpLibrary(val liked: List<SpItem>, val albums: List<SpItem>, val show
 /** Dati Spotify dell'utente e comandi della riproduzione. */
 object SpotifyStore {
     private val scope = MainScope()
-    private const val MAX_AGE = 10 * 60_000L
+    /**
+     * Quanto vale quello già letto prima di richiederlo (1.526): un'ora per i tuoi ascolti, sei per la libreria.
+     * Prima erano dieci minuti e ogni apertura di Media rifaceva le stesse richieste; le modifiche fatte
+     * dall'app (playlist, mi piace) ricaricano comunque subito.
+     */
+    private const val MAX_AGE = 60 * 60_000L
+    private const val LIBRARY_MAX_AGE = 6 * 3_600_000L
+    /** Le foto che servono davvero: gli ultimi tre artisti ascoltati nella fila Musica. */
+    private const val LISTENED_PHOTOS = 3
     private const val RELEASES_MAX_AGE = 24 * 3_600_000L
     // Inizia con "sp-": si cancella insieme agli altri dati quando si scollega Spotify.
     private const val SEEN_FILE = "sp-releases-seen.json"
@@ -113,7 +121,8 @@ object SpotifyStore {
                 val list = SpotifyArtist.listened(raw).take(LISTENED_MAX)
                 val known = (_artists.value.data.orEmpty().map { it.artist } + _home.value.data?.topArtists.orEmpty())
                 known.forEach { if (it.image.isNotBlank()) photos[it.id] = it.image }
-                val missing = list.map { it.artist.id }.filter { it !in photos }
+                // Una richiesta per foto: solo per i primi, gli altri restano con quella che c'è.
+                val missing = list.map { it.artist.id }.distinct().filter { it !in photos }.take(LISTENED_PHOTOS)
                 missing.chunked(5).forEach { group ->
                     coroutineScope {
                         group.map { id -> async { id to runCatching { SpotifyApi.artistPhoto(token, id) }.getOrDefault("") } }.awaitAll()
@@ -433,7 +442,7 @@ object SpotifyStore {
         Loadable(error = e.userMessage("Spotify non è raggiungibile, riprova tra poco."))
     }
 
-    fun refreshLibrary(force: Boolean = false) = load(_library, force, FeedCache.spLibrary) { token ->
+    fun refreshLibrary(force: Boolean = false) = load(_library, force, FeedCache.spLibrary, maxAge = LIBRARY_MAX_AGE) { token ->
         coroutineScope {
             val liked = async { SpotifyApi.likedTracks(token) }
             val albums = async { runCatching { SpotifyApi.savedAlbums(token) }.getOrDefault(emptyList()) }

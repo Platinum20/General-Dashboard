@@ -192,7 +192,7 @@ fun MediaScreen(
         if (spotifyOn) {
             com.platinum20.dashboard.media.spotify.SpotifyStore.refreshHome()
             com.platinum20.dashboard.media.spotify.SpotifyStore.refreshLibrary()
-            com.platinum20.dashboard.media.spotify.SpotifyStore.refreshReleases()
+            // Le nuove uscite (una richiesta per artista seguito) solo in Scopri e nel Release Radar, non a ogni apertura.
             com.platinum20.dashboard.media.spotify.SpotifyStore.refreshListened()
         }
     }
