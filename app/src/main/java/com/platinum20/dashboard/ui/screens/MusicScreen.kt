@@ -149,7 +149,7 @@ fun SpotifyItemScreen(item: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> 
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
-                // Dopo "Modifica" il nome nuovo si vede subito (1.504).
+                // Dopo "Modifica" il nome nuovo si vede subito (1.507).
                 title = if (item.kind == SpKind.PLAYLIST) PlaylistManage.title(item) else item.title,
                 subtitle = when (item.kind) {
                     SpKind.ALBUM -> "Album"
@@ -594,7 +594,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     val state = all[parent.id] ?: Loadable(loading = true)
     LaunchedEffect(parent.id) { SpotifyStore.loadChildren(parent) }
     val isPlaylist = parent.kind == SpKind.PLAYLIST
-    // Le tue playlist si gestiscono da qui (1.504): serve sapere se è tua, e la sua descrizione.
+    // Le tue playlist si gestiscono da qui (1.507): serve sapere se è tua, e la sua descrizione.
     LaunchedEffect(parent.id) { if (isPlaylist) PlaylistManage.load(parent.id) }
     val info = PlaylistManage.infos[parent.id]?.first
     val arranging = isPlaylist && PlaylistManage.arranging[parent.id] == true
@@ -701,7 +701,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     }
 }
 
-/** Un brano mentre riordini la playlist (1.504): a destra la maniglia, un tocco apre Togli / In cima / In fondo. */
+/** Un brano mentre riordini la playlist (1.507): a destra la maniglia, un tocco apre Togli / In cima / In fondo. */
 @Composable
 private fun ArrangeRow(item: SpItem, modifier: Modifier, handle: Modifier, onClick: () -> Unit) {
     Surface(

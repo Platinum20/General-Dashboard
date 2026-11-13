@@ -213,7 +213,7 @@ object SpotifyApi {
     /** Il tuo id di Spotify: serve per sapere quali playlist sono tue. */
     suspend fun myId(token: String): String = request(token, "me")?.optString("id").orEmpty()
 
-    /** Nome, descrizione, privata e proprietario di una playlist (1.504). */
+    /** Nome, descrizione, privata e proprietario di una playlist (1.507). */
     suspend fun playlistInfo(token: String, playlistId: String): SpPlaylistInfo? =
         SpotifyPlaylists.info(request(token, "playlists/$playlistId?fields=id,name,description,public,collaborative,owner(id)"))
 

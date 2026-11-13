@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** 1.504 (Antonio): "poter cancellare le playlist e comunque gestirle": dettagli, permessi, spostare e togliere brani. */
+/** 1.507 (Antonio): "poter cancellare le playlist e comunque gestirle": dettagli, permessi, spostare e togliere brani. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class SpotifyPlaylistManageTest {

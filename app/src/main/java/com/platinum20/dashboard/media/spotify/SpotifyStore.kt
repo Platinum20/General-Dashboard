@@ -282,7 +282,7 @@ object SpotifyStore {
         return Result.success(made)
     }
 
-    // --- Gestire una playlist (1.504) ---
+    // --- Gestire una playlist (1.507) ---
 
     /** Il tuo id di Spotify, letto una volta: decide quali playlist si possono cambiare. */
     private var myId: String? = null
