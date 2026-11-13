@@ -193,6 +193,9 @@ object SpotifyStore {
         }
     }
 
+    /** Il primo artista di un brano o di un album (null se non ce l'ha), con l'errore da dire se Spotify non risponde. */
+    suspend fun firstArtist(kind: String, id: String): Loadable<SpItem?> = call { token -> SpotifyApi.firstArtist(token, kind, id) }
+
     /** Aperta un'uscita, il pallino "nuovo" sparisce (anche alle prossime aperture dell'app). */
     fun markReleaseSeen(id: String) {
         if (id in _seenReleases.value) return

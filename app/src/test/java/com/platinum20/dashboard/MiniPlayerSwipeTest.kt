@@ -154,7 +154,7 @@ class MiniPlayerSwipeTest {
         assertEquals(0, closed)
     }
 
-    /** Senza barra delle sezioni sotto (come qui): basta portarlo fino al fondo dello schermo, non oltre (1.518). */
+    /** Senza barra delle sezioni sotto (come qui): basta portarlo fino al fondo dello schermo, non oltre (1.521). */
     @Test
     fun senzaBarraSiChiudeAlFondoDelloSchermo() {
         show()
@@ -167,7 +167,7 @@ class MiniPlayerSwipeTest {
     private fun tabCenter(): Offset =
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).fetchSemanticsNode().boundsInRoot.center
 
-    /** La linguetta si porta direttamente sull'altro bordo, senza riaprirla (1.518). */
+    /** La linguetta si porta direttamente sull'altro bordo, senza riaprirla (1.521). */
     @Test
     fun laLinguettaSiSpostaSullAltroBordo() {
         show()

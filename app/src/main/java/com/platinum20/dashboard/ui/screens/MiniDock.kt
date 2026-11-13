@@ -40,7 +40,7 @@ object MiniDock {
     /** Da che lato sta la linguetta: a destra all'inizio, poi dove l'hai lanciato. */
     var tuckRight by mutableStateOf(true)
 
-    /** Dove sta la linguetta lungo il bordo: 0 = in alto, 1 = in basso (la si trascina su e giù, 1.518). */
+    /** Dove sta la linguetta lungo il bordo: 0 = in alto, 1 = in basso (la si trascina su e giù, 1.521). */
     var tabFrac by androidx.compose.runtime.mutableFloatStateOf(1f)
 
     /** Il video sta volando verso il mini player: intanto il mini player resta invisibile. */

@@ -9,6 +9,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -89,19 +90,22 @@ internal fun PlayerSheet(
     fixedHeight: Float? = null,
     sideShare: Float = 0.45f,
     sideMax: Dp = 440.dp,
+    /** Larghezza fissa in orizzontale (la coda: quanto le impostazioni video), al posto della parte di schermo. */
+    sideWidth: Dp? = null,
     content: @Composable ColumnScope.(sideways: Boolean, panelWidth: Dp) -> Unit,
 ) {
     androidx.activity.compose.BackHandler(enabled = open, onBack = onClose)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val sideways = QueueSheet.sideways(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
-        val width = QueueSheet.sideWidth(maxWidth.value, sideShare, 340f, sideMax.value).dp
+        val width = sideWidth ?: QueueSheet.sideWidth(maxWidth.value, sideShare, 340f, sideMax.value).dp
         val density = LocalDensity.current
         val extent = with(density) { if (sideways) width.toPx() else maxHeight.toPx() * (fixedHeight ?: 0.6f) }
         AnimatedVisibility(visible = open, enter = fadeIn(), exit = fadeOut()) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.45f))
+                    // Velo leggero: sotto al vetro il video si deve ancora vedere.
+                    .background(Color.Black.copy(alpha = 0.18f))
                     .pointerInput(Unit) { detectTapGestures { onClose() } },
             )
         }
@@ -110,12 +114,20 @@ internal fun PlayerSheet(
             visible = open,
             enter = if (sideways) slideInHorizontally(Motion.settle()) { it } else slideInVertically(Motion.settle()) { it },
             exit = if (sideways) slideOutHorizontally(Motion.settle()) { it } else slideOutVertically(Motion.settle()) { it },
-            modifier = Modifier.align(if (sideways) Alignment.CenterEnd else Alignment.BottomCenter),
+            modifier = Modifier
+                .align(if (sideways) Alignment.CenterEnd else Alignment.BottomCenter)
+                // In orizzontale un fumetto staccato dai bordi, come le impostazioni del video.
+                .then(
+                    if (sideways) Modifier
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End + WindowInsetsSides.Vertical))
+                        .padding(end = 16.dp, top = 12.dp, bottom = 12.dp)
+                    else Modifier,
+                ),
         ) {
             val scope = rememberCoroutineScope()
             val drag = remember { Animatable(0f) }
             val view = LocalView.current
-            val shape = if (sideways) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+            val shape = if (sideways) RoundedCornerShape(26.dp)
             else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             val size = when {
                 sideways -> Modifier.width(width).fillMaxHeight()
@@ -125,17 +137,17 @@ internal fun PlayerSheet(
             Column(
                 size
                     .offset { if (sideways) IntOffset(drag.value.roundToInt(), 0) else IntOffset(0, drag.value.roundToInt()) }
-                    .clip(shape)
-                    .background(MaterialTheme.colorScheme.background)
+                    .border(cardBorder(), shape)
+                    .glass(shape)
                     // I tocchi sul pannello restano al pannello, non chiudono.
                     .pointerInput(Unit) { detectTapGestures { } }
-                    .windowInsetsPadding(
-                        WindowInsets.safeDrawing.only(
-                            if (sideways) WindowInsetsSides.End + WindowInsetsSides.Vertical
-                            else WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
-                        ),
+                    .then(
+                        if (sideways) Modifier
+                        else Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)),
                     ),
             ) {
+              // Fuori dal NavHost nessuno dà il colore del testo: lo dà il pannello.
+              androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                 // L'intestazione è la maniglia: portata verso il bordo chiude.
                 val tracker = remember { VelocityTracker() }
                 Column(
@@ -191,6 +203,7 @@ internal fun PlayerSheet(
                     }
                 }
                 content(sideways, width)
+              }
             }
         }
     }

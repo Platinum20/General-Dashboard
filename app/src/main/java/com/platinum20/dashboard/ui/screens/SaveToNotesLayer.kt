@@ -139,6 +139,17 @@ internal fun BoxScope.SaveToNotesLayer() {
         // Le azioni della sua pagina, senza aprirla (Antonio, 2026-11-13): Mi piace e Condividi per un video,
         // i preferiti per una radio, Segui per il podcast dell'episodio.
         if (media != null) MediaPageRows(media) { SavedLinks.dismiss() }
+        // Da un brano o un album all'artista, da un video al suo canale (1.518, Antonio).
+        val inApp = LocalInAppNav.current
+        val creator = media?.let(::goToCreatorLabel)
+        if (media != null && creator != null && inApp != null) {
+            BubbleRow(icon = creator.second, title = creator.first, detail = media.subtitle) {
+                haptic(Haptic.CONFIRM)
+                SavedLinks.dismiss()
+                goToCreator(context, media, inApp.openRoute)
+            }
+            RowDivider()
+        }
         // Se la cosa è già nelle note, lo stesso posto la toglie: mai due copie.
         val saved = remember(notes.notes, link) { SavedLinks.notesWith(notes.notes, link).isNotEmpty() }
         BubbleRow(

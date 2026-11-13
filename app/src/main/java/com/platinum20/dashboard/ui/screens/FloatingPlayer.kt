@@ -112,7 +112,7 @@ fun FloatingPlayer(
     }
 
     // Quanto schermo resta sotto il suo riquadro (barra delle sezioni compresa, se c'è): la calamita e la X
-    // stanno sul fondo dello schermo, non sulla barra, così si chiude anche nelle pagine senza (1.518).
+    // stanno sul fondo dello schermo, non sulla barra, così si chiude anche nelle pagine senza (1.521).
     var screenBelow by remember { mutableFloatStateOf(0f) }
     BoxWithConstraints(
         modifier
@@ -172,7 +172,7 @@ fun FloatingPlayer(
         LaunchedEffect(tucked) {
             if (tucked || !reopened) return@LaunchedEffect
             reopened = false
-            // Esce dal bordo dove si era nascosto, scorrendo fino al suo posto (1.518).
+            // Esce dal bordo dove si era nascosto, scorrendo fino al suo posto (1.521).
             x.snapTo((if (MiniDock.tuckRight) 1f else -1f) * maxW * 0.9f)
             appear.snapTo(0.85f)
             launch { appear.animateTo(1f, Motion.lively()) }
@@ -186,7 +186,7 @@ fun FloatingPlayer(
             val bar = if (barH > 0) barH.toFloat() else guess
             val tabRange = (maxH - bar).coerceAtLeast(1f)
             val tabPx = with(density) { 56.dp.toPx() }
-            // Trascinabile in ogni direzione (1.518, Antonio): su e giù lungo il bordo, direttamente sull'altro
+            // Trascinabile in ogni direzione (1.521, Antonio): su e giù lungo il bordo, direttamente sull'altro
             // bordo, o giù sulla X per chiuderla. Il tocco la riapre.
             val tabDx = remember { Animatable(0f) }
             val tabDy = remember { Animatable(0f) }
@@ -457,7 +457,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
 ) {
     val density = LocalDensity.current
     val open by androidx.compose.runtime.rememberUpdatedState(onOpen)
-    // Entra scivolando dal bordo e, riaprendo, ci rientra prima che la barra ne esca (1.518).
+    // Entra scivolando dal bordo e, riaprendo, ci rientra prima che la barra ne esca (1.521).
     val show = remember { Animatable(0f) }
     LaunchedEffect(Unit) { show.animateTo(1f, Motion.lively()) }
     val tabScope = androidx.compose.runtime.rememberCoroutineScope()

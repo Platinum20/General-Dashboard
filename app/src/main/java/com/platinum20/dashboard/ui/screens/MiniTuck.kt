@@ -2,7 +2,7 @@ package com.platinum20.dashboard.ui.screens
 
 /**
  * Le regole del mini player a linguetta (1.508, Antonio): lanciato a destra o a sinistra si ritira (solo a mano:
- * mai da solo scorrendo, 1.518) in una linguetta tonda sul bordo, così non copre la pagina; si chiude solo
+ * mai da solo scorrendo, 1.521) in una linguetta tonda sul bordo, così non copre la pagina; si chiude solo
  * portandolo giù, sotto lo schermo, dove una calamita lo prende con una vibrazione. Pure, provate nei test.
  */
 object MiniTuck {
@@ -19,7 +19,7 @@ object MiniTuck {
 
     /**
      * Quanto va portato giù perché la calamita lo prenda: [MAGNET_DP], ma senza barra delle sezioni sotto il dito
-     * arriva presto al bordo dello schermo, quindi al massimo metà dello spazio che ha davanti (1.518: prima
+     * arriva presto al bordo dello schermo, quindi al massimo metà dello spazio che ha davanti (1.521: prima
      * nelle pagine senza barra non si chiudeva). [roomPx] = dal centro della barra al fondo dello schermo.
      */
     fun threshold(roomPx: Float, density: Float): Float =
@@ -39,7 +39,7 @@ object MiniTuck {
     }
 
     /**
-     * Su quale bordo va la linguetta lasciandola (1.518): lanciata forte va dal lato del lancio,
+     * Su quale bordo va la linguetta lasciandola (1.521): lanciata forte va dal lato del lancio,
      * altrimenti dal lato della metà dello schermo dove l'hai lasciata.
      */
     fun tabSide(centerX: Float, vx: Float, width: Float): Boolean = when {

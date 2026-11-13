@@ -297,8 +297,8 @@ fun YouTubeWatchScreen(
             // Toccato "Commenti" o "Correlati": la lista scorre fino a loro.
             LaunchedEffect(panel) {
                 if (panel != null && stream0 != null) {
-                    val index = 1 + (if (stream0.chapters.size > 1) 1 else 0)
-                    listState.animateScrollToItem(index)
+                    // Con commenti o correlati aperti descrizione e capitoli spariscono: subito dopo il titolo.
+                    listState.animateScrollToItem(1)
                 }
             }
             LazyColumn(
@@ -310,9 +310,9 @@ fun YouTubeWatchScreen(
                 val stream = now?.stream
                 item(key = "title") { TitleBlock(now, stream, panel, onPanel = { panel = if (panel == it) null else it }, onOpenChannel = onOpenChannel) }
                 if (stream != null) {
-                    // La descrizione solo quando sotto non c'è altro: con commenti o correlati aperti sparisce.
+                    // Descrizione e capitoli solo quando sotto non c'è altro: con commenti o correlati aperti spariscono insieme.
                     if (panel == null && stream.description.isNotBlank()) item(key = "desc") { Description(stream) }
-                    if (stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
+                    if (panel == null && stream.chapters.size > 1) item(key = "chapters") { Chapters(stream.chapters) }
                     if (panel == WatchPanel.COMMENTS) {
                         if (thread != null && thread.loaded && !thread.disabled && !(thread.failed && thread.comments.isEmpty())) {
                             item(key = "comments-new") {
@@ -439,7 +439,7 @@ private fun VideoArea(
 
     // I comandi spariscono da soli dopo 3 secondi mentre il video va (non con un menu aperto).
     // Con il fumetto del menu aperto i comandi restano.
-    val menuOpen = ActionBubble.actions != null || VideoSettings.open
+    val menuOpen = ActionBubble.actions != null || VideoSettings.open || QueueOpen.open
     LaunchedEffect(controls, playing, flashKey, menuOpen) {
         if (controls && playing && !menuOpen) {
             delay(3_000)
@@ -833,6 +833,7 @@ private fun VideoArea(
                         live = now?.stream?.hlsUrl != null,
                         knownSec = now?.stream?.durationSec ?: 0,
                         storyboard = now?.stream?.storyboard,
+                        chapters = now?.stream?.chapters.orEmpty(),
                         swipeMs = swipeAt,
                         onFullscreen = onToggleFullscreen,
                         fullscreen = fullscreen,
@@ -868,6 +869,8 @@ private fun TimeBar(
     onFullscreen: () -> Unit,
     onInteract: () -> Unit,
     storyboard: com.platinum20.dashboard.media.youtube.player.YtStoryboard? = null,
+    /** I capitoli: tacche sulla barra e il nome sotto l'anteprima mentre si trascina. */
+    chapters: List<YtChapter> = emptyList(),
     /** Punto dello scorrimento di lato sul video: muove il pallino e l'anteprima come trascinare la barra. */
     swipeMs: Long? = null,
 ) {
@@ -938,7 +941,7 @@ private fun TimeBar(
                 // Barra sottile quanto i segmenti di SponsorBlock, che ci stanno sopra allineati.
                 val buffer = if (duration > 0) buffered.toFloat() / duration else 0f
                 val played = moving ?: if (duration > 0) position.toFloat() / duration else 0f
-                VideoTrack(played, buffer, if (duration > 0) marks else emptyList(), duration)
+                VideoTrack(played, buffer, if (duration > 0) marks else emptyList(), duration, ChapterTicks.fractions(chapters, duration))
             },
             modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
         )
@@ -947,7 +950,7 @@ private fun TimeBar(
             SeekPreview(
                 storyboard = storyboard,
                 positionMs = (at * duration).toLong(),
-                label = formatDuration((at * duration).toLong()),
+                label = ChapterTicks.label(formatDuration((at * duration).toLong()), chapters, (at * duration).toLong()),
                 width = previewW,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -1574,10 +1577,10 @@ internal fun SeekTrack(draw: androidx.compose.ui.graphics.drawscope.DrawScope.()
 
 /**
  * La barra del tempo del video: fondo, parte già scaricata, parte vista e sopra i segmenti di
- * SponsorBlock, tutti alti uguali (4dp) e larghi quanto la barra.
+ * SponsorBlock, tutti alti uguali (4dp) e larghi quanto la barra; le tacche dei capitoli la dividono.
  */
 @Composable
-private fun VideoTrack(played: Float, buffered: Float, marks: List<SbSegment>, durationMs: Long) {
+private fun VideoTrack(played: Float, buffered: Float, marks: List<SbSegment>, durationMs: Long, chapterTicks: List<Float> = emptyList()) {
     SeekTrack {
         val h = size.height
         drawRect(Color.White.copy(alpha = 0.3f), size = Size(size.width, h))
@@ -1590,6 +1593,11 @@ private fun VideoTrack(played: Float, buffered: Float, marks: List<SbSegment>, d
             val end = if (m.type == SbType.POI) start + 3.dp.toPx()
             else (m.endMs.toFloat() / durationMs).coerceIn(0f, 1f) * size.width
             drawRect(Color(m.category.color), topLeft = Offset(start, 0f), size = Size((end - start).coerceAtLeast(2f), h))
+        }
+        // I capitoli come su YouTube: uno stacco scuro dove ne comincia uno, la barra resta divisa a pezzi.
+        val gap = 2.dp.toPx()
+        for (f in chapterTicks) {
+            drawRect(Color.Black.copy(alpha = 0.7f), topLeft = Offset(f * size.width - gap / 2, 0f), size = Size(gap, h))
         }
     }
 }
