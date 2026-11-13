@@ -188,6 +188,8 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     )
                     // La pioggia sta dentro l'eroe (punto 45): un solo blocco colorato, la stessa frase di Adesso.
                     forecast.rainAlert?.let { alert -> HeroRainLine(alert) }
+                    // La curva delle prossime 24 ore con la pioggia (1.528, Antonio scelta B).
+                    TempCurve(forecast, Modifier.padding(start = 18.dp, end = 18.dp, bottom = 16.dp))
                 }
             }
             if (state.error != null) {
@@ -200,23 +202,18 @@ fun WeatherScreen(onBack: () -> Unit, onPickPlace: () -> Unit) {
                     )
                 }
             }
-            item { DetailsGrid(forecast) }
-            item { SectionTitle("Prossime 24 ore") }
-            item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(forecast.hourly) { HourCell(it) }
-                }
-            }
-            item { SectionTitle("Prossimi 7 giorni") }
+            // Prima i giorni, poi i dettagli come tessere (1.528, scelta B): la pagina sta quasi in uno schermo.
             item {
                 val low = forecast.daily.minOfOrNull { it.min }?.takeIf { !it.isNaN() } ?: 0.0
                 val high = forecast.daily.maxOfOrNull { it.max }?.takeIf { !it.isNaN() } ?: 1.0
                 CanvasCard(shape = MaterialTheme.shapes.extraLarge) {
-                    Column(Modifier.padding(vertical = 8.dp)) {
+                    CardTitle("Prossimi giorni")
+                    Column(Modifier.padding(bottom = 8.dp)) {
                         forecast.daily.forEach { DayRow(it, low, high) }
                     }
                 }
             }
+            item { DetailTiles(weatherDetails(forecast)) }
             item {
                 Text(
                     "Dati meteo: Open-Meteo.com · aggiornati ${relativeTime(java.time.Instant.ofEpochMilli(forecast.fetchedAt))}",
@@ -244,7 +241,7 @@ private fun HeroRainLine(alert: String) {
 }
 
 /**
- * I dettagli in una card sola, una riga per voce (punto 45). Niente pressione né "pioggia oggi"
+ * I dettagli come tessere, due per riga (1.528; prima una card a righe, punto 45). Niente pressione né "pioggia oggi"
  * (la striscia delle ore la dice già); l'UV solo quando conta, da 3 in su.
  */
 internal fun weatherDetails(forecast: Forecast): List<Pair<String, String>> {
@@ -258,69 +255,6 @@ internal fun weatherDetails(forecast: Forecast): List<Pair<String, String>> {
         today?.uvMax?.takeIf { !it.isNaN() && it >= 3.0 }?.let { "Indice UV" to "%.0f".format(Locale.ITALIAN, it) },
         today?.let { "Alba · Tramonto" to "${it.sunrise?.format(time) ?: "–"} · ${it.sunset?.format(time) ?: "–"}" },
     )
-}
-
-@Composable
-private fun DetailsGrid(forecast: Forecast) {
-    val icons = mapOf(
-        "Umidità" to Icons.Outlined.Opacity,
-        "Vento" to Icons.Outlined.Air,
-        "Qualità dell'aria" to Icons.Outlined.Masks,
-        "Indice UV" to Icons.Outlined.WbSunny,
-        "Alba · Tramonto" to Icons.Outlined.WbTwilight,
-    )
-    val rows = weatherDetails(forecast)
-    CanvasCard(shape = MaterialTheme.shapes.extraLarge) {
-        Column {
-            rows.forEachIndexed { i, (label, value) ->
-                if (i > 0) RowDivider()
-                DetailCell(icons[label] ?: Icons.Outlined.Opacity, label, value)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DetailCell(icon: ImageVector, label: String, value: String) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.size(12.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun SectionTitle(text: String) {
-    SectionHeader(text, Modifier.padding(top = 8.dp))
-}
-
-@Composable
-private fun HourCell(point: HourlyPoint) {
-    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.card,
-        border = cardBorder(),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp).width(44.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(point.time.format(DateTimeFormatter.ofPattern("HH")), style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(6.dp))
-            Icon(weatherIcon(point.code, point.isDay), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(6.dp))
-            Text(point.temperature.asTemp(), style = MaterialTheme.typography.titleMedium)
-            Text(
-                if (point.precipitationProbability > 0) "${point.precipitationProbability}%" else " ",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
 }
 
 @Composable

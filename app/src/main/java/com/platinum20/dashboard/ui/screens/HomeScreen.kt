@@ -398,21 +398,23 @@ fun HomeScreen(
             // Le card nell'ordine scelto in Personalizza, senza animazioni della lista: anche solo la sfumata (1.472)
             // lasciava la SIM sopra il fondo del Calendario quando questo cambiava altezza (Antonio, 2026-11-11 e 11-12).
             // Le card entrano già con la loro cascata ([entrance]).
-            items(cards, key = { it.name }) { cardContent(it) }
-            item(key = "invites") {
+            // Le cose da sistemare stanno in cima, sotto il titolo (1.528): una riga arancione, solo se ce ne sono.
+            val invites = Invites.pending(
+                agendaVisible = !(agendaOff ?: CalendarAsk.isOff(context)),
+                calendarGranted = agenda.granted,
+                autoFillEnabled = autoFillEnabled,
+                autoFillDismissed = autoFillDismissed,
+                shiftsExpired = shiftsExpired,
+            )
+            if (invites.isNotEmpty()) item(key = "invites") {
                 InvitesRow(
-                    invites = Invites.pending(
-                        agendaVisible = !(agendaOff ?: CalendarAsk.isOff(context)),
-                        calendarGranted = agenda.granted,
-                        autoFillEnabled = autoFillEnabled,
-                        autoFillDismissed = autoFillDismissed,
-                        shiftsExpired = shiftsExpired,
-                    ),
+                    invites = invites,
                     onAllowCalendar = agenda.requestPermission,
                     onOpenAutoFill = onOpenAutoFill,
                     onDismissAutoFill = { AutoFill.dismissIntro() },
                 )
             }
+            items(cards, key = { it.name }) { cardContent(it) }
         }
         }
     }
@@ -484,7 +486,14 @@ private fun WeatherCard(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
-        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, alone = briefing.isEmpty())
+        WeatherSummary(state, hasPermission, onRequestPermission, onRetry, alone = briefing.isEmpty() && forecast == null)
+        // Le prossime ore dentro Adesso (1.528, Antonio scelta B): il meteo si legge senza aprire la pagina.
+        if (forecast != null) {
+            HourStrip(
+                forecast.hourly,
+                Modifier.padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = if (briefing.isEmpty()) 14.dp else 8.dp),
+            )
+        }
         if (briefing.isNotEmpty()) {
             Column(Modifier.padding(bottom = 10.dp)) {
                 briefing.forEach { line -> BriefRow(line, onAction = { onBriefAction(line) }) { onOpenBrief(line) } }
