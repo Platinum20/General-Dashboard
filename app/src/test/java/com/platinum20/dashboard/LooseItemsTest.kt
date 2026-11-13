@@ -57,7 +57,7 @@ class LooseItemsTest {
             Note(10, video, createdAt = 300),
             Note(11, article, createdAt = 200),
             Note(12, "Idea regalo per Marta", createdAt = 100),
-            Note(13, "Scontrino\nscade a marzo", createdAt = 400, photo = "/f.jpg"),
+            Note(13, "Scontrino\nscade a marzo", createdAt = 400, photos = listOf("/f.jpg")),
             Note(14, "Codice del cancello", createdAt = 50, pinned = true),
         )
         val tasks = listOf(

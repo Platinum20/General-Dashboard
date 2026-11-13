@@ -31,7 +31,7 @@ class LaterPlacesTest {
         Note(2, article, createdAt = 200),
         Note(3, "https://youtu.be/BBBBBBBBBBB", createdAt = 300),
         Note(4, "Idea regalo per Marta", createdAt = 400),
-        Note(5, "Scontrino lavatrice\nscade a marzo 2028", createdAt = 500, photo = "/foto.jpg"),
+        Note(5, "Scontrino lavatrice\nscade a marzo 2028", createdAt = 500, photos = listOf("/foto.jpg")),
         Note(6, song, createdAt = 600),
         // Un testo lungo che cita un video resta una nota.
         Note(7, "Ricetta\nfarina 200 g\nuova 2\nhttps://youtu.be/CCCCCCCCCCC", createdAt = 700),
@@ -59,7 +59,7 @@ class LaterPlacesTest {
     }
 
     @Test fun rigaDellaFoto() {
-        assertEquals("Foto", photoLine(Note(1, "", photo = "/f.jpg")))
+        assertEquals("Foto", photoLine(Note(1, "", photos = listOf("/f.jpg"))))
         assertNull(photoLine(Note(2, "Testo")))
     }
 

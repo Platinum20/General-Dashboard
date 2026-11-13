@@ -74,10 +74,13 @@ object PhotoAttach {
     private fun cut(text: String, max: Int): String =
         if (text.length <= max) text else text.take(max).substringBeforeLast(' ').trimEnd() + "…"
 
-    /** Copia la foto dentro l'app: quella della galleria può sparire, quella della fotocamera è in cache. */
+    /**
+     * Copia la foto dentro l'app: quella della galleria può sparire, quella della fotocamera è in cache. Il nome ha un pezzo
+     * a caso: più foto scelte insieme arrivano nello stesso millisecondo (1.529).
+     */
     suspend fun keep(context: Context, uri: Uri): String? = withContext(Dispatchers.IO) {
         runCatching {
-            val file = File(context.filesDir, "note-photos/${System.currentTimeMillis()}.jpg").apply { parentFile?.mkdirs() }
+            val file = File(context.filesDir, "note-photos/${System.currentTimeMillis()}-${java.util.UUID.randomUUID().toString().take(8)}.jpg").apply { parentFile?.mkdirs() }
             context.contentResolver.openInputStream(uri)!!.use { input -> file.outputStream().use { input.copyTo(it) } }
             file.absolutePath
         }.getOrNull()
