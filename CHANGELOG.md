@@ -5,6 +5,7 @@
 - Lanciato di lato, la linguetta tonda entra scivolando dal bordo invece di comparire sul posto
 - Toccandola (o tirandola verso il centro) rientra nel bordo e il mini player ne esce scorrendo fino al suo posto
 - Scorrendo le pagine il mini player non si ritira più da solo: va nel bordo solo se lo lanci tu
+- Sistemato il titolo del mini player, che nella 1.517 era scuro su scuro e quasi illeggibile
 
 ## 1.517.0
 **Mini player: portato giù passa davvero sopra la barra**

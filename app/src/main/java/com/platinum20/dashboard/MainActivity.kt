@@ -1702,6 +1702,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
     }
     // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.517: fuori dallo Scaffold, che disegna la barra sopra il suo contenuto).
+    // Fuori dallo Scaffold manca il suo colore del testo: senza, il titolo veniva scuro su scuro (1.518).
+    CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
     FloatingPlayer(
         currentRoute = currentRoute,
         onExpand = { playing ->
@@ -1711,6 +1713,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         },
         modifier = Modifier.padding(scaffoldPadding),
     )
+    }
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
     ActionBubbleLayer()
