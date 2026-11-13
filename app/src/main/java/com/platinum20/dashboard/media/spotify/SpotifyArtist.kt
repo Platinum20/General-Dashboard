@@ -30,7 +30,19 @@ data class SpArtistPage(
     val appearsOn: List<SpItem>,
     /** Il giorno d'uscita di ogni uscita sopra (per id): mette in ordine l'elenco intero. */
     val released: Map<String, LocalDate> = emptyMap(),
-)
+    /**
+     * Quante uscite ha ogni gruppo secondo Spotify. All'apertura si scarica solo la prima pagina di ogni gruppo
+     * (1.525): prima la pagina di un grande artista faceva decine di richieste e Spotify bloccava l'app per ore.
+     */
+    val totals: Map<SpReleaseGroup, Int> = emptyMap(),
+    /** Tutte le pagine scaricate (l'elenco intero è stato aperto almeno una volta). */
+    val complete: Boolean = false,
+) {
+    /** Le uscite che Spotify dice di avere (anche quelle non ancora scaricate), senza "Appare in". */
+    val ownTotal: Int
+        get() = SpReleaseGroup.entries.filter { it != SpReleaseGroup.APPEARS }
+            .sumOf { maxOf(totals[it] ?: 0, it.of(this).size) }
+}
 
 /** I gruppi della discografia, nell'ordine dei chip; [label] è anche il tipo scritto sotto il titolo nell'elenco intero. */
 enum class SpReleaseGroup(val label: String, val one: String) {
@@ -57,8 +69,22 @@ object SpotifyArtist {
     /** Oltre non serve: nessun artista vero ne ha di più, e ogni pagina è una richiesta. */
     const val RELEASES_MAX = 500
     /** "Appare in" per i grandi nomi sono migliaia di raccolte altrui: le più recenti bastano. */
-    const val APPEARS_MAX = 200
-    const val PARALLEL = 4
+    const val APPEARS_MAX = 50
+    const val PARALLEL = 2
+
+    /**
+     * Le richieste che fa l'apertura della pagina di un artista (1.525): artista, una ricerca per i popolari, la
+     * prima pagina di album, singoli, raccolte e "Appare in". Prima erano tutte le pagine di ogni gruppo (decine).
+     */
+    const val OPEN_CALLS = 6
+
+    /** Le pagine salvate con [fresh] in cima, una per artista, al massimo [max]. */
+    fun kept(old: List<Pair<Long, SpArtistPage>>, fresh: Pair<Long, SpArtistPage>, max: Int): List<Pair<Long, SpArtistPage>> =
+        (listOf(fresh) + old.filter { it.second.artist.id != fresh.second.artist.id }).take(max)
+
+    /** Le pagine ancora da scaricare per avere tutto un gruppo, dato quante ce ne sono e quante sono già qui. */
+    fun missingOffsets(total: Int, loaded: Int, page: Int, max: Int): List<Int> =
+        nextOffsets(total, page, max).filter { it >= loaded }
 
     /** Gli offset delle pagine dopo la prima: [total] uscite, al massimo [max]. */
     fun nextOffsets(total: Int, page: Int, max: Int): List<Int> =

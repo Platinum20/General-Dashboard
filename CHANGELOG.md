@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.525.0
+**Pagina dell'artista leggera: niente più blocchi di Spotify**
+- Aprire un artista ora chiede a Spotify 6 cose invece di decine (per un grande nome anche più di 50): l'artista, i popolari e i primi 10 di album, singoli, raccolte e "Appare in"
+- Il resto della discografia si scarica solo se apri l'elenco intero, e una volta sola
+- Gli ultimi 30 artisti aperti restano salvati per 3 giorni, solo come testo (pochi KB): riaprirli non chiede niente a Spotify. I brani di un album arrivano solo quando lo apri
+
 ## 1.524.0
 **Impostazioni del video: si riaprono sempre**
 - Se chiudevi il fumetto delle impostazioni portandolo di lato, poi la rotella non lo faceva più comparire. Ora torna al suo posto ogni volta che lo apri

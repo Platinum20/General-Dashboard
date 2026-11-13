@@ -78,7 +78,7 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     val popular = page?.popular.orEmpty()
     if (everything && page != null) {
         BackHandler { everything = false }
-        DiscographyScreen(page, onBack = { everything = false }, onOpenItem = onOpenItem)
+        DiscographyScreen(page, loading = state.loading, onBack = { everything = false }, onOpenItem = onOpenItem)
         return
     }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -209,7 +209,9 @@ private val OWN_GROUPS = listOf(SpReleaseGroup.ALBUM, SpReleaseGroup.SINGLE, SpR
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DiscographyScreen(page: SpArtistPage, onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
+private fun DiscographyScreen(page: SpArtistPage, loading: Boolean, onBack: () -> Unit, onOpenItem: (SpItem) -> Unit) {
+    // Le altre pagine si chiedono solo qui, una volta (1.525): aprire l'artista ne scarica solo la prima di ogni gruppo.
+    LaunchedEffect(page.artist.id) { SpotifyStore.loadDiscography(page.artist.id) }
     var only by rememberSaveable { mutableStateOf<SpReleaseGroup?>(null) }
     val groups = SpReleaseGroup.entries.filter { it.of(page).isNotEmpty() }
     val rows = if (only == SpReleaseGroup.APPEARS) page.appearsOn.map { it to SpReleaseGroup.APPEARS } else SpotifyArtist.everything(page, only)
@@ -217,7 +219,7 @@ private fun DiscographyScreen(page: SpArtistPage, onBack: () -> Unit, onOpenItem
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TopLevelBar(
             title = page.artist.title,
-            subtitle = "Discografia · " + releasesLine(SpotifyArtist.everything(page).size),
+            subtitle = "Discografia · " + releasesLine(maxOf(page.ownTotal, SpotifyArtist.everything(page).size)),
             onBack = onBack,
             scrollBehavior = scroll,
         )
@@ -234,6 +236,7 @@ private fun DiscographyScreen(page: SpArtistPage, onBack: () -> Unit, onOpenItem
             items(rows, key = { (item, g) -> g.name + item.uri }) { (item, g) ->
                 ReleaseRow(item, g, page.released[item.id]?.year) { onOpenItem(item) }
             }
+            if (loading && !page.complete) item(key = "more") { PlaceholderList(rows = 3, label = "Carico il resto della discografia") }
         }
     }
 }
