@@ -220,7 +220,7 @@ fun MediaScreen(
     val freshEpisodes = remember(latestEpisodes.data, history) { newEpisodes(latestEpisodes.data.orEmpty(), history).size }
 
     // La coda si apre nello stesso riquadro del player (1.357): una coda sola, un posto solo.
-    var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { QueueOpen.open = false } }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -247,7 +247,7 @@ fun MediaScreen(
                         playing, onOpen = { onOpenPlayer(playing) }, modifier = Modifier.padding(horizontal = 16.dp),
                         next = queue.upcoming.firstOrNull()?.item?.title,
                         more = (queue.upcoming.size - 1).coerceAtLeast(0),
-                        onQueue = { queueOpen = true },
+                        onQueue = { QueueOpen.open = true },
                     )
                 }
             }
@@ -258,14 +258,14 @@ fun MediaScreen(
                         last, onClick = { openResume(last) }, modifier = Modifier.padding(horizontal = 16.dp),
                         next = queue.upcoming.firstOrNull()?.item?.title,
                         more = (queue.upcoming.size - 1).coerceAtLeast(0),
-                        onQueue = { queueOpen = true },
+                        onQueue = { QueueOpen.open = true },
                     )
                 }
             }
             // Solo se non c'è niente da riprendere la coda resta da sola, per non perderla.
             if (now == null && hero == null && queue.upcoming.isNotEmpty()) item(key = "queue") {
                 QueuePeek(
-                    onOpenQueue = { queueOpen = true },
+                    onOpenQueue = { QueueOpen.open = true },
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
@@ -331,8 +331,6 @@ fun MediaScreen(
             }
         }
     }
-    // Sopra Media la barra resta in basso: l'ultima voce della coda le sta sopra.
-    QueuePopup(open = queueOpen, onClose = { queueOpen = false }, bottomExtra = bottomPadding.calculateBottomPadding())
     }
 }
 

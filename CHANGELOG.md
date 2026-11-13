@@ -1,10 +1,24 @@
 # Changelog
 
-## 1.518.0
+## 1.520.0
 **Tieni premuto: Vai all'artista e Vai al canale**
 - Tenendo premuto un brano o un album di Spotify c'è "Vai all'artista", che apre la sua pagina nell'app
 - Tenendo premuto un video di YouTube c'è "Vai al canale", che apre la pagina del canale
 - Funziona nelle file di Media, nei Salvati, nella coda, nella ricerca e nella cronologia
+
+## 1.519.0
+**Cerca: artisti e canali tra i risultati**
+- Cercando un nome ora compaiono in cima anche gli artisti di Spotify e i canali di YouTube, con gli iscritti
+- Toccandoli si apre la loro pagina nell'app; tenendo premuto un canale puoi aprirlo o iscriverti
+- Le categorie dei risultati aperte con "Mostra altri" ora si richiudono con "Mostra meno"
+
+## 1.518.0
+
+**Capitoli sulla barra e coda di vetro**
+
+- Sulla barra del video di YouTube ci sono le tacche dei capitoli; trascinando, sotto l'anteprima compare anche il nome del capitolo.
+- Aprendo Commenti o Correlati spariscono insieme descrizione e capitoli.
+- La coda è di vetro: il video si vede sotto. In orizzontale è un fumetto a destra largo quanto le impostazioni del video.
 
 ## 1.517.0
 **Mini player: portato giù passa davvero sopra la barra**
