@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.513.0
+## 1.515.0
 **Tieni premuto: le azioni di ogni cosa, senza aprirla**
 - Eventi del calendario: oltre ad Apri e Condividi ora ci sono Modifica, Elimina, Biglietto e Ascolta lo zaino
 - Pacchi: Traccia la spedizione e Condividi
@@ -9,6 +9,20 @@
 - Notizie: Condividi il link
 - Video: Mi piace e Condividi; radio: Aggiungi ai preferiti; episodi: Segui il podcast
 - Coda: tenendo premuta una voce, Riproduci ora, Subito dopo e Togli dalla coda
+
+## 1.514.0
+**Aggiornamenti: le versioni su una linea del tempo**
+- In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
+- Sotto, le versioni su una linea come nel Calendario: il segno INSTALLATA separa le nuove da quelle che hai già, più chiare
+- Numeri corti (1.514) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
+- Le note delle versioni uscite insieme a un'altra non si perdono più: compaiono dentro quella successiva
+
+## 1.513.0
+**Mini player: linguetta sistemata**
+- La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
+- Riaprendola, il mini player torna sempre al suo posto (prima a volte restava a metà, mezzo fuori)
+- Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto, e in fondo compare una X rossa (anche lei sopra la barra) che cresce quando la calamita lo prende
+- Vibrazioni più chiare: una quando lo porti oltre metà di lato (lasciandolo va nella linguetta), una quando la calamita lo prende, una alla chiusura e alla riapertura; la linguetta si schiaccia un po' al tocco
 
 ## 1.512.0
 **Musica: tieni premuta una playlist per gestirla**

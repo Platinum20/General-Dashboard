@@ -1243,6 +1243,8 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         CaptureFeedback.active = true
         onPauseOrDispose { CaptureFeedback.active = false }
     }
+    // Dove finisce la pagina (sopra la barra): lo legge il mini player, disegnato sopra lo Scaffold.
+    var scaffoldPadding by remember { mutableStateOf(androidx.compose.foundation.layout.PaddingValues()) }
     Box(Modifier.fillMaxSize()) {
     Scaffold(
         bottomBar = {
@@ -1693,20 +1695,22 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         }
         }
         }
-        // Mini player a bolla, sopra tutte le schermate.
-        FloatingPlayer(
-            currentRoute = currentRoute,
-            onExpand = { playing ->
-                // Quello che suona al momento del tocco, non quello di quando la barra è comparsa.
-                val current = com.platinum20.dashboard.media.Playback.now.value ?: playing
-                navController.navigate(if (current.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
-            },
-            modifier = Modifier.padding(padding),
-        )
+        // Il mini player si disegna fuori dalla pagina (sotto): qui serve solo sapere dove sta la barra.
+        androidx.compose.runtime.SideEffect { scaffoldPadding = padding }
         PullToSearchIndicator(pullSearch)
         // Sotto la barra, che intanto è diventata il campo per scrivere.
         CaptureComposerVeil()
         }
+    // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.513).
+    FloatingPlayer(
+        currentRoute = currentRoute,
+        onExpand = { playing ->
+            // Quello che suona al momento del tocco, non quello di quando la barra è comparsa.
+            val current = com.platinum20.dashboard.media.Playback.now.value ?: playing
+            navController.navigate(if (current.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
+        },
+        modifier = Modifier.padding(scaffoldPadding),
+    )
     }
     SaveToNotesLayer()
     ActionBubbleLayer()
