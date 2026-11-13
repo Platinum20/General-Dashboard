@@ -160,6 +160,7 @@ fun LaterArchiveScreen(onBack: () -> Unit) {
     val data by NotesStore.data.collectAsState()
     val items = remember(data.tasks) { archivedItems(data.tasks) }
     val open = rememberDueOpen()
+    val rowActions = rememberRowActions()
     val haptic = rememberHaptic()
     val bar = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     androidx.compose.material3.Scaffold(
@@ -175,7 +176,8 @@ fun LaterArchiveScreen(onBack: () -> Unit) {
                 LooseRow(
                     item,
                     onClick = { haptic(Haptic.TICK); item.row?.let(open) },
-                    onLongClick = { haptic(Haptic.TICK); item.row?.let(open) },
+                    // Tenendo premuto: il fumetto delle sue azioni (torna da fare, condividi, elimina), come nella card (Antonio, 2026-11-13).
+                    onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } },
                     onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
                 )
             }

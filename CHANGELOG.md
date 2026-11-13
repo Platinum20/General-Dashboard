@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.505.0
+**Archivio di Per dopo: tieni premuta una cosa fatta**
+- Nell'archivio di Per dopo, tenendo premuta una cosa già fatta si apre il fumetto in basso con le sue azioni: rimettila da fare, condividila o eliminala
+
 ## 1.503.0
 **Media: video in grande nella fila Video**
 - La fila Video usa le schede grandi della lista verticale: anteprima larga quasi quanto lo schermo, titolo su due righe, canale e data sotto; la scheda successiva spunta a destra
