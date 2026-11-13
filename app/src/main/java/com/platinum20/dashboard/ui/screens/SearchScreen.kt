@@ -252,7 +252,7 @@ fun SearchScreen(
                 count += foundEvents.size + foundNews.size
                 // In rete: valgono solo se sono di questa ricerca (si scrive più in fretta di quanto rispondano).
                 val fresh = media.query == q.trim()
-                // Artisti e canali hanno il loro gruppo, in cima (1.518): qui restano brani, album e playlist.
+                // Artisti e canali hanno il loro gruppo, in cima (1.519): qui restano brani, album e playlist.
                 val people = if (fresh) SearchPeople.hits(media.spotify, media.channels, shows(SearchFilter.MUSIC), shows(SearchFilter.VIDEO)) else emptyList()
                 val music = if (fresh && shows(SearchFilter.MUSIC)) media.spotify.filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE && it.kind != SpKind.ARTIST } else emptyList()
                 val videos = if (fresh && shows(SearchFilter.VIDEO)) media.videos else emptyList()
@@ -376,7 +376,7 @@ private fun <T> SourceSection(
     Section(title = "$title · ${items.size}", modifier = modifier) {
         val shown = if (expanded) items else items.take(PER_SOURCE)
         shown.forEach { item -> row(item) }
-        // Aperta si richiude con lo stesso pulsante (1.518): prima restava aperta per sempre.
+        // Aperta si richiude con lo stesso pulsante (1.519): prima restava aperta per sempre.
         if (items.size > PER_SOURCE) {
             TextButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
                 Text(if (expanded) "Mostra meno" else "Mostra altri ${items.size - PER_SOURCE}")
