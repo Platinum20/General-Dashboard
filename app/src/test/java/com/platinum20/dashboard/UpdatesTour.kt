@@ -28,7 +28,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 /**
- * Foto della pagina Aggiornamenti (1.512, bozza C) con versioni finte ma note vere dal CHANGELOG.
+ * Foto della pagina Aggiornamenti (1.513, bozza C) con versioni finte ma note vere dal CHANGELOG.
  * Parte solo con `-Ptour=true` (workflow "Screenshot").
  */
 @RunWith(AndroidJUnit4::class)

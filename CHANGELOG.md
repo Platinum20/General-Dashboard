@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.512.0
+## 1.513.0
 **Aggiornamenti: le versioni su una linea del tempo**
 - In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
 - Sotto, le versioni su una linea come nel Calendario: il segno INSTALLATA separa le nuove da quelle che hai già, più chiare
-- Numeri corti (1.512) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
+- Numeri corti (1.513) e date come nel resto dell'app ("oggi 04:17"); le note restano identiche
 - Le note delle versioni uscite insieme a un'altra non si perdono più: compaiono dentro quella successiva
+
+## 1.512.0
+**Musica: tieni premuta una playlist per gestirla**
+- Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina
+- "Riordina e togli brani" apre la playlist già pronta per spostare e togliere i brani
+- Le playlist di altri che segui: Riproduci e Togli dalla libreria
 
 ## 1.511.0
 **Spotify parte subito, senza bloccarsi**
