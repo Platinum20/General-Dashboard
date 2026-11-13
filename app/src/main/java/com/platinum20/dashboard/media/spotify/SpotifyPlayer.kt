@@ -238,7 +238,30 @@ object SpotifyPlayer : ExternalBackend {
                 result = runCatching { send(item.key, startMs) }
             }
             result.exceptionOrNull()?.let { fail(spotifyMessage(it)); return@launch }
+            launch { ensureStarted(context, item.key, startMs) }
             watch(item.key)
+        }
+    }
+
+    /**
+     * Spotify ha detto "ok" ma il brano non parte (pagina addormentata o morta dietro le quinte, il
+     * telefono l'ha chiusa): prima restava la rotella finché non si toccava di nuovo. Se dopo pochi
+     * secondi né la pagina né Spotify dicono che suona il nostro brano, lo si rimanda; la seconda
+     * volta si riaccende anche la pagina.
+     */
+    private suspend fun ensureStarted(context: Context, uri: String, startMs: Long) {
+        for (attempt in 0 until 2) {
+            delay(START_CHECK_MS)
+            if (target != uri || last != null) return
+            val token = runCatching { SpotifyAuth.token() }.getOrNull() ?: return
+            val playback = runCatching { SpotifyApi.playback(token) }.getOrNull()
+            if (target != uri || last != null) return
+            if (playback != null && playback.device == DEVICE_NAME && (playback.playing || pauseOnStart) &&
+                (playback.item?.uri == uri || playback.item?.uri == alias)) return
+            if (attempt == 1) restart(context)
+            val sent = runCatching { send(uri, startMs) }
+            if (target != uri) return
+            sent.exceptionOrNull()?.let { fail(spotifyMessage(it)); return }
         }
     }
 
@@ -430,7 +453,9 @@ object SpotifyPlayer : ExternalBackend {
     /** Quanto resta acceso il riproduttore con l'app chiusa e niente che suona. */
     private const val SLEEP_MS = 5 * 60_000L
     /** Quanto si aspetta la pagina prima di riaccenderla, e poi quanto la pagina riaccesa. */
-    private const val FIRST_WAIT_MS = 10_000L
+    private const val FIRST_WAIT_MS = 6_000L
+    /** Dopo il play, quanto si aspetta il primo segno di vita del brano prima di rimandarlo. */
+    private const val START_CHECK_MS = 4_000L
     private const val SECOND_WAIT_MS = 20_000L
     /** Il nome del nostro riproduttore tra i dispositivi di Spotify (lo stesso della pagina). */
     private const val DEVICE_NAME = "Canvas"

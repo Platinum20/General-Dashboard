@@ -1701,7 +1701,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
         // Sotto la barra, che intanto è diventata il campo per scrivere.
         CaptureComposerVeil()
         }
-    // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.509).
+    // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.512).
     FloatingPlayer(
         currentRoute = currentRoute,
         onExpand = { playing ->

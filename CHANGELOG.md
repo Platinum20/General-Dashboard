@@ -1,11 +1,22 @@
 # Changelog
 
-## 1.510.0
+## 1.512.0
 **Mini player: linguetta sistemata**
 - La linguetta ora è un cerchio intero, tutto dentro lo schermo: niente più mezza fuori, e il vetro si vede bene
 - Riaprendola, il mini player torna sempre al suo posto (prima a volte restava a metà, mezzo fuori)
 - Portandolo giù per chiuderlo passa sopra la barra in basso, non sotto, e in fondo compare una X rossa (anche lei sopra la barra) che cresce quando la calamita lo prende
 - Vibrazioni più chiare: una quando lo porti oltre metà di lato (lasciandolo va nella linguetta), una quando la calamita lo prende, una alla chiusura e alla riapertura; la linguetta si schiaccia un po' al tocco
+
+## 1.511.0
+**Spotify parte subito, senza bloccarsi**
+- Se tocchi un brano e dopo pochi secondi non suona ancora, l'app lo rimanda da sola; se serve riaccende anche il riproduttore. Prima restava fermo finché non toccavi di nuovo
+- Il riproduttore bloccato si riaccende prima: si aspettano 6 secondi invece di 10
+
+## 1.510.0
+**Aggiornamenti: ora arrivano davvero da soli**
+- L'aggiornamento automatico non partiva mai: Canvas si credeva sempre "in uso" per colpa del lettore delle notifiche. Ora si installa da sola quando non la stai usando e non sta suonando niente
+- Se resta occupata per più di un'ora ti arriva comunque l'avviso "tocca per aggiornare"
+- Dopo l'installazione il file scaricato viene cancellato: decine di MB liberati sul telefono
 
 ## 1.509.0
 **Salvati: tieni premuto per metterli in coda**
