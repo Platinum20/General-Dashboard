@@ -42,6 +42,8 @@ object SpotifyAuth {
     private const val KEY_EXPIRES = "expires_at"
     private const val KEY_VERIFIER = "pkce_verifier"
     private const val KEY_STATE = "pkce_state"
+    /** Fino a quando Spotify ha chiesto di non chiamarlo (dopo un 429). */
+    private const val KEY_LIMITED_UNTIL = "limited_until"
 
     private val SCOPES = listOf(
         "user-read-private", "user-read-recently-played", "user-top-read",
@@ -72,6 +74,8 @@ object SpotifyAuth {
         prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         _clientId.value = prefs.getString(KEY_CLIENT_ID, null)?.takeIf { it.isNotBlank() } ?: DEFAULT_CLIENT_ID
         _connected.value = prefs.getString(KEY_REFRESH, null) != null
+        SpotifyApi.limit.restore(prefs.getLong(KEY_LIMITED_UNTIL, 0))
+        SpotifyApi.limit.onChange = { prefs.edit().putLong(KEY_LIMITED_UNTIL, it).apply() }
     }
 
     /** Indirizzo del login di Spotify, da aprire dentro l'app (nessun browser esterno). */

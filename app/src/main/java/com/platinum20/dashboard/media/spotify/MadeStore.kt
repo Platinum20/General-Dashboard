@@ -63,11 +63,17 @@ object MadeStore {
     private var radios: List<SpMix> = emptyList()
     private val resolved = LinkedHashMap<String, SpItem?>()
     private var loaded = false
+    private var lastTry = 0L
+    private const val RETRY_MS = 30 * 60_000L
 
     /** Rifà quello che è scaduto. Si può chiamare spesso: fa qualcosa solo se serve. */
-    fun refresh(context: Context) {
+    fun refresh(context: Context, force: Boolean = false) {
         LastFm.init(context)
         if (_working.value) return
+        // Un tentativo ogni mezz'ora al massimo: prima ogni apertura di Media rifaceva centinaia di ricerche.
+        val now = System.currentTimeMillis()
+        if (!force && now - lastTry < RETRY_MS) return
+        lastTry = now
         _working.value = true
         scope.launch {
             try {
