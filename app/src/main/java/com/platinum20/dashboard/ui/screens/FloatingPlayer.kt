@@ -109,10 +109,12 @@ fun FloatingPlayer(
         return
     }
 
+    // Ritirato, la linguetta tocca il bordo dello schermo: niente margine ai lati, se no la sua parte
+    // esterna starebbe fuori dal riquadro e non prenderebbe i tocchi.
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = if (MiniDock.tucked) 0.dp else 16.dp, vertical = 6.dp)
     ) {
         val density = LocalDensity.current
         val maxH = constraints.maxHeight.toFloat()
@@ -172,7 +174,6 @@ fun FloatingPlayer(
                 now = now,
                 right = MiniDock.tuckRight,
                 yPx = { y.value * (maxH - bar).coerceAtLeast(1f) + bar / 2f },
-                edgePx = with(density) { 16.dp.toPx() },
                 maxW = maxW,
                 onOpen = {
                     view.haptic(Haptic.SNAP)
@@ -336,7 +337,6 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
     now: Playing,
     right: Boolean,
     yPx: () -> Float,
-    edgePx: Float,
     maxW: Float,
     onOpen: () -> Unit,
 ) {
@@ -357,7 +357,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
             .offset {
                 val w = with(density) { tabW.toPx() }
                 val h = with(density) { tabH.toPx() }
-                val left = if (right) maxW + edgePx - w else -edgePx
+                val left = if (right) maxW - w else 0f
                 IntOffset(left.roundToInt(), (yPx() - h / 2f).roundToInt())
             }
             .graphicsLayer {
