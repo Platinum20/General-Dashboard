@@ -123,6 +123,10 @@ object SpotifyPlaylists {
     /** Per "Annulla": il brano torna dove era la prima volta. */
     fun restored(tracks: List<SpItem>, track: SpItem, at: Int): List<SpItem> =
         tracks.toMutableList().apply { add(at.coerceIn(0, size), track) }
+
+    /** "spotify:playlist:abc" → "abc": la cosa tenuta premuta è una playlist (1.511). */
+    fun playlistId(uri: String): String? =
+        uri.split(":").takeIf { it.size == 3 && it[0] == "spotify" && it[1] == "playlist" && it[2].isNotBlank() }?.get(2)
 }
 
 /** I dettagli di una playlist che si possono cambiare, più il proprietario per sapere se si può. */

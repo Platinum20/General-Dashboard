@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.511.0
+**Musica: tieni premuta una playlist per gestirla**
+- Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina
+- "Riordina e togli brani" apre la playlist già pronta per spostare e togliere i brani
+- Le playlist di altri che segui: Riproduci e Togli dalla libreria
+
 ## 1.510.0
 **Aggiornamenti: ora arrivano davvero da soli**
 - L'aggiornamento automatico non partiva mai: Canvas si credeva sempre "in uso" per colpa del lettore delle notifiche. Ora si installa da sola quando non la stai usando e non sta suonando niente
