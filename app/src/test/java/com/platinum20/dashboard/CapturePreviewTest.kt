@@ -29,3 +29,13 @@ class CapturePreviewTest {
         assertEquals(CapturePreview.LATER, row.destination)
     }
 }
+
+class SpotifyHeaderLineTest {
+    @Test
+    fun headerAndClock() {
+        val p = com.platinum20.dashboard.media.spotify.SpotifyPlaylists
+        assertEquals("Madame · 14 brani · 48 min", p.headerLine("Madame", 14, 48 * 60_000L))
+        assertEquals("1 h 5 min", p.headerLine("", 0, 65 * 60_000L))
+        assertEquals("3:05", p.clock(185_000))
+    }
+}

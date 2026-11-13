@@ -2,6 +2,8 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.Shuffle
+import androidx.compose.material.icons.rounded.PlayArrow
 import com.platinum20.dashboard.media.spotify.SpotifyPlaylists
 import com.platinum20.dashboard.media.podcast.Episode
 import com.platinum20.dashboard.media.podcast.Podcast
@@ -632,24 +634,37 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     // Con i dati (anche vuoti) l'avviso va sotto il titolo, così "Riproduci" resta lì sopra.
     val note = state.error?.takeIf { state.data != null }
     FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.medium, 96.dp, MediaMarks.of(parent))
-                Spacer(Modifier.width(16.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        if (isPlaylist) PlaylistManage.title(parent) else parent.title,
-                        style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(parent.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (arranging) {
-                            CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true)
-                        } else if (parent.kind != SpKind.ARTIST) {
-                            FilledTonalButton(onClick = { onPlay(parent) }) { Text("Riproduci") }
+        // La testata (1.528, Antonio scelta B): copertina quadrata al centro, titolo e una riga sotto, poi
+        // Casuale · Riproduci · Altro in fila al centro.
+        item(key = "header") {
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.large, 200.dp, MediaMarks.of(parent))
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    if (isPlaylist) PlaylistManage.title(parent) else parent.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    SpotifyPlaylists.headerLine(parent.subtitle, tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }, tracks.sumOf { it.durationMs }),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (arranging) {
+                        CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true)
+                    } else if (parent.kind != SpKind.ARTIST) {
+                        RoundIconButton(Icons.Rounded.Shuffle, "Casuale") {
+                            view.haptic(Haptic.CONFIRM)
+                            playTracks(context, tracks.shuffled(), null, link = parent.uri)
                         }
-                        if (isPlaylist && !arranging && info != null) {
+                        CanvasButton("Riproduci", onClick = { onPlay(parent) }, icon = Icons.Rounded.PlayArrow, primary = true)
+                        if (isPlaylist && info != null) {
                             RoundIconButton(Icons.Rounded.MoreHoriz, "Altro") {
                                 view.haptic(Haptic.CONFIRM)
                                 PlaylistManage.openMenu(context, parent, onGone)
@@ -689,7 +704,9 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
         } else {
             items(shown.size, key = { keys[it] }) { i ->
                 val child = shown[i]
-                ItemRow(child, onClick = {
+                // Un album ha una copertina sola: le righe hanno il numero a sinistra e la durata a destra (1.528).
+                if (parent.kind == SpKind.ALBUM && child.kind == SpKind.TRACK) NumberedTrackRow(i + 1, child, onClick = { onPlayFrom(child) })
+                else ItemRow(child, onClick = {
                     if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
                         onPlayFrom(child)
                     } else {
@@ -697,6 +714,41 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
                     }
                 })
             }
+        }
+    }
+}
+
+/** Un brano di un album (1.528): numero a sinistra, nome e artista, durata a destra; la riga Canvas, senza card. */
+@Composable
+private fun NumberedTrackRow(number: Int, item: SpItem, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress(0.98f)
+            .clip(MaterialTheme.shapes.medium)
+            .tapOrSave({ SavedLinks.spotify(item) }, onClick)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "$number",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.width(32.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (item.durationMs > 0) {
+            Spacer(Modifier.width(8.dp))
+            Text(
+                SpotifyPlaylists.clock(item.durationMs),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

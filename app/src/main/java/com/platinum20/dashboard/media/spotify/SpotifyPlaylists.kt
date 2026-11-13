@@ -127,14 +127,25 @@ object SpotifyPlaylists {
     /** "spotify:playlist:abc" → "abc": la cosa tenuta premuta è una playlist (1.512). */
     fun playlistId(uri: String): String? =
         uri.split(":").takeIf { it.size == 3 && it[0] == "spotify" && it[1] == "playlist" && it[2].isNotBlank() }?.get(2)
-}
 
-/** I dettagli di una playlist che si possono cambiare, più il proprietario per sapere se si può. */
-data class SpPlaylistInfo(
-    val id: String,
-    val name: String,
-    val description: String,
-    val public: Boolean,
-    val collaborative: Boolean,
-    val ownerId: String,
-)
+    /** "3:12": la durata di un brano nella riga dell'album (1.528). */
+    fun clock(ms: Long): String {
+        val total = ms / 1000
+        return "${total / 60}:${"%02d".format(total % 60)}"
+    }
+
+    /** La riga sotto il titolo della testata (1.528): "Madame · 14 brani · 48 min", solo quello che si sa. */
+    fun headerLine(subtitle: String, tracks: Int, totalMs: Long): String {
+        val min = totalMs / 60_000
+        val length = when {
+            min <= 0 -> null
+            min < 60 -> "$min min"
+            else -> "${min / 60} h ${min % 60} min"
+        }
+        return listOfNotNull(
+            subtitle.takeIf { it.isNotBlank() },
+            tracks.takeIf { it > 0 }?.let { if (it == 1) "1 brano" else "$it brani" },
+            length,
+        ).joinToString(" · ")
+    }
+}
