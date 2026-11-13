@@ -100,6 +100,14 @@ internal fun BoxScope.SaveToNotesLayer() {
         val link = last ?: return@BottomBubble
         val media = (link as? SavedLink.Media)?.item?.takeIf { it.kind != ResumeKind.VIDEO }
         // Video, canzoni, radio ed episodi si possono anche mettere in coda, dopo quello che suona.
+        // Una playlist tenuta premuta (1.512, Antonio): le stesse azioni del tasto "…" della sua pagina.
+        media?.let { com.platinum20.dashboard.media.spotify.SpotifyPlaylists.playlistId(it.key) }?.let { id ->
+            PlaylistBubbleRows(
+                com.platinum20.dashboard.media.spotify.SpItem(
+                    id, media.key, com.platinum20.dashboard.media.spotify.SpKind.PLAYLIST, media.title, media.subtitle, media.image,
+                ),
+            )
+        }
         if (media != null) {
             BubbleRow(icon = Icons.Rounded.QueueMusic, title = "Aggiungi alla coda", detail = media.title) {
                 haptic(Haptic.CONFIRM)

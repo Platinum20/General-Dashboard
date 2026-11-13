@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.511.0
+## 1.513.0
 **Tieni premuto: le azioni di ogni cosa, senza aprirla**
 - Eventi del calendario: oltre ad Apri e Condividi ora ci sono Modifica, Elimina, Biglietto e Ascolta lo zaino
 - Pacchi: Traccia la spedizione e Condividi
@@ -9,6 +9,17 @@
 - Notizie: Condividi il link
 - Video: Mi piace e Condividi; radio: Aggiungi ai preferiti; episodi: Segui il podcast
 - Coda: tenendo premuta una voce, Riproduci ora, Subito dopo e Togli dalla coda
+
+## 1.512.0
+**Musica: tieni premuta una playlist per gestirla**
+- Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina
+- "Riordina e togli brani" apre la playlist già pronta per spostare e togliere i brani
+- Le playlist di altri che segui: Riproduci e Togli dalla libreria
+
+## 1.511.0
+**Spotify parte subito, senza bloccarsi**
+- Se tocchi un brano e dopo pochi secondi non suona ancora, l'app lo rimanda da sola; se serve riaccende anche il riproduttore. Prima restava fermo finché non toccavi di nuovo
+- Il riproduttore bloccato si riaccende prima: si aspettano 6 secondi invece di 10
 
 ## 1.510.0
 **Aggiornamenti: ora arrivano davvero da soli**
