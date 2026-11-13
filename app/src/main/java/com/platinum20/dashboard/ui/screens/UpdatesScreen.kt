@@ -137,6 +137,7 @@ internal fun UpdatesContent(
                         VersionRow(
                             release = release,
                             newer = compareVersions(release.version, state.currentVersion) > 0,
+                            older = compareVersions(release.version, state.currentVersion) < 0,
                             last = i == state.releases.lastIndex,
                         )
                     }
@@ -238,9 +239,9 @@ private fun StatusHero(state: UpdateUiState, onUpdate: () -> Unit, onGrantPermis
     }
 }
 
-/** Una versione sulla linea: pallino colorato se nuova, inchiostro se già tua; quelle vecchie attenuate. */
+/** Una versione sulla linea: pallino colorato se nuova, inchiostro se già tua; quelle prima della tua attenuate. */
 @Composable
-private fun VersionRow(release: GitHubRelease, newer: Boolean, last: Boolean) {
+private fun VersionRow(release: GitHubRelease, newer: Boolean, older: Boolean, last: Boolean) {
     val rail = MaterialTheme.colorScheme.outlineVariant
     val dot = if (newer) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
     Row(
@@ -253,7 +254,7 @@ private fun VersionRow(release: GitHubRelease, newer: Boolean, last: Boolean) {
                 drawCircle(dot, radius = 5.dp.toPx(), center = Offset(x, y))
             }
             .padding(start = 24.dp, top = 10.dp, bottom = 12.dp)
-            .alpha(if (newer) 1f else 0.6f),
+            .alpha(if (older) 0.6f else 1f),
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
