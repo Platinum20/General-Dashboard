@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.502.0
+**Media: video in grande nella fila Video**
+- La fila Video usa le schede grandi della lista verticale: anteprima larga quasi quanto lo schermo, titolo su due righe, canale e data sotto; la scheda successiva spunta a destra
+- La tessera Salvati mostra le copertine di quello che hai salvato, con il segnalibro nell'angolo
+
 ## 1.501.0
 **Musica: la playlist nuova va subito in cima**
 - Una playlist appena creata compare per prima nella fila Musica e nell'elenco completo, anche se non l'hai ancora ascoltata

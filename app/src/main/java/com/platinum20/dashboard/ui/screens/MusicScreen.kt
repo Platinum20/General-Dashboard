@@ -249,7 +249,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
         OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
-            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
                     // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
@@ -476,7 +476,19 @@ internal object CoverTiles {
 
     /** Tre copertine più i margini e gli spazi tra loro riempiono esattamente lo schermo. */
     fun width(screenDp: Int): Int = (screenDp - 2 * EDGE - (PER_SCREEN - 1) * GAP) / PER_SCREEN
+
+    /** Quanto si vede della scheda video successiva: dice che la fila scorre di lato. */
+    const val PEEK = 40
+
+    /**
+     * Larghezza delle schede video grandi della fila Video (1.502, Antonio: "come la pagina verticale ma in
+     * orizzontale"): quasi tutto lo schermo, col margine a sinistra, lo spazio e un pezzo della successiva a destra.
+     */
+    fun bigVideoWidth(screenDp: Int): Int = screenDp - EDGE - GAP - PEEK
 }
+
+@Composable
+internal fun bigVideoWidth(): Dp = CoverTiles.bigVideoWidth(LocalConfiguration.current.screenWidthDp).dp
 
 @Composable
 internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
