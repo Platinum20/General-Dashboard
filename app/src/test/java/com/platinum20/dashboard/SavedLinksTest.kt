@@ -67,4 +67,16 @@ class SavedLinksTest {
         assertEquals("Brano\nArtista\nhttps://open.spotify.com/track/abc", SavedLinks.shareText(song))
         assertEquals("Titolo\nhttps://example.com/a", SavedLinks.shareText(SavedLink.Article("https://example.com/a", "Open", "Titolo")))
     }
+
+    @Test
+    fun onlySingleThingsGoInTheQueue() {
+        fun item(kind: ResumeKind, key: String) = ResumeItem(kind, key, "T", "", at = 1L)
+        assertEquals(true, SavedLinks.queueable(item(ResumeKind.YOUTUBE, "abc")))
+        assertEquals(true, SavedLinks.queueable(item(ResumeKind.SPOTIFY, "spotify:track:abc")))
+        assertEquals(true, SavedLinks.queueable(item(ResumeKind.PODCAST, "https://x/ep.mp3")))
+        // Album, playlist e mix si aprono nella loro pagina; i video del telefono restano fuori.
+        assertEquals(false, SavedLinks.queueable(item(ResumeKind.SPOTIFY, "spotify:album:abc")))
+        assertEquals(false, SavedLinks.queueable(item(ResumeKind.SPOTIFY, "mix:daily1")))
+        assertEquals(false, SavedLinks.queueable(item(ResumeKind.VIDEO, "content://v")))
+    }
 }
