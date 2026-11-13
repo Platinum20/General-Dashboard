@@ -41,3 +41,12 @@ class WhenHeroTest {
         assertEquals("45 min", WhenHero.duration(45 * 60_000L))
     }
 }
+
+class NoteAppendTest {
+    @Test
+    fun dictatedTextGoesAtTheEnd() {
+        assertEquals("Ciao", com.platinum20.dashboard.notes.NoteText.append("", "ciao"))
+        assertEquals("Spesa Latte", com.platinum20.dashboard.notes.NoteText.append("Spesa", "latte"))
+        assertEquals("Spesa\nLatte", com.platinum20.dashboard.notes.NoteText.append("Spesa\n", "latte"))
+    }
+}
