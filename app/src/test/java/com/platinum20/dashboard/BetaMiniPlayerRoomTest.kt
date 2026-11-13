@@ -6,6 +6,7 @@ import java.io.File
 
 /**
  * 1.286: nelle pagine senza barra delle sezioni la lista finisce sopra il mini player.
+ * (MailUi.kt dal 1.528 sta su DetailPage, che lascia lo spazio da sé.)
  * Se una di queste pagine viene riscritta e perde `miniPlayerRoom()`, l'ultima riga torna sotto il player.
  */
 class BetaMiniPlayerRoomTest {
@@ -17,7 +18,7 @@ class BetaMiniPlayerRoomTest {
     fun paginaSenzaBarraLasciaSpazioAlMiniPlayer() {
         val pages = mapOf(
             "SettingsScreen.kt" to 2, "WeatherScreen.kt" to 1, "SearchScreen.kt" to 1,
-            "UpdatesScreen.kt" to 1, "CustomizeScreen.kt" to 1, "MailUi.kt" to 1, "AutoFillUi.kt" to 1,
+            "UpdatesScreen.kt" to 1, "CustomizeScreen.kt" to 1, "AutoFillUi.kt" to 1,
             "PlacePickerScreen.kt" to 1,
         )
         pages.forEach { (name, min) ->
