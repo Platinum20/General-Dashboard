@@ -39,3 +39,18 @@ class SpotifyHeaderLineTest {
         assertEquals("3:05", p.clock(185_000))
     }
 }
+
+class PodcastHeroTest {
+    private fun ep(id: String, at: Long, dur: Long = 3600) =
+        com.platinum20.dashboard.media.podcast.Episode(id, id, "", at, dur, "", "", "", "")
+
+    @Test
+    fun startedWinsElseNewestUnheard() {
+        val h = com.platinum20.dashboard.media.podcast.PodcastHero
+        val eps = listOf(ep("new", 3), ep("mid", 2), ep("old", 1))
+        assertEquals("mid", h.pick(eps, mapOf("mid" to 600_000L))?.id)
+        assertEquals("new", h.pick(eps, emptyMap())?.id)
+        assertEquals("mid", h.pick(eps, mapOf("new" to 3_600_000L))?.id)
+        assertEquals(null, h.pick(listOf(ep("a", 1)), mapOf("a" to 3_600_000L)))
+    }
+}
