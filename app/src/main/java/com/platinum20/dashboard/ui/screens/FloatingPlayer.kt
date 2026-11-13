@@ -357,7 +357,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
     val open by androidx.compose.runtime.rememberUpdatedState(onOpen)
     val show = remember { Animatable(0f) }
     LaunchedEffect(Unit) { show.animateTo(1f, Motion.lively()) }
-    // Tonda e tutta dentro lo schermo, allineata al bordo della barra: niente mezza fuori (Antonio, 1.512).
+    // Tonda e tutta dentro lo schermo, allineata al bordo della barra: niente mezza fuori (Antonio, 1.513).
     val tabW = 56.dp
     val tabH = 56.dp
     val shape = CircleShape
