@@ -37,7 +37,7 @@ sealed interface AgendaRow {
 
 /**
  * Cosa mostra il widget Calendario: lo stesso Oggi del calendario dell'app ([dueDays] con `withToday`): tutte
- * le cose di oggi (turni, treni, eventi anche finiti, promemoria, note, cose spuntate) in ordine d'orario, niente
+ * le cose di oggi con un giorno (turni, treni, eventi anche finiti, promemoria e date; le cose senza data stanno in Per dopo) in ordine d'orario, niente
  * nascosto; spese escluse (vanno nella sezione dei soldi); poi i prossimi giorni finché c'è posto. Le parole vengono da [timelineEntries].
  */
 object AgendaRows {
@@ -106,6 +106,9 @@ object AgendaRows {
         timelineEntries(listOf(group), today, zone).mapNotNull { (entry, row) ->
             // La riga di OGGI è il titolo del widget, non una voce.
             if (row.today) return@mapNotNull null
+            // Le cose senza data (da fare, note, foto, pacchi senza data) stanno solo in "Per dopo", come nell'app
+            // (Antonio, 2026-11-13: nei widget e nella notifica del mattino c'erano ancora).
+            if (com.platinum20.dashboard.ui.screens.isLoose(row)) return@mapNotNull null
             val (kind, id) = when {
                 row.event != null -> AgendaRow.Kind.EVENT to row.event.eventId
                 row.task != null -> (if (row.task.allDay) AgendaRow.Kind.DATE else AgendaRow.Kind.TASK) to row.task.id
