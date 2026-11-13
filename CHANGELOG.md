@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.515.0
+## 1.516.0
 **Tieni premuto: le azioni di ogni cosa, senza aprirla**
 - Eventi del calendario: oltre ad Apri e Condividi ora ci sono Modifica, Elimina, Biglietto e Ascolta lo zaino
 - Pacchi: Traccia la spedizione e Condividi
@@ -9,6 +9,13 @@
 - Notizie: Condividi il link
 - Video: Mi piace e Condividi; radio: Aggiungi ai preferiti; episodi: Segui il podcast
 - Coda: tenendo premuta una voce, Riproduci ora, Subito dopo e Togli dalla coda
+
+## 1.515.0
+**Impostazioni del video rifatte**
+- La rotella sul video apre un fumetto di vetro con quattro righe: Qualità, Velocità, Sottotitoli e Ripeti. Ogni riga dice già com'è impostata
+- Tocchi una riga e sotto compaiono le sue scelte, tutte su una fila che scorre di lato; si riapre sull'ultima che hai cambiato
+- In verticale sta in basso e il video resta in vista; in orizzontale sta a destra
+- Qualità: prima Automatica e le più comuni (1080p, 720p, 480p, 360p), poi le altre. Sottotitoli: prima la lingua originale, poi l'italiano
 
 ## 1.514.0
 **Aggiornamenti: le versioni su una linea del tempo**

@@ -2,6 +2,7 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.youtube.player.YtQuality
+import com.platinum20.dashboard.media.youtube.player.YtSubtitle
 import com.platinum20.dashboard.ui.screens.QueueLook
 import com.platinum20.dashboard.ui.screens.QueueSheet
 import com.platinum20.dashboard.ui.screens.VideoSettings
@@ -40,5 +41,18 @@ class PlayerPanelsTest {
         assertEquals(listOf(1080, 720, 360), VideoSettings.qualities(listOf(YtQuality(360, "a"), YtQuality(1080, "b"), YtQuality(720, "c"), YtQuality(720, "d"))))
         assertEquals("Automatica · 720p ora", VideoSettings.qualityValue(true, 720, 1080))
         assertEquals("1080p", VideoSettings.qualityValue(false, 720, 1080))
+    }
+
+    @Test fun videoSettingsRows() {
+        // Le più comuni prima (si vedono senza scorrere), poi le altre dalla più alta.
+        assertEquals(listOf(1080, 720, 480, 360, 2160, 1440, 240, 144), VideoSettings.qualityRow(listOf(2160, 1440, 1080, 720, 480, 360, 240, 144)))
+        assertEquals(listOf(720, 360, 240), VideoSettings.qualityRow(listOf(720, 360, 240)))
+        assertEquals("Normale", VideoSettings.speedChip(1f))
+        assertEquals("0,75×", VideoSettings.speedChip(0.75f))
+        val en = YtSubtitle("en", "Inglese", "u1", auto = false, original = true)
+        val it = YtSubtitle("it", "Italiano", "u2", auto = false)
+        val es = YtSubtitle("es", "Spagnolo", "u3", auto = false)
+        val enAuto = YtSubtitle("en", "Inglese (automatici)", "u4", auto = true)
+        assertEquals(listOf(en, it, es, enAuto), VideoSettings.subtitleRow(listOf(enAuto, es, it, en)))
     }
 }
