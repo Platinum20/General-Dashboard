@@ -72,6 +72,14 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.platinum20.dashboard.search.SearchRecents
+import com.platinum20.dashboard.search.PersonHit
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.search.SearchPeople
+import com.platinum20.dashboard.media.youtube.YtRatings
+import com.platinum20.dashboard.media.youtube.YouTubeStore
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.NotificationsOff
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
@@ -105,6 +113,7 @@ private data class MediaHits(
     val spotify: List<SpItem> = emptyList(),
     val videos: List<YtVideo> = emptyList(),
     val radio: List<RadioStation> = emptyList(),
+    val channels: List<Pair<com.platinum20.dashboard.media.youtube.YtChannel, Long>> = emptyList(),
 )
 
 /**
@@ -166,7 +175,8 @@ fun SearchScreen(
             val spotify = async { runCatching { SpotifyAuth.token()?.let { SpotifyApi.search(it, q) } }.getOrNull().orEmpty() }
             val videos = async { runCatching { YtResolver.search(q) }.getOrDefault(emptyList()) }
             val radio = async { runCatching { RadioApi.search(q) }.getOrDefault(emptyList()) }
-            media = MediaHits(q, false, spotify.await(), videos.await().take(MAX_ONLINE), radio.await().take(MAX_ONLINE))
+            val channels = async { runCatching { YtResolver.searchChannels(q) }.getOrDefault(emptyList()) }
+            media = MediaHits(q, false, spotify.await(), videos.await().take(MAX_ONLINE), radio.await().take(MAX_ONLINE), channels.await().take(MAX_ONLINE))
             expanded = emptySet()
         }
     }
@@ -228,13 +238,13 @@ fun SearchScreen(
                 val foundEvents = if (shows(SearchFilter.AGENDA)) EverywhereSearch.events(events, q, today) else emptyList()
                 val foundNews = if (shows(SearchFilter.NEWS)) EverywhereSearch.news(news?.items.orEmpty(), q) else emptyList()
                 if (foundEvents.isNotEmpty()) item(key = "events") {
-                    SourceSection("Calendario", foundEvents, "events" in expanded, { expanded = expanded + "events" }, Modifier.animateItem()) { (day, e) ->
+                    SourceSection("Calendario", foundEvents, "events" in expanded, { expanded = SearchPeople.toggled(expanded, "events") }, Modifier.animateItem()) { (day, e) ->
                         val time = if (e.allDay) "" else " · " + Instant.ofEpochMilli(e.begin).atZone(ZoneId.systemDefault()).format(eventHour)
                         ResultRow(e.title, longDate(day) + time) { inApp?.openEvent?.invoke(e) }
                     }
                 }
                 if (foundNews.isNotEmpty()) item(key = "news") {
-                    SourceSection("News", foundNews, "news" in expanded, { expanded = expanded + "news" }, Modifier.animateItem()) { n ->
+                    SourceSection("News", foundNews, "news" in expanded, { expanded = SearchPeople.toggled(expanded, "news") }, Modifier.animateItem()) { n ->
                         val whenText = n.publishedAt?.let { " · " + relativeTime(it) }.orEmpty()
                         ResultRow(n.title, n.source.name + whenText, onLongClick = { SavedLinks.offer(n.savedLink()) }) { onOpenArticle(n) }
                     }
@@ -242,12 +252,44 @@ fun SearchScreen(
                 count += foundEvents.size + foundNews.size
                 // In rete: valgono solo se sono di questa ricerca (si scrive più in fretta di quanto rispondano).
                 val fresh = media.query == q.trim()
-                val music = if (fresh && shows(SearchFilter.MUSIC)) media.spotify.filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE } else emptyList()
+                // Artisti e canali hanno il loro gruppo, in cima (1.518): qui restano brani, album e playlist.
+                val people = if (fresh) SearchPeople.hits(media.spotify, media.channels, shows(SearchFilter.MUSIC), shows(SearchFilter.VIDEO)) else emptyList()
+                val music = if (fresh && shows(SearchFilter.MUSIC)) media.spotify.filter { it.kind != SpKind.SHOW && it.kind != SpKind.EPISODE && it.kind != SpKind.ARTIST } else emptyList()
                 val videos = if (fresh && shows(SearchFilter.VIDEO)) media.videos else emptyList()
                 val radio = if (fresh && shows(SearchFilter.RADIO)) media.radio else emptyList()
                 val pods = if (shows(SearchFilter.MUSIC) && q.trim().length >= 2) podcasts.data.orEmpty().take(MAX_ONLINE) else emptyList()
+                if (people.isNotEmpty()) item(key = "people") {
+                    SourceSection("Artisti e canali", people, "people" in expanded, { expanded = SearchPeople.toggled(expanded, "people") }, Modifier.animateItem()) { hit ->
+                        when (hit) {
+                            is PersonHit.Artist -> {
+                                val open = { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.spotifyItem(hit.item)); Unit }
+                                ResultRow(hit.title, "Artista", onLongClick = SavedLinks.spotify(hit.item)?.let { l -> { SavedLinks.offer(l) } }, onClick = open)
+                            }
+                            is PersonHit.Channel -> {
+                                val open = { inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.youtubeChannel(hit.channel)); Unit }
+                                ResultRow(hit.title, SearchPeople.channelLine(hit.subscribers), onLongClick = {
+                                    // Le stesse azioni della pagina del canale: aprirlo e l'iscrizione.
+                                    val now = YtRatings.isSubscribed(hit.channel.id, YtRatings.subscribed.value, YouTubeStore.channels.value.data)
+                                    ActionBubble.show(
+                                        BubbleAction(Icons.Outlined.AccountCircle, "Apri il canale", onClick = open),
+                                        BubbleAction(
+                                            if (now) Icons.Outlined.NotificationsOff else Icons.Outlined.NotificationsActive,
+                                            if (now) "Annulla l'iscrizione" else "Iscriviti",
+                                            danger = now,
+                                        ) {
+                                            val ok = YtRatings.toggleSubscribe(context, hit.channel.id, now) {
+                                                CaptureFeedback.tell(context, "YouTube non ha preso l'iscrizione, riprova")
+                                            }
+                                            if (!ok) CaptureFeedback.tell(context, "Accedi a YouTube in Impostazioni › Account")
+                                        },
+                                    )
+                                }, onClick = open)
+                            }
+                        }
+                    }
+                }
                 if (music.isNotEmpty()) item(key = "music") {
-                    SourceSection("Spotify", music, "music" in expanded, { expanded = expanded + "music" }, Modifier.animateItem()) { item ->
+                    SourceSection("Spotify", music, "music" in expanded, { expanded = SearchPeople.toggled(expanded, "music") }, Modifier.animateItem()) { item ->
                         ResultRow(item.title, kindLabel(item.kind) + item.subtitle.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty(), onLongClick = SavedLinks.spotify(item)?.let { l -> { SavedLinks.offer(l) } }) {
                             // Artisti, album e playlist si aprono nella loro pagina (1.481); un brano parte.
                             if (item.kind == SpKind.ARTIST || item.kind == SpKind.ALBUM || item.kind == SpKind.PLAYLIST) {
@@ -260,12 +302,12 @@ fun SearchScreen(
                     }
                 }
                 if (videos.isNotEmpty()) item(key = "videos") {
-                    SourceSection("YouTube", videos, "videos" in expanded, { expanded = expanded + "videos" }, Modifier.animateItem()) { v ->
+                    SourceSection("YouTube", videos, "videos" in expanded, { expanded = SearchPeople.toggled(expanded, "videos") }, Modifier.animateItem()) { v ->
                         ResultRow(v.title, v.channel, onLongClick = { SavedLinks.offer(SavedLinks.youtube(v)) }) { onWatch(v.watchUrl) }
                     }
                 }
                 if (radio.isNotEmpty()) item(key = "radio") {
-                    SourceSection("Radio", radio, "radio" in expanded, { expanded = expanded + "radio" }, Modifier.animateItem()) { station ->
+                    SourceSection("Radio", radio, "radio" in expanded, { expanded = SearchPeople.toggled(expanded, "radio") }, Modifier.animateItem()) { station ->
                         ResultRow(station.name, com.platinum20.dashboard.media.radio.RadioGenre.of(station.tags) ?: "Radio", onLongClick = { SavedLinks.offer(SavedLinks.radio(station)) }) {
                             RadioStore.play(station)
                             onOpenPlayer()
@@ -273,7 +315,7 @@ fun SearchScreen(
                     }
                 }
                 if (pods.isNotEmpty()) item(key = "podcasts") {
-                    SourceSection("Podcast", pods, "podcasts" in expanded, { expanded = expanded + "podcasts" }, Modifier.animateItem()) { podcast ->
+                    SourceSection("Podcast", pods, "podcasts" in expanded, { expanded = SearchPeople.toggled(expanded, "podcasts") }, Modifier.animateItem()) { podcast ->
                         ResultRow(podcast.title, "Ultimo episodio · ${podcast.author}") {
                             // Parte l'episodio più recente: gli altri si trovano in Media › Podcast.
                             scope.launch {
@@ -290,7 +332,7 @@ fun SearchScreen(
                         }
                     }
                 }
-                val online = music.size + videos.size + radio.size + pods.size
+                val online = people.size + music.size + videos.size + radio.size + pods.size
                 if (media.loading && online == 0) item(key = "loading") {
                     Text(
                         "Cerco anche su Spotify, YouTube, radio e podcast…",
@@ -326,7 +368,7 @@ private fun <T> SourceSection(
     title: String,
     items: List<T>,
     expanded: Boolean,
-    onExpand: () -> Unit,
+    onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     row: @Composable (T) -> Unit,
 ) {
@@ -334,9 +376,10 @@ private fun <T> SourceSection(
     Section(title = "$title · ${items.size}", modifier = modifier) {
         val shown = if (expanded) items else items.take(PER_SOURCE)
         shown.forEach { item -> row(item) }
-        if (!expanded && items.size > PER_SOURCE) {
-            TextButton(onClick = onExpand, modifier = Modifier.fillMaxWidth()) {
-                Text("Mostra altri ${items.size - PER_SOURCE}")
+        // Aperta si richiude con lo stesso pulsante (1.518): prima restava aperta per sempre.
+        if (items.size > PER_SOURCE) {
+            TextButton(onClick = onToggle, modifier = Modifier.fillMaxWidth()) {
+                Text(if (expanded) "Mostra meno" else "Mostra altri ${items.size - PER_SOURCE}")
             }
         }
     }
