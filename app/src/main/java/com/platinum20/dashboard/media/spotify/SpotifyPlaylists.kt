@@ -46,7 +46,7 @@ object SpotifyPlaylists {
     fun touch(touched: Map<String, Long>, uri: String, at: Long): Map<String, Long> =
         (touched + (uri to at)).entries.sortedByDescending { it.value }.take(MAX_TOUCHED).associate { it.key to it.value }
 
-    // --- Gestire le tue playlist (1.502, Antonio: "poter cancellare le playlist e comunque gestirle") ---
+    // --- Gestire le tue playlist (1.504, Antonio: "poter cancellare le playlist e comunque gestirle") ---
 
     /** La descrizione più lunga che Spotify accetta. */
     const val MAX_DESCRIPTION = 300

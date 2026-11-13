@@ -149,7 +149,7 @@ fun SpotifyItemScreen(item: SpItem, onBack: () -> Unit, onOpenItem: (SpItem) -> 
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
         topBar = {
             TopLevelBar(
-                // Dopo "Modifica" il nome nuovo si vede subito (1.502).
+                // Dopo "Modifica" il nome nuovo si vede subito (1.504).
                 title = if (item.kind == SpKind.PLAYLIST) PlaylistManage.title(item) else item.title,
                 subtitle = when (item.kind) {
                     SpKind.ALBUM -> "Album"
@@ -253,7 +253,7 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
         OpenableHeader("Musica", onDiscover, Modifier.padding(horizontal = 16.dp)) { HistoryButton(onOpenAll) }
         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Le cose salvate per dopo, prima di tutto; senza niente di salvato la tessera non c'è (1.490, Antonio).
-            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved.size, wide = false, onClick = onOpenSaved) }
+            if (saved.isNotEmpty()) item(key = "saved") { SavedTile(tile, saved, wide = false, onClick = onOpenSaved) }
             items(entries.take(PER_TE_MAX), key = { it.key }) { e ->
                 when (e) {
                     // Un tocco su un mix apre la sua pagina con Riproduci, come una playlist (1.486, Antonio).
@@ -480,7 +480,19 @@ internal object CoverTiles {
 
     /** Tre copertine più i margini e gli spazi tra loro riempiono esattamente lo schermo. */
     fun width(screenDp: Int): Int = (screenDp - 2 * EDGE - (PER_SCREEN - 1) * GAP) / PER_SCREEN
+
+    /** Quanto si vede della scheda video successiva: dice che la fila scorre di lato. */
+    const val PEEK = 40
+
+    /**
+     * Larghezza delle schede video grandi della fila Video (1.503, Antonio: "come la pagina verticale ma in
+     * orizzontale"): quasi tutto lo schermo, col margine a sinistra, lo spazio e un pezzo della successiva a destra.
+     */
+    fun bigVideoWidth(screenDp: Int): Int = screenDp - EDGE - GAP - PEEK
 }
+
+@Composable
+internal fun bigVideoWidth(): Dp = CoverTiles.bigVideoWidth(LocalConfiguration.current.screenWidthDp).dp
 
 @Composable
 internal fun CoverTile(item: SpItem, first: Boolean, onClick: () -> Unit) {
@@ -582,7 +594,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     val state = all[parent.id] ?: Loadable(loading = true)
     LaunchedEffect(parent.id) { SpotifyStore.loadChildren(parent) }
     val isPlaylist = parent.kind == SpKind.PLAYLIST
-    // Le tue playlist si gestiscono da qui (1.502): serve sapere se è tua, e la sua descrizione.
+    // Le tue playlist si gestiscono da qui (1.504): serve sapere se è tua, e la sua descrizione.
     LaunchedEffect(parent.id) { if (isPlaylist) PlaylistManage.load(parent.id) }
     val info = PlaylistManage.infos[parent.id]?.first
     val arranging = isPlaylist && PlaylistManage.arranging[parent.id] == true
@@ -689,7 +701,7 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     }
 }
 
-/** Un brano mentre riordini la playlist (1.502): a destra la maniglia, un tocco apre Togli / In cima / In fondo. */
+/** Un brano mentre riordini la playlist (1.504): a destra la maniglia, un tocco apre Togli / In cima / In fondo. */
 @Composable
 private fun ArrangeRow(item: SpItem, modifier: Modifier, handle: Modifier, onClick: () -> Unit) {
     Surface(

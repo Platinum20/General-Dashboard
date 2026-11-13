@@ -40,7 +40,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 /**
- * Gestire le tue playlist di Spotify (1.502, Antonio: "poter cancellare le playlist e comunque gestirle"). Nella pagina
+ * Gestire le tue playlist di Spotify (1.504, Antonio: "poter cancellare le playlist e comunque gestirle"). Nella pagina
  * della playlist il tasto "Altro" accanto a Riproduci apre il fumetto: Modifica (nome, descrizione, privata),
  * Riordina e togli brani, Elimina. Quelle che segui ma non sono tue si possono solo togliere dalla libreria.
  */

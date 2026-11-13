@@ -289,14 +289,19 @@ fun MediaScreen(
                     }
                 }
                 item(key = "continue") {
+                    // Schede grandi come nella lista verticale (1.503, Antonio), una per volta con la successiva che spunta.
+                    val big = bigVideoWidth()
+                    val bigHeight = big * 9f / 16f
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (savedVideos.isNotEmpty()) item(key = "saved") {
-                            SavedTile(coverTileWidth(), savedVideos.size, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
+                            SavedTile(bigHeight, savedVideos, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
-                        items(subsRow, key = { "sub-" + it.id }) { v -> VideoTile(v, coverTileWidth()) { onPlayVideo(v.watchUrl) } }
+                        items(subsRow, key = { "sub-" + it.id }) { v ->
+                            androidx.compose.foundation.layout.Box(Modifier.width(big)) { VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
+                        }
                         if (youTubeOn && subsRow.isNotEmpty() && !subsEnded) item(key = "subs-more") {
                             LaunchedEffect(subsRow.size) { YouTubeStore.loadMoreSubscriptions(context) }
-                            Placeholder(coverTileWidth() * 16f / 9f, coverTileWidth(), shape = MaterialTheme.shapes.medium)
+                            Placeholder(big, bigHeight, shape = MaterialTheme.shapes.large)
                         }
                     }
                 }
