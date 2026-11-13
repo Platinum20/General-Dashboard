@@ -87,6 +87,9 @@ internal object VideoSettings {
     /** Aperto dalla rotella sul video; il fumetto è disegnato fuori dal NavHost (MainActivity), così il vetro sfoca il video. */
     var open by mutableStateOf(false)
 
+    /** Larghezza del fumetto in orizzontale; la coda usa la stessa. */
+    val SIDE_WIDTH = 380.dp
+
     enum class Group { QUALITY, SPEED, SUBTITLES }
 
     /** La riga aperta quando si riapre il fumetto: l'ultima che si è cambiata. */
@@ -161,7 +164,7 @@ internal fun VideoSettingsLayer() {
                     contentColor = MaterialTheme.colorScheme.onSurface,
                     border = cardBorder(),
                     modifier = Modifier
-                        .then(if (sideways) Modifier.width(380.dp) else Modifier.widthIn(max = 480.dp).fillMaxWidth())
+                        .then(if (sideways) Modifier.width(VideoSettings.SIDE_WIDTH) else Modifier.widthIn(max = 480.dp).fillMaxWidth())
                         .heightIn(max = maxH - 24.dp)
                         .swipeAway(swipe) { if (visible) close() }
                         .glass(shape)

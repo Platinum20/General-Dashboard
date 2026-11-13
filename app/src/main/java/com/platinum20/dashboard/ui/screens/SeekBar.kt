@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -113,6 +114,25 @@ internal fun SeekBar(
     }
 }
 
+/**
+ * Le tacche dei capitoli sulla barra del video (1.518): dove comincia ciascuno, tranne il primo
+ * (all'inizio non serve) e quelli oltre la fine. Pure, così si prova.
+ */
+object ChapterTicks {
+    fun fractions(chapters: List<com.platinum20.dashboard.media.youtube.player.YtChapter>, durationMs: Long): List<Float> {
+        if (chapters.size < 2 || durationMs <= 0) return emptyList()
+        return chapters.map { it.startSec * 1000f / durationMs }.filter { it > 0f && it < 1f }.distinct().sorted()
+    }
+
+    /** Il capitolo in corso a [positionMs]: l'ultimo cominciato. */
+    fun at(chapters: List<com.platinum20.dashboard.media.youtube.player.YtChapter>, positionMs: Long): com.platinum20.dashboard.media.youtube.player.YtChapter? =
+        if (chapters.size < 2) null else chapters.filter { it.startSec * 1000L <= positionMs }.maxByOrNull { it.startSec }
+
+    /** "12:30 · Il titolo del capitolo" sotto l'anteprima; solo il tempo senza capitoli. */
+    fun label(time: String, chapters: List<com.platinum20.dashboard.media.youtube.player.YtChapter>, positionMs: Long): String =
+        at(chapters, positionMs)?.title?.takeIf { it.isNotBlank() }?.let { "$time · $it" } ?: time
+}
+
 /** Il doppio tocco ripetuto si somma: +10, +20, +30… finché si resta dallo stesso lato. */
 object SeekStack {
     const val STEP_S = 10
@@ -207,7 +227,11 @@ internal fun SeekPreview(
             label,
             color = Color.White,
             style = MaterialTheme.typography.labelLarge,
+            // Col nome del capitolo può essere lunga: una riga sola, tagliata.
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier
+                .widthIn(max = 260.dp)
                 .clip(CircleShape)
                 .background(Color.Black.copy(alpha = 0.55f))
                 .padding(horizontal = 10.dp, vertical = 4.dp),
