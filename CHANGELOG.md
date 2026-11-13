@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.529.0
+**Note lunghe: un editor nuovo, con tutte le foto che vuoi**
+- In basso gli stessi due tasti delle altre schede: "Aggiungi" a sinistra e "Altro" a destra, niente più barra speciale
+- "Aggiungi": foto dalla galleria (anche più insieme), scatta una foto, detta (il testo va dove hai il cursore), lista da spuntare, titoletto. Tienilo premuto per scegliere subito le foto
+- Le foto stanno in fila sotto il titolo: tocca per vederla grande (scorri di lato tra le foto, giù per chiudere), tieni premuto per aprirla, metterla per prima, ruotarla, condividerla o toglierla (con Annulla), tieni premuto e trascina per cambiare l'ordine
+- Scegli delle parole e in basso compaiono grassetto, corsivo, barrato e titoletto
+- "Altro": fissa in alto, copia il testo, condividi testo e foto insieme, elimina
+- In alto una riga sola dice quando l'hai scritta, quante parole e quante foto; mentre detti, quello che sta capendo
+
 ## 1.528.0
 **Nuovo aspetto per tredici zone dell'app**
 - Home: in Adesso ci sono le prossime sei ore; le cose da sistemare (accessi scaduti, agenda) sono una riga arancione sotto il titolo invece che in fondo
