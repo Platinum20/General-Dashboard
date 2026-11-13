@@ -39,6 +39,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -267,7 +269,7 @@ private fun NothingNext() {
  */
 /** La coda aperta: disegnata fuori dal NavHost (MainActivity) perché il vetro sfochi davvero il video sotto. */
 internal object QueueOpen {
-    var open by androidx.compose.runtime.mutableStateOf(false)
+    var open by mutableStateOf(false)
 }
 
 /** Il livello della coda in MainActivity, sopra pagine, barra e mini player (vetro, 1.518). */
