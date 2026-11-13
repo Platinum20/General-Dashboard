@@ -190,7 +190,7 @@ class MiniPlayerSwipeTest {
         val c = tabCenter()
         drag(c, Offset(c.x, 300f), 600)
         assertTrue(MiniDock.tucked)
-        assertTrue(MiniDock.tabFrac < 0.5f)
+        assertEquals(0f, MiniDock.tabFrac, 0f)
         assertTrue(tabCenter().y < 600f)
         assertEquals(0, closed)
     }

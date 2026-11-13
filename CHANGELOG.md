@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.522.0
+**Mini player: la linguetta si aggancia in alto o in basso**
+- Spostata su o giù, la linguetta ora si ferma solo in alto o in basso, a sinistra o a destra, come il mini player normale: niente più posizioni a metà bordo
+
 ## 1.521.0
 **Mini player: entra ed esce dal bordo, e si nasconde solo quando vuoi tu**
 - Lanciato di lato, la linguetta tonda entra scivolando dal bordo invece di comparire sul posto
