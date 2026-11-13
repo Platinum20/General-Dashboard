@@ -150,7 +150,60 @@ class MiniPlayerSwipeTest {
     fun appenaGiuNonChiude() {
         show()
         val y = barY()
-        drag(Offset(600f, y), Offset(600f, y + 90f), 600)
+        drag(Offset(600f, y), Offset(600f, y + 45f), 600)
         assertEquals(0, closed)
+    }
+
+    /** Senza barra delle sezioni sotto (come qui): basta portarlo fino al fondo dello schermo, non oltre (1.518). */
+    @Test
+    fun senzaBarraSiChiudeAlFondoDelloSchermo() {
+        show()
+        val y = barY()
+        val bottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom - 2f
+        drag(Offset(600f, y), Offset(600f, bottom), 600)
+        assertEquals(1, closed)
+    }
+
+    private fun tabCenter(): Offset =
+        compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).fetchSemanticsNode().boundsInRoot.center
+
+    /** La linguetta si porta direttamente sull'altro bordo, senza riaprirla (1.518). */
+    @Test
+    fun laLinguettaSiSpostaSullAltroBordo() {
+        show()
+        val y = barY()
+        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        assertTrue(MiniDock.tuckRight)
+        val c = tabCenter()
+        drag(c, Offset(150f, c.y), 600)
+        assertTrue(MiniDock.tucked)
+        assertFalse(MiniDock.tuckRight)
+        assertEquals(0, closed)
+    }
+
+    /** Trascinata su resta sul bordo, in alto: riaprendola la barra torna in alto. */
+    @Test
+    fun laLinguettaSiPortaInAlto() {
+        show()
+        val y = barY()
+        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        val c = tabCenter()
+        drag(c, Offset(c.x, 300f), 600)
+        assertTrue(MiniDock.tucked)
+        assertTrue(MiniDock.tabFrac < 0.5f)
+        assertTrue(tabCenter().y < 600f)
+        assertEquals(0, closed)
+    }
+
+    /** Giù fino al fondo dello schermo, sulla X: la linguetta chiude il mini player. */
+    @Test
+    fun laLinguettaGiuSiChiude() {
+        show()
+        val y = barY()
+        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        val c = tabCenter()
+        val bottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom - 2f
+        drag(c, Offset(c.x, bottom), 600)
+        assertEquals(1, closed)
     }
 }

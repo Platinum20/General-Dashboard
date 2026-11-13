@@ -12,13 +12,21 @@ object MiniTuck {
     /** Quanto scatta giù la calamita quando lo prende, in dp: si sente che è "attaccato". */
     const val PULL_DP = 28f
 
-    /** Tirando la linguetta verso il centro di almeno tanto (dp) il mini player si riapre. */
-    const val PULL_OUT_DP = 24f
-
     enum class Release { CLOSE, TUCK_LEFT, TUCK_RIGHT, STAY }
 
-    /** La calamita lo tiene: è sceso di almeno [MAGNET_DP] sotto il suo posto in basso. */
-    fun magnet(belowPx: Float, density: Float): Boolean = belowPx > MAGNET_DP * density
+    /** Sotto questa soglia (dp) la calamita non scende mai, anche con poco spazio: un piccolo spostamento non chiude. */
+    const val MIN_MAGNET_DP = 24f
+
+    /**
+     * Quanto va portato giù perché la calamita lo prenda: [MAGNET_DP], ma senza barra delle sezioni sotto il dito
+     * arriva presto al bordo dello schermo, quindi al massimo il 70% dello spazio che ha davanti (1.518: prima
+     * nelle pagine senza barra non si chiudeva). [roomPx] = dal centro della barra al fondo dello schermo.
+     */
+    fun threshold(roomPx: Float, density: Float): Float =
+        minOf(MAGNET_DP * density, maxOf(MIN_MAGNET_DP * density, roomPx * 0.7f))
+
+    /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
+    fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
 
     /**
      * Cosa succede lasciandolo: preso dalla calamita = si chiude; portato oltre metà di lato o lanciato
@@ -30,7 +38,13 @@ object MiniTuck {
         else -> Release.STAY
     }
 
-    /** La linguetta tirata verso il centro dello schermo (a destra si tira a sinistra e viceversa). */
-    fun pulledOut(dx: Float, right: Boolean, density: Float): Boolean =
-        (if (right) -dx else dx) > PULL_OUT_DP * density
+    /**
+     * Su quale bordo va la linguetta lasciandola (1.518): lanciata forte va dal lato del lancio,
+     * altrimenti dal lato della metà dello schermo dove l'hai lasciata.
+     */
+    fun tabSide(centerX: Float, vx: Float, width: Float): Boolean = when {
+        vx > 1_500f -> true
+        vx < -1_500f -> false
+        else -> centerX > width / 2f
+    }
 }
