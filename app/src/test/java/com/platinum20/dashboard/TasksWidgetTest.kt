@@ -62,10 +62,10 @@ class AgendaRowsTest {
         )
         assertEquals(AgendaRow.Day("Oggi"), rows.first())
         val titles = items(rows).map { it.title }
-        // Il turno finito stamattina, la cosa spuntata e la nota restano.
+        // Il turno finito stamattina resta; le cose senza data (da fare, spuntate, note) stanno in Per dopo (2026-11-13).
         assertTrue(titles.any { it.contains("Turno") })
-        assertTrue(titles.contains("Latte") && titles.contains("Idea regalo") && titles.contains("Comprare il pane"))
-        assertTrue(items(rows).first { it.title == "Latte" }.done)
+        assertTrue(titles.none { it == "Latte" || it == "Idea regalo" || it == "Comprare il pane" })
+        assertTrue(titles.any { it.contains("Chiamare Marco") })
         assertEquals("10:00", items(rows).first { it.title.contains("Riunione") }.time)
     }
 

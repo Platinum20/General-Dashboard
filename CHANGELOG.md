@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.530.0
+**Per dopo: tutto si fissa in alto**
+- "Fissa in alto" ora porta davvero la cosa in cima alla card Per dopo, sopra a tutto (prima una nota fissata restava sotto le cose da fare)
+- Si fissano anche le cose da fare, i pacchi senza data e, nell'archivio, le cose già spuntate; una puntina a destra dice quali sono fissate
+- Nei widget Calendario e Oggi e nella notifica del mattino non ci sono più note, foto e cose senza data: stanno solo in Per dopo
+
 ## 1.529.0
 **Artista e Radio col nuovo aspetto**
 - Artista: come album e playlist, la foto tonda al centro, il nome, follower e generi sotto, poi Casuale · Riproduci · Altro; i Popolari sono righe col numero, il titolo e la durata

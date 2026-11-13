@@ -46,6 +46,8 @@ data class TaskItem(
     val place: String = "",
     /** L'anno vero di un compleanno o anniversario, per dire quanti anni compie; null se non si sa. */
     val firstYear: Int? = null,
+    /** Fissata in cima a "Per dopo" (o al suo archivio), come le note (Antonio, 2026-11-13). */
+    val pinned: Boolean = false,
 ) {
     /** Segna una spunta del ricorrente, tenendo solo le ultime [MAX_DONE_TIMES]. */
     fun withDoneTime(at: Long): TaskItem = copy(doneTimes = (doneTimes + at).takeLast(MAX_DONE_TIMES))
@@ -633,6 +635,16 @@ object NotesStore {
         d.copy(notes = d.notes.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
     }
 
+    /** Fissa in cima a Per dopo una cosa da fare (anche spuntata, nell'archivio). */
+    fun toggleTaskPin(id: Long) = update { d ->
+        d.copy(tasks = d.tasks.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
+    }
+
+    /** Fissa in cima a Per dopo un pacco senza data. */
+    fun toggleParcelPin(id: Long) = update { d ->
+        d.copy(parcels = d.parcels.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
+    }
+
     fun deleteNote(id: Long) = update { d -> d.copy(notes = d.notes.filter { it.id != id }) }
 
     /** Rimette una nota eliminata per sbaglio: serve ad "Annulla". */
@@ -685,6 +697,7 @@ object NotesStore {
                         .apply { if (it.notes.isNotEmpty()) put("notes", it.notes) }
                         .apply { if (it.place.isNotEmpty()) put("place", it.place) }
                         .apply { it.firstYear?.let { y -> put("firstYear", y) } }
+                        .apply { if (it.pinned) put("pinned", true) }
                 )
             }
         })
@@ -713,6 +726,7 @@ object NotesStore {
                     JSONObject().put("id", it.id).put("title", it.title).put("code", it.code)
                         .apply { it.expected?.let { e -> put("expected", e.toString()) } }
                         .apply { it.deliveredOn?.let { e -> put("deliveredOn", e.toString()) } }
+                        .apply { if (it.pinned) put("pinned", true) }
                 )
             }
         })
@@ -744,6 +758,7 @@ object NotesStore {
                     notes = o.optString("notes"),
                     place = o.optString("place"),
                     firstYear = if (o.has("firstYear")) o.optInt("firstYear") else null,
+                    pinned = o.optBoolean("pinned"),
                 )
             }
         // Prima della 1.361 le date da ricordare erano a parte: ora sono promemoria di tutto il giorno.
@@ -775,7 +790,7 @@ object NotesStore {
             },
             parcels = (0 until parcels.length()).map { i ->
                 val o = parcels.getJSONObject(i)
-                Parcel(o.getLong("id"), o.optString("title"), o.optString("code"), o.date("expected"), o.date("deliveredOn"))
+                Parcel(o.getLong("id"), o.optString("title"), o.optString("code"), o.date("expected"), o.date("deliveredOn"), o.optBoolean("pinned"))
             },
         )
     }
