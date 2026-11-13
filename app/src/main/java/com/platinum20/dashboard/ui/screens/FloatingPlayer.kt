@@ -348,11 +348,9 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
     val tabH = 56.dp
     val shape = if (right) androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
     else androidx.compose.foundation.shape.RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
-    Surface(
-        shape = shape,
-        color = Color.Transparent,
-        border = cardBorder(),
-        modifier = Modifier
+    // I tocchi su un riquadro semplice (senza vetro né scala), il disegno dentro.
+    Box(
+        Modifier
             .size(tabW, tabH)
             .offset {
                 val w = with(density) { tabW.toPx() }
@@ -360,13 +358,6 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
                 val left = if (right) maxW - w else 0f
                 IntOffset(left.roundToInt(), (yPx() - h / 2f).roundToInt())
             }
-            .graphicsLayer {
-                scaleX = 0.6f + 0.4f * show.value
-                scaleY = 0.6f + 0.4f * show.value
-                alpha = show.value.coerceIn(0f, 1f)
-                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (right) 1f else 0f, 0.5f)
-            }
-            .glass(shape)
             .semantics(mergeDescendants = true) {
                 contentDescription = "Mini player: ${now.title}. Tocca per riaprirlo"
             }
@@ -382,6 +373,20 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
             }
             // Un vero clic (non solo un tocco a mano): così lo apre anche TalkBack.
             .clickable(interactionSource = null, indication = null, onClickLabel = "Riapri") { open() },
+    ) {
+    Surface(
+        shape = shape,
+        color = Color.Transparent,
+        border = cardBorder(),
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                scaleX = 0.6f + 0.4f * show.value
+                scaleY = 0.6f + 0.4f * show.value
+                alpha = show.value.coerceIn(0f, 1f)
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(if (right) 1f else 0f, 0.5f)
+            }
+            .glass(shape),
     ) {
         Box(
             Modifier.padding(start = if (right) 7.dp else 0.dp, end = if (right) 0.dp else 7.dp),
@@ -410,6 +415,7 @@ private fun androidx.compose.foundation.layout.BoxScope.MiniTab(
                 )
             }
         }
+    }
     }
 }
 
