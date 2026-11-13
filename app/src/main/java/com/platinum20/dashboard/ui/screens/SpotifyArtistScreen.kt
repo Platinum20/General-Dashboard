@@ -50,6 +50,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.platinum20.dashboard.capture.SavedLinks
@@ -83,31 +87,18 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     }
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(contentPadding = PaddingValues(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item(key = "head") { ArtistHeader(page?.photo?.ifBlank { null } ?: artist.image, page?.artist?.title ?: artist.title) }
-            item(key = "meta") {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        page?.let(::metaLine).orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (popular.isNotEmpty()) {
-                        Box(
-                            Modifier
-                                .size(56.dp)
-                                .bouncyPress(0.9f)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable { playTracks(context, popular, null) },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = "Riproduci", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(30.dp))
-                        }
-                    }
-                }
+            // La testata (1.529, Antonio scelta B come album e playlist): foto tonda al centro, nome, una riga sotto,
+            // poi Casuale · Riproduci · Altro in fila al centro.
+            item(key = "head") {
+                ArtistHeader(
+                    photo = page?.photo?.ifBlank { null } ?: artist.image,
+                    name = page?.artist?.title ?: artist.title,
+                    meta = page?.let(::metaLine).orEmpty(),
+                    canPlay = popular.isNotEmpty(),
+                    onShuffle = { playTracks(context, popular.shuffled(), null) },
+                    onPlay = { playTracks(context, popular, null) },
+                    onMore = { SavedLinks.spotify(page?.artist ?: artist)?.let(SavedLinks::offer) },
+                )
             }
             if (page == null && state.loading) item(key = "loading") { PlaceholderList(rows = 5, label = "Carico l'artista") }
             state.error?.takeIf { page == null }?.let { error ->
@@ -156,27 +147,53 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
 internal fun metaLine(page: SpArtistPage): String =
     listOf(SpotifyArtist.followersLine(page.followers), page.genres.joinToString(", ")).filter { it.isNotBlank() }.joinToString(" · ")
 
-/** La foto grande dell'artista, che sfuma nello sfondo, col nome sopra in grande. */
+/**
+ * La testata dell'artista (1.529, scelta B): come album e playlist, la foto (tonda, è una persona) al centro, il nome,
+ * follower e generi in una riga, e i tre tasti in fila. "Altro" apre lo stesso fumetto della pressione lunga.
+ */
 @Composable
-private fun ArtistHeader(photo: String, name: String) {
-    val background = MaterialTheme.colorScheme.background
-    Box(Modifier.fillMaxWidth().height(340.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
-        if (photo.isNotBlank()) {
-            AsyncImage(model = photo, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        }
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(0.45f to Color.Transparent, 1f to background)),
-        )
+private fun ArtistHeader(
+    photo: String,
+    name: String,
+    meta: String,
+    canPlay: Boolean,
+    onShuffle: () -> Unit,
+    onPlay: () -> Unit,
+    onMore: () -> Unit,
+) {
+    val haptic = rememberHaptic()
+    Column(
+        Modifier.fillMaxWidth().statusBarsPadding().padding(start = 16.dp, end = 16.dp, top = 56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Cover(photo, CircleShape, 200.dp, null)
+        Spacer(Modifier.height(14.dp))
         Text(
             name,
-            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.ExtraBold),
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.align(Alignment.BottomStart).padding(horizontal = 16.dp, vertical = 8.dp),
         )
+        if (meta.isNotBlank()) {
+            Text(
+                meta,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (canPlay) {
+                RoundIconButton(Icons.Rounded.Shuffle, "Casuale") { haptic(Haptic.CONFIRM); onShuffle() }
+                CanvasButton("Riproduci", onClick = onPlay, icon = Icons.Rounded.PlayArrow, primary = true)
+            }
+            RoundIconButton(Icons.Rounded.MoreHoriz, "Altro") { haptic(Haptic.CONFIRM); onMore() }
+        }
     }
 }
 
@@ -265,7 +282,7 @@ private fun ReleaseRow(item: SpItem, group: SpReleaseGroup, year: Int?, onClick:
     }
 }
 
-/** Un brano popolare: il numero a sinistra, copertina e titolo, la durata a destra. */
+/** Un brano popolare (1.529, come i brani di un album): il numero a sinistra, il titolo, la durata a destra. */
 @Composable
 private fun PopularRow(rank: Int, track: SpItem, artistName: String, onClick: () -> Unit) {
     Row(
@@ -278,14 +295,14 @@ private fun PopularRow(rank: Int, track: SpItem, artistName: String, onClick: ()
     ) {
         Text(
             "$rank",
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(28.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(32.dp),
         )
-        Cover(track.image, MaterialTheme.shapes.small, 48.dp, MediaMark(MediaType.MUSIC))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(track.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.width(8.dp))
+        Column(Modifier.weight(1f).padding(vertical = 4.dp)) {
+            Text(track.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             // Con altri artisti si vede con chi è; da solo basta il titolo.
             val others = track.subtitle.split(", ").filter { it.isNotBlank() && !it.equals(artistName, ignoreCase = true) }
             if (others.isNotEmpty()) {

@@ -10,6 +10,8 @@ data class Parcel(
     val code: String = "",
     val expected: LocalDate? = null,
     val deliveredOn: LocalDate? = null,
+    /** Fissato in cima a "Per dopo" (2026-11-13). */
+    val pinned: Boolean = false,
 ) {
     val carrier: Carrier get() = Carrier.detect(code)
     val delivered: Boolean get() = deliveredOn != null

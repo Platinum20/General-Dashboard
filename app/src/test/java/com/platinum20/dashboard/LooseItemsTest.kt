@@ -67,7 +67,8 @@ class LooseItemsTest {
         val groups = dueDays(tasks, emptyList(), emptyList(), now = now, zone = zone, withToday = true, notes = notes)
         val items = looseItems(groups, notes, today)
         assertEquals(
-            listOf("task-1", "note-14", "note-13", "note-12", "task-2"),
+            // La nota fissata va in cima a tutto, sopra anche le cose da fare (2026-11-13).
+            listOf("note-14", "task-1", "note-13", "note-12", "task-2"),
             items.map { it.key },
         )
         assertEquals(LooseKind.PHOTO, items[2].kind)
@@ -91,6 +92,29 @@ class LooseItemsTest {
         assertEquals(listOf("task-3", "task-2"), archivedItems(tasks).map { it.key })
         val card = listOf(LooseItem("a", LooseKind.TODO, "A"), LooseItem("b", LooseKind.TODO, "B", done = true))
         assertEquals(listOf("a"), card.pending().map { it.key })
+    }
+
+    @Test fun tuttoSiFissaInAlto() {
+        val tasks = listOf(
+            TaskItem(1, "Comprare il latte", createdAt = 1),
+            TaskItem(2, "Rinnovare la carta", createdAt = 2, pinned = true),
+            TaskItem(3, "Banca", createdAt = 3, done = true, doneAt = 200),
+            TaskItem(4, "Posta", createdAt = 4, done = true, doneAt = 100, pinned = true),
+        )
+        val parcels = listOf(Parcel(5, "Cuffie"), Parcel(6, "Libro", pinned = true))
+        val notes = listOf(Note(7, "Idea", createdAt = 10))
+        val groups = dueDays(tasks.take(2), parcels, emptyList(), now = now, zone = zone, withToday = true, notes = notes)
+        val items = looseItems(groups, notes, today)
+        assertEquals(listOf("task-2", "parcel-6", "task-1", "parcel-5", "note-7"), items.map { it.key })
+        assertTrue(items[0].pinned && items[1].pinned && !items[2].pinned)
+        // Anche nell'archivio la fissata sta in cima, anche se spuntata prima.
+        assertEquals(listOf("task-4", "task-3"), archivedItems(tasks).map { it.key })
+        // E resta fissata dopo il salvataggio.
+        val data = com.platinum20.dashboard.notes.NotesStore.parse(
+            com.platinum20.dashboard.notes.NotesStore.serialize(com.platinum20.dashboard.notes.NotesData(tasks = tasks, parcels = parcels)),
+        )
+        assertEquals(listOf(false, true, false, true), data.tasks.map { it.pinned })
+        assertEquals(listOf(false, true), data.parcels.map { it.pinned })
     }
 
     @Test fun ilNumeroDelCalendarioContaFinoAFineMese() {

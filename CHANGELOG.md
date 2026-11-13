@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.529.0
+## 1.531.0
 **Note lunghe: un editor nuovo, con tutte le foto che vuoi**
 - In basso gli stessi due tasti delle altre schede: "Aggiungi" a sinistra e "Altro" a destra, niente più barra speciale
 - "Aggiungi": foto dalla galleria (anche più insieme), scatta una foto, detta (il testo va dove hai il cursore), lista da spuntare, titoletto. Tienilo premuto per scegliere subito le foto
@@ -8,6 +8,19 @@
 - Scegli delle parole e in basso compaiono grassetto, corsivo, barrato e titoletto
 - "Altro": fissa in alto, copia il testo, condividi testo e foto insieme, elimina
 - In alto una riga sola dice quando l'hai scritta, quante parole e quante foto; mentre detti, quello che sta capendo
+
+## 1.530.0
+**Per dopo: tutto si fissa in alto**
+- "Fissa in alto" ora porta davvero la cosa in cima alla card Per dopo, sopra a tutto (prima una nota fissata restava sotto le cose da fare)
+- Si fissano anche le cose da fare, i pacchi senza data e, nell'archivio, le cose già spuntate; una puntina a destra dice quali sono fissate
+- Nei widget Calendario e Oggi e nella notifica del mattino non ci sono più note, foto e cose senza data: stanno solo in Per dopo
+
+## 1.529.0
+**Artista e Radio col nuovo aspetto**
+- Artista: come album e playlist, la foto tonda al centro, il nome, follower e generi sotto, poi Casuale · Riproduci · Altro; i Popolari sono righe col numero, il titolo e la durata
+- Album: il nome dell'artista sotto il titolo si tocca e apre la sua pagina
+- Radio: in cima le tue radio in loghi tondi, poi "In onda adesso" con quello che trasmette la radio che suona, poi i generi da toccare per restringere le più ascoltate in Italia
+- Tenendo premuta una radio ora c'è anche "Svegliami con questa radio", all'ora della sveglia che hai già scelto
 
 ## 1.528.0
 **Nuovo aspetto per tredici zone dell'app**

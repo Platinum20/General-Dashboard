@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.automirrored.outlined.StickyNote2
@@ -148,6 +149,11 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
             item.line?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+        // Fissata: la puntina a destra dice perché sta in cima (Antonio, 2026-11-13).
+        if (item.pinned) {
+            Spacer(Modifier.width(8.dp))
+            Icon(Icons.Filled.PushPin, contentDescription = "Fissata", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
     }
 }

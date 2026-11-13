@@ -649,30 +649,38 @@ internal data class LooseItem(
     val image: String = "",
     val done: Boolean = false,
     val row: DueRow? = null,
+    /** Fissata in cima (Antonio, 2026-11-13): qualsiasi cosa di Per dopo, non solo le note. */
+    val pinned: Boolean = false,
 )
 
 /**
- * Tutte le cose senza scadenza, nessuna nascosta: prima quelle da fare, poi i pacchi in arrivo, le note fissate,
+ * Le fissate prima di tutto, di qualsiasi tipo (Antonio, 2026-11-13: prima una nota fissata restava sotto le cose da
+ * fare e sembrava che "Fissa in alto" non facesse niente); fra loro e fra le altre l'ordine resta quello di sempre.
+ */
+internal fun List<LooseItem>.pinnedFirst(): List<LooseItem> = sortedByDescending { it.pinned }
+
+/**
+ * Tutte le cose senza scadenza, nessuna nascosta: le fissate in cima, poi quelle da fare, poi i pacchi in arrivo, le note fissate,
  * poi note, foto e cose salvate dalla più nuova; in fondo le cose spuntate oggi (per poterle rimettere).
  */
 internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboard.notes.Note>, today: LocalDate): List<LooseItem> {
     val rows = groups.filter { it.day == today && !it.past && !it.late }.flatMap { g -> g.rows.filter(::isLoose) }.distinctBy { it.key }
     val todo = rows.filter { it.task != null }.map { r ->
-        LooseItem(r.key, LooseKind.TODO, r.task!!.text, r.task.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = r.task.done, row = r)
+        LooseItem(r.key, LooseKind.TODO, r.task!!.text, r.task.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = r.task.done, row = r, pinned = r.task.pinned)
     }
     val parcels = rows.filter { it.parcel != null }.map { r ->
         val p = r.parcel!!
-        LooseItem(r.key, LooseKind.PARCEL, p.title, listOf("Pacco", p.code.takeIf { it.isNotBlank() }?.let { p.carrier.label }).filterNotNull().joinToString(" · "), row = r)
+        LooseItem(r.key, LooseKind.PARCEL, p.title, listOf("Pacco", p.code.takeIf { it.isNotBlank() }?.let { p.carrier.label }).filterNotNull().joinToString(" · "), row = r, pinned = p.pinned)
     }
     val dated = buildList<Pair<Pair<Boolean, Long>, LooseItem>> {
         rows.mapNotNull { r -> r.note?.let { r to it } }.forEach { (r, n) ->
             val photo = n.photo.isNotEmpty()
             val more = n.body.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
             add((n.pinned to n.createdAt) to LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
-                if (photo) photoLine(n) else more, image = n.photo, row = r))
+                if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned))
         }
     }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
-    return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }
+    return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }.pinnedFirst()
 }
 
 /**
@@ -684,8 +692,9 @@ internal fun archivedItems(tasks: List<TaskItem>): List<LooseItem> = tasks
     .sortedByDescending { it.doneAt ?: it.createdAt }
     .map { t ->
         val row = DueRow("task-${t.id}", null, Long.MAX_VALUE, task = t)
-        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row)
+        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row, pinned = t.pinned)
     }
+    .pinnedFirst()
 
 /** La card mostra solo le cose ancora da fare: le spuntate stanno nell'archivio. */
 internal fun List<LooseItem>.pending(): List<LooseItem> = filterNot { it.done }

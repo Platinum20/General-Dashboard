@@ -208,6 +208,7 @@ first block of the event page and ItemDetail (WHEN+STATUS lines move into it); n
 reader `ReaderText` (pinch scale saved, `left` = "N min alla fine" in the meta line); Settings `AccountTiles.kt` row on top (Account menu row
 removed, version in the subtitle); `MailScreen` on `DetailPage` ("Letta" = `markSeen`, opening no longer marks it), Home card max
 `MAX_HOME_MAIL` = 2; widget Calendario rows on a rail (`widget_rail`, `widget_row_cal_note`; News keeps `widget_row_note`).
+1.529: `ArtistScreen` header = same centered B header (round photo, Casuale · Riproduci · Altro = save bubble), Popolari numbered rows; album header line taps → artist (`goToCreator`); Radio page (`radioSections` RadioScreen.kt) = round logos of yours, "In onda adesso" (playing only), genre chips (pure `RadioGenre.primary/chips`); radio long-press bubble has "Svegliami con questa radio" (`RadioAlarm`).
 
 ## Conventions
 

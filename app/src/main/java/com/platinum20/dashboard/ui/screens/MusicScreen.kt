@@ -647,12 +647,20 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
+                // Di un album l'artista si tocca e apre la sua pagina (scelta B: "Madame ›"), come "Vai all'artista".
+                val inApp = LocalInAppNav.current
+                val toArtist = parent.kind == SpKind.ALBUM && inApp != null && parent.uri.isNotBlank()
+                val line = SpotifyPlaylists.headerLine(parent.subtitle, tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }, tracks.sumOf { it.durationMs })
                 Text(
-                    SpotifyPlaylists.headerLine(parent.subtitle, tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }, tracks.sumOf { it.durationMs }),
+                    if (toArtist) line.replaceFirst(" · ", " › · ").let { if (" · " in line) it else "$line ›" } else line,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = if (toArtist) Modifier.clip(MaterialTheme.shapes.small).clickable {
+                        view.haptic(Haptic.TICK)
+                        SavedLinks.spotify(parent)?.let { goToCreator(context, (it as com.platinum20.dashboard.capture.SavedLink.Media).item, inApp!!.openRoute) }
+                    }.padding(horizontal = 6.dp, vertical = 2.dp) else Modifier,
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {

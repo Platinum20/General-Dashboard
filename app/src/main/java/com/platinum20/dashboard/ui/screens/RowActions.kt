@@ -53,11 +53,18 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         if (removed.isNotEmpty()) offerUndo(message) { NotesStore.restoreTasks(removed) }
     }
     fun share(text: String) = shareText(context, text)
+    /** "Fissa in alto" uguale per ogni cosa di Per dopo: note, cose da fare (anche nell'archivio), pacchi senza data. */
+    fun pinAction(pinned: Boolean, title: String, toggle: () -> Unit) = BubbleAction(
+        if (pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
+        if (pinned) "Togli da in alto" else "Fissa in alto",
+        detail = title,
+    ) { haptic(if (pinned) Haptic.TOGGLE_OFF else Haptic.TOGGLE_ON); toggle() }
     fun taskActions(t: TaskItem): List<BubbleAction> = listOfNotNull(
         if (!t.tickable) null else BubbleAction(Icons.Outlined.Check, if (t.done) "Segna da fare" else "Fatto", detail = t.text) {
             haptic(Haptic.CONFIRM)
             NotesStore.toggleTask(t.id)
         },
+        if (!t.tickable) null else pinAction(t.pinned, t.text) { NotesStore.toggleTaskPin(t.id) },
         snoozeAction(t),
         BubbleAction(Icons.Outlined.Share, "Condividi") { share(t.text) },
         BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
@@ -128,6 +135,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                         inApp?.openWeb?.invoke(url, row.parcel.carrier.label)
                     }
                 },
+                row.parcel.takeIf { it.expected == null && !it.delivered }?.let { p -> pinAction(p.pinned, p.title) { NotesStore.toggleParcelPin(p.id) } },
                 BubbleAction(Icons.Outlined.Share, "Condividi") { share(row.parcel.title) },
                 BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
                     NotesStore.deleteParcel(row.parcel.id)
@@ -140,11 +148,7 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
     }
     fun noteActions(n: Note) {
         ActionBubble.show(
-            BubbleAction(
-                if (n.pinned) Icons.Filled.PushPinFilled else Icons.Outlined.PushPin,
-                if (n.pinned) "Togli da in alto" else "Fissa in alto",
-                detail = n.title,
-            ) { NotesStore.togglePin(n.id) },
+            pinAction(n.pinned, n.title) { NotesStore.togglePin(n.id) },
             BubbleAction(Icons.Outlined.Share, "Condividi") { share(n.text) },
             BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
                 NotesStore.deleteNote(n.id)
