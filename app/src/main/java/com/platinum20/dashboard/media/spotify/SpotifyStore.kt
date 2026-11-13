@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import com.platinum20.dashboard.media.FeedCache
+import kotlinx.coroutines.sync.withLock
 import com.platinum20.dashboard.media.FeedCodec
 import com.platinum20.dashboard.media.Loadable
 import com.platinum20.dashboard.net.DiskCache
@@ -182,16 +183,56 @@ object SpotifyStore {
         }
     }
 
-    /** La pagina di un artista: si scarica alla prima apertura e si tiene finché l'app è aperta. */
+    /**
+     * La pagina di un artista (1.525): prima quella salvata (riaprire un artista non costa richieste per
+     * [ARTIST_MAX_AGE]), altrimenti la versione leggera, [SpotifyArtist.OPEN_CALLS] richieste.
+     */
     fun loadArtist(artist: SpItem, force: Boolean = false) {
         val state = _artistPages.value[artist.id]
         if (!force && state != null && (state.loading || state.data != null)) return
         _artistPages.update { it + (artist.id to (state ?: Loadable()).copy(loading = true, error = null)) }
         scope.launch {
+            val saved = if (force) null else savedArtist(artist.id)
+            if (saved != null) {
+                _artistPages.update { it + (artist.id to Loadable(data = saved.second, loadedAt = saved.first)) }
+                return@launch
+            }
             val result = call { token -> SpotifyApi.artistPage(token, artist) }
             _artistPages.update { it + (artist.id to if (result.data == null) result.copy(data = state?.data) else result) }
+            result.data?.let { keepArtist(it) }
         }
     }
+
+    /** Il resto della discografia, solo quando si apre l'elenco intero (e una volta sola: poi resta salvato). */
+    fun loadDiscography(artistId: String) {
+        val state = _artistPages.value[artistId] ?: return
+        val page = state.data ?: return
+        if (state.loading || page.complete) return
+        _artistPages.update { it + (artistId to state.copy(loading = true, error = null)) }
+        scope.launch {
+            val result = call { token -> SpotifyApi.fullDiscography(token, page) }
+            _artistPages.update { it + (artistId to if (result.data == null) result.copy(data = page) else result) }
+            result.data?.let { keepArtist(it) }
+        }
+    }
+
+    private val artistFile = kotlinx.coroutines.sync.Mutex()
+
+    private suspend fun savedArtist(id: String): Pair<Long, SpArtistPage>? = artistFile.withLock {
+        FeedCache.restore(FeedCache.spArtistPages)?.data.orEmpty()
+            .firstOrNull { (at, p) -> p.artist.id == id && System.currentTimeMillis() - at < ARTIST_MAX_AGE }
+    }
+
+    /** Salvata in cima; si tengono solo le ultime [ARTISTS_KEPT], così il file resta piccolo. */
+    private suspend fun keepArtist(page: SpArtistPage) = artistFile.withLock {
+        val old = FeedCache.restore(FeedCache.spArtistPages)?.data.orEmpty()
+        val now = System.currentTimeMillis()
+        val list = SpotifyArtist.kept(old, now to page, ARTISTS_KEPT)
+        FeedCache.save(FeedCache.spArtistPages, list, now)
+    }
+
+    private const val ARTIST_MAX_AGE = 3 * 24 * 3_600_000L
+    private const val ARTISTS_KEPT = 30
 
     /** Il primo artista di un brano o di un album (null se non ce l'ha), con l'errore da dire se Spotify non risponde. */
     suspend fun firstArtist(kind: String, id: String): Loadable<SpItem?> = call { token -> SpotifyApi.firstArtist(token, kind, id) }

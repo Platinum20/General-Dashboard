@@ -1,6 +1,8 @@
 package com.platinum20.dashboard.media
 
 import com.platinum20.dashboard.media.spotify.SpArtistLatest
+import com.platinum20.dashboard.media.spotify.SpArtistPage
+import com.platinum20.dashboard.media.spotify.SpReleaseGroup
 import com.platinum20.dashboard.media.spotify.SpDiscoverRow
 import com.platinum20.dashboard.media.spotify.SpHome
 import com.platinum20.dashboard.media.spotify.SpItem
@@ -155,6 +157,48 @@ object FeedCache {
             )
         },
     )
+
+    /**
+     * Le pagine degli artisti aperti di recente, solo testo (le copertine sono nella cache delle immagini, che ha già
+     * un tetto): riaprire un artista non chiede niente a Spotify. Ognuna con l'ora in cui è stata letta.
+     */
+    val spArtistPages = FeedCodec<List<Pair<Long, SpArtistPage>>>(
+        "sp-artist-pages.json",
+        { list -> list.toArray { (at, p) -> artistPage(p).put("at", at) } },
+        { array -> array.objects { it.optLong("at") to artistPage(it) } },
+    )
+
+    private fun artistPage(p: SpArtistPage) = JSONObject()
+        .put("a", item(p.artist)).put("ph", p.photo).put("f", p.followers)
+        .put("g", JSONArray(p.genres)).put("pop", items(p.popular))
+        .put("al", items(p.albums)).put("si", items(p.singles)).put("co", items(p.compilations)).put("ap", items(p.appearsOn))
+        .put("r", JSONObject().also { o -> p.released.forEach { (id, day) -> o.put(id, day.toString()) } })
+        .put("n", JSONObject().also { o -> p.totals.forEach { (g, n) -> o.put(g.name, n) } })
+        .put("c", p.complete)
+
+    private fun artistPage(o: JSONObject): SpArtistPage {
+        val released = o.optJSONObject("r")
+        val totals = o.optJSONObject("n")
+        val genres = o.optJSONArray("g")
+        return SpArtistPage(
+            artist = item(o.getJSONObject("a")),
+            photo = o.optString("ph"),
+            followers = o.optLong("f"),
+            genres = (0 until (genres?.length() ?: 0)).map { genres!!.getString(it) },
+            popular = items(o.getJSONArray("pop")),
+            albums = items(o.getJSONArray("al")),
+            singles = items(o.getJSONArray("si")),
+            compilations = items(o.getJSONArray("co")),
+            appearsOn = items(o.getJSONArray("ap")),
+            released = released?.keys()?.asSequence()?.mapNotNull { id ->
+                runCatching { id to LocalDate.parse(released.getString(id)) }.getOrNull()
+            }?.toMap().orEmpty(),
+            totals = totals?.keys()?.asSequence()?.mapNotNull { k ->
+                runCatching { SpReleaseGroup.valueOf(k) to totals.getInt(k) }.getOrNull()
+            }?.toMap().orEmpty(),
+            complete = o.optBoolean("c"),
+        )
+    }
 
     val spLibrary = FeedCodec<SpLibrary>(
         "sp-libreria.json",
