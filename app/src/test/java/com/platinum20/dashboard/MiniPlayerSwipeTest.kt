@@ -14,6 +14,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import com.platinum20.dashboard.ui.screens.MiniDock
 import org.junit.Rule
 import org.junit.Test
@@ -87,6 +88,18 @@ class MiniPlayerSwipeTest {
         compose.waitForIdle()
         assertFalse(MiniDock.tucked)
         compose.onNodeWithText("Brano di prova").assertExists()
+    }
+
+    @Test
+    fun laLinguettaSiRiapreDaTalkBack() {
+        show()
+        val y = barY()
+        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true)
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
+        compose.mainClock.advanceTimeBy(1_000)
+        compose.waitForIdle()
+        assertFalse(MiniDock.tucked)
     }
 
     @Test
