@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.528.0
+**Nuovo aspetto per tredici zone dell'app**
+- Home: in Adesso ci sono le prossime sei ore; le cose da sistemare (accessi scaduti, agenda) sono una riga arancione sotto il titolo invece che in fondo
+- Meteo: nel blocco colorato la curva della temperatura con la pioggia delle prossime 24 ore, poi i giorni, poi i dettagli in tessere piccole
+- SIM: la pagina mostra un anello con i giga rimasti e "Ti bastano fino al rinnovo"; sotto minuti, SMS, credito e rinnovo con la loro icona e il consumo degli ultimi giorni. La card in Home resta con le barre
+- Documenti: fronte e retro uno dietro l'altro come nel portafoglio (tocca quello dietro o scorri per scambiarli); "Mostra" apre la foto a tutto schermo con la luminosità al massimo. In Home le tessere in fila
+- Schede di eventi, promemoria, date, pacchi e turni: il quando sta nel blocco colorato in cima ("Tra 2 ore", l'ora grande, il giorno e la durata); toccandolo lo cambi
+- Note lunghe: una sola barra in basso con lista, foto, dettatura, parole e Altro
+- "+": sopra la barra vedi la riga che verrà salvata e dove andrà (Calendario, Per dopo, abitudini), anche mentre detti
+- Album e playlist: copertina grande al centro, Casuale · Riproduci · Altro, brani degli album numerati con la durata
+- Podcast: in cima la puntata da ascoltare (quella lasciata a metà o la più nuova), con il tasto per farla partire
+- Lettore: sopra il titolo quanti minuti mancano alla fine, che scendono mentre leggi; pizzica per ingrandire il testo, e la grandezza resta
+- Impostazioni: in cima una tessera per ogni account con il suo stato; quella da sistemare è arancione e il tocco fa rientrare. La versione sta sopra il titolo
+- Posta: in Home al massimo due mail, con l'iniziale del mittente; la mail si apre nella pagina di dettaglio e "Letta" la toglie dalla Home
+- Widget Calendario: la stessa linea del tempo dell'app, con OGGI e i pallini dei giorni
+
 ## 1.527.0
 **Video: salti più rapidi e senza bolle**
 - Trascinando il dito di lato sul video ora ti sposti tre volte più veloce: tutta la larghezza vale tre minuti invece di uno
