@@ -12,6 +12,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.SwapVert
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistRemove
 import androidx.compose.material.icons.rounded.VerticalAlignBottom
 import androidx.compose.material.icons.rounded.VerticalAlignTop
@@ -95,7 +96,12 @@ internal object PlaylistManage {
         else ActionBubble.show(*actions.toTypedArray())
     }
 
-    private fun delete(context: Context, playlist: SpItem, name: String, onGone: () -> Unit) {
+    /** Apre "Modifica playlist" sui dettagli già letti. */
+    fun edit(playlistId: String) {
+        editing = infos[playlistId]?.first
+    }
+
+    fun delete(context: Context, playlist: SpItem, name: String, onGone: () -> Unit) {
         scope.launch {
             val error = SpotifyStore.deletePlaylist(playlist)
             if (error != null) return@launch CaptureFeedback.tell(context, error)
@@ -218,4 +224,53 @@ internal fun PlaylistEditLayer() {
         confirmButton = { ConfirmButton(enabled = ready, onClick = { save() }) { Text(if (busy) "Salvo…" else "Salva") } },
         dismissButton = { DismissButton(enabled = !busy, onClick = { PlaylistManage.closeEditor() }) { Text("Annulla") } },
     )
+}
+
+/**
+ * Le righe di una playlist nel fumetto del tieni premuto (1.512, Antonio: "anche tenendo premuto sulle playlist devono
+ * uscire modifica, eccetera, elimina"): Riproduci sempre; Modifica, Riordina ed Elimina appena si sa se è tua.
+ */
+@Composable
+internal fun PlaylistBubbleRows(playlist: SpItem) {
+    val context = LocalContext.current
+    val haptic = rememberHaptic()
+    val inApp = LocalInAppNav.current
+    androidx.compose.runtime.LaunchedEffect(playlist.id) { PlaylistManage.load(playlist.id) }
+    val canEdit = PlaylistManage.infos[playlist.id]?.second == true
+    val inLibrary = canEdit || SpotifyStore.inLibrary(playlist.id)
+    val name = PlaylistManage.title(playlist)
+    fun close() {
+        haptic(Haptic.CONFIRM)
+        com.platinum20.dashboard.capture.SavedLinks.dismiss()
+    }
+    BubbleRow(icon = Icons.Rounded.PlayArrow, title = "Riproduci", detail = name) {
+        close()
+        com.platinum20.dashboard.media.spotify.SpotifyPlayer.play(context, playlist)
+    }
+    RowDivider()
+    if (canEdit) {
+        BubbleRow(icon = Icons.Outlined.Edit, title = "Modifica", detail = "Nome, descrizione, privata") {
+            close()
+            PlaylistManage.edit(playlist.id)
+        }
+        RowDivider()
+        BubbleRow(icon = Icons.Outlined.SwapVert, title = "Riordina e togli brani", detail = "Si apre la playlist") {
+            close()
+            PlaylistManage.arranging[playlist.id] = true
+            inApp?.openRoute?.invoke(com.platinum20.dashboard.Routes.spotifyItem(playlist.copy(title = name)))
+        }
+        RowDivider()
+    }
+    if (inLibrary) {
+        BubbleRow(
+            icon = Icons.Outlined.Delete,
+            title = if (canEdit) "Elimina playlist" else "Togli dalla libreria",
+            detail = if (canEdit) "Sparisce da Spotify, anche sul PC" else "Non la segui più",
+            danger = true,
+        ) {
+            close()
+            PlaylistManage.delete(context, playlist, name) {}
+        }
+        RowDivider()
+    }
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.512.0
+**Musica: tieni premuta una playlist per gestirla**
+- Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina
+- "Riordina e togli brani" apre la playlist già pronta per spostare e togliere i brani
+- Le playlist di altri che segui: Riproduci e Togli dalla libreria
+
 ## 1.511.0
 **Spotify parte subito, senza bloccarsi**
 - Se tocchi un brano e dopo pochi secondi non suona ancora, l'app lo rimanda da sola; se serve riaccende anche il riproduttore. Prima restava fermo finché non toccavi di nuovo

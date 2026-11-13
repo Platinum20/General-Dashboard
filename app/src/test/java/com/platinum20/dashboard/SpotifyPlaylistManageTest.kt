@@ -79,3 +79,16 @@ class SpotifyPlaylistManageTest {
         assertEquals(listOf("b", "c", "a"), SpotifyPlaylists.restored(without, track("a"), 9).map { it.id })
     }
 }
+
+/** 1.512 (Antonio): tenendo premuta una playlist escono le sue azioni: si riconosce dall'indirizzo. */
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [35])
+class SpotifyPlaylistLongPressTest {
+    @Test
+    fun riconosceLaPlaylist() {
+        assertEquals("abc", SpotifyPlaylists.playlistId("spotify:playlist:abc"))
+        assertNull(SpotifyPlaylists.playlistId("spotify:album:abc"))
+        assertNull(SpotifyPlaylists.playlistId("mix:made-1"))
+        assertNull(SpotifyPlaylists.playlistId("spotify:playlist:"))
+    }
+}
