@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.515.0
+**Impostazioni del video rifatte**
+- La rotella sul video apre un fumetto di vetro con quattro righe: Qualità, Velocità, Sottotitoli e Ripeti. Ogni riga dice già com'è impostata
+- Tocchi una riga e sotto compaiono le sue scelte, tutte su una fila che scorre di lato; si riapre sull'ultima che hai cambiato
+- In verticale sta in basso e il video resta in vista; in orizzontale sta a destra
+- Qualità: prima Automatica e le più comuni (1080p, 720p, 480p, 360p), poi le altre. Sottotitoli: prima la lingua originale, poi l'italiano
+
 ## 1.514.0
 **Aggiornamenti: le versioni su una linea del tempo**
 - In alto un riquadro dice da quale versione a quale passi, quante sono nuove e quando ho controllato; il tasto "Aggiorna ora" è lì dentro e sparisce quando sei già aggiornato
