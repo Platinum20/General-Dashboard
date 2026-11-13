@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.519.0
+**Cerca: artisti e canali tra i risultati**
+- Cercando un nome ora compaiono in cima anche gli artisti di Spotify e i canali di YouTube, con gli iscritti
+- Toccandoli si apre la loro pagina nell'app; tenendo premuto un canale puoi aprirlo o iscriverti
+- Le categorie dei risultati aperte con "Mostra altri" ora si richiudono con "Mostra meno"
+
 ## 1.518.0
 
 **Capitoli sulla barra e coda di vetro**

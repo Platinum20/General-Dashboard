@@ -202,6 +202,23 @@ object YtResolver {
     }
 
     /**
+     * I canali che rispondono alla ricerca, come la scheda Canali di YouTube: per mostrarli in Cerca accanto
+     * agli artisti di Spotify. Con il numero di iscritti (0 se YouTube non lo dice).
+     */
+    suspend fun searchChannels(query: String): List<Pair<com.platinum20.dashboard.media.youtube.YtChannel, Long>> = withContext(Dispatchers.IO) {
+        init()
+        val service = ServiceList.YouTube
+        val handler = service.searchQHFactory.fromQuery(query, listOf(YoutubeSearchQueryHandlerFactory.CHANNELS), "")
+        SearchInfo.getInfo(service, handler).relatedItems
+            .filterIsInstance<org.schabi.newpipe.extractor.channel.ChannelInfoItem>()
+            .mapNotNull { c ->
+                val id = channelId(c.url) ?: return@mapNotNull null
+                val image = c.thumbnails.maxByOrNull { it.height }?.url.orEmpty().let { if (it.startsWith("//")) "https:$it" else it }
+                com.platinum20.dashboard.media.youtube.YtChannel(id, c.name.orEmpty(), image) to c.subscriberCount.coerceAtLeast(0)
+            }
+    }
+
+    /**
      * Commenti del video come li ordina YouTube: senza [page] la prima pagina, con [page] la successiva
      * oppure le risposte a un commento (la pagina presa da [YtComment.repliesPage]).
      */
