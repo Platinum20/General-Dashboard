@@ -619,7 +619,10 @@ internal fun calendarMonthCount(rows: List<DueRow>, today: LocalDate): Int {
 internal fun photoLine(note: com.platinum20.dashboard.notes.Note): String? {
     if (note.photo.isEmpty()) return null
     val more = note.text.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.drop(1).firstOrNull()
-    return if (more == null) "Foto" else "Foto · $more"
+        ?.let(com.platinum20.dashboard.notes.NoteFormat::plain)
+    // Con più foto si dice quante (1.529).
+    val head = if (note.photos.size > 1) "${note.photos.size} foto" else "Foto"
+    return if (more == null) head else "$head · $more"
 }
 
 /**

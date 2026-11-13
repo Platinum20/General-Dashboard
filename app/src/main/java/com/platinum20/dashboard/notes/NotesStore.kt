@@ -235,13 +235,15 @@ data class Note(
     val pinned: Boolean = false,
     /** Quando è stata scritta: l'ordine e la linea del tempo delle Note. Le vecchie note non lo avevano: vale l'ultima modifica. */
     val createdAt: Long = updatedAt,
-    /** La foto allegata con la graffetta (file nell'app), vuota per le note di solo testo. */
-    val photo: String = "",
+    /** Le foto allegate (file nell'app), in ordine: la prima è la copertina. Vuota per le note di solo testo (1.529: più d'una). */
+    val photos: List<String> = emptyList(),
 ) {
-    /** La prima riga fa da titolo. */
-    val title: String get() = text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
-    /** Senza l'indirizzo canvas://open delle cose salvate da "Salva nelle note". */
-    val body: String get() = SavedLinks.withoutLink(text).substringAfter('\n', "").trim()
+    /** La copertina: quella che si vede sulla linea del tempo e in Per dopo. */
+    val photo: String get() = photos.firstOrNull().orEmpty()
+    /** La prima riga fa da titolo, senza i segni dei formati. */
+    val title: String get() = NoteFormat.plain(text.lineSequence().firstOrNull { it.isNotBlank() }?.trim().orEmpty())
+    /** Senza l'indirizzo canvas://open delle cose salvate da "Salva nelle note", e senza i segni dei formati. */
+    val body: String get() = NoteFormat.plain(SavedLinks.withoutLink(text).substringAfter('\n', "").trim())
 }
 
 data class NotesData(
@@ -601,7 +603,7 @@ object NotesStore {
     /** Salva una nota (nuova se [id] è null) e ne restituisce l'id. Una nota vuota viene eliminata. */
     fun saveNote(id: Long?, text: String): Long? {
         // Una foto senza testo resta una nota: si cancella solo con Elimina.
-        if (text.isBlank() && id?.let(::note)?.photo.isNullOrEmpty()) {
+        if (text.isBlank() && id?.let(::note)?.photos.isNullOrEmpty()) {
             if (id != null) deleteNote(id)
             return null
         }
@@ -610,7 +612,7 @@ object NotesStore {
             val existing = d.notes.firstOrNull { it.id == noteId }
             if (existing != null && existing.text == text) return@update d
             val now = System.currentTimeMillis()
-            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photo.orEmpty())
+            val note = Note(noteId, text, now, existing?.pinned ?: false, existing?.createdAt ?: now, existing?.photos.orEmpty())
             d.copy(notes = listOf(note) + d.notes.filter { it.id != noteId })
         }
         return noteId
@@ -619,14 +621,28 @@ object NotesStore {
     /** Una foto in cui Canvas non ha trovato niente da fare: diventa una nota con la foto. */
     fun addPhotoNote(text: String, photo: String): Note {
         val now = System.currentTimeMillis()
-        val note = Note(newId(), text, now, createdAt = now, photo = photo)
+        val note = Note(newId(), text, now, createdAt = now, photos = listOf(photo))
         update { d -> d.copy(notes = listOf(note) + d.notes) }
         return note
     }
 
-    /** Mette (o cambia) la foto di una nota, dall'editor (1.528). */
-    fun setNotePhoto(id: Long, photo: String) = update { d ->
-        d.copy(notes = d.notes.map { if (it.id == id) it.copy(photo = photo, updatedAt = System.currentTimeMillis()) else it })
+    /**
+     * Cambia le foto di una nota dall'editor (aggiungi, togli, riordina, ruota: i conti in [NotePhotos]).
+     * Una nota senza testo e senza più foto si elimina, come una nota svuotata.
+     */
+    fun editNotePhotos(id: Long, change: (List<String>) -> List<String>) = update { d ->
+        val n = d.notes.firstOrNull { it.id == id } ?: return@update d
+        val next = change(n.photos)
+        if (next == n.photos) return@update d
+        if (next.isEmpty() && n.text.isBlank()) return@update d.copy(notes = d.notes.filter { it.id != id })
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(photos = next, updatedAt = System.currentTimeMillis()) else it })
+    }
+
+    /** Le foto lette dal file: le note di prima della 1.529 hanno solo "photo". */
+    private fun notePhotos(o: JSONObject): List<String> {
+        val all = o.optJSONArray("photos")
+        if (all != null) return (0 until all.length()).map { all.optString(it) }.filter { it.isNotEmpty() }
+        return listOfNotNull(o.optString("photo").takeIf { it.isNotEmpty() })
     }
 
     fun togglePin(id: Long) = update { d ->
@@ -691,7 +707,8 @@ object NotesStore {
         .put("notes", JSONArray().apply {
             d.notes.forEach {
                 put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt)
-                    .apply { if (it.photo.isNotEmpty()) put("photo", it.photo) })
+                    // "photo" = la copertina, per i backup letti da versioni vecchie; "photos" = tutte.
+                    .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) })
             }
         })
         .put("habits", JSONArray().apply {
@@ -757,7 +774,7 @@ object NotesStore {
             notes = (0 until notes.length()).map { i ->
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
-                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), o.optString("photo"))
+                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o))
                 }
             },
             habits = (0 until habits.length()).map { i ->

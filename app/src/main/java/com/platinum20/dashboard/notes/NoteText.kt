@@ -59,4 +59,28 @@ object NoteText {
             else -> "$text $add"
         }
     }
+
+    /** Il titolo (prima riga) e il resto: nell'editor stanno in due campi con le foto in mezzo (1.529). */
+    fun split(text: String): Pair<String, String> {
+        val cut = text.indexOf('\n')
+        return if (cut < 0) text to "" else text.substring(0, cut) to text.substring(cut + 1)
+    }
+
+    /** L'inverso di [split]: una nota con solo il titolo non porta un a capo in fondo. */
+    fun join(title: String, body: String): String = if (body.isEmpty()) title else "$title\n$body"
+
+    /** Inserisce il testo dettato dove sta il cursore, con lo spazio giusto prima e dopo; restituisce testo e cursore. */
+    fun insert(text: String, at: Int, heard: String): Pair<String, Int> {
+        val add = heard.trim()
+        if (add.isEmpty()) return text to at
+        val i = at.coerceIn(0, text.length)
+        val before = text.substring(0, i)
+        val after = text.substring(i)
+        val sentence = before.isBlank() || before.trimEnd().lastOrNull() in listOf('.', '!', '?', '\n') || before.endsWith("\n")
+        val word = if (sentence) add.replaceFirstChar { it.uppercase() } else add
+        val pre = if (before.isEmpty() || before.endsWith(" ") || before.endsWith("\n")) "" else " "
+        val post = if (after.isEmpty() || after.startsWith(" ") || after.startsWith("\n")) "" else " "
+        val piece = pre + word + post
+        return before + piece + after to i + pre.length + word.length
+    }
 }
