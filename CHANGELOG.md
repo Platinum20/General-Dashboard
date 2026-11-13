@@ -1,11 +1,17 @@
 # Changelog
 
-## 1.512.0
+## 1.513.0
 **Impostazioni del video rifatte**
 - La rotella sul video apre un fumetto di vetro con quattro righe: Qualità, Velocità, Sottotitoli e Ripeti. Ogni riga dice già com'è impostata
 - Tocchi una riga e sotto compaiono le sue scelte, tutte su una fila che scorre di lato; si riapre sull'ultima che hai cambiato
 - In verticale sta in basso e il video resta in vista; in orizzontale sta a destra
 - Qualità: prima Automatica e le più comuni (1080p, 720p, 480p, 360p), poi le altre. Sottotitoli: prima la lingua originale, poi l'italiano
+
+## 1.512.0
+**Musica: tieni premuta una playlist per gestirla**
+- Tenendo premuta una playlist (nella fila Musica, negli elenchi, nella ricerca) escono Riproduci, Modifica, Riordina e togli brani, Elimina
+- "Riordina e togli brani" apre la playlist già pronta per spostare e togliere i brani
+- Le playlist di altri che segui: Riproduci e Togli dalla libreria
 
 ## 1.511.0
 **Spotify parte subito, senza bloccarsi**
