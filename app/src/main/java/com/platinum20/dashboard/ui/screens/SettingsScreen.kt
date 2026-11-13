@@ -622,7 +622,7 @@ private fun LastFmSetting() {
                 ConfirmButton(onClick = {
                     com.platinum20.dashboard.media.lastfm.LastFm.setKey(value)
                     editing = false
-                    com.platinum20.dashboard.media.spotify.MadeStore.refresh(context)
+                    com.platinum20.dashboard.media.spotify.MadeStore.refresh(context, force = true)
                 }) { Text("Salva") }
             },
             dismissButton = { DismissButton(onClick = { editing = false }) { Text("Annulla") } },

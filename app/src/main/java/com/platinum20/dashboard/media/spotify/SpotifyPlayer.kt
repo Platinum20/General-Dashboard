@@ -271,14 +271,25 @@ object SpotifyPlayer : ExternalBackend {
      * dell'SDK non arrivano (prima restava la rotella e il play faceva ripartire il brano da capo).
      */
     private suspend fun watch(uri: String) {
+        var asked = 0L
         while (target == uri) {
-            // In pausa basta ogni tanto.
-            delay(if (last?.paused == true) WATCH_MS * 4 else WATCH_MS)
+            delay(WATCH_MS)
             if (target != uri) return
+            val paused = last?.paused == true
+            val now = System.currentTimeMillis()
             // In pausa la pagina scrive più di rado: si guarda lo stesso intervallo, non si va in rete.
-            val window = if (last?.paused == true) PAUSED_POLL_MS + WATCH_MS else WATCH_MS
-            val fresh = last?.let { System.currentTimeMillis() - it.at < window } ?: false
+            val window = if (paused) PAUSED_POLL_MS + WATCH_MS else WATCH_MS
+            val fresh = last?.let { now - it.at < window } ?: false
             if (fresh) continue
+            // Alla pagina che tace si chiede a Spotify, ma di rado: prima ogni 2,5 secondi per ore
+            // (schermo spento, pagina addormentata) e Spotify bloccava l'app intera per troppe richieste.
+            val every = when {
+                paused -> SERVER_POLL_PAUSED_MS
+                inBackground -> SERVER_POLL_BACKGROUND_MS
+                else -> SERVER_POLL_MS
+            }
+            if (now - asked < every) continue
+            asked = now
             val token = SpotifyAuth.token() ?: continue
             val playback = runCatching { SpotifyApi.playback(token) }.getOrNull() ?: continue
             if (target != uri || playback.device != DEVICE_NAME) continue
@@ -448,6 +459,10 @@ object SpotifyPlayer : ExternalBackend {
     private const val RESUME_CHECK_MS = 3_000L
     /** Ogni quanto, se la pagina tace, si chiede a Spotify lo stato. */
     private const val WATCH_MS = 2_500L
+    /** Ogni quanto, al massimo, si chiede lo stato al server di Spotify (che conta le richieste). */
+    private const val SERVER_POLL_MS = 15_000L
+    private const val SERVER_POLL_BACKGROUND_MS = 60_000L
+    private const val SERVER_POLL_PAUSED_MS = 120_000L
     /** In pausa la pagina manda lo stato ogni tanto, non ogni secondo (stesso valore nello script). */
     private const val PAUSED_POLL_MS = 15_000L
     /** Quanto resta acceso il riproduttore con l'app chiusa e niente che suona. */

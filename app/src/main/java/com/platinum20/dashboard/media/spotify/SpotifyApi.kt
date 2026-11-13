@@ -76,6 +76,9 @@ object SpotifyApi {
      */
     private val gate = Semaphore(4)
 
+    /** Il tetto di chiamate per finestra di 30 secondi, per non farsi bloccare per ore. */
+    private val budget = CallBudget()
+
     private suspend fun request(
         token: String,
         path: String,
@@ -85,6 +88,12 @@ object SpotifyApi {
         limit.left().let { left ->
             if (left > SpotifyLimit.SHORT_WAIT_MS) throw SpotifyApiException(SpotifyLimit.message(left), 429)
             if (left > 0) delay(left)
+        }
+        val isBackground = CallBudget.isBackground(path)
+        while (true) {
+            val wait = budget.reserve(System.currentTimeMillis(), isBackground)
+            if (wait <= 0) break
+            delay(wait)
         }
         return gate.withPermit { call(token, path, method, body) }
     }
