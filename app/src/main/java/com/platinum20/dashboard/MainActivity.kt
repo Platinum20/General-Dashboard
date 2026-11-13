@@ -1714,6 +1714,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     )
     SaveToNotesLayer()
     com.platinum20.dashboard.ui.screens.VideoSettingsLayer()
+    com.platinum20.dashboard.ui.screens.QueueLayer()
     ActionBubbleLayer()
     com.platinum20.dashboard.ui.screens.PlaylistNameLayer()
     WhatsNewLayer()

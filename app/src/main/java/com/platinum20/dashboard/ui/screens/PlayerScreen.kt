@@ -148,17 +148,15 @@ fun PlayerScreen(
         }
     }
     // La coda si apre sopra il player, non in un'altra pagina: il video resta a schermo intero e in orizzontale.
-    var queueOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    val onOpenQueue = { queueOpen = true }
+    val onOpenQueue = { QueueOpen.open = true }
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         if (starting || now?.source == PlaySource.VIDEO) {
             YouTubeWatchScreen(url = null, onBack = onBack, onOpenQueue = onOpenQueue, onOpenChannel = onOpenChannel)
         } else {
             AudioPlayer(onBack, onOpenQueue)
         }
-        QueuePopup(open = queueOpen, onClose = { queueOpen = false })
-        // Il fumetto delle impostazioni sta fuori dal NavHost (vetro): uscendo dal player si chiude.
-        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { VideoSettings.open = false } }
+        // Il fumetto delle impostazioni e la coda stanno fuori dal NavHost (vetro): uscendo dal player si chiudono.
+        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { VideoSettings.open = false; QueueOpen.open = false } }
     }
 }
 
