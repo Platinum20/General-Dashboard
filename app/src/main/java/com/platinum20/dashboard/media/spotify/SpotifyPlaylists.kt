@@ -149,3 +149,13 @@ object SpotifyPlaylists {
         ).joinToString(" · ")
     }
 }
+
+/** I dettagli di una playlist che si possono cambiare, più il proprietario per sapere se si può. */
+data class SpPlaylistInfo(
+    val id: String,
+    val name: String,
+    val description: String,
+    val public: Boolean,
+    val collaborative: Boolean,
+    val ownerId: String,
+)
