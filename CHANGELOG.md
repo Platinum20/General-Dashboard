@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.523.0
+**Impostazioni del video: si riaprono sempre**
+- Se chiudevi il fumetto delle impostazioni portandolo di lato, poi la rotella non lo faceva più comparire. Ora torna al suo posto ogni volta che lo apri
+
 ## 1.522.0
 **Mini player: la linguetta si aggancia in alto o in basso**
 - Spostata su o giù, la linguetta ora si ferma solo in alto o in basso, a sinistra o a destra, come il mini player normale: niente più posizioni a metà bordo
