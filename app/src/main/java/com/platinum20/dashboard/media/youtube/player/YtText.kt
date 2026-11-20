@@ -145,7 +145,7 @@ object YtText {
      */
     fun unescape(text: String): String {
         if ('&' !in text) return text
-        fun once(t: String) = entity.replace(t) { m ->
+        fun once(t: String): String = entity.replace(t) { m: MatchResult ->
             when (val code = m.groupValues[1]) {
                 "amp" -> "&"
                 "quot" -> "\""
@@ -154,8 +154,9 @@ object YtText {
                 "gt" -> ">"
                 "nbsp" -> " "
                 else -> {
-                    val n = if (code[1] == 'x' || code[1] == 'X') code.drop(2).toIntOrNull(16) else code.drop(1).toIntOrNull()
-                    n?.takeIf { Character.isValidCodePoint(it) }?.let { String(Character.toChars(it)) } ?: m.value
+                    val hex = code.length > 1 && (code[1] == 'x' || code[1] == 'X')
+                    val n: Int? = if (hex) code.drop(2).toIntOrNull(16) else code.drop(1).toIntOrNull()
+                    if (n != null && Character.isValidCodePoint(n)) String(Character.toChars(n)) else m.value
                 }
             }
         }
