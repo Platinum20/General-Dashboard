@@ -103,7 +103,7 @@ class TripLiveTest {
         assertEquals("In ritardo di 15 min · rilevato alle 8:55", card.lines[0])
         assertEquals("Prossima: Foggia alle 9:25", card.lines[1])
         assertEquals(listOf(70, 150), card.track!!.steps(at(8, 56)).points)
-        assertEquals(listOf(LiveStop("8:05", "Bari Centrale", true), LiveStop("9:25", "Foggia", false)), card.stops)
+        assertEquals(listOf(LiveStop("8:05", "Bari Centrale", true, "7:50"), LiveStop("9:25", "Foggia", false, "9:10")), card.stops)
         // Senza rete resta l'ultima lettura: orari col ritardo, e dice quanto è vecchia.
         val old = LiveTrip.card(train, at(9, 30), status, checked = true, zone = zone)!!
         assertEquals("11:12 11:27 Pescara", old.arrive)
@@ -299,7 +299,7 @@ class TripLiveTest {
         val base = 1_700_000_000_000L
         val ev = com.platinum20.dashboard.trips.LiveDemo.event(base)
         val late = com.platinum20.dashboard.trips.LiveDemo.frames(base).map { LiveTrip.card(ev, it.now, it.status, checked = true)!! }.last()
-        val middle = late.stops[1]
+        val middle = late.stops.first()
         assertNotNull(middle.planned)
         assertTrue(middle.planned != middle.time)
     }
