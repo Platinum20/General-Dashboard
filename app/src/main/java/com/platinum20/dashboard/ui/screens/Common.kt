@@ -774,21 +774,24 @@ fun CardTitle(
         modifier = modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 16.dp, end = 12.dp, top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            title.uppercase(),
-            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
-            color = color,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false).semantics { heading() },
-        )
-        if (opens) Icon(
-            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-            contentDescription = "Apri",
-            tint = color,
-            modifier = Modifier.size(18.dp),
-        )
-        Spacer(Modifier.weight(1f))
+        // Titolo e freccia in una riga che prende tutto lo spazio: il numero resta attaccato al bordo destro
+        // (con due pesi uguali finiva a metà card, 2026-11-20).
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                title.uppercase(),
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false).semantics { heading() },
+            )
+            if (opens) Icon(
+                Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = "Apri",
+                tint = color,
+                modifier = Modifier.size(18.dp),
+            )
+        }
         trailing()
     }
 }

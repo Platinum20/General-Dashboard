@@ -75,6 +75,19 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             post(context, event, card, now)
             posted += event.eventId.toString()
         }
+        // I treni già arrivati (sull'orario del biglietto) di cui non sappiamo com'è finita: una lettura ogni 15 minuti
+        // finché non è chiusa, così il Calendario tiene il ritardo vero anche se l'abbiamo perso (2026-11-20).
+        if (trains) for (event in events) {
+            val trip = event.trip ?: continue
+            if (event.eventId in active.map { it.eventId }) continue
+            TrainLive.close(event.eventId, event.end, now)
+            val known = TrainLive.known(event.eventId, now)
+            if (!TrainLive.needsLastRead(known, event.end, now)) continue
+            val lastRead = prefs.getLong("read_${event.eventId}", 0L)
+            if (now - lastRead < LATE_READ_EVERY_MS) continue
+            prefs.edit().putLong("read_${event.eventId}", now).apply()
+            TrainLive.refresh(event.eventId, trip, event.begin, event.end)
+        }
         // Le notifiche dei viaggi finiti (o spenti) se ne vanno.
         (shown - posted).forEach { NotificationManagerCompat.from(context).cancel(notificationId(it.toLong())) }
         prefs.edit().putStringSet(KEY_SHOWN, posted).apply()
@@ -100,9 +113,16 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
             // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
             val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
-                val line = "${stop.time}  ${stop.name}"
-                if (!stop.passed) line else android.text.SpannableString(line).apply {
-                    setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                // In ritardo come partenza e arrivo: l'orario del biglietto barrato, quello vero in arancio.
+                val planned = stop.planned?.let { "$it " }.orEmpty()
+                val line = "$planned${stop.time}  ${stop.name}"
+                android.text.SpannableString(line).apply {
+                    val span = android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    if (planned.isNotEmpty()) {
+                        setSpan(android.text.style.StrikethroughSpan(), 0, planned.length - 1, span)
+                        if (!stop.passed) setSpan(android.text.style.ForegroundColorSpan(LATE_TEXT), planned.length, planned.length + stop.time.length, span)
+                    }
+                    if (stop.passed) setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, span)
                 }
             } else card.lines.mapIndexed { i, line -> marked(line, i, card) }
             // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
@@ -127,7 +147,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setContentTitle(card.title)
                 .setContentText(text)
                 // Nell'intestazione "arriva tra 3 h 54 min" (2026-11-20): il cronometro incollato al titolo non si leggeva.
-                .setSubText(card.header)
+                .setSubText(card.header?.let { marked(it, LiveCard.HEADER, card) })
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(small)
                 .setCustomBigContentView(big)
@@ -197,6 +217,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         private const val KEY_SHOWN = "shown"
         private const val KEY_TICK = "tick"
         private const val READ_EVERY_MS = 2 * 60_000L
+        private const val LATE_READ_EVERY_MS = 15 * 60_000L
         private const val NOTIFICATION_BASE = 7_000
         private const val CANVAS_BLUE = 0xFF3550E8.toInt()
         private const val LATE_COLOR = 0xFFD9572B.toInt()

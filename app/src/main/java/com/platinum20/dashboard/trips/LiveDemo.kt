@@ -52,4 +52,8 @@ object LiveDemo {
         }
         return out
     }
+
+    /** L'intestazione della prova: "prova delle 21:22 · parte tra 38 min", con l'ora dell'orologio finto. */
+    fun header(header: String, now: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+        "prova delle ${java.time.Instant.ofEpochMilli(now).atZone(zone).format(java.time.format.DateTimeFormatter.ofPattern("H:mm"))} · $header"
 }
