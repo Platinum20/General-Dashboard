@@ -70,8 +70,11 @@ data class LiveCard(
     }
 }
 
-/** Una fermata nell'elenco "Fermate": orario (col ritardo), nome, già passata. */
-data class LiveStop(val time: String, val name: String, val passed: Boolean)
+/**
+ * Una fermata nell'elenco "Fermate": orario (col ritardo), nome, già passata; [planned] = l'orario del biglietto,
+ * solo se in ritardo, barrato davanti come per partenza e arrivo (2026-11-20).
+ */
+data class LiveStop(val time: String, val name: String, val passed: Boolean, val planned: String? = null)
 
 /**
  * Il viaggio vivo (1.467): un'ora prima del treno nasce una notifica sola che conta i minuti alla partenza,
@@ -180,7 +183,7 @@ object LiveTrip {
         val arrive = "${time(event.end, end, LiveCard.ARRIVE)} ${short(trip.to) ?: trip.to}"
         val stops = TrainLive.between(status?.stops.orEmpty(), trip.from, trip.to)
         val points = stops.map { it.at + delay }.filter { it in (leave + 1) until end }
-        val stopList = stops.map { LiveStop(at(it.at + delay, zone), TrainLive.pretty(it.name), it.at + delay <= now) }
+        val stopList = stops.map { LiveStop(at(it.at + delay, zone), TrainLive.pretty(it.name), it.at + delay <= now, at(it.at, zone).takeIf { late }) }
         val lines = mutableListOf<String>()
         liveLine?.let {
             lines += it

@@ -290,4 +290,17 @@ class TripLiveTest {
         assertFalse(TrainLive.needsLastRead(null, arrival = h, now = 14 * h))
         assertFalse(TrainLive.needsLastRead(null, arrival = 2 * h, now = h))
     }
+
+    @Test
+    fun laProvaDiceLOraFintaELeFermateHannoIlRitardo() {
+        val zone = java.time.ZoneId.of("Europe/Rome")
+        val at = java.time.ZonedDateTime.of(2026, 11, 20, 21, 22, 0, 0, zone).toInstant().toEpochMilli()
+        assertEquals("prova delle 21:22 · parte tra 38 min", com.platinum20.dashboard.trips.LiveDemo.header("parte tra 38 min", at, zone))
+        val base = 1_700_000_000_000L
+        val ev = com.platinum20.dashboard.trips.LiveDemo.event(base)
+        val late = com.platinum20.dashboard.trips.LiveDemo.frames(base).map { LiveTrip.card(ev, it.now, it.status, checked = true)!! }.last()
+        val middle = late.stops[1]
+        assertNotNull(middle.planned)
+        assertTrue(middle.planned != middle.time)
+    }
 }

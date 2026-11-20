@@ -113,9 +113,16 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
             // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
             val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
-                val line = "${stop.time}  ${stop.name}"
-                if (!stop.passed) line else android.text.SpannableString(line).apply {
-                    setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                // In ritardo come partenza e arrivo: l'orario del biglietto barrato, quello vero in arancio.
+                val planned = stop.planned?.let { "$it " }.orEmpty()
+                val line = "$planned${stop.time}  ${stop.name}"
+                android.text.SpannableString(line).apply {
+                    val span = android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    if (planned.isNotEmpty()) {
+                        setSpan(android.text.style.StrikethroughSpan(), 0, planned.length - 1, span)
+                        if (!stop.passed) setSpan(android.text.style.ForegroundColorSpan(LATE_TEXT), planned.length, planned.length + stop.time.length, span)
+                    }
+                    if (stop.passed) setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, span)
                 }
             } else card.lines.mapIndexed { i, line -> marked(line, i, card) }
             // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
