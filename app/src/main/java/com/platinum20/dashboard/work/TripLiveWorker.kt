@@ -93,7 +93,10 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(card.title)
             .setContentText(card.text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(card.text))
+            // Chiusa una riga sola; aperta una cosa per riga: partenza, arrivo, ritardo e quando l'abbiamo letto, posto.
+            .setStyle(NotificationCompat.BigTextStyle().bigText(card.lines.joinToString("\n")))
+            // Arancio = attenzione (in ritardo o soppresso), altrimenti il blu della Canvas: un colore, un significato.
+            .setColor(if (card.late) LATE_COLOR else CANVAS_BLUE)
             .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -129,6 +132,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         /** `Notification.EXTRA_REQUEST_PROMOTED_ONGOING` e `EXTRA_SHORT_CRITICAL_TEXT` (API 36), scritti a mano. */
         private const val EXTRA_PROMOTED = "android.requestPromotedOngoing"
         private const val EXTRA_CHIP = "android.shortCriticalText"
+        private const val CANVAS_BLUE = 0xFF3550E8.toInt()
+        private const val LATE_COLOR = 0xFFD9572B.toInt()
 
         fun notificationId(eventId: Long): Int = NOTIFICATION_BASE + Math.floorMod(eventId, 1_000L).toInt()
 
