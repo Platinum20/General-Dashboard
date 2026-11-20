@@ -195,12 +195,12 @@ class TripsTest {
         val s = tripStops(late, day20, zoneR, live = TrainStatus(45, readAt = 1L), packSec = 0)!!
         assertEquals("00:25", s.arriveAt)
         assertEquals("23:40", s.plannedArrive)
-        assertEquals("Arrivo a Taranto · Sab 21", s.to)
+        assertEquals("Arrivo a Taranto · Domani", s.to)
         assertEquals("Arrivo a Taranto", tripStops(late, day20, zoneR, live = null, packSec = 0)!!.to)
         // Anche la partenza oltre mezzanotte lo dice.
         val night = ic.copy(begin = at(20, 23, 50), end = at(21, 3, 0))
         val n = tripStops(night, day20, zoneR, live = TrainStatus(20, readAt = 1L), packSec = 0)!!
         assertEquals("00:10", n.departAt)
-        assertEquals("Treno da Pescara Centrale · Sab 21", n.from)
+        assertEquals("Treno da Pescara Centrale · Domani", n.from)
     }
 }
