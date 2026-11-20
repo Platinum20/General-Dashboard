@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.535.0
+
+**L'icona delle notifiche è quella dell'app**
+- Nella barra di stato e in cima alle notifiche ora c'è la pennellata con la goccia di Canvas, non più i vecchi tre riquadri.
+- Anche la notifica del player e quelle trovate nei messaggi usano la stessa icona.
+- Le notifiche hanno l'arancio dell'icona (il treno resta blu, arancio solo se è in ritardo).
+
 ## 1.534.0
 **Notifica del treno: la linea del viaggio**
 - Su Android 16 la barra diventa il viaggio: un punto per ogni fermata e il treno che avanza

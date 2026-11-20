@@ -49,6 +49,7 @@ class TaskReminderWorker(context: Context, params: WorkerParameters) : Coroutine
 
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
             .setContentTitle(ReminderText.title(task))
             .setContentText(ReminderText.detail(task))
             .setContentIntent(

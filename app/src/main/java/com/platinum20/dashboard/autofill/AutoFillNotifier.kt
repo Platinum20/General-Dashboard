@@ -73,7 +73,8 @@ object AutoFillNotifier {
             )
             val added = s.state == SuggestionState.ADDED
             val builder = NotificationCompat.Builder(context, CHANNEL)
-                .setSmallIcon(R.drawable.ic_quick_add)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setColor(context.getColor(R.color.notification_accent))
                 .setContentTitle(if (added) "Aggiunto: " + SuggestionText.title(s.found) else SuggestionText.title(s.found))
                 .setContentText(SuggestionText.detail(s))
                 .setContentIntent(open)
