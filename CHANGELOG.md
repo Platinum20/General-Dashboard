@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.540.0
+**Treni: il ritardo resta anche a viaggio finito, e la prova della notifica**
+- Quando il treno è arrivato (contando il ritardo) Canvas smette di controllarlo e il Calendario tiene per sempre gli orari col ritardo, anche nei giorni passati
+- La notifica dal vivo resta fino all'arrivo col ritardo, non a quello del biglietto
+- Nuova riga "Prova la notifica" in Impostazioni › Notifiche: un treno finto che in poco più di un minuto passa per l'attesa, il ritardo, il viaggio senza rete e l'arrivo
+
 ## 1.539.0
 **Da fare e Appunti a tutto schermo, titoli con la freccia**
 - I titoli delle card in Home sono in maiuscolo come in Media, con la freccia › quando aprono una pagina ("DA FARE ›", "CALENDARIO ›")
