@@ -194,6 +194,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val span: Any = when (m.kind) {
                     com.platinum20.dashboard.trips.MarkKind.LATE -> android.text.style.ForegroundColorSpan(LATE_TEXT)
                     com.platinum20.dashboard.trips.MarkKind.STRUCK -> android.text.style.StrikethroughSpan()
+                    com.platinum20.dashboard.trips.MarkKind.SOFT -> android.text.style.ForegroundColorSpan(PASSED_TEXT)
                 }
                 out.setSpan(span, at, at + m.text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 from = at + m.text.length

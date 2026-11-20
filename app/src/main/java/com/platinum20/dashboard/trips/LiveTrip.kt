@@ -9,7 +9,8 @@ import java.time.format.DateTimeFormatter
 enum class LivePhase { SOON, ON_BOARD }
 
 /** Come segnare un pezzo di testo: arancio (in ritardo) o barrato (l'orario del biglietto superato dal ritardo). */
-enum class MarkKind { LATE, STRUCK }
+/** LATE = arancio, STRUCK = barrato, SOFT = grigio (le righe di contorno, come nella proposta A). */
+enum class MarkKind { LATE, STRUCK, SOFT }
 
 /** Un pezzo di testo da segnare nella riga [line] di [LiveCard.lines] (-1 = nel [LiveCard.text]). */
 data class LiveMark(val line: Int, val text: String, val kind: MarkKind)
@@ -163,16 +164,22 @@ object LiveTrip {
         val ago = status?.takeIf { old }?.let { "letto ${TrainLive.ago(now - it.readAt)}" }
         fun head(rest: String): String {
             if (plus != null) marks += LiveMark(LiveCard.HEADER, plus, MarkKind.LATE)
-            return listOfNotNull(plus, ago, rest).joinToString(" · ")
+            // Corta (2026-11-20): su One UI l'intestazione divide la riga con "Canvas" e la freccia e si tagliava;
+            // "letto N min fa" va in una riga sua sotto la linea.
+            return listOfNotNull(plus, rest).joinToString(" · ")
         }
-        val liveLine = if (status == null && checked) "Ritardo non disponibile" else null
+        val liveLine = when {
+            status == null && checked -> "Ritardo non disponibile"
+            ago != null -> "Ritardo ${ago}"
+            else -> null
+        }
         // La notifica chiusa (proposta A, Antonio 2026-11-20): la stessa riga dell'intestazione più binario o prossima
         // fermata; arancio solo il ritardo.
         fun closed(rest: String, extra: String?): String {
             if (plus != null) marks += LiveMark(LiveCard.TEXT, plus, MarkKind.LATE)
-            val missing = liveLine?.lowercase()
+            val missing = if (status == null && checked) "ritardo non disponibile" else null
             val onTime = if (status != null && !late && !old) "in orario" else null
-            return listOfNotNull(plus, onTime, ago, rest, extra, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
+            return listOfNotNull(plus, onTime, rest, extra, ago, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
         }
         // Con il ritardo l'orario del biglietto resta, barrato, davanti a quello vero: "18:27 19:59".
         fun time(planned: Long, real: Long, line: Int): String {
@@ -182,18 +189,20 @@ object LiveTrip {
             return "${at(planned, zone)} ${at(real, zone)}"
         }
         val depart = "${time(event.begin, leave, LiveCard.DEPART)} ${short(trip.from) ?: trip.from.orEmpty()}".trim()
-        val arrive = "${time(event.end, end, LiveCard.ARRIVE)} ${short(trip.to) ?: trip.to}"
+        // La stazione d'arrivo prima dell'orario (Antonio, 2026-11-20): gli orari stanno ai due bordi, sotto i pallini.
+        val arrive = "${short(trip.to) ?: trip.to} ${time(event.end, end, LiveCard.ARRIVE)}"
         val stops = TrainLive.between(status?.stops.orEmpty(), trip.from, trip.to)
         val points = stops.map { it.at + delay }.filter { it in (leave + 1) until end }
         val stopList = stops.map { LiveStop(at(it.at + delay, zone), TrainLive.pretty(it.name), it.at + delay <= now, at(it.at, zone).takeIf { late }) }
         val lines = mutableListOf<String>()
-        liveLine?.let { lines += it }
+        liveLine?.let { lines += it; marks += LiveMark(lines.lastIndex, it, MarkKind.SOFT) }
         val track = LiveTrack(leave, end, points)
         return when (phase) {
             LivePhase.SOON -> {
                 // Prima di partire il binario al posto della prossima fermata.
-                status?.platform?.let { lines += "Binario $it" }
-                seat?.let { lines += it }
+                // Prima di partire il binario, dopo la prossima fermata: la stessa riga "che cosa viene adesso".
+                status?.platform?.let { lines += "Parte dal binario $it" }
+                seat?.let { lines += it; marks += LiveMark(lines.lastIndex, it, MarkKind.SOFT) }
                 val platform = status?.platform?.let { "binario $it" }
                 val waited = (((now - (leave - LEAD_MS)).toDouble() / LEAD_MS) * 100).toInt().coerceIn(0, 100)
                 val text = closed("parte ${inText(leave - now)}", platform)
@@ -217,7 +226,7 @@ object LiveTrip {
                 val arrived = now >= end
                 val next = if (arrived) null else stops.firstOrNull { it.at + delay > now }
                 next?.let { lines += "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
-                seat?.let { lines += it }
+                seat?.let { lines += it; marks += LiveMark(lines.lastIndex, it, MarkKind.SOFT) }
                 val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}",
                     next?.let { "prossima ${TrainLive.pretty(it.name)}" })
                 LiveCard(

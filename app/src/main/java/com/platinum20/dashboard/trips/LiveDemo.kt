@@ -53,7 +53,6 @@ object LiveDemo {
         return out
     }
 
-    /** L'intestazione della prova: "prova delle 21:22 · parte tra 38 min", con l'ora dell'orologio finto. */
-    fun header(header: String, now: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
-        "prova delle ${java.time.Instant.ofEpochMilli(now).atZone(zone).format(java.time.format.DateTimeFormatter.ofPattern("H:mm"))} · $header"
+    /** Il titolo della prova: "Prova · Treno per Bologna Centrale", così non si confonde con un treno vero. */
+    fun title(title: String): String = "Prova · $title"
 }

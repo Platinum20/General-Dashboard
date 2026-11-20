@@ -60,12 +60,12 @@ class TripLiveTest {
         assertTrue(LiveMark(LiveCard.TEXT, "+10 min", MarkKind.LATE) in card.marks)
         // Sotto la linea: l'orario del biglietto barrato davanti a quello vero, in arancio (proposta A).
         assertEquals("6:40 6:50 Taranto", card.depart)
-        assertEquals("11:12 11:22 Pescara", card.arrive)
+        assertEquals("Pescara 11:12 11:22", card.arrive)
         assertTrue(LiveMark(LiveCard.DEPART, "6:40", MarkKind.STRUCK) in card.marks)
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:12", MarkKind.STRUCK) in card.marks)
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:22", MarkKind.LATE) in card.marks)
         assertEquals(
-            listOf("Binario 4", "Intercity 612 · carr. 8, posto 11D"),
+            listOf("Parte dal binario 4", "Intercity 612 · carr. 8, posto 11D"),
             card.lines,
         )
         // Proposta A del riordino: il ritardo nell'intestazione, in arancio.
@@ -87,10 +87,10 @@ class TripLiveTest {
         assertEquals("11:12", card.chip)
         assertEquals("arriva tra 2 h 16 min", card.header)
         assertEquals("6:40 Taranto", card.depart)
-        assertEquals("11:12 Pescara", card.arrive)
+        assertEquals("Pescara 11:12", card.arrive)
         assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines[0])
         assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.last())
-        assertTrue(card.marks.isEmpty())
+        assertTrue(card.marks.all { it.kind == MarkKind.SOFT })
     }
 
     @Test
@@ -101,15 +101,16 @@ class TripLiveTest {
         )
         val status = TrainStatus(15, readAt = at(8, 55), stops = stops)
         val card = LiveTrip.card(train, at(8, 56), status, checked = true, zone = zone)!!
-        assertEquals("11:12 11:27 Pescara", card.arrive)
+        assertEquals("Pescara 11:12 11:27", card.arrive)
         assertEquals("+15 min · arriva tra 2 h 31 min", card.header)
         assertEquals("Prossima: Foggia 9:25", card.lines[0])
         assertEquals(listOf(70, 150), card.track!!.steps(at(8, 56)).points)
         assertEquals(listOf(LiveStop("8:05", "Bari Centrale", true, "7:50"), LiveStop("9:25", "Foggia", false, "9:10")), card.stops)
         // Senza rete resta l'ultima lettura: orari col ritardo, e dice quanto è vecchia.
         val old = LiveTrip.card(train, at(9, 30), status, checked = true, zone = zone)!!
-        assertEquals("11:12 11:27 Pescara", old.arrive)
-        assertEquals("+15 min · letto 35 min fa · arriva tra 1 h 57 min", old.header)
+        assertEquals("Pescara 11:12 11:27", old.arrive)
+        assertEquals("+15 min · arriva tra 1 h 57 min", old.header)
+        assertEquals("Ritardo letto 35 min fa", old.lines[0])
         val steps = LiveTrack(at(6, 55), at(11, 27), listOf(at(8, 5), at(9, 25))).steps(at(8, 56))
         assertEquals(272, steps.max)
         assertEquals(121, steps.progress)
@@ -278,7 +279,7 @@ class TripLiveTest {
         assertFalse(cards.first()!!.late)
         assertTrue(cards.any { it!!.phase == LivePhase.SOON && it.late })
         assertEquals(LivePhase.ON_BOARD, cards.last()!!.phase)
-        assertTrue(cards.last()!!.header!!.contains("letto"))
+        assertTrue(cards.last()!!.lines.first().contains("letto"))
         // Dura poco più di un minuto: a ogni fotogramma 3 secondi.
         assertTrue(frames.size * com.platinum20.dashboard.trips.LiveDemo.FRAME_MS in 60_000L..120_000L)
     }
@@ -298,7 +299,7 @@ class TripLiveTest {
     fun laProvaDiceLOraFintaELeFermateHannoIlRitardo() {
         val zone = java.time.ZoneId.of("Europe/Rome")
         val at = java.time.ZonedDateTime.of(2026, 11, 20, 21, 22, 0, 0, zone).toInstant().toEpochMilli()
-        assertEquals("prova delle 21:22 · parte tra 38 min", com.platinum20.dashboard.trips.LiveDemo.header("parte tra 38 min", at, zone))
+        assertEquals("Prova · Treno per Bologna Centrale", com.platinum20.dashboard.trips.LiveDemo.title("Treno per Bologna Centrale"))
         val base = 1_700_000_000_000L
         val ev = com.platinum20.dashboard.trips.LiveDemo.event(base)
         val late = com.platinum20.dashboard.trips.LiveDemo.frames(base).map { LiveTrip.card(ev, it.now, it.status, checked = true)!! }.last()

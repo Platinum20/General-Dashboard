@@ -1,6 +1,14 @@
 # Changelog
 
 ## 1.544.0
+**Notifica del treno ripulita**
+- L'intestazione non si taglia più: solo ritardo e minuti ("+12 min · arriva tra 44 min"); "letto 35 min fa" ha una riga sua, grigia
+- La stazione d'arrivo sta prima dell'orario ("Bologna 0:08 0:20"): gli orari sono ai due bordi, sotto i pallini
+- Prima di partire "Parte dal binario 14", a bordo "Prossima: …": la stessa riga nello stesso posto
+- Treno, carrozza e posto in grigio e testi un po' più piccoli, come nel disegno
+- La prova della notifica dice "Prova" nel titolo
+
+## 1.544.0
 **Spotify non chiede più di ricollegarsi senza motivo**
 - Quando l'accesso di un'ora scade o il telefono si risveglia senza rete, l'app rinnova da sola il collegamento e riaccende il riproduttore, senza dirti di ricollegare la chiave
 - Il nuovo accesso dato da Spotify a ogni rinnovo viene salvato subito: prima, se l'app si chiudeva in quel momento, si perdeva e il collegamento cadeva davvero
