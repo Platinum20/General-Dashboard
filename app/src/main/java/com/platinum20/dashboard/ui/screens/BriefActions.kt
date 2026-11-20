@@ -158,6 +158,28 @@ internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) ->
     )
 }
 
+/**
+ * Le abitudini in cima a "Da fare" (1.534, Antonio 2026-11-20): la serie a destra, "🔥 5" (giorni di fila, settimane
+ * per quelle "N volte a settimana"); niente se la serie è a zero.
+ */
+internal fun habitFlame(h: Habit, today: java.time.LocalDate): String? =
+    (if (h.weekly) h.weekStreak(today) else h.streak(today)).takeIf { it > 0 }?.let { "🔥 $it" }
+
+/**
+ * La riga sotto il nome in "Da fare": fatta = spenta fino a domani; dalle 17 "Manca oggi" (arancione, come in Adesso);
+ * le settimanali dicono a che punto è la settimana. Le altre non hanno riga: la serie è già a destra.
+ */
+internal fun habitTodoLine(h: Habit, now: java.time.LocalDateTime): com.platinum20.dashboard.notes.HabitLine? {
+    val today = now.toLocalDate()
+    val week = "${h.weekCount(today)} su ${h.perWeek} questa settimana"
+    return when {
+        h.isDone(today) -> com.platinum20.dashboard.notes.HabitLine(if (h.weekly) "Fatta oggi · $week" else "Fatta oggi · torna domani", urgent = false)
+        h.weekly -> com.platinum20.dashboard.notes.HabitLine(if (h.needsReminder(now)) "Manca oggi · $week" else week, urgent = h.needsReminder(now))
+        now.hour >= com.platinum20.dashboard.today.Briefing.HABIT_HOUR -> com.platinum20.dashboard.notes.HabitLine("Manca oggi", urgent = true)
+        else -> null
+    }
+}
+
 /** Il testo della riga delle abitudini, uguale in Home e nel calendario. */
 internal fun habitsLine(habits: List<Habit>, today: java.time.LocalDate): String =
     "Abitudini · ${habits.count { it.isDone(today) }} su ${habits.size}"

@@ -336,7 +336,8 @@ fun NotesScreen(
         val nowItem = if (nowAt > 0) timelineIndex + nowAt else null
         // Le abitudini si fanno oggi (1.357): una riga dentro OGGI, prima dei giorni dopo. In fondo alla linea non ci si
         // arrivava mai, perché scorrendo il calendario carica un anno dopo l'altro.
-        val showHabits = filter == null && data.habits.isNotEmpty() && nowAt >= 0
+        // Dalla 1.534 le abitudini stanno in "Da fare" in Home, in un posto solo (Antonio): qui non c'è più la riga.
+        val showHabits = false
         val habitsAt = if (showHabits) habitsIndex(entries.map { it.second.day to it.first.past }, nowAt, today) else entries.size
         val habitCount = if (showHabits) 1 else 0
         val lastItem = timelineIndex + entries.lastIndex + habitCount

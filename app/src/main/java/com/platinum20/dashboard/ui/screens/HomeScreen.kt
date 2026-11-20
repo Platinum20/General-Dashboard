@@ -268,7 +268,7 @@ fun HomeScreen(
             HomeCard.DOCS -> docs.isNotEmpty()
             // Vuota non c'è: compare quando hai qualcosa per dopo.
             // Compare anche vuota se c'è l'archivio: si apre da qui.
-            HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0
+            HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0 || notes.habits.isNotEmpty()
             HomeCard.JOTTINGS -> jottings.isNotEmpty() || archivedCount > 0
             // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
             HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
@@ -324,7 +324,7 @@ fun HomeScreen(
             HomeCard.DAY -> CalendarCard(
                 groups = calendar,
                 today = minute.toLocalDate(),
-                habits = notes.habits,
+                // Le abitudini stanno in "Da fare" (1.534): nel Calendario non c'è più la riga "Abitudini".
                 onOpenAll = {
                     haptic(Haptic.TICK)
                     onOpenNotes()
@@ -342,7 +342,7 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, doneCount, onOpenArchive = {
+            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, doneCount, habits = notes.habits, onOpenArchive = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.LATER_ARCHIVE)
             })

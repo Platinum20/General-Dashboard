@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -98,17 +99,37 @@ internal fun archiveLine(kind: LooseCardKind, count: Int): String? = if (count <
  * Ogni riga ha a sinistra la spunta (cose da fare) o l'immagine, il nome e al massimo una riga sotto.
  */
 @Composable
-internal fun LaterCard(kind: LooseCardKind, items: List<LooseItem>, archiveCount: Int, onOpenArchive: () -> Unit) {
+internal fun LaterCard(
+    kind: LooseCardKind,
+    items: List<LooseItem>,
+    archiveCount: Int,
+    onOpenArchive: () -> Unit,
+    habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
+) {
     val open = rememberDueOpen()
+    val openItem = rememberOpenItem()
+    val now = java.time.LocalDateTime.now()
+    val today = now.toLocalDate()
+    // Le abitudini di oggi ancora da fare contano come le altre cose da fare.
+    val count = items.size + habits.count { !it.isDone(today) }
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
     // Toccando la card, fuori dalle righe, si apre il suo archivio.
     CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpenArchive) {
         CardTitle(kind.title, trailing = {
-            if (items.isNotEmpty()) Text(looseCount(items.size), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
+            if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            if (items.isEmpty()) {
+            // In cima le abitudini (1.534): tornano ogni giorno, spuntate si spengono fino a domani e non vanno in "Fatte".
+            habits.forEach { h ->
+                HabitTodoRow(
+                    h, now,
+                    onClick = { haptic(Haptic.TICK); openItem(ItemKind.HABIT, h.id) },
+                    onLongClick = { haptic(Haptic.LONG_PRESS); ActionBubble.show(*habitActions(h, today) { openItem(ItemKind.HABIT, it.id) }) },
+                    onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
+                )
+            }
+            if (items.isEmpty() && habits.isEmpty()) {
                 Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             }
             items.forEach { item ->
@@ -183,6 +204,55 @@ private fun LooseRow(item: LooseItem, onClick: () -> Unit, onLongClick: () -> Un
         if (item.pinned) {
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Filled.PushPin, contentDescription = "Fissata", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+/** Un'abitudine in "Da fare": la spunta di oggi, il nome, la serie a destra. Fatta = spenta fino a domani. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun HabitTodoRow(
+    habit: com.platinum20.dashboard.notes.Habit,
+    now: java.time.LocalDateTime,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onTick: () -> Unit,
+) {
+    val done = habit.isDone(now.toLocalDate())
+    val line = habitTodoLine(habit, now)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .bouncyPress()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .graphicsLayer { alpha = if (done) 0.5f else 1f }
+            .padding(horizontal = 16.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+            Icon(
+                if (done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = if (done) "Togli da oggi" else "Fatta oggi",
+                tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp).clip(CircleShape).clickable(onClick = onTick),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(habit.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            line?.let {
+                Text(
+                    it.text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (it.urgent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        habitFlame(habit, now.toLocalDate())?.let {
+            Spacer(Modifier.width(8.dp))
+            Text(it, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
