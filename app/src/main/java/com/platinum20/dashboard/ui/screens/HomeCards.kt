@@ -163,6 +163,7 @@ internal fun CalendarCard(
     val inApp = LocalInAppNav.current
     // Tenendo premuta una riga: il fumetto con le sue azioni, uguale alla pagina intera (Antonio, 2026-11-12).
     val rowActions = rememberRowActions { e -> inApp?.openEvent?.invoke(e) }
+    val openItem = rememberOpenItem()
     // Oggi come nella pagina, niente nascosto: anche le cose spuntate oggi (Antonio, 1.400 e 2026-11-10).
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
@@ -179,7 +180,7 @@ internal fun CalendarCard(
     val extras = buildList<Triple<TimelineEntry, (() -> Unit)?, () -> Unit>> {
         if (habits.isNotEmpty()) add(Triple(
             TimelineEntry(key = "habits", kind = BriefKind.HABIT, text = habitsLine(habits, today), dayLabel = null),
-            null, { ActionBubble.show(*habitsBubble(habits, today)) },
+            null, { ActionBubble.show(*habitsBubble(habits, today) { openItem(ItemKind.HABIT, it.id) }) },
         ))
     }
     fun <T> withExtras(list: List<T>, items: List<T>): List<T> =

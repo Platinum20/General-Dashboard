@@ -21,6 +21,8 @@ internal data class BubbleAction(
     val danger: Boolean = false,
     /** Scelte rapide in fila (punto 32): la riga diventa una fila di chip, [title] sopra. */
     val chips: List<BubbleChip> = emptyList(),
+    /** Tenendo premuta la riga: di solito il fumetto con le azioni di quella cosa (regola del tocco lungo, 1.535). Prima di [onClick], che resta l'ultimo per la lambda in coda. */
+    val onLongClick: (() -> Unit)? = null,
     val onClick: () -> Unit = {},
 )
 
@@ -85,7 +87,10 @@ internal fun BoxScope.ActionBubbleLayer() {
                         ActionBubble.dismiss()
                         chip.onClick()
                     }
-                } else BubbleRow(a.icon, a.title, a.detail, a.danger) {
+                } else BubbleRow(
+                    a.icon, a.title, a.detail, a.danger,
+                    onLongClick = a.onLongClick?.let { long -> { haptic(Haptic.LONG_PRESS); long() } },
+                ) {
                     haptic(Haptic.CONFIRM)
                     ActionBubble.dismiss()
                     a.onClick()

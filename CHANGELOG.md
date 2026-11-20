@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.535.0
+**Le abitudini stanno in "Da fare" e si eliminano tenendole premute**
+- Le abitudini sono in cima alla card "Da fare" in Home, con la serie a destra (🔥 5)
+- Spuntata, un'abitudine si spegne fino a domani e non finisce in "Fatte"
+- Nel Calendario non c'è più la riga "Abitudini": stanno in un posto solo
+- Toccandone una si apre la sua pagina (nome, giorni, promemoria), che prima non si raggiungeva
+- Tenendola premuta: "Fatta oggi", "Apri e modifica" ed "Elimina", con "Annulla" che la rimette con tutta la serie
+
 ## 1.534.0
 **Notifica del treno: la linea del viaggio**
 - Su Android 16 la barra diventa il viaggio: un punto per ogni fermata e il treno che avanza
