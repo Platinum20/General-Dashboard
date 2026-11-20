@@ -758,26 +758,37 @@ fun Section(
 }
 
 /**
- * Il titolo dentro una card della Home (1.404, punto 7 B): niente etichetta maiuscola fuori, la card è un
- * oggetto a sé col suo nome in alto. A destra un valore, se c'è (il totale del mese nel Calendario).
+ * Il titolo dentro una card della Home (1.404, punto 7 B): la card è un oggetto a sé col suo nome in alto.
+ * Dal 1.539 (Antonio, mockup archivi-card A) il nome è maiuscolo come le sezioni di Media e, se la card apre
+ * una pagina ([opens]), ha la freccia accanto: "DA FARE ›". A destra un valore, se c'è.
  */
 @Composable
 fun CardTitle(
     title: String,
     modifier: Modifier = Modifier,
+    opens: Boolean = false,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
+    val color = MaterialTheme.colorScheme.onSurface
     Row(
         modifier = modifier.fillMaxWidth().heightIn(min = 40.dp).padding(start = 16.dp, end = 12.dp, top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
+            title.uppercase(),
+            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.sp, fontWeight = FontWeight.Bold),
+            color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).semantics { heading() },
+            modifier = Modifier.weight(1f, fill = false).semantics { heading() },
         )
+        if (opens) Icon(
+            Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+            contentDescription = "Apri",
+            tint = color,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.weight(1f))
         trailing()
     }
 }
@@ -794,7 +805,7 @@ fun CardSection(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     CanvasCard(modifier.fillMaxWidth(), onClick = onClick, onLongClick = onLongClick) {
-        CardTitle(title, trailing = trailing)
+        CardTitle(title, opens = onClick != null, trailing = trailing)
         content()
     }
 }

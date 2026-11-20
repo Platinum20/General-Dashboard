@@ -676,6 +676,8 @@ internal data class LooseItem(
     val row: DueRow? = null,
     /** Fissata in cima (Antonio, 2026-11-13): qualsiasi cosa di Per dopo, non solo le note. */
     val pinned: Boolean = false,
+    /** Quando è finita nell'archivio (fatta o archiviata): divide la pagina per giorno o per mese. */
+    val at: Long? = null,
 )
 
 /**
@@ -718,7 +720,7 @@ internal fun List<LooseItem>.jottings(): List<LooseItem> = filter { it.kind == L
 internal fun archivedNotes(notes: List<com.platinum20.dashboard.notes.Note>): List<LooseItem> = notes
     .filter { it.archivedAt != null && !com.platinum20.dashboard.capture.SavedLinks.livesElsewhere(it) }
     .sortedByDescending { it.archivedAt }
-    .map { n -> noteItem(DueRow("note-${n.id}", null, Long.MAX_VALUE, note = n), n) }
+    .map { n -> noteItem(DueRow("note-${n.id}", null, Long.MAX_VALUE, note = n), n).copy(at = n.archivedAt) }
     .pinnedFirst()
 
 /**
@@ -730,9 +732,43 @@ internal fun archivedItems(tasks: List<TaskItem>): List<LooseItem> = tasks
     .sortedByDescending { it.doneAt ?: it.createdAt }
     .map { t ->
         val row = DueRow("task-${t.id}", null, Long.MAX_VALUE, task = t)
-        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row, pinned = t.pinned)
+        LooseItem(row.key, LooseKind.TODO, t.text, t.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = true, row = row, pinned = t.pinned, at = t.doneAt ?: t.createdAt)
     }
     .pinnedFirst()
+
+/** Un gruppo di cose vecchie nella pagina di Da fare o Appunti: "Ieri", "Lun 16", "Ottobre". */
+internal data class ArchiveGroup(val label: String, val items: List<LooseItem>)
+
+private val ARCHIVE_DAYS = listOf("Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom")
+private val ARCHIVE_MONTHS = listOf("Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre")
+
+/**
+ * Le cose vecchie sopra la linea ADESSO, come il passato nel Calendario (1.539, Antonio, mockup archivi-card 1):
+ * la più vecchia in cima, quella appena fatta subito sopra la linea. Le fatte per giorno, gli archiviati per mese.
+ */
+internal fun archiveGroups(items: List<LooseItem>, byMonth: Boolean, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<ArchiveGroup> {
+    fun day(item: LooseItem) = java.time.Instant.ofEpochMilli(item.at ?: 0L).atZone(zone).toLocalDate()
+    fun label(d: LocalDate): String = if (byMonth) {
+        ARCHIVE_MONTHS[d.monthValue - 1] + if (d.year != today.year) " ${d.year}" else ""
+    } else when (d) {
+        today -> "Oggi"
+        today.minusDays(1) -> "Ieri"
+        // Nell'ultima settimana il giorno della settimana, prima la data: "Lun 16", "3 ott", "3 ott 2025".
+        else -> if (today.toEpochDay() - d.toEpochDay() < 7) "${ARCHIVE_DAYS[d.dayOfWeek.value - 1]} ${d.dayOfMonth}"
+        else "${d.dayOfMonth} ${ARCHIVE_MONTHS[d.monthValue - 1].take(3).lowercase()}" + if (d.year != today.year) " ${d.year}" else ""
+    }
+    fun key(d: LocalDate) = if (byMonth) d.withDayOfMonth(1) else d
+    return items.sortedBy { it.at ?: 0L }
+        .groupBy { key(day(it)) }
+        .toSortedMap()
+        .map { (d, list) -> ArchiveGroup(label(d), list) }
+}
+
+/** Il sottotitolo della pagina: "4 da fare · 12 fatte", "3 appunti · 8 archiviati". Lo zero non si dice. */
+internal fun loosePageLine(todo: Boolean, active: Int, archived: Int): String = listOfNotNull(
+    active.takeIf { it > 0 }?.let { if (todo) "$it da fare" else if (it == 1) "1 appunto" else "$it appunti" },
+    archived.takeIf { it > 0 }?.let { if (todo) (if (it == 1) "1 fatta" else "$it fatte") else (if (it == 1) "1 archiviato" else "$it archiviati") },
+).joinToString(" · ").ifEmpty { if (todo) "Niente da fare" else "Nessun appunto" }
 
 /** La card mostra solo le cose ancora da fare: le spuntate stanno nell'archivio. */
 internal fun List<LooseItem>.pending(): List<LooseItem> = filterNot { it.done }
