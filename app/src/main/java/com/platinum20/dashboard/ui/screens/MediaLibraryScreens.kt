@@ -237,48 +237,30 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
 }
 
 /**
- * "Scopri" dei video (1.488, Antonio: "la home sarebbe novità, scopri, la stessa cosa"): in cima i video nuovi delle
- * iscrizioni dall'ultima visita, poi la Home di YouTube che arrivando in fondo carica altri consigliati, senza fine.
+ * "Scopri" dei video = solo la Home di YouTube (1.542, Antonio: "voglio letteralmente solo la home di youtube qui"):
+ * le iscrizioni hanno già la loro fila in Media. Arrivando in fondo carica altri consigliati, senza fine.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     val context = LocalContext.current
-    val subs by YouTubeStore.subscriptions.collectAsState()
     val home by YouTubeStore.home.collectAsState()
     val ended by YouTubeStore.homeEnded.collectAsState()
     val hideLive by com.platinum20.dashboard.settings.AppSettings.hideLive.collectAsState()
     val hideMembers by com.platinum20.dashboard.settings.AppSettings.hideMembers.collectAsState()
-    LaunchedEffect(Unit) {
-        YouTubeStore.refreshSubscriptions(context)
-        YouTubeStore.refreshHome(context)
-    }
-    val since = com.platinum20.dashboard.media.MediaFeedNow.since
-    val fresh = remember(subs.data, since, hideLive, hideMembers) {
-        pickFeed(subs.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
-            .filter { com.platinum20.dashboard.media.MediaFresh.isNew(it.published, since) }
-            .sortedByDescending { it.published }
-    }
-    val tips = remember(home.data, fresh, hideLive, hideMembers) {
-        val shown = fresh.map { it.id }.toSet()
-        pickFeed(home.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos.filter { it.id !in shown }
+    LaunchedEffect(Unit) { YouTubeStore.refreshHome(context) }
+    val tips = remember(home.data, hideLive, hideMembers) {
+        pickFeed(home.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers).videos
     }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Scopri", subtitle = MediaShelves.title("Video", fresh.size), scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Scopri", subtitle = "Home di YouTube", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        val count = fresh.size + tips.size
+        val count = tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = fresh + tips, loading = (home.loading || subs.loading) && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora") {
-                if (fresh.isNotEmpty()) {
-                    item(key = "fresh-h") { SectionHeader("Nuovi dalle iscrizioni") }
-                    items(fresh, key = { "f-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
-                }
-                if (tips.isNotEmpty()) {
-                    item(key = "tips-h") { SectionHeader("Per te su YouTube") }
-                    items(tips, key = { "t-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
-                }
+            FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora") {
+                items(tips, key = { "t-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
                 if (!ended && home.data != null) item(key = "more") {
                     // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
                     LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
