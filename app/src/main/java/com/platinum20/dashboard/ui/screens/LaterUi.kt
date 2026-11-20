@@ -82,17 +82,12 @@ internal object LaterText {
 enum class LooseCardKind(
     val title: String,
     val empty: String,
-    /** La riga in fondo alla card e il sottotitolo dell'archivio: "Fatte · 12", "Archiviate · 8". */
-    val archived: String,
-    val archiveEmpty: String,
     internal val mode: CaptureMode,
 ) {
-    TODO("Da fare", "Tutto fatto.", "Fatte", "Qui finiscono le cose che spunti.", CaptureMode.TASK),
-    JOTTINGS("Appunti", "Nessun appunto.", "Archiviati", "Tieni premuto un appunto e scegli Archivia: finisce qui.", CaptureMode.NOTE),
+    TODO("Da fare", "Tutto fatto.", CaptureMode.TASK),
+    JOTTINGS("Appunti", "Nessun appunto.", CaptureMode.NOTE),
 }
 
-/** La riga in fondo alla card: quante cose ci sono nell'archivio. Vuoto = non si mostra. */
-internal fun archiveLine(kind: LooseCardKind, count: Int): String? = if (count <= 0) null else "${kind.archived} · $count"
 
 /**
  * Una card senza data: tutte le righe, niente nascosto, il titolo dentro come le altre card e il numero a destra.
@@ -102,8 +97,7 @@ internal fun archiveLine(kind: LooseCardKind, count: Int): String? = if (count <
 internal fun LaterCard(
     kind: LooseCardKind,
     items: List<LooseItem>,
-    archiveCount: Int,
-    onOpenArchive: () -> Unit,
+    onOpen: () -> Unit,
     habits: List<com.platinum20.dashboard.notes.Habit> = emptyList(),
 ) {
     val open = rememberDueOpen()
@@ -114,9 +108,9 @@ internal fun LaterCard(
     val count = items.size + habits.count { !it.isDone(today) }
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
-    // Toccando la card, fuori dalle righe, si apre il suo archivio.
-    CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpenArchive) {
-        CardTitle(kind.title, trailing = {
+    // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.538).
+    CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpen) {
+        CardTitle(kind.title, opens = true, trailing = {
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
@@ -145,15 +139,6 @@ internal fun LaterCard(
                     onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
                     onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
                 )
-            }
-            archiveLine(kind, archiveCount)?.let { line ->
-                Row(
-                    Modifier.fillMaxWidth().clickable(onClick = onOpenArchive).padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                }
             }
         }
     }
@@ -263,8 +248,9 @@ private fun looseIcon(item: LooseItem) = when (item.kind) {
 }
 
 /**
- * L'archivio di una card: per Da fare le cose fatte (toccando il cerchio pieno tornano da fare), per Appunti le note
- * archiviate (tenendo premuto: Rimetti negli appunti o Elimina). Toccando la riga si apre la sua scheda.
+ * La pagina intera di Da fare o Appunti (1.538, Antonio, mockup archivi-card 1): come il Calendario, le cose vecchie
+ * sopra (fatte per giorno, archiviati per mese, sbiadite), la linea ADESSO e sotto quelle attive. Si apre su ADESSO.
+ * Toccando il cerchio pieno una fatta torna da fare; tenendo premuto ogni riga ha le sue azioni (Archivia/Rimetti, Elimina).
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -272,28 +258,69 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
     val context = LocalContext.current
     NotesStore.init(context)
     val data by NotesStore.data.collectAsState()
-    val items = remember(data, kind) { if (kind == LooseCardKind.TODO) archivedItems(data.tasks) else archivedNotes(data.notes) }
+    val todo = kind == LooseCardKind.TODO
+    val now = java.time.LocalDateTime.now()
+    val today = now.toLocalDate()
+    val archived = remember(data, kind) { if (todo) archivedItems(data.tasks) else archivedNotes(data.notes) }
+    val groups = remember(archived, today) { archiveGroups(archived, byMonth = !todo, today = today) }
+    // Le attive come nella card della Home: stessa lista, stesso ordine.
+    val active = remember(data, kind, today) {
+        val loose = looseItems(dueDays(data.tasks, data.parcels, emptyList(), withToday = true, notes = data.notes), data.notes, today).pending()
+        if (todo) loose.todos() else loose.jottings()
+    }
+    val habits = if (todo) data.habits else emptyList()
     val open = rememberDueOpen()
+    val openItem = rememberOpenItem()
     val rowActions = rememberRowActions()
     val haptic = rememberHaptic()
+    // Si apre sulla linea ADESSO: sopra c'è il passato, come nel Calendario.
+    val marker = groups.sumOf { it.items.size + 1 }
+    val list = androidx.compose.foundation.lazy.rememberLazyListState(initialFirstVisibleItemIndex = if (groups.isEmpty()) 0 else marker)
     val bar = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
+    val activeCount = active.size + habits.count { !it.isDone(today) }
     androidx.compose.material3.Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Archivio", subtitle = archiveLine(kind, items.size)?.let { "${kind.title} · ${it.lowercase()}" } ?: kind.title, scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = kind.title, subtitle = loosePageLine(todo, activeCount, archived.size), scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
-        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner)) {
-            if (items.isEmpty()) item {
-                Text(kind.archiveEmpty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize().padding(inner), state = list, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 160.dp)) {
+            groups.forEach { g ->
+                item(key = "g-${g.label}") { SectionHeader(g.label, modifier = Modifier.padding(start = 12.dp, end = 16.dp, top = 8.dp)) }
+                g.items.forEach { item ->
+                    item(key = item.key) {
+                        Box(Modifier.graphicsLayer { alpha = FADED_ALPHA }) {
+                            LooseRow(
+                                item,
+                                onClick = { haptic(Haptic.TICK); item.row?.let(open) },
+                                onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } },
+                                onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
+                            )
+                        }
+                    }
+                }
             }
-            items(items.size, key = { items[it].key }) { i ->
-                val item = items[i]
-                LooseRow(
-                    item,
-                    onClick = { haptic(Haptic.TICK); item.row?.let(open) },
-                    // Tenendo premuto: il fumetto delle sue azioni, come nella card (Antonio, 2026-11-13).
-                    onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } },
-                    onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
-                )
+            if (groups.isNotEmpty()) item(key = "adesso") { NewsVisitMarker("Adesso", Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) }
+            habits.forEach { h ->
+                item(key = "habit-${h.id}") {
+                    HabitTodoRow(
+                        h, now,
+                        onClick = { haptic(Haptic.TICK); openItem(ItemKind.HABIT, h.id) },
+                        onLongClick = { haptic(Haptic.LONG_PRESS); ActionBubble.show(*habitActions(h, today) { openItem(ItemKind.HABIT, it.id) }) },
+                        onTick = { haptic(if (h.isDone(today)) Haptic.TICK else Haptic.CONFIRM); NotesStore.toggleHabit(h.id, today) },
+                    )
+                }
+            }
+            if (active.isEmpty() && habits.isEmpty()) item(key = "empty") {
+                Text(kind.empty, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp))
+            }
+            active.forEach { item ->
+                item(key = item.key) {
+                    LooseRow(
+                        item,
+                        onClick = { haptic(Haptic.TICK); item.row?.let(open) },
+                        onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } },
+                        onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
+                    )
+                }
             }
         }
     }

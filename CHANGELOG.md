@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.538.0
+**Da fare e Appunti a tutto schermo, titoli con la freccia**
+- I titoli delle card in Home sono in maiuscolo come in Media, con la freccia › quando aprono una pagina ("DA FARE ›", "CALENDARIO ›")
+- Via le righe "Fatte · N" e "Archiviati · N" in fondo alle card
+- Toccando Da fare o Appunti si apre la pagina intera, come il Calendario: sopra le cose vecchie sbiadite (le fatte per giorno, gli archiviati per mese), la linea ADESSO e sotto quelle attive, abitudini in cima
+- La pagina si apre su ADESSO; scorrendo su vedi il passato. Toccando il cerchio pieno una fatta torna da fare, tenendo premuto ogni riga ha le sue azioni
+
 ## 1.537.0
 **"Calendario" nel + chiede solo quando**
 - Scegliendo "Calendario" per una cosa senza giorno non si apre più la vecchia finestra "Aggiungi"

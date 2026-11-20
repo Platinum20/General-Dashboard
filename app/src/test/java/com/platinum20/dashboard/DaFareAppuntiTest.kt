@@ -7,8 +7,9 @@ import com.platinum20.dashboard.notes.Note
 import com.platinum20.dashboard.notes.NotesData
 import com.platinum20.dashboard.notes.NotesStore
 import com.platinum20.dashboard.notes.TaskItem
-import com.platinum20.dashboard.ui.screens.LooseCardKind
-import com.platinum20.dashboard.ui.screens.archiveLine
+import com.platinum20.dashboard.ui.screens.archiveGroups
+import com.platinum20.dashboard.ui.screens.archivedItems
+import com.platinum20.dashboard.ui.screens.loosePageLine
 import com.platinum20.dashboard.ui.screens.archivedNotes
 import com.platinum20.dashboard.ui.screens.dueDays
 import com.platinum20.dashboard.ui.screens.jottings
@@ -18,7 +19,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -48,8 +48,26 @@ class DaFareAppuntiTest {
         // E restano archiviate dopo il salvataggio.
         val back = NotesStore.parse(NotesStore.serialize(NotesData(notes = notes)))
         assertEquals(listOf(null, 100L, 50L), back.notes.map { it.archivedAt })
-        assertEquals("Archiviati · 2", archiveLine(LooseCardKind.JOTTINGS, 2))
-        assertNull(archiveLine(LooseCardKind.TODO, 0))
+    }
+
+    /** 1.538: la pagina intera mette le vecchie sopra ADESSO, la più vecchia in cima, per giorno o per mese. */
+    @Test fun laPaginaInteraDivideIlPassato() {
+        val today = now.toLocalDate()
+        fun at(daysAgo: Long) = now.minusDays(daysAgo).atZone(zone).toInstant().toEpochMilli()
+        val tasks = listOf(
+            TaskItem(1, "Ieri", createdAt = 1, done = true, doneAt = at(1)),
+            TaskItem(2, "Lunedì", createdAt = 1, done = true, doneAt = at(4)),
+            TaskItem(3, "Ottobre", createdAt = 1, done = true, doneAt = at(48)),
+            TaskItem(4, "Ancora da fare", createdAt = 1),
+        )
+        val days = archiveGroups(archivedItems(tasks), byMonth = false, today = today, zone = zone)
+        assertEquals(listOf("3 ott", "Lun 16", "Ieri"), days.map { it.label })
+        val notes = listOf(Note(5, "Vecchia", createdAt = 1, archivedAt = at(48)), Note(6, "Nuova", createdAt = 1, archivedAt = at(2)))
+        val months = archiveGroups(archivedNotes(notes), byMonth = true, today = today, zone = zone)
+        assertEquals(listOf("Ottobre", "Novembre"), months.map { it.label })
+        assertEquals("4 da fare · 12 fatte", loosePageLine(true, 4, 12))
+        assertEquals("1 appunto", loosePageLine(false, 1, 0))
+        assertEquals("Niente da fare", loosePageLine(true, 0, 0))
     }
 
     @Test fun laChipAccesaDaSola() {

@@ -267,7 +267,7 @@ fun TimelineCard(
     // Toccando la card ovunque, anche sul titolo, si apre la sezione (come Per dopo, Antonio 2026-11-12).
     val longOpen = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }
     CanvasCard(modifier.fillMaxWidth(), onClick = onOpen, onLongClick = longOpen) {
-        if (title != null) CardTitle(title, trailing = titleTrailing ?: {
+        if (title != null) CardTitle(title, opens = true, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
