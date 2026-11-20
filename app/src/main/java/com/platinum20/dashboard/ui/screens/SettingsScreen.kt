@@ -1351,6 +1351,23 @@ private fun LiveTripSettings() {
         onClick = { change(!shifts, AppSettings::setLiveShifts) },
         trailing = { Switch(checked = shifts && !needsPermission, onCheckedChange = hapticToggle { change(it, AppSettings::setLiveShifts) }) },
     )
+    RowDivider()
+    // La prova (Antonio, 2026-11-20): un treno finto che in un minuto e mezzo passa attesa, ritardo, viaggio
+    // senza rete e arrivo, con la notifica vera. Toccata di nuovo si ferma.
+    val demo by com.platinum20.dashboard.work.TripLiveDemo.running.collectAsState()
+    SettingsItem(
+        icon = Icons.Outlined.PlayCircle,
+        accent = TileAccent.BLUE,
+        title = if (demo) "Ferma la prova" else "Prova la notifica",
+        subtitle = if (demo) "Il treno finto sta viaggiando" else "Un treno finto, dalla partenza all'arrivo",
+        onClick = {
+            val start = { com.platinum20.dashboard.work.TripLiveDemo.toggle(context) }
+            if (needsPermission) {
+                pending = start
+                permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else start()
+        },
+    )
 }
 
 /** Aggiornamenti automatici: si installano da soli, o arriva l'avviso dove Android non lo permette. */

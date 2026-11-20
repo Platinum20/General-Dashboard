@@ -242,4 +242,41 @@ class TripLiveTest {
         assertEquals("Arriva tra 1 h 27", WhenHero.train(ev.begin, ev.end, null, at(17, 0), zone).countdown)
         assertEquals("Soppresso", WhenHero.train(ev.begin, ev.end, TrainStatus(0, cancelled = true), at(13, 0), zone).countdown)
     }
+
+    @Test
+    fun ilViaggioArrivatoTieneIlRitardoPerSempre() {
+        val h = 60 * 60_000L
+        val arrived = TrainStatus(25, readAt = 0L, until = 2 * h)
+        // Prima dell'arrivo col ritardo vale la regola delle 12 ore; dopo resta, anche giorni dopo.
+        assertFalse(arrived.closed(h))
+        assertTrue(arrived.closed(2 * h))
+        assertTrue(TrainLive.kept(arrived, 30L * 24 * h))
+        assertFalse(TrainLive.kept(TrainStatus(25, readAt = 0L), 30L * 24 * h))
+        assertFalse(TrainLive.kept(arrived, 2 * h + TrainLive.KEEP_PAST_MS))
+        assertEquals(mapOf(3L to arrived), TrainLive.decode(TrainLive.encode(mapOf(3L to arrived))))
+    }
+
+    @Test
+    fun laNotificaRestaFinoAllArrivoColRitardo() {
+        val ev = CalendarEvent(9L, "Treno per Roma", 0L, 60 * 60_000L, false, "", 0, Trip("Milano", "Roma", "FR 9541"))
+        val late = TrainStatus(40, readAt = 0L)
+        assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(ev, 90 * 60_000L, late))
+        assertNull(LiveTrip.phase(ev, 90 * 60_000L, null))
+    }
+
+    @Test
+    fun laProvaPassaPerTutteLeFasi() {
+        val base = 1_700_000_000_000L
+        val ev = com.platinum20.dashboard.trips.LiveDemo.event(base)
+        val frames = com.platinum20.dashboard.trips.LiveDemo.frames(base)
+        val cards = frames.map { LiveTrip.card(ev, it.now, it.status, checked = true) }
+        assertTrue(cards.all { it != null })
+        assertEquals(LivePhase.SOON, cards.first()!!.phase)
+        assertFalse(cards.first()!!.late)
+        assertTrue(cards.any { it!!.phase == LivePhase.SOON && it.late })
+        assertEquals(LivePhase.ON_BOARD, cards.last()!!.phase)
+        assertTrue(cards.last()!!.lines.first().contains("letto"))
+        // Dura poco più di un minuto: a ogni fotogramma 3 secondi.
+        assertTrue(frames.size * com.platinum20.dashboard.trips.LiveDemo.FRAME_MS in 60_000L..120_000L)
+    }
 }

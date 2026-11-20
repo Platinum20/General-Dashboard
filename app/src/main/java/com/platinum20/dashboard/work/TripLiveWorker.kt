@@ -65,14 +65,14 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val lastRead = prefs.getLong("read_${event.eventId}", 0L)
             if (trip != null && now - lastRead >= READ_EVERY_MS) {
                 prefs.edit().putLong("read_${event.eventId}", now).apply()
-                status = TrainLive.refresh(event.eventId, trip, event.begin) ?: status
+                status = TrainLive.refresh(event.eventId, trip, event.begin, event.end) ?: status
                 // Il biglietto pronto prima di arrivare ai tornelli, anche senza rete in stazione.
                 if (TicketQrStore.cached(context, event.eventId).isEmpty()) runCatching {
                     CalendarRepository.event(context, event.eventId)?.let { TicketQrStore.find(context, it) }
                 }
             }
             val card = LiveTrip.card(event, now, status, checked = trip != null && lastRead > 0) ?: continue
-            post(context, event, card)
+            post(context, event, card, now)
             posted += event.eventId.toString()
         }
         // Le notifiche dei viaggi finiti (o spenti) se ne vanno.
@@ -85,75 +85,77 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         return Result.success()
     }
 
-    @SuppressLint("MissingPermission")
-    private fun post(context: Context, event: CalendarEvent, card: LiveCard) {
-        ensureChannel(context)
-        val open = Intent(context, MainActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-        OpenRequest(OpenRequest.EVENT, url = "${event.eventId}/${event.begin}/${event.end}").writeTo(open)
-        val id = notificationId(event.eventId)
-        val accent = if (card.late) LATE_COLOR else CANVAS_BLUE
-        val text = marked(card.text, LiveCard.TEXT, card)
-        val showStops = card.stops.isNotEmpty() &&
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
-        // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
-        val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
-            val line = "${stop.time}  ${stop.name}"
-            if (!stop.passed) line else android.text.SpannableString(line).apply {
-                setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-        } else card.lines.mapIndexed { i, line -> marked(line, i, card) }
-        // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
-        // tondi, orari sotto la linea, barrato né più di due righe. Il sistema tiene icona, nome e "arriva tra".
-        val small = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_small).apply {
-            setTextViewText(R.id.trip_title, card.title)
-            setTextViewText(R.id.trip_text, text)
-        }
-        val big = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_big).apply {
-            setTextViewText(R.id.trip_title, card.title)
-            card.track?.let { track ->
-                val arrived = card.phase == LivePhase.ON_BOARD && System.currentTimeMillis() >= track.end
-                runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(System.currentTimeMillis()), accent, arrived)) }
-            }
-            setTextViewText(R.id.trip_depart, card.depart?.let { marked(it, LiveCard.DEPART, card) } ?: "")
-            setTextViewText(R.id.trip_arrive, card.arrive?.let { marked(it, LiveCard.ARRIVE, card) } ?: "")
-            setTextViewText(R.id.trip_lines, join(body))
-            setViewVisibility(R.id.trip_lines, if (body.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE)
-        }
-        val builder = NotificationCompat.Builder(context, CHANNEL)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(card.title)
-            .setContentText(text)
-            // Nell'intestazione "arriva tra 3 h 54 min" (2026-11-20): il cronometro incollato al titolo non si leggeva.
-            .setSubText(card.header)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(small)
-            .setCustomBigContentView(big)
-            .setCustomHeadsUpContentView(small)
-            // Arancio = attenzione (in ritardo o soppresso), altrimenti il blu della Canvas: un colore, un significato.
-            .setColor(accent)
-            .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setShowWhen(false)
-            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setTimeoutAfter((event.end + 2 * LiveTrip.AFTER_MS + 60 * 60_000L - System.currentTimeMillis()).coerceAtLeast(60_000L))
-        if (card.phase == LivePhase.ON_BOARD || event.trip != null) {
-            if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
-                builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))
-            }
-        }
-        if (card.stops.isNotEmpty()) {
-            val toggle = Intent(context, TripStopsReceiver::class.java).putExtra(TripStopsReceiver.EXTRA_EVENT, event.eventId)
-            builder.addAction(0, if (showStops) "Nascondi fermate" else "Fermate",
-                PendingIntent.getBroadcast(context, id, toggle, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
-        }
-        NotificationManagerCompat.from(context).notify(id, builder.build())
-    }
-
     companion object {
+        /** Disegna (o ridisegna) la notifica di [event]; [now] = l'ora da mostrare (la prova usa un orologio finto). */
+    @SuppressLint("MissingPermission")
+        fun post(context: Context, event: CalendarEvent, card: LiveCard, now: Long = System.currentTimeMillis()) {
+            ensureChannel(context)
+            val open = Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            OpenRequest(OpenRequest.EVENT, url = "${event.eventId}/${event.begin}/${event.end}").writeTo(open)
+            val id = notificationId(event.eventId)
+            val accent = if (card.late) LATE_COLOR else CANVAS_BLUE
+            val text = marked(card.text, LiveCard.TEXT, card)
+            val showStops = card.stops.isNotEmpty() &&
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
+            // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
+            val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
+                val line = "${stop.time}  ${stop.name}"
+                if (!stop.passed) line else android.text.SpannableString(line).apply {
+                    setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            } else card.lines.mapIndexed { i, line -> marked(line, i, card) }
+            // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
+            // tondi, orari sotto la linea, barrato né più di due righe. Il sistema tiene icona, nome e "arriva tra".
+            val small = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_small).apply {
+                setTextViewText(R.id.trip_title, card.title)
+                setTextViewText(R.id.trip_text, text)
+            }
+            val big = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_big).apply {
+                setTextViewText(R.id.trip_title, card.title)
+                card.track?.let { track ->
+                    val arrived = card.phase == LivePhase.ON_BOARD && now >= track.end
+                    runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(now), accent, arrived)) }
+                }
+                setTextViewText(R.id.trip_depart, card.depart?.let { marked(it, LiveCard.DEPART, card) } ?: "")
+                setTextViewText(R.id.trip_arrive, card.arrive?.let { marked(it, LiveCard.ARRIVE, card) } ?: "")
+                setTextViewText(R.id.trip_lines, join(body))
+                setViewVisibility(R.id.trip_lines, if (body.isEmpty()) android.view.View.GONE else android.view.View.VISIBLE)
+            }
+            val builder = NotificationCompat.Builder(context, CHANNEL)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(card.title)
+                .setContentText(text)
+                // Nell'intestazione "arriva tra 3 h 54 min" (2026-11-20): il cronometro incollato al titolo non si leggeva.
+                .setSubText(card.header)
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                .setCustomContentView(small)
+                .setCustomBigContentView(big)
+                .setCustomHeadsUpContentView(small)
+                // Arancio = attenzione (in ritardo o soppresso), altrimenti il blu della Canvas: un colore, un significato.
+                .setColor(accent)
+                .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setShowWhen(false)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                // Col ritardo: un treno in ritardo di due ore non perde la notifica all'arrivo del biglietto (2026-11-20).
+                .setTimeoutAfter((event.end + TrainLive.shiftMs(TrainLive.known(event.eventId, now)) + 2 * LiveTrip.AFTER_MS + 60 * 60_000L - now).coerceAtLeast(60_000L))
+            if (card.phase == LivePhase.ON_BOARD || event.trip != null) {
+                if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
+                    builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))
+                }
+            }
+            if (card.stops.isNotEmpty()) {
+                val toggle = Intent(context, TripStopsReceiver::class.java).putExtra(TripStopsReceiver.EXTRA_EVENT, event.eventId)
+                builder.addAction(0, if (showStops) "Nascondi fermate" else "Fermate",
+                    PendingIntent.getBroadcast(context, id, toggle, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            }
+            NotificationManagerCompat.from(context).notify(id, builder.build())
+        }
+
         /** Le righe della notifica aperta, una per riga, tenendo colori e barrati. */
         private fun join(lines: List<CharSequence>): CharSequence {
             val out = android.text.SpannableStringBuilder()

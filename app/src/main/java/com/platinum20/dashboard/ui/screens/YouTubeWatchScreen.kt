@@ -899,7 +899,7 @@ private fun TimeBar(
             delay(250)
         }
     }
-    // 1.540 (Antonio): prima la barra, sotto il tempo e lo schermo intero. Le dirette hanno la barra sulla finestra
+    // 1.541 (Antonio): prima la barra, sotto il tempo e lo schermo intero. Le dirette hanno la barra sulla finestra
     // che YouTube tiene (se ce n'è una) e "In diretta" che riporta al bordo live.
     if (!live || duration > 0) {
         val sponsor by SponsorBlock.state.collectAsState()

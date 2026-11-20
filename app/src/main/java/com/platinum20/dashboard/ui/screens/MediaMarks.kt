@@ -42,7 +42,7 @@ enum class MediaType { MUSIC, VIDEO, PODCAST, RADIO }
 data class MediaMark(
     val type: MediaType,
     val duration: String? = null,
-    /** Una diretta in corso: il segno è blu, il colore di "adesso" (1.540). */
+    /** Una diretta in corso: il segno è blu, il colore di "adesso" (1.541). */
     val live: Boolean = false,
 )
 
