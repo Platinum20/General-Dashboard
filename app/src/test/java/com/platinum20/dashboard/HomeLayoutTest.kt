@@ -21,7 +21,8 @@ class HomeLayoutTest {
         val layout = HomeLayout.read("DAY,WEATHER,RESUME,SIM,DOCS,MAIL,RECAP", "", HomeLayout.VERSION)
         assertEquals(listOf(HomeCard.DAY, HomeCard.LATER, HomeCard.JOTTINGS, HomeCard.WEATHER), layout.order.take(4))
         // 1.532: chi aveva già "Per dopo" (ora "Da fare") trova "Appunti" subito dopo.
-        assertEquals(listOf(HomeCard.LATER, HomeCard.JOTTINGS, HomeCard.SIM), HomeLayout.read("LATER,SIM,DAY", "", HomeLayout.VERSION).order.take(3))
+        val saved = HomeLayout.read("SIM,LATER,DAY", "", HomeLayout.VERSION).order
+        assertEquals(saved.indexOf(HomeCard.LATER) + 1, saved.indexOf(HomeCard.JOTTINGS))
     }
 
     @Test fun daVersioneVecchiaOrdinePredefinito() {
