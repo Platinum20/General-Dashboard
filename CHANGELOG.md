@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.542.0
+**Scopri dei video = solo la Home di YouTube**
+- In Media › Video › Scopri non ci sono più i nuovi dalle iscrizioni (hanno già la loro fila in Media): solo i consigliati della Home di YouTube, senza fine
+- Le dirette finite dei canali che segui dicono "Diretta terminata" anche nella fila Video
+
 ## 1.541.0
 **Dirette di YouTube: barra, "In diretta" che torna al live, etichette in Media**
 - Le dirette hanno la barra di avanzamento: si può tornare indietro nella parte che YouTube tiene, e trascinando si vede quanto si resta indietro

@@ -147,7 +147,7 @@ Screens: `NewsScreen` (Ascolta hero, stories, `NewsVisitMarker` 'ULTIMA VISITA' 
   has ONE square `DiscoverButton` (MediaMarks.kt) on the right: Musica → `Routes.MUSIC_DISCOVER` = `MusicDiscoverScreen`
   (MediaLibraryScreens.kt: releases + `SpotifyStore.discover` rows from `SpotifyDiscover` = genres of top artists → `genre:` artist
   search minus known + genre playlists; related/recommendations APIs are closed to personal apps), Video → `Routes.MEDIA_NEWS` =
-  `MediaNewsScreen` "Scopri" (fresh subscriptions since `MediaFeedNow.since`, then YouTube Home paged by `loadMoreHome`).
+  `MediaNewsScreen` "Scopri" (since 1.542 ONLY the YouTube Home paged by `loadMoreHome`, no subscriptions: Antonio). `withFeedDetails` also copies live/liveEnded from the Iscrizioni page.
   Saved-for-later media (`SavedLinks.later`, split by `SavedLinks.isVideo`) = first tile `SavedTile` "Salvati · N" of each row (hidden
   when empty) → `Routes.savedMedia(video)` = `SavedMediaScreen` (MediaLine list, long press = forget). NOT in the calendar any more:
   `looseItems` keeps only articles; save dot flies to MEDIA_TAB (articles to HOME_TAB).
