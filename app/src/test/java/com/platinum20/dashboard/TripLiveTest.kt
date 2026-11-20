@@ -55,15 +55,20 @@ class TripLiveTest {
         assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(train, at(11, 25), late))
         val card = LiveTrip.card(train, at(6, 30), late, checked = true, zone = zone)!!
         assertEquals("Parte alle 6:50 · +10 min · binario 4", card.text)
+        // L'orario del biglietto resta, barrato, davanti a quello vero; il ritardo in arancio.
         assertEquals(
             listOf(
-                "Parte alle 6:50 invece delle 6:40 · binario 4",
-                "Arrivo a Pescara Centrale alle 11:22 invece delle 11:12",
-                "+10 min · rilevato alle 6:30",
+                "Parte alle 6:40 6:50 · binario 4",
+                "Arrivo a Pescara Centrale alle 11:12 11:22",
+                "In ritardo di 10 min · rilevato alle 6:30",
                 "Intercity 612 · carr. 8, posto 11D",
             ),
             card.lines,
         )
+        assertEquals("parte tra 20 min", card.header)
+        assertTrue(LiveMark(0, "6:40", MarkKind.STRUCK) in card.marks)
+        assertTrue(LiveMark(1, "11:22", MarkKind.LATE) in card.marks)
+        assertTrue(LiveMark(2, "In ritardo di 10 min", MarkKind.LATE) in card.marks)
         assertTrue(card.late)
         // La linea di progresso nell'ultima ora prima di partire: a 20 minuti dalla partenza è a due terzi.
         assertEquals(66, card.progress)
