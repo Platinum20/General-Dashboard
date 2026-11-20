@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icona piccola delle notifiche di Canvas: i tre riquadri dell'icona. -->
+<!-- Icona piccola delle notifiche: la stessa pennellata con la goccia dell'icona di Canvas, in bianco
+     (Android la tinge). Il gruppo sposta il disegno da 108 a una finestra di 64 (margine di sicurezza) così riempie i 24 dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M19,14h26a5,5 0,0 1,5,5v70a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-70a5,5 0,0 1,5,-5z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M63,14h26a5,5 0,0 1,5,5v26a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-26a5,5 0,0 1,5,-5z" />
-    <path android:fillColor="#FFFFFFFF" android:pathData="M63,58h26a5,5 0,0 1,5,5v26a5,5 0,0 1,-5,5h-26a5,5 0,0 1,-5,-5v-26a5,5 0,0 1,5,-5z" />
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <group android:translateX="-22.5" android:translateY="-22">
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="11" android:strokeLineCap="round" android:pathData="M33,70 C39,48 52,74 60,52 S72,34 76,33" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M74,65a7,7 0,1 1,0,14a7,7 0,1 1,0,-14z" />
+    </group>
 </vector>

@@ -120,6 +120,7 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
         OpenRequest(OpenRequest.HOME).writeTo(intent)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
             .setContentTitle(title)
             .setContentText(summary)
             .setStyle(NotificationCompat.BigTextStyle().bigText(render(groups)))
