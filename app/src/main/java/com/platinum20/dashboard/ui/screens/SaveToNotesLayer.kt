@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
@@ -251,13 +252,21 @@ internal fun BoxScope.BottomBubble(
  * [danger] = rosso, per le azioni che tolgono qualcosa. Le righe stanno nel blocco di [BottomBubble].
  */
 @Composable
-internal fun BubbleRow(icon: ImageVector, title: String, detail: String = "", danger: Boolean = false, onClick: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+internal fun BubbleRow(
+    icon: ImageVector,
+    title: String,
+    detail: String = "",
+    danger: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     val tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     Row(
         Modifier
             .fillMaxWidth()
             .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .heightIn(min = 48.dp)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

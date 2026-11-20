@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.535.0
+## 1.536.0
 
 **L'icona delle notifiche è quella dell'app**
 - Nella barra di stato e in cima alle notifiche ora c'è la pennellata con la goccia di Canvas, non più i vecchi tre riquadri.
 - Anche la notifica del player e quelle trovate nei messaggi usano la stessa icona.
 - Le notifiche hanno l'arancio dell'icona (il treno resta blu, arancio solo se è in ritardo).
+
+## 1.535.0
+**Le abitudini stanno in "Da fare" e si eliminano tenendole premute**
+- Le abitudini sono in cima alla card "Da fare" in Home, con la serie a destra (🔥 5)
+- Spuntata, un'abitudine si spegne fino a domani e non finisce in "Fatte"
+- Nel Calendario non c'è più la riga "Abitudini": stanno in un posto solo
+- Toccandone una si apre la sua pagina (nome, giorni, promemoria), che prima non si raggiungeva
+- Tenendola premuta: "Fatta oggi", "Apri e modifica" ed "Elimina", con "Annulla" che la rimette con tutta la serie
 
 ## 1.534.0
 **Notifica del treno: la linea del viaggio**
