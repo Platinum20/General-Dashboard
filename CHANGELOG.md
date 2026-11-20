@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.545.0
+**Card Calendario più ariosa, fiamma delle abitudini disegnata**
+- Nella card Calendario della Home c'è il triplo dello spazio vuoto sotto la linea del tempo; la linea resta com'era
+- La serie delle abitudini in Da fare ha una fiamma disegnata nello stile di Canvas al posto dell'emoji 🔥
+
 ## 1.544.0
 **Spotify non chiede più di ricollegarsi senza motivo**
 - Quando l'accesso di un'ora scade o il telefono si risveglia senza rete, l'app rinnova da sola il collegamento e riaccende il riproduttore, senza dirti di ricollegare la chiave

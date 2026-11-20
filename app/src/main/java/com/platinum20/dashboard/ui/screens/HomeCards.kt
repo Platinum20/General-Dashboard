@@ -270,7 +270,8 @@ fun TimelineCard(
         if (title != null) CardTitle(title, opens = true, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
-        Column(Modifier.padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
+        // Sotto la linea del tempo il triplo di spazio vuoto di prima (Antonio 2026-11-20): la card respira.
+        Column(Modifier.padding(top = if (title == null) 4.dp else 0.dp, bottom = 18.dp)) {
             if (entries.isEmpty()) {
                 Text(
                     empty,
