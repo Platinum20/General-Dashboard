@@ -19,7 +19,15 @@ data class TrainStatus(
     val cancelled: Boolean = false,
     val readAt: Long = 0L,
     val stops: List<TrainStop> = emptyList(),
-)
+    /**
+     * L'arrivo previsto con questo ritardo (arrivo del biglietto + ritardo); 0 = non saputo (letture vecchie).
+     * Passato quello il viaggio è chiuso: niente più letture e il ritardo resta per sempre (Antonio, 2026-11-20).
+     */
+    val until: Long = 0L,
+) {
+    /** Il treno è arrivato (col ritardo): quest'ultima lettura è quella che resta. */
+    fun closed(now: Long): Boolean = until > 0L && now >= until
+}
 
 /** Una fermata del treno con l'orario programmato (senza ritardo), per i punti sulla linea della notifica. */
 data class TrainStop(val name: String, val at: Long)
@@ -37,6 +45,12 @@ object TrainLive {
      * quelli col ritardo dell'ultimo rilevamento, non tornano quelli del biglietto. Basta per un viaggio lungo.
      */
     const val KEEP_MS = 12 * 60 * 60_000L
+    /** Quanto teniamo i viaggi chiusi: come i giorni passati del calendario, con margine. */
+    const val KEEP_PAST_MS = 400L * 24 * 60 * 60_000L
+
+    /** Da tenere: lettura recente, o viaggio chiuso (arrivato) da meno di [KEEP_PAST_MS]. */
+    fun kept(s: TrainStatus, now: Long): Boolean =
+        if (s.closed(now)) now - s.until < KEEP_PAST_MS else now - s.readAt < KEEP_MS
 
     private val _statuses = MutableStateFlow<Map<Long, TrainStatus>>(emptyMap())
     /** L'ultimo stato letto per ogni evento-treno (id dell'evento), salvato su file: resta anche se l'app si chiude. */
@@ -49,16 +63,17 @@ object TrainLive {
         val f = java.io.File(context.filesDir, "train-live.json")
         file = f
         val now = System.currentTimeMillis()
-        val saved = runCatching { decode(f.readText()) }.getOrDefault(emptyMap()).filterValues { now - it.readAt < KEEP_MS }
+        val saved = runCatching { decode(f.readText()) }.getOrDefault(emptyMap()).filterValues { kept(it, now) }
         _statuses.update { saved + it }
     }
 
     /**
-     * L'ultima lettura dell'evento, anche se non è di adesso (al massimo [KEEP_MS]): gli orari restano spostati
-     * dal ritardo e la riga dice quando l'abbiamo letto (regola 4). Null se non l'abbiamo mai letto.
+     * L'ultima lettura dell'evento, anche se non è di adesso (al massimo [KEEP_MS], per sempre se il treno è
+     * arrivato): gli orari restano spostati dal ritardo e la riga dice quando l'abbiamo letto (regola 4).
+     * Null se non l'abbiamo mai letto.
      */
     fun known(eventId: Long, now: Long = System.currentTimeMillis()): TrainStatus? =
-        _statuses.value[eventId]?.takeIf { now - it.readAt < KEEP_MS }
+        _statuses.value[eventId]?.takeIf { kept(it, now) }
 
     /** Letto da meno di [FRESH_MS]. */
     fun isFresh(s: TrainStatus, now: Long): Boolean = now - s.readAt < FRESH_MS
@@ -68,6 +83,7 @@ object TrainLive {
         map.forEach { (id, s) ->
             put(id.toString(), org.json.JSONObject().apply {
                 put("delay", s.delay); s.platform?.let { put("platform", it) }; put("cancelled", s.cancelled); put("readAt", s.readAt)
+                if (s.until > 0L) put("until", s.until)
                 put("stops", org.json.JSONArray().apply { s.stops.forEach { put(org.json.JSONObject().put("name", it.name).put("at", it.at)) } })
             })
         }
@@ -84,6 +100,7 @@ object TrainLive {
                 platform = o.optString("platform").takeIf { o.has("platform") && it.isNotEmpty() },
                 cancelled = o.optBoolean("cancelled"),
                 readAt = o.optLong("readAt"),
+                until = o.optLong("until"),
                 stops = (0 until (stops?.length() ?: 0)).mapNotNull { i -> stops!!.optJSONObject(i)?.let { TrainStop(it.optString("name"), it.optLong("at")) } },
             )
         }.toMap()
@@ -92,18 +109,22 @@ object TrainLive {
     private fun save() {
         val f = file ?: return
         val now = System.currentTimeMillis()
-        runCatching { f.writeText(encode(_statuses.value.filterValues { now - it.readAt < KEEP_MS })) }
+        runCatching { f.writeText(encode(_statuses.value.filterValues { kept(it, now) })) }
     }
 
-    /** Legge il treno ora; null se ViaggiaTreno non risponde o non lo conosce. */
-    suspend fun refresh(eventId: Long, trip: Trip, departure: Long, zone: ZoneId = ZoneId.systemDefault()): TrainStatus? {
+    /**
+     * Legge il treno ora; null se ViaggiaTreno non risponde o non lo conosce. [arrival] = arrivo del biglietto:
+     * a viaggio chiuso (arrivato col ritardo) non legge più e rende l'ultima lettura, che resta così.
+     */
+    suspend fun refresh(eventId: Long, trip: Trip, departure: Long, arrival: Long = 0L, zone: ZoneId = ZoneId.systemDefault()): TrainStatus? {
+        _statuses.value[eventId]?.takeIf { it.closed(System.currentTimeMillis()) }?.let { return it }
         val number = number(trip.train) ?: return null
         val day = Instant.ofEpochMilli(departure).atZone(zone).toLocalDate()
         val status = runCatching {
             val found = origin(get(BASE + "cercaNumeroTrenoTrenoAutocomplete/$number"), trip.from) ?: return null
             val midnight = day.atStartOfDay(zone).toInstant().toEpochMilli()
             parse(get(BASE + "andamentoTreno/${found}/$number/$midnight"), trip.from, System.currentTimeMillis())
-        }.getOrNull() ?: return null
+        }.getOrNull()?.let { if (arrival > 0L) it.copy(until = arrival + shiftMs(it)) else it } ?: return null
         _statuses.update { it + (eventId to status) }
         save()
         return status

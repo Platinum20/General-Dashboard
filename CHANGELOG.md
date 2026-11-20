@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.539.0
+**Treni: il ritardo resta anche a viaggio finito, e la prova della notifica**
+- Quando il treno è arrivato (contando il ritardo) Canvas smette di controllarlo e il Calendario tiene per sempre gli orari col ritardo, anche nei giorni passati
+- La notifica dal vivo resta fino all'arrivo col ritardo, non a quello del biglietto
+- Nuova riga "Prova la notifica" in Impostazioni › Notifiche: un treno finto che in poco più di un minuto passa per l'attesa, il ritardo, il viaggio senza rete e l'arrivo
+
 ## 1.538.0
 **Treni: la notifica come il disegno, e il ritardo che resta anche senza rete**
 - La notifica del treno ora è disegnata da Canvas, uguale alla proposta A: la linea del viaggio con un pallino per fermata e il treno che avanza, sotto la partenza a sinistra e l'arrivo a destra (l'orario del biglietto barrato e quello vero in arancio), poi ritardo, prossima fermata e posto, una cosa per riga
