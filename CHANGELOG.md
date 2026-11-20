@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.532.0
+**Documenti: PDF a mezza pagina e card più pulita**
+- Nel PDF il fronte riempie la metà alta del foglio e il retro quella bassa, ingranditi quanto serve senza deformarsi
+- Nella card Documenti della Home le tessere scorrono dentro i margini della card e non arrivano più fino al bordo
+
 ## 1.531.0
 **Note lunghe: un editor nuovo, con tutte le foto che vuoi**
 - In basso gli stessi due tasti delle altre schede: "Aggiungi" a sinistra e "Altro" a destra, niente più barra speciale
