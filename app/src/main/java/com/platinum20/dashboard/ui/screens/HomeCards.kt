@@ -267,7 +267,7 @@ fun TimelineCard(
     // Toccando la card ovunque, anche sul titolo, si apre la sezione (come Per dopo, Antonio 2026-11-12).
     val longOpen = onLongOpen?.let { open -> { haptic(Haptic.LONG_PRESS); open() } }
     CanvasCard(modifier.fillMaxWidth(), onClick = onOpen, onLongClick = longOpen) {
-        if (title != null) CardTitle(title, trailing = titleTrailing ?: {
+        if (title != null) CardTitle(title, opens = true, trailing = titleTrailing ?: {
             if (count != null) Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.padding(top = if (title == null) 4.dp else 0.dp, bottom = 6.dp)) {
@@ -282,7 +282,8 @@ fun TimelineCard(
             FlashNewRows(entries.map { it.key })
             entries.forEachIndexed { index, entry ->
                 val row = rows.getOrNull(index)
-                TimelineRow(entry, top = index > 0, bottom = index < entries.lastIndex, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
+                // La linea del tempo esce un po' sopra la prima riga e sotto l'ultima (1.539, Antonio): continua oltre la card.
+                TimelineRow(entry, top = true, bottom = true, onClick = row?.let { open -> { haptic(Haptic.TICK); open() } } ?: onOpen, onIcon = ticks.getOrNull(index), monthTick = false, onLongClick = rowLongs.getOrNull(index) ?: onLongOpen, sharedScope = SharedRows.HOME)
             }
             footer?.let { text ->
                 Text(

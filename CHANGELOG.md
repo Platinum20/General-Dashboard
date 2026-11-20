@@ -1,11 +1,19 @@
 # Changelog
 
-## 1.539.0
+## 1.540.0
 **Dirette di YouTube: barra, "In diretta" che torna al live, etichette in Media**
 - Le dirette hanno la barra di avanzamento: si può tornare indietro nella parte che YouTube tiene, e trascinando si vede quanto si resta indietro
 - Il tasto "In diretta" sotto la barra riporta al momento live; se sei indietro dice di quanto ("-4:12 · Torna in diretta")
 - Nel player la barra ora sta sopra, il tempo e lo schermo intero sotto
 - In Media le dirette in corso hanno l'etichetta blu "● IN DIRETTA", quelle finite "Diretta terminata" con la durata
+
+## 1.539.0
+**Da fare e Appunti a tutto schermo, titoli con la freccia**
+- I titoli delle card in Home sono in maiuscolo come in Media, con la freccia › quando aprono una pagina ("DA FARE ›", "CALENDARIO ›")
+- Via le righe "Fatte · N" e "Archiviati · N" in fondo alle card
+- Toccando Da fare o Appunti si apre la pagina intera, come il Calendario: sopra le cose vecchie sbiadite (le fatte per giorno, gli archiviati per mese), la linea ADESSO e sotto quelle attive, abitudini in cima
+- La pagina si apre su ADESSO; scorrendo su vedi il passato. Toccando il cerchio pieno una fatta torna da fare, tenendo premuto ogni riga ha le sue azioni
+- Nella card Calendario la linea del tempo esce un pezzettino sopra la prima riga e sotto l'ultima
 
 ## 1.538.0
 **Treni: la notifica come il disegno, e il ritardo che resta anche senza rete**

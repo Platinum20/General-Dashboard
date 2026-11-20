@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.media.youtube
 
 /**
- * Le dirette (1.539, Antonio): nel player una barra sulla finestra che YouTube tiene indietro, con "In diretta"
+ * Le dirette (1.540, Antonio): nel player una barra sulla finestra che YouTube tiene indietro, con "In diretta"
  * che riporta al bordo live; in Media "In diretta" per quelle in corso e "Diretta terminata" per quelle finite.
  */
 object YtLive {

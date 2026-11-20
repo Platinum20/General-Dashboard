@@ -31,7 +31,7 @@ data class YtVideo(
     /** In diretta adesso (o in arrivo, con [upcoming]). */
     val live: Boolean = false,
     val upcoming: Boolean = false,
-    /** Era una diretta, ora finita (1.539): in Media "Diretta terminata". */
+    /** Era una diretta, ora finita (1.540): in Media "Diretta terminata". */
     val liveEnded: Boolean = false,
     /** Inizio dell'anteprima o della diretta in programma, se si conosce. */
     val startsAt: Instant? = null,
