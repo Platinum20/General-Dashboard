@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.544.0
+## 1.545.0
 **Notifica del treno ripulita**
 - L'intestazione non si taglia più: solo ritardo e minuti ("+12 min · arriva tra 44 min"); "letto 35 min fa" ha una riga sua, grigia
 - La stazione d'arrivo sta prima dell'orario ("Bologna 0:08 0:20"): gli orari sono ai due bordi, sotto i pallini
