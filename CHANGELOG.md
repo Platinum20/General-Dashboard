@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.544.0
+**Spotify non chiede più di ricollegarsi senza motivo**
+- Quando l'accesso di un'ora scade o il telefono si risveglia senza rete, l'app rinnova da sola il collegamento e riaccende il riproduttore, senza dirti di ricollegare la chiave
+- Il nuovo accesso dato da Spotify a ogni rinnovo viene salvato subito: prima, se l'app si chiudeva in quel momento, si perdeva e il collegamento cadeva davvero
+- "Ricollega" compare solo se Spotify ha davvero chiuso il collegamento, e dice dove farlo (Impostazioni › Account)
+
 ## 1.543.0
 **Treni: notifica più pulita, ritardo recuperato dopo l'arrivo, numeri delle card a destra**
 - Notifica del treno riordinata come la proposta A: il ritardo sta in alto accanto ai minuti ("+12 min · arriva tra 59 min"), si vede anche a notifica chiusa; sotto la linea partenza e arrivo, poi solo prossima fermata e treno con carrozza e posto
