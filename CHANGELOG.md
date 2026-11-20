@@ -6,6 +6,7 @@
 - Via le righe "Fatte · N" e "Archiviati · N" in fondo alle card
 - Toccando Da fare o Appunti si apre la pagina intera, come il Calendario: sopra le cose vecchie sbiadite (le fatte per giorno, gli archiviati per mese), la linea ADESSO e sotto quelle attive, abitudini in cima
 - La pagina si apre su ADESSO; scorrendo su vedi il passato. Toccando il cerchio pieno una fatta torna da fare, tenendo premuto ogni riga ha le sue azioni
+- Nella card Calendario la linea del tempo esce un pezzettino sopra la prima riga e sotto l'ultima
 
 ## 1.537.0
 **"Calendario" nel + chiede solo quando**
