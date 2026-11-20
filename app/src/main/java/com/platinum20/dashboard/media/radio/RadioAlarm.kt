@@ -179,6 +179,7 @@ object RadioAlarm {
         OpenRequest(OpenRequest.MEDIA, source = com.platinum20.dashboard.media.PlayerService.SOURCE_PLAYER).writeTo(open)
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
             .setContentTitle("Sveglia · ${_settings.value.timeLabel}")
             .setContentText(title)
             .setCategory(Notification.CATEGORY_ALARM)

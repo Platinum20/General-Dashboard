@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Colori dei widget: la palette Canvas (carta, inchiostro, blu, arancio), chiara e scura col telefono. -->
+    <!-- Colore delle notifiche: l'arancio del fondo dell'icona, così icona piccola e nome dell'app combaciano. -->
+    <color name="notification_accent">#FFD9572B</color>
     <color name="widget_background">#FFFAF8F4</color>
     <color name="widget_text">#FF1B1A17</color>
     <color name="widget_text_secondary">#FF6F6B62</color>

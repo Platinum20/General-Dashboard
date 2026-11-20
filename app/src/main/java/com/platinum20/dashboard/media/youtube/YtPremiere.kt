@@ -157,6 +157,7 @@ class PremiereReminderWorker(context: Context, params: WorkerParameters) : Corou
         val notificationId = 5000 + (id.hashCode() and 0xFFFFF)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
             // Il titolo è la cosa, il testo è il quando (1.402).
             .setContentTitle(title.ifBlank { "Il video che aspettavi" })
             .setContentText("Anteprima · inizia adesso")

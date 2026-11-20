@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.536.0
+
+**L'icona delle notifiche è quella dell'app**
+- Nella barra di stato e in cima alle notifiche ora c'è la pennellata con la goccia di Canvas, non più i vecchi tre riquadri.
+- Anche la notifica del player e quelle trovate nei messaggi usano la stessa icona.
+- Le notifiche hanno l'arancio dell'icona (il treno resta blu, arancio solo se è in ritardo).
+
 ## 1.535.0
 **Le abitudini stanno in "Da fare" e si eliminano tenendole premute**
 - Le abitudini sono in cima alla card "Da fare" in Home, con la serie a destra (🔥 5)
