@@ -2,36 +2,65 @@ package com.platinum20.dashboard
 
 import com.platinum20.dashboard.ui.screens.MiniDock
 import com.platinum20.dashboard.ui.screens.MiniTuck
-import com.platinum20.dashboard.ui.screens.MiniTuck.Release
+import com.platinum20.dashboard.ui.screens.MiniTuck.Drop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** 1.508: lancio di lato = linguetta, giù sotto lo schermo = calamita che chiude, scorrendo si ritira. */
+/** 1.508/1.545: riquadro nei quattro angoli, lancio verso il bordo = linguetta, giù sotto lo schermo = calamita che chiude. */
 class MiniTuckTest {
     private val w = 1_000f
 
+    // Riquadro 600 px su 1000: a destra sta a 400, a sinistra a 0.
+    private val box = 600f
+
     @Test
     fun laCalamitaVinceSuTutto() {
-        assertEquals(Release.CLOSE, MiniTuck.release(magnet = true, dx = 800f, vx = 4_000f, vy = 0f, width = w))
+        assertEquals(Drop.CLOSE, MiniTuck.drop(magnet = true, left = 800f, boxW = box, maxW = w, vx = 4_000f))
     }
 
     @Test
-    fun oltreMetaDiLatoVaNellaLinguetta() {
-        assertEquals(Release.TUCK_RIGHT, MiniTuck.release(false, 600f, 0f, 0f, w))
-        assertEquals(Release.TUCK_LEFT, MiniTuck.release(false, -600f, 0f, 0f, w))
+    fun oltreIlBordoVaNellaLinguetta() {
+        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 700f, box, w, 0f))
+        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, -300f, box, w, 0f))
     }
 
     @Test
-    fun lancioDecisoDiLato() {
-        assertEquals(Release.TUCK_LEFT, MiniTuck.release(false, -300f, -3_000f, 200f, w))
-        assertEquals(Release.STAY, MiniTuck.release(false, 100f, 3_000f, 0f, w))
+    fun lanciatoVersoIlSuoBordoSiRitiraVersoLAltroCambiaAngolo() {
+        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 400f, box, w, 3_000f))
+        assertEquals(Drop.LEFT, MiniTuck.drop(false, 400f, box, w, -3_000f))
+        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, 0f, box, w, -3_000f))
+        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 0f, box, w, 3_000f))
     }
 
     @Test
-    fun pocoSpostatoResta() {
-        assertEquals(Release.STAY, MiniTuck.release(false, 200f, 0f, 0f, w))
+    fun lasciatoVaNellAngoloDellaSuaMeta() {
+        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 350f, box, w, 0f))
+        assertEquals(Drop.LEFT, MiniTuck.drop(false, 100f, box, w, 0f))
+    }
+
+    @Test
+    fun sbiadisceSoloFuoriDalloSchermo() {
+        assertEquals(0f, MiniTuck.offscreen(400f, box, w), 0f)
+        assertEquals(0.5f, MiniTuck.offscreen(700f, box, w), 0.001f)
+        assertEquals(0.5f, MiniTuck.offscreen(-300f, box, w), 0.001f)
+    }
+
+    @Test
+    fun laLinguettaEsceTirandolaVersoIlCentro() {
+        assertFalse(MiniTuck.pulledOut(MiniTuck.PULL_OUT_DP * 3f - 1f, 3f))
+        assertTrue(MiniTuck.pulledOut(MiniTuck.PULL_OUT_DP * 3f + 1f, 3f))
+    }
+
+    @Test
+    fun tastiSulVideoSoloAlToccoConMusicaSempre() {
+        assertTrue(MiniTuck.controlsAlways(isVideo = false, playing = true))
+        assertTrue(MiniTuck.controlsAlways(isVideo = true, playing = false))
+        assertFalse(MiniTuck.controlsAlways(isVideo = true, playing = true))
+        assertEquals(MiniTuck.Tap.SHOW_CONTROLS, MiniTuck.tap(isVideo = true, controlsShown = false))
+        assertEquals(MiniTuck.Tap.EXPAND, MiniTuck.tap(isVideo = true, controlsShown = true))
+        assertEquals(MiniTuck.Tap.EXPAND, MiniTuck.tap(isVideo = false, controlsShown = true))
     }
 
     @Test

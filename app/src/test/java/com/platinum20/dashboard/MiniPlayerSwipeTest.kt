@@ -23,8 +23,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Il mini player lanciato di lato si ritira nella linguetta sul bordo (1.508), anche mentre lo si sposta
- * su e giù; meno di così torna al suo posto. Si chiude solo portandolo giù, sotto lo schermo (calamita).
+ * Il riquadro del mini player (1.545) si aggancia ai quattro angoli; lanciato verso il suo bordo si ritira nella
+ * linguetta (1.508), anche mentre lo si sposta su e giù. Si chiude solo portandolo giù, sotto lo schermo (calamita).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h914dp-xxhdpi")
@@ -38,14 +38,15 @@ class MiniPlayerSwipeTest {
         MiniDock.tucked = false
         MiniDock.tuckRight = true
         MiniDock.atTop = false
+        MiniDock.atRight = true
         val song = Playing(PlaySource.SPOTIFY, "Brano di prova", "Artista", "", playing = true, positionMs = 10_000, durationMs = 200_000)
         compose.setContent { FloatingPlayer(currentRoute = null, onExpand = {}, shown = song, onClose = { closed++ }) }
         compose.waitForIdle()
         compose.onNodeWithText("Brano di prova").assertExists()
     }
 
-    /** L'altezza della barra sullo schermo (si trascina dalla barra, non solo dal titolo). */
-    private fun barY(): Float = compose.onNodeWithText("Brano di prova").fetchSemanticsNode().boundsInRoot.center.y
+    /** Un punto dentro il riquadro (sul titolo): si trascina da lì. */
+    private fun boxPoint(): Offset = compose.onNodeWithText("Brano di prova").fetchSemanticsNode().boundsInRoot.let { Offset(it.left + 20f, it.center.y) }
 
     private fun drag(from: Offset, to: Offset, ms: Long) {
         compose.onRoot().performTouchInput { swipe(from, to, durationMillis = ms) }
@@ -58,31 +59,50 @@ class MiniPlayerSwipeTest {
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).assertExists()
     }
 
+    private fun tuckRight() {
+        val p = boxPoint()
+        drag(p, Offset(p.x + 500f, p.y), 200)
+    }
+
     @Test
-    fun lanciatoDiLatoSiRitira() {
+    fun lanciatoVersoIlBordoSiRitira() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        tuckRight()
         assertEquals(0, closed)
         assertTab()
         assertTrue(MiniDock.tuckRight)
     }
 
+    /** 1.545: dall'angolo a destra, lanciato a sinistra va nell'angolo a sinistra; lanciato ancora, nella linguetta. */
     @Test
-    fun ancheVersoSinistra() {
+    fun lanciatoVersoLAltraMetaCambiaAngoloPoiSiRitira() {
         show()
-        val y = barY()
-        drag(Offset(1_100f, y), Offset(60f, y), 200)
+        val p = boxPoint()
+        drag(p, Offset(p.x - 500f, p.y), 200)
         assertEquals(0, closed)
+        assertFalse(MiniDock.tucked)
+        assertFalse(MiniDock.atRight)
+        val q = boxPoint()
+        assertTrue(q.x < p.x - 300f)
+        drag(q, Offset(q.x - 500f, q.y), 200)
         assertTab()
         assertFalse(MiniDock.tuckRight)
     }
 
     @Test
+    fun trascinatoPianoDallAltraParteCambiaAngolo() {
+        show()
+        val p = boxPoint()
+        drag(p, Offset(p.x - 600f, p.y), 1_200)
+        assertFalse(MiniDock.tucked)
+        assertFalse(MiniDock.atRight)
+        assertEquals(0, closed)
+    }
+
+    @Test
     fun laLinguettaSiRiapreConUnTocco() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        tuckRight()
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).performClick()
         compose.mainClock.advanceTimeBy(1_000)
         compose.waitForIdle()
@@ -93,8 +113,7 @@ class MiniPlayerSwipeTest {
     @Test
     fun laLinguettaSiRiapreDaTalkBack() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        tuckRight()
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true)
             .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick)
         compose.mainClock.advanceTimeBy(1_000)
@@ -105,18 +124,19 @@ class MiniPlayerSwipeTest {
     @Test
     fun spostatoPocoTorna() {
         show()
-        val y = barY()
-        drag(Offset(600f, y), Offset(700f, y), 800)
+        val p = boxPoint()
+        drag(p, Offset(p.x + 100f, p.y), 800)
         assertEquals(0, closed)
         assertFalse(MiniDock.tucked)
+        assertTrue(MiniDock.atRight)
         compose.onNodeWithText("Brano di prova").assertExists()
     }
 
     @Test
     fun diLatoESuInsiemeSiRitira() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y - 400f), 300)
+        val p = boxPoint()
+        drag(p, Offset(p.x + 500f, p.y - 400f), 300)
         assertEquals(0, closed)
         assertTab()
     }
@@ -124,33 +144,34 @@ class MiniPlayerSwipeTest {
     @Test
     fun unPoDiLatoMentreLoSpostiResta() {
         show()
-        val y = barY()
-        drag(Offset(600f, y), Offset(850f, 300f), 300)
+        val p = boxPoint()
+        drag(p, Offset(p.x + 150f, 300f), 300)
         assertEquals(0, closed)
         assertFalse(MiniDock.tucked)
+        assertTrue(MiniDock.atTop)
     }
 
     @Test
     fun suEGiuNonChiude() {
         show()
-        val y = barY()
-        drag(Offset(600f, y), Offset(600f, 300f), 300)
+        val p = boxPoint()
+        drag(p, Offset(p.x, 300f), 300)
         assertEquals(0, closed)
     }
 
     @Test
     fun portatoSottoLoSchermoSiChiude() {
         show()
-        val y = barY()
-        drag(Offset(600f, y), Offset(600f, y + 330f), 600)
+        val p = boxPoint()
+        drag(p, Offset(p.x, p.y + 330f), 600)
         assertEquals(1, closed)
     }
 
     @Test
     fun appenaGiuNonChiude() {
         show()
-        val y = barY()
-        drag(Offset(600f, y), Offset(600f, y + 45f), 600)
+        val p = boxPoint()
+        drag(p, Offset(p.x, p.y + 45f), 600)
         assertEquals(0, closed)
     }
 
@@ -158,35 +179,33 @@ class MiniPlayerSwipeTest {
     @Test
     fun senzaBarraSiChiudeAlFondoDelloSchermo() {
         show()
-        val y = barY()
+        val p = boxPoint()
         val bottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom - 2f
-        drag(Offset(600f, y), Offset(600f, bottom), 600)
+        drag(p, Offset(p.x, bottom), 600)
         assertEquals(1, closed)
     }
 
     private fun tabCenter(): Offset =
         compose.onNodeWithContentDescription("Mini player: Brano di prova", substring = true).fetchSemanticsNode().boundsInRoot.center
 
-    /** La linguetta si porta direttamente sull'altro bordo, senza riaprirla (1.521). */
+    /** 1.545: tirata verso il centro (con la vibrazione) la linguetta fa uscire il riquadro dal suo lato. */
     @Test
-    fun laLinguettaSiSpostaSullAltroBordo() {
+    fun laLinguettaTirataVersoIlCentroEsce() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
-        assertTrue(MiniDock.tuckRight)
+        tuckRight()
         val c = tabCenter()
-        drag(c, Offset(150f, c.y), 600)
-        assertTrue(MiniDock.tucked)
-        assertFalse(MiniDock.tuckRight)
+        drag(c, Offset(c.x - 300f, c.y), 600)
+        assertFalse(MiniDock.tucked)
+        assertTrue(MiniDock.atRight)
         assertEquals(0, closed)
+        compose.onNodeWithText("Brano di prova").assertExists()
     }
 
     /** Trascinata su resta sul bordo, in alto: riaprendola la barra torna in alto. */
     @Test
     fun laLinguettaSiPortaInAlto() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        tuckRight()
         val c = tabCenter()
         drag(c, Offset(c.x, 300f), 600)
         assertTrue(MiniDock.tucked)
@@ -199,8 +218,7 @@ class MiniPlayerSwipeTest {
     @Test
     fun laLinguettaGiuSiChiude() {
         show()
-        val y = barY()
-        drag(Offset(60f, y), Offset(1_100f, y), 200)
+        tuckRight()
         val c = tabCenter()
         val bottom = compose.onRoot().fetchSemanticsNode().boundsInRoot.bottom - 2f
         drag(c, Offset(c.x, bottom), 600)

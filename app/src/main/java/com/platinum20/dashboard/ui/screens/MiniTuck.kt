@@ -1,9 +1,10 @@
 package com.platinum20.dashboard.ui.screens
 
 /**
- * Le regole del mini player a linguetta (1.508, Antonio): lanciato a destra o a sinistra si ritira (solo a mano:
- * mai da solo scorrendo, 1.521) in una linguetta tonda sul bordo, così non copre la pagina; si chiude solo
- * portandolo giù, sotto lo schermo, dove una calamita lo prende con una vibrazione. Pure, provate nei test.
+ * Le regole del mini player (1.508, Antonio; riquadro dal 1.545): un riquadro con video o copertina e i tasti
+ * dentro, agganciato a uno dei quattro angoli; lanciato di lato (solo a mano) si ritira in una linguetta alta
+ * quanto lui sul bordo, che si tira fuori con una vibrazione; si chiude solo portandolo giù, sotto lo schermo,
+ * dove una calamita lo prende con una vibrazione. Pure, provate nei test.
  */
 object MiniTuck {
     /** Oltre quanti dp sotto il suo posto in basso la calamita lo prende (e lasciandolo si chiude). */
@@ -11,8 +12,6 @@ object MiniTuck {
 
     /** Quanto scatta giù la calamita quando lo prende, in dp: si sente che è "attaccato". */
     const val PULL_DP = 28f
-
-    enum class Release { CLOSE, TUCK_LEFT, TUCK_RIGHT, STAY }
 
     /** Sotto questa soglia (dp) la calamita non scende mai, anche con poco spazio: un piccolo spostamento non chiude. */
     const val MIN_MAGNET_DP = 24f
@@ -28,15 +27,69 @@ object MiniTuck {
     /** La calamita lo tiene: è sceso di almeno [thresholdPx] sotto il suo posto in basso. */
     fun magnet(belowPx: Float, thresholdPx: Float): Boolean = belowPx > thresholdPx
 
-    /**
-     * Cosa succede lasciandolo: preso dalla calamita = si chiude; portato oltre metà di lato o lanciato
-     * di lato (la stessa regola di [SwipeAway]) = linguetta da quel lato; altrimenti torna in alto o in basso.
-     */
-    fun release(magnet: Boolean, dx: Float, vx: Float, vy: Float, width: Float): Release = when {
-        magnet -> Release.CLOSE
-        SwipeAway.closes(dx, vx, vy, width) -> if (dx >= 0f) Release.TUCK_RIGHT else Release.TUCK_LEFT
-        else -> Release.STAY
+    /** Il riquadro del mini player (1.545, Antonio): circa il doppio del video di prima (84 × 48), 16:9. */
+    const val BOX_W = 200f
+    const val BOX_H = 113f
+
+    /** In alto il riquadro sta sotto il titolo grande delle pagine, non sopra (dp dal bordo alto). */
+    const val TOP_GAP = 96f
+
+    /** La linguetta: sottile, alta quanto il riquadro, attaccata al bordo dello schermo (dp). */
+    const val TAB_W = 24f
+
+    /** Quanto si tira la linguetta verso il centro perché il riquadro esca (con la vibrazione), in dp. */
+    const val PULL_OUT_DP = 40f
+
+    /** Dopo quanto spariscono i tasti sopra il video. */
+    const val CONTROLS_MS = 3_000L
+
+    /** Un lancio di lato: oltre questa velocità (px/s) conta la direzione del dito, non dove l'hai lasciato. */
+    const val FLING = 1_500f
+
+    /** Dove va il riquadro lasciandolo: chiuso, nella linguetta da un lato, o nell'angolo a sinistra/destra. */
+    enum class Drop { CLOSE, TUCK_LEFT, TUCK_RIGHT, LEFT, RIGHT }
+
+    /** Portato oltre il bordo per più di un terzo: -1 a sinistra, 1 a destra, 0 dentro. [left] = bordo sinistro in px. */
+    fun offEdge(left: Float, boxW: Float, maxW: Float): Int = when {
+        left < -boxW * 0.35f -> -1
+        left + boxW > maxW + boxW * 0.35f -> 1
+        else -> 0
     }
+
+    /** Quanto del riquadro è fuori dallo schermo (0..1): sbiadisce man mano. */
+    fun offscreen(left: Float, boxW: Float, maxW: Float): Float =
+        (maxOf(-left, left + boxW - maxW).coerceAtLeast(0f) / boxW.coerceAtLeast(1f)).coerceIn(0f, 1f)
+
+    /**
+     * Cosa succede lasciandolo (1.545): preso dalla calamita = si chiude; portato oltre il bordo = linguetta da
+     * quel lato; lanciato verso il bordo dalla sua metà = linguetta, lanciato verso l'altra metà = angolo di là;
+     * altrimenti l'angolo della metà dove l'hai lasciato. In alto o in basso lo decide la parte verticale.
+     */
+    fun drop(magnet: Boolean, left: Float, boxW: Float, maxW: Float, vx: Float): Drop {
+        val center = left + boxW / 2f
+        val rightHalf = center > maxW / 2f
+        return when {
+            magnet -> Drop.CLOSE
+            offEdge(left, boxW, maxW) > 0 -> Drop.TUCK_RIGHT
+            offEdge(left, boxW, maxW) < 0 -> Drop.TUCK_LEFT
+            vx > FLING -> if (rightHalf) Drop.TUCK_RIGHT else Drop.RIGHT
+            vx < -FLING -> if (!rightHalf) Drop.TUCK_LEFT else Drop.LEFT
+            rightHalf -> Drop.RIGHT
+            else -> Drop.LEFT
+        }
+    }
+
+    /** La linguetta tirata verso il centro di almeno [PULL_OUT_DP]: il riquadro esce. */
+    fun pulledOut(inwardPx: Float, density: Float): Boolean = inwardPx > PULL_OUT_DP * density
+
+    /** I tasti restano sempre in vista con musica e radio (sotto non c'è niente da guardare) e col video in pausa. */
+    fun controlsAlways(isVideo: Boolean, playing: Boolean): Boolean = !isVideo || !playing
+
+    enum class Tap { SHOW_CONTROLS, EXPAND }
+
+    /** Un tocco sul riquadro: sul video senza tasti li fa comparire, altrimenti apre il player intero. */
+    fun tap(isVideo: Boolean, controlsShown: Boolean): Tap =
+        if (isVideo && !controlsShown) Tap.SHOW_CONTROLS else Tap.EXPAND
 
     /**
      * Su quale bordo va la linguetta lasciandola (1.521): lanciata forte va dal lato del lancio,
