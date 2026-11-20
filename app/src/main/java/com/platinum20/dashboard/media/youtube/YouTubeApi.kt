@@ -2,10 +2,11 @@ package com.platinum20.dashboard.media.youtube
 
 import android.util.Xml
 import com.platinum20.dashboard.BuildConfig
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -217,17 +218,31 @@ object YouTubeApi {
         }.getOrNull()
     }
 
-    /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
-    suspend fun uploads(channels: List<YtChannel>): List<YtVideo> = coroutineScope {
-        val gate = Semaphore(5)
-        channels.map { channel ->
-            async(Dispatchers.IO) {
-                gate.withPermit {
-                    withMembers(channel.id, runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()))
-                        .map { it.copy(channelAvatar = channel.thumbnail) }
+    /**
+     * I video recenti dei canali dai feed RSS, al massimo per [budgetMs]: con tanti canali i feed lenti facevano
+     * scadere tutta la lettura e il feed restava fermo a giorni prima (1.532). Allo scadere si tiene quello che è
+     * arrivato (i canali sono in ordine di novità) e gli altri tengono i video di prima ([keepMissingChannels]).
+     */
+    suspend fun uploads(channels: List<YtChannel>, budgetMs: Long = Long.MAX_VALUE): List<YtVideo> {
+        val done = ConcurrentLinkedQueue<List<YtVideo>>()
+        // Fuori dallo scope di chi chiama: una lettura bloccata non deve trattenerlo oltre il tempo dato.
+        val job = CoroutineScope(Dispatchers.IO).launch {
+            val gate = Semaphore(8)
+            channels.forEach { channel ->
+                launch {
+                    gate.withPermit {
+                        done += withMembers(channel.id, runCatching { channelFeed(channel.id) }.getOrDefault(emptyList()))
+                            .map { it.copy(channelAvatar = channel.thumbnail) }
+                    }
                 }
             }
-        }.awaitAll().flatten()
+        }
+        try {
+            withTimeoutOrNull(budgetMs) { job.join() }
+        } finally {
+            job.cancel()
+        }
+        return done.toList().flatten()
             .distinctBy { it.id }
             .sortedByDescending { it.published }
     }

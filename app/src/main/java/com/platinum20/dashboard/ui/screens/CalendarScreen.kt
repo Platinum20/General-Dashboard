@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Train
+import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -280,12 +281,32 @@ fun EventDetailScreen(
                     value = System.currentTimeMillis()
                 }
             }
-            WhenHeroCard(WhenHero.of(from, to, current.allDay, nowMs, zone))
+            // Il treno adesso: con la pagina aperta il ritardo si rilegge ogni 2 minuti, finché non è arrivato
+            // (2026-11-20). Solo un dato fresco sposta gli orari; quello vecchio dice solo quando l'abbiamo letto.
+            val statuses by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
+            var liveTried by remember(current.id) { mutableStateOf(false) }
+            var liveAsk by remember(current.id) { mutableStateOf(0) }
+            val liveOn = trip != null && !current.allDay && to > from
+            if (liveOn) LaunchedEffect(current.id, liveAsk) {
+                while (true) {
+                    val now = System.currentTimeMillis()
+                    val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(com.platinum20.dashboard.trips.TrainLive.fresh(current.id, now))
+                    // Da 12 ore prima fino all'arrivo: prima ViaggiaTreno non conosce ancora il treno del giorno.
+                    if (now > to + shift || from - now > LIVE_FROM_MS) break
+                    if (liveAsk > 0 || com.platinum20.dashboard.trips.TrainLive.fresh(current.id, now)?.let { now - it.readAt >= LIVE_EVERY_MS } != false) {
+                        com.platinum20.dashboard.trips.TrainLive.refresh(current.id, trip!!, from, zone)
+                        liveTried = true
+                    }
+                    kotlinx.coroutines.delay(LIVE_EVERY_MS)
+                }
+            }
+            val live = statuses[current.id]?.takeIf { nowMs - it.readAt < com.platinum20.dashboard.trips.TrainLive.FRESH_MS }
+            WhenHeroCard(if (liveOn) WhenHero.train(from, to, live, nowMs, zone) else WhenHero.of(from, to, current.allDay, nowMs, zone))
             CanvasCard(Modifier.fillMaxWidth()) {
                 // I treni tengono il viaggio sulla linea del tempo: partenza, linea, arrivo (Antonio).
                 val stops = if (current.allDay || trip == null) null else tripStops(
                     CalendarEvent(current.id, current.title, from, to, false, current.location, current.color, trip),
-                    LocalDate.now(), zone, labels = false,
+                    LocalDate.now(), zone, labels = false, live = live,
                 )
                 // Il primo divisore della card cade se sopra non c'è il viaggio.
                 var first = stops == null
@@ -304,6 +325,14 @@ fun EventDetailScreen(
                     ticket.forEach { (label, value) ->
                         Sep()
                         DetailRow(Icons.Outlined.Train, "$label $value")
+                    }
+                    // Quando abbiamo letto il ritardo (regola 4); un tocco lo rilegge subito.
+                    val readLine = if (liveOn && nowMs < to + com.platinum20.dashboard.trips.TrainLive.shiftMs(live)) {
+                        com.platinum20.dashboard.trips.TrainLive.readLine(statuses[current.id], liveTried, nowMs, zone)
+                    } else null
+                    readLine?.let {
+                        Sep()
+                        DetailTapRow(Icons.Outlined.Sync, it, onClick = { liveAsk++ })
                     }
                     // Le stesse righe, nello stesso ordine, di promemoria e date (1.361): si ripete, avviso, luogo, note.
                     // Per un treno "Non si ripete" non dice niente: si mostra solo se si ripete davvero.
@@ -605,3 +634,9 @@ private fun TimeRow(label: String, value: LocalDateTime, allDay: Boolean, onClic
         )
     }
 }
+
+/** Il ritardo si rilegge ogni 2 minuti con la pagina del treno aperta, come fa la notifica viva. */
+private const val LIVE_EVERY_MS = 2 * 60_000L
+
+/** Da quanto prima della partenza chiedere: ViaggiaTreno conosce i treni solo del giorno. */
+private const val LIVE_FROM_MS = 12 * 60 * 60_000L

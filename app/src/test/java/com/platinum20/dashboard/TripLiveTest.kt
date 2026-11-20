@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.robolectric.annotation.Config
+import com.platinum20.dashboard.ui.screens.WhenHero
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -49,7 +50,19 @@ class TripLiveTest {
         assertEquals(LivePhase.SOON, LiveTrip.phase(train, at(6, 45), late))
         assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(train, at(11, 25), late))
         val card = LiveTrip.card(train, at(6, 30), late, checked = true, zone = zone)!!
-        assertEquals("Parte alle 6:50 · +10 min · binario 4 · carr. 8, posto 11D", card.text)
+        assertEquals("Parte alle 6:50 · +10 min · binario 4", card.text)
+        assertEquals(
+            listOf(
+                "Parte alle 6:50 invece delle 6:40 · binario 4",
+                "Arrivo a Pescara Centrale alle 11:22 invece delle 11:12",
+                "+10 min · rilevato alle 6:30",
+                "Intercity 612 · carr. 8, posto 11D",
+            ),
+            card.lines,
+        )
+        assertTrue(card.late)
+        // La linea di progresso nell'ultima ora prima di partire: a 20 minuti dalla partenza è a due terzi.
+        assertEquals(66, card.progress)
         assertEquals("6:50", card.chip)
         assertEquals(at(6, 50), card.countdownTo)
     }
@@ -75,6 +88,8 @@ class TripLiveTest {
         val card = LiveTrip.card(train, at(6, 0), TrainStatus(0, cancelled = true, readAt = at(6, 0)), checked = true, zone = zone)!!
         assertEquals("Soppresso", card.chip)
         assertEquals("Intercity 612 · Soppresso", card.text)
+        assertTrue(card.late)
+        assertEquals("Soppresso · doveva partire alle 6:40", card.lines.first())
     }
 
     @Test
@@ -122,5 +137,49 @@ class TripLiveTest {
     fun unRitardoVecchioNonSiMostra() {
         assertNull(TrainLive.fresh(999_999L))
         assertNotNull(TrainLive.FRESH_MS)
+    }
+
+    @Test
+    fun inOrarioNienteArancio() {
+        val card = LiveTrip.card(train, at(6, 20), TrainStatus(0, readAt = at(6, 19)), checked = true, zone = zone)!!
+        assertFalse(card.late)
+        assertEquals("Parte alle 6:40", card.lines.first())
+        assertEquals("Parte alle 6:40 · In orario", card.text)
+        // In anticipo: orari del biglietto.
+        assertEquals(at(6, 40), LiveTrip.card(train, at(6, 20), TrainStatus(-4, readAt = at(6, 19)), checked = true, zone = zone)!!.countdownTo)
+    }
+
+    @Test
+    fun laRigaDellUltimaLettura() {
+        assertNull(TrainLive.readLine(null, tried = false, now = at(7, 0), zone = zone))
+        assertEquals("Ritardo non disponibile", TrainLive.readLine(null, tried = true, now = at(7, 0), zone = zone))
+        assertEquals("Ultimo rilevamento 6:55", TrainLive.readLine(TrainStatus(5, readAt = at(6, 55)), true, at(7, 0), zone))
+        assertEquals("Ritardo non aggiornato · letto alle 6:40", TrainLive.readLine(TrainStatus(5, readAt = at(6, 40)), true, at(7, 0), zone))
+        assertEquals(0, TrainLive.shiftMinutes(TrainStatus(30, cancelled = true)))
+        assertEquals(0, TrainLive.shiftMinutes(TrainStatus(-2)))
+        assertEquals(30, TrainLive.shiftMinutes(TrainStatus(30)))
+    }
+
+    @Test
+    fun laFasciaInAltoPrimaEDopoLaPartenza() {
+        val late = TrainStatus(97, readAt = at(5, 0))
+        val ev = train.copy(begin = at(14, 1), end = at(18, 27))
+        // Non ancora partito: conta sulla partenza spostata.
+        val before = WhenHero.train(ev.begin, ev.end, late, at(15, 5), zone)
+        assertEquals("Parte tra 33 min", before.countdown)
+        assertEquals("15:38 – 20:04", before.big)
+        assertEquals("Oggi · 4 h 26 · programmato 14:01 – 18:27", before.sub)
+        assertTrue(before.late)
+        // In viaggio: l'arrivo spostato.
+        val onBoard = WhenHero.train(ev.begin, ev.end, late, at(18, 4), zone)
+        assertEquals("Arriva tra 2 h", onBoard.countdown)
+        // Senza ritardo (o dato scaduto, quindi null): orari del biglietto, niente arancio.
+        val plain = WhenHero.train(ev.begin, ev.end, null, at(13, 0), zone)
+        assertEquals("Parte tra 1 h 1", plain.countdown)
+        assertEquals("14:01 – 18:27", plain.big)
+        assertEquals("Oggi · 4 h 26", plain.sub)
+        assertFalse(plain.late)
+        assertEquals("Arriva tra 1 h 27", WhenHero.train(ev.begin, ev.end, null, at(17, 0), zone).countdown)
+        assertEquals("Soppresso", WhenHero.train(ev.begin, ev.end, TrainStatus(0, cancelled = true), at(13, 0), zone).countdown)
     }
 }

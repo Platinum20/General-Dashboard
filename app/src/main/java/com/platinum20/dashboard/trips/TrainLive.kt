@@ -133,6 +133,30 @@ object TrainLive {
         else -> "In orario"
     }
 
+    /**
+     * Di quanto spostare partenza e arrivo: solo un ritardo vero su un treno che viaggia. In orario, in anticipo
+     * o soppresso restano gli orari programmati (Antonio, 2026-11-20). Passare solo uno stato fresco ([fresh]).
+     */
+    fun shiftMinutes(s: TrainStatus?): Int = if (s == null || s.cancelled) 0 else s.delay.coerceAtLeast(0)
+
+    fun shiftMs(s: TrainStatus?): Long = shiftMinutes(s) * 60_000L
+
+    private val clock = java.time.format.DateTimeFormatter.ofPattern("H:mm")
+
+    /**
+     * La riga dell'ultima lettura sulla pagina del viaggio (regola 4): "Ultimo rilevamento 14:44" se fresca,
+     * "Ritardo non aggiornato · letto alle 14:44" se vecchia, "Ritardo non disponibile" se ViaggiaTreno non ha
+     * risposto; null se non l'abbiamo ancora chiesto.
+     */
+    fun readLine(last: TrainStatus?, tried: Boolean, now: Long, zone: ZoneId = ZoneId.systemDefault()): String? {
+        if (last == null || last.readAt <= 0L) return if (tried) "Ritardo non disponibile" else null
+        val at = Instant.ofEpochMilli(last.readAt).atZone(zone).format(clock)
+        return if (now - last.readAt < FRESH_MS) "Ultimo rilevamento $at" else "Ritardo non aggiornato · letto alle $at"
+    }
+
+    /** Lo stato letto per ultimo, anche vecchio: solo per dire quando l'abbiamo letto. */
+    fun last(eventId: Long): TrainStatus? = _statuses.value[eventId]
+
     /** "+5 min · binario 4", per la riga del treno nel Calendario. */
     fun line(s: TrainStatus): String =
         listOfNotNull(delayText(s), s.platform?.takeIf { !s.cancelled }?.let { "binario $it" }).joinToString(" · ")

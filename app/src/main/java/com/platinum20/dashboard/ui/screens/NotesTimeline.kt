@@ -317,23 +317,41 @@ internal fun tripStops(
     val endDay = to.toLocalDate().takeIf { it != from.toLocalDate() }
         ?.let { com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }
     val duration = com.platinum20.dashboard.calendar.Trips.duration(event.begin, event.end)
-    return if (trip != null) TripStops(
-        departAt = from.format(hour),
+    if (trip != null) {
+        // Il ritardo sposta partenza e arrivo (2026-11-20): gli orari veri in arancio, i programmati barrati accanto.
+        // Solo con un dato fresco; la durata resta quella del biglietto. Il giorno accanto segue l'orario spostato.
+        val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(live)
+        val leave = Instant.ofEpochMilli(event.begin + shift).atZone(zone)
+        val arrive = Instant.ofEpochMilli(event.end + shift).atZone(zone)
+        val leaveDay = leave.toLocalDate().takeIf { it != from.toLocalDate() }
+            ?.let { com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }
+        val arriveDay = arrive.toLocalDate().takeIf { it != from.toLocalDate() }
+            ?.let { com.platinum20.dashboard.today.Upcoming.dayLabel(it, today) }
+        val delayText = live?.takeIf { shift > 0 }?.let(com.platinum20.dashboard.trips.TrainLive::delayText)
+        return TripStops(
+        departAt = leave.format(hour),
         // Nel calendario da dove parte in alto e dove arriva in fondo: "Treno da Taranto" … "Arrivo a Pescara"
         // (Antonio, 1.475; il titolo resta "Treno per …" altrove). Sulla pagina del viaggio le due stazioni.
-        from = if (labels) trip.from ?: "Partenza" else trip.from?.let { "Treno da $it" } ?: RowText.event(event),
-        arriveAt = to.format(hour),
-        to = (if (labels) trip.to else "Arrivo a ${trip.to}") + endDay?.let { " · $it" }.orEmpty(),
+        from = (if (labels) trip.from ?: "Partenza" else trip.from?.let { "Treno da $it" } ?: RowText.event(event)) +
+            leaveDay?.let { " · $it" }.orEmpty(),
+        arriveAt = arrive.format(hour),
+        to = (if (labels) trip.to else "Arrivo a ${trip.to}") + arriveDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
         middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line)).joinToString(" · "),
+        plannedDepart = from.format(hour).takeIf { shift > 0 },
+        plannedArrive = to.format(hour).takeIf { shift > 0 },
+        late = delayText,
         // Sotto treno, carrozza e posto; se lo zaino è pronto, quanto c'è da ascoltare e guardare (1.468).
         below = listOfNotNull(
             com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
             packSec.takeIf { it > 0 && !labels }?.let(com.platinum20.dashboard.trips.TrainPack::readyLine),
         ).joinToString(" · ").ifEmpty { null },
-        begin = event.begin,
-        end = event.end,
-    ) else {
+        // Il pallino "sei qui" segue il treno vero.
+        begin = event.begin + shift,
+        end = event.end + shift,
+        )
+    }
+    return run {
     // Il nome accanto all'ora d'inizio, come "Treno per …" e "Turno su A, B e C": niente riga in più (Antonio, 1.401).
     val creators = if (event.eventId < -1 && !labels) com.platinum20.dashboard.shifts.ShiftParse.creators(event.title) else emptyList()
     TripStops(

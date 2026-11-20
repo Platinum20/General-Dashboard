@@ -67,7 +67,10 @@ class MorningWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     private suspend fun post(context: Context) {
         val forecast = runCatching { WeatherStore.fetch(context, freshLocation = false) }.getOrNull()
             ?: WeatherStore.cached(context)
-        val themes = runCatching { NewsStore.widgetStories(context, NewsStore.load(force = true).items) }.getOrDefault(emptyList())
+        // Le notizie servono solo al widget News: senza widget non si scaricano (1.532).
+        val hasNewsWidget = com.platinum20.dashboard.widget.Widgets.ids(context, NewsWidget::class.java).isNotEmpty()
+        val themes = if (!hasNewsWidget) emptyList()
+        else runCatching { NewsStore.widgetStories(context, NewsStore.load(force = true).items) }.getOrDefault(emptyList())
         if (themes.isNotEmpty()) NewsWidget.save(context, themes)
         NotesStore.init(context)
         val notes = NotesStore.data.value

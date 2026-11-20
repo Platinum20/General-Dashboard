@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -166,7 +167,9 @@ internal fun CalendarCard(
     val pending = groups.filter { it.rows.isNotEmpty() }
     // Niente segno del mese in cima: il mese è già scritto in alto nella Home (Antonio, 2026-11-10). Il mese dopo sì.
     // Le cose senza scadenza non stanno nei giorni: hanno la card "Per dopo" (LaterCard, Antonio 2026-11-12).
-    val all = remember(pending, today) { timelineEntries(pending.withoutLoose(), today) }
+    // Un nuovo ritardo letto ridisegna le righe dei treni con gli orari spostati.
+    val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
+    val all = remember(pending, today, trains) { timelineEntries(pending.withoutLoose(), today) }
     val todayCount = all.count { it.second.day == today && !it.first.past }
     // Dopo oggi solo domani (Antonio, 2026-11-11); il resto del mese è a un tocco, "Altre N a novembre".
     val (later, _) = calendarCardCut(all.drop(todayCount).map { it.second.day }, today)

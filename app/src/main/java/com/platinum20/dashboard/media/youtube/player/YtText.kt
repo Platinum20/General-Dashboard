@@ -133,7 +133,8 @@ object YtText {
 
     /** Il video con titolo e descrizione originali al posto di quelli tradotti (null o vuoti = si tiene quello che c'è). */
     fun original(stream: YtStream, title: String?, description: String?): YtStream = stream.copy(
-        title = title?.takeIf { it.isNotBlank() } ?: stream.title,
-        description = description?.takeIf { it.isNotBlank() } ?: stream.description,
+        title = decodeEntities(title?.takeIf { it.isNotBlank() } ?: stream.title),
+        description = decodeEntities(description?.takeIf { it.isNotBlank() } ?: stream.description),
     )
+
 }

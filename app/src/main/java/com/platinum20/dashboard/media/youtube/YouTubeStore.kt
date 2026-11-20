@@ -19,6 +19,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 object YouTubeStore {
     private val scope = MainScope()
     private const val MAX_AGE = 15 * 60_000L
+    /** Tempo per i feed RSS dei canali e per tutta la lettura delle iscrizioni (due pagine del sito + i feed). */
+    private const val RSS_BUDGET = 30_000L
+    private const val SUBS_TIMEOUT = 90_000L
 
     private val _subscriptions = MutableStateFlow(Loadable<List<YtVideo>>())
     /** Nuovi video dei canali seguiti, i più recenti prima. */
@@ -59,12 +62,15 @@ object YouTubeStore {
     }
 
     fun refreshSubscriptions(context: Context, force: Boolean = false) =
-        load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), web = {
+        load(context, _subscriptions, force, FeedCache.videos("yt-iscrizioni.json"), timeoutMs = SUBS_TIMEOUT, web = {
             val channels = YouTubeWeb.subscriptions(it)
-            withFeedDetails(keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300), YouTubeWeb.lastFeed)
+            val feed = YouTubeWeb.lastFeed
+            // Prima i feed RSS (con i video di prima per i canali che non hanno risposto), poi i nuovi della pagina Iscrizioni.
+            val rss = keepMissingChannels(YouTubeApi.uploads(channels, RSS_BUDGET), _subscriptions.value.data.orEmpty(), channels)
+            withFeedDetails(YtFeedTime.withFeedVideos(rss, feed, java.time.Instant.now()).take(300), feed)
         }) { token ->
             val channels = YouTubeApi.subscriptions(token)
-            YouTubeApi.withDetails(token, keepMissingChannels(YouTubeApi.uploads(channels), _subscriptions.value.data.orEmpty(), channels).take(300))
+            YouTubeApi.withDetails(token, keepMissingChannels(YouTubeApi.uploads(channels, RSS_BUDGET), _subscriptions.value.data.orEmpty(), channels).take(300))
         }
 
     private val _subsMore = MutableStateFlow<List<YtVideo>>(emptyList())
@@ -338,6 +344,7 @@ object YouTubeStore {
         flow: MutableStateFlow<Loadable<T>>,
         force: Boolean,
         codec: FeedCodec<T>,
+        timeoutMs: Long = 60_000,
         web: suspend (Context) -> T,
         api: (suspend (String) -> T)?,
     ) {
@@ -357,7 +364,7 @@ object YouTubeStore {
                     }
                 }
             }
-            val result = call(context, web, api)
+            val result = call(context, web, timeoutMs, api)
             flow.value = if (result.data == null) result.copy(data = previous) else result
             result.data?.let { FeedCache.save(codec, it, result.loadedAt) }
         }
@@ -367,13 +374,13 @@ object YouTubeStore {
      * Con l'API ufficiale collegata usa un token valido (se è scaduto lo rinnova una volta e riprova),
      * altrimenti legge il sito con l'accesso fatto nell'app.
      */
-    private suspend fun <T> call(context: Context, web: suspend (Context) -> T, api: (suspend (String) -> T)?): Loadable<T> {
+    private suspend fun <T> call(context: Context, web: suspend (Context) -> T, timeoutMs: Long = 60_000, api: (suspend (String) -> T)?): Loadable<T> {
         val app = context.applicationContext
         return try {
             val token = if (api != null && YouTubeAuth.connected.value) YouTubeAuth.token(app) else null
             val data = when {
-                // Senza API ufficiale si legge il sito: mai più di un minuto, poi un errore chiaro.
-                api == null || token == null -> withTimeoutOrNull(60_000) { web(app) }
+                // Senza API ufficiale si legge il sito: mai oltre [timeoutMs], poi un errore chiaro.
+                api == null || token == null -> withTimeoutOrNull(timeoutMs) { web(app) }
                     ?: throw java.io.IOException(
                         "YouTube non risponde. Tocca la chiave in alto e collega l'API ufficiale di Google: è più veloce e affidabile."
                     )
