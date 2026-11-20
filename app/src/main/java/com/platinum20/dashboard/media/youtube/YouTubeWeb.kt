@@ -193,6 +193,7 @@ object YouTubeWeb {
                     watchedPercent = v.optInt("watched"),
                     membersOnly = v.optBoolean("members"),
                     uploadedText = v.optString("ago"),
+                    liveEnded = !v.optBoolean("live") && YtLive.ended(v.optString("ago")),
                 )
             }
         }.distinctBy { it.id }

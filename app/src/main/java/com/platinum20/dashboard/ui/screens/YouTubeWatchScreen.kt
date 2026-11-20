@@ -109,6 +109,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.platinum20.dashboard.media.youtube.YtLive
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -878,6 +879,8 @@ private fun TimeBar(
     var position by remember { mutableLongStateOf(0L) }
     var duration by remember { mutableLongStateOf(0L) }
     var buffered by remember { mutableLongStateOf(0L) }
+    // Diretta: quanto si è indietro rispetto al live (negativo = non si sa).
+    var liveOffset by remember { mutableLongStateOf(-1L) }
     var barDrag by remember { mutableStateOf<Float?>(null) }
     // Il punto mostrato mentre ci si sposta: dal dito sulla barra o dallo scorrimento sul video.
     val moving = barDrag ?: swipeMs?.let { if (duration > 0) (it.toFloat() / duration).coerceIn(0f, 1f) else null }
@@ -892,34 +895,17 @@ private fun TimeBar(
             position = player.currentPosition
             buffered = player.bufferedPosition
             duration = player.duration.takeIf { it > 0 } ?: 0L
+            liveOffset = if (player.isCurrentMediaItemLive) player.currentLiveOffset.takeIf { it != androidx.media3.common.C.TIME_UNSET } ?: -1L else -1L
             delay(250)
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (live) {
-            Text("● IN DIRETTA", color = Color(0xFFFF4D4D), style = MaterialTheme.typography.labelLarge)
-        } else {
-            val shown = moving?.let { (it * duration).toLong() } ?: position
-            Text(
-                timeLabel(shown, duration, knownSec),
-                color = Color.White,
-                style = MaterialTheme.typography.labelLarge,
-            )
-        }
-        Spacer(Modifier.weight(1f))
-        IconButton(onClick = onFullscreen) {
-            Icon(
-                if (fullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
-                contentDescription = if (fullscreen) "Esci da schermo intero" else "Schermo intero",
-                tint = Color.White,
-            )
-        }
-    }
-    if (!live) {
+    // 1.541 (Antonio): prima la barra, sotto il tempo e lo schermo intero. Le dirette hanno la barra sulla finestra
+    // che YouTube tiene (se ce n'è una) e "In diretta" che riporta al bordo live.
+    if (!live || duration > 0) {
         val sponsor by SponsorBlock.state.collectAsState()
         val sponsorOn by AppSettings.sponsorBlock.collectAsState()
         val actions by AppSettings.sponsorActions.collectAsState()
-        val marks = if (sponsorOn) SponsorBlock.marks(sponsor?.segments.orEmpty(), actions) else emptyList()
+        val marks = if (sponsorOn && !live) SponsorBlock.marks(sponsor?.segments.orEmpty(), actions) else emptyList()
         // Tocco semplice = niente salto: si sposta solo trascinando di lato (SeekBar).
         // Mentre si trascina, sopra al pallino il fotogramma dove si lascerà il video (storyboard di YouTube).
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -943,14 +929,16 @@ private fun TimeBar(
                 val played = moving ?: if (duration > 0) position.toFloat() / duration else 0f
                 VideoTrack(played, buffer, if (duration > 0) marks else emptyList(), duration, ChapterTicks.fractions(chapters, duration))
             },
-            modifier = Modifier.height(SEEK_HEIGHT).offset(y = (-4).dp),
+            modifier = Modifier.height(SEEK_HEIGHT),
         )
         moving?.let { at ->
             val previewW = if (fullscreen) 200.dp else 150.dp
             SeekPreview(
                 storyboard = storyboard,
                 positionMs = (at * duration).toLong(),
-                label = ChapterTicks.label(formatDuration((at * duration).toLong()), chapters, (at * duration).toLong()),
+                // In diretta conta quanto si resta indietro rispetto al live, non il tempo dall'inizio della finestra.
+                label = if (live) YtLive.behind(((1f - at) * duration).toLong())
+                else ChapterTicks.label(formatDuration((at * duration).toLong()), chapters, (at * duration).toLong()),
                 width = previewW,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -967,6 +955,45 @@ private fun TimeBar(
                     },
             )
         }
+        }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (live) {
+            val edge = moving == null && YtLive.atEdge(liveOffset)
+            val behindMs = moving?.let { ((1f - it) * duration).toLong() } ?: liveOffset
+            Row(
+                Modifier
+                    .clip(CircleShape)
+                    .clickable {
+                        YtPlayer.goLive(context)
+                        onInteract()
+                    }
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.size(8.dp).background(if (edge) LiveBlue else Color.White.copy(alpha = 0.55f), CircleShape))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    if (edge) "In diretta" else "${YtLive.behind(behindMs)} · Torna in diretta",
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        } else {
+            val shown = moving?.let { (it * duration).toLong() } ?: position
+            Text(
+                timeLabel(shown, duration, knownSec),
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onFullscreen) {
+            Icon(
+                if (fullscreen) Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                contentDescription = if (fullscreen) "Esci da schermo intero" else "Schermo intero",
+                tint = Color.White,
+            )
         }
     }
 }

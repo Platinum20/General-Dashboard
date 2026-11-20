@@ -31,6 +31,8 @@ data class YtVideo(
     /** In diretta adesso (o in arrivo, con [upcoming]). */
     val live: Boolean = false,
     val upcoming: Boolean = false,
+    /** Era una diretta, ora finita (1.541): in Media "Diretta terminata". */
+    val liveEnded: Boolean = false,
     /** Inizio dell'anteprima o della diretta in programma, se si conosce. */
     val startsAt: Instant? = null,
     /** Foto del canale, se si conosce. */
@@ -178,8 +180,9 @@ object YouTubeApi {
             val broadcast = item.optJSONObject("snippet")?.optString("liveBroadcastContent").orEmpty()
             val scheduled = item.optJSONObject("liveStreamingDetails")?.optString("scheduledStartTime").orEmpty()
                 .let { runCatching { Instant.parse(it) }.getOrNull() }
+            val ended = broadcast == "none" && item.optJSONObject("liveStreamingDetails")?.has("actualEndTime") == true
             video.copy(
-                durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming",
+                durationSec = seconds, live = broadcast == "live", upcoming = broadcast == "upcoming", liveEnded = ended,
                 startsAt = scheduled.takeIf { broadcast == "upcoming" },
             )
         }
