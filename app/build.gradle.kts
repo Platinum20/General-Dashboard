@@ -37,7 +37,7 @@ val hasReleaseKey = !keystorePath.isNullOrBlank() && file(keystorePath).exists()
 
 android {
     namespace = "com.platinum20.dashboard"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.platinum20.dashboard"

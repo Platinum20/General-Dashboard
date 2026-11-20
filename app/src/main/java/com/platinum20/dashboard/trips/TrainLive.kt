@@ -18,7 +18,11 @@ data class TrainStatus(
     val platform: String? = null,
     val cancelled: Boolean = false,
     val readAt: Long = 0L,
+    val stops: List<TrainStop> = emptyList(),
 )
+
+/** Una fermata del treno con l'orario programmato (senza ritardo), per i punti sulla linea della notifica. */
+data class TrainStop(val name: String, val at: Long)
 
 /**
  * Il ritardo dal vivo dei treni (Il viaggio vivo, 1.467): i dati pubblici e gratuiti di ViaggiaTreno
@@ -107,6 +111,14 @@ object TrainLive {
         val stops = root.optJSONArray("fermate")
         val wanted = from?.let(::plain)
         var platform: String? = null
+        val all = mutableListOf<TrainStop>()
+        if (stops != null) for (i in 0 until stops.length()) {
+            val stop = stops.optJSONObject(i) ?: continue
+            val name = stop.optString("stazione").trim().takeIf { it.isNotEmpty() && it != "null" } ?: continue
+            val time = listOf("programmata", "partenza_teorica", "arrivo_teorico")
+                .firstNotNullOfOrNull { k -> stop.optLong(k, 0L).takeIf { it > 0L } } ?: continue
+            all += TrainStop(name, time)
+        }
         if (stops != null && wanted != null) {
             for (i in 0 until stops.length()) {
                 val stop = stops.optJSONObject(i) ?: continue
@@ -122,7 +134,27 @@ object TrainLive {
             platform = platform,
             cancelled = root.optInt("provvedimento", 0) == 1,
             readAt = now,
+            stops = all,
         )
+    }
+
+    /**
+     * Le fermate fra dove sali ([from]) e dove scendi ([to]), esclusi questi due: i punti sulla linea della
+     * notifica. Se dove sali non si trova si parte dall'inizio; se dove scendi non si trova si va fino in fondo.
+     */
+    fun between(stops: List<TrainStop>, from: String?, to: String?): List<TrainStop> {
+        fun index(name: String?): Int {
+            val w = name?.let(::plain)?.takeIf { it.isNotEmpty() } ?: return -1
+            return stops.indexOfFirst { s -> val n = plain(s.name); n.isNotEmpty() && (n.contains(w.substringBefore(' ')) || w.contains(n)) }
+        }
+        val start = index(from)
+        val end = index(to).takeIf { it > start } ?: stops.size
+        return stops.subList((start + 1).coerceAtMost(end), end)
+    }
+
+    /** "BARI CENTRALE" → "Bari Centrale", come lo scriveresti tu. */
+    fun pretty(name: String): String = name.trim().lowercase().split(Regex("""\s+""")).joinToString(" ") { w ->
+        w.split('-').joinToString("-") { it.replaceFirstChar(Char::titlecase) }
     }
 
     /** "Ritardo" per la riga e la notifica: "In orario", "+5 min", "2 min in anticipo", "Soppresso". */

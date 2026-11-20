@@ -89,21 +89,23 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         OpenRequest(OpenRequest.EVENT, url = "${event.eventId}/${event.begin}/${event.end}").writeTo(open)
         val id = notificationId(event.eventId)
+        val accent = if (card.late) LATE_COLOR else CANVAS_BLUE
+        val text = marked(card.text, -1, card)
+        val lines = card.lines.mapIndexed { i, line -> marked(line, i, card) }
         val builder = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(card.title)
-            .setContentText(card.text)
-            // Chiusa una riga sola; aperta una cosa per riga: partenza, arrivo, ritardo e quando l'abbiamo letto, posto.
-            .setStyle(NotificationCompat.BigTextStyle().bigText(card.lines.joinToString("\n")))
+            .setContentText(text)
+            // Nell'intestazione "arriva tra 3 h 54 min" (2026-11-20): il cronometro incollato al titolo non si leggeva.
+            .setSubText(card.header)
+            // Chiusa una riga sola; aperta una cosa per riga: partenza → arrivo, ritardo, prossima fermata, posto.
+            .setStyle(NotificationCompat.BigTextStyle().bigText(join(lines)))
             // Arancio = attenzione (in ritardo o soppresso), altrimenti il blu della Canvas: un colore, un significato.
-            .setColor(if (card.late) LATE_COLOR else CANVAS_BLUE)
+            .setColor(accent)
             .setContentIntent(PendingIntent.getActivity(context, id, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setShowWhen(true)
-            .setWhen(card.countdownTo)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
+            .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -117,10 +119,58 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         // Android 16+: Live Update in alto sulla schermata di blocco, con l'orario nel chip della barra di stato.
         builder.extras.putBoolean(EXTRA_PROMOTED, true)
         builder.extras.putCharSequence(EXTRA_CHIP, card.chip)
-        NotificationManagerCompat.from(context).notify(id, builder.build())
+        val track = card.track
+        val notification = if (Build.VERSION.SDK_INT >= 36 && track != null) {
+            runCatching { journey(context, builder.build(), track, lines, accent) }.getOrElse { builder.build() }
+        } else builder.build()
+        NotificationManagerCompat.from(context).notify(id, notification)
+    }
+
+    /**
+     * Android 16 (proposta A, 2026-11-20): la barra diventa il viaggio. Un tratto per ogni pezzo fra due fermate,
+     * un punto per fermata, il treno che avanza; il testo aperto resta una cosa per riga.
+     */
+    @androidx.annotation.RequiresApi(36)
+    private fun journey(context: Context, base: android.app.Notification, track: com.platinum20.dashboard.trips.LiveTrack, lines: List<CharSequence>, accent: Int): android.app.Notification {
+        val steps = track.steps(System.currentTimeMillis())
+        val style = android.app.Notification.ProgressStyle()
+            .setStyledByProgress(true)
+            .setProgressSegments(steps.segments.map { android.app.Notification.ProgressStyle.Segment(it).setColor(accent) })
+            .setProgressPoints(steps.points.map { android.app.Notification.ProgressStyle.Point(it).setColor(accent) })
+            .setProgress(steps.progress)
+            .setProgressTrackerIcon(android.graphics.drawable.Icon.createWithResource(context, R.drawable.ic_train_tracker))
+        return android.app.Notification.Builder.recoverBuilder(context, base)
+            .setStyle(style)
+            .setContentText(join(lines))
+            .build()
     }
 
     companion object {
+        /** Le righe della notifica aperta, una per riga, tenendo colori e barrati. */
+        private fun join(lines: List<CharSequence>): CharSequence {
+            val out = android.text.SpannableStringBuilder()
+            lines.forEachIndexed { i, l -> if (i > 0) out.append('\n'); out.append(l) }
+            return out
+        }
+
+        /** La riga [line] con i suoi pezzi arancio (ritardo) o barrati (l'orario del biglietto superato). */
+        private fun marked(textLine: String, line: Int, card: LiveCard): CharSequence {
+            val marks = card.marks.filter { it.line == line }
+            if (marks.isEmpty()) return textLine
+            val out = android.text.SpannableString(textLine)
+            var from = 0
+            for (m in marks) {
+                val at = textLine.indexOf(m.text, from).takeIf { it >= 0 } ?: textLine.indexOf(m.text).takeIf { it >= 0 } ?: continue
+                val span: Any = when (m.kind) {
+                    com.platinum20.dashboard.trips.MarkKind.LATE -> android.text.style.ForegroundColorSpan(LATE_TEXT)
+                    com.platinum20.dashboard.trips.MarkKind.STRUCK -> android.text.style.StrikethroughSpan()
+                }
+                out.setSpan(span, at, at + m.text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                from = at + m.text.length
+            }
+            return out
+        }
+
         private const val WORK = "trip_live"
         private const val TICK = "trip_live_tick"
         private const val CHANNEL = "trip_live"
@@ -134,6 +184,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         private const val EXTRA_CHIP = "android.shortCriticalText"
         private const val CANVAS_BLUE = 0xFF3550E8.toInt()
         private const val LATE_COLOR = 0xFFD9572B.toInt()
+        /** L'arancio del testo: più chiaro, si legge sia sul chiaro sia sullo scuro. */
+        private const val LATE_TEXT = 0xFFF08A3C.toInt()
 
         fun notificationId(eventId: Long): Int = NOTIFICATION_BASE + Math.floorMod(eventId, 1_000L).toInt()
 
