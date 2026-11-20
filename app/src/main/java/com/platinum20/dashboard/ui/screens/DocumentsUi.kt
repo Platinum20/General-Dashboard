@@ -131,10 +131,11 @@ internal fun DocumentsCard(onOpen: (Long) -> Unit) {
         Text("${docs.size}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }) {
         Row(
+            // Padding prima dello scroll: le tessere si tagliano al margine della card, non al bordo (1.532).
             Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 14.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 14.dp)
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             // Prima quelli che scadono prima; senza scadenza in fondo.

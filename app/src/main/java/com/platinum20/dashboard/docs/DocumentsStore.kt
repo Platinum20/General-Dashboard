@@ -250,23 +250,15 @@ object DocumentsStore {
     }
 
     /**
-     * Pura: dove va una foto sul foglio A4 (595 × 842 punti), in punti. Una tessera ritagliata va a
-     * grandezza vera (85,6 mm), come una fotocopia; un foglio o una foto intera riempie la sua metà.
+     * Pura: quanto è grande una foto nella sua metà di A4 (595 × 842 punti), in punti. Riempie la metà
+     * senza deformarsi (1.532, Antonio: fronte metà pagina, retro l'altra metà).
      */
-    fun pdfSize(kind: DocKind, cropped: Boolean, width: Int, height: Int, slotW: Float, slotH: Float): Pair<Float, Float> {
-        val a = width.toFloat() / height
-        val real = when {
-            !cropped -> null
-            kind == DocKind.PASSPORT && a in 1.25f..1.75f -> 125f
-            kind !in setOf(DocKind.VEHICLE, DocKind.INSURANCE, DocKind.OTHER) && a in DocCrop.CARD_RANGE -> 85.6f
-            else -> null
-        }
+    fun pdfSize(width: Int, height: Int, slotW: Float, slotH: Float): Pair<Float, Float> {
         val fit = minOf(slotW / width, slotH / height)
-        val scale = real?.let { minOf(it / 25.4f * 72f / width, fit) } ?: fit
-        return width * scale to height * scale
+        return width * fit to height * fit
     }
 
-    /** Il PDF come una fotocopia: fronte e retro sullo stesso foglio A4, uno sotto l'altro. */
+    /** Il PDF: fronte nella metà alta del foglio A4, retro in quella bassa, ognuno centrato nella sua metà. */
     suspend fun pdf(context: Context, doc: Document): File = withContext(Dispatchers.IO) {
         val dirOut = File(context.cacheDir, "documents").apply { mkdirs() }
         dirOut.listFiles()?.forEach { it.delete() }
@@ -275,21 +267,19 @@ object DocumentsStore {
         try {
             val page = pdf.startPage(PdfDocument.PageInfo.Builder(595, 842, 1).create())
             page.canvas.drawColor(android.graphics.Color.WHITE)
-            val photos = listOfNotNull(doc.front to (doc.frontFull != null), doc.back?.let { it to (doc.backFull != null) })
-                .mapNotNull { (path, cropped) -> BitmapFactory.decodeFile(path)?.let { it to cropped } }
-            val margin = 56f
-            val gap = 28f
+            val photos = listOfNotNull(doc.front, doc.back).mapNotNull { BitmapFactory.decodeFile(it) }
+            val margin = 28f
+            val gap = 20f
             val slotW = 595f - margin * 2
             val slotH = (842f - margin * 2 - gap) / 2
             val paint = Paint(Paint.FILTER_BITMAP_FLAG)
-            var top = margin
-            photos.forEach { (bmp, cropped) ->
-                val (w, h) = pdfSize(doc.kind, cropped, bmp.width, bmp.height, slotW, slotH)
+            photos.forEachIndexed { i, bmp ->
+                val (w, h) = pdfSize(bmp.width, bmp.height, slotW, slotH)
+                val top = margin + i * (slotH + gap) + (slotH - h) / 2
                 // Al massimo 300 dpi: il PDF resta leggero da mandare.
                 val px = (w / 72f * 300f).toInt()
                 val img = if (bmp.width > px * 1.2f) Bitmap.createScaledBitmap(bmp, px, maxOf(1, (bmp.height * px / bmp.width.toFloat()).toInt()), true) else bmp
                 page.canvas.drawBitmap(img, null, RectF((595f - w) / 2, top, (595f + w) / 2, top + h), paint)
-                top += h + gap
             }
             pdf.finishPage(page)
             out.outputStream().use { pdf.writeTo(it) }
