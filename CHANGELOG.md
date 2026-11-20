@@ -1,7 +1,13 @@
 # Changelog
 
 ## 1.532.0
-**Documenti: PDF a mezza pagina e card più pulita**
+**Treni che seguono il ritardo, video nuovi che arrivano di nuovo, Documenti più puliti**
+- Treni: con un ritardo, partenza e arrivo si spostano da soli, in arancio, con l'orario del biglietto barrato accanto. Nel Calendario e nella pagina del viaggio. Vale per Intercity, Frecce e regionali
+- Se il ritardo fa passare la mezzanotte, accanto all'orario compare il giorno giusto
+- In cima alla pagina del treno: "Parte tra 33 min" prima di partire, "Arriva tra 2 h" in viaggio, sugli orari veri. Con il ritardo il blocco diventa arancio e sotto resta l'orario programmato
+- Con la pagina del treno aperta il ritardo si rilegge ogni 2 minuti; la riga "Ultimo rilevamento 14:44" dice quando l'abbiamo letto, toccala per rileggerlo subito. Un ritardo vecchio di oltre 10 minuti non sposta niente
+- In orario, in anticipo o soppresso: restano gli orari del biglietto ("Soppresso" sempre in evidenza)
+- Notifica del viaggio: chiusa sta su una riga sola; aperta mette una cosa per riga (partenza, arrivo, ritardo con l'ora della lettura, treno e posto), con la linea di progresso già nell'ultima ora prima di partire e il colore arancio quando il treno è in ritardo
 - Nel PDF il fronte riempie la metà alta del foglio e il retro quella bassa, ingranditi quanto serve senza deformarsi
 - Nella card Documenti della Home le tessere scorrono dentro i margini della card e non arrivano più fino al bordo
 - I video nuovi dei canali a cui sei iscritto si aggiornano di nuovo: con tanti canali la lettura andava oltre il tempo e il feed restava fermo a giorni prima
