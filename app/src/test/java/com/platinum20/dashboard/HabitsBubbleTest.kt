@@ -32,7 +32,7 @@ class HabitsBubbleTest {
         assertEquals(listOf("Leggere", "Correre", "Acqua"), b.map { it.title })
         assertEquals("Fatta oggi · tieni premuto per altro", b[0].detail)
         assertEquals("Tocca per segnarla · tieni premuto per altro", b[1].detail)
-        // Tenendo premuta un'abitudine salgono le sue azioni (1.534).
+        // Tenendo premuta un'abitudine salgono le sue azioni (1.535).
         b.forEach { assertNotNull(it.onLongClick) }
     }
 

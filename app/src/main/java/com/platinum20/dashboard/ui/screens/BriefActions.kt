@@ -125,7 +125,7 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
 /**
  * Le abitudini di oggi nel fumetto in basso (1.421, punto 19): toccando la riga "Abitudini · 0 su 2" in Home o
  * nel calendario si apre questo, una riga per abitudine; toccandone una si segna (o si toglie) per oggi.
- * Tenendone premuta una salgono le sue azioni (1.534, Antonio non trovava come cancellarle): [habitActions].
+ * Tenendone premuta una salgono le sue azioni (1.535, Antonio non trovava come cancellarle): [habitActions].
  */
 internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate, open: (Habit) -> Unit): Array<BubbleAction> =
     habits.map { h ->
@@ -159,7 +159,7 @@ internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) ->
 }
 
 /**
- * Le abitudini in cima a "Da fare" (1.534, Antonio 2026-11-20): la serie a destra, "🔥 5" (giorni di fila, settimane
+ * Le abitudini in cima a "Da fare" (1.535, Antonio 2026-11-20): la serie a destra, "🔥 5" (giorni di fila, settimane
  * per quelle "N volte a settimana"); niente se la serie è a zero.
  */
 internal fun habitFlame(h: Habit, today: java.time.LocalDate): String? =

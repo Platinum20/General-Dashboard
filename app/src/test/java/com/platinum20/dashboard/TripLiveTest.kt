@@ -3,9 +3,13 @@ package com.platinum20.dashboard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.Trip
 import com.platinum20.dashboard.trips.LivePhase
+import com.platinum20.dashboard.trips.LiveMark
+import com.platinum20.dashboard.trips.LiveTrack
 import com.platinum20.dashboard.trips.LiveTrip
+import com.platinum20.dashboard.trips.MarkKind
 import com.platinum20.dashboard.trips.TrainLive
 import com.platinum20.dashboard.trips.TrainStatus
+import com.platinum20.dashboard.trips.TrainStop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -51,15 +55,20 @@ class TripLiveTest {
         assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(train, at(11, 25), late))
         val card = LiveTrip.card(train, at(6, 30), late, checked = true, zone = zone)!!
         assertEquals("Parte alle 6:50 · +10 min · binario 4", card.text)
+        // L'orario del biglietto resta, barrato, davanti a quello vero; il ritardo in arancio.
         assertEquals(
             listOf(
-                "Parte alle 6:50 invece delle 6:40 · binario 4",
-                "Arrivo a Pescara Centrale alle 11:22 invece delle 11:12",
-                "+10 min · rilevato alle 6:30",
+                "Parte alle 6:40 6:50 · binario 4",
+                "Arrivo a Pescara Centrale alle 11:12 11:22",
+                "In ritardo di 10 min · rilevato alle 6:30",
                 "Intercity 612 · carr. 8, posto 11D",
             ),
             card.lines,
         )
+        assertEquals("parte tra 20 min", card.header)
+        assertTrue(LiveMark(0, "6:40", MarkKind.STRUCK) in card.marks)
+        assertTrue(LiveMark(1, "11:22", MarkKind.LATE) in card.marks)
+        assertTrue(LiveMark(2, "In ritardo di 10 min", MarkKind.LATE) in card.marks)
         assertTrue(card.late)
         // La linea di progresso nell'ultima ora prima di partire: a 20 minuti dalla partenza è a due terzi.
         assertEquals(66, card.progress)
@@ -74,6 +83,44 @@ class TripLiveTest {
         assertEquals(50, card.progress)
         assertTrue(card.text.startsWith("Arrivo alle 11:12 · In orario"))
         assertEquals("11:12", card.chip)
+        assertEquals("arriva tra 2 h 16 min", card.header)
+        assertEquals("6:40 Taranto → 11:12 Pescara", card.lines[0])
+        assertEquals("In orario · rilevato alle 8:55", card.lines[1])
+        assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.last())
+        assertTrue(card.marks.isEmpty())
+    }
+
+    @Test
+    fun laLineaHaUnPuntoPerFermata() {
+        val stops = listOf(
+            TrainStop("TARANTO", at(6, 40)), TrainStop("BARI CENTRALE", at(7, 50)),
+            TrainStop("FOGGIA", at(9, 10)), TrainStop("PESCARA CENTRALE", at(11, 12)),
+        )
+        val status = TrainStatus(15, readAt = at(8, 55), stops = stops)
+        val card = LiveTrip.card(train, at(8, 56), status, checked = true, zone = zone)!!
+        assertEquals("6:55 Taranto → 11:12 11:27 Pescara", card.lines[0])
+        assertEquals("Prossima: Foggia alle 9:25", card.lines[2])
+        val steps = card.track!!.steps(at(8, 56))
+        assertEquals(272, steps.max)
+        assertEquals(121, steps.progress)
+        assertEquals(listOf(70, 150), steps.points)
+        assertEquals(listOf(70, 80, 122), steps.segments)
+        assertEquals(steps.max, steps.segments.sum())
+    }
+
+    @Test
+    fun fermateFraDoveSaliEDoveScendi() {
+        val stops = listOf(TrainStop("LECCE", 1), TrainStop("TARANTO", 2), TrainStop("BARI CENTRALE", 3), TrainStop("PESCARA CENTRALE", 4), TrainStop("ANCONA", 5))
+        assertEquals(listOf("BARI CENTRALE"), TrainLive.between(stops, "Taranto", "Pescara Centrale").map { it.name })
+        assertEquals(5, TrainLive.between(stops, "Roma", "Milano").size)
+        assertEquals("Bari Centrale", TrainLive.pretty("BARI  CENTRALE"))
+        assertEquals("Pescara", LiveTrip.short("Pescara Centrale"))
+        assertEquals("tra 3 h 54 min", LiveTrip.inText(234 * 60_000L))
+        assertEquals("tra 2 h", LiveTrip.inText(120 * 60_000L))
+        assertEquals("tra meno di un minuto", LiveTrip.inText(20_000L))
+        val many = LiveTrack(0, 100 * 60_000L, (1..40).map { it * 2 * 60_000L }).steps(0)
+        assertTrue(many.points.size <= LiveTrack.MAX_POINTS)
+        assertEquals(100, many.segments.sum())
     }
 
     @Test
@@ -117,11 +164,12 @@ class TripLiveTest {
     @Test
     fun andamentoDelTreno() {
         val json = """{"numeroTreno":612,"ritardo":7,"provvedimento":0,"fermate":[
-            {"stazione":"TARANTO","id":"S11119","binarioProgrammatoPartenzaDescrizione":"2","binarioEffettivoPartenzaDescrizione":"4"},
+            {"stazione":"TARANTO","id":"S11119","programmata":1000,"binarioProgrammatoPartenzaDescrizione":"2","binarioEffettivoPartenzaDescrizione":"4"},
             {"stazione":"PESCARA CENTRALE","id":"S07000","binarioProgrammatoPartenzaDescrizione":null}]}"""
         val s = TrainLive.parse(json, "Taranto", 1L)!!
         assertEquals(7, s.delay)
         assertEquals("4", s.platform)
+        assertEquals(listOf(TrainStop("TARANTO", 1000)), s.stops)
         assertFalse(s.cancelled)
         assertEquals("+7 min · binario 4", TrainLive.line(s))
         val programmed = TrainLive.parse(json.replace(",\"binarioEffettivoPartenzaDescrizione\":\"4\"", ""), "Taranto", 1L)!!

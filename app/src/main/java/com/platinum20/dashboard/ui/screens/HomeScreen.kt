@@ -324,7 +324,7 @@ fun HomeScreen(
             HomeCard.DAY -> CalendarCard(
                 groups = calendar,
                 today = minute.toLocalDate(),
-                // Le abitudini stanno in "Da fare" (1.534): nel Calendario non c'è più la riga "Abitudini".
+                // Le abitudini stanno in "Da fare" (1.535): nel Calendario non c'è più la riga "Abitudini".
                 onOpenAll = {
                     haptic(Haptic.TICK)
                     onOpenNotes()

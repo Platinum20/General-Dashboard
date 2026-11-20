@@ -120,7 +120,7 @@ internal fun LaterCard(
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
         })
         Column(Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-            // In cima le abitudini (1.534): tornano ogni giorno, spuntate si spengono fino a domani e non vanno in "Fatte".
+            // In cima le abitudini (1.535): tornano ogni giorno, spuntate si spengono fino a domani e non vanno in "Fatte".
             habits.forEach { h ->
                 HabitTodoRow(
                     h, now,

@@ -21,7 +21,7 @@ internal data class BubbleAction(
     val danger: Boolean = false,
     /** Scelte rapide in fila (punto 32): la riga diventa una fila di chip, [title] sopra. */
     val chips: List<BubbleChip> = emptyList(),
-    /** Tenendo premuta la riga: di solito il fumetto con le azioni di quella cosa (regola del tocco lungo, 1.534). Prima di [onClick], che resta l'ultimo per la lambda in coda. */
+    /** Tenendo premuta la riga: di solito il fumetto con le azioni di quella cosa (regola del tocco lungo, 1.535). Prima di [onClick], che resta l'ultimo per la lambda in coda. */
     val onLongClick: (() -> Unit)? = null,
     val onClick: () -> Unit = {},
 )
