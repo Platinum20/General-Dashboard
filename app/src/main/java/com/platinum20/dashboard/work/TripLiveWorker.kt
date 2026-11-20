@@ -147,7 +147,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setContentTitle(card.title)
                 .setContentText(text)
                 // Nell'intestazione "arriva tra 3 h 54 min" (2026-11-20): il cronometro incollato al titolo non si leggeva.
-                .setSubText(card.header)
+                .setSubText(card.header?.let { marked(it, LiveCard.HEADER, card) })
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(small)
                 .setCustomBigContentView(big)

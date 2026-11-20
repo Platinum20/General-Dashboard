@@ -1,7 +1,9 @@
 # Changelog
 
 ## 1.543.0
-**Treni: il ritardo recuperato anche dopo l'arrivo, numeri delle card a destra**
+**Treni: notifica più pulita, ritardo recuperato dopo l'arrivo, numeri delle card a destra**
+- Notifica del treno riordinata come la proposta A: il ritardo sta in alto accanto ai minuti ("+12 min · arriva tra 59 min"), si vede anche a notifica chiusa; sotto la linea partenza e arrivo, poi solo prossima fermata e treno con carrozza e posto
+- Via "rilevato alle": l'ora della lettura compare solo quando è vecchia ("letto 35 min fa")
 - Se Canvas aveva perso il ritardo di un treno già arrivato (per esempio con un aggiornamento a metà viaggio), lo rilegge da solo dopo l'arrivo e il Calendario mostra gli orari veri, poi non controlla più
 - I ritardi letti prima di questa versione restano anche loro per sempre una volta arrivato il treno
 - Nelle card della Home il numero accanto al titolo ("CALENDARIO ›  8") torna attaccato al bordo destro
