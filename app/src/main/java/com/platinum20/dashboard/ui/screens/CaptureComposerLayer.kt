@@ -112,12 +112,12 @@ internal fun BoxScope.CaptureComposerVeil() {
         else if (imeVisible) imeShown = true
         else if (imeShown && !dictating) CaptureComposer.close()
     }
-    // Un velo leggero: toccando fuori dalla barra si chiude.
+    // Un velo scuro (1.532): mentre si scrive la pagina sotto non si legge più e non confonde; toccando fuori si chiude.
     AnimatedVisibility(open, enter = fadeIn(), exit = fadeOut(tween(Motion.EXIT_MS)), modifier = Modifier.matchParentSize()) {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.10f))
+                .background(Color.Black.copy(alpha = CaptureHints.VEIL_ALPHA))
                 .pointerInput(Unit) { detectTapGestures { CaptureComposer.close() } },
         )
     }
@@ -133,11 +133,12 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
     return remember {
         {
             val value = CaptureComposer.text.text.trim()
+            val chosen = CaptureComposer.chosen
             CaptureComposer.close()
             if (value.isNotEmpty()) {
                 haptic(Haptic.CONFIRM)
                 scope.launch {
-                    when (val outcome = VoiceCapture.save(context, value)) {
+                    when (val outcome = VoiceCapture.save(context, value, chosen)) {
                         VoiceCapture.Outcome.NeedsDialog -> needsDialog(value)
                         is VoiceCapture.Outcome.Answered -> com.platinum20.dashboard.capture.CaptureAsk.show(context, outcome.answer)
                         is VoiceCapture.Outcome.Saved -> {
@@ -257,7 +258,6 @@ private fun rememberPhotoAttach(onReading: (Boolean) -> Unit): () -> Unit {
 internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
     val haptic = rememberHaptic()
     val text = CaptureComposer.text
-    val mode = remember(text.text) { CaptureGuess.guess(text.text) }
     var reading by remember { mutableStateOf(false) }
     val attach = rememberPhotoAttach { reading = it }
     val empty = text.text.isEmpty()
@@ -319,75 +319,59 @@ internal fun CaptureComposerInput(modifier: Modifier = Modifier) {
                 modifier = Modifier.size(20.dp),
             )
         }
-        // Tutto a destra, appena si scrive: il simbolo di cosa diventerà, che cambia mentre si scrive.
-        AnimatedVisibility(
-            visible = !empty,
-            enter = fadeIn(Motion.lively()) + expandHorizontally(Motion.lively(), expandFrom = Alignment.Start) + scaleIn(Motion.lively(), initialScale = 0.6f),
-            exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkHorizontally(Motion.settle(), shrinkTowards = Alignment.Start),
-        ) {
-            val summary = remember(text.text, mode) { CaptureHints.summary(mode, text.text) }
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(40.dp).semantics { contentDescription = summary ?: mode.label },
-            ) {
-                Crossfade(mode, animationSpec = tween(Motion.EXIT_MS), label = "tipo") { shown ->
-                    Icon(shown.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
-                }
-            }
-        }
     }
 }
 
 /**
- * La riga che verrà salvata, sopra la barra del "+" (1.528, Antonio scelta B): stessa forma delle righe del
- * Calendario (ora a sinistra, nome, una riga sotto) e dove andrà. Vale anche mentre si detta.
+ * Sopra la barra del "+", mentre si scrive (1.532, Antonio scelta A): dove andrà, come fila di chip. Canvas accende da
+ * sola quella giusta; toccandone un'altra si corregge (vince fino a quando si chiude). Niente bolla trasparente sopra
+ * la pagina: prima l'anteprima copriva il Calendario e sembrava rotta. Dettando non c'è (si salva appena si lascia).
  */
 @Composable
-internal fun CapturePreviewBubble(text: String, modifier: Modifier = Modifier) {
+internal fun CaptureDestinationChips(text: String, modifier: Modifier = Modifier) {
+    val haptic = rememberHaptic()
     val row = remember(text) { com.platinum20.dashboard.capture.CapturePreview.of(text) }
-    // L'ultima riga resta mentre la bolla sparisce, così non si svuota a metà animazione.
-    var last by remember { mutableStateOf(row) }
-    if (row != null) last = row
+    val auto = remember(text, row) { row?.let { com.platinum20.dashboard.capture.CaptureDestination.of(it.mode, text) } }
+    // L'ultima scelta resta mentre la fila sparisce, così non si svuota a metà animazione.
+    var last by remember { mutableStateOf(auto) }
+    if (auto != null) last = auto
     AnimatedVisibility(
-        visible = row != null,
+        visible = auto != null,
         enter = fadeIn(Motion.lively()) + expandVertically(Motion.lively(), expandFrom = Alignment.Bottom),
         exit = fadeOut(tween(Motion.EXIT_MS)) + shrinkVertically(Motion.settle(), shrinkTowards = Alignment.Bottom),
         modifier = modifier,
     ) {
-        val shown = last ?: return@AnimatedVisibility
-        val shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
-        androidx.compose.material3.Surface(
-            shape = shape,
-            color = androidx.compose.ui.graphics.Color.Transparent,
-            border = cardBorder(),
-            modifier = Modifier.fillMaxWidth().glass(shape),
-        ) {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                Text(
-                    shown.destination.uppercase(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+        val lit = CaptureComposer.chosen ?: last ?: return@AnimatedVisibility
+        // Nel Calendario la chip dice anche il giorno capito ("Calendario · Domani"): si vede subito se ha letto bene.
+        val day = row?.takeIf { lit == com.platinum20.dashboard.capture.CaptureDestination.CALENDAR && CaptureComposer.chosen == null }
+            ?.detail?.substringBefore(" · ")?.takeIf { it.isNotBlank() && !it.startsWith("Scrivi") }
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            items(com.platinum20.dashboard.capture.CaptureDestination.entries.size) { i ->
+                val d = com.platinum20.dashboard.capture.CaptureDestination.entries[i]
+                val on = d == lit
+                androidx.compose.material3.FilterChip(
+                    selected = on,
+                    onClick = {
+                        haptic(Haptic.TICK)
+                        // Toccando quella già scelta da Canvas si torna all'automatico.
+                        CaptureComposer.chosen = if (d == auto) null else d
+                    },
+                    label = { Text(if (on && day != null) "${d.label} · $day" else d.label, style = MaterialTheme.typography.labelLarge, maxLines = 1) },
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.card,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = on,
+                        borderColor = MaterialTheme.colorScheme.outlineVariant,
+                        selectedBorderColor = Color.Transparent,
+                    ),
+                    modifier = Modifier.bouncyPress(0.94f).semantics { contentDescription = if (on) "Va in ${d.label}" else "Metti in ${d.label}" },
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                    Box(Modifier.width(48.dp)) {
-                        if (shown.left.isNotEmpty()) {
-                            Text(shown.left, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                        } else {
-                            Icon(shown.mode.icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
-                        }
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text(shown.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            shown.detail,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
             }
         }
     }

@@ -24,9 +24,9 @@ class CapturePreviewTest {
     }
 
     @Test
-    fun undatedThingsGoInPerDopo() {
+    fun undatedThingsGoInDaFare() {
         val row = CapturePreview.of("comprare il latte", now)!!
-        assertEquals(CapturePreview.LATER, row.destination)
+        assertEquals(CapturePreview.TODO, row.destination)
     }
 }
 

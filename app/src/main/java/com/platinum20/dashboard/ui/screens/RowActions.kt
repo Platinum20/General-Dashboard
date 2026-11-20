@@ -2,7 +2,9 @@ package com.platinum20.dashboard.ui.screens
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin as PushPinFilled
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Luggage
@@ -135,7 +137,6 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                         inApp?.openWeb?.invoke(url, row.parcel.carrier.label)
                     }
                 },
-                row.parcel.takeIf { it.expected == null && !it.delivered }?.let { p -> pinAction(p.pinned, p.title) { NotesStore.toggleParcelPin(p.id) } },
                 BubbleAction(Icons.Outlined.Share, "Condividi") { share(row.parcel.title) },
                 BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
                     NotesStore.deleteParcel(row.parcel.id)
@@ -150,6 +151,11 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         ActionBubble.show(
             pinAction(n.pinned, n.title) { NotesStore.togglePin(n.id) },
             BubbleAction(Icons.Outlined.Share, "Condividi") { share(n.text) },
+            // L'archivio di Appunti (Antonio, 2026-11-20): la nota esce dalla card senza perdersi.
+            if (n.archivedAt == null) BubbleAction(Icons.Outlined.Archive, "Archivia", detail = n.title) {
+                NotesStore.toggleNoteArchive(n.id)
+                offerUndo("Archiviata") { NotesStore.toggleNoteArchive(n.id) }
+            } else BubbleAction(Icons.Outlined.Unarchive, "Rimetti negli appunti") { NotesStore.toggleNoteArchive(n.id) },
             BubbleAction(Icons.Outlined.Delete, "Elimina", danger = true) {
                 NotesStore.deleteNote(n.id)
                 offerUndo("Nota eliminata") { NotesStore.restoreNote(n) }

@@ -239,6 +239,8 @@ data class Note(
     val createdAt: Long = updatedAt,
     /** Le foto allegate (file nell'app), in ordine: la prima è la copertina. Vuota per le note di solo testo (1.529: più d'una). */
     val photos: List<String> = emptyList(),
+    /** Messa nell'archivio di Appunti (Antonio, 2026-11-20): esce dalla card ma non si perde. Null = in Appunti. */
+    val archivedAt: Long? = null,
 ) {
     /** La copertina: quella che si vede sulla linea del tempo e in Per dopo. */
     val photo: String get() = photos.firstOrNull().orEmpty()
@@ -566,6 +568,14 @@ object NotesStore {
     }
 
     /** Un promemoria con scadenza già nota, senza interpretare il testo. */
+    /** Una cosa da fare senza data, col testo così com'è (scelta "Da fare" a mano nel "+", anche se c'era un giorno). */
+    fun addTodo(text: String): TaskItem? {
+        if (text.isBlank()) return null
+        val task = TaskItem(newId(), text.trim())
+        update { it.copy(tasks = listOf(task) + it.tasks) }
+        return task
+    }
+
     fun addTaskAt(text: String, dueAt: Long): TaskItem {
         val task = TaskItem(newId(), text.trim(), dueAt = dueAt)
         update { it.copy(tasks = listOf(task) + it.tasks) }
@@ -661,6 +671,11 @@ object NotesStore {
         d.copy(parcels = d.parcels.map { if (it.id == id) it.copy(pinned = !it.pinned) else it })
     }
 
+    /** Archivia una nota (o la rimette in Appunti): la card della Home mostra solo quelle attive. */
+    fun toggleNoteArchive(id: Long, now: Long = System.currentTimeMillis()) = update { d ->
+        d.copy(notes = d.notes.map { if (it.id == id) it.copy(archivedAt = if (it.archivedAt == null) now else null) else it })
+    }
+
     fun deleteNote(id: Long) = update { d -> d.copy(notes = d.notes.filter { it.id != id }) }
 
     /** Rimette una nota eliminata per sbaglio: serve ad "Annulla". */
@@ -721,7 +736,8 @@ object NotesStore {
             d.notes.forEach {
                 put(JSONObject().put("id", it.id).put("text", it.text).put("updatedAt", it.updatedAt).put("pinned", it.pinned).put("createdAt", it.createdAt)
                     // "photo" = la copertina, per i backup letti da versioni vecchie; "photos" = tutte.
-                    .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) })
+                    .apply { if (it.photos.isNotEmpty()) put("photo", it.photo).put("photos", JSONArray(it.photos)) }
+                    .apply { it.archivedAt?.let { at -> put("archivedAt", at) } })
             }
         })
         .put("habits", JSONArray().apply {
@@ -789,7 +805,8 @@ object NotesStore {
             notes = (0 until notes.length()).map { i ->
                 val o = notes.getJSONObject(i)
                 o.optLong("updatedAt").let { updated ->
-                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o))
+                    Note(o.getLong("id"), o.optString("text"), updated, o.optBoolean("pinned"), o.optLong("createdAt", updated), notePhotos(o),
+                        o.optLong("archivedAt", 0L).takeIf { it > 0L })
                 }
             },
             habits = (0 until habits.length()).map { i ->

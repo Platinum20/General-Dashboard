@@ -48,7 +48,7 @@ internal object CapturePreview {
             } ?: CapturePreviewRow(CALENDAR, "", clean, "Scrivi anche quando", mode)
             CaptureMode.TASK -> QuickParse.parse(clean, now).let { e ->
                 val due = e.due
-                if (due == null) CapturePreviewRow(LATER, "", e.text.ifBlank { clean }, "Da fare, senza data", mode)
+                if (due == null) CapturePreviewRow(TODO, "", e.text.ifBlank { clean }, "Da fare, senza data", mode)
                 else CapturePreviewRow(
                     CALENDAR,
                     due.format(hour),
@@ -83,12 +83,13 @@ internal object CapturePreview {
                 CaptureSave.preview(mode, clean, now) ?: "Pacco in arrivo",
                 mode,
             )
-            CaptureMode.NOTE -> CapturePreviewRow(LATER, "", clean.lineSequence().first().take(80), "Nota", mode)
+            CaptureMode.NOTE -> CapturePreviewRow(JOTTINGS, "", clean.lineSequence().first().take(80), "Nota", mode)
         }
     }
 
     const val CALENDAR = "Va nel Calendario"
-    const val LATER = "Va in Per dopo"
+    const val TODO = "Va in Da fare"
+    const val JOTTINGS = "Va negli Appunti"
     const val HABITS = "Va nelle abitudini"
 
     private fun dayLine(day: LocalDate, today: LocalDate): String = when (day) {

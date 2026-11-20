@@ -9,7 +9,7 @@ import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.songid.SongId
 import com.platinum20.dashboard.ui.screens.CaptureComposerVeil
 import com.platinum20.dashboard.ui.screens.CaptureComposerInput
-import com.platinum20.dashboard.ui.screens.CapturePreviewBubble
+import com.platinum20.dashboard.ui.screens.CaptureDestinationChips
 import com.platinum20.dashboard.ui.screens.rememberComposerSend
 import com.platinum20.dashboard.ui.screens.ItemDetailScreen
 import com.platinum20.dashboard.ui.screens.ItemKind
@@ -395,6 +395,7 @@ object Routes {
     const val SIM = "home/sim"
     /** L'archivio di Per dopo (1.493): le cose fatte, si apre toccando la card. */
     const val LATER_ARCHIVE = "home/later/archive"
+    const val JOTTINGS_ARCHIVE = "home/jottings/archive"
     /** Un documento fotografato con la graffetta (dalla card Documenti della Home). */
     const val DOCUMENT = "home/document/{id}"
     fun document(id: Long) = "home/document/$id"
@@ -542,13 +543,9 @@ private fun CanvasNavBar(
     // Mentre si scrive la barra è il campo: sale con la tastiera.
     val insets = if (composing) WindowInsets.navigationBars.union(WindowInsets.ime) else WindowInsets.navigationBars
     Column(Modifier.fillMaxWidth().windowInsetsPadding(insets)) {
-    // Sopra la barra, mentre si scrive o si detta: la riga che verrà salvata, com'è e dove va (1.528, Antonio scelta B).
-    CapturePreviewBubble(
-        when {
-            listening && !music -> partial
-            composing -> CaptureComposer.text.text
-            else -> ""
-        },
+    // Sopra la barra, mentre si scrive: dove andrà, come chip da correggere con un tocco (1.532, Antonio scelta A).
+    CaptureDestinationChips(
+        if (composing) CaptureComposer.text.text else "",
         Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp),
     )
     Row(
@@ -1579,6 +1576,9 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             }
             composable(Routes.LATER_ARCHIVE) {
                 com.platinum20.dashboard.ui.screens.LaterArchiveScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.JOTTINGS_ARCHIVE) {
+                com.platinum20.dashboard.ui.screens.LaterArchiveScreen(com.platinum20.dashboard.ui.screens.LooseCardKind.JOTTINGS, onBack = { navController.popBackStack() })
             }
             composable(Routes.SIM) {
                 CompositionLocalProvider(com.platinum20.dashboard.ui.screens.LocalRouteScope provides this) {
