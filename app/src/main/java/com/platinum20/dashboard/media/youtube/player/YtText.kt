@@ -133,7 +133,32 @@ object YtText {
 
     /** Il video con titolo e descrizione originali al posto di quelli tradotti (null o vuoti = si tiene quello che c'è). */
     fun original(stream: YtStream, title: String?, description: String?): YtStream = stream.copy(
-        title = title?.takeIf { it.isNotBlank() } ?: stream.title,
-        description = description?.takeIf { it.isNotBlank() } ?: stream.description,
+        title = unescape(title?.takeIf { it.isNotBlank() } ?: stream.title),
+        description = unescape(description?.takeIf { it.isNotBlank() } ?: stream.description),
     )
+
+    private val entity = Regex("&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|amp|quot|apos|lt|gt|nbsp);")
+
+    /**
+     * Toglie i codici HTML rimasti nel testo ("I&apos;ve", "&quot;Brain Drain&quot;", 1.532): li lasciano le descrizioni
+     * tradotte con Google Traduttore e incollate dall'autore. Due giri per quelli scritti due volte ("&amp;apos;").
+     */
+    fun unescape(text: String): String {
+        if ('&' !in text) return text
+        fun once(t: String) = entity.replace(t) { m ->
+            when (val code = m.groupValues[1]) {
+                "amp" -> "&"
+                "quot" -> "\""
+                "apos" -> "'"
+                "lt" -> "<"
+                "gt" -> ">"
+                "nbsp" -> " "
+                else -> {
+                    val n = if (code[1] == 'x' || code[1] == 'X') code.drop(2).toIntOrNull(16) else code.drop(1).toIntOrNull()
+                    n?.takeIf { Character.isValidCodePoint(it) }?.let { String(Character.toChars(it)) } ?: m.value
+                }
+            }
+        }
+        return once(once(text))
+    }
 }

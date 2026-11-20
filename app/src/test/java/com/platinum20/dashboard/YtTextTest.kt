@@ -90,4 +90,12 @@ class YtTextTest {
         assertEquals("Descrizione tradotta", fixed.description)
         assertEquals(s, YtText.original(s, " ", ""))
     }
+
+    @Test
+    fun descrizioneSenzaCodiciHtml() {
+        assertEquals("I've seen \"Brain Drain,\" & more", YtText.unescape("I&apos;ve seen &quot;Brain Drain,&quot; &amp; more"))
+        assertEquals("l'altro", YtText.unescape("l&amp;apos;altro"))
+        assertEquals("caffè 'ok'", YtText.unescape("caff&#232; &#x27;ok&#39;"))
+        assertEquals("R&B &foo;", YtText.unescape("R&B &foo;"))
+    }
 }

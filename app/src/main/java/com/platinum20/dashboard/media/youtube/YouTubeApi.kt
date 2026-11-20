@@ -218,7 +218,6 @@ object YouTubeApi {
         }.getOrNull()
     }
 
-    /** Ultimi video dei canali seguiti, dai feed RSS pubblici (gratis, senza quota). */
     /**
      * I video recenti dei canali dai feed RSS, al massimo per [budgetMs]: con tanti canali i feed lenti facevano
      * scadere tutta la lettura e il feed restava fermo a giorni prima (1.532). Allo scadere si tiene quello che è
