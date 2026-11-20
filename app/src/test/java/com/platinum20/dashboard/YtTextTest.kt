@@ -93,9 +93,9 @@ class YtTextTest {
 
     @Test
     fun descrizioneSenzaCodiciHtml() {
-        assertEquals("I've seen \"Brain Drain,\" & more", YtText.unescape("I&apos;ve seen &quot;Brain Drain,&quot; &amp; more"))
-        assertEquals("l'altro", YtText.unescape("l&amp;apos;altro"))
-        assertEquals("caffè 'ok'", YtText.unescape("caff&#232; &#x27;ok&#39;"))
-        assertEquals("R&B &foo;", YtText.unescape("R&B &foo;"))
+        assertEquals("I've seen \"Brain Drain,\" & more", YtText.decodeEntities("I&apos;ve seen &quot;Brain Drain,&quot; &amp; more"))
+        assertEquals("l'altro", YtText.decodeEntities("l&amp;apos;altro"))
+        assertEquals("caffè 'ok'", YtText.decodeEntities("caff&#232; &#x27;ok&#39;"))
+        assertEquals("R&B &foo;", YtText.decodeEntities("R&B &foo;"))
     }
 }
