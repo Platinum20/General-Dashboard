@@ -345,7 +345,7 @@ internal fun CaptureDestinationChips(text: String, modifier: Modifier = Modifier
         // Nel Calendario la chip dice anche il giorno capito ("Calendario · Domani"): si vede subito se ha letto bene.
         val day = row?.takeIf { lit == com.platinum20.dashboard.capture.CaptureDestination.CALENDAR && CaptureComposer.chosen == null }
             ?.detail?.substringBefore(" · ")?.takeIf { it.isNotBlank() && !it.startsWith("Scrivi") }
-        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
             items(com.platinum20.dashboard.capture.CaptureDestination.entries.size) { i ->
                 val d = com.platinum20.dashboard.capture.CaptureDestination.entries[i]
                 val on = d == lit
