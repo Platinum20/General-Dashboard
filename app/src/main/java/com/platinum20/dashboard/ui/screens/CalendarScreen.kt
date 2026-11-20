@@ -290,17 +290,17 @@ fun EventDetailScreen(
             if (liveOn) LaunchedEffect(current.id, liveAsk) {
                 while (true) {
                     val now = System.currentTimeMillis()
-                    val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(com.platinum20.dashboard.trips.TrainLive.fresh(current.id, now))
+                    val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(com.platinum20.dashboard.trips.TrainLive.known(current.id, now))
                     // Da 12 ore prima fino all'arrivo: prima ViaggiaTreno non conosce ancora il treno del giorno.
                     if (now > to + shift || from - now > LIVE_FROM_MS) break
-                    if (liveAsk > 0 || com.platinum20.dashboard.trips.TrainLive.fresh(current.id, now)?.let { now - it.readAt >= LIVE_EVERY_MS } != false) {
+                    if (liveAsk > 0 || com.platinum20.dashboard.trips.TrainLive.known(current.id, now)?.let { now - it.readAt >= LIVE_EVERY_MS } != false) {
                         com.platinum20.dashboard.trips.TrainLive.refresh(current.id, trip!!, from, zone)
                         liveTried = true
                     }
                     kotlinx.coroutines.delay(LIVE_EVERY_MS)
                 }
             }
-            val live = statuses[current.id]?.takeIf { nowMs - it.readAt < com.platinum20.dashboard.trips.TrainLive.FRESH_MS }
+            val live = statuses[current.id]?.takeIf { nowMs - it.readAt < com.platinum20.dashboard.trips.TrainLive.KEEP_MS }
             WhenHeroCard(if (liveOn) WhenHero.train(from, to, live, nowMs, zone) else WhenHero.of(from, to, current.allDay, nowMs, zone))
             CanvasCard(Modifier.fillMaxWidth()) {
                 // I treni tengono il viaggio sulla linea del tempo: partenza, linea, arrivo (Antonio).

@@ -140,27 +140,30 @@ object LiveTrip {
         val leave = event.begin + delay
         val end = event.end + delay
         val marks = mutableListOf<LiveMark>()
-        // "In ritardo di 92 min · rilevato alle 16:02": il ritardo in arancio, poi da quando vale (regola 4).
-        val delayWords = if (late) "In ritardo di ${TrainLive.shiftMinutes(status)} min" else live
-        val liveLine = listOfNotNull(delayWords, status?.let { "rilevato alle ${at(it.readAt, zone)}" }).joinToString(" · ").ifEmpty { null }
-        // Con il ritardo l'orario del biglietto resta, barrato, davanti a quello vero: "18:27 19:59".
-        fun time(planned: Long, real: Long, line: Int): String {
-            if (!late) return at(real, zone)
-            marks += LiveMark(line, at(planned, zone), MarkKind.STRUCK)
-            marks += LiveMark(line, at(real, zone), MarkKind.LATE)
-            return "${at(planned, zone)} ${at(real, zone)}"
+        // Il ritardo in poche parole, così non va a capo: "In ritardo di 95 min". Una lettura vecchia resta
+        // valida (gli orari restano spostati) ma dice quanto è vecchia: "+95 min · letto 35 min fa" (regola 4).
+        val old = status != null && !TrainLive.isFresh(status, now)
+        val delayWords = when {
+            status == null -> live
+            old -> listOfNotNull(if (late) "+${TrainLive.shiftMinutes(status)} min" else live, "letto ${TrainLive.ago(now - status.readAt)}").joinToString(" · ")
+            late -> "In ritardo di ${TrainLive.shiftMinutes(status)} min"
+            else -> live
         }
+        // Partenza a sinistra, arrivo a destra, solo con gli orari veri (One UI non mostra il barrato: due orari
+        // affiancati si leggevano come un errore, 2026-11-20). Il ritardo detto sotto basta a capire.
+        val route = listOfNotNull(at(leave, zone), short(trip.from)).joinToString(" ") + " → " + "${at(end, zone)} ${short(trip.to) ?: trip.to}"
+        if (late) marks += LiveMark(0, at(end, zone), MarkKind.LATE)
         val stops = TrainLive.between(status?.stops.orEmpty(), trip.from, trip.to)
-        val points = stops.map { it.at + delay }.filter { it in (leave + 1) until end }
         return when (phase) {
             LivePhase.SOON -> {
                 val platform = status?.platform?.let { "binario $it" }
                 // La linea di progresso nell'ultima ora: si riempie man mano che la partenza si avvicina.
                 val waited = (((now - (leave - LEAD_MS)).toDouble() / LEAD_MS) * 100).toInt().coerceIn(0, 100)
-                val lines = mutableListOf<String>()
-                lines += listOfNotNull("Parte alle ${time(event.begin, leave, 0)}", platform).joinToString(" · ")
-                lines += "Arrivo a ${trip.to} alle ${time(event.end, end, 1)}"
-                liveLine?.let { lines += it; if (late) marks += LiveMark(lines.lastIndex, delayWords!!, MarkKind.LATE) }
+                val lines = mutableListOf(route)
+                listOfNotNull(delayWords, platform).joinToString(" · ").ifEmpty { null }?.let {
+                    lines += it
+                    if (late && delayWords != null) marks += LiveMark(1, delayWords, MarkKind.LATE)
+                }
                 seat?.let { lines += it }
                 val text = listOfNotNull("Parte alle ${at(leave, zone)}", live, platform).joinToString(" · ")
                 if (late) marks += LiveMark(-1, text, MarkKind.LATE)
@@ -180,11 +183,12 @@ object LiveTrip {
                 val progress = (((now - leave).toDouble() / (end - leave)) * 100).toInt().coerceIn(0, 100)
                 val arrived = now >= end
                 val arrival = if (arrived) "Arrivato a ${trip.to}" else "Arrivo alle ${at(end, zone)}"
-                val lines = mutableListOf<String>()
-                // Partenza a sinistra, arrivo a destra: la stessa linea scritta in parole.
-                lines += if (arrived) arrival else
-                    listOfNotNull(at(leave, zone), short(trip.from)).joinToString(" ") + " → " + "${time(event.end, end, 0)} ${short(trip.to) ?: trip.to}"
-                liveLine?.let { lines += it; if (late) marks += LiveMark(lines.lastIndex, delayWords!!, MarkKind.LATE) }
+                val lines = mutableListOf(if (arrived) arrival else route)
+                if (arrived) marks.clear()
+                delayWords?.let {
+                    lines += it
+                    if (late) marks += LiveMark(1, it, MarkKind.LATE)
+                }
                 if (!arrived) stops.firstOrNull { it.at + delay > now }?.let { next ->
                     lines += "Prossima: ${TrainLive.pretty(next.name)} alle ${at(next.at + delay, zone)}"
                 }
@@ -200,7 +204,7 @@ object LiveTrip {
                     late = late,
                     header = if (arrived) null else "arriva ${inText(end - now)}",
                     marks = marks,
-                    track = LiveTrack(leave, end, points),
+                    track = LiveTrack(leave, end),
                 )
             }
         }

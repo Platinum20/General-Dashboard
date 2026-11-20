@@ -41,6 +41,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val context = applicationContext
         AppSettings.init(context)
+        // L'ultimo ritardo letto, anche da un giro precedente o prima di un riavvio: senza rete restano quegli orari.
+        TrainLive.init(context)
         val trains = AppSettings.liveTrips.value
         val shifts = AppSettings.liveShifts.value
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -53,11 +55,11 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }.getOrDefault(emptyList())
         val active = events.filter { e ->
             if (e.trip != null) trains else shifts && e.eventId < -1
-        }.filter { LiveTrip.phase(it, now, TrainLive.fresh(it.eventId, now)) != null }
+        }.filter { LiveTrip.phase(it, now, TrainLive.known(it.eventId, now)) != null }
 
         val posted = mutableSetOf<String>()
         if (MorningWorker.canNotify(context)) for (event in active) {
-            var status = TrainLive.fresh(event.eventId, now)
+            var status = TrainLive.known(event.eventId, now)
             val trip = event.trip
             val lastRead = prefs.getLong("read_${event.eventId}", 0L)
             if (trip != null && now - lastRead >= READ_EVERY_MS) {
@@ -127,21 +129,21 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     /**
-     * Android 16 (proposta A, 2026-11-20): la barra diventa il viaggio. Un tratto per ogni pezzo fra due fermate,
-     * un punto per fermata, il treno che avanza; il testo aperto resta una cosa per riga.
+     * Android 16 (proposta A, 2026-11-20): la barra col treno che avanza. Un tratto solo, senza i punti delle
+     * fermate: One UI li disegna come quadrati con la linea spezzata. Il testo tiene due righe (partenza → arrivo
+     * e ritardo), le altre andrebbero tagliate con "…".
      */
     @androidx.annotation.RequiresApi(36)
     private fun journey(context: Context, base: android.app.Notification, track: com.platinum20.dashboard.trips.LiveTrack, lines: List<CharSequence>, accent: Int): android.app.Notification {
         val steps = track.steps(System.currentTimeMillis())
         val style = android.app.Notification.ProgressStyle()
             .setStyledByProgress(true)
-            .setProgressSegments(steps.segments.map { android.app.Notification.ProgressStyle.Segment(it).setColor(accent) })
-            .setProgressPoints(steps.points.map { android.app.Notification.ProgressStyle.Point(it).setColor(accent) })
+            .setProgressSegments(listOf(android.app.Notification.ProgressStyle.Segment(steps.max).setColor(accent)))
             .setProgress(steps.progress)
             .setProgressTrackerIcon(android.graphics.drawable.Icon.createWithResource(context, R.drawable.ic_train_tracker))
         return android.app.Notification.Builder.recoverBuilder(context, base)
             .setStyle(style)
-            .setContentText(join(lines))
+            .setContentText(join(lines.take(2)))
             .build()
     }
 

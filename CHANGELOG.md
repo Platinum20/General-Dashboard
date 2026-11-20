@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.536.0
+**Treni: il ritardo resta anche senza rete, notifica più pulita**
+- Se la connessione cade a metà viaggio, Calendario, pagina del viaggio e notifica tengono gli orari col ritardo dell'ultimo rilevamento invece di tornare a quelli del biglietto, e dicono quanto è vecchio ("letto 35 min fa")
+- L'ultimo ritardo letto si salva: resta anche se l'app si chiude o si aggiorna
+- Notifica: partenza e arrivo solo con gli orari veri ("15:36 Pescara → 20:02 Taranto"), niente più due orari affiancati
+- Il ritardo in poche parole ("In ritardo di 95 min"), senza puntini
+- La barra del treno è una linea sola, senza i quadratini delle fermate
+
 ## 1.535.0
 **Le abitudini stanno in "Da fare" e si eliminano tenendole premute**
 - Le abitudini sono in cima alla card "Da fare" in Home, con la serie a destra (🔥 5)
