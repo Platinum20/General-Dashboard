@@ -372,7 +372,7 @@ fun FloatingPlayer(
                             val velocity = tracker.calculateVelocity()
                             val vx = velocity.x
                             val oldBase = if (atRight) maxW - boxW else 0f
-                            when (val drop = MiniTuck.drop(magnet, oldBase + dx, boxW, maxW, vx)) {
+                            when (val drop = MiniTuck.drop(magnet, oldBase + dx, boxW, maxW, vx, fromRight = atRight)) {
                                 MiniTuck.Drop.CLOSE -> {
                                     closing = true
                                     view.haptic(Haptic.CONFIRM)

@@ -62,18 +62,19 @@ object MiniTuck {
 
     /**
      * Cosa succede lasciandolo (1.545): preso dalla calamita = si chiude; portato oltre il bordo = linguetta da
-     * quel lato; lanciato verso il bordo dalla sua metà = linguetta, lanciato verso l'altra metà = angolo di là;
-     * altrimenti l'angolo della metà dove l'hai lasciato. In alto o in basso lo decide la parte verticale.
+     * quel lato; lanciato verso il bordo del suo angolo ([fromRight] = da dove è partito) = linguetta, lanciato
+     * verso l'altro lato = angolo di là; altrimenti l'angolo della metà dove l'hai lasciato. In alto o in basso
+     * lo decide la parte verticale.
      */
-    fun drop(magnet: Boolean, left: Float, boxW: Float, maxW: Float, vx: Float): Drop {
+    fun drop(magnet: Boolean, left: Float, boxW: Float, maxW: Float, vx: Float, fromRight: Boolean): Drop {
         val center = left + boxW / 2f
         val rightHalf = center > maxW / 2f
         return when {
             magnet -> Drop.CLOSE
             offEdge(left, boxW, maxW) > 0 -> Drop.TUCK_RIGHT
             offEdge(left, boxW, maxW) < 0 -> Drop.TUCK_LEFT
-            vx > FLING -> if (rightHalf) Drop.TUCK_RIGHT else Drop.RIGHT
-            vx < -FLING -> if (!rightHalf) Drop.TUCK_LEFT else Drop.LEFT
+            vx > FLING -> if (fromRight) Drop.TUCK_RIGHT else Drop.RIGHT
+            vx < -FLING -> if (!fromRight) Drop.TUCK_LEFT else Drop.LEFT
             rightHalf -> Drop.RIGHT
             else -> Drop.LEFT
         }

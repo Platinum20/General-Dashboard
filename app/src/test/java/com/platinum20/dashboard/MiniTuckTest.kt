@@ -17,27 +17,27 @@ class MiniTuckTest {
 
     @Test
     fun laCalamitaVinceSuTutto() {
-        assertEquals(Drop.CLOSE, MiniTuck.drop(magnet = true, left = 800f, boxW = box, maxW = w, vx = 4_000f))
+        assertEquals(Drop.CLOSE, MiniTuck.drop(magnet = true, left = 800f, boxW = box, maxW = w, vx = 4_000f, fromRight = true))
     }
 
     @Test
     fun oltreIlBordoVaNellaLinguetta() {
-        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 700f, box, w, 0f))
-        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, -300f, box, w, 0f))
+        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 700f, box, w, 0f, true))
+        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, -300f, box, w, 0f, false))
     }
 
     @Test
     fun lanciatoVersoIlSuoBordoSiRitiraVersoLAltroCambiaAngolo() {
-        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 400f, box, w, 3_000f))
-        assertEquals(Drop.LEFT, MiniTuck.drop(false, 400f, box, w, -3_000f))
-        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, 0f, box, w, -3_000f))
-        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 0f, box, w, 3_000f))
+        assertEquals(Drop.TUCK_RIGHT, MiniTuck.drop(false, 450f, box, w, 3_000f, true))
+        assertEquals(Drop.LEFT, MiniTuck.drop(false, 50f, box, w, -3_000f, true))
+        assertEquals(Drop.TUCK_LEFT, MiniTuck.drop(false, -50f, box, w, -3_000f, false))
+        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 350f, box, w, 3_000f, false))
     }
 
     @Test
     fun lasciatoVaNellAngoloDellaSuaMeta() {
-        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 350f, box, w, 0f))
-        assertEquals(Drop.LEFT, MiniTuck.drop(false, 100f, box, w, 0f))
+        assertEquals(Drop.RIGHT, MiniTuck.drop(false, 350f, box, w, 0f, false))
+        assertEquals(Drop.LEFT, MiniTuck.drop(false, 100f, box, w, 0f, true))
     }
 
     @Test
