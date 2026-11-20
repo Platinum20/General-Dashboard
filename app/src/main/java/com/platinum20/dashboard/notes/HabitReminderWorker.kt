@@ -92,6 +92,7 @@ class HabitReminderWorker(context: Context, params: WorkerParameters) : Coroutin
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(context.getColor(R.color.notification_accent))
             .setContentTitle(habit.title)
             .setContentText(HabitReminder.text(habit, today))
             .setContentIntent(PendingIntent.getActivity(context, code, open, flags))

@@ -11,12 +11,14 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.SimpleBasePlayer
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.platinum20.dashboard.MainActivity
 import com.platinum20.dashboard.OpenRequest
+import com.platinum20.dashboard.R
 import com.platinum20.dashboard.news.RecapSpeaker
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -35,6 +37,8 @@ class PlayerService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         CanvasPlayer.init(this)
+        // La notifica del player usa la stessa icona piccola delle altre (non la nota di Media3).
+        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build().apply { setSmallIcon(R.drawable.ic_notification) })
         // Il motore nasce qui se non c'era già: la notifica lo segue dal primo istante.
         CanvasPlayer.player(this)
         val open = Intent(this, MainActivity::class.java)

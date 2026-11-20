@@ -1,11 +1,25 @@
 # Changelog
 
-## 1.536.0
+## 1.538.0
 **Treni: la notifica come il disegno, e il ritardo che resta anche senza rete**
 - La notifica del treno ora è disegnata da Canvas, uguale alla proposta A: la linea del viaggio con un pallino per fermata e il treno che avanza, sotto la partenza a sinistra e l'arrivo a destra (l'orario del biglietto barrato e quello vero in arancio), poi ritardo, prossima fermata e posto, una cosa per riga
 - Nuovo tasto "Fermate": mostra tutte le fermate con l'orario (quelle già passate più chiare)
 - Se la connessione cade a metà viaggio, Calendario, pagina del viaggio e notifica tengono gli orari col ritardo dell'ultimo rilevamento invece di tornare a quelli del biglietto, e dicono quanto è vecchio ("letto 35 min fa")
 - L'ultimo ritardo letto si salva: resta anche se l'app si chiude o si aggiorna
+
+## 1.537.0
+**"Calendario" nel + chiede solo quando**
+- Scegliendo "Calendario" per una cosa senza giorno non si apre più la vecchia finestra "Aggiungi"
+- Sale il fumetto di vetro: prima il giorno (Oggi, Domani, i giorni dopo o "Altro giorno"), poi l'ora (tutto il giorno, qualche ora pronta o "Altra ora")
+- Il testo resta quello scritto, non si riscrive; portando il fumetto di lato non si salva niente
+- Si salva nel giorno scelto, con "Annulla" come sempre
+
+## 1.536.0
+
+**L'icona delle notifiche è quella dell'app**
+- Nella barra di stato e in cima alle notifiche ora c'è la pennellata con la goccia di Canvas, non più i vecchi tre riquadri.
+- Anche la notifica del player e quelle trovate nei messaggi usano la stessa icona.
+- Le notifiche hanno l'arancio dell'icona (il treno resta blu, arancio solo se è in ritardo).
 
 ## 1.535.0
 **Le abitudini stanno in "Da fare" e si eliminano tenendole premute**

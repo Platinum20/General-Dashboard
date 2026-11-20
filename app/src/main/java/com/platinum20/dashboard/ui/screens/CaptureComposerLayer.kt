@@ -140,6 +140,8 @@ internal fun rememberComposerSend(onNeedsDialog: (String) -> Unit): () -> Unit {
                 scope.launch {
                     when (val outcome = VoiceCapture.save(context, value, chosen)) {
                         VoiceCapture.Outcome.NeedsDialog -> needsDialog(value)
+                        // Calendario senza giorno: si chiede solo quando, nel fumetto (1.536), non più il dialogo.
+                        is VoiceCapture.Outcome.NeedsWhen -> CaptureWhenAsk.askDay(context, scope, outcome.text)
                         is VoiceCapture.Outcome.Answered -> com.platinum20.dashboard.capture.CaptureAsk.show(context, outcome.answer)
                         is VoiceCapture.Outcome.Saved -> {
                             AppSettings.countCaptureSave()
