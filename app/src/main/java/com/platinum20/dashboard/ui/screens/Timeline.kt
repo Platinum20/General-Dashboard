@@ -60,6 +60,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.platform.LocalDensity
@@ -162,6 +164,11 @@ data class TripStops(
     val extra: String = "",
     /** Una riga sotto [middle]: per un treno "Intercity 612 · Carrozza 5 · Posto 42D", per un turno venduto, scaglione e guadagno (Antonio). */
     val below: String? = null,
+    /** Gli orari del biglietto quando il ritardo li sposta: barrati e piccoli accanto a quelli veri (2026-11-20). */
+    val plannedDepart: String? = null,
+    val plannedArrive: String? = null,
+    /** Il ritardo ("+97 min") dentro [middle], da colorare in arancio: attenzione. */
+    val late: String? = null,
 ) {
     /**
      * Lo spazio (dp) fra inizio e fine: uguale per tutti, non più in base alla durata, che è già scritta in mezzo
@@ -424,6 +431,7 @@ internal fun TripBlock(
     val text = if (past) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
     val sub = MaterialTheme.colorScheme.onSurfaceVariant
     val here = MaterialTheme.colorScheme.primary
+    val urgent = Urgent.color(darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f)
     val progress = trip.progress(System.currentTimeMillis())
     val lineH = tripLine()
     Column(modifier.padding(vertical = TRIP_PAD)) {
@@ -451,7 +459,7 @@ internal fun TripBlock(
             )
             if (rail) Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                TripStop(trip.departAt, trip.from, text, lineH, if (trip.title == null) title else Modifier)
+                TripStop(trip.departAt, trip.from, text, lineH, if (trip.title == null) title else Modifier, trip.plannedDepart, urgent)
                 // In mezzo tutto allineato agli orari: le creator e poi durata e guadagno. L'altezza è quella
                 // della durata, o di più se il testo non ci sta: niente spazi vuoti con il testo che galleggia.
                 Box(Modifier.fillMaxWidth().heightIn(min = trip.middleMinDp().dp), contentAlignment = Alignment.CenterStart) {
@@ -477,7 +485,7 @@ internal fun TripBlock(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         } else if (trip.middle.isNotEmpty()) Text(
-                            trip.middle,
+                            lateMiddle(trip.middle, trip.late, urgent),
                             style = MaterialTheme.typography.labelMedium,
                             color = sub,
                             maxLines = 1,
@@ -489,7 +497,7 @@ internal fun TripBlock(
                         }
                     }
                 }
-                TripStop(trip.arriveAt, trip.to, text, lineH)
+                TripStop(trip.arriveAt, trip.to, text, lineH, planned = trip.plannedArrive, urgent = urgent)
             }
         }
     }
@@ -509,10 +517,42 @@ internal fun peopleLabel(people: Int) = when {
     else -> "In $people"
 }
 
+/** [middle] con il ritardo in arancio, il resto com'è. */
+private fun lateMiddle(middle: String, late: String?, urgent: Color): androidx.compose.ui.text.AnnotatedString {
+    val at = late?.let { middle.indexOf(it) } ?: -1
+    return androidx.compose.ui.text.buildAnnotatedString {
+        append(middle)
+        if (at >= 0) addStyle(androidx.compose.ui.text.SpanStyle(color = urgent), at, at + late!!.length)
+    }
+}
+
+/**
+ * Ora e stazione. Con [planned] l'ora è spostata dal ritardo: in arancio, e accanto quella del biglietto
+ * barrata e più piccola, così si vede cosa è cambiato senza perdere l'orario vero.
+ */
 @Composable
-private fun TripStop(time: String, station: String, color: Color, height: Dp, title: Modifier = Modifier) {
+private fun TripStop(
+    time: String,
+    station: String,
+    color: Color,
+    height: Dp,
+    title: Modifier = Modifier,
+    planned: String? = null,
+    urgent: Color = color,
+) {
     Row(Modifier.height(height), verticalAlignment = Alignment.CenterVertically) {
-        Text(time, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1)
+        Text(time, style = MaterialTheme.typography.bodyMedium, color = if (planned != null) urgent else color, maxLines = 1)
+        if (planned != null) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                planned,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough,
+                maxLines = 1,
+                modifier = Modifier.semantics { contentDescription = "invece delle $planned" },
+            )
+        }
         if (station.isNotEmpty()) {
             Spacer(Modifier.width(10.dp))
             Text(station, style = MaterialTheme.typography.bodyMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = title)

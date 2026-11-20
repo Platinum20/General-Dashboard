@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -21,8 +22,11 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-/** Le tre righe del blocco "quando" delle schede: quanto manca, l'ora (o il giorno) grande, il giorno e la durata. */
-data class WhenText3(val countdown: String, val big: String, val sub: String)
+/**
+ * Le tre righe del blocco "quando" delle schede: quanto manca, l'ora (o il giorno) grande, il giorno e la durata.
+ * [late] = un treno in ritardo: il blocco si colora d'arancio (attenzione), mai rosso.
+ */
+data class WhenText3(val countdown: String, val big: String, val sub: String, val late: Boolean = false)
 
 /**
  * Il "quando" delle schede nel blocco colorato (1.528, Antonio scelta B): è la domanda a cui risponde la pagina.
@@ -64,6 +68,44 @@ object WhenHero {
             now >= from -> "Adesso"
             day != today -> days(ChronoUnit.DAYS.between(today, day))
             else -> "Tra " + span(from - now)
+        }
+    }
+
+    /**
+     * Il quando di un treno (2026-11-20): prima di partire "Parte tra 33 min", in viaggio "Arriva tra 2 h 10",
+     * sugli orari spostati da un ritardo fresco ([live], da [com.platinum20.dashboard.trips.TrainLive.fresh]).
+     * Con il ritardo l'ora grande è quella vera e sotto resta il programmato. Soppresso: lo dice, orari del biglietto.
+     */
+    fun train(from: Long, to: Long, live: com.platinum20.dashboard.trips.TrainStatus?, now: Long, zone: ZoneId = ZoneId.systemDefault()): WhenText3 {
+        if (to <= from) return of(from, to, false, now, zone)
+        val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(live)
+        val leave = from + shift
+        val arrive = to + shift
+        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        val day = Instant.ofEpochMilli(leave).atZone(zone).toLocalDate()
+        val countdown = when {
+            live?.cancelled == true -> "Soppresso"
+            now >= arrive -> "Finito"
+            now >= leave -> "Arriva tra " + short(arrive - now)
+            day != today -> days(ChronoUnit.DAYS.between(today, day))
+            else -> "Parte tra " + short(leave - now)
+        }
+        fun at(ms: Long) = Instant.ofEpochMilli(ms).atZone(zone).format(hour)
+        val sub = listOfNotNull(
+            dayName(day, today, long = false),
+            duration(to - from),
+            if (shift > 0) "programmato ${at(from)} – ${at(to)}" else null,
+        ).joinToString(" · ")
+        return WhenText3(countdown, at(leave) + " – " + at(arrive), sub, late = shift > 0 || live?.cancelled == true)
+    }
+
+    /** "33 min", "1 h 20", "2 h": corto, sta nella riga sopra l'ora grande. */
+    fun short(ms: Long): String {
+        val min = ((ms + 59_999) / 60_000).coerceAtLeast(1)
+        return when {
+            min < 60 -> "$min min"
+            min % 60 == 0L -> "${min / 60} h"
+            else -> "${min / 60} h ${min % 60}"
         }
     }
 
@@ -114,19 +156,21 @@ fun WhenHeroCard(text: WhenText3, onClick: (() -> Unit)? = null, onLongClick: ((
         onClick = onClick,
         onLongClick = onLongClick,
         shape = MaterialTheme.shapes.extraLarge,
+        // Un treno in ritardo: blocco arancio, "Parte tra" in arancio pieno (una sola cosa da guardare).
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            containerColor = if (text.late) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer,
+            contentColor = if (text.late) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
         ),
     ) {
         val soft = LocalContentColor.current.copy(alpha = 0.72f)
+        val urgent = Urgent.color(darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f)
         Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
             if (text.countdown.isNotBlank()) {
                 Text(
                     text.countdown.uppercase(Locale.ITALIAN),
                     style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.8.sp),
                     fontWeight = FontWeight.SemiBold,
-                    color = soft,
+                    color = if (text.late) urgent else soft,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

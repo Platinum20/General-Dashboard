@@ -97,6 +97,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -316,7 +317,9 @@ fun NotesScreen(
         val empty = groups.sumOf { it.rows.size } <= 1 && data.habits.isEmpty()
         // Ogni riga è un item della lista, così si disegna solo quello che si vede: prima tutta la linea
         // (mesi di eventi) era un'unica colonna e togliere un filtro la ridisegnava intera, a scatti.
-        val entries = remember(groups, today) {
+        // Un nuovo ritardo letto ridisegna le righe dei treni con gli orari spostati.
+        val trains by com.platinum20.dashboard.trips.TrainLive.statuses.collectAsState()
+        val entries = remember(groups, today, trains) {
             timelineEntries(groups, today, months = true)
         }
         val entryKeys = remember(entries) { timelineKeys(entries.map { it.first.key }) }
