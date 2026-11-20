@@ -65,7 +65,7 @@ class TripLiveTest {
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:12", MarkKind.STRUCK) in card.marks)
         assertTrue(LiveMark(LiveCard.ARRIVE, "11:22", MarkKind.LATE) in card.marks)
         assertEquals(
-            listOf("Parte dal binario 4", "Intercity 612 · carr. 8, posto 11D"),
+            listOf("Parte dal binario 4"),
             card.lines,
         )
         // Proposta A del riordino: il ritardo nell'intestazione, in arancio.
@@ -88,8 +88,8 @@ class TripLiveTest {
         assertEquals("arriva tra 2 h 16 min", card.header)
         assertEquals("6:40 Taranto", card.depart)
         assertEquals("Pescara 11:12", card.arrive)
-        assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines[0])
-        assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.last())
+        assertTrue(card.lines.isEmpty())
+        assertEquals("Intercity 612 · carr. 8, posto 11D", card.sub)
         assertTrue(card.marks.all { it.kind == MarkKind.SOFT })
     }
 
@@ -207,7 +207,7 @@ class TripLiveTest {
         assertFalse(card.late)
         assertEquals("6:40 Taranto", card.depart)
         assertEquals("parte tra 20 min", card.header)
-        assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.first())
+        assertEquals("Intercity 612 · carr. 8, posto 11D", card.sub)
         assertEquals("In orario · parte tra 20 min", card.text)
         // In anticipo: orari del biglietto.
         assertEquals(at(6, 40), LiveTrip.card(train, at(6, 20), TrainStatus(-4, readAt = at(6, 19)), checked = true, zone = zone)!!.countdownTo)

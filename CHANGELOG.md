@@ -5,7 +5,7 @@
 - L'intestazione non si taglia più: solo ritardo e minuti ("+12 min · arriva tra 44 min"); "letto 35 min fa" ha una riga sua, grigia
 - La stazione d'arrivo sta prima dell'orario ("Bologna 0:08 0:20"): gli orari sono ai due bordi, sotto i pallini
 - Prima di partire "Parte dal binario 14", a bordo "Prossima: …": la stessa riga nello stesso posto
-- Treno, carrozza e posto in grigio e testi un po' più piccoli, come nel disegno
+- Treno, carrozza e posto nella seconda riga, sotto "Treno per …" e prima della linea, in grigio; testi un po' più piccoli come nel disegno
 - La prova della notifica dice "Prova" nel titolo
 
 ## 1.544.0

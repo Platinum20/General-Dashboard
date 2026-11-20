@@ -63,6 +63,8 @@ data class LiveCard(
     val arrive: String? = null,
     /** Le fermate fra partenza e arrivo, per il tasto "Fermate". */
     val stops: List<LiveStop> = emptyList(),
+    /** Sotto il titolo, prima della linea (Antonio, 2026-11-20): "Frecciarossa 9541 · carr. 8, posto 11D". */
+    val sub: String? = null,
 ) {
     companion object {
         const val TEXT = -1
@@ -202,7 +204,6 @@ object LiveTrip {
                 // Prima di partire il binario al posto della prossima fermata.
                 // Prima di partire il binario, dopo la prossima fermata: la stessa riga "che cosa viene adesso".
                 status?.platform?.let { lines += "Parte dal binario $it" }
-                seat?.let { lines += it; marks += LiveMark(lines.lastIndex, it, MarkKind.SOFT) }
                 val platform = status?.platform?.let { "binario $it" }
                 val waited = (((now - (leave - LEAD_MS)).toDouble() / LEAD_MS) * 100).toInt().coerceIn(0, 100)
                 val text = closed("parte ${inText(leave - now)}", platform)
@@ -219,6 +220,7 @@ object LiveTrip {
                     depart = depart,
                     arrive = arrive,
                     stops = stopList,
+                    sub = seat,
                 )
             }
             LivePhase.ON_BOARD -> {
@@ -226,7 +228,6 @@ object LiveTrip {
                 val arrived = now >= end
                 val next = if (arrived) null else stops.firstOrNull { it.at + delay > now }
                 next?.let { lines += "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
-                seat?.let { lines += it; marks += LiveMark(lines.lastIndex, it, MarkKind.SOFT) }
                 val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}",
                     next?.let { "prossima ${TrainLive.pretty(it.name)}" })
                 LiveCard(
@@ -242,6 +243,7 @@ object LiveTrip {
                     depart = depart,
                     arrive = arrive,
                     stops = stopList,
+                    sub = seat,
                 )
             }
         }

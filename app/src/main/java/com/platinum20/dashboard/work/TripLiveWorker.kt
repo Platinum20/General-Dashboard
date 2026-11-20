@@ -133,6 +133,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
             val big = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_big).apply {
                 setTextViewText(R.id.trip_title, card.title)
+                setTextViewText(R.id.trip_sub, card.sub ?: "")
+                setViewVisibility(R.id.trip_sub, if (card.sub == null) android.view.View.GONE else android.view.View.VISIBLE)
                 card.track?.let { track ->
                     val arrived = card.phase == LivePhase.ON_BOARD && now >= track.end
                     runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(now), accent, arrived)) }
