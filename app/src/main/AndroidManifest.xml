@@ -112,6 +112,11 @@
             </intent-filter>
         </service>
 
+        <!-- Il tasto "Fermate" della notifica del treno. -->
+        <receiver
+            android:name=".work.TripStopsReceiver"
+            android:exported="false" />
+
         <!-- Widget "Oggi": meteo e Adesso (nome della classe di sempre, se no sparisce dalla Home). -->
         <receiver
             android:name=".widget.DashboardWidget"

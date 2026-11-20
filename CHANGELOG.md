@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.538.0
+**Treni: la notifica come il disegno, e il ritardo che resta anche senza rete**
+- La notifica del treno ora è disegnata da Canvas, uguale alla proposta A: la linea del viaggio con un pallino per fermata e il treno che avanza, sotto la partenza a sinistra e l'arrivo a destra (l'orario del biglietto barrato e quello vero in arancio), poi ritardo, prossima fermata e posto, una cosa per riga
+- Nuovo tasto "Fermate": mostra tutte le fermate con l'orario (quelle già passate più chiare)
+- Se la connessione cade a metà viaggio, Calendario, pagina del viaggio e notifica tengono gli orari col ritardo dell'ultimo rilevamento invece di tornare a quelli del biglietto, e dicono quanto è vecchio ("letto 35 min fa")
+- L'ultimo ritardo letto si salva: resta anche se l'app si chiude o si aggiorna
+
 ## 1.537.0
 **"Calendario" nel + chiede solo quando**
 - Scegliendo "Calendario" per una cosa senza giorno non si apre più la vecchia finestra "Aggiungi"

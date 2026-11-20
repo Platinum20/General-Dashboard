@@ -30,16 +30,70 @@ data class TrainStop(val name: String, val at: Long)
  */
 object TrainLive {
     internal const val BASE = "https://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/"
-    /** Dopo quanto un ritardo letto non vale più: la riga torna a dire solo gli orari. */
+    /** Fino a quando una lettura si dice "appena fatta"; dopo resta valida ma dice quanto è vecchia. */
     const val FRESH_MS = 10 * 60_000L
+    /**
+     * Quanto teniamo l'ultima lettura (Antonio, 2026-11-20): se la rete cade a metà viaggio gli orari restano
+     * quelli col ritardo dell'ultimo rilevamento, non tornano quelli del biglietto. Basta per un viaggio lungo.
+     */
+    const val KEEP_MS = 12 * 60 * 60_000L
 
     private val _statuses = MutableStateFlow<Map<Long, TrainStatus>>(emptyMap())
-    /** Lo stato letto per ogni evento-treno (id dell'evento), finché l'app resta aperta. */
+    /** L'ultimo stato letto per ogni evento-treno (id dell'evento), salvato su file: resta anche se l'app si chiude. */
     val statuses: StateFlow<Map<Long, TrainStatus>> = _statuses.asStateFlow()
+    @Volatile private var file: java.io.File? = null
 
-    /** Lo stato dell'evento se letto da poco, altrimenti null (regola 4: un ritardo vecchio non si spaccia per vero). */
-    fun fresh(eventId: Long, now: Long = System.currentTimeMillis()): TrainStatus? =
-        _statuses.value[eventId]?.takeIf { now - it.readAt < FRESH_MS }
+    /** Carica le ultime letture salvate (una volta per processo: app o giro della notifica). */
+    fun init(context: android.content.Context) {
+        if (file != null) return
+        val f = java.io.File(context.filesDir, "train-live.json")
+        file = f
+        val now = System.currentTimeMillis()
+        val saved = runCatching { decode(f.readText()) }.getOrDefault(emptyMap()).filterValues { now - it.readAt < KEEP_MS }
+        _statuses.update { saved + it }
+    }
+
+    /**
+     * L'ultima lettura dell'evento, anche se non è di adesso (al massimo [KEEP_MS]): gli orari restano spostati
+     * dal ritardo e la riga dice quando l'abbiamo letto (regola 4). Null se non l'abbiamo mai letto.
+     */
+    fun known(eventId: Long, now: Long = System.currentTimeMillis()): TrainStatus? =
+        _statuses.value[eventId]?.takeIf { now - it.readAt < KEEP_MS }
+
+    /** Letto da meno di [FRESH_MS]. */
+    fun isFresh(s: TrainStatus, now: Long): Boolean = now - s.readAt < FRESH_MS
+
+    /** Le letture in JSON, per il file: ritardo, binario, soppresso, quando, fermate. */
+    fun encode(map: Map<Long, TrainStatus>): String = org.json.JSONObject().apply {
+        map.forEach { (id, s) ->
+            put(id.toString(), org.json.JSONObject().apply {
+                put("delay", s.delay); s.platform?.let { put("platform", it) }; put("cancelled", s.cancelled); put("readAt", s.readAt)
+                put("stops", org.json.JSONArray().apply { s.stops.forEach { put(org.json.JSONObject().put("name", it.name).put("at", it.at)) } })
+            })
+        }
+    }.toString()
+
+    fun decode(json: String): Map<Long, TrainStatus> {
+        val root = JSONObject(json)
+        return root.keys().asSequence().mapNotNull { key ->
+            val id = key.toLongOrNull() ?: return@mapNotNull null
+            val o = root.optJSONObject(key) ?: return@mapNotNull null
+            val stops = o.optJSONArray("stops")
+            id to TrainStatus(
+                delay = o.optInt("delay"),
+                platform = o.optString("platform").takeIf { o.has("platform") && it.isNotEmpty() },
+                cancelled = o.optBoolean("cancelled"),
+                readAt = o.optLong("readAt"),
+                stops = (0 until (stops?.length() ?: 0)).mapNotNull { i -> stops!!.optJSONObject(i)?.let { TrainStop(it.optString("name"), it.optLong("at")) } },
+            )
+        }.toMap()
+    }
+
+    private fun save() {
+        val f = file ?: return
+        val now = System.currentTimeMillis()
+        runCatching { f.writeText(encode(_statuses.value.filterValues { now - it.readAt < KEEP_MS })) }
+    }
 
     /** Legge il treno ora; null se ViaggiaTreno non risponde o non lo conosce. */
     suspend fun refresh(eventId: Long, trip: Trip, departure: Long, zone: ZoneId = ZoneId.systemDefault()): TrainStatus? {
@@ -51,6 +105,7 @@ object TrainLive {
             parse(get(BASE + "andamentoTreno/${found}/$number/$midnight"), trip.from, System.currentTimeMillis())
         }.getOrNull() ?: return null
         _statuses.update { it + (eventId to status) }
+        save()
         return status
     }
 
@@ -177,13 +232,19 @@ object TrainLive {
 
     /**
      * La riga dell'ultima lettura sulla pagina del viaggio (regola 4): "Ultimo rilevamento 14:44" se fresca,
-     * "Ritardo non aggiornato · letto alle 14:44" se vecchia, "Ritardo non disponibile" se ViaggiaTreno non ha
-     * risposto; null se non l'abbiamo ancora chiesto.
+     * "Ultimo rilevamento 14:44 · 35 min fa" se vecchia (gli orari restano quelli di quella lettura),
+     * "Ritardo non disponibile" se ViaggiaTreno non ha mai risposto; null se non l'abbiamo ancora chiesto.
      */
     fun readLine(last: TrainStatus?, tried: Boolean, now: Long, zone: ZoneId = ZoneId.systemDefault()): String? {
         if (last == null || last.readAt <= 0L) return if (tried) "Ritardo non disponibile" else null
         val at = Instant.ofEpochMilli(last.readAt).atZone(zone).format(clock)
-        return if (now - last.readAt < FRESH_MS) "Ultimo rilevamento $at" else "Ritardo non aggiornato · letto alle $at"
+        return if (isFresh(last, now)) "Ultimo rilevamento $at" else "Ultimo rilevamento $at · ${ago(now - last.readAt)}"
+    }
+
+    /** "35 min fa", "2 h fa": quanto è vecchia una lettura. */
+    fun ago(ms: Long): String {
+        val m = ms / 60_000L
+        return if (m < 60) "$m min fa" else "${m / 60} h fa"
     }
 
     /** Lo stato letto per ultimo, anche vecchio: solo per dire quando l'abbiamo letto. */

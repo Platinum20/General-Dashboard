@@ -3,7 +3,9 @@ package com.platinum20.dashboard
 import com.platinum20.dashboard.calendar.CalendarEvent
 import com.platinum20.dashboard.calendar.Trip
 import com.platinum20.dashboard.trips.LivePhase
+import com.platinum20.dashboard.trips.LiveCard
 import com.platinum20.dashboard.trips.LiveMark
+import com.platinum20.dashboard.trips.LiveStop
 import com.platinum20.dashboard.trips.LiveTrack
 import com.platinum20.dashboard.trips.LiveTrip
 import com.platinum20.dashboard.trips.MarkKind
@@ -55,20 +57,18 @@ class TripLiveTest {
         assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(train, at(11, 25), late))
         val card = LiveTrip.card(train, at(6, 30), late, checked = true, zone = zone)!!
         assertEquals("Parte alle 6:50 · +10 min · binario 4", card.text)
-        // L'orario del biglietto resta, barrato, davanti a quello vero; il ritardo in arancio.
+        // Sotto la linea: l'orario del biglietto barrato davanti a quello vero, in arancio (proposta A).
+        assertEquals("6:40 6:50 Taranto", card.depart)
+        assertEquals("11:12 11:22 Pescara", card.arrive)
+        assertTrue(LiveMark(LiveCard.DEPART, "6:40", MarkKind.STRUCK) in card.marks)
+        assertTrue(LiveMark(LiveCard.ARRIVE, "11:12", MarkKind.STRUCK) in card.marks)
+        assertTrue(LiveMark(LiveCard.ARRIVE, "11:22", MarkKind.LATE) in card.marks)
         assertEquals(
-            listOf(
-                "Parte alle 6:40 6:50 · binario 4",
-                "Arrivo a Pescara Centrale alle 11:12 11:22",
-                "In ritardo di 10 min · rilevato alle 6:30",
-                "Intercity 612 · carr. 8, posto 11D",
-            ),
+            listOf("In ritardo di 10 min · rilevato alle 6:30", "Binario 4", "Intercity 612 · carr. 8, posto 11D"),
             card.lines,
         )
         assertEquals("parte tra 20 min", card.header)
-        assertTrue(LiveMark(0, "6:40", MarkKind.STRUCK) in card.marks)
-        assertTrue(LiveMark(1, "11:22", MarkKind.LATE) in card.marks)
-        assertTrue(LiveMark(2, "In ritardo di 10 min", MarkKind.LATE) in card.marks)
+        assertTrue(LiveMark(0, "In ritardo di 10 min", MarkKind.LATE) in card.marks)
         assertTrue(card.late)
         // La linea di progresso nell'ultima ora prima di partire: a 20 minuti dalla partenza è a due terzi.
         assertEquals(66, card.progress)
@@ -84,8 +84,9 @@ class TripLiveTest {
         assertTrue(card.text.startsWith("Arrivo alle 11:12 · In orario"))
         assertEquals("11:12", card.chip)
         assertEquals("arriva tra 2 h 16 min", card.header)
-        assertEquals("6:40 Taranto → 11:12 Pescara", card.lines[0])
-        assertEquals("In orario · rilevato alle 8:55", card.lines[1])
+        assertEquals("6:40 Taranto", card.depart)
+        assertEquals("11:12 Pescara", card.arrive)
+        assertEquals("In orario · rilevato alle 8:55", card.lines[0])
         assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.last())
         assertTrue(card.marks.isEmpty())
     }
@@ -98,9 +99,16 @@ class TripLiveTest {
         )
         val status = TrainStatus(15, readAt = at(8, 55), stops = stops)
         val card = LiveTrip.card(train, at(8, 56), status, checked = true, zone = zone)!!
-        assertEquals("6:55 Taranto → 11:12 11:27 Pescara", card.lines[0])
-        assertEquals("Prossima: Foggia alle 9:25", card.lines[2])
-        val steps = card.track!!.steps(at(8, 56))
+        assertEquals("11:12 11:27 Pescara", card.arrive)
+        assertEquals("In ritardo di 15 min · rilevato alle 8:55", card.lines[0])
+        assertEquals("Prossima: Foggia alle 9:25", card.lines[1])
+        assertEquals(listOf(70, 150), card.track!!.steps(at(8, 56)).points)
+        assertEquals(listOf(LiveStop("8:05", "Bari Centrale", true), LiveStop("9:25", "Foggia", false)), card.stops)
+        // Senza rete resta l'ultima lettura: orari col ritardo, e dice quanto è vecchia.
+        val old = LiveTrip.card(train, at(9, 30), status, checked = true, zone = zone)!!
+        assertEquals("11:12 11:27 Pescara", old.arrive)
+        assertEquals("+15 min · letto 35 min fa", old.lines[0])
+        val steps = LiveTrack(at(6, 55), at(11, 27), listOf(at(8, 5), at(9, 25))).steps(at(8, 56))
         assertEquals(272, steps.max)
         assertEquals(121, steps.progress)
         assertEquals(listOf(70, 150), steps.points)
@@ -183,7 +191,10 @@ class TripLiveTest {
 
     @Test
     fun unRitardoVecchioNonSiMostra() {
-        assertNull(TrainLive.fresh(999_999L))
+        assertNull(TrainLive.known(999_999L))
+        val saved = mapOf(42L to TrainStatus(95, platform = "3", readAt = 7L, stops = listOf(TrainStop("BARI CENTRALE", 9L))))
+        assertEquals(saved, TrainLive.decode(TrainLive.encode(saved)))
+        assertEquals(mapOf(1L to TrainStatus(0, readAt = 5L)), TrainLive.decode(TrainLive.encode(mapOf(1L to TrainStatus(0, readAt = 5L)))))
         assertNotNull(TrainLive.FRESH_MS)
     }
 
@@ -191,7 +202,8 @@ class TripLiveTest {
     fun inOrarioNienteArancio() {
         val card = LiveTrip.card(train, at(6, 20), TrainStatus(0, readAt = at(6, 19)), checked = true, zone = zone)!!
         assertFalse(card.late)
-        assertEquals("Parte alle 6:40", card.lines.first())
+        assertEquals("6:40 Taranto", card.depart)
+        assertEquals("In orario · rilevato alle 6:19", card.lines.first())
         assertEquals("Parte alle 6:40 · In orario", card.text)
         // In anticipo: orari del biglietto.
         assertEquals(at(6, 40), LiveTrip.card(train, at(6, 20), TrainStatus(-4, readAt = at(6, 19)), checked = true, zone = zone)!!.countdownTo)
@@ -202,7 +214,7 @@ class TripLiveTest {
         assertNull(TrainLive.readLine(null, tried = false, now = at(7, 0), zone = zone))
         assertEquals("Ritardo non disponibile", TrainLive.readLine(null, tried = true, now = at(7, 0), zone = zone))
         assertEquals("Ultimo rilevamento 6:55", TrainLive.readLine(TrainStatus(5, readAt = at(6, 55)), true, at(7, 0), zone))
-        assertEquals("Ritardo non aggiornato · letto alle 6:40", TrainLive.readLine(TrainStatus(5, readAt = at(6, 40)), true, at(7, 0), zone))
+        assertEquals("Ultimo rilevamento 6:40 · 20 min fa", TrainLive.readLine(TrainStatus(5, readAt = at(6, 40)), true, at(7, 0), zone))
         assertEquals(0, TrainLive.shiftMinutes(TrainStatus(30, cancelled = true)))
         assertEquals(0, TrainLive.shiftMinutes(TrainStatus(-2)))
         assertEquals(30, TrainLive.shiftMinutes(TrainStatus(30)))
