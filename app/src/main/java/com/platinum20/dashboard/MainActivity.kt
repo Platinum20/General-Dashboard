@@ -1149,6 +1149,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     val sendComposer = rememberComposerSend { dictated = it; capturing = true }
     val plusOverride by PlusAction.override
     if (capturing) CaptureDialog(initial = dictated, initialMode = CaptureMode.TASK, onClose = { capturing = false; dictated = "" })
+    com.platinum20.dashboard.ui.screens.CaptureWhenPickers()
     // Tenendo premuto il + si detta, senza finestre: il microfono e il testo li disegna la barra.
     val dictation = remember { Dictation(context.applicationContext) }
     val voiceScope = rememberCoroutineScope()
@@ -1217,6 +1218,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                         dictated = text
                         capturing = true
                     }
+                    is VoiceCapture.Outcome.NeedsWhen -> com.platinum20.dashboard.ui.screens.CaptureWhenAsk.askDay(context, voiceScope, outcome.text)
                     is VoiceCapture.Outcome.Saved ->
                         CaptureFeedback.show(CaptureNotice(outcome.mode, outcome.message, outcome.undo))
                     is VoiceCapture.Outcome.Answered -> com.platinum20.dashboard.capture.CaptureAsk.show(context, outcome.answer)

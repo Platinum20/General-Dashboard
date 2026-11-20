@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.537.0
+**"Calendario" nel + chiede solo quando**
+- Scegliendo "Calendario" per una cosa senza giorno non si apre più la vecchia finestra "Aggiungi"
+- Sale il fumetto di vetro: prima il giorno (Oggi, Domani, i giorni dopo o "Altro giorno"), poi l'ora (tutto il giorno, qualche ora pronta o "Altra ora")
+- Il testo resta quello scritto, non si riscrive; portando il fumetto di lato non si salva niente
+- Si salva nel giorno scelto, con "Annulla" come sempre
+
 ## 1.535.0
 **Le abitudini stanno in "Da fare" e si eliminano tenendole premute**
 - Le abitudini sono in cima alla card "Da fare" in Home, con la serie a destra (🔥 5)
