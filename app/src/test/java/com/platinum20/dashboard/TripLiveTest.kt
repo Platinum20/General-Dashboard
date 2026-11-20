@@ -56,7 +56,8 @@ class TripLiveTest {
         assertEquals(LivePhase.SOON, LiveTrip.phase(train, at(6, 45), late))
         assertEquals(LivePhase.ON_BOARD, LiveTrip.phase(train, at(11, 25), late))
         val card = LiveTrip.card(train, at(6, 30), late, checked = true, zone = zone)!!
-        assertEquals("Parte alle 6:50 · +10 min · binario 4", card.text)
+        assertEquals("+10 min · parte tra 20 min · binario 4", card.text)
+        assertTrue(LiveMark(LiveCard.TEXT, "+10 min", MarkKind.LATE) in card.marks)
         // Sotto la linea: l'orario del biglietto barrato davanti a quello vero, in arancio (proposta A).
         assertEquals("6:40 6:50 Taranto", card.depart)
         assertEquals("11:12 11:22 Pescara", card.arrive)
@@ -82,7 +83,7 @@ class TripLiveTest {
         val card = LiveTrip.card(train, at(8, 56), TrainStatus(0, readAt = at(8, 55)), checked = true, zone = zone)!!
         assertEquals(LivePhase.ON_BOARD, card.phase)
         assertEquals(50, card.progress)
-        assertTrue(card.text.startsWith("Arrivo alle 11:12 · In orario"))
+        assertEquals("In orario · arriva tra 2 h 16 min", card.text)
         assertEquals("11:12", card.chip)
         assertEquals("arriva tra 2 h 16 min", card.header)
         assertEquals("6:40 Taranto", card.depart)
@@ -206,7 +207,7 @@ class TripLiveTest {
         assertEquals("6:40 Taranto", card.depart)
         assertEquals("parte tra 20 min", card.header)
         assertEquals("Intercity 612 · carr. 8, posto 11D", card.lines.first())
-        assertEquals("Parte alle 6:40 · In orario", card.text)
+        assertEquals("In orario · parte tra 20 min", card.text)
         // In anticipo: orari del biglietto.
         assertEquals(at(6, 40), LiveTrip.card(train, at(6, 20), TrainStatus(-4, readAt = at(6, 19)), checked = true, zone = zone)!!.countdownTo)
     }

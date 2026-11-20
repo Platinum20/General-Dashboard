@@ -152,11 +152,6 @@ object LiveTrip {
         val phase = phase(event, now, status) ?: return null
         val delay = TrainLive.shiftMs(status)
         val late = delay > 0
-        val live = when {
-            status != null -> TrainLive.delayText(status)
-            checked -> "ritardo non disponibile"
-            else -> null
-        }
         val leave = event.begin + delay
         val end = event.end + delay
         val marks = mutableListOf<LiveMark>()
@@ -171,6 +166,14 @@ object LiveTrip {
             return listOfNotNull(plus, ago, rest).joinToString(" · ")
         }
         val liveLine = if (status == null && checked) "Ritardo non disponibile" else null
+        // La notifica chiusa (proposta A, Antonio 2026-11-20): la stessa riga dell'intestazione più binario o prossima
+        // fermata; arancio solo il ritardo.
+        fun closed(rest: String, extra: String?): String {
+            if (plus != null) marks += LiveMark(LiveCard.TEXT, plus, MarkKind.LATE)
+            val missing = liveLine?.lowercase()
+            val onTime = if (status != null && !late && !old) "in orario" else null
+            return listOfNotNull(plus, onTime, ago, rest, extra, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
+        }
         // Con il ritardo l'orario del biglietto resta, barrato, davanti a quello vero: "18:27 19:59".
         fun time(planned: Long, real: Long, line: Int): String {
             if (!late) return at(real, zone)
@@ -193,8 +196,7 @@ object LiveTrip {
                 seat?.let { lines += it }
                 val platform = status?.platform?.let { "binario $it" }
                 val waited = (((now - (leave - LEAD_MS)).toDouble() / LEAD_MS) * 100).toInt().coerceIn(0, 100)
-                val text = listOfNotNull("Parte alle ${at(leave, zone)}", live, platform).joinToString(" · ")
-                if (late) marks += LiveMark(LiveCard.TEXT, text, MarkKind.LATE)
+                val text = closed("parte ${inText(leave - now)}", platform)
                 LiveCard(
                     phase, title = title, text = text,
                     chip = at(leave, zone),
@@ -213,13 +215,11 @@ object LiveTrip {
             LivePhase.ON_BOARD -> {
                 val progress = (((now - leave).toDouble() / (end - leave)) * 100).toInt().coerceIn(0, 100)
                 val arrived = now >= end
-                val arrival = if (arrived) "Arrivato a ${trip.to}" else "Arrivo alle ${at(end, zone)}"
-                if (!arrived) stops.firstOrNull { it.at + delay > now }?.let { next ->
-                    lines += "Prossima: ${TrainLive.pretty(next.name)} ${at(next.at + delay, zone)}"
-                }
+                val next = if (arrived) null else stops.firstOrNull { it.at + delay > now }
+                next?.let { lines += "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
                 seat?.let { lines += it }
-                val text = listOfNotNull(arrival, live).joinToString(" · ")
-                if (late) marks += LiveMark(LiveCard.TEXT, text, MarkKind.LATE)
+                val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}",
+                    next?.let { "prossima ${TrainLive.pretty(it.name)}" })
                 LiveCard(
                     phase, title = title, text = text,
                     chip = at(end, zone),
