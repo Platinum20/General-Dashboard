@@ -53,10 +53,14 @@ object YouTubeStore {
         val avatars = feed.filter { it.channelId.isNotBlank() && it.channelAvatar.isNotBlank() }.associate { it.channelId to it.channelAvatar }
         return videos.map { v ->
             val f = byId[v.id]
+            val uploaded = v.uploadedText.ifBlank { f?.uploadedText.orEmpty() }
             v.copy(
                 durationSec = v.durationSec.takeIf { it > 0 } ?: f?.durationSec ?: 0,
                 channelAvatar = v.channelAvatar.ifBlank { f?.channelAvatar?.takeIf { it.isNotBlank() } ?: avatars[v.channelId].orEmpty() },
-                uploadedText = v.uploadedText.ifBlank { f?.uploadedText.orEmpty() },
+                uploadedText = uploaded,
+                // L'RSS non sa delle dirette: "Diretta terminata" viene dalla pagina Iscrizioni ("Trasmesso … fa", 1.542).
+                liveEnded = v.liveEnded || (!v.live && (f?.liveEnded == true || YtLive.ended(uploaded))),
+                live = v.live || f?.live == true,
             )
         }
     }

@@ -4,6 +4,7 @@ import com.platinum20.dashboard.media.MediaStories
 import com.platinum20.dashboard.media.podcast.Episode
 import com.platinum20.dashboard.media.youtube.YouTubeStore
 import com.platinum20.dashboard.media.youtube.YtVideo
+import com.platinum20.dashboard.ui.screens.videoBadgeText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -30,6 +31,14 @@ class MediaRowsTest {
         assertEquals("", out[2].channelAvatar)
         assertEquals("3 ore fa", out[0].uploadedText)
         assertEquals(rss, YouTubeStore.withFeedDetails(rss, emptyList()))
+    }
+
+    @Test fun direttaFinitaDallaPaginaIscrizioni() {
+        val rss = listOf(YtVideo("l", "Live del venerdì", "Breaking Italy", "bi", now), YtVideo("v", "V", "Breaking Italy", "bi", now))
+        val feed = listOf(YtVideo("l", "Live del venerdì", "Breaking Italy", "bi", null, durationSec = 5301, uploadedText = "Trasmesso in live streaming 57 minuti fa"))
+        val out = YouTubeStore.withFeedDetails(rss, feed)
+        assertEquals(listOf(true, false), out.map { it.liveEnded })
+        assertEquals("Diretta terminata · 1:28:21", videoBadgeText(out[0]))
     }
 
     @Test fun quandoEUscitoUnEpisodio() {
