@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.532.0
+**Video: le novità dei canali arrivano davvero**
+- I video nuovi dei canali a cui sei iscritto si aggiornano di nuovo: con tanti canali la lettura andava oltre il tempo e il feed restava fermo a giorni prima
+- I video appena usciti si prendono anche dalla pagina Iscrizioni di YouTube, non solo dai feed dei canali (che a volte non rispondono)
+- Se qualche canale è lento si tiene quello che è arrivato invece di buttare via tutto
+
 ## 1.531.0
 **Note lunghe: un editor nuovo, con tutte le foto che vuoi**
 - In basso gli stessi due tasti delle altre schede: "Aggiungi" a sinistra e "Altro" a destra, niente più barra speciale
