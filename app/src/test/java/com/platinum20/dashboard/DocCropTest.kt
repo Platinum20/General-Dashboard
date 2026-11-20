@@ -101,13 +101,15 @@ class DocCropTest {
     }
 
     @Test
-    fun pdfCardAtRealSize() {
-        // Tessera ritagliata: 85,6 mm = 242,6 punti, come una fotocopia.
-        val (w, _) = DocumentsStore.pdfSize(DocKind.ID_CARD, cropped = true, width = 1600, height = 1010, slotW = 483f, slotH = 350f)
-        assertEquals(242.6f, w, 0.5f)
-        // Foto intera (non ritagliata): riempie la sua metà di foglio.
-        val (fw, fh) = DocumentsStore.pdfSize(DocKind.ID_CARD, cropped = false, width = 1600, height = 1200, slotW = 483f, slotH = 350f)
-        assertTrue(fw <= 483f && fh <= 350.01f && (abs(fw - 483f) < 0.5f || abs(fh - 350f) < 0.5f))
+    fun pdfPhotoFillsItsHalf() {
+        // Tessera larga: tocca i lati della metà, altezza in proporzione.
+        val (w, h) = DocumentsStore.pdfSize(width = 1600, height = 1010, slotW = 539f, slotH = 383f)
+        assertEquals(539f, w, 0.5f)
+        assertEquals(1010f * 539f / 1600f, h, 0.5f)
+        // Foto alta: tocca sopra e sotto, mai oltre la metà.
+        val (fw, fh) = DocumentsStore.pdfSize(width = 1000, height = 1400, slotW = 539f, slotH = 383f)
+        assertEquals(383f, fh, 0.5f)
+        assertTrue(fw < 539f)
     }
 
     @Test
