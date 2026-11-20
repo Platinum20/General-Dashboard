@@ -15,6 +15,9 @@ internal object CaptureHints {
     /** Alta quanto il +, sempre: la barra non cresce né con gli esempi né col testo lungo. */
     const val BAR_DP = 60
 
+    /** Il velo sotto la barra mentre si scrive (1.532): abbastanza scuro da non leggere la pagina sotto. */
+    const val VEIL_ALPHA = 0.72f
+
     /** Ogni quanto cambia l'esempio nel campo vuoto. */
     const val EXAMPLE_MS = 3_000L
 

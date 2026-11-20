@@ -20,6 +20,9 @@ object CaptureComposer {
 
     val isOpen: Boolean get() = request != null
 
+    /** La chip toccata a mano sopra la barra (1.532): vince su quella che sceglie Canvas. Null = automatico. */
+    internal var chosen by mutableStateOf<CaptureDestination?>(null)
+
     /** Si sta dettando dentro il campo: la tastiera che si chiude non deve annullare la nota. */
     var dictating by mutableStateOf(false)
 
@@ -28,11 +31,13 @@ object CaptureComposer {
 
     fun open(text: String = "") {
         this.text = TextFieldValue(text, TextRange(text.length))
+        chosen = null
         request = text
     }
 
     fun close() {
         request = null
+        chosen = null
         dictating = false
         attaching = false
     }

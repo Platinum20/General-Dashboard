@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.533.0
+**Home: "Da fare" e "Appunti" separati, e il "+" più pulito**
+- In Home due card al posto di "Per dopo": "Da fare" con le cose da spuntare, "Appunti" con note e foto
+- Ognuna ha il suo archivio: in fondo alla card "Fatte · N" o "Archiviati · N", toccala per aprirlo. Tieni premuto un appunto e scegli "Archivia" per toglierlo dalla card; dall'archivio lo rimetti o lo elimini
+- I pacchi senza data tornano nel Calendario, sotto OGGI ("In arrivo: …"); quando arrivano restano sul giorno della consegna
+- Scrivendo col "+", sopra la barra c'è una fila di scelte: Da fare, Appunti, Calendario, Abitudine. Canvas accende da solo quella giusta, se sbaglia ne tocchi un'altra. Nel Calendario la scelta dice anche il giorno capito
+- Via l'anteprima trasparente che copriva la pagina e il simbolo doppio nella barra; mentre scrivi lo sfondo si scurisce
+
 ## 1.532.0
 **Documenti: PDF a mezza pagina e card più pulita**
 - Nel PDF il fronte riempie la metà alta del foglio e il retro quella bassa, ingranditi quanto serve senza deformarsi

@@ -254,7 +254,10 @@ fun HomeScreen(
     val gmailConnected = gmailOAuth || gmailImap
     // Le cose senza scadenza (da fare, note, foto, salvati): la card "Per dopo", fuori dal Calendario.
     val loose = remember(calendar, notes, minute) { looseItems(calendar.filter { it.rows.isNotEmpty() }, notes.notes, minute.toLocalDate()).pending() }
-    val archived = remember(notes) { notes.tasks.any { it.tickable && it.done } }
+    val todos = remember(loose) { loose.todos() }
+    val jottings = remember(loose) { loose.jottings() }
+    val doneCount = remember(notes) { notes.tasks.count { it.tickable && it.done } }
+    val archivedCount = remember(notes) { archivedNotes(notes.notes).size }
     // Una card compare solo se ha qualcosa da dire.
     val cards = layout.visible.filter { card ->
         when (card) {
@@ -265,7 +268,8 @@ fun HomeScreen(
             HomeCard.DOCS -> docs.isNotEmpty()
             // Vuota non c'è: compare quando hai qualcosa per dopo.
             // Compare anche vuota se c'è l'archivio: si apre da qui.
-            HomeCard.LATER -> loose.isNotEmpty() || archived
+            HomeCard.LATER -> todos.isNotEmpty() || doneCount > 0
+            HomeCard.JOTTINGS -> jottings.isNotEmpty() || archivedCount > 0
             // Niente di nuovo da leggere: la card News sparisce invece di dire che sei in pari (punto 20 A).
             HomeCard.RECAP -> news.loading || news.error != null || news.feed.fresh.isNotEmpty()
             else -> true
@@ -338,9 +342,13 @@ fun HomeScreen(
                     openResumeItem(context, item) { route -> inApp?.openRoute?.invoke(route) }
                 })
             }
-            HomeCard.LATER -> LaterCard(loose, onOpenArchive = {
+            HomeCard.LATER -> LaterCard(LooseCardKind.TODO, todos, doneCount, onOpenArchive = {
                 haptic(Haptic.TICK)
                 inApp?.openRoute?.invoke(Routes.LATER_ARCHIVE)
+            })
+            HomeCard.JOTTINGS -> LaterCard(LooseCardKind.JOTTINGS, jottings, archivedCount, onOpenArchive = {
+                haptic(Haptic.TICK)
+                inApp?.openRoute?.invoke(Routes.JOTTINGS_ARCHIVE)
             })
             HomeCard.SIM -> ContiCard(onOpenSim = { inApp?.openRoute?.invoke(Routes.SIM) })
             HomeCard.DOCS -> DocumentsCard(onOpen = { id ->

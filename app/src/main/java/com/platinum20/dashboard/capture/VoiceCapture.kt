@@ -19,9 +19,17 @@ internal object VoiceCapture {
         data class Answered(val answer: Answer) : Outcome
     }
 
-    suspend fun save(context: Context, text: String): Outcome {
-        CaptureAsk.answer(context, text)?.let { return Outcome.Answered(it) }
-        val mode = CaptureGuess.guess(text)
+    /** [chosen] = la chip toccata a mano sopra la barra (1.532); null = decide Canvas, come sempre. */
+    suspend fun save(context: Context, text: String, chosen: CaptureDestination? = null): Outcome {
+        val guessed = CaptureGuess.guess(text)
+        // Scelto a mano non è una domanda: si salva.
+        if (chosen == null) CaptureAsk.answer(context, text)?.let { return Outcome.Answered(it) }
+        val mode = chosen?.let { CaptureDestination.modeFor(it, guessed, text) } ?: guessed
+        if (CaptureDestination.plainTodo(chosen, guessed, text)) {
+            NotesStore.init(context)
+            val task = NotesStore.addTodo(text) ?: return Outcome.NeedsDialog
+            return Outcome.Saved(CaptureMode.TASK, "In Da fare: ${task.text}") { NotesStore.deleteTask(task.id) }
+        }
         if (mode == CaptureMode.EVENT) {
             val draft = QuickEvent.parse(text) ?: return Outcome.NeedsDialog
             if (!CalendarRepository.canWrite(context)) return Outcome.NeedsDialog

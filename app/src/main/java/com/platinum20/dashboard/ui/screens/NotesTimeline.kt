@@ -168,7 +168,7 @@ internal fun dueDays(
                 .forEach { t -> add(DueRow("task-${t.id}", today, t.doneAt ?: nowMs, task = t)) }
             // Le note fissate per prime, poi dalla più nuova. Video, brani e articoli salvati non ci sono come note:
             // [looseItems] li mette in "Senza scadenza" con la loro anteprima (2026-11-12).
-            notes.filterNot(com.platinum20.dashboard.capture.SavedLinks::livesElsewhere).sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
+            notes.filterNot(com.platinum20.dashboard.capture.SavedLinks::livesElsewhere).filter { it.archivedAt == null }.sortedWith(compareByDescending<com.platinum20.dashboard.notes.Note> { it.pinned }.thenByDescending { it.createdAt })
                 .forEach { n -> add(DueRow("note-${n.id}", today, Long.MAX_VALUE, note = n)) }
         }
         return buildList {
@@ -416,7 +416,7 @@ internal fun timelineEntries(
                 r.event != null -> com.platinum20.dashboard.today.BriefKind.EVENT to RowText.event(r.event)
                 // Pacchi e rinnovo SIM sono eventi del giorno (Antonio): stessa riga e stesso filtro degli eventi.
                 r.parcel != null -> com.platinum20.dashboard.today.BriefKind.EVENT to
-                    (if (g.past) "Arrivato: " else "Arriva: ") + r.parcel.title
+                    (if (g.past) "Arrivato: " else if (r.parcel.expected == null) "In arrivo: " else "Arriva: ") + r.parcel.title
                 r.simRenewal -> com.platinum20.dashboard.today.BriefKind.EVENT to com.platinum20.dashboard.today.Upcoming.SIM_RENEWAL
                 else -> com.platinum20.dashboard.today.BriefKind.FREE to ""
             }
@@ -631,7 +631,8 @@ internal fun photoLine(note: com.platinum20.dashboard.notes.Note): String? {
  * stanno in Media e News.
  */
 internal fun isLoose(row: DueRow): Boolean =
-    row.note != null || row.task?.tickable == true || (row.parcel != null && row.parcel.expected == null)
+    // 1.532 (Antonio): i pacchi senza data tornano nel Calendario, sotto OGGI: un pacco atteso sta succedendo adesso.
+    row.note != null || row.task?.tickable == true
 
 /** I giorni senza le cose senza scadenza: stanno in fondo alla card della Home. OGGI resta sempre. */
 internal fun List<DueDay>.withoutLoose(): List<DueDay> =
@@ -668,23 +669,36 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
     val todo = rows.filter { it.task != null }.map { r ->
         LooseItem(r.key, LooseKind.TODO, r.task!!.text, r.task.notes.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }, done = r.task.done, row = r, pinned = r.task.pinned)
     }
-    val parcels = rows.filter { it.parcel != null }.map { r ->
-        val p = r.parcel!!
-        LooseItem(r.key, LooseKind.PARCEL, p.title, listOf("Pacco", p.code.takeIf { it.isNotBlank() }?.let { p.carrier.label }).filterNotNull().joinToString(" · "), row = r, pinned = p.pinned)
-    }
     val dated = buildList<Pair<Pair<Boolean, Long>, LooseItem>> {
-        rows.mapNotNull { r -> r.note?.let { r to it } }.forEach { (r, n) ->
-            val photo = n.photo.isNotEmpty()
-            val more = n.body.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
-            add((n.pinned to n.createdAt) to LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
-                if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned))
+        rows.mapNotNull { r -> r.note?.takeIf { it.archivedAt == null }?.let { r to it } }.forEach { (r, n) ->
+            add((n.pinned to n.createdAt) to noteItem(r, n))
         }
     }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
-    return (todo.filter { !it.done } + parcels + dated + todo.filter { it.done }).distinctBy { it.key }.pinnedFirst()
+    return (todo.filter { !it.done } + dated + todo.filter { it.done }).distinctBy { it.key }.pinnedFirst()
 }
 
+private fun noteItem(r: DueRow, n: com.platinum20.dashboard.notes.Note): LooseItem {
+    val photo = n.photo.isNotEmpty()
+    val more = n.body.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
+    return LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
+        if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned)
+}
+
+/** La card "Da fare" (1.532, Antonio): solo le cose da spuntare. */
+internal fun List<LooseItem>.todos(): List<LooseItem> = filter { it.kind == LooseKind.TODO }
+
+/** La card "Appunti" (1.532, Antonio): note e foto, quello che non si spunta. */
+internal fun List<LooseItem>.jottings(): List<LooseItem> = filter { it.kind == LooseKind.NOTE || it.kind == LooseKind.PHOTO }
+
+/** L'archivio di Appunti: le note messe da parte, dall'ultima archiviata. Le cose salvate (video, articoli) no: stanno in Media e News. */
+internal fun archivedNotes(notes: List<com.platinum20.dashboard.notes.Note>): List<LooseItem> = notes
+    .filter { it.archivedAt != null && !com.platinum20.dashboard.capture.SavedLinks.livesElsewhere(it) }
+    .sortedByDescending { it.archivedAt }
+    .map { n -> noteItem(DueRow("note-${n.id}", null, Long.MAX_VALUE, note = n), n) }
+    .pinnedFirst()
+
 /**
- * L'archivio di Per dopo (Antonio, 2026-11-12): le cose da fare spuntate, dalla più recente. Nella card restano solo
+ * L'archivio di Da fare (Antonio, 2026-11-12): le cose da fare spuntate, dalla più recente. Nella card restano solo
  * quelle da fare; queste si vedono toccando la card.
  */
 internal fun archivedItems(tasks: List<TaskItem>): List<LooseItem> = tasks

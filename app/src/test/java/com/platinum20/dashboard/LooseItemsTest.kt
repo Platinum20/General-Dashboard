@@ -47,7 +47,8 @@ class LooseItemsTest {
                 DueRow("parcel-5", today, 6L, parcel = Parcel(5, "Libro", expected = today)),
             )),
         )
-        assertEquals(listOf("today", "task-2", "parcel-5"), groups.withoutLoose().single().rows.map { it.key })
+        // 1.532: i pacchi senza data restano nel Calendario, sotto OGGI.
+        assertEquals(listOf("today", "task-2", "parcel-4", "parcel-5"), groups.withoutLoose().single().rows.map { it.key })
     }
 
     @Test fun tuttoInsiemeNellOrdineGiusto() {
@@ -105,8 +106,8 @@ class LooseItemsTest {
         val notes = listOf(Note(7, "Idea", createdAt = 10))
         val groups = dueDays(tasks.take(2), parcels, emptyList(), now = now, zone = zone, withToday = true, notes = notes)
         val items = looseItems(groups, notes, today)
-        assertEquals(listOf("task-2", "parcel-6", "task-1", "parcel-5", "note-7"), items.map { it.key })
-        assertTrue(items[0].pinned && items[1].pinned && !items[2].pinned)
+        assertEquals(listOf("task-2", "task-1", "note-7"), items.map { it.key })
+        assertTrue(items[0].pinned && !items[1].pinned)
         // Anche nell'archivio la fissata sta in cima, anche se spuntata prima.
         assertEquals(listOf("task-4", "task-3"), archivedItems(tasks).map { it.key })
         // E resta fissata dopo il salvataggio.
