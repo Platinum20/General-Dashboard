@@ -279,4 +279,15 @@ class TripLiveTest {
         // Dura poco più di un minuto: a ogni fotogramma 3 secondi.
         assertTrue(frames.size * com.platinum20.dashboard.trips.LiveDemo.FRAME_MS in 60_000L..120_000L)
     }
+
+    @Test
+    fun aViaggioFinitoRileggeSoloSeNonSappiamoComeEAndata() {
+        val h = 60 * 60_000L
+        // Arrivato da un'ora, nessuna lettura (persa): si rilegge. Lettura chiusa: no. Dopo 12 ore: no.
+        assertTrue(TrainLive.needsLastRead(null, arrival = h, now = 2 * h))
+        assertTrue(TrainLive.needsLastRead(TrainStatus(30, readAt = 0L), arrival = h, now = 2 * h))
+        assertFalse(TrainLive.needsLastRead(TrainStatus(30, readAt = 0L, until = h + 30 * 60_000L), arrival = h, now = 2 * h))
+        assertFalse(TrainLive.needsLastRead(null, arrival = h, now = 14 * h))
+        assertFalse(TrainLive.needsLastRead(null, arrival = 2 * h, now = h))
+    }
 }

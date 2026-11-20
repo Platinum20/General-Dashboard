@@ -292,7 +292,16 @@ fun EventDetailScreen(
                     val now = System.currentTimeMillis()
                     val shift = com.platinum20.dashboard.trips.TrainLive.shiftMs(com.platinum20.dashboard.trips.TrainLive.known(current.id, now))
                     // Da 12 ore prima fino all'arrivo: prima ViaggiaTreno non conosce ancora il treno del giorno.
-                    if (now > to + shift || from - now > LIVE_FROM_MS) break
+                    if (now > to + shift) {
+                        // A viaggio finito una lettura sola se non sappiamo com'è andata (2026-11-20), poi resta quella.
+                        com.platinum20.dashboard.trips.TrainLive.close(current.id, to, now)
+                        if (com.platinum20.dashboard.trips.TrainLive.needsLastRead(com.platinum20.dashboard.trips.TrainLive.known(current.id, now), to, now)) {
+                            com.platinum20.dashboard.trips.TrainLive.refresh(current.id, trip!!, from, to, zone)
+                            liveTried = true
+                        }
+                        break
+                    }
+                    if (from - now > LIVE_FROM_MS) break
                     if (liveAsk > 0 || com.platinum20.dashboard.trips.TrainLive.known(current.id, now)?.let { now - it.readAt >= LIVE_EVERY_MS } != false) {
                         com.platinum20.dashboard.trips.TrainLive.refresh(current.id, trip!!, from, to, zone)
                         liveTried = true

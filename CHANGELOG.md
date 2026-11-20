@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.542.0
+**Treni: il ritardo recuperato anche dopo l'arrivo, numeri delle card a destra**
+- Se Canvas aveva perso il ritardo di un treno già arrivato (per esempio con un aggiornamento a metà viaggio), lo rilegge da solo dopo l'arrivo e il Calendario mostra gli orari veri, poi non controlla più
+- I ritardi letti prima di questa versione restano anche loro per sempre una volta arrivato il treno
+- Nelle card della Home il numero accanto al titolo ("CALENDARIO ›  8") torna attaccato al bordo destro
+
 ## 1.541.0
 **Dirette di YouTube: barra, "In diretta" che torna al live, etichette in Media**
 - Le dirette hanno la barra di avanzamento: si può tornare indietro nella parte che YouTube tiene, e trascinando si vede quanto si resta indietro

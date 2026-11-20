@@ -75,6 +75,19 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             post(context, event, card, now)
             posted += event.eventId.toString()
         }
+        // I treni già arrivati (sull'orario del biglietto) di cui non sappiamo com'è finita: una lettura ogni 15 minuti
+        // finché non è chiusa, così il Calendario tiene il ritardo vero anche se l'abbiamo perso (2026-11-20).
+        if (trains) for (event in events) {
+            val trip = event.trip ?: continue
+            if (event.eventId in active.map { it.eventId }) continue
+            TrainLive.close(event.eventId, event.end, now)
+            val known = TrainLive.known(event.eventId, now)
+            if (!TrainLive.needsLastRead(known, event.end, now)) continue
+            val lastRead = prefs.getLong("read_${event.eventId}", 0L)
+            if (now - lastRead < LATE_READ_EVERY_MS) continue
+            prefs.edit().putLong("read_${event.eventId}", now).apply()
+            TrainLive.refresh(event.eventId, trip, event.begin, event.end)
+        }
         // Le notifiche dei viaggi finiti (o spenti) se ne vanno.
         (shown - posted).forEach { NotificationManagerCompat.from(context).cancel(notificationId(it.toLong())) }
         prefs.edit().putStringSet(KEY_SHOWN, posted).apply()
@@ -197,6 +210,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
         private const val KEY_SHOWN = "shown"
         private const val KEY_TICK = "tick"
         private const val READ_EVERY_MS = 2 * 60_000L
+        private const val LATE_READ_EVERY_MS = 15 * 60_000L
         private const val NOTIFICATION_BASE = 7_000
         private const val CANVAS_BLUE = 0xFF3550E8.toInt()
         private const val LATE_COLOR = 0xFFD9572B.toInt()

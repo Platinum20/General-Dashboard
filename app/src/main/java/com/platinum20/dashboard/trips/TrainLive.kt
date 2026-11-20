@@ -75,6 +75,23 @@ object TrainLive {
     fun known(eventId: Long, now: Long = System.currentTimeMillis()): TrainStatus? =
         _statuses.value[eventId]?.takeIf { kept(it, now) }
 
+    /**
+     * Va riletto a viaggio finito (dopo l'arrivo del biglietto [arrival]): non sappiamo com'è finito ([status] null,
+     * per esempio perso con un aggiornamento) o la lettura non è chiusa. ViaggiaTreno tiene il treno per la giornata.
+     */
+    fun needsLastRead(status: TrainStatus?, arrival: Long, now: Long): Boolean =
+        now > arrival && now - arrival < KEEP_MS && status?.closed(now) != true
+
+    /**
+     * Chiude le letture senza [TrainStatus.until] (salvate prima della 1.540): passato l'arrivo col ritardo restano per
+     * sempre. Senza rete, basta l'orario del biglietto.
+     */
+    fun close(eventId: Long, arrival: Long, now: Long = System.currentTimeMillis()) {
+        val s = _statuses.value[eventId]?.takeIf { it.until == 0L && kept(it, now) } ?: return
+        _statuses.update { it + (eventId to s.copy(until = arrival + shiftMs(s))) }
+        save()
+    }
+
     /** Letto da meno di [FRESH_MS]. */
     fun isFresh(s: TrainStatus, now: Long): Boolean = now - s.readAt < FRESH_MS
 
