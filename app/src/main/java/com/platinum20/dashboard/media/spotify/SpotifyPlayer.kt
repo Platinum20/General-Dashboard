@@ -50,6 +50,8 @@ object SpotifyPlayer : ExternalBackend {
     private var page = 0
     /** L'ultimo errore detto dalla pagina (accesso, Premium, WebView): il play non lo cancella. */
     private var pageError: String? = null
+    /** Ultimo rinnovo silenzioso dopo un "accesso non valido" della pagina ([SpotifyRelink]). */
+    private var authRetryAt = 0L
 
     /** La voce che il player unico ci ha chiesto di suonare (uri di Spotify). */
     private var target: String? = null
@@ -123,8 +125,7 @@ object SpotifyPlayer : ExternalBackend {
         val loaded = SpotifyStore.children.value[parent.id]?.data
         scope.launch {
             val children = loaded ?: runCatching {
-                val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
-                SpotifyApi.children(token, parent)
+                withToken { SpotifyApi.children(it, parent) }
             }.getOrElse {
                 _error.value = if (it is PlaylistLockedException) it.message else spotifyMessage(it)
                 return@launch
@@ -301,8 +302,48 @@ object SpotifyPlayer : ExternalBackend {
 
     private suspend fun send(uri: String, startMs: Long) {
         val device = device()
-        val token = SpotifyAuth.token() ?: throw SpotifyApiException("Collega Spotify per ascoltare", 401)
-        SpotifyApi.playOn(token, device, null, listOf(uri), null, startMs)
+        withToken { SpotifyApi.playOn(it, device, null, listOf(uri), null, startMs) }
+    }
+
+    /**
+     * Chiamata col token; un 401 vuol dire quasi sempre token di un'ora scaduto: si rinnova e si
+     * riprova una volta, invece di dire subito "ricollega".
+     */
+    private suspend fun <T> withToken(block: suspend (String) -> T): T {
+        val token = SpotifyAuth.token() ?: throw SpotifyApiException(SpotifyRelink.RELINK, 401)
+        return try {
+            block(token)
+        } catch (e: SpotifyApiException) {
+            if (e.code != 401) throw e
+            block(SpotifyAuth.token(forceRefresh = true) ?: throw e)
+        }
+    }
+
+    /**
+     * La pagina dice "accesso non valido": di solito ha preso il token senza rete (risveglio dal
+     * sonno) o scaduto. Si rinnova e si riaccende da sola; "ricollega" solo se il collegamento è caduto.
+     */
+    private fun authFailed() {
+        val now = System.currentTimeMillis()
+        val step = SpotifyRelink.step(SpotifyAuth.connected.value, authRetryAt, now)
+        if (step == SpotifyRelink.Step.RETRY) {
+            val context = appContext
+            if (context != null) {
+                authRetryAt = now
+                pageError = null
+                scope.launch {
+                    runCatching { SpotifyAuth.token(forceRefresh = true) }
+                    if (SpotifyAuth.connected.value) restart(context) else showPageError(SpotifyRelink.RELINK)
+                }
+                return
+            }
+        }
+        showPageError(if (step == SpotifyRelink.Step.ASK) SpotifyRelink.RELINK else SpotifyRelink.LATER)
+    }
+
+    private fun showPageError(text: String) {
+        pageError = text
+        if (target != null) fail(text) else _error.value = text
     }
 
     /**
@@ -507,9 +548,12 @@ object SpotifyPlayer : ExternalBackend {
 
         @JavascriptInterface
         fun onError(kind: String, message: String) {
+            if (kind == "authentication_error") {
+                mine { authFailed() }
+                return
+            }
             val text = when (kind) {
                 "initialization_error" -> "Questo telefono non riesce ad avviare il riproduttore di Spotify: aggiorna \"Android System WebView\" dal Play Store e riprova"
-                "authentication_error" -> "Ricollega Spotify con la chiave in alto per ascoltare nell'app"
                 "account_error" -> "Per ascoltare nell'app serve Spotify Premium"
                 else -> "Spotify: $message"
             }
@@ -522,9 +566,9 @@ object SpotifyPlayer : ExternalBackend {
     }
 
     /** Messaggio in italiano per un errore del comando "suona" (mai il testo grezzo dell'API o della rete). */
-    fun spotifyMessage(error: Throwable): String = when {
+    fun spotifyMessage(error: Throwable, connected: Boolean = SpotifyAuth.connected.value): String = when {
         error is SpotifyApiException -> when (error.code) {
-            401 -> "Ricollega Spotify con la chiave in alto per ascoltare nell'app"
+            401 -> SpotifyRelink.message(connected)
             404 -> "Il riproduttore di Spotify si è scollegato: riprova tra qualche secondo"
             else -> error.message ?: "Spotify non risponde, riprova più tardi"
         }

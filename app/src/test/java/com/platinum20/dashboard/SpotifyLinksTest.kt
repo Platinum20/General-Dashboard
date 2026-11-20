@@ -3,6 +3,7 @@ package com.platinum20.dashboard
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.platinum20.dashboard.media.spotify.SpotifyApiException
 import com.platinum20.dashboard.media.spotify.SpotifyPlayer
+import com.platinum20.dashboard.media.spotify.SpotifyRelink
 import java.io.IOException
 import java.net.UnknownHostException
 import org.junit.Assert.assertEquals
@@ -34,7 +35,8 @@ class SpotifyLinksTest {
 
     @Test
     fun messaggiInItaliano() {
-        assertEquals("Ricollega Spotify con la chiave in alto per ascoltare nell'app", SpotifyPlayer.spotifyMessage(SpotifyApiException("Accesso a Spotify scaduto", 401)))
+        assertEquals(SpotifyRelink.RELINK, SpotifyPlayer.spotifyMessage(SpotifyApiException("Accesso a Spotify scaduto", 401), connected = false))
+        assertEquals(SpotifyRelink.LATER, SpotifyPlayer.spotifyMessage(SpotifyApiException("Accesso a Spotify scaduto", 401), connected = true))
         assertEquals("Per comandare la riproduzione serve Spotify Premium", SpotifyPlayer.spotifyMessage(SpotifyApiException("Per comandare la riproduzione serve Spotify Premium", 403)))
         assertEquals("Il riproduttore di Spotify si è scollegato: riprova tra qualche secondo", SpotifyPlayer.spotifyMessage(SpotifyApiException("Device not found", 404)))
         assertEquals("Troppe richieste a Spotify, riprova tra poco", SpotifyPlayer.spotifyMessage(SpotifyApiException("Troppe richieste a Spotify, riprova tra poco", 429)))

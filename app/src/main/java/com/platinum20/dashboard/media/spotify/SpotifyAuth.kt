@@ -205,7 +205,10 @@ object SpotifyAuth {
                 .putLong(KEY_EXPIRES, System.currentTimeMillis() + (json.optLong("expires_in", 3600) - 120) * 1000)
             // Al rinnovo Spotify a volte non manda un nuovo refresh token: si tiene quello vecchio.
             json.optString("refresh_token").takeIf { it.isNotBlank() }?.let { Vault.put(editor, KEY_REFRESH, it) }
-            editor.apply()
+            // Scritto subito su disco: Spotify cambia il refresh token a ogni rinnovo e butta il vecchio.
+            // Con apply() l'app chiusa in quel momento teneva quello vecchio, rifiutato al giro dopo:
+            // collegamento perso e "ricollega" con la chiave a posto.
+            editor.commit()
             _connected.value = true
         } finally {
             conn.disconnect()
