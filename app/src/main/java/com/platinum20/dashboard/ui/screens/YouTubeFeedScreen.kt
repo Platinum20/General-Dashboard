@@ -564,7 +564,7 @@ internal fun VideoTile(video: YtVideo, height: Dp, onClick: () -> Unit) {
     MediaTile(
         height = height, wide = true, image = v.thumbnail.replace("/mqdefault.jpg", "/hqdefault.jpg"),
         title = v.title, author = v.channel, date = videoDate(v),
-        mark = MediaMark(MediaType.VIDEO, videoBadgeText(v)),
+        mark = videoMark(v),
         click = Modifier.tapOrSave({ SavedLinks.youtube(v) }, onClick),
     ) { WatchedBar(v, Modifier.align(Alignment.BottomCenter)) }
 }
@@ -575,7 +575,7 @@ internal fun VideoLine(video: YtVideo, onClick: () -> Unit, author: String? = nu
     val v = video.withKnownDuration()
     MediaLine(
         wide = true, image = v.thumbnail, title = v.title, author = author ?: listOfNotNull(v.channel.takeIf { it.isNotBlank() }, videoDate(v)).joinToString(" · "),
-        mark = MediaMark(MediaType.VIDEO, videoBadgeText(v)),
+        mark = videoMark(v),
         click = Modifier.tapOrSave({ SavedLinks.youtube(v) }, onClick),
     ) { WatchedBar(v, Modifier.align(Alignment.BottomCenter)) }
 }
@@ -596,12 +596,16 @@ internal fun YtVideo.withKnownDuration(): YtVideo {
 
 /** Il testo nell'angolo in basso a destra: in diretta, anteprima, Short o la durata; null se niente. */
 internal fun videoBadgeText(video: YtVideo): String? = when {
-    video.live -> "● IN DIRETTA"
+    video.live -> com.platinum20.dashboard.media.youtube.YtLive.LIVE_BADGE
     video.upcoming -> com.platinum20.dashboard.media.youtube.YtPremiere.badge(video.startsAt)
     video.isShort -> "SHORT"
+    video.liveEnded -> com.platinum20.dashboard.media.youtube.YtLive.endedBadge(video.durationSec.takeIf { it > 0 }?.let { formatDuration(it * 1000L) })
     video.durationSec > 0 -> formatDuration(video.durationSec * 1000L)
     else -> null
 }
+
+/** Il segno sulla copertina di un video: tipo, durata o diretta (blu se in corso). */
+internal fun videoMark(video: YtVideo): MediaMark = MediaMark(MediaType.VIDEO, videoBadgeText(video), live = video.live)
 
 /** Titolo e riga del canale di [VideoCard]; [fixed] = occupa sempre due righe di titolo. */
 @Composable
@@ -790,19 +794,14 @@ internal fun compactCount(n: Long): String = when {
 /** Durata, IN DIRETTA o ANTEPRIMA (con l'orario d'inizio) sulla copertina. */
 @Composable
 private fun VideoBadge(video: YtVideo, modifier: Modifier) {
-    val text = when {
-        video.live -> "● IN DIRETTA"
-        video.upcoming -> com.platinum20.dashboard.media.youtube.YtPremiere.badge(video.startsAt)
-        video.isShort -> "SHORT"
-        video.durationSec > 0 -> formatDuration(video.durationSec * 1000L)
-        else -> return
-    }
+    val text = videoBadgeText(video) ?: return
     Text(
         text,
         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
         color = Color.White,
         modifier = modifier
-            .background(if (video.live) Color(0xFFCC0000) else Color.Black.copy(alpha = 0.78f), MaterialTheme.shapes.extraSmall)
+            // Blu = adesso (regola dei colori): la diretta in corso; il resto inchiostro su nero.
+            .background(if (video.live) LiveBlue else Color.Black.copy(alpha = 0.78f), MaterialTheme.shapes.extraSmall)
             .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }

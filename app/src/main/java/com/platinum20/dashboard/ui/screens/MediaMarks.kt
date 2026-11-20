@@ -32,11 +32,19 @@ import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.spotify.SpItem
 import com.platinum20.dashboard.media.spotify.SpKind
 
+/** Il blu di "adesso" sulle immagini (diretta in corso): fisso, perché nel tema Puro il primario è nero. */
+internal val LiveBlue = Color(0xFF4A64FF)
+
 /** Che cosa è una copertina (1.485, Antonio): musica, video, podcast o radio. */
 enum class MediaType { MUSIC, VIDEO, PODCAST, RADIO }
 
 /** I segni sopra una copertina: il simbolo del tipo in alto a sinistra, la durata in basso a destra (vuota = niente). */
-data class MediaMark(val type: MediaType, val duration: String? = null)
+data class MediaMark(
+    val type: MediaType,
+    val duration: String? = null,
+    /** Una diretta in corso: il segno è blu, il colore di "adesso" (1.539). */
+    val live: Boolean = false,
+)
 
 /**
  * Simbolo e durata su ogni copertina (1.485, Antonio: "ovunque appaia un media"): così in un feed che mescola Spotify,
@@ -128,7 +136,7 @@ fun BoxScope.MediaMarkOverlay(mark: MediaMark?, compact: Boolean = false, inset:
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(inset)
-                .background(badge, MaterialTheme.shapes.extraSmall)
+                .background(if (mark.live) LiveBlue else badge, MaterialTheme.shapes.extraSmall)
                 .padding(horizontal = if (compact) 3.dp else 5.dp, vertical = 1.dp),
         )
     }

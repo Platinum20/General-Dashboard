@@ -339,6 +339,8 @@ object YtResolver {
             views = item.viewCount,
             uploadedText = item.textualUploadDate.orEmpty(),
             membersOnly = item.contentAvailability == ContentAvailability.MEMBERSHIP,
+            liveEnded = item.streamType == StreamType.POST_LIVE_STREAM || item.streamType == StreamType.POST_LIVE_AUDIO_STREAM ||
+                (item.streamType != StreamType.LIVE_STREAM && com.platinum20.dashboard.media.youtube.YtLive.ended(item.textualUploadDate.orEmpty())),
         )
     }
 

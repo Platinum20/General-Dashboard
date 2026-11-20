@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.539.0
+**Dirette di YouTube: barra, "In diretta" che torna al live, etichette in Media**
+- Le dirette hanno la barra di avanzamento: si può tornare indietro nella parte che YouTube tiene, e trascinando si vede quanto si resta indietro
+- Il tasto "In diretta" sotto la barra riporta al momento live; se sei indietro dice di quanto ("-4:12 · Torna in diretta")
+- Nel player la barra ora sta sopra, il tempo e lo schermo intero sotto
+- In Media le dirette in corso hanno l'etichetta blu "● IN DIRETTA", quelle finite "Diretta terminata" con la durata
+
 ## 1.538.0
 **Treni: la notifica come il disegno, e il ritardo che resta anche senza rete**
 - La notifica del treno ora è disegnata da Canvas, uguale alla proposta A: la linea del viaggio con un pallino per fermata e il treno che avanza, sotto la partenza a sinistra e l'arrivo a destra (l'orario del biglietto barrato e quello vero in arancio), poi ritardo, prossima fermata e posto, una cosa per riga

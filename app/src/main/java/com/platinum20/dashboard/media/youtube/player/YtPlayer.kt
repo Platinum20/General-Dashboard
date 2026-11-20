@@ -229,6 +229,14 @@ object YtPlayer {
         CanvasPlayer.seekTo(positionMs)
     }
 
+    /** Diretta: torna al bordo live (il tasto "In diretta" del player) e riparte se era in pausa. */
+    fun goLive(context: Context) {
+        CanvasPlayer.init(context)
+        val p = current() ?: return
+        p.seekToDefaultPosition()
+        p.play()
+    }
+
     /** Avanti o indietro di [deltaMs] (doppio tocco sul video). */
     fun seekBy(context: Context, deltaMs: Long) {
         CanvasPlayer.init(context)
