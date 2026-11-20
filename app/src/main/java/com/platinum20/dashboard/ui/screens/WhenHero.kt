@@ -73,7 +73,7 @@ object WhenHero {
 
     /**
      * Il quando di un treno (2026-11-20): prima di partire "Parte tra 33 min", in viaggio "Arriva tra 2 h 10",
-     * sugli orari spostati da un ritardo fresco ([live], da [com.platinum20.dashboard.trips.TrainLive.fresh]).
+     * sugli orari spostati da un ritardo fresco ([live], da [com.platinum20.dashboard.trips.TrainLive.known]).
      * Con il ritardo l'ora grande è quella vera e sotto resta il programmato. Soppresso: lo dice, orari del biglietto.
      */
     fun train(from: Long, to: Long, live: com.platinum20.dashboard.trips.TrainStatus?, now: Long, zone: ZoneId = ZoneId.systemDefault()): WhenText3 {

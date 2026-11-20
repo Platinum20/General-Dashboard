@@ -304,10 +304,12 @@ internal fun tripStops(
     today: LocalDate,
     zone: ZoneId = ZoneId.systemDefault(),
     labels: Boolean = false,
-    /** Il treno adesso (viaggio vivo, 1.467): ritardo e binario accanto alla durata, solo se letti da poco. */
-    live: com.platinum20.dashboard.trips.TrainStatus? = event.trip?.let { com.platinum20.dashboard.trips.TrainLive.fresh(event.eventId) },
+    /** Il treno adesso (viaggio vivo, 1.467): ritardo e binario accanto alla durata; l'ultima lettura resta anche senza rete. */
+    live: com.platinum20.dashboard.trips.TrainStatus? = event.trip?.let { com.platinum20.dashboard.trips.TrainLive.known(event.eventId) },
     /** Lo zaino del treno pronto (secondi), letto dall'indice dei file. */
     packSec: Long = if (event.trip != null && event.end > System.currentTimeMillis()) com.platinum20.dashboard.trips.TrainPackStore.readySec(event.eventId) else 0L,
+    /** Adesso, per dire quanto è vecchia la lettura del ritardo. */
+    now: Long = System.currentTimeMillis(),
 ): TripStops? {
     if (event.allDay || event.end <= event.begin) return null
     val trip = event.trip
@@ -337,7 +339,11 @@ internal fun tripStops(
         arriveAt = arrive.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + arriveDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
-        middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line)).joinToString(" · "),
+        middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line),
+            // Una lettura vecchia lo dice (regola 4): gli orari restano quelli col ritardo, ma sai da quando.
+            live?.takeIf { !com.platinum20.dashboard.trips.TrainLive.isFresh(it, now) }
+                ?.let { "letto " + com.platinum20.dashboard.trips.TrainLive.ago(now - it.readAt) },
+        ).joinToString(" · "),
         plannedDepart = from.format(hour).takeIf { shift > 0 },
         plannedArrive = to.format(hour).takeIf { shift > 0 },
         late = delayText,
@@ -737,7 +743,7 @@ private val ARCHIVE_DAYS = listOf("Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom
 private val ARCHIVE_MONTHS = listOf("Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre")
 
 /**
- * Le cose vecchie sopra la linea ADESSO, come il passato nel Calendario (1.538, Antonio, mockup archivi-card 1):
+ * Le cose vecchie sopra la linea ADESSO, come il passato nel Calendario (1.539, Antonio, mockup archivi-card 1):
  * la più vecchia in cima, quella appena fatta subito sopra la linea. Le fatte per giorno, gli archiviati per mese.
  */
 internal fun archiveGroups(items: List<LooseItem>, byMonth: Boolean, today: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<ArchiveGroup> {

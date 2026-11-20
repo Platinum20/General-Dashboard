@@ -108,7 +108,7 @@ internal fun LaterCard(
     val count = items.size + habits.count { !it.isDone(today) }
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
-    // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.538).
+    // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.539).
     CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpen) {
         CardTitle(kind.title, opens = true, trailing = {
             if (count > 0) Text(looseCount(count), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 4.dp))
@@ -248,7 +248,7 @@ private fun looseIcon(item: LooseItem) = when (item.kind) {
 }
 
 /**
- * La pagina intera di Da fare o Appunti (1.538, Antonio, mockup archivi-card 1): come il Calendario, le cose vecchie
+ * La pagina intera di Da fare o Appunti (1.539, Antonio, mockup archivi-card 1): come il Calendario, le cose vecchie
  * sopra (fatte per giorno, archiviati per mese, sbiadite), la linea ADESSO e sotto quelle attive. Si apre su ADESSO.
  * Toccando il cerchio pieno una fatta torna da fare; tenendo premuto ogni riga ha le sue azioni (Archivia/Rimetti, Elimina).
  */

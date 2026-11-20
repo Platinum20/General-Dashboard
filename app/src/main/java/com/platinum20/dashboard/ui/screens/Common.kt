@@ -759,7 +759,7 @@ fun Section(
 
 /**
  * Il titolo dentro una card della Home (1.404, punto 7 B): la card è un oggetto a sé col suo nome in alto.
- * Dal 1.538 (Antonio, mockup archivi-card A) il nome è maiuscolo come le sezioni di Media e, se la card apre
+ * Dal 1.539 (Antonio, mockup archivi-card A) il nome è maiuscolo come le sezioni di Media e, se la card apre
  * una pagina ([opens]), ha la freccia accanto: "DA FARE ›". A destra un valore, se c'è.
  */
 @Composable

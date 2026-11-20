@@ -304,6 +304,7 @@ class MainActivity : ComponentActivity() {
             coil3.ImageLoader.Builder(ctx).components { add(coil3.video.VideoFrameDecoder.Factory()) }.build()
         }
         AppSettings.init(this)
+        com.platinum20.dashboard.trips.TrainLive.init(this)
         WebFetcher.init(this)
         DiskCache.init(this)
         // Le liste del blocco pubblicità si caricano in sottofondo, pronte per la prima pagina web.

@@ -50,7 +50,7 @@ class DaFareAppuntiTest {
         assertEquals(listOf(null, 100L, 50L), back.notes.map { it.archivedAt })
     }
 
-    /** 1.538: la pagina intera mette le vecchie sopra ADESSO, la più vecchia in cima, per giorno o per mese. */
+    /** 1.539: la pagina intera mette le vecchie sopra ADESSO, la più vecchia in cima, per giorno o per mese. */
     @Test fun laPaginaInteraDivideIlPassato() {
         val today = now.toLocalDate()
         fun at(daysAgo: Long) = now.minusDays(daysAgo).atZone(zone).toInstant().toEpochMilli()
