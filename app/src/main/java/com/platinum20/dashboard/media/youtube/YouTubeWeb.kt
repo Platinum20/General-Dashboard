@@ -192,6 +192,7 @@ object YouTubeWeb {
                     channelAvatar = v.optString("avatar"),
                     watchedPercent = v.optInt("watched"),
                     membersOnly = v.optBoolean("members"),
+                    uploadedText = v.optString("ago"),
                 )
             }
         }.distinctBy { it.id }
@@ -387,7 +388,13 @@ function(data) {
       var avatar = '';
       try { avatar = thumb(meta.image.decoratedAvatarViewModel.avatar.avatarViewModel.image); } catch (e) {}
       var members = /MEMBERS_ONLY/.test(JSON.stringify(meta || {}));
-      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, start: start, avatar: avatar, watched: watched, members: members});
+      var ago = '';
+      try {
+        meta.metadata.contentMetadataViewModel.metadataRows.forEach(function(row) {
+          (row.metadataParts || []).forEach(function(p) { var t = text(p.text); if (/\d/.test(t) && /( fa$|ago$)/.test(t)) ago = t; });
+        });
+      } catch (e) {}
+      videos.push({id: l.contentId, title: title, channel: channel, channelId: channelId, length: len, live: live, start: start, avatar: avatar, watched: watched, members: members, ago: ago});
     } else if (type.indexOf('PLAYLIST') >= 0) {
       var count = 0;
       try { count = parseInt(JSON.stringify(l.contentImage).match(/"text":"(\d+)/)[1], 10) || 0; } catch (e) {}
@@ -417,7 +424,7 @@ function(data) {
         try { avatar = thumb(v.channelThumbnailSupportedRenderers.channelThumbnailWithLinkRenderer.thumbnail); } catch (e) {}
         if (!avatar && v.channelThumbnail) avatar = thumb(v.channelThumbnail);
         var members = /MEMBERS_ONLY/.test(overlays);
-        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, start: start, avatar: avatar, watched: watched, members: members});
+        videos.push({id: v.videoId, title: text(v.title), channel: by.name, channelId: by.id, length: text(v.lengthText), live: live, start: start, avatar: avatar, watched: watched, members: members, ago: text(v.publishedTimeText)});
       } else if (key === 'reelItemRenderer' && v.videoId) {
         videos.push({id: v.videoId, title: text(v.headline), channel: '', channelId: '', short: true});
       } else if ((key === 'gridPlaylistRenderer' || key === 'playlistRenderer') && v.playlistId) {

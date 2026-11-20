@@ -328,7 +328,7 @@ object YtResolver {
         val id = videoId(item.url) ?: return null
         return YtVideo(
             id = id,
-            title = item.name,
+            title = YtText.decodeEntities(item.name.orEmpty()),
             channel = item.uploaderName.orEmpty(),
             channelId = "",
             published = null,
@@ -381,7 +381,7 @@ object YtResolver {
 
         YtStream(
             id = id,
-            title = info.name.orEmpty(),
+            title = YtText.decodeEntities(info.name.orEmpty()),
             channel = info.uploaderName.orEmpty(),
             thumbnail = "https://i.ytimg.com/vi/$id/hqdefault.jpg",
             videoUrl = video?.content,
@@ -398,7 +398,7 @@ object YtResolver {
             subscribers = info.uploaderSubscriberCount,
             likes = info.likeCount,
             description = info.description?.content.orEmpty().let { raw ->
-                if ('<' in raw) Html.fromHtml(YtText.descriptionHtml(raw), Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw
+                YtText.decodeEntities(if ('<' in raw) Html.fromHtml(YtText.descriptionHtml(raw), Html.FROM_HTML_MODE_COMPACT).toString().trim() else raw)
             },
             dashManifest = if (live) null else dashManifest(info.videoOnlyStreams, audio, info.duration),
             subtitles = subtitles,

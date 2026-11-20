@@ -20,21 +20,23 @@ import com.platinum20.dashboard.widget.NewsWidget
 import com.platinum20.dashboard.widget.Widgets
 import java.util.concurrent.TimeUnit
 
-/** Aggiorna meteo e notizie in background, poi ridisegna i widget. */
+/** Aggiorna meteo (e notizie, solo col widget News) in background, poi ridisegna i widget. */
 class RefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         DiskCache.init(applicationContext)
         runCatching { NotesStore.init(applicationContext) }
         val weather = runCatching { WeatherStore.fetch(applicationContext, freshLocation = false) }
+        // Le notizie con l'app chiusa servono solo al widget News (1.532, Antonio): senza widget si leggono all'apertura.
         val news = runCatching {
+            check(Widgets.ids(applicationContext, NewsWidget::class.java).isNotEmpty())
             val result = NewsStore.load(force = true)
             val feed = NewsStore.widgetFeed(applicationContext, result.items)
             NewsWidget.save(applicationContext, NewsStories.forWidget(feed), feed.fresh.size)
         }
         // Ogni ora (e dopo mezzanotte) tutti i widget si ridisegnano: meteo, Adesso, il giorno nuovo.
         Widgets.refresh(applicationContext)
-        return if (weather.isFailure && news.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
+        return if (weather.isFailure && runAttemptCount < 2) Result.retry() else Result.success()
     }
 
     companion object {
