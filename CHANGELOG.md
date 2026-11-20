@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.534.0
+**Le abitudini si eliminano tenendole premute**
+- Nel fumetto delle abitudini (tocca "Abitudini · N su M" in Home o nel Calendario) tieni premuta un'abitudine: salgono "Fatta oggi", "Apri e modifica" ed "Elimina"
+- "Elimina" ha "Annulla", che la rimette con tutta la serie
+- "Apri e modifica" porta alla pagina dell'abitudine (nome, giorni, promemoria), che prima non si raggiungeva da nessuna parte
+- Anche tenendo premuta la riga "Abitudini" nel Calendario si apre il fumetto
+
 ## 1.533.0
 **Home: "Da fare" e "Appunti" separati, e il "+" più pulito**
 - In Home due card al posto di "Per dopo": "Da fare" con le cose da spuntare, "Appunti" con note e foto

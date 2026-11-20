@@ -504,10 +504,15 @@ fun NotesScreen(
                             total = data.habits.size,
                             open = false,
                             modifier = Modifier.animateItem().captureTarget(CaptureMode.HABIT),
+                            // Tenendo premuto: lo stesso fumetto, come ogni cosa con delle azioni (regola del tocco lungo).
+                            onLongClick = {
+                                haptic(Haptic.LONG_PRESS)
+                                ActionBubble.show(*habitsBubble(data.habits, today) { openItem(ItemKind.HABIT, it.id) })
+                            },
                         ) {
                             // Le abitudini si segnano dal fumetto in basso, non aprendo la lista sul posto (1.421).
                             haptic(Haptic.TICK)
-                            ActionBubble.show(*habitsBubble(data.habits, today))
+                            ActionBubble.show(*habitsBubble(data.habits, today) { openItem(ItemKind.HABIT, it.id) })
                         }
                     }
                 }
@@ -629,7 +634,8 @@ private fun habitItems(habits: List<Habit>, onDeleted: (Habit) -> Unit): LazyLis
  * una per una con la spunta, e si richiude.
  */
 @Composable
-private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modifier = Modifier, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     val turn by androidx.compose.animation.core.animateFloatAsState(if (open) 180f else 0f, Motion.settle(), label = "habitsTurn")
     val line = MaterialTheme.colorScheme.outlineVariant
     Row(
@@ -637,7 +643,7 @@ private fun HabitsTodayRow(done: Int, total: Int, open: Boolean, modifier: Modif
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
             .bouncyPress(0.98f)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             // La linea del tempo a sinistra passa anche qui, senza buchi dentro OGGI (1.465).
             .drawBehind {
                 val x = (16 + 11).dp.toPx()

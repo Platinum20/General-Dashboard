@@ -12,6 +12,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Done
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import com.platinum20.dashboard.capture.CaptureFeedback
+import com.platinum20.dashboard.capture.CaptureMode
+import com.platinum20.dashboard.capture.CaptureNotice
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -120,17 +125,38 @@ fun HabitsTodayDialog(habits: List<Habit>, today: LocalDate, onToggle: (Habit) -
 /**
  * Le abitudini di oggi nel fumetto in basso (1.421, punto 19): toccando la riga "Abitudini · 0 su 2" in Home o
  * nel calendario si apre questo, una riga per abitudine; toccandone una si segna (o si toglie) per oggi.
+ * Tenendone premuta una salgono le sue azioni (1.534, Antonio non trovava come cancellarle): [habitActions].
  */
-internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate): Array<BubbleAction> =
+internal fun habitsBubble(habits: List<Habit>, today: java.time.LocalDate, open: (Habit) -> Unit): Array<BubbleAction> =
     habits.map { h ->
         val done = h.isDone(today)
         BubbleAction(
             icon = if (done) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
             title = h.title,
-            detail = if (done) "Fatta oggi · tocca per toglierla" else "Tocca per segnarla fatta",
+            detail = if (done) "Fatta oggi · tieni premuto per altro" else "Tocca per segnarla · tieni premuto per altro",
             onClick = { NotesStore.toggleHabit(h.id, today) },
+            onLongClick = { ActionBubble.show(*habitActions(h, today, open)) },
         )
     }.toTypedArray()
+
+/** Le azioni di un'abitudine: segnarla per oggi, aprirne la pagina, eliminarla (con "Annulla" che rimette la serie). */
+internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) -> Unit): Array<BubbleAction> {
+    val done = h.isDone(today)
+    return arrayOf(
+        BubbleAction(
+            if (done) Icons.Outlined.RadioButtonUnchecked else Icons.Filled.CheckCircle,
+            if (done) "Togli da oggi" else "Fatta oggi",
+            detail = h.title,
+        ) { NotesStore.toggleHabit(h.id, today) },
+        BubbleAction(Icons.Outlined.Edit, "Apri e modifica", detail = "Nome, giorni, promemoria") { open(h) },
+        BubbleAction(Icons.Outlined.Delete, "Elimina", detail = h.title, danger = true) {
+            NotesStore.deleteHabit(h.id)
+            CaptureFeedback.show(
+                CaptureNotice(CaptureMode.HABIT, "Abitudine eliminata", undo = { NotesStore.restoreHabit(h) }, icon = Icons.Outlined.Delete, fly = false),
+            )
+        },
+    )
+}
 
 /** Il testo della riga delle abitudini, uguale in Home e nel calendario. */
 internal fun habitsLine(habits: List<Habit>, today: java.time.LocalDate): String =
