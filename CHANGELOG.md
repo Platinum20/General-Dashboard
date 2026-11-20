@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.534.0
+**Notifica del treno: la linea del viaggio**
+- Su Android 16 la barra diventa il viaggio: un punto per ogni fermata e il treno che avanza
+- In alto "arriva tra 3 h 54 min" (o "parte tra 12 min"), al posto del cronometro attaccato al titolo
+- Aperta, una cosa per riga: partenza → arrivo (con l'orario del biglietto barrato se c'è ritardo), il ritardo in arancio con l'ora del rilevamento, la prossima fermata, carrozza e posto
+- Prima di partire: l'orario vero accanto a quello barrato, il binario e lo stesso conto alla rovescia
+
 ## 1.533.0
 **Home: "Da fare" e "Appunti" separati, e il "+" più pulito**
 - In Home due card al posto di "Per dopo": "Da fare" con le cose da spuntare, "Appunti" con note e foto
