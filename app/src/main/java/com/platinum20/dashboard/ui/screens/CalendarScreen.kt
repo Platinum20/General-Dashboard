@@ -34,7 +34,6 @@ import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EventBusy
@@ -213,9 +212,6 @@ fun EventDetailScreen(
     if (showTicket && codes.isNotEmpty()) TicketSheet(codes) { showTicket = false }
     // I turni di Creators Pro: scheda tutta loro (con chi, guadagno, mese), niente righe da calendario (Antonio).
     val shift = if (eventId < -1) rememberShift(eventId) else null
-    val packFiles by com.platinum20.dashboard.trips.TrainPackStore.files.collectAsState()
-    val pack = packFiles.filter { it.eventId == eventId }.map { it.item }
-    val packSec = packFiles.filter { it.eventId == eventId }.sumOf { it.sec }
     DetailPage(
         onBack = onBack,
         meta = if (shift != null) "Creators Pro" else "Evento",
@@ -223,16 +219,7 @@ fun EventDetailScreen(
             haptic(Haptic.CONFIRM)
             showTicket = true
         } else null,
-        // Lo zaino del treno pronto: un tocco e va tutto in coda (1.468).
-        more = pack.takeIf { it.isNotEmpty() }?.let { items ->
-            listOf(
-                BubbleAction(
-                    Icons.Outlined.Luggage,
-                    "Ascolta lo zaino",
-                    detail = com.platinum20.dashboard.trips.TrainPack.readyLine(packSec).orEmpty(),
-                ) { com.platinum20.dashboard.media.CanvasPlayer.playList(context, items) },
-            )
-        }.orEmpty() +
+        more =
             // Condividi, che prima stava tenendo premuta la riga (Antonio, 2026-11-11).
             listOfNotNull(current?.let { ev -> BubbleAction(Icons.Outlined.Share, "Condividi") { shareText(context, eventShareText(ev.title, ev.begin)) } }),
         onEdit = if (writable) ({ withWrite { current?.let { onEdit(it.id) } } }) else null,

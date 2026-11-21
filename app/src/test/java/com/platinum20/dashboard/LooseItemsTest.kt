@@ -17,6 +17,7 @@ import com.platinum20.dashboard.ui.screens.looseCount
 import com.platinum20.dashboard.ui.screens.archivedItems
 import com.platinum20.dashboard.ui.screens.calendarMonthCount
 import com.platinum20.dashboard.ui.screens.pending
+import com.platinum20.dashboard.ui.screens.jottings
 import com.platinum20.dashboard.ui.screens.LooseItem
 import com.platinum20.dashboard.ui.screens.withoutLoose
 import java.time.LocalDate
@@ -69,17 +70,21 @@ class LooseItemsTest {
         val items = looseItems(groups, notes, today)
         assertEquals(
             // La nota fissata va in cima a tutto, sopra anche le cose da fare (2026-11-13).
-            listOf("note-14", "task-1", "note-13", "note-12", "task-2"),
+            listOf("note-14", "task-1", "note-13", "saved-10", "note-12", "task-2"),
             items.map { it.key },
         )
         assertEquals(LooseKind.PHOTO, items[2].kind)
         assertEquals("Foto · scade a marzo", items[2].line)
-        // Video e articoli salvati non sono in Per dopo: stanno in Media e News.
-        assertTrue(items.none { it.key == "note-10" || it.key == "note-11" })
+        // I media salvati stanno anche in Appunti, con la copertina (2026-11-21); gli articoli solo in News.
+        assertEquals(LooseKind.SAVED, items[3].kind)
+        assertEquals("img", items[3].image)
+        assertEquals("Veritasium", items[3].line)
+        assertTrue(items[3] in items.jottings())
+        assertTrue(items.none { it.key == "note-10" || it.key == "note-11" || it.key == "saved-11" })
         assertTrue(items.last().done)
         // Ogni riga ha al massimo una riga sotto.
         assertTrue(items.all { it.line == null || '\n' !in it.line!! })
-        assertEquals("5", looseCount(items.size))
+        assertEquals("6", looseCount(items.size))
     }
 
     @Test fun leCoseFatteVannoInArchivio() {

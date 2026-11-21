@@ -159,7 +159,7 @@ class TripsTest {
     private val day20 = LocalDate.of(2026, 11, 20)
 
     @Test fun ilRitardoSpostaGliOrari() {
-        val s = tripStops(ic, day20, zoneR, live = TrainStatus(97, platform = "2", readAt = 1L), packSec = 0, now = 2L)!!
+        val s = tripStops(ic, day20, zoneR, live = TrainStatus(97, platform = "2", readAt = 1L), now = 2L)!!
         assertEquals("15:38", s.departAt)
         assertEquals("20:04", s.arriveAt)
         assertEquals("14:01", s.plannedDepart)
@@ -170,7 +170,7 @@ class TripsTest {
         assertEquals("4 h 26 min · +97 min", s.middle)
         assertEquals("Binario 2 · Intercity 605 · Carrozza 7 · Posto 16A", s.below)
         // Senza rete resta l'ultima lettura, ma dice quanto è vecchia.
-        val old = tripStops(ic, day20, zoneR, live = TrainStatus(97, platform = "2", readAt = 1L), packSec = 0, now = 1L + 35 * 60_000L)!!
+        val old = tripStops(ic, day20, zoneR, live = TrainStatus(97, platform = "2", readAt = 1L), now = 1L + 35 * 60_000L)!!
         assertEquals("4 h 26 min · +97 min · letto 35 min fa", old.middle)
         assertEquals("+97 min", s.late)
         assertEquals(at(20, 15, 38), s.begin)
@@ -178,7 +178,7 @@ class TripsTest {
 
     @Test fun inOrarioOAnticipoNienteBarrato() {
         listOf(TrainStatus(0, readAt = 1L), TrainStatus(-3, readAt = 1L), null).forEach { st ->
-            val s = tripStops(ic, day20, zoneR, live = st, packSec = 0)!!
+            val s = tripStops(ic, day20, zoneR, live = st)!!
             assertEquals("14:01", s.departAt)
             assertEquals("18:27", s.arriveAt)
             assertEquals(null, s.plannedDepart)
@@ -188,7 +188,7 @@ class TripsTest {
     }
 
     @Test fun soppressoTieneGliOrariDelBiglietto() {
-        val s = tripStops(ic, day20, zoneR, live = TrainStatus(40, cancelled = true, readAt = 1L), packSec = 0, now = 2L)!!
+        val s = tripStops(ic, day20, zoneR, live = TrainStatus(40, cancelled = true, readAt = 1L), now = 2L)!!
         assertEquals("14:01", s.departAt)
         assertEquals(null, s.plannedDepart)
         assertEquals("4 h 26 min · Soppresso", s.middle)
@@ -196,14 +196,14 @@ class TripsTest {
 
     @Test fun ilRitardoPortaLArrivoDopoMezzanotte() {
         val late = ic.copy(begin = at(20, 19, 30), end = at(20, 23, 40))
-        val s = tripStops(late, day20, zoneR, live = TrainStatus(45, readAt = 1L), packSec = 0)!!
+        val s = tripStops(late, day20, zoneR, live = TrainStatus(45, readAt = 1L))!!
         assertEquals("00:25", s.arriveAt)
         assertEquals("23:40", s.plannedArrive)
         assertEquals("Arrivo a Taranto · Domani", s.to)
-        assertEquals("Arrivo a Taranto", tripStops(late, day20, zoneR, live = null, packSec = 0)!!.to)
+        assertEquals("Arrivo a Taranto", tripStops(late, day20, zoneR, live = null)!!.to)
         // Anche la partenza oltre mezzanotte lo dice.
         val night = ic.copy(begin = at(20, 23, 50), end = at(21, 3, 0))
-        val n = tripStops(night, day20, zoneR, live = TrainStatus(20, readAt = 1L), packSec = 0)!!
+        val n = tripStops(night, day20, zoneR, live = TrainStatus(20, readAt = 1L))!!
         assertEquals("00:10", n.departAt)
         assertEquals("Treno da Pescara Centrale · Domani", n.from)
     }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.554.0
+**Media salvati: copertine, Appunti e download**
+- Lo zaino del treno non c'è più: niente si scarica più da solo prima dei viaggi
+- Quando salvi un video di YouTube o un episodio di podcast, si scarica sul telefono; con "Scarica solo col Wi-Fi" acceso aspetta il Wi-Fi. Togliendolo dai salvati il file si cancella
+- I brani di Spotify restano in streaming: sono protetti e non si possono scaricare fuori dall'app Spotify
+- In Media ogni cosa salvata ha la sua tessera con la copertina vera, in testa alla fila Musica o Video
+- Video, brani e podcast salvati compaiono anche nella card Appunti della Home
+- Impostazioni › Media: "Scarica i salvati" dice quanti sono pronti senza rete e quanto pesano
+
 ## 1.552.0
 **Nota lunga più pulita**
 - Grassetto, corsivo, barrato e titoletti si vedono senza gli asterischi: i segni ricompaiono sbiaditi solo quando metti il cursore su quel pezzo
