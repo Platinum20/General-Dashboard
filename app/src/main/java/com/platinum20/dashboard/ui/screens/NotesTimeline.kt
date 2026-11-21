@@ -706,7 +706,8 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
 
 private fun noteItem(r: DueRow, n: com.platinum20.dashboard.notes.Note): LooseItem {
     val photo = n.photo.isNotEmpty()
-    val more = n.body.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
+    // Con delle voci da spuntare "2 di 4 fatte · Documenti, Ombrello" (1.553), se no la prima riga senza segni.
+    val more = com.platinum20.dashboard.notes.NoteLines.cardLine(n.body)
     return LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
         if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned)
 }

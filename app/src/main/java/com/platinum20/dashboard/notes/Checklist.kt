@@ -1,8 +1,8 @@
 package com.platinum20.dashboard.notes
 
 /**
- * Liste di spunta dentro le note libere. Restano testo semplice ("[ ] latte", "[x] pane",
- * anche "- uova" conta come voce da fare), così le note vecchie e quelle condivise si leggono ovunque.
+ * Liste di spunta dentro le note libere. Restano testo semplice ("[ ] latte", "[x] pane"), così le note vecchie e
+ * quelle condivise si leggono ovunque. Dalla 1.553 "- uova" è un punto dell'elenco, non una voce da fare ([NoteLines]).
  * Funzioni pure: si provano senza telefono.
  */
 object Checklist {
@@ -13,13 +13,9 @@ object Checklist {
     data class Item(override val index: Int, val text: String, val done: Boolean) : Line
     data class Plain(override val index: Int, val text: String) : Line
 
-    private val CHECKED = Regex("""^\s*\[[xX]]\s?(.*)$""")
-    private val UNCHECKED = Regex("""^\s*(?:\[ ?]|[-*•])\s(.*)$""")
-
     fun parseLine(index: Int, line: String): Line {
-        CHECKED.matchEntire(line)?.let { return Item(index, it.groupValues[1].trim(), true) }
-        UNCHECKED.matchEntire(line)?.let { return Item(index, it.groupValues[1].trim(), false) }
-        return Plain(index, line)
+        val (kind, done, prefix) = NoteLines.kindOf(line)
+        return if (kind == NoteLines.Kind.CHECK) Item(index, line.substring(prefix).trim(), done) else Plain(index, line)
     }
 
     /** Le righe dopo il titolo. */
@@ -36,7 +32,7 @@ object Checklist {
     }
 
     fun progressLabel(text: String): String? = progress(text)?.let { (done, total) ->
-        if (done == total) "Tutto fatto · $total di $total" else "$done di $total fatti"
+        if (done == total) "Tutto fatto · $total di $total" else "$done di $total fatte"
     }
 
     /** Spunta o toglie la spunta alla riga [index]; le altre righe restano identiche. */
@@ -63,7 +59,7 @@ object Checklist {
         return (listOf(all.first()) + all.drop(1).mapIndexed { i, line ->
             when (val parsed = parseLine(i + 1, line)) {
                 is Item -> format(parsed.text, parsed.done)
-                is Plain -> if (line.isBlank()) line else format(line.trim(), false)
+                is Plain -> if (line.isBlank()) line else format(line.substring(NoteLines.kindOf(line).third).trim(), false)
             }
         }).joinToString("\n")
     }
@@ -72,7 +68,7 @@ object Checklist {
     fun preview(body: String): String = body.lines().joinToString("\n") { line ->
         when (val parsed = parseLine(1, line)) {
             is Item -> (if (parsed.done) "✓ " else "○ ") + parsed.text
-            is Plain -> line
+            is Plain -> if (NoteLines.kindOf(line).first == NoteLines.Kind.BULLET) "• " + NoteLines.plainLine(line) else line
         }
     }
 
