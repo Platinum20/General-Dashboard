@@ -30,7 +30,7 @@ class ChecklistTest {
         assertEquals("[ ] pane", back.lines()[2])
     }
 
-    /** Dalla 1.553 il trattino è un punto dell'elenco: non si spunta. */
+    /** Dalla 1.555 il trattino è un punto dell'elenco: non si spunta. */
     @Test fun ilTrattinoEUnPuntoNonUnaVoce() =
         assertEquals(spesa, Checklist.toggle(spesa, 3))
 

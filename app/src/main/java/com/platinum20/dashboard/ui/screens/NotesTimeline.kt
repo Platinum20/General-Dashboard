@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import com.platinum20.dashboard.notes.NoteText
+import com.platinum20.dashboard.media.coverImage
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -306,8 +307,6 @@ internal fun tripStops(
     labels: Boolean = false,
     /** Il treno adesso (viaggio vivo, 1.467): ritardo e binario accanto alla durata; l'ultima lettura resta anche senza rete. */
     live: com.platinum20.dashboard.trips.TrainStatus? = event.trip?.let { com.platinum20.dashboard.trips.TrainLive.known(event.eventId) },
-    /** Lo zaino del treno pronto (secondi), letto dall'indice dei file. */
-    packSec: Long = if (event.trip != null && event.end > System.currentTimeMillis()) com.platinum20.dashboard.trips.TrainPackStore.readySec(event.eventId) else 0L,
     /** Adesso, per dire quanto è vecchia la lettura del ritardo. */
     now: Long = System.currentTimeMillis(),
 ): TripStops? {
@@ -348,11 +347,8 @@ internal fun tripStops(
         plannedDepart = from.format(hour).takeIf { shift > 0 },
         plannedArrive = to.format(hour).takeIf { shift > 0 },
         late = delayText,
-        // Sotto treno, carrozza e posto; se lo zaino è pronto, quanto c'è da ascoltare e guardare (1.468).
-        below = listOfNotNull(
-            com.platinum20.dashboard.calendar.Trips.ticketLine(trip, live?.takeIf { !it.cancelled }?.platform),
-            packSec.takeIf { it > 0 && !labels }?.let(com.platinum20.dashboard.trips.TrainPack::readyLine),
-        ).joinToString(" · ").ifEmpty { null },
+        // Sotto treno, carrozza e posto.
+        below = com.platinum20.dashboard.calendar.Trips.ticketLine(trip, live?.takeIf { !it.cancelled }?.platform)?.ifEmpty { null },
         // Il pallino "sei qui" segue il treno vero.
         begin = event.begin + shift,
         end = event.end + shift,
@@ -663,7 +659,7 @@ internal fun isLoose(row: DueRow): Boolean =
 internal fun List<DueDay>.withoutLoose(): List<DueDay> =
     map { g -> g.copy(rows = g.rows.filterNot(::isLoose)) }.filter { it.rows.isNotEmpty() }
 
-internal enum class LooseKind { TODO, NOTE, PHOTO, PARCEL }
+internal enum class LooseKind { TODO, NOTE, PHOTO, PARCEL, SAVED }
 
 /** Una riga della card "Per dopo": a sinistra la spunta o l'immagine, il nome, al massimo una riga sotto. */
 internal data class LooseItem(
@@ -679,6 +675,8 @@ internal data class LooseItem(
     val pinned: Boolean = false,
     /** Quando è finita nell'archivio (fatta o archiviata): divide la pagina per giorno o per mese. */
     val at: Long? = null,
+    /** Un video, un brano o un podcast salvato (2026-11-21, Antonio): sta anche in Appunti, con la sua copertina. */
+    val saved: com.platinum20.dashboard.capture.SavedLinks.Later? = null,
 )
 
 /**
@@ -700,23 +698,33 @@ internal fun looseItems(groups: List<DueDay>, notes: List<com.platinum20.dashboa
         rows.mapNotNull { r -> r.note?.takeIf { it.archivedAt == null }?.let { r to it } }.forEach { (r, n) ->
             add((n.pinned to n.createdAt) to noteItem(r, n))
         }
+        // I media salvati (2026-11-21, Antonio): oltre che in Media anche in Appunti, con la copertina. Gli articoli restano in News.
+        com.platinum20.dashboard.capture.SavedLinks.later(notes.filter { it.archivedAt == null }).forEach { l ->
+            add((l.note.pinned to l.note.createdAt) to savedItem(l))
+        }
     }.sortedWith(compareByDescending<Pair<Pair<Boolean, Long>, LooseItem>> { it.first.first }.thenByDescending { it.first.second }).map { it.second }
     return (todo.filter { !it.done } + dated + todo.filter { it.done }).distinctBy { it.key }.pinnedFirst()
 }
 
 private fun noteItem(r: DueRow, n: com.platinum20.dashboard.notes.Note): LooseItem {
     val photo = n.photo.isNotEmpty()
-    // Con delle voci da spuntare "2 di 4 fatte · Documenti, Ombrello" (1.553), se no la prima riga senza segni.
+    // Con delle voci da spuntare "2 di 4 fatte · Documenti, Ombrello" (1.555), se no la prima riga senza segni.
     val more = com.platinum20.dashboard.notes.NoteLines.cardLine(n.body)
     return LooseItem(r.key, if (photo) LooseKind.PHOTO else LooseKind.NOTE, n.title.ifBlank { if (photo) "Foto" else "Nota" },
         if (photo) photoLine(n) else more, image = n.photo, row = r, pinned = n.pinned)
 }
 
+private fun savedItem(l: com.platinum20.dashboard.capture.SavedLinks.Later): LooseItem = LooseItem(
+    "saved-${l.note.id}", LooseKind.SAVED, l.item.title.ifBlank { LaterText.subtitle(l.item) }, LaterText.subtitle(l.item),
+    image = l.item.coverImage(),
+    pinned = l.note.pinned, saved = l,
+)
+
 /** La card "Da fare" (1.532, Antonio): solo le cose da spuntare. */
 internal fun List<LooseItem>.todos(): List<LooseItem> = filter { it.kind == LooseKind.TODO }
 
 /** La card "Appunti" (1.532, Antonio): note e foto, quello che non si spunta. */
-internal fun List<LooseItem>.jottings(): List<LooseItem> = filter { it.kind == LooseKind.NOTE || it.kind == LooseKind.PHOTO }
+internal fun List<LooseItem>.jottings(): List<LooseItem> = filter { it.kind == LooseKind.NOTE || it.kind == LooseKind.PHOTO || it.kind == LooseKind.SAVED }
 
 /** L'archivio di Appunti: le note messe da parte, dall'ultima archiviata. Le cose salvate (video, articoli) no: stanno in Media e News. */
 internal fun archivedNotes(notes: List<com.platinum20.dashboard.notes.Note>): List<LooseItem> = notes

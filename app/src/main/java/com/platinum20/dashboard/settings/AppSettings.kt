@@ -134,14 +134,14 @@ object AppSettings {
     private val _liveShifts = MutableStateFlow(false)
     /** Lo stesso conto alla rovescia prima di ogni turno (spento di default). */
     val liveShifts: StateFlow<Boolean> = _liveShifts.asStateFlow()
-    private val _trainPack = MutableStateFlow(true)
-    /** Lo zaino del treno: prima del viaggio, col Wi-Fi, scarica podcast e video per il treno (acceso di default). */
-    val trainPack: StateFlow<Boolean> = _trainPack.asStateFlow()
+    private val _downloadSaved = MutableStateFlow(true)
+    /** I video e gli episodi salvati si scaricano sul telefono (acceso di default; prima era lo zaino del treno). */
+    val downloadSaved: StateFlow<Boolean> = _downloadSaved.asStateFlow()
     private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
     /** La voce che legge notizie e punto del giorno. */
     val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
     private val _wifiOnlyDownloads = MutableStateFlow(false)
-    /** Voci e aggiornamenti si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
+    /** Voci, aggiornamenti e media salvati si scaricano solo col Wi-Fi (spento: scarica con qualunque rete). */
     val wifiOnlyDownloads: StateFlow<Boolean> = _wifiOnlyDownloads.asStateFlow()
     private val _hiddenNewsSources = MutableStateFlow<Set<String>>(emptySet())
     /** Le fonti delle News che non vuoi vedere (id di NewsSources): si nascondono tenendo premuta una notizia. */
@@ -226,7 +226,7 @@ object AppSettings {
         _rainAlert.value = prefs.getBoolean(KEY_RAIN_ALERT, false)
         _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
         _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, false)
-        _trainPack.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
+        _downloadSaved.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
@@ -324,8 +324,8 @@ object AppSettings {
         prefs.edit().putBoolean(KEY_LIVE_TRIPS, enabled).apply()
     }
 
-    fun setTrainPack(enabled: Boolean) {
-        _trainPack.value = enabled
+    fun setDownloadSaved(enabled: Boolean) {
+        _downloadSaved.value = enabled
         prefs.edit().putBoolean(KEY_TRAIN_PACK, enabled).apply()
     }
 

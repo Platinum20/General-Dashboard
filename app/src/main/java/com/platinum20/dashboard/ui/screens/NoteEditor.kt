@@ -268,7 +268,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     }
 
     /**
-     * Punto, voce da spuntare o titoletto da "Aggiungi" (1.553): la riga del cursore cambia; senza cursore nel testo
+     * Punto, voce da spuntare o titoletto da "Aggiungi" (1.555): la riga del cursore cambia; senza cursore nel testo
      * se ne aggiunge una nuova in fondo.
      */
     fun lineKind(kind: NoteLines.Kind) {
@@ -326,7 +326,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         NotesStore.togglePin(nid)
                     }
                 },
-                // Per le liste (1.553): le fatte in fondo, via, o tutte da rifare (la valigia).
+                // Per le liste (1.555): le fatte in fondo, via, o tutte da rifare (la valigia).
                 if (!NoteLines.hasDone(body.text)) null else BubbleAction(Icons.Outlined.VerticalAlignBottom, "Fatte in fondo", "in ogni lista le spuntate scendono") {
                     body = TextFieldValue(NoteLines.doneToBottom(body.text))
                     save()
@@ -403,7 +403,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                     .imePadding()
                     .miniPlayerFloor()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.553).
+                // Mentre si scrive, al posto dei due tasti: la barra delle righe (1.555).
                 if (richBarShown()) {
                     RichToolbar(place)
                 } else {

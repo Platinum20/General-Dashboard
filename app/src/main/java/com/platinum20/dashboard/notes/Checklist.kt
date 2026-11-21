@@ -2,7 +2,7 @@ package com.platinum20.dashboard.notes
 
 /**
  * Liste di spunta dentro le note libere. Restano testo semplice ("[ ] latte", "[x] pane"), così le note vecchie e
- * quelle condivise si leggono ovunque. Dalla 1.553 "- uova" è un punto dell'elenco, non una voce da fare ([NoteLines]).
+ * quelle condivise si leggono ovunque. Dalla 1.555 "- uova" è un punto dell'elenco, non una voce da fare ([NoteLines]).
  * Funzioni pure: si provano senza telefono.
  */
 object Checklist {

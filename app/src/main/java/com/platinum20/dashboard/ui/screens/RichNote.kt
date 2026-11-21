@@ -81,7 +81,7 @@ import com.platinum20.dashboard.notes.NoteLines
 import com.platinum20.dashboard.notes.NotesStore
 
 /**
- * Il testo con le righe (1.553, Antonio scelta A di /mnt/project-files/editor-note-2/): punti, voci da spuntare e
+ * Il testo con le righe (1.555, Antonio scelta A di /mnt/project-files/editor-note-2/): punti, voci da spuntare e
  * titoletti mescolati nella stessa nota, la barra Punti · Spunta · Titolo · Aa sopra la tastiera. Lo usano le note
  * lunghe e il campo "Note" di eventi, promemoria e date.
  */

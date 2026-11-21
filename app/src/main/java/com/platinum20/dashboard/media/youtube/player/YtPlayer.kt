@@ -302,10 +302,10 @@ object YtPlayer {
         appContext = context.applicationContext
         watchVolume(context)
         _now.value = YtNow(link = link, stream = null, audioOnly = audioOnly)
-        // Nello zaino del treno: si guarda dal file, senza rete e senza consumare la SIM.
-        com.platinum20.dashboard.trips.TrainPackStore.init(context)
-        val packed = com.platinum20.dashboard.trips.TrainPackStore.localVideo(id)?.let { f ->
-            com.platinum20.dashboard.trips.TrainPackStore.fileOf(f)?.let { file ->
+        // Salvato e già scaricato: si guarda dal file, senza rete e senza consumare la SIM.
+        com.platinum20.dashboard.media.SavedDownloads.init(context)
+        val packed = com.platinum20.dashboard.media.SavedDownloads.localVideo(id)?.let { f ->
+            com.platinum20.dashboard.media.SavedDownloads.fileOf(f)?.let { file ->
                 YtStream(
                     id = id, title = f.item.title, channel = f.item.subtitle, thumbnail = f.item.image,
                     videoUrl = null, audioUrl = null, muxedUrl = Uri.fromFile(file).toString(), hlsUrl = null,

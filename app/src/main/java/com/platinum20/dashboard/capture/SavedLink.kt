@@ -185,7 +185,7 @@ object SavedLinks {
 
     /**
      * Video, brani, radio e podcast salvati per dopo e i link di YouTube incollati, dal più recente: "Salvati" in Media
-     * (1.490, Antonio: ognuno nella sua sezione). Restano note (sincronia con YouTube, Zaino del treno).
+     * (1.490, Antonio: ognuno nella sua sezione). Restano note (sincronia con YouTube, download dei salvati).
      */
     fun later(notes: List<Note>): List<Later> = notes
         .sortedByDescending { it.createdAt }
@@ -249,6 +249,7 @@ object SavedLinks {
         val removed = notesWith(NotesStore.data.value.notes, link)
         if (removed.isEmpty()) return
         removed.forEach { NotesStore.deleteNote(it.id) }
+        if (link is SavedLink.Media) runCatching { com.platinum20.dashboard.work.SavedDownloadWorker.now(context) }
         CaptureFeedback.show(
             CaptureNotice(
                 CaptureMode.NOTE,
@@ -280,6 +281,10 @@ object SavedLinks {
         NotesStore.init(context)
         if (notesWith(NotesStore.data.value.notes, link).isNotEmpty()) return
         val id = NotesStore.saveNote(null, noteText(link)) ?: return
+        // Video ed episodi si scaricano subito (col Wi-Fi se l'impostazione è accesa), 2026-11-21.
+        if (link is SavedLink.Media && com.platinum20.dashboard.media.SavedDownloadPlan.kindOf(link.item) != null) {
+            runCatching { com.platinum20.dashboard.work.SavedDownloadWorker.now(context) }
+        }
         CaptureFeedback.show(
             CaptureNotice(
                 CaptureMode.NOTE,

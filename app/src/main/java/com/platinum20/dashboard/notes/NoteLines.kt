@@ -1,7 +1,7 @@
 package com.platinum20.dashboard.notes
 
 /**
- * Le righe di una nota (1.553, Antonio scelta A di /mnt/project-files/editor-note-2/): ogni riga sceglie da sola cosa
+ * Le righe di una nota (1.555, Antonio scelta A di /mnt/project-files/editor-note-2/): ogni riga sceglie da sola cosa
  * essere, testo, punto ("- "), voce da spuntare ("[ ] " / "[x] ") o titoletto ("## "), e nella stessa nota si mescolano.
  * Restano segni nel testo, così le note si copiano e si condividono ovunque; l'editor li nasconde e disegna cerchi e
  * pallini. Funzioni pure: si provano senza telefono.

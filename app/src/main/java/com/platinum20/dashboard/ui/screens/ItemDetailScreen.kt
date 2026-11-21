@@ -256,7 +256,7 @@ fun ItemDetailScreen(kind: ItemKind, id: Long, onBack: () -> Unit) {
                 when (val edit = lineEdit(kind, id, data, line.kind)) {
                     null -> DetailRow(line.kind.icon(), line.text)
                     is LineEdit.Tap -> DetailTapRow(line.kind.icon(), line.text, onClick = { picker = edit.picker ?: run { edit.onClick(); null } }, onClear = edit.onClear)
-                    // Le note con punti e voci da spuntare, come le note lunghe (1.553).
+                    // Le note con punti e voci da spuntare, come le note lunghe (1.555).
                     is LineEdit.Field -> if (line.kind == LineKind.NOTES) DetailRichRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.onCommit)
                     else DetailFieldRow("$kind-$id-${line.kind}", line.kind.icon(), edit.value, edit.placeholder, edit.number, edit.prose, edit.onCommit)
                 }
