@@ -298,7 +298,7 @@ fun MediaScreen(
                     // Schede grandi come nella lista verticale (1.503, Antonio), una per volta con la successiva che spunta.
                     val big = bigVideoWidth()
                     val bigHeight = big * 9f / 16f
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (savedVideos.isNotEmpty()) item(key = "saved") {
                             SavedTile(bigHeight, savedVideos, wide = true) { onOpenRoute(Routes.savedMedia(video = true)) }
                         }
@@ -338,7 +338,7 @@ fun MediaScreen(
 @Composable
 private fun StoriesRow(stories: List<com.platinum20.dashboard.media.MediaStory>, onOpen: (com.platinum20.dashboard.media.MediaStory) -> Unit) {
     val nowMs = remember { System.currentTimeMillis() }
-    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(stories, key = { it.key }) { story ->
             Column(
                 Modifier.width(72.dp).bouncyPress(0.94f).clickable { onOpen(story) },
@@ -385,7 +385,7 @@ private fun NewsRow(feed: com.platinum20.dashboard.media.MediaFeedRows, onPlayVi
         is com.platinum20.dashboard.media.FeedEntry.Video -> VideoTile(entry.video, height) { onPlayVideo(entry.video.watchUrl) }
         is com.platinum20.dashboard.media.FeedEntry.Podcast -> EpisodeTile(entry.episode, height)
     }
-    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyRow(state = rememberRowAtStart(), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(feed.fresh, key = { "f-" + it.key }) { Entry(it) }
         if (feed.fresh.isNotEmpty() && older.isNotEmpty()) item(key = "feed-marker") { VisitMarkTile(height) }
         items(older, key = { "o-" + it.key }) { Entry(it) }

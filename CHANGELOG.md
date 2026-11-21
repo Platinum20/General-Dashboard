@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.551.0
+**Le righe di Media partono da sinistra**
+- Aprendo Media la riga Musica (e le altre righe orizzontali) si apre dall'inizio, non più tutta a destra
+
 ## 1.549.0
 **Il mini player si appoggia sopra i tasti**
 - Nelle note e nelle pagine di dettaglio i tasti in basso restano fermi: è il mini player ad agganciarsi sopra di loro
