@@ -42,7 +42,7 @@ data class PackFile(
     val asked: Int = 360,
 )
 
-/** La qualità dei video salvati, scelta in Impostazioni › Media (1.556, Antonio: Full HD di default). */
+/** La qualità dei video salvati, scelta in Impostazioni › Media (1.557, Antonio: Full HD di default). */
 enum class SavedQuality(val height: Int, val label: String, val detail: String) {
     FULL_HD(1080, "Full HD", "1080p · circa 1,4 GB l'ora"),
     HD(720, "HD", "720p · circa 700 MB l'ora"),
@@ -164,6 +164,8 @@ object SavedDownloads {
         AppSettings.init(context)
         NotesStore.init(context)
         fun saved() = SavedLinks.later(NotesStore.data.value.notes.filter { it.archivedAt == null }).map { it.item }
+        // Prima le copertine che mancano ai salvati di Spotify: una richiesta piccola, anche coi dati.
+        runCatching { com.platinum20.dashboard.capture.SavedCovers.fill(context) }
         val on = AppSettings.downloadSaved.value
         lock.withLock {
             val gone = if (on) SavedDownloadPlan.stale(saved(), _files.value) else _files.value

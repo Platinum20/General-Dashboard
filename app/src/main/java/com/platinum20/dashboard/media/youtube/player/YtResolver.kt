@@ -443,7 +443,7 @@ object YtResolver {
     }
 
     /**
-     * I flussi per scaricare un video salvato (1.556, Antonio: in Full HD): video H.264 senza audio per ogni qualità
+     * I flussi per scaricare un video salvato (1.557, Antonio: in Full HD): video H.264 senza audio per ogni qualità
      * e audio M4A originale, da unire sul telefono in un MP4; [YtDownload.muxedUrl] = il file unico a 360p di riserva.
      */
     suspend fun forDownload(link: String): YtDownload = withContext(Dispatchers.IO) {

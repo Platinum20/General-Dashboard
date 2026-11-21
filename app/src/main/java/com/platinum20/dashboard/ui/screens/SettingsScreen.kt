@@ -1324,7 +1324,7 @@ private fun SavedDownloadSetting() {
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { set(it) }) },
     )
     if (enabled) {
-        // 1.556 (Antonio): Full HD di default; i file pesano circa cinque volte quelli a 360p.
+        // 1.557 (Antonio): Full HD di default; i file pesano circa cinque volte quelli a 360p.
         val height by AppSettings.savedQuality.collectAsState()
         val quality = com.platinum20.dashboard.media.SavedQuality.of(height)
         RowDivider()
