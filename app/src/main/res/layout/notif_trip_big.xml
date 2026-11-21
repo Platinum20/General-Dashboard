@@ -2,7 +2,7 @@
 <!--
   Notifica del treno aperta, come la proposta A (Antonio, 2026-11-20): titolo, la linea del viaggio con un
   pallino per fermata e il treno che avanza (disegnata da TrackArt), sotto partenza a sinistra e arrivo a destra,
-  poi una cosa per riga: ritardo, prossima fermata, posto. Con "Fermate" le righe diventano l'elenco delle fermate.
+  sotto il titolo la prossima fermata e binario · treno · carrozza · posto, in fondo il ritardo (versione compatta 1, 2026-11-21). Con "Fermate" le righe diventano l'elenco delle fermate.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -13,6 +13,14 @@
         style="@style/TextAppearance.Compat.Notification.Title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:singleLine="true" />
+    <TextView
+        android:id="@+id/trip_next"
+        style="@style/TextAppearance.Compat.Notification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
         android:ellipsize="end"
         android:singleLine="true" />
     <TextView

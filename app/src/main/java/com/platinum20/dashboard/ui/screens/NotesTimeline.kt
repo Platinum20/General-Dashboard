@@ -339,7 +339,8 @@ internal fun tripStops(
         arriveAt = arrive.format(hour),
         to = (if (labels) trip.to else "Arrivo a ${trip.to}") + arriveDay?.let { " · $it" }.orEmpty(),
         // In mezzo la durata, sotto treno, carrozza e posto (Antonio, 1.438).
-        middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::line),
+        // Il binario sta sotto, a sinistra del treno (Antonio, 2026-11-21): qui solo il ritardo.
+        middle = listOfNotNull(duration, live?.let(com.platinum20.dashboard.trips.TrainLive::delayText),
             // Una lettura vecchia lo dice (regola 4): gli orari restano quelli col ritardo, ma sai da quando.
             live?.takeIf { !com.platinum20.dashboard.trips.TrainLive.isFresh(it, now) }
                 ?.let { "letto " + com.platinum20.dashboard.trips.TrainLive.ago(now - it.readAt) },
@@ -349,7 +350,7 @@ internal fun tripStops(
         late = delayText,
         // Sotto treno, carrozza e posto; se lo zaino è pronto, quanto c'è da ascoltare e guardare (1.468).
         below = listOfNotNull(
-            com.platinum20.dashboard.calendar.Trips.ticketLine(trip),
+            com.platinum20.dashboard.calendar.Trips.ticketLine(trip, live?.takeIf { !it.cancelled }?.platform),
             packSec.takeIf { it > 0 && !labels }?.let(com.platinum20.dashboard.trips.TrainPack::readyLine),
         ).joinToString(" · ").ifEmpty { null },
         // Il pallino "sei qui" segue il treno vero.

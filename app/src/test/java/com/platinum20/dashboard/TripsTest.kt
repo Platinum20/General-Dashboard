@@ -167,10 +167,11 @@ class TripsTest {
         // I testi restano quelli: solo gli orari si spostano, la durata è quella del biglietto.
         assertEquals("Treno da Pescara Centrale", s.from)
         assertEquals("Arrivo a Taranto", s.to)
-        assertEquals("4 h 26 min · +97 min · binario 2", s.middle)
+        assertEquals("4 h 26 min · +97 min", s.middle)
+        assertEquals("Binario 2 · Intercity 605 · Carrozza 7 · Posto 16A", s.below)
         // Senza rete resta l'ultima lettura, ma dice quanto è vecchia.
         val old = tripStops(ic, day20, zoneR, live = TrainStatus(97, platform = "2", readAt = 1L), packSec = 0, now = 1L + 35 * 60_000L)!!
-        assertEquals("4 h 26 min · +97 min · binario 2 · letto 35 min fa", old.middle)
+        assertEquals("4 h 26 min · +97 min · letto 35 min fa", old.middle)
         assertEquals("+97 min", s.late)
         assertEquals(at(20, 15, 38), s.begin)
     }

@@ -111,7 +111,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val text = marked(card.text, LiveCard.TEXT, card)
             val showStops = card.stops.isNotEmpty() &&
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
-            // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
+            // Aperta: in fondo la riga del ritardo o, col tasto "Fermate", l'elenco delle fermate.
             val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
                 // In ritardo come partenza e arrivo: l'orario del biglietto barrato, quello vero in arancio.
                 val planned = stop.planned?.let { "$it " }.orEmpty()
@@ -133,6 +133,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
             val big = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_big).apply {
                 setTextViewText(R.id.trip_title, card.title)
+                setTextViewText(R.id.trip_next, card.next ?: "")
+                setViewVisibility(R.id.trip_next, if (card.next == null) android.view.View.GONE else android.view.View.VISIBLE)
                 setTextViewText(R.id.trip_sub, card.sub ?: "")
                 setViewVisibility(R.id.trip_sub, if (card.sub == null) android.view.View.GONE else android.view.View.VISIBLE)
                 card.track?.let { track ->
