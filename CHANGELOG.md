@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.571.0
+**Widget nuovi: Da fare, e Oggi, SIM e Calendario come la Home**
+- Nuovo widget Da fare: in cima le abitudini con la fiamma della serie, poi le cose da fare. Il cerchio si spunta senza aprire l'app, il nome apre la sua pagina, il titolo apre tutto Da fare. Lo aggiungi dall'elenco dei widget del telefono
+- Il widget Oggi è come la card Adesso: il meteo con le prossime ore e sotto la prossima cosa vera ("Domani 07:00 · Turno su Debora"), non più "Ancora da fare: 2 abitudini"
+- Il widget SIM ha l'anello della pagina SIM con i giga rimasti al centro e sotto solo "Rinnovo tra 9 giorni": niente più testi coi puntini
+- Il widget Calendario ha il titolo "CALENDARIO ›" con il conto di qui a fine mese, come la card della Home
+
 ## 1.570.0
 **Venduto del turno: la lettura non si interrompe più a metà**
 - La rilettura di Creators Pro va avanti anche se cambi pagina: prima si fermava dopo i turni e prima della busta paga, così il venduto restava fermo

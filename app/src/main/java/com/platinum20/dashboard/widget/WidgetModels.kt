@@ -3,8 +3,7 @@ package com.platinum20.dashboard.widget
 import com.platinum20.dashboard.sim.SimStatus
 import com.platinum20.dashboard.ui.screens.euroLabel
 import com.platinum20.dashboard.ui.screens.gbLabel
-import com.platinum20.dashboard.ui.screens.meterText
-import com.platinum20.dashboard.ui.screens.renewalLine
+import com.platinum20.dashboard.ui.screens.renewalLabel
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.LocalDate
@@ -64,13 +63,16 @@ object NewsWidgetRows {
     }
 }
 
-/** Cosa mostra il widget SIM: [progress] da 0 a 1000, null se non si sa il totale. */
-data class SimModel(val big: String, val of: String, val progress: Int?, val line1: String, val line2: String)
+/**
+ * Cosa mostra il widget SIM (giro 2, 2026-11-21): l'anello della pagina SIM con [big] e [of] al centro e una riga sola
+ * sotto ([line1]), niente puntini. [progress] da 0 a 1000 = quanto resta, null se non si sa il totale.
+ */
+data class SimModel(val big: String, val of: String, val progress: Int?, val line1: String, val line2: String = "")
 
 object SimWidgetRows {
     fun model(status: SimStatus?, linked: Boolean, today: LocalDate): SimModel {
         if (!linked || status == null || !status.hasAny) {
-            return SimModel("–", "", null, "Collega la SIM", "Impostazioni › Account")
+            return SimModel("–", "", null, "Collega la SIM")
         }
         val data = status.data
         val big = when {
@@ -78,18 +80,15 @@ object SimWidgetRows {
             data.unlimited -> "∞"
             else -> gbLabel(data.left)
         }
+        // Sotto il numero, dentro l'anello: una parola, così non va mai coi puntini.
         val of = when {
-            data == null -> if (status.credit != null) "di credito" else ""
-            data.unlimited -> "giga illimitati"
-            data.total != null -> "di " + gbLabel(data.total)
+            data == null -> if (status.credit != null) "credito" else ""
+            data.unlimited -> "illimitati"
             else -> "rimasti"
         }
         val progress = data?.fraction?.let { (it * 1000).toInt() }
-        val line1 = status.renewal?.let { renewalLine(it, today) } ?: status.offer.orEmpty()
-        val line2 = listOfNotNull(
-            status.minutes?.let { "Minuti " + meterText(it, "") },
-            status.credit?.takeIf { data != null }?.let { "credito " + euroLabel(it) },
-        ).joinToString(" · ")
-        return SimModel(big, of, progress, line1, line2)
+        // "Rinnovo tra 9 giorni": la data esatta sta nella pagina SIM.
+        val line1 = status.renewal?.let { "Rinnovo " + renewalLabel(it, today) } ?: status.offer.orEmpty()
+        return SimModel(big, of, progress, line1)
     }
 }

@@ -2,9 +2,11 @@
 <resources>
     <!-- Nomi e descrizioni nell'elenco dei widget del telefono. -->
     <string name="widget_today_label">Oggi</string>
-    <string name="widget_description">Il meteo e quello che conta adesso, come in cima alla Home</string>
+    <string name="widget_description">Il meteo con le prossime ore e la prossima cosa da fare</string>
     <string name="widget_calendar_label">Calendario</string>
-    <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, promemoria da spuntare, date</string>
+    <string name="widget_tasks_description">Oggi e i prossimi giorni: eventi, turni, treni, date</string>
+    <string name="widget_todo_label">Da fare</string>
+    <string name="widget_todo_description">Le cose da fare e le abitudini, da spuntare col dito</string>
     <string name="widget_news_label">News</string>
     <string name="widget_news_description">Le storie nuove dall\'ultima visita</string>
     <string name="widget_sim_label">SIM</string>
@@ -27,6 +29,18 @@
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/widget_accent</item>
         <item name="android:textSize">11sp</item>
+    </style>
+
+    <!-- Il titolo di un widget come quello delle card della Home (CardTitle, 1.539): maiuscolo, inchiostro, con ›. -->
+    <style name="WidgetCardTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:fontFamily">@font/inter_semibold</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <!-- Il numero grande: temperatura, euro, giga. -->
