@@ -1,70 +1,49 @@
 package com.platinum20.dashboard.ui.screens
 
-import com.platinum20.dashboard.media.radio.RadioGenre
-import androidx.compose.foundation.lazy.itemsIndexed
-import com.platinum20.dashboard.capture.SavedLinks
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Radio
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.platinum20.dashboard.capture.SavedLinks
 import com.platinum20.dashboard.media.Loadable
+import com.platinum20.dashboard.media.radio.RadioGenre
+import com.platinum20.dashboard.media.radio.RadioHero
 import com.platinum20.dashboard.media.radio.RadioNow
 import com.platinum20.dashboard.media.radio.RadioStation
 import com.platinum20.dashboard.media.radio.RadioStore
-import androidx.compose.runtime.remember
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.text.style.TextAlign
 
 /**
- * La pagina Radio (1.529, Antonio scelta B/C): in cima le tue radio come loghi tondi (preferite, poi le ultime
- * ascoltate), "In onda adesso" con quello che sta trasmettendo la radio che suona, poi i generi in chip che
- * restringono le più ascoltate in Italia. Tieni premuta una radio per preferita, sveglia, salva.
+ * La pagina Radio nello stile delle pagine di Spotify e YouTube (1.572, Antonio): in cima il blocco grande con il
+ * logo della radio che suona (o la preferita), il nome e il ▶; sotto, sullo sfondo senza card, le tue radio, i generi
+ * e le più ascoltate in Italia. Tieni premuta una radio per preferita, sveglia, salva.
  */
 internal fun LazyListScope.radioSections(
     popular: Loadable<List<RadioStation>>,
@@ -73,104 +52,105 @@ internal fun LazyListScope.radioSections(
     now: RadioNow?,
     genre: String?,
     onGenre: (String?) -> Unit,
+    onBack: () -> Unit,
 ) {
-    val mine = (favorites + recent).distinctBy { it.id }
-    if (mine.isNotEmpty()) item(key = "mine") { MyStations(mine, now) }
-    now?.let { playing ->
-        item(key = "onair-header") { SectionTitle("In onda adesso") }
-        item(key = "onair-${playing.station.id}") { StationRow(playing.station, playing, first = true, last = true) }
-    }
     val top = popular.data.orEmpty()
+    val hero = RadioHero.pick(now?.station, favorites, recent, top)
+    item(key = "radio-hero") { RadioHeroBlock(hero, now, onBack) }
+    val mine = (favorites + recent).distinctBy { it.id }
+    if (mine.isNotEmpty()) mediaGroup(key = "mine", title = "Le tue radio", items = mine, itemKey = { it.id }) { _, s -> StationLine(s, now) }
     val genres = RadioGenre.chips(top.map { it.tags })
-    if (genres.isNotEmpty()) {
-        item(key = "genre-header") { SectionTitle("Per genere") }
-        item(key = "genre-chips") {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                genres.forEach { g -> CanvasChip(selected = g == genre, onClick = { onGenre(if (g == genre) null else g) }, label = g) }
-            }
+    if (genres.isNotEmpty()) mediaShelf(key = "genres", title = "Per genere") {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            genres.forEach { g -> CanvasChip(selected = g == genre, onClick = { onGenre(if (g == genre) null else g) }, label = g) }
         }
     }
     val shown = if (genre == null) top else top.filter { RadioGenre.primary(it.tags) == genre }
     if (shown.isNotEmpty()) {
-        item(key = "popular-header") { SectionTitle(if (genre == null) "Le più ascoltate in Italia" else "$genre in Italia") }
-        itemsIndexed(shown, key = { _, s -> "list-${s.id}" }) { i, s -> StationRow(s, now, i == 0, i == shown.lastIndex) }
+        mediaGroup(
+            key = "popular",
+            title = if (genre == null) "Le più ascoltate in Italia" else "$genre in Italia",
+            items = shown,
+            itemKey = { it.id },
+        ) { _, s -> StationLine(s, now) }
     } else if (popular.loading) item(key = "popular-loading") {
-        PlaceholderList(rows = 4, label = "Carico le radio")
+        PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 4, label = "Carico le radio")
     }
 }
 
-/** Le tue radio in loghi tondi, la preferita prima; quella che suona ha il nome blu. */
+/** Il blocco in cima: il logo grande, il nome una volta sola, perché è lì ("In onda adesso", "La tua preferita") e il ▶. */
 @Composable
-private fun MyStations(stations: List<RadioStation>, now: RadioNow?) {
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        stations.forEach { station ->
-            val playing = now?.station?.id == station.id
-            Column(
-                Modifier.width(72.dp).bouncyPress(0.94f).clip(MaterialTheme.shapes.medium)
-                    .tapOrSave({ SavedLinks.radio(station) }) { RadioStore.play(station) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                StationLogo(station, 64, CircleShape)
-                Spacer(Modifier.size(6.dp))
-                Text(
-                    station.name,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (playing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
+private fun RadioHeroBlock(hero: RadioHero.Pick?, now: RadioNow?, onBack: () -> Unit) {
+    if (hero == null) {
+        MediaHero(title = "Radio", image = "", onBack = onBack, mark = MediaMark(MediaType.RADIO), line = "Le radio italiane in diretta")
+        return
     }
+    val station = hero.station
+    val onAir = now?.station?.id == station.id
+    MediaHero(
+        title = station.name,
+        image = station.logo,
+        onBack = onBack,
+        line = RadioHero.line(hero.why),
+        detail = RadioHero.detail(hero.why, now?.track, station.tags),
+        picture = { StationLogo(station, MediaPage.HERO_COVER.value.toInt(), MaterialTheme.shapes.large) },
+        playing = onAir && now?.playing == true,
+        onPlay = { if (onAir) RadioStore.togglePause() else RadioStore.play(station) },
+        onMore = { SavedLinks.offer(SavedLinks.radio(station)) },
+    )
 }
 
+/**
+ * La riga Canvas di una radio, sullo sfondo: a sinistra il logo, in mezzo il nome e il genere (mentre suona, cosa
+ * trasmette), a destra il cuore delle preferite o, se suona, LIVE nel colore di "adesso".
+ */
 @Composable
-private fun SectionTitle(text: String) {
-    SectionHeader(text, Modifier.padding(top = 16.dp, bottom = 4.dp))
-}
-
-@Composable
-private fun StationRow(station: RadioStation, now: RadioNow?, first: Boolean, last: Boolean) {
+private fun StationLine(station: RadioStation, now: RadioNow?) {
     val favorites by RadioStore.favorites.collectAsState()
     val favorite = favorites.any { it.id == station.id }
     val playing = now?.station?.id == station.id
     val haptic = rememberHaptic()
-    // Le radio di una sezione sono righe di un'unica card (1.423, punto 8 A): 12 a schermo invece di 9.
-    Box(
-        Modifier.fillMaxWidth()
-            .cardGroupItem(first, last, if (playing) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.card)
-            .tapOrSave({ SavedLinks.radio(station) }) { RadioStore.play(station) },
+    val accent = MaterialTheme.colorScheme.primary
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 56.dp).bouncyPress(0.98f).clip(MaterialTheme.shapes.medium)
+            .tapOrSave({ SavedLinks.radio(station) }) { if (playing) RadioStore.togglePause() else RadioStore.play(station) }
+            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            StationLogo(station, 48)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(station.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    // Il genere in italiano, non i tag in inglese con i kbps (punto 42); mentre suona, cosa trasmette.
-                    now?.track?.takeIf { playing && it.isNotBlank() } ?: RadioGenre.of(station.tags) ?: "Radio",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (playing) {
-                Text("LIVE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 12.dp))
-            } else IconButton(onClick = {
-                haptic(if (favorite) Haptic.TICK else Haptic.CONFIRM)
-                RadioStore.toggleFavorite(station)
-            }) {
-                Icon(
-                    if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (favorite) "Togli dalle preferite" else "Aggiungi alle preferite",
-                    tint = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+        StationLogo(station, 44)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                station.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (playing) accent else MaterialTheme.colorScheme.onSurface,
+                fontWeight = if (playing) FontWeight.SemiBold else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                // Il genere in italiano, non i tag in inglese con i kbps; mentre suona, cosa trasmette.
+                now?.track?.takeIf { playing && it.isNotBlank() } ?: RadioGenre.of(station.tags) ?: "Radio",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (playing) {
+            Text("LIVE", style = MaterialTheme.typography.labelMedium, color = accent, modifier = Modifier.padding(horizontal = 12.dp))
+        } else IconButton(onClick = {
+            haptic(if (favorite) Haptic.TICK else Haptic.CONFIRM)
+            RadioStore.toggleFavorite(station)
+        }) {
+            Icon(
+                if (favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = if (favorite) "Togli dalle preferite" else "Aggiungi alle preferite",
+                tint = if (favorite) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -187,7 +167,11 @@ fun StationLogo(station: RadioStation, sizeDp: Int, shape: androidx.compose.ui.g
         // Senza logo (o se non si carica, sta sotto) le iniziali: ogni radio si riconosce, non la stessa icona per tutte.
         Text(
             RadioGenre.initials(station.name),
-            style = if (sizeDp >= 40) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelSmall,
+            style = when {
+                sizeDp >= 120 -> MaterialTheme.typography.displaySmall
+                sizeDp >= 40 -> MaterialTheme.typography.titleSmall
+                else -> MaterialTheme.typography.labelSmall
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
@@ -196,4 +180,3 @@ fun StationLogo(station: RadioStation, sizeDp: Int, shape: androidx.compose.ui.g
         }
     }
 }
-

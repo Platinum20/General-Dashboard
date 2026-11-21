@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.572.0
+**Radio e podcast nello stile nuovo**
+- La pagina Radio si apre con un blocco grande: il logo della radio che suona (o della tua preferita), il nome e il tasto ▶ per farla partire o fermarla
+- Le tue radio, i generi e le più ascoltate in Italia ora sono righe sullo sfondo, senza card, come le pagine di Spotify e YouTube
+- La pagina di un podcast ha la copertina grande, l'autore, la puntata che parte col ▶ (quella da riprendere o l'ultima uscita) e il tasto Segui accanto
+- Le puntate sono righe semplici con quando sono uscite e quanto durano (o quanto manca), con la barra se le hai iniziate
+- Tenendo premuto un podcast (nella fila Musica o in "I tuoi podcast") compaiono Apri e Segui / Non seguire più
+
 ## 1.571.0
 **YouTube sempre nella lingua originale**
 - I canali, la Home, la Cronologia, la ricerca e le playlist non mostrano più i video italiani tradotti in inglese: Canvas chiedeva a YouTube una lingua che non conosce e YouTube rispondeva in inglese

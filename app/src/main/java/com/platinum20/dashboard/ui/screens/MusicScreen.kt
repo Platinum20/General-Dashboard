@@ -31,6 +31,7 @@ import com.platinum20.dashboard.media.Accounts
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -181,7 +182,7 @@ internal fun SpotifyNotices() {
 
 /**
  * "I tuoi podcast" (1.481, Antonio: una riga in fondo a Media, non un titolo da toccare): quelli che segui, un tocco
- * apre gli episodi qui dentro.
+ * apre la pagina del podcast qui dentro (1.572: blocco grande in cima come Spotify, senza barra del titolo).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -193,23 +194,19 @@ fun PodcastsScreen(onBack: () -> Unit) {
     val opened = remember { PodcastOpen.take() }
     var podcast by remember { mutableStateOf(opened) }
     BackHandler(enabled = podcast != null && opened == null) { podcast = null }
+    val page = podcast
+    if (page != null) {
+        Column(Modifier.fillMaxSize()) {
+            PodcastPage(page, podcastNow, onBack = { if (opened == null) podcast = null else onBack() })
+        }
+        return
+    }
     val barScroll = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior(androidx.compose.material3.rememberTopAppBarState())
     Scaffold(
         modifier = Modifier.nestedScroll(barScroll.nestedScrollConnection),
-        topBar = {
-            TopLevelBar(
-                title = podcast?.title ?: "I tuoi podcast",
-                subtitle = podcast?.let { p -> p.author.ifBlank { if (p.fromSpotify) "Da Spotify" else "Podcast" } } ?: "Podcast",
-                scrollBehavior = barScroll,
-                onBack = { if (podcast != null && opened == null) podcast = null else onBack() },
-            )
-        },
+        topBar = { TopLevelBar(title = "I tuoi podcast", subtitle = "Podcast", scrollBehavior = barScroll, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            podcast?.let { page ->
-                PodcastPage(page, podcastNow)
-                return@Column
-            }
             FollowedPodcasts(onOpen = { podcast = it })
         }
     }
@@ -262,7 +259,8 @@ internal fun PerTeRow(onOpen: (SpItem) -> Unit, onOpenMix: (SpMix) -> Unit, onOp
                     is PerTe.Show -> MediaTile(
                         tile, wide = false, image = e.podcast.artwork, title = e.podcast.title,
                         author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, date = null,
-                        mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { onOpenPodcast(e.podcast) },
+                        mark = MediaMark(MediaType.PODCAST),
+                        click = Modifier.podcastClick(e.podcast, PodcastStore.followed.value.any { it.feedUrl == e.podcast.feedUrl }, null) { onOpenPodcast(e.podcast) },
                     )
                 }
             }
@@ -405,7 +403,7 @@ internal fun RadioRow(onOpenAll: () -> Unit) {
     }
 }
 
-/** "I tuoi podcast": quelli che segui (anche salvati su Spotify), uno per riga; senza, qualche idea da cui partire. */
+/** "I tuoi podcast": quelli che segui (anche salvati su Spotify), uno per riga sullo sfondo; senza, qualche idea da cui partire. */
 @Composable
 private fun FollowedPodcasts(onOpen: (Podcast) -> Unit) {
     val followedHere by PodcastStore.followed.collectAsState()
@@ -413,10 +411,10 @@ private fun FollowedPodcasts(onOpen: (Podcast) -> Unit) {
     val followed = remember(followedHere, spotifyShows) { PodcastStore.merge(followedHere, spotifyShows) }
     val search by PodcastStore.search.collectAsState()
     var idea by rememberSaveable { mutableStateOf<String?>(null) }
-    LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp)) {
         if (followed.isEmpty()) {
             item(key = "start") {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Non segui ancora nessun podcast", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         podcastIdeas.forEach { text ->
@@ -428,32 +426,40 @@ private fun FollowedPodcasts(onOpen: (Podcast) -> Unit) {
                     }
                 }
             }
-            if (idea != null) items(search.data.orEmpty(), key = { "idea-" + it.feedUrl }) { podcast -> PodcastLine(podcast, onOpen) }
-        }
-        items(followed, key = { it.feedUrl }) { podcast -> PodcastLine(podcast, onOpen) }
+            if (idea != null) {
+                val found = search.data.orEmpty()
+                if (found.isNotEmpty()) mediaGroup(key = "idea", title = idea.orEmpty(), items = found, itemKey = { it.feedUrl }) { _, p ->
+                    PodcastLine(p, followedHere.any { it.feedUrl == p.feedUrl }, onOpen)
+                }
+            }
+        } else mediaGroup(
+            key = "followed", title = "Che segui", items = followed, itemKey = { it.feedUrl },
+            trailing = { Text("${followed.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+        ) { _, p -> PodcastLine(p, followedHere.any { it.feedUrl == p.feedUrl }, onOpen) }
     }
 }
 
+/** Un podcast in riga Canvas: copertina, nome, autore; tenendo premuto Apri e Segui (regola del tocco lungo). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun PodcastLine(podcast: Podcast, onOpen: (Podcast) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).bouncyPress(0.97f).clickable { onOpen(podcast) },
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Cover(podcast.artwork, MaterialTheme.shapes.medium, 56.dp, MediaMark(MediaType.PODCAST))
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(podcast.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                podcast.author.ifBlank { if (podcast.fromSpotify) "Spotify" else "Podcast" },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+private fun PodcastLine(podcast: Podcast, followed: Boolean, onOpen: (Podcast) -> Unit) {
+    val haptic = rememberHaptic()
+    MediaRow(
+        title = podcast.title,
+        line = podcast.author.ifBlank { if (podcast.fromSpotify) "Spotify" else "Podcast" },
+        image = podcast.artwork,
+        mark = MediaMark(MediaType.PODCAST),
+        click = Modifier.podcastClick(podcast, followed, haptic) { onOpen(podcast) },
+    )
 }
+
+/** Tocco = apre il podcast; tenendo premuto = Apri e Segui / Non seguire più ([podcastActions]). */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun Modifier.podcastClick(podcast: Podcast, followed: Boolean, haptic: ((Haptic) -> Unit)?, onOpen: () -> Unit): Modifier =
+    combinedClickable(
+        onClick = onOpen,
+        onLongClick = { haptic?.invoke(Haptic.LONG_PRESS); podcastActions(podcast, followed, podcast.fromSpotify, onOpen) },
+    )
 
 /** Larghezza delle copertine: tre intere per schermo, così nessuna resta tagliata al bordo. */
 @Composable

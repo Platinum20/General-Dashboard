@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,6 +88,8 @@ internal fun MediaHero(
     detail: String = "",
     description: String = "",
     onPlay: (() -> Unit)? = null,
+    /** Sta suonando proprio questo (una radio, un podcast): il tasto grande diventa ❚❚. */
+    playing: Boolean = false,
     onShuffle: (() -> Unit)? = null,
     onMore: (() -> Unit)? = null,
     picture: (@Composable () -> Unit)? = null,
@@ -189,7 +192,11 @@ internal fun MediaHero(
                     if (onPlay != null) {
                         Spacer(Modifier.width(8.dp))
                         FilledIconButton(onClick = { haptic(Haptic.CONFIRM); onPlay() }, modifier = Modifier.size(56.dp).bouncyPress()) {
-                            Icon(Icons.Rounded.PlayArrow, contentDescription = "Riproduci", modifier = Modifier.size(30.dp))
+                            Icon(
+                                if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                contentDescription = if (playing) "Pausa" else "Riproduci",
+                                modifier = Modifier.size(30.dp),
+                            )
                         }
                     }
                 }
