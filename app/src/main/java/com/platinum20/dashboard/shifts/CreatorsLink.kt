@@ -263,7 +263,8 @@ object CreatorsLink {
     /** Rilettura nascosta: riapre la timeline con la sessione già fatta. False se non è arrivato niente. */
     suspend fun refresh(context: Context): Boolean {
         ShiftStore.init(context)
-        if (!ShiftStore.linked.value || ShiftStore.refreshing.value) return false
+        if (!ShiftStore.linked.value) return false
+        if (ShiftStore.refreshing.value) { ShiftStore.noteRead("saltata: già in corso"); return false }
         ShiftStore.setRefreshing(true)
         val before = ShiftStore.readAt.value
         val asked = System.currentTimeMillis()
@@ -287,6 +288,7 @@ object CreatorsLink {
                     }
                 }
                 val got = ShiftStore.readAt.value != before
+                ShiftStore.noteRead(if (got) "letto" else if (isLoginPage(lastUrl ?: view.url)) "pagina d'accesso" else "niente in ${READ_MS / 1000} s")
                 if (isExpired(got, isLoginPage(lastUrl ?: view.url), ShiftStore.refusedAt >= asked)) ShiftStore.setExpired(true)
                 if (got) CreatorsSession.save(context)
                 CookieManager.getInstance().flush()

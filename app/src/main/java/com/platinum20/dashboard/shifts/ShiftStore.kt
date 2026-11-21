@@ -123,7 +123,7 @@ object ShiftStore {
         synchronized(this) {
             val clean = url.substringBefore('#')
             captures.removeAll { it.optString("url") == clean }
-            val kept = if (months != null) body.take(20_000) else "turni letti: ${shifts?.size ?: -1}"
+            val kept = if (months != null) body.take(20_000) else "turni letti: ${shifts?.size ?: -1}\n" + ShiftPay.shape(body).take(20_000)
             captures.addLast(JSONObject().put("url", clean).put("at", System.currentTimeMillis()).put("turni", shifts?.size ?: months?.size ?: -1).put("body", kept))
             while (captures.size > MAX_CAPTURES) captures.removeFirst()
         }
@@ -217,8 +217,19 @@ object ShiftStore {
         File(app.filesDir, CAPTURES).delete()
     }
 
+    /** Le ultime riletture nascoste (ora e com'è andata), per capire dal file se il giro dei 15 minuti gira. */
+    private val reads = ArrayDeque<String>()
+
+    fun noteRead(line: String) {
+        synchronized(this) {
+            reads.addLast(java.time.Instant.ofEpochMilli(System.currentTimeMillis()).toString() + " " + line)
+            while (reads.size > 30) reads.removeFirst()
+        }
+    }
+
     fun capturesText(): String = synchronized(this) {
         JSONObject()
+            .put("riletture", JSONArray(reads.toList()))
             .put("turni_letti", JSONArray(ShiftParse.toJson(_shifts.value)))
             .put("pagina", timelineUrl ?: "")
             .put("testo_pagina", pageText)
