@@ -98,4 +98,12 @@ class ShiftLiveTest {
         assertEquals("4 h 30 min", ShiftLive.length(270 * 60_000L))
         assertEquals("45 min", ShiftLive.length(45 * 60_000L))
     }
+
+    @Test
+    fun numeriVecchiDiconoDaQuando() {
+        val card = ShiftLive.card(shift, at(14, 50), selling, month, zone, readAt = at(14, 0))!!
+        assertEquals("letto alle 14:00", card.lines[1])
+        val fresh = ShiftLive.card(shift, at(14, 50), selling, month, zone, readAt = at(14, 40))!!
+        assertEquals(1, fresh.lines.size)
+    }
 }

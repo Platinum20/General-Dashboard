@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.566.0
+## 1.567.0
 **Spotify e YouTube, giro 2: più immagini, niente scatole**
 - Album, playlist e mix: in cima la copertina grande, il nome, l'artista e un tasto ▶ grande; la pagina prende il colore della copertina. I brani stanno sullo sfondo, come nel Calendario e in News
 - Artista: la foto a tutta larghezza col nome sopra; i Popolari con la copertina; Discografia e "Appare in" in file che scorrono di lato
@@ -9,6 +9,12 @@
 - Il canale: foto grande al centro, nome, iscritti e Iscriviti; poi gli ultimi video, Shorts e Playlist in file che scorrono
 - La Cronologia è sulla linea del tempo del Calendario (Oggi ——— ●). Per svuotarla tieni premuto il nome di un giorno
 - Il player dei video di YouTube resta com'è
+
+## 1.566.0
+**Il venduto del turno dice sempre la stessa cosa**
+- La notifica e la pagina del turno mostrano gli stessi numeri: se Creators Pro segna $0, lo dicono tutte e due
+- Se i numeri non sono freschi, sotto c'è "letto alle 18:20", così sai che sono vecchi
+- Il file "Salva i dati letti dei turni" ora dice quando Canvas ha riletto Creators Pro e dove tiene il venduto del turno in corso (senza nomi dei fan), per capire perché non arriva
 
 ## 1.565.0
 **I soldi del turno mentre lavori**

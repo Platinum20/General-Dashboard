@@ -22,6 +22,8 @@ object ShiftLive {
     const val LEAD_MS = 45 * 60_000L
     /** Mentre lavori i numeri si rileggono più spesso della lettura oraria: il venduto cresce turno per turno. */
     const val READ_EVERY_MS = 15 * 60_000L
+    /** Oltre questa età il venduto in notifica dice "letto alle …". */
+    const val STALE_MS = 20 * 60_000L
     /** Quanto il riepilogo può ancora aggiornarsi col guadagno che Creators Pro segna dopo la fine. */
     const val DONE_MS = 12 * 60 * 60_000L
 
@@ -73,6 +75,8 @@ object ShiftLive {
         val lines = buildList {
             if (phase != ShiftPhase.SOON && sold != null) add(sold)
             if (phase != ShiftPhase.SOON && sold == null) add(missing(readAt, zone))
+            // Numeri vecchi: si dice da quando (la rilettura dei 15 minuti non è passata).
+            if (phase == ShiftPhase.WORKING && sold != null && readAt > 0 && now - readAt > STALE_MS) add("letto alle ${at(readAt, zone)}")
             if (phase == ShiftPhase.DONE && month != null) add("${ShiftPay.monthName(month, zone)}: ${ShiftPay.money(month.total)} in ${if (month.shifts == 1) "1 turno" else "${month.shifts} turni"}")
         }
         val text = when {

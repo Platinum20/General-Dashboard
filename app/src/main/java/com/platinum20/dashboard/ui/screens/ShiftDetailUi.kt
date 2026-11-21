@@ -53,12 +53,15 @@ internal fun ShiftWhoRows(shift: Shift) {
 internal fun ShiftPayCards(shift: Shift) {
     val pay by ShiftStore.pay.collectAsStateWithLifecycle()
     val months by ShiftStore.payMonths.collectAsStateWithLifecycle()
-    val earning = ShiftPay.of(shift, pay)?.takeIf(ShiftPay::worked)
+    val now = System.currentTimeMillis()
+    val working = now in shift.start until shift.end
+    // Mentre lavori anche a zero, come la notifica: le due dicono la stessa cosa (2026-11-21).
+    val earning = ShiftPay.of(shift, pay)?.takeIf { ShiftPay.worked(it) || working }
     val month = ShiftPay.monthOf(shift.start, months)
     val readAt by ShiftStore.readAt.collectAsStateWithLifecycle()
-    earning?.let { ShiftEarningCard(it) }
+    earning?.let { ShiftEarningCard(it, readAt.takeIf { working && now - it > com.platinum20.dashboard.trips.ShiftLive.STALE_MS }) }
     // Turno iniziato ma Creators Pro non ha ancora i numeri: lo diciamo, con l'ora dell'ultima lettura (2026-11-21).
-    if (earning == null && shift.start <= System.currentTimeMillis()) {
+    if (earning == null && shift.start <= now) {
         CanvasCard(Modifier.fillMaxWidth()) {
             PayLine("Venduto", com.platinum20.dashboard.trips.ShiftLive.missing(readAt).removePrefix("Venduto: ").replaceFirstChar { it.uppercase() })
         }
@@ -67,12 +70,13 @@ internal fun ShiftPayCards(shift: Shift) {
 }
 
 @Composable
-private fun ShiftEarningCard(e: ShiftEarning) {
+private fun ShiftEarningCard(e: ShiftEarning, staleSince: Long? = null) {
     CanvasCard(Modifier.fillMaxWidth()) {
         PayHeadline(if (e.current) "Guadagnato finora" else "Guadagnato", ShiftPay.money(e.earned), ShiftPay.percent(e.percent))
         RowDivider()
         PayLine("Venduto", ShiftPay.money(e.sold))
         if (e.hours > 0) PayLine("Ore lavorate", ShiftPay.hours(e.hours))
+        staleSince?.let { PayLine("Letto alle", java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("H:mm"))) }
     }
 }
 
