@@ -1,10 +1,15 @@
 # Changelog
 
-## 1.569.0
+## 1.570.0
 **Venduto del turno: la lettura non si interrompe più a metà**
 - La rilettura di Creators Pro va avanti anche se cambi pagina: prima si fermava dopo i turni e prima della busta paga, così il venduto restava fermo
 - "Letto alle" ora dice quando sono stati letti davvero venduto e guadagno
 - Se una lettura va a vuoto si riprova dopo 5 minuti, non dopo 15
+
+## 1.569.0
+**La cronologia della musica è solo una cronologia**
+- Il tasto con l'orologio accanto a Musica ora apre solo i brani che hai ascoltato di recente, dal più nuovo, divisi per giorno con l'ora
+- Niente più libreria, mix, playlist e artisti in quella pagina: stanno già nella fila Musica
 
 ## 1.568.0
 **Il venduto del turno si aggiorna davvero**
