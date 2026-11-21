@@ -25,7 +25,7 @@ create something it lists, so the next thread doesn't have to explore.
   `Section`, `RowDivider`, `CanvasChip`, `RoundIconButton`, `IconTile`/`TileAccent`,
   `canvasFieldColors()`, `cardBorder()`, `Modifier.glass()/glassSource()`, `bouncyPress()`,
   `autoFocus()`, `RollingText` (numbers that change), `LoadingPulse` (no spinners anywhere since 1.357), `CanvasButton` (the one button; `ButtonLevel` PRIMARY/TONAL/DANGER since 1.402; dialogs use `ConfirmButton`/`DismissButton`, row "Esci" = `DangerButton`), `OpenableHeader` (primary label + chevron = tappable title that opens a page; plain `SectionHeader` = not tappable), haptics (`rememberHaptic`, `hapticToggle`), `Clip.copy` (Clip.kt: the only clipboard copy; glass notice only below Android 13, where the system shows none, 1.479), `Springs`, `AutoRefresh`,
-  `TabReselect`/`rememberReselectListState`, `rememberRowAtStart` (every Media LazyRow: opens at the start until the finger drags it, 1.549), `PlusAction`/`ProvidePlusAction`, `relativeTime`,
+  `TabReselect`/`rememberReselectListState`, `rememberRowAtStart` (every Media LazyRow: opens at the start until the finger drags it, 1.551), `PlusAction`/`ProvidePlusAction`, `relativeTime`,
   `weatherIcon`.
 - `ui/screens/Motion.kt`: motion tokens (`Motion.*`, tab/push transitions, `Modifier.entrance()`
   cascade already built into CanvasCard + SectionHeader). Use these, not ad-hoc tweens. Since 1.347 only three springs:

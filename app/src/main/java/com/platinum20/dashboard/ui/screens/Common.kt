@@ -355,7 +355,7 @@ fun rememberReselectListState(route: String, initialIndex: Int = 0): LazyListSta
 }
 
 /**
- * Fila orizzontale che si apre sempre dall'inizio (1.549, Antonio: la riga Musica partiva tutta a destra).
+ * Fila orizzontale che si apre sempre dall'inizio (1.551, Antonio: la riga Musica partiva tutta a destra).
  * Le tessere arrivano a pezzi (salvati, mix, playlist) davanti a quelle fisse in fondo: LazyRow resta
  * attaccata alla tessera che vedeva, cioè l'ultima. Finché non la tocchi col dito torna a sinistra a ogni cambio.
  */

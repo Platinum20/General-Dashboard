@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.549.0
+## 1.551.0
 **Le righe di Media partono da sinistra**
 - Aprendo Media la riga Musica (e le altre righe orizzontali) si apre dall'inizio, non più tutta a destra
 
