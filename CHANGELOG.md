@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.569.0
+**La cronologia della musica è solo una cronologia**
+- Il tasto con l'orologio accanto a Musica ora apre solo i brani che hai ascoltato di recente, dal più nuovo, divisi per giorno con l'ora
+- Niente più libreria, mix, playlist e artisti in quella pagina: stanno già nella fila Musica
+
 ## 1.568.0
 **Il venduto del turno si aggiorna davvero**
 - Il tuo file ha mostrato che Creators Pro il venduto in corso lo dà ($97 alle 19:46): mancavano solo le riletture durante il turno
