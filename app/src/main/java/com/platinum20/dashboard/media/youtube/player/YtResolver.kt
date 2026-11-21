@@ -116,6 +116,17 @@ data class YtChannelTabItems(val videos: List<YtVideo>, val playlists: List<com.
 
 data class YtQuality(val height: Int, val url: String)
 
+/** Cosa serve per scaricare un video: le qualità H.264 senza audio (dalla più alta), l'audio M4A e il file unico. */
+data class YtDownload(
+    val title: String,
+    val channel: String,
+    val durationSec: Long,
+    val live: Boolean,
+    val videos: List<YtQuality>,
+    val audioUrl: String?,
+    val muxedUrl: String?,
+)
+
 data class YtChapter(val title: String, val startSec: Int)
 
 /** [original] = nella lingua originale del video (quelli da accendere di default). */
@@ -428,6 +439,42 @@ object YtResolver {
         val id = channelId(info.uploaderUrl.orEmpty()) ?: return@withContext null
         com.platinum20.dashboard.media.youtube.YtChannel(
             id, info.uploaderName.orEmpty(), info.uploaderAvatars.maxByOrNull { it.height }?.url.orEmpty(),
+        )
+    }
+
+    /**
+     * I flussi per scaricare un video salvato (1.556, Antonio: in Full HD): video H.264 senza audio per ogni qualità
+     * e audio M4A originale, da unire sul telefono in un MP4; [YtDownload.muxedUrl] = il file unico a 360p di riserva.
+     */
+    suspend fun forDownload(link: String): YtDownload = withContext(Dispatchers.IO) {
+        init()
+        val id = videoId(link) ?: throw IllegalArgumentException("Link di YouTube non valido")
+        val info = streamInfo(id)
+        val live = info.streamType == StreamType.LIVE_STREAM || info.streamType == StreamType.AUDIO_LIVE_STREAM
+        val audios = info.audioStreams.filter {
+            it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.format == MediaFormat.M4A
+        }
+        val audio = audios.filter { it.audioTrackType == null || it.audioTrackType == AudioTrackType.ORIGINAL }.ifEmpty { audios }
+            .maxByOrNull { it.averageBitrate }
+        val videos = info.videoOnlyStreams
+            .filter {
+                it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP && it.format == MediaFormat.MPEG_4 &&
+                    it.codec?.startsWith("avc") != false && height(it.resolution) in 1..MAX_HEIGHT
+            }
+            .sortedByDescending { height(it.resolution) }
+            .distinctBy { height(it.resolution) }
+            .map { YtQuality(height(it.resolution), it.content) }
+        val muxed = info.videoStreams
+            .filter { it.isUrl && it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }
+            .maxByOrNull { height(it.resolution) }
+        YtDownload(
+            title = YtText.decodeEntities(info.name.orEmpty()),
+            channel = info.uploaderName.orEmpty(),
+            durationSec = info.duration,
+            live = live,
+            videos = videos,
+            audioUrl = audio?.content,
+            muxedUrl = muxed?.content,
         )
     }
 

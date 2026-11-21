@@ -5,6 +5,8 @@ import com.platinum20.dashboard.media.PackKind
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.SavedDownloadPlan
+import com.platinum20.dashboard.media.SavedDownloads
+import com.platinum20.dashboard.media.SavedQuality
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -42,5 +44,38 @@ class SavedDownloadsTest {
         assertNull(SavedDownloadPlan.readyLine(0, 0))
         assertEquals("1 pronto senza rete · 300 MB", SavedDownloadPlan.readyLine(1, 300L * 1024 * 1024))
         assertEquals("3 pronti senza rete · 1,5 GB", SavedDownloadPlan.readyLine(3, 1536L * 1024 * 1024))
+    }
+
+    @Test fun fullHdSeCeESeCiSta() {
+        val have = listOf(1080, 720, 480, 360, 240)
+        assertEquals(1080, SavedDownloadPlan.pickHeight(have, 1080, 600, 0))
+        assertEquals(720, SavedDownloadPlan.pickHeight(have, 720, 600, 0))
+        // Solo fino a 720p su YouTube: si prende quella.
+        assertEquals(720, SavedDownloadPlan.pickHeight(listOf(720, 360), 1080, 600, 0))
+        // Leggera = il file unico a 360p.
+        assertNull(SavedDownloadPlan.pickHeight(have, 360, 600, 0))
+        // Un'ora e mezza in Full HD non sta accanto a 1 GB già scaricato: si scende.
+        assertEquals(720, SavedDownloadPlan.pickHeight(have, 1080, 5400, 1L shl 30))
+    }
+
+    @Test fun alzataLaQualitaSiRiscarica() {
+        val old = PackFile(video, PackKind.VIDEO, "yt-1.mp4", 600)
+        assertEquals(listOf(video), SavedDownloadPlan.missing(listOf(video), listOf(old), 1080))
+        assertEquals(emptyList<ResumeItem>(), SavedDownloadPlan.missing(listOf(video), listOf(old.copy(height = 720, asked = 1080)), 1080))
+        // Abbassata non si riscarica niente.
+        assertEquals(emptyList<ResumeItem>(), SavedDownloadPlan.missing(listOf(video), listOf(old.copy(asked = 1080)), 360))
+    }
+
+    @Test fun qualitaDiDefaultFullHd() {
+        assertEquals(SavedQuality.FULL_HD, SavedQuality.of(0))
+        assertEquals(SavedQuality.HD, SavedQuality.of(720))
+        assertTrue(SavedDownloadPlan.estimateBytes(PackKind.VIDEO, 60, 1080) > 4 * SavedDownloadPlan.estimateBytes(PackKind.VIDEO, 60))
+    }
+
+    @Test fun indiceTieneLaQualita() {
+        val f = PackFile(video, PackKind.VIDEO, "yt-1.mp4", 600, height = 1080, asked = 1080)
+        assertEquals(listOf(f), SavedDownloads.read(SavedDownloads.write(listOf(f))))
+        val legacy = SavedDownloads.read("[{\"item\":${video.toJson()},\"kind\":\"VIDEO\",\"file\":\"a.mp4\",\"sec\":5}]")
+        assertEquals(360, legacy.single().height)
     }
 }

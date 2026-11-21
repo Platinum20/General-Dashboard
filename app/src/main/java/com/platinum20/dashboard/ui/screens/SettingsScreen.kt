@@ -85,6 +85,7 @@ import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material.icons.outlined.DownloadForOffline
+import androidx.compose.material.icons.outlined.Hd
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -1322,6 +1323,32 @@ private fun SavedDownloadSetting() {
         onClick = { set(!enabled) },
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { set(it) }) },
     )
+    if (enabled) {
+        // 1.556 (Antonio): Full HD di default; i file pesano circa cinque volte quelli a 360p.
+        val height by AppSettings.savedQuality.collectAsState()
+        val quality = com.platinum20.dashboard.media.SavedQuality.of(height)
+        RowDivider()
+        SettingsItem(
+            icon = Icons.Outlined.Hd,
+            accent = TileAccent.BLUE,
+            title = "Qualità dei video",
+            subtitle = quality.detail,
+            value = quality.label,
+            showChevron = true,
+            onClick = {
+                ActionBubble.show(*com.platinum20.dashboard.media.SavedQuality.entries.map { q ->
+                    BubbleAction(
+                        icon = if (q == quality) Icons.Outlined.Check else Icons.Outlined.Hd,
+                        title = q.label,
+                        detail = q.detail,
+                    ) {
+                        AppSettings.setSavedQuality(q.height)
+                        com.platinum20.dashboard.work.SavedDownloadWorker.now(context)
+                    }
+                }.toTypedArray())
+            },
+        )
+    }
 }
 
 /**

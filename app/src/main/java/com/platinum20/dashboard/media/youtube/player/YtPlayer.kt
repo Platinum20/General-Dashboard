@@ -309,7 +309,7 @@ object YtPlayer {
                 YtStream(
                     id = id, title = f.item.title, channel = f.item.subtitle, thumbnail = f.item.image,
                     videoUrl = null, audioUrl = null, muxedUrl = Uri.fromFile(file).toString(), hlsUrl = null,
-                    height = 360, durationSec = f.sec,
+                    height = f.height, durationSec = f.sec,
                 )
             }
         }

@@ -100,6 +100,7 @@ object AppSettings {
     private const val KEY_LIVE_TRIPS = "live_trips"
     private const val KEY_LIVE_SHIFTS = "live_shifts"
     private const val KEY_TRAIN_PACK = "train_pack"
+    private const val KEY_SAVED_QUALITY = "saved_quality"
     private const val KEY_READING_VOICE = "reading_voice"
     private const val KEY_WIFI_ONLY = "wifi_only_downloads"
     private const val KEY_HIDE_SHORTS = "video_hide_shorts"
@@ -137,6 +138,9 @@ object AppSettings {
     private val _downloadSaved = MutableStateFlow(true)
     /** I video e gli episodi salvati si scaricano sul telefono (acceso di default; prima era lo zaino del treno). */
     val downloadSaved: StateFlow<Boolean> = _downloadSaved.asStateFlow()
+    private val _savedQuality = MutableStateFlow(com.platinum20.dashboard.media.SavedQuality.DEFAULT.height)
+    /** Altezza dei video salvati da scaricare (1080 = Full HD, di default; se non c'è si scende). */
+    val savedQuality: StateFlow<Int> = _savedQuality.asStateFlow()
     private val _readingVoice = MutableStateFlow(ReadingVoice.DEFAULT)
     /** La voce che legge notizie e punto del giorno. */
     val readingVoice: StateFlow<ReadingVoice> = _readingVoice.asStateFlow()
@@ -227,6 +231,7 @@ object AppSettings {
         _liveTrips.value = prefs.getBoolean(KEY_LIVE_TRIPS, true)
         _liveShifts.value = prefs.getBoolean(KEY_LIVE_SHIFTS, false)
         _downloadSaved.value = prefs.getBoolean(KEY_TRAIN_PACK, true)
+        _savedQuality.value = prefs.getInt(KEY_SAVED_QUALITY, com.platinum20.dashboard.media.SavedQuality.DEFAULT.height)
         _readingVoice.value = ReadingVoice.of(prefs.getString(KEY_READING_VOICE, null))
         _wifiOnlyDownloads.value = prefs.getBoolean(KEY_WIFI_ONLY, false)
         _hideShorts.value = prefs.getBoolean(KEY_HIDE_SHORTS, true)
@@ -327,6 +332,11 @@ object AppSettings {
     fun setDownloadSaved(enabled: Boolean) {
         _downloadSaved.value = enabled
         prefs.edit().putBoolean(KEY_TRAIN_PACK, enabled).apply()
+    }
+
+    fun setSavedQuality(height: Int) {
+        _savedQuality.value = height
+        prefs.edit().putInt(KEY_SAVED_QUALITY, height).apply()
     }
 
     fun setLiveShifts(enabled: Boolean) {
