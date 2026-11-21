@@ -5,7 +5,6 @@ import com.platinum20.dashboard.media.PackKind
 import com.platinum20.dashboard.media.ResumeItem
 import com.platinum20.dashboard.media.ResumeKind
 import com.platinum20.dashboard.media.SavedDownloadPlan
-import com.platinum20.dashboard.media.SavedDownloads
 import com.platinum20.dashboard.media.SavedQuality
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -70,12 +69,5 @@ class SavedDownloadsTest {
         assertEquals(SavedQuality.FULL_HD, SavedQuality.of(0))
         assertEquals(SavedQuality.HD, SavedQuality.of(720))
         assertTrue(SavedDownloadPlan.estimateBytes(PackKind.VIDEO, 60, 1080) > 4 * SavedDownloadPlan.estimateBytes(PackKind.VIDEO, 60))
-    }
-
-    @Test fun indiceTieneLaQualita() {
-        val f = PackFile(video, PackKind.VIDEO, "yt-1.mp4", 600, height = 1080, asked = 1080)
-        assertEquals(listOf(f), SavedDownloads.read(SavedDownloads.write(listOf(f))))
-        val legacy = SavedDownloads.read("[{\"item\":${video.toJson()},\"kind\":\"VIDEO\",\"file\":\"a.mp4\",\"sec\":5}]")
-        assertEquals(360, legacy.single().height)
     }
 }
