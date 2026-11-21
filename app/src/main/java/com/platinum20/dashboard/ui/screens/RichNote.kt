@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -100,7 +101,7 @@ internal fun richBarShown(): Boolean = RichBar.target != null && WindowInsets.is
  * Il posto di cerchio e pallino: lo spazio sottile al posto del segno, allargato con la spaziatura delle lettere.
  * Niente ParagraphStyle (1.556): ogni voce diventava un paragrafo a sé e fra le righe compariva una riga vuota.
  */
-private val INDENT = 24.sp
+private val INDENT = 32.sp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -192,7 +193,8 @@ internal fun RichNoteField(
                 val row = l.getLineForOffset(at)
                 val top = l.getLineTop(row)
                 val height = with(density) { (l.getLineBottom(row) - top).toDp() }
-                val width = with(density) { place.width.coerceAtLeast(1f).toDp() }
+                // Tutto il rientro fino al testo: il riquadro del solo spazio sottile è largo un filo e schiacciava i cerchi (1.559).
+                val width = with(density) { (l.getHorizontalPosition(at + 1, true) - place.left).coerceAtLeast(place.width).toDp() }
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -231,11 +233,12 @@ internal fun RichNoteField(
 private fun LineMark(line: NoteLines.Line) {
     val colors = MaterialTheme.colorScheme
     when {
-        line.kind == NoteLines.Kind.BULLET -> Box(Modifier.size(6.dp).clip(CircleShape).background(colors.onSurface))
-        line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.size(19.dp).clip(CircleShape).background(colors.primary)) {
+        // requiredSize: tondi sempre, anche se il posto è più stretto.
+        line.kind == NoteLines.Kind.BULLET -> Box(Modifier.requiredSize(6.dp).clip(CircleShape).background(colors.onSurface))
+        line.done -> Box(contentAlignment = Alignment.Center, modifier = Modifier.requiredSize(19.dp).clip(CircleShape).background(colors.primary)) {
             Icon(Icons.Outlined.Check, contentDescription = null, tint = colors.onPrimary, modifier = Modifier.size(13.dp))
         }
-        else -> Box(Modifier.size(19.dp).border(1.6.dp, colors.onSurfaceVariant, CircleShape))
+        else -> Box(Modifier.requiredSize(19.dp).border(1.6.dp, colors.onSurfaceVariant, CircleShape))
     }
 }
 
