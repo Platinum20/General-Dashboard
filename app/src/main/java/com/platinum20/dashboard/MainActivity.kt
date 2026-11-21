@@ -1717,6 +1717,18 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
     // Mini player sopra tutte le schermate e sopra la barra: portato giù per chiuderlo le passa davanti (1.517: fuori dallo Scaffold, che disegna la barra sopra il suo contenuto).
     // Fuori dallo Scaffold manca il suo colore del testo: senza, il titolo veniva scuro su scuro (1.521).
     CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onBackground) {
+    // Sulle pagine con i tasti in fondo (note, dettagli) il mini player si aggancia sopra di loro: i tasti restano fermi (1.549).
+    val miniDensity = androidx.compose.ui.platform.LocalDensity.current
+    val miniLift by androidx.compose.animation.core.animateDpAsState(
+        with(miniDensity) {
+            com.platinum20.dashboard.ui.screens.MiniDock.lift(
+                com.platinum20.dashboard.ui.screens.MiniDock.floor(com.platinum20.dashboard.ui.screens.MiniDock.floors.values),
+                scaffoldPadding.calculateBottomPadding().toPx(),
+            ).toDp()
+        },
+        com.platinum20.dashboard.ui.screens.Motion.settle(),
+        label = "miniLift",
+    )
     FloatingPlayer(
         currentRoute = currentRoute,
         onExpand = { playing ->
@@ -1724,7 +1736,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
             val current = com.platinum20.dashboard.media.Playback.now.value ?: playing
             navController.navigate(if (current.isVideo) Routes.youtubeWatch() else Routes.PLAYER) { launchSingleTop = true }
         },
-        modifier = Modifier.padding(scaffoldPadding),
+        modifier = Modifier.padding(scaffoldPadding).padding(bottom = miniLift),
     )
     }
     SaveToNotesLayer()
