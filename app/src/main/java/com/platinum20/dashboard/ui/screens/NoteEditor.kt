@@ -173,7 +173,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     }
 
     // ---- Foto ----
-    // Le note con la stessa foto due volte (prima della 1.549 si poteva) tornano con una sola.
+    // Le note con la stessa foto due volte (prima della 1.552 si poteva) tornano con una sola.
     LaunchedEffect(noteId) {
         val nid = noteId ?: return@LaunchedEffect
         val now = NotesStore.note(nid)?.photos.orEmpty()
@@ -536,7 +536,7 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
 }
 
 /**
- * I formati disegnati: grassetto, corsivo, barrato, titoletto. I segni (`**`, `~~`, `## `) si nascondono (1.549) e
+ * I formati disegnati: grassetto, corsivo, barrato, titoletto. I segni (`**`, `~~`, `## `) si nascondono (1.552) e
  * ricompaiono sbiaditi solo attorno al formato dove sta il cursore, per correggerli.
  */
 @Composable
@@ -629,7 +629,7 @@ private fun PhotoStrip(
     onAdd: () -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.549): niente foto tagliata dal bordo.
+        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.552): niente foto tagliata dal bordo.
         PhotoRow(photos, (maxWidth - PHOTO_GAP * 2) / 3, onOpen, onMenu, onMove, onArranging, onAdd)
     }
 }

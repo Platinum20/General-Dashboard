@@ -23,7 +23,7 @@ object NoteText {
 
     /**
      * La riga sopra una nota aperta, con l'orario vero: solo il momento più recente, perché la riga intera stia su una
-     * riga (1.549): "Scritta oggi, 10:05" oppure "Modificata 14 nov, 09:44" (la modifica conta da un minuto dopo).
+     * riga (1.552): "Scritta oggi, 10:05" oppure "Modificata 14 nov, 09:44" (la modifica conta da un minuto dopo).
      */
     fun moment(createdAt: Long, updatedAt: Long, now: Long = System.currentTimeMillis(), zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
         val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()

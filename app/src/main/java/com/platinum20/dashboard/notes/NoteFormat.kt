@@ -48,7 +48,7 @@ object NoteFormat {
     }
 
     /**
-     * I segni da nascondere mentre si legge (1.549): `**` e compagni spariscono e resta solo il testo formattato.
+     * I segni da nascondere mentre si legge (1.552): `**` e compagni spariscono e resta solo il testo formattato.
      * Tornano visibili (sbiaditi) solo attorno al formato dove sta il cursore, per poterli correggere; [focused] falso =
      * nessun cursore, tutti nascosti. Ogni intervallo ha [IntRange.last] incluso; in ordine e senza sovrapposizioni.
      */

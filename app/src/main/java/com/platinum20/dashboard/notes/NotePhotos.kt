@@ -9,7 +9,7 @@ object NotePhotos {
     fun add(list: List<String>, new: List<String>): List<String> = list + new.filter { it.isNotEmpty() && it !in list }.distinct()
 
     /**
-     * Senza doppioni di contenuto (1.549): la stessa foto aggiunta due volte resta una, la prima. [prints] = impronta
+     * Senza doppioni di contenuto (1.552): la stessa foto aggiunta due volte resta una, la prima. [prints] = impronta
      * per percorso ([NotePhotoFiles.fingerprint]); una foto senza impronta (file illeggibile) resta com'è.
      */
     fun unique(list: List<String>, prints: Map<String, String>): List<String> {
