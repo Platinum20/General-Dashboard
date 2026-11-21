@@ -95,6 +95,8 @@ object CanvasPlayer {
     private const val KEY = "queue"
     private const val KEY_CURRENT = "queue_current"
     private const val KEY_AUTOFILL = "queue_autofill"
+    private const val KEY_SHUFFLE = "queue_shuffle"
+    private const val KEY_REPEAT = "queue_repeat"
 
     private val scope = MainScope()
     private var exo: ExoPlayer? = null
@@ -125,6 +127,16 @@ object CanvasPlayer {
     val autoFill: StateFlow<Boolean> = _autoFill.asStateFlow()
     private var filling: Job? = null
 
+    private val _shuffle = MutableStateFlow(false)
+    /** "Casuale" del player (1.563): le voci dopo sono mescolate. */
+    val shuffle: StateFlow<Boolean> = _shuffle.asStateFlow()
+    /** L'ordine di "Dopo" prima di mescolare: spegnendo "Casuale" torna così. */
+    private var unshuffled: List<Long> = emptyList()
+
+    private val _repeat = MutableStateFlow(Repeat.OFF)
+    /** "Ripeti" del player (1.563): spento, tutta la coda, solo questo brano. */
+    val repeat: StateFlow<Repeat> = _repeat.asStateFlow()
+
     fun init(context: Context) {
         if (appContext != null) return
         val app = context.applicationContext
@@ -137,6 +149,8 @@ object CanvasPlayer {
             nextId = entries.size + 1L
             _queue.value = QueueState(entries, p.getInt(KEY_CURRENT, -1).coerceIn(-1, entries.size - 1))
             _autoFill.value = p.getBoolean(KEY_AUTOFILL, true)
+            _shuffle.value = p.getBoolean(KEY_SHUFFLE, false)
+            _repeat.value = runCatching { Repeat.valueOf(p.getString(KEY_REPEAT, null) ?: "OFF") }.getOrDefault(Repeat.OFF)
         }
     }
 
@@ -157,7 +171,10 @@ object CanvasPlayer {
         init(context)
         val first = nextId
         nextId += items.size
-        setQueue(QueueOps.playList(_queue.value, items, start, first))
+        val list = QueueOps.playList(_queue.value, items, start, first)
+        // Con "Casuale" acceso anche una lista nuova parte mescolata, dal brano scelto in poi.
+        unshuffled = list.upcoming.map { it.id }
+        setQueue(if (_shuffle.value) QueueOps.shuffleUpcoming(list, kotlin.random.Random.Default) else list)
         load(true, null)
     }
 
@@ -231,11 +248,33 @@ object CanvasPlayer {
         }
     }
 
-    /** Avanti nella coda, se c'è qualcosa dopo. */
+    /** "Casuale": acceso mescola quelle dopo, spento le rimette com'erano. */
+    fun toggleShuffle() {
+        val on = !_shuffle.value
+        _shuffle.value = on
+        prefs?.edit()?.putBoolean(KEY_SHUFFLE, on)?.apply()
+        val s = _queue.value
+        if (on) {
+            unshuffled = s.upcoming.map { it.id }
+            setQueue(QueueOps.shuffleUpcoming(s, kotlin.random.Random.Default))
+        } else {
+            setQueue(QueueOps.unshuffle(s, unshuffled))
+            unshuffled = emptyList()
+        }
+    }
+
+    /** "Ripeti": spento → tutta la coda → solo questo brano → spento. */
+    fun cycleRepeat() {
+        val next = _repeat.value.next()
+        _repeat.value = next
+        prefs?.edit()?.putString(KEY_REPEAT, next.name)?.apply()
+    }
+
+    /** Avanti nella coda, se c'è qualcosa dopo (con "ripeti tutto" dalla fine si torna alla prima). */
     fun next(): Boolean {
         val s = _queue.value
-        if (!s.hasNext) return false
-        setQueue(s.copy(current = s.current + 1))
+        val to = QueueOps.nextIndex(s, _repeat.value) ?: return false
+        setQueue(s.copy(current = to))
         load(true, null)
         return true
     }
@@ -504,6 +543,8 @@ object CanvasPlayer {
         if (endedId == n.entryId) return
         endedId = n.entryId
         saveProgress()
+        // "Ripeti questo brano": ricomincia da capo invece di passare al dopo.
+        if (_repeat.value == Repeat.ONE) return load(true, 0)
         if (next()) return
         // Coda finita su un video di YouTube: si continua con quelli proposti, come su YouTube (se lo vuoi).
         if (!AppSettings.autoplayNext.value) return

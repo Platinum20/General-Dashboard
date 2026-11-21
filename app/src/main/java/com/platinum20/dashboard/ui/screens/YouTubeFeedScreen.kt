@@ -498,6 +498,8 @@ fun <T> FeedList(
     state: Loadable<T>,
     empty: String,
     listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    /** Le pagine a card (1.563) mettono le righe attaccate e lo spazio solo fra una card e l'altra. */
+    spacing: androidx.compose.ui.unit.Dp = 16.dp,
     content: LazyListScope.() -> Unit,
 ) {
     val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
@@ -509,7 +511,7 @@ fun <T> FeedList(
         else -> LazyColumn(
             state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
             if (state.loading) item { PlaceholderList(rows = 3, label = "Carico i video") }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }

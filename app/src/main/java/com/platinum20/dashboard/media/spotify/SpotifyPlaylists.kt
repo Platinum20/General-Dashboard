@@ -148,6 +148,15 @@ object SpotifyPlaylists {
             length,
         ).joinToString(" · ")
     }
+
+    /**
+     * Di chi è la playlist, nella prima card (1.563): "Tua · privata", "Condivisa", o il proprietario che dice Spotify.
+     */
+    fun ownerLine(mine: Boolean, public: Boolean, collaborative: Boolean, fallback: String): String = when {
+        mine -> listOfNotNull("Tua", "privata".takeIf { !public }, "condivisa".takeIf { collaborative }).joinToString(" · ")
+        collaborative -> "Condivisa"
+        else -> fallback
+    }
 }
 
 /** I dettagli di una playlist che si possono cambiare, più il proprietario per sapere se si può. */
