@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Una riga del widget Da fare: il cerchio da toccare, il nome con al più una riga sotto, a destra la serie. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/todo_root"
+    android:layout_width="match_parent"
+    android:layout_height="44dp"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/todo_check"
+        android:layout_width="40dp"
+        android:layout_height="44dp"
+        android:paddingStart="10dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="12dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/widget_check"
+        android:contentDescription="Fatto" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/todo_title"
+            style="@style/WidgetText"
+            android:layout_width="match_parent"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/todo_line"
+            style="@style/WidgetSub"
+            android:layout_width="match_parent"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/todo_flame"
+        android:layout_width="12dp"
+        android:layout_height="14dp"
+        android:layout_marginStart="8dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/widget_ic_flame"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/todo_streak"
+        style="@style/WidgetSub"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/widget_text"
+        android:textSize="13sp"
+        android:visibility="gone" />
+</LinearLayout>

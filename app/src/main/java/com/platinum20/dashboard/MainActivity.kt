@@ -265,6 +265,8 @@ data class OpenRequest(
         const val ITEM = "item"
         const val EVENT = "event"
         const val SIM = "sim"
+        /** Dal widget Da fare: la pagina intera di Da fare (come toccando la card della Home). */
+        const val LATER = "later"
         /** Widget Scrivi e "+" del Calendario: la barra si apre già pronta per scrivere, o in ascolto. */
         const val WRITE = "write"
         const val VOICE = "voice"
@@ -1094,6 +1096,7 @@ private fun AppContent(navController: NavHostController, openRequest: OpenReques
                     navController.navigate(Routes.calendarEvent(id, begin, end))
                 }
                 OpenRequest.SIM -> navController.navigate(Routes.SIM)
+                OpenRequest.LATER -> navController.navigate(Routes.LATER_ARCHIVE)
                 OpenRequest.WRITE -> CaptureComposer.open()
                 OpenRequest.VOICE -> voiceRequested = true
                 OpenRequest.RECAP -> Unit

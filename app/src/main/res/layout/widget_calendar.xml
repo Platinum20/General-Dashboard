@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Widget "Calendario": oggi e i prossimi giorni, come la card della Home. -->
+<!-- Widget "Calendario": oggi e i prossimi giorni, come la card della Home (titolo uguale dal giro 2). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
     android:layout_width="match_parent"
@@ -18,24 +18,27 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <!-- Come il titolo delle card della Home (1.539): "CALENDARIO ›" in maiuscolo e il conto di qui a fine mese. -->
         <LinearLayout
             android:id="@+id/cal_header"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/cal_label"
-                style="@style/WidgetLabel"
-                android:text="OGGI" />
+                style="@style/WidgetCardTitle"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:text="CALENDARIO ›" />
 
             <TextView
-                android:id="@+id/cal_title"
-                style="@style/WidgetBig"
-                android:layout_marginTop="2dp"
-                android:textSize="20sp"
-                android:text="Lunedì 9" />
+                android:id="@+id/cal_count"
+                style="@style/WidgetSub"
+                android:layout_marginEnd="12dp"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <ImageView

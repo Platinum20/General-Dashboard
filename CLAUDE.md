@@ -59,7 +59,8 @@ Da fare/Appunti/Calendario/Abitudine (never ask the type), `CaptureGuess`, `Capt
 the one MediaSession/notification; `Playback.kt` = what screens show. Spotify = `media/spotify/` (PKCE auth, Web
 Playback SDK in a hidden WebView = audio only, `MadeStore` own mixes, playlists edit). YouTube = `media/youtube/`
 (NewPipe `YtResolver`, `YtPlayer`, `YtSync` two-way with the web login, `SponsorBlock`, `YtOriginals` = always the
-original-language titles). Also `media/radio/`, `media/podcast/`, `media/lyrics/`, `media/SavedDownloads.kt`.
+original-language titles). Also `media/radio/` (`RadioHero`), `media/podcast/` (`PodcastHero`), `media/lyrics/`,
+`media/SavedDownloads.kt`. Radio page `ListenScreen` and `PodcastPage` use `MediaHero` + flat `mediaGroup` rows too.
 Screens: `MediaScreen` (hero/queue, rows Musica `PerTeRow` + Video), `MediaPageKit.kt` (`MediaHero`, `mediaGroup`,
 `mediaShelf`, `MediaRow`: pages on the background, no cards), `MediaMarks.kt` (`MediaTile`, `MediaLine`),
 `PlayerScreen` (audio = tinted full page; YouTube = `YouTubeWatchScreen`), `QueueScreen` (popup), mini player
@@ -72,7 +73,12 @@ Gmail read-only (IMAP app password preferred), `tickets/` QR from ticket mails, 
 notification (`TrainLive` ViaggiaTreno, `LiveTrip`, `ShiftLive`, RemoteViews in `work/TripLiveWorker`), `docs/`
 documents scan. `security/Vault.kt` = Keystore for tokens.
 
-**Other**: `search/` (Cerca ovunque), `widget/` (`Widgets.refresh`, class names fixed or placed widgets vanish),
+**Widgets** (`widget/`): `WidgetKit.kt` `CanvasWidget` + `Widgets.refresh` (call when data changes), deep links
+`Widgets.open` → `OpenRequest`. `DashboardWidget` "Oggi" (weather + hours + one "PROSSIMO" line, `AgendaRows.next`),
+`TodoWidget` "Da fare" (habits + to-dos, tick in place, pure `TodoWidgetRows`), `SimWidget` (ring), `TasksWidget`
+"Calendario" (`AgendaRows.build`), `MoreWidgets.kt` News/Meteo/Scrivi. Never rename widget classes (placed ones vanish).
+
+**Other**: `search/` (Cerca ovunque),
 `work/` (Morning, Refresh, RainAlert, UpdateCheck), `update/` (self-update, `UpdateTrust`, `WhatsNew` from
 CHANGELOG), `SettingsScreen.kt` (`SettingsPageScreen(SettingsPage)`), `UpdatesScreen.kt`, `adblock/`, `backup/`.
 

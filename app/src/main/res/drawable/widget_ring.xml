@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'anello del widget SIM (giro 2): come SimRingHero nella pagina SIM, la parte piena = quello che resta. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape
+            android:innerRadius="31dp"
+            android:shape="ring"
+            android:thickness="7dp"
+            android:useLevel="false">
+            <solid android:color="@color/widget_hero" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <rotate
+            android:fromDegrees="270"
+            android:pivotX="50%"
+            android:pivotY="50%"
+            android:toDegrees="270">
+            <shape
+                android:innerRadius="31dp"
+                android:shape="ring"
+                android:thickness="7dp"
+                android:useLevel="true">
+                <solid android:color="@color/widget_on_hero" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

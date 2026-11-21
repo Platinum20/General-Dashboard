@@ -81,9 +81,9 @@ class AgendaRowsTest {
     @Test fun nelloSpazioCheCe() {
         val tasks = (1..10L).map { task(it, "Cosa $it", ms(13 + (it % 8).toInt())) }
         val small = AgendaRows.build(days(tasks), now, zone, heightDp = 200)
-        // 200 - 76 - 26 (Oggi) = 98dp: una riga e "+ altre 9".
-        assertEquals(1, items(small).size)
-        assertEquals(AgendaRow.Note("+ altre 9 cose oggi"), small.last())
+        // 200 - 60 - 26 (Oggi) = 114dp: due righe e "+ altre 8".
+        assertEquals(2, items(small).size)
+        assertEquals(AgendaRow.Note("+ altre 8 cose oggi"), small.last())
     }
 
     @Test fun widgetOggiUsaLoStessoOggi() {

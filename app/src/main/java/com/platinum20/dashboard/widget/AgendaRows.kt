@@ -2,7 +2,9 @@ package com.platinum20.dashboard.widget
 
 import com.platinum20.dashboard.ui.screens.DueDay
 import com.platinum20.dashboard.ui.screens.RowText
+import com.platinum20.dashboard.ui.screens.calendarMonthCount
 import com.platinum20.dashboard.ui.screens.timelineEntries
+import com.platinum20.dashboard.ui.screens.withoutLoose
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -25,6 +27,8 @@ sealed interface AgendaRow {
         val end: Long = 0,
         /** Spuntata oggi: resta sotto Oggi, segnata fatta (come nell'app). */
         val done: Boolean = false,
+        /** Quando (ms): l'ora di un promemoria o l'inizio di un evento, per la "prossima cosa" del widget Oggi. */
+        val at: Long = 0,
     ) : AgendaRow {
         val key: String get() = "${kind.name}:$id:$begin"
     }
@@ -45,8 +49,8 @@ object AgendaRows {
     const val ITEM_DP = 36
     const val DAY_DP = 26
     const val NOTE_DP = 30
-    /** Intestazione (etichetta + giorno + tasto) e margini del widget. */
-    const val HEADER_DP = 76
+    /** Intestazione ("CALENDARIO ›", conto e tasto, giro 2) e margini del widget. */
+    const val HEADER_DP = 60
 
     /** [days] = [dueDays] con `withToday = true`: il primo giorno è oggi. */
     internal fun build(
@@ -95,6 +99,34 @@ object AgendaRows {
         return rows
     }
 
+    /** Il conto a destra di "CALENDARIO ›", lo stesso della card della Home; null se non c'è niente. */
+    internal fun monthCount(days: List<DueDay>, today: LocalDate): Int? =
+        calendarMonthCount(days.withoutLoose().flatMap { it.rows }, today).takeIf { it > 0 }
+
+    /**
+     * La prossima cosa per il widget Oggi (giro 2): oggi la prima con un orario non ancora finita, se no la prima dei
+     * prossimi giorni. "Domani 07:00 · Turno su Debora", "16:30 · Dentista". Null se la settimana è libera.
+     */
+    internal fun next(days: List<DueDay>, now: Long, zone: ZoneId): String? {
+        val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+        for (group in days) {
+            val day = group.day ?: continue
+            if (group.past || group.late || day.isBefore(today) || !day.isBefore(today.plusDays(DAYS.toLong()))) continue
+            for (item in items(group, today, zone)) {
+                if (item.done) continue
+                if (day == today) {
+                    // Oggi contano solo le cose con un orario: quelle di tutto il giorno sono già sotto OGGI.
+                    if (item.time == null) continue
+                    val until = if (item.end > 0) item.end else item.at
+                    if (until in 1 until now) continue
+                }
+                val label = if (day == today) null else dayLabel(day, today)
+                return listOfNotNull(listOfNotNull(label, item.time).joinToString(" ").ifEmpty { null }, item.title).joinToString(" · ")
+            }
+        }
+        return null
+    }
+
     /** Tutte le cose di oggi, come sotto OGGI nell'app. */
     internal fun todayItems(days: List<DueDay>, today: LocalDate, zone: ZoneId): List<AgendaRow.Item> =
         days.firstOrNull { it.day == today && !it.past && !it.late }?.let { items(it, today, zone) }.orEmpty()
@@ -125,6 +157,7 @@ object AgendaRows {
                 begin = row.event?.begin ?: 0,
                 end = row.event?.end ?: 0,
                 done = entry.done,
+                at = row.at,
             )
         }
 

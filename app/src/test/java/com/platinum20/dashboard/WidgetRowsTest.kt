@@ -73,10 +73,11 @@ class WidgetRowsTest {
             today,
         )
         assertEquals("25 GB", m.big)
-        assertEquals("di 100 GB", m.of)
+        assertEquals("rimasti", m.of)
         assertEquals(250, m.progress)
-        assertTrue(m.line1, m.line1.endsWith("tra 5 giorni"))
-        assertTrue(m.line2, m.line2.contains("3,20"))
+        // Una riga sola sotto l'anello, corta: niente data e credito che finivano coi puntini.
+        assertEquals("Rinnovo tra 5 giorni", m.line1)
+        assertEquals("Rinnovo domani", SimWidgetRows.model(SimStatus(data = Allowance(1.0, 2.0), renewal = today.plusDays(1)), true, today).line1)
         assertEquals("∞", SimWidgetRows.model(SimStatus(data = Allowance(0.0, unlimited = true)), true, today).big)
     }
 }

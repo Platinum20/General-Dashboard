@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La fiamma della serie di un'abitudine, disegnata come le icone Canvas (niente emoji, 1.545). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="12dp"
+    android:height="14dp"
+    android:viewportWidth="12"
+    android:viewportHeight="14">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M6,1C6.8,3.4 10.6,5.2 10.6,8.8A4.6,4.6 0,0 1,1.4 8.8C1.4,7 2.2,5.9 3.2,5C3.3,6.4 4,7.3 4.9,7.6C4.6,5.4 4.9,3 6,1Z"
+        android:strokeWidth="1.4"
+        android:strokeColor="@color/widget_text"
+        android:strokeLineJoin="round" />
+</vector>

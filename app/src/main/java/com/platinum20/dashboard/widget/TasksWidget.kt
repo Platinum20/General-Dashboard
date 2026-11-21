@@ -69,9 +69,13 @@ class TasksWidget : CanvasWidget(Renderer, WidgetSize(250, 250)) {
             views.setOnClickPendingIntent(android.R.id.background, openCalendar)
             views.setOnClickPendingIntent(R.id.cal_header, openCalendar)
             views.setOnClickPendingIntent(R.id.cal_add, Widgets.open(context, OpenRequest(OpenRequest.WRITE), 201))
-            views.setTextViewText(R.id.cal_title, WidgetRows.dayTitle(today))
+            val days = loadDays(context, zone)
+            // Il conto a destra del titolo, lo stesso della card della Home: le cose di qui a fine mese.
+            val count = AgendaRows.monthCount(days, today)
+            views.setTextViewText(R.id.cal_count, count?.toString().orEmpty())
+            views.setViewVisibility(R.id.cal_count, if (count == null) View.GONE else View.VISIBLE)
 
-            val rows = AgendaRows.build(loadDays(context, zone), System.currentTimeMillis(), zone, size.heightDp)
+            val rows = AgendaRows.build(days, System.currentTimeMillis(), zone, size.heightDp)
             views.removeAllViews(R.id.cal_rows)
             rows.forEach { row -> views.addView(R.id.cal_rows, rowView(context, row, openCalendar)) }
             views

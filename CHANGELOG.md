@@ -1,11 +1,26 @@
 # Changelog
 
-## 1.572.0
+## 1.574.0
 **Meno puntini, meno allarmi, meno codice**
 - Abitudini in Da fare: "Manca oggi" è grigio di giorno e diventa arancione solo dalle 20, se non l'hai ancora fatta. Prima usava il colore del tema: con Material You sembrava grigio anche la sera
 - Mini player: sotto il titolo solo cosa sta succedendo ("In diretta", "Collegamento…"), senza "Radio ·" davanti che lo faceva finire coi puntini
 - Testi più corti dove finivano coi puntini: la tessera Radio in Media ("Le tue preferite") e "Turno dal vivo" nelle Notifiche
 - Tolto codice che non si usava più (storie e Novità di Media, barra dei giorni, filtri del Calendario, pagina dei video piaciuti, tasto Fermate della notifica del treno): l'app non cambia, è solo più leggera
+
+## 1.573.0
+**Widget nuovi: Da fare, e Oggi, SIM e Calendario come la Home**
+- Nuovo widget Da fare: in cima le abitudini con la fiamma della serie, poi le cose da fare. Il cerchio si spunta senza aprire l'app, il nome apre la sua pagina, il titolo apre tutto Da fare. Lo aggiungi dall'elenco dei widget del telefono
+- Il widget Oggi è come la card Adesso: il meteo con le prossime ore e sotto la prossima cosa vera ("Domani 07:00 · Turno su Debora"), non più "Ancora da fare: 2 abitudini"
+- Il widget SIM ha l'anello della pagina SIM con i giga rimasti al centro e sotto solo "Rinnovo tra 9 giorni": niente più testi coi puntini
+- Il widget Calendario ha il titolo "CALENDARIO ›" con il conto di qui a fine mese, come la card della Home
+
+## 1.572.0
+**Radio e podcast nello stile nuovo**
+- La pagina Radio si apre con un blocco grande: il logo della radio che suona (o della tua preferita), il nome e il tasto ▶ per farla partire o fermarla
+- Le tue radio, i generi e le più ascoltate in Italia ora sono righe sullo sfondo, senza card, come le pagine di Spotify e YouTube
+- La pagina di un podcast ha la copertina grande, l'autore, la puntata che parte col ▶ (quella da riprendere o l'ultima uscita) e il tasto Segui accanto
+- Le puntate sono righe semplici con quando sono uscite e quanto durano (o quanto manca), con la barra se le hai iniziate
+- Tenendo premuto un podcast (nella fila Musica o in "I tuoi podcast") compaiono Apri e Segui / Non seguire più
 
 ## 1.571.0
 **YouTube sempre nella lingua originale**
