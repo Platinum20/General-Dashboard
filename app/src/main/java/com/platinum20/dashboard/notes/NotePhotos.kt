@@ -8,6 +8,15 @@ object NotePhotos {
     /** Aggiunge in fondo, senza doppioni. */
     fun add(list: List<String>, new: List<String>): List<String> = list + new.filter { it.isNotEmpty() && it !in list }.distinct()
 
+    /**
+     * Senza doppioni di contenuto (1.549): la stessa foto aggiunta due volte resta una, la prima. [prints] = impronta
+     * per percorso ([NotePhotoFiles.fingerprint]); una foto senza impronta (file illeggibile) resta com'è.
+     */
+    fun unique(list: List<String>, prints: Map<String, String>): List<String> {
+        val seen = mutableSetOf<String>()
+        return list.filter { p -> prints[p]?.let { seen.add(it) } ?: true }
+    }
+
     fun remove(list: List<String>, path: String): List<String> = list - path
 
     /** "Annulla": la foto torna al suo posto. */

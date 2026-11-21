@@ -47,6 +47,45 @@ object NoteFormat {
         return out.filter { it.end > it.start }.sortedBy { it.start }
     }
 
+    /**
+     * I segni da nascondere mentre si legge (1.549): `**` e compagni spariscono e resta solo il testo formattato.
+     * Tornano visibili (sbiaditi) solo attorno al formato dove sta il cursore, per poterli correggere; [focused] falso =
+     * nessun cursore, tutti nascosti. Ogni intervallo ha [IntRange.last] incluso; in ordine e senza sovrapposizioni.
+     */
+    fun hidden(text: String, selStart: Int, selEnd: Int, focused: Boolean): List<IntRange> {
+        val s = minOf(selStart, selEnd)
+        val e = maxOf(selStart, selEnd)
+        val all = spans(text)
+        val marks = all.filter { it.kind == Kind.MARK }
+        val formats = all.filter { it.kind != Kind.MARK }
+        val out = mutableListOf<IntRange>()
+        // Un formato = i suoi segni più il testo fra loro: se il cursore lo tocca (anche appena fuori), i segni restano.
+        formats.forEach { f ->
+            val open = marks.firstOrNull { it.end == f.start }
+            val close = if (f.kind == Kind.HEADING) null else marks.firstOrNull { it.start == f.end }
+            val first = open?.start ?: f.start
+            val last = close?.end ?: f.end
+            if (focused && s <= last && e >= first) return@forEach
+            open?.let { out += it.start until it.end }
+            close?.let { out += it.start until it.end }
+        }
+        return out.sortedBy { it.first }.fold(mutableListOf<IntRange>()) { acc, r ->
+            if (acc.isNotEmpty() && r.first <= acc.last().last) acc.apply { this[size - 1] = acc.last().first..maxOf(acc.last().last, r.last) }
+            else acc.apply { add(r) }
+        }
+    }
+
+    /** Dove cade un punto del testo vero nel testo disegnato senza i segni [hidden], e viceversa. */
+    class Collapse(private val hidden: List<IntRange>) {
+        fun toShown(offset: Int): Int = offset - hidden.sumOf { r -> (minOf(offset, r.last + 1) - r.first).coerceAtLeast(0) }
+
+        fun toText(shown: Int): Int {
+            var o = shown
+            for (r in hidden) if (r.first <= o) o += r.last - r.first + 1 else break
+            return o
+        }
+    }
+
     /** Il testo senza segni, per le righe e i titoli fuori dall'editor. */
     fun plain(text: String): String {
         var t = headingRx.replace(text) { it.groupValues[1] }

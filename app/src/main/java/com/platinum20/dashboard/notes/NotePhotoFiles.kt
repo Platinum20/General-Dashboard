@@ -14,6 +14,26 @@ import java.io.File
 
 /** I file delle foto delle note: ruotarle e condividerle (1.529). Le liste stanno in [NotePhotos]. */
 object NotePhotoFiles {
+    /** L'impronta del contenuto (SHA-1 dei byte): la stessa foto scelta due volte ha due file ma la stessa impronta. */
+    suspend fun fingerprint(path: String): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val md = java.security.MessageDigest.getInstance("SHA-1")
+            File(path).inputStream().use { input ->
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    md.update(buf, 0, n)
+                }
+            }
+            md.digest().joinToString("") { "%02x".format(it) }
+        }.getOrNull()
+    }
+
+    /** Le impronte di tutte le foto, per [NotePhotos.unique]. */
+    suspend fun fingerprints(paths: List<String>): Map<String, String> =
+        paths.mapNotNull { p -> fingerprint(p)?.let { p to it } }.toMap()
+
     /**
      * Gira la foto di un quarto a destra e la scrive in un file nuovo (Coil ricorda le immagini per percorso, così si
      * vede subito girata). Restituisce il percorso nuovo, null se non ci è riuscito.

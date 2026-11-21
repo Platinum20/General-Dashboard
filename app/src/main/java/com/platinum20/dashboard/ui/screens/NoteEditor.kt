@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -172,7 +173,19 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
     }
 
     // ---- Foto ----
-    fun attach(paths: List<String>) {
+    // Le note con la stessa foto due volte (prima della 1.549 si poteva) tornano con una sola.
+    LaunchedEffect(noteId) {
+        val nid = noteId ?: return@LaunchedEffect
+        val now = NotesStore.note(nid)?.photos.orEmpty()
+        if (now.size < 2) return@LaunchedEffect
+        val keep = NotePhotos.unique(now, NotePhotoFiles.fingerprints(now))
+        if (keep != now) NotesStore.editNotePhotos(nid) { list -> list.filter { it in keep } }
+    }
+    suspend fun attach(picked: List<String>) {
+        // La stessa foto scelta di nuovo non si aggiunge: il suo file copiato si butta.
+        val prints = NotePhotoFiles.fingerprints(photos + picked)
+        val paths = NotePhotos.unique(photos + picked, prints).filter { it in picked && it !in photos }
+        (picked - paths.toSet() - photos.toSet()).forEach { java.io.File(it).delete() }
         if (paths.isEmpty()) return
         val nid = id
         if (nid == null || NotesStore.note(nid) == null) {
@@ -409,7 +422,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
             val bodyStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface, lineHeight = 26.sp)
             val titleStyle = MaterialTheme.typography.headlineSmall.copy(color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             val faint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            val formats = rememberNoteFormats()
+            val formats = rememberNoteFormats(body.selection, bodyFocused)
             Column(
                 Modifier
                     .fillMaxSize()
@@ -525,15 +538,19 @@ private fun HoldRoundButton(icon: ImageVector, label: String, tint: Color = Mate
     }
 }
 
-/** I segni dei formati disegnati: grassetto, corsivo, barrato, titoletto; i segni stessi restano, sbiaditi. */
+/**
+ * I formati disegnati: grassetto, corsivo, barrato, titoletto. I segni (`**`, `~~`, `## `) si nascondono (1.549) e
+ * ricompaiono sbiaditi solo attorno al formato dove sta il cursore, per correggerli.
+ */
 @Composable
-private fun rememberNoteFormats(): VisualTransformation {
+private fun rememberNoteFormats(selection: TextRange, focused: Boolean): VisualTransformation {
     val mark = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
-    return remember(mark) {
+    return remember(mark, selection, focused) {
         VisualTransformation { input ->
+            val text = input.text
             val styled = buildAnnotatedString {
-                append(input.text)
-                NoteFormat.spans(input.text).forEach { s ->
+                append(text)
+                NoteFormat.spans(text).forEach { s ->
                     val style = when (s.kind) {
                         NoteFormat.Kind.BOLD -> SpanStyle(fontWeight = FontWeight.Bold)
                         NoteFormat.Kind.ITALIC -> SpanStyle(fontStyle = FontStyle.Italic)
@@ -544,7 +561,22 @@ private fun rememberNoteFormats(): VisualTransformation {
                     addStyle(style, s.start, s.end)
                 }
             }
-            TransformedText(styled, OffsetMapping.Identity)
+            val hidden = NoteFormat.hidden(text, selection.start.coerceIn(0, text.length), selection.end.coerceIn(0, text.length), focused)
+            if (hidden.isEmpty()) return@VisualTransformation TransformedText(styled, OffsetMapping.Identity)
+            val shown = buildAnnotatedString {
+                var at = 0
+                hidden.forEach { r ->
+                    append(styled.subSequence(at, r.first))
+                    at = r.last + 1
+                }
+                append(styled.subSequence(at, text.length))
+            }
+            val collapse = NoteFormat.Collapse(hidden)
+            val mapping = object : OffsetMapping {
+                override fun originalToTransformed(offset: Int) = collapse.toShown(offset).coerceIn(0, shown.length)
+                override fun transformedToOriginal(offset: Int) = collapse.toText(offset).coerceIn(0, text.length)
+            }
+            TransformedText(shown, mapping)
         }
     }
 }
@@ -599,10 +631,27 @@ private fun PhotoStrip(
     onArranging: (Boolean) -> Unit,
     onAdd: () -> Unit,
 ) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
+        // Tre foto riempiono giuste la larghezza fra i margini della pagina (1.549): niente foto tagliata dal bordo.
+        PhotoRow(photos, (maxWidth - PHOTO_GAP * 2) / 3, onOpen, onMenu, onMove, onArranging, onAdd)
+    }
+}
+
+private val PHOTO_GAP = 8.dp
+
+@Composable
+private fun PhotoRow(
+    photos: List<String>,
+    tile: androidx.compose.ui.unit.Dp,
+    onOpen: (Int) -> Unit,
+    onMenu: (String) -> Unit,
+    onMove: (Int, Int) -> Unit,
+    onArranging: (Boolean) -> Unit,
+    onAdd: () -> Unit,
+) {
     val haptic = rememberHaptic()
     val density = LocalDensity.current
-    val tile = 112.dp
-    val gap = 8.dp
+    val gap = PHOTO_GAP
     val step = with(density) { (tile + gap).toPx() }
     val slop = with(density) { 12.dp.toPx() }
     val current by rememberUpdatedState(photos)
@@ -618,8 +667,7 @@ private fun PhotoStrip(
         horizontalArrangement = Arrangement.spacedBy(gap),
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState(), enabled = dragFrom == null)
-            .padding(horizontal = 24.dp),
+            .horizontalScroll(rememberScrollState(), enabled = dragFrom == null),
     ) {
         photos.forEachIndexed { i, path ->
             key(path) {

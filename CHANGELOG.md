@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.550.0
+**Nota lunga più pulita**
+- Grassetto, corsivo, barrato e titoletti si vedono senza gli asterischi: i segni ricompaiono sbiaditi solo quando metti il cursore su quel pezzo
+- La riga in alto sta su una riga: dice solo l'ultima modifica ("Modificata 14 nov, 09:44 · 7 parole · 3 foto")
+- Le foto stanno dentro i margini della pagina: tre riempiono la riga, le altre scorrendo, nessuna tagliata dal bordo
+- La stessa foto scelta due volte non si aggiunge più, e le note che l'avevano doppia tornano con una sola
+
 ## 1.548.0
 **Notifica del treno più essenziale**
 - Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura, anche nella notifica ridotta
