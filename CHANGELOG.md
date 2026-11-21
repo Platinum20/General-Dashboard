@@ -7,7 +7,7 @@
 - La Discografia è divisa per anno
 - Il canale YouTube non ha più banner e schede: una card con foto, iscritti e Iscriviti, poi Video, Shorts, Live e Playlist
 - Sotto il video: i tasti Mi piace, Non mi piace, Salva e Condividi in fila, poi le card del canale, dei capitoli (quello in corso è colorato), della descrizione, dei commenti e dei correlati
-- La Cronologia è divisa per giorno (Oggi, Ieri, Mer 19 nov…) e Scopri è una sola card
+- La Cronologia è divisa per giorno (Oggi, Ieri, Gio 19 nov…) e Scopri è una sola card
 - Il player della musica: tutto in un blocco colorato con la copertina, il cuore dei Mi piace di Spotify, Casuale e Ripeti (tutta la coda o solo questo brano) e una fila di scorciatoie: Playlist, Coda, Testo, Radio, Condividi. Sotto, la card "Dopo" con i prossimi brani
 - Per il cuore serve rientrare una volta in Spotify (Impostazioni › Account): chiede il permesso di modificare i tuoi Mi piace
 - Il player dei video di YouTube resta com'era
