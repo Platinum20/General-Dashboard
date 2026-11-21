@@ -89,4 +89,36 @@ class NoteEditorPhotosTest {
         assertEquals("Fine. Poi" to 9, NoteText.insert("Fine.", 5, "poi"))
         assertEquals("a x b" to 3, NoteText.insert("ab", 1, "x"))
     }
+
+    @Test
+    fun marksHideUnlessCursorTouchesThem() {
+        val text = "Esatto **lui**!"
+        // Senza cursore spariscono i due "**".
+        assertEquals(listOf(7..8, 12..13), NoteFormat.hidden(text, 0, 0, focused = false))
+        // Cursore lontano: nascosti; cursore dentro o appena dopo: visibili.
+        assertEquals(2, NoteFormat.hidden(text, 2, 2, focused = true).size)
+        assertTrue(NoteFormat.hidden(text, 10, 10, focused = true).isEmpty())
+        assertTrue(NoteFormat.hidden(text, 14, 14, focused = true).isEmpty())
+        assertEquals(listOf(0..2), NoteFormat.hidden("## Titolo\nx", 11, 11, focused = true))
+        val c = NoteFormat.Collapse(NoteFormat.hidden(text, 0, 0, focused = false))
+        // "Esatto lui!": la "l" sta al 7 nel disegno e al 9 nel testo.
+        assertEquals(7, c.toShown(9))
+        assertEquals(9, c.toText(7))
+        assertEquals(11, c.toShown(text.length))
+        assertEquals(text.length, c.toText(11))
+        assertEquals(3, c.toShown(3))
+    }
+
+    @Test
+    fun samePhotoTwiceKeepsTheFirst() {
+        val prints = mapOf("/a" to "x", "/b" to "x", "/c" to "y")
+        assertEquals(listOf("/a", "/c", "/d"), NotePhotos.unique(listOf("/a", "/b", "/c", "/d"), prints))
+    }
+
+    @Test
+    fun metaLineSaysOnlyTheLatestMoment() {
+        val zone = java.time.ZoneId.of("Europe/Rome")
+        fun at(d: Int, h: Int, m: Int) = java.time.ZonedDateTime.of(2026, 11, d, h, m, 0, 0, zone).toInstant().toEpochMilli()
+        assertEquals("Modificata 14 nov, 09:44", NoteText.moment(at(13, 20, 32), at(14, 9, 44), at(21, 12, 0), zone))
+    }
 }
