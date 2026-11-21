@@ -186,9 +186,8 @@ internal fun RichNoteField(
             val shown = NoteLines.Shown(text, NoteFormat.hidden(text, value.selection.start.coerceIn(0, text.length), value.selection.end.coerceIn(0, text.length), focused))
             val density = LocalDensity.current
             val drawn = l.layoutInput.text.length
-            shown.lines.filter { it.isList }.forEach { line -> androidx.compose.runtime.key(line.index) {
+            shown.lines.filter { it.isList && shown.toShown(it.start) < drawn }.forEach { line -> androidx.compose.runtime.key(line.index) {
                 val at = shown.toShown(line.start)
-                if (at >= drawn) return@key
                 val place = l.getBoundingBox(at)
                 val row = l.getLineForOffset(at)
                 val top = l.getLineTop(row)
