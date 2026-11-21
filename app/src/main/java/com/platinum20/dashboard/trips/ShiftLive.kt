@@ -111,6 +111,16 @@ object ShiftLive {
     }
 
     /** "Venduto: non ancora segnato · letto alle 18:05": Creators Pro non ha ancora i numeri di questo turno. */
+    /** Dopo una lettura andata a vuoto si riprova prima dei 15 minuti. */
+    const val RETRY_MS = 5 * 60_000L
+
+    /**
+     * Se rileggere adesso: conta l'ultima busta paga letta davvero ([payReadAt]), non la timeline, che si legge
+     * anche quando la lettura si ferma prima dei soldi; [tried] = l'ultimo tentativo, per non insistere ogni minuto.
+     */
+    fun shouldRead(now: Long, payReadAt: Long, tried: Long): Boolean =
+        now - payReadAt >= READ_EVERY_MS && now - tried >= RETRY_MS
+
     fun missing(readAt: Long, zone: ZoneId = ZoneId.systemDefault()): String =
         "Venduto: non ancora segnato" + if (readAt > 0) " · letto alle ${at(readAt, zone)}" else ""
 

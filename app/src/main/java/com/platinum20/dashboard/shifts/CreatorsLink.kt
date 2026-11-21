@@ -13,7 +13,11 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.platinum20.dashboard.media.browserUserAgent
 import com.platinum20.dashboard.net.WebSession
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -125,7 +129,8 @@ object CreatorsLink {
                 var since = Date.now() - 62 * 86400000;
                 var ids = ((w && w.data) || []).filter(function (x) { return x && x.info && x.info.id && Date.parse(x.info.endedAt) > since; })
                   .map(function (x) { return x.info.id; });
-                return Promise.all(ids.map(function (i) { return fetch(wage + '/' + i, opt).catch(function () {}); }));
+                return Promise.all(ids.map(function (i) { return fetch(wage + '/' + i, opt).catch(function () {}); }))
+                  .then(function () { if (w) try { CanvasShift.paid(true); } catch (e) {} });
               });
           }).catch(function () {}).then(function () { end(false); });
         })()
@@ -151,6 +156,10 @@ object CreatorsLink {
     private object Bridge {
         @JavascriptInterface
         fun pulled(ok: Boolean) { pullEndedAt = System.currentTimeMillis() }
+
+        /** La busta paga letta tutta: da qui conta il "letto alle" del venduto. */
+        @JavascriptInterface
+        fun paid(ok: Boolean) { if (ok) ShiftStore.notePayRead() }
 
         @JavascriptInterface
         fun capture(url: String, status: Int, body: String) = ShiftStore.capture(url, status, body)
@@ -261,17 +270,36 @@ object CreatorsLink {
     internal fun isExpired(gotData: Boolean, onLogin: Boolean, refused: Boolean) = !gotData && (onLogin || refused)
 
     /** Rilettura nascosta: riapre la timeline con la sessione già fatta. False se non è arrivato niente. */
+    /** Le letture vivono qui, non in chi le chiede: uscire da una pagina o un giro sostituito non le tronca più. */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    @Volatile private var running: Deferred<Boolean>? = null
+
+    /**
+     * Rilegge turni e busta paga. Chi chiama mentre una lettura è già in corso aspetta quella. La lettura gira in
+     * un ambito suo: il 2026-11-21 le letture partite da Home/Calendario si interrompevano quando cambiavi pagina,
+     * dopo la timeline e prima della busta paga, e il venduto restava fermo.
+     */
     suspend fun refresh(context: Context): Boolean {
-        ShiftStore.init(context)
+        val app = context.applicationContext
+        ShiftStore.init(app)
         if (!ShiftStore.linked.value) return false
+        val job = synchronized(this) {
+            running?.takeIf { it.isActive }?.also { ShiftStore.noteRead("già in corso: aspetto quella") }
+                ?: scope.async { read(app) }.also { running = it }
+        }
+        return job.await()
+    }
+
+    private suspend fun read(context: Context): Boolean {
         ShiftStore.noteRead("avvio" + if (ShiftStore.expired.value) " (segnato scaduto)" else "")
-        if (ShiftStore.refreshing.value) { ShiftStore.noteRead("saltata: già in corso"); return false }
         ShiftStore.setRefreshing(true)
         val before = ShiftStore.readAt.value
+        val payBefore = ShiftStore.payReadAt.value
         val asked = System.currentTimeMillis()
+        var outcome = "interrotta"
         try {
             withContext(Dispatchers.Main) {
-                val view = WebView(context.applicationContext)
+                val view = WebView(context)
                 var lastUrl: String? = null
                 prepare(view, context) { lastUrl = it }
                 // Nessuno la guarda: niente immagini da scaricare (meno rete e batteria a ogni giro).
@@ -279,7 +307,7 @@ object CreatorsLink {
                 view.loadUrl(ShiftStore.timelineUrl ?: HOME)
                 withTimeoutOrNull(READ_MS) {
                     while (ShiftStore.readAt.value == before && !isLoginPage(lastUrl)) delay(400)
-                    // La pagina ha letto la sua creator: ora tutte le altre, con la stessa sessione.
+                    // La pagina ha letto la sua creator: ora tutte le altre e la busta paga, con la stessa sessione.
                     if (ShiftStore.readAt.value != before) {
                         delay(1_500)
                         val pulledAt = System.currentTimeMillis()
@@ -289,14 +317,20 @@ object CreatorsLink {
                     }
                 }
                 val got = ShiftStore.readAt.value != before
-                ShiftStore.noteRead(if (got) "letto" else if (isLoginPage(lastUrl ?: view.url)) "pagina d'accesso" else "niente in ${READ_MS / 1000} s")
+                val paid = ShiftStore.payReadAt.value != payBefore
+                outcome = if (got) "letto" + if (paid) " con la busta paga" else " (busta paga no)"
+                    else if (isLoginPage(lastUrl ?: view.url)) "pagina d'accesso" else "niente in ${READ_MS / 1000} s"
                 if (isExpired(got, isLoginPage(lastUrl ?: view.url), ShiftStore.refusedAt >= asked)) ShiftStore.setExpired(true)
                 if (got) CreatorsSession.save(context)
                 CookieManager.getInstance().flush()
                 view.stopLoading()
                 view.destroy()
             }
+        } catch (e: Throwable) {
+            outcome = "errore: " + (e.javaClass.simpleName.ifEmpty { "?" }) + (e.message?.take(80)?.let { " $it" } ?: "")
+            throw e
         } finally {
+            ShiftStore.noteRead(outcome)
             ShiftStore.setRefreshing(false)
         }
         return ShiftStore.readAt.value > before
