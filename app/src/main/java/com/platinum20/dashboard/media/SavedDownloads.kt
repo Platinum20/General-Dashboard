@@ -1,6 +1,10 @@
 package com.platinum20.dashboard.media
 
 import android.content.Context
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.net.Uri
 import com.platinum20.dashboard.BuildConfig
 import com.platinum20.dashboard.capture.SavedLinks
@@ -21,6 +25,7 @@ import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.ByteBuffer
 
 /** Cosa si scarica: un episodio di podcast o un video di YouTube. I brani di Spotify no: sono protetti (DRM). */
 enum class PackKind { PODCAST, VIDEO }
@@ -31,7 +36,23 @@ data class PackFile(
     val kind: PackKind,
     val file: String,
     val sec: Long,
+    /** Qualità del file (video): 360 = il file unico di YouTube. */
+    val height: Int = 360,
+    /** La qualità scelta in Impostazioni quando si è scaricato: se poi la alzi, il video si riscarica. */
+    val asked: Int = 360,
 )
+
+/** La qualità dei video salvati, scelta in Impostazioni › Media (1.557, Antonio: Full HD di default). */
+enum class SavedQuality(val height: Int, val label: String, val detail: String) {
+    FULL_HD(1080, "Full HD", "1080p · circa 1,4 GB l'ora"),
+    HD(720, "HD", "720p · circa 700 MB l'ora"),
+    LIGHT(360, "Leggera", "360p · circa 300 MB l'ora");
+
+    companion object {
+        val DEFAULT = FULL_HD
+        fun of(height: Int): SavedQuality = entries.firstOrNull { it.height == height } ?: DEFAULT
+    }
+}
 
 /**
  * Le regole pure dei download dei salvati (2026-11-21, Antonio: al posto dello zaino del treno, si scarica quello che
@@ -43,11 +64,23 @@ object SavedDownloadPlan {
     /** Durata ipotetica di un episodio che il feed non dice. */
     const val UNKNOWN_SEC = 30 * 60L
 
-    /** Peso stimato: audio a 128 kbit/s, video a 360p (circa 640 kbit/s). */
-    fun estimateBytes(kind: PackKind, sec: Long): Long = when (kind) {
+    /** Peso stimato: audio a 128 kbit/s; video a 360p circa 640 kbit/s, 720p 1,5 Mbit/s, 1080p 3,2 Mbit/s (audio compreso). */
+    fun estimateBytes(kind: PackKind, sec: Long, height: Int = 360): Long = when (kind) {
         PackKind.PODCAST -> sec * 16_000
-        PackKind.VIDEO -> sec * 80_000
+        PackKind.VIDEO -> sec * when {
+            height > 720 -> 400_000
+            height > 480 -> 190_000
+            height > 360 -> 110_000
+            else -> 80_000
+        }
     }
+
+    /**
+     * La qualità da scaricare fra quelle che ci sono ([available], solo video senza audio): la più alta fino a [wanted]
+     * che sta nei 2 GB accanto a [usedBytes]; null = il file unico a 360p (scelta Leggera, o niente di meglio che ci stia).
+     */
+    fun pickHeight(available: List<Int>, wanted: Int, sec: Long, usedBytes: Long): Int? =
+        available.filter { it in 361..wanted && fits(usedBytes, estimateBytes(PackKind.VIDEO, sec, it)) }.maxOrNull()
 
     /** Il tipo di file per un media salvato; null = non si scarica (Spotify, radio, video del telefono). */
     fun kindOf(item: ResumeItem): PackKind? = when (item.kind) {
@@ -56,10 +89,13 @@ object SavedDownloadPlan {
         else -> null
     }
 
-    /** Quello che manca da scaricare, dal salvato più recente. */
-    fun missing(saved: List<ResumeItem>, have: List<PackFile>): List<ResumeItem> =
-        saved.filter { s -> kindOf(s) != null && have.none { it.item.key == s.key && it.kind == kindOf(s) } }
-            .distinctBy { it.kind to it.key }
+    /** Quello che manca da scaricare, dal salvato più recente; un video scaricato sotto la qualità [wanted] di adesso manca ancora. */
+    fun missing(saved: List<ResumeItem>, have: List<PackFile>, wanted: Int = 360): List<ResumeItem> =
+        saved.filter { s ->
+            kindOf(s) != null && have.none {
+                it.item.key == s.key && it.kind == kindOf(s) && (it.kind != PackKind.VIDEO || it.asked >= wanted)
+            }
+        }.distinctBy { it.kind to it.key }
 
     /** I file da buttare: le cose che non sono più fra i salvati. */
     fun stale(saved: List<ResumeItem>, have: List<PackFile>): List<PackFile> =
@@ -128,6 +164,8 @@ object SavedDownloads {
         AppSettings.init(context)
         NotesStore.init(context)
         fun saved() = SavedLinks.later(NotesStore.data.value.notes.filter { it.archivedAt == null }).map { it.item }
+        // Prima le copertine che mancano ai salvati di Spotify: una richiesta piccola, anche coi dati.
+        runCatching { com.platinum20.dashboard.capture.SavedCovers.fill(context) }
         val on = AppSettings.downloadSaved.value
         lock.withLock {
             val gone = if (on) SavedDownloadPlan.stale(saved(), _files.value) else _files.value
@@ -140,65 +178,153 @@ object SavedDownloads {
             }
         }
         if (!on) return
+        val wanted = AppSettings.savedQuality.value
         val tried = mutableSetOf<String>()
         while (true) {
             if (HeavyDownloads.blocked(context)) return
-            val next = SavedDownloadPlan.missing(saved(), _files.value).firstOrNull { it.key !in tried } ?: return
+            val next = SavedDownloadPlan.missing(saved(), _files.value, wanted).firstOrNull { it.key !in tried } ?: return
             tried += next.key
-            runCatching { take(d, next) }
+            runCatching { take(d, next, wanted) }
         }
     }
 
-    private suspend fun take(d: File, item: ResumeItem) {
+    private suspend fun take(d: File, item: ResumeItem, wanted: Int) {
         val kind = SavedDownloadPlan.kindOf(item) ?: return
-        var sec = item.durationMs / 1000
-        val link: String
-        var entry = item
-        if (kind == PackKind.VIDEO) {
-            // Un file solo, audio e video insieme: YouTube lo dà a 360p. Le dirette non si scaricano.
-            val s = YtResolver.resolve("https://www.youtube.com/watch?v=${item.key}", 360)
-            if (s.hlsUrl != null) return
-            link = s.muxedUrl ?: return
-            sec = s.durationSec
-            entry = item.copy(title = s.title.ifBlank { item.title }, subtitle = s.channel.ifBlank { item.subtitle }, durationMs = s.durationSec * 1000)
-        } else {
-            link = item.link
-        }
-        val estimate = SavedDownloadPlan.estimateBytes(kind, sec.takeIf { it > 0 } ?: SavedDownloadPlan.UNKNOWN_SEC)
-        if (!SavedDownloadPlan.fits(bytes(), estimate)) return
         val name = (if (kind == PackKind.VIDEO) "yt-" else "pod-") + item.key.hashCode().toUInt().toString(16) +
             if (kind == PackKind.VIDEO) ".mp4" else ".audio"
         val file = File(d, name)
-        val ok = runCatching { download(link, file) }.isSuccess
-        if (!ok) {
-            file.delete()
+        // Se il video c'era già in qualità più bassa, il suo peso non conta: lo sostituisce.
+        val used = bytes() - (_files.value.firstOrNull { it.file == name }?.let { fileOf(it)?.length() } ?: 0L)
+        if (kind == PackKind.PODCAST) {
+            val sec = item.durationMs / 1000
+            val estimate = SavedDownloadPlan.estimateBytes(kind, sec.takeIf { it > 0 } ?: SavedDownloadPlan.UNKNOWN_SEC)
+            if (!SavedDownloadPlan.fits(used, estimate)) return
+            if (runCatching { download(item.link, file) }.isFailure) return
+            lock.withLock { save(_files.value.filterNot { it.file == name } + PackFile(item, kind, name, sec)) }
             return
         }
-        lock.withLock { save(_files.value.filterNot { it.file == name } + PackFile(entry, kind, name, sec)) }
+        // Le dirette non si scaricano.
+        val s = YtResolver.forDownload("https://www.youtube.com/watch?v=${item.key}")
+        if (s.live) return
+        val sec = s.durationSec.takeIf { it > 0 } ?: SavedDownloadPlan.UNKNOWN_SEC
+        val entry = item.copy(title = s.title.ifBlank { item.title }, subtitle = s.channel.ifBlank { item.subtitle }, durationMs = s.durationSec * 1000)
+        val height = SavedDownloadPlan.pickHeight(s.videos.map { it.height }, wanted, sec, used)
+            ?.takeIf { s.audioUrl != null }
+        // Full HD: YouTube dà video e audio separati, si scaricano tutti e due e si uniscono qui in un MP4.
+        val got = height?.let { h ->
+            val video = s.videos.first { it.height == h }.url
+            runCatching { downloadJoined(d, video, s.audioUrl!!, file) }.isSuccess.takeIf { it }?.let { h }
+        } ?: run {
+            // Riserva: il file unico a 360p, audio e video insieme. Se c'è già, si tiene quello.
+            val old = _files.value.firstOrNull { it.file == name }
+            if (old != null && file.exists()) {
+                lock.withLock { save(_files.value.map { if (it.file == name) it.copy(asked = wanted) else it }) }
+                return
+            }
+            val muxed = s.muxedUrl ?: return
+            if (!SavedDownloadPlan.fits(used, SavedDownloadPlan.estimateBytes(kind, sec))) return
+            if (runCatching { download(muxed, file) }.isFailure) return
+            360
+        }
+        lock.withLock {
+            save(_files.value.filterNot { it.file == name } + PackFile(entry, kind, name, s.durationSec, height = got, asked = wanted))
+        }
     }
 
-    /** Scarica a pezzi da 8 MB (YouTube rallenta le richieste intere), seguendo i rimandi anche fra http e https. */
+    /** Scarica video e audio a parte e li unisce in [target]; il file di prima resta finché quello nuovo non è pronto. */
+    private suspend fun downloadJoined(d: File, video: String, audio: String, target: File) {
+        val v = File(d, target.name + ".v")
+        val a = File(d, target.name + ".a")
+        val out = File(d, target.name + ".mux")
+        try {
+            download(video, v)
+            download(audio, a)
+            withContext(Dispatchers.IO) { mux(v, a, out) }
+            if (!out.renameTo(target)) throw IOException("Rinomina non riuscita")
+        } finally {
+            v.delete()
+            a.delete()
+            out.delete()
+        }
+    }
+
+    /**
+     * Unisce la traccia video e quella audio (MP4 a pezzi di YouTube) in un MP4 normale, senza ricodificare: copia i
+     * campioni alternandoli per tempo, così il file si legge dall'inizio senza saltare avanti e indietro.
+     */
+    private fun mux(video: File, audio: File, out: File) {
+        val sources = listOf(video, audio).map { f -> MediaExtractor().apply { setDataSource(f.path) } }
+        val muxer = MediaMuxer(out.path, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        try {
+            var maxSample = 2 * 1024 * 1024
+            val tracks = sources.mapIndexed { n, e ->
+                val prefix = if (n == 0) "video/" else "audio/"
+                val i = (0 until e.trackCount).firstOrNull { e.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith(prefix) == true }
+                    ?: throw IOException("Traccia mancante")
+                e.selectTrack(i)
+                val format = e.getTrackFormat(i)
+                if (format.containsKey(MediaFormat.KEY_MAX_INPUT_SIZE)) maxSample = maxOf(maxSample, format.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE))
+                muxer.addTrack(format)
+            }
+            muxer.start()
+            val buffer = ByteBuffer.allocateDirect(maxSample)
+            val info = MediaCodec.BufferInfo()
+            val done = BooleanArray(sources.size)
+            while (!done.all { it }) {
+                // Il campione più indietro nel tempo fra le due tracce.
+                val n = sources.indices.filter { !done[it] }.minBy { sources[it].sampleTime }
+                val e = sources[n]
+                buffer.clear()
+                val size = e.readSampleData(buffer, 0)
+                if (size < 0) {
+                    done[n] = true
+                    continue
+                }
+                val key = e.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0
+                info.set(0, size, e.sampleTime, if (key) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0)
+                muxer.writeSampleData(tracks[n], buffer, info)
+                if (!e.advance()) done[n] = true
+            }
+            muxer.stop()
+        } finally {
+            runCatching { muxer.release() }
+            sources.forEach { runCatching { it.release() } }
+        }
+    }
+
+    /**
+     * Scarica a pezzi da 8 MB (YouTube rallenta le richieste intere), seguendo i rimandi anche fra http e https. Scrive
+     * accanto (.part) e sostituisce [target] solo alla fine: se va male, il file di prima resta.
+     */
     private suspend fun download(url: String, target: File) = withContext(Dispatchers.IO) {
         val part = File(target.path + ".part")
         part.delete()
         var address = url
         var start = 0L
-        part.outputStream().use { out ->
-            while (true) {
-                val (conn, final) = open(address, start)
-                address = final
-                val total = try {
-                    // Senza Content-Range il server manda tutto in una volta.
-                    val size = conn.getHeaderField("Content-Range")?.substringAfterLast('/')?.toLongOrNull()
-                    start += conn.inputStream.use { it.copyTo(out) }
-                    size
-                } finally {
-                    conn.disconnect()
+        runCatching {
+            part.outputStream().use { out ->
+                while (true) {
+                    val (conn, final) = open(address, start)
+                    address = final
+                    val total = try {
+                        // Senza Content-Range il server manda tutto in una volta.
+                        val size = conn.getHeaderField("Content-Range")?.substringAfterLast('/')?.toLongOrNull()
+                        start += conn.inputStream.use { it.copyTo(out) }
+                        size
+                    } finally {
+                        conn.disconnect()
+                    }
+                    if (total == null || start >= total) break
                 }
-                if (total == null || start >= total) break
             }
+        }.onFailure {
+            part.delete()
+            throw it
         }
-        if (part.length() == 0L) throw IOException("File vuoto")
+        if (part.length() == 0L) {
+            part.delete()
+            throw IOException("File vuoto")
+        }
         if (!part.renameTo(target)) throw IOException("Rinomina non riuscita")
     }
 
@@ -237,7 +363,10 @@ object SavedDownloads {
 
     internal fun write(list: List<PackFile>): String = JSONArray().apply {
         list.forEach { f ->
-            put(JSONObject().put("item", f.item.toJson()).put("kind", f.kind.name).put("file", f.file).put("sec", f.sec))
+            put(
+                JSONObject().put("item", f.item.toJson()).put("kind", f.kind.name).put("file", f.file).put("sec", f.sec)
+                    .put("height", f.height).put("asked", f.asked),
+            )
         }
     }.toString()
 
@@ -248,7 +377,7 @@ object SavedDownloads {
             runCatching {
                 PackFile(
                     ResumeItem.fromJson(o.getJSONObject("item")), PackKind.valueOf(o.getString("kind")), o.getString("file"),
-                    o.optLong("sec"),
+                    o.optLong("sec"), o.optInt("height", 360), o.optInt("asked", 360),
                 )
             }.getOrNull()
         }

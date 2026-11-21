@@ -46,14 +46,21 @@ class SavedDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
             wm.enqueueUniquePeriodicWork(WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
 
-        /** Appena salvi o togli qualcosa: allinea i file, alla prima rete adatta. */
+        /**
+         * Appena salvi o togli qualcosa: subito con qualunque rete (copertine e file tolti; i download si fermano da
+         * soli se serve il Wi-Fi) e, con "Scarica solo col Wi-Fi", di nuovo appena arriva il Wi-Fi.
+         */
         fun now(context: Context) {
             AppSettings.init(context)
-            val request = OneTimeWorkRequestBuilder<SavedDownloadWorker>()
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(network()).build())
+            val wm = WorkManager.getInstance(context)
+            fun request(type: NetworkType) = OneTimeWorkRequestBuilder<SavedDownloadWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(type).build())
                 .build()
             // In coda dietro a quello che sta già scaricando, che non si interrompe.
-            WorkManager.getInstance(context).enqueueUniqueWork(NOW, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+            wm.enqueueUniqueWork(NOW, ExistingWorkPolicy.APPEND_OR_REPLACE, request(NetworkType.CONNECTED))
+            if (AppSettings.wifiOnlyDownloads.value) wm.enqueueUniqueWork(WIFI, ExistingWorkPolicy.KEEP, request(NetworkType.UNMETERED))
         }
+
+        private const val WIFI = "saved_downloads_wifi"
     }
 }

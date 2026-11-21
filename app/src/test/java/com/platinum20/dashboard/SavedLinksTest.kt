@@ -79,4 +79,16 @@ class SavedLinksTest {
         assertEquals(false, SavedLinks.queueable(item(ResumeKind.SPOTIFY, "mix:daily1")))
         assertEquals(false, SavedLinks.queueable(item(ResumeKind.VIDEO, "content://v")))
     }
+
+    @Test fun ogniSalvatoHaLaCopertina() {
+        val yt = SavedLinks.noteText(SavedLink.Media(ResumeItem(ResumeKind.YOUTUBE, "AAAAAAAAAAA", "Motore", "Veritasium", "", at = 1)))
+        val item = SavedLinks.later(listOf(Note(1, yt, createdAt = 1))).single().item
+        assertEquals("https://i.ytimg.com/vi/AAAAAAAAAAA/hqdefault.jpg", item.image)
+        assertEquals("https://open.spotify.com/track/abc", SavedLinks.spotifyPage("spotify:track:abc"))
+        assertNull(SavedLinks.spotifyPage("mix:daily1"))
+        val sp = SavedLinks.noteText(SavedLink.Media(ResumeItem(ResumeKind.SPOTIFY, "spotify:track:abc", "Brano", "Artista", "", at = 1)))
+        val filled = SavedLinks.withImage(sp, "https://i.scdn.co/image/x")
+        assertEquals("https://i.scdn.co/image/x", (SavedLinks.find(filled) as SavedLink.Media).item.image)
+        assertEquals("Brano", filled.lines().first())
+    }
 }
