@@ -88,32 +88,25 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
     }
     val name = page?.artist?.title ?: artist.title
     val playingKey = rememberPlayingKey()
-    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    // Come le altre pagine (1.563, Antonio strada A): titolo grande a sinistra, foto tonda nella prima card, poi card.
+    // Giro 2 (1.566): la foto a tutta larghezza col nome sopra, poi tutto sullo sfondo.
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        TopLevelBar(
-            title = name,
-            subtitle = listOf("Artista", page?.let { SpotifyArtist.followersLine(it.followers) }.orEmpty()).filter { it.isNotBlank() }.joinToString(" · "),
-            onBack = onBack,
-            scrollBehavior = bar,
-        )
         LazyColumn(
-            Modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 120.dp),
         ) {
             item(key = "head") {
-                MediaHeadCard(
+                MediaHero(
+                    title = name,
                     image = page?.photo?.ifBlank { null } ?: artist.image,
-                    round = true,
-                    line = page?.genres.orEmpty().take(3).joinToString(", ").ifBlank { "Artista" },
-                    detail = page?.let { releasesLine(maxOf(it.ownTotal, SpotifyArtist.everything(it).size)) }.orEmpty(),
+                    onBack = onBack,
+                    style = HeroStyle.PHOTO,
+                    detail = page?.let { metaLine(it.copy(genres = it.genres.take(2))) }.orEmpty().ifBlank { "Artista" },
                     onPlay = if (popular.isNotEmpty()) ({ playTracks(context, popular, null) }) else null,
                     onShuffle = if (popular.isNotEmpty()) ({ playTracks(context, popular.shuffled(), null) }) else null,
                     onMore = { SavedLinks.spotify(page?.artist ?: artist)?.let(SavedLinks::offer) },
                 )
             }
-            mediaGap("head-gap")
-            if (page == null && state.loading) item(key = "loading") { PlaceholderList(rows = 5, label = "Carico l'artista") }
+            if (page == null && state.loading) item(key = "loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 5, label = "Carico l'artista") }
             state.error?.takeIf { page == null }?.let { error ->
                 item(key = "error") { Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             }
@@ -128,10 +121,11 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
                 ) { i, track ->
                     // Con altri artisti si vede con chi è; da solo basta il titolo.
                     val others = track.subtitle.split(", ").filter { it.isNotBlank() && !it.equals(name, ignoreCase = true) }
+                    // I Popolari vengono da album diversi: ognuno con la sua copertina (giro 2).
                     MediaRow(
                         title = track.title,
                         line = if (others.isEmpty()) "" else "con " + others.joinToString(", "),
-                        number = i + 1,
+                        image = track.image,
                         trailing = track.durationMs.takeIf { it > 0 }?.let(::duration),
                         now = track.uri == playingKey,
                         click = Modifier.tapOrSave({ SavedLinks.spotify(track) }) { playTracks(context, popular, track) },
@@ -141,29 +135,18 @@ internal fun ArtistScreen(artist: SpItem, onBack: () -> Unit, onOpenItem: (SpIte
             val groups = page?.let { p -> OWN_GROUPS.filter { it.of(p).isNotEmpty() } }.orEmpty()
             if (page != null && groups.isNotEmpty()) {
                 // Il titolo apre l'elenco intero; la fila mostra tutto il gruppo scelto, dal più nuovo.
-                item(key = "disc") {
-                    CardSection("Discografia", onClick = { everything = true }, trailing = {
-                        Text(releasesLine(maxOf(page.ownTotal, SpotifyArtist.everything(page).size)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }) {
-                        Row(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            groups.forEach { g ->
-                                CanvasChip(selected = g == groups.getOrElse(group) { groups[0] }, onClick = { group = groups.indexOf(g) }, label = g.label)
-                            }
+                mediaShelf("disc", "Discografia", onOpen = { everything = true }) {
+                    Row(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        groups.forEach { g ->
+                            CanvasChip(selected = g == groups.getOrElse(group) { groups[0] }, onClick = { group = groups.indexOf(g) }, label = g.label)
                         }
-                        val chosen = groups.getOrElse(group) { groups[0] }
-                        ReleaseCovers(chosen.of(page), onOpenItem, onAll = { everything = true })
-                        Spacer(Modifier.height(12.dp))
                     }
+                    val chosen = groups.getOrElse(group) { groups[0] }
+                    ReleaseCovers(chosen.of(page), onOpenItem, onAll = { everything = true })
                 }
-                mediaGap("disc-gap")
             }
             if (page != null && page.appearsOn.isNotEmpty()) {
-                item(key = "appears") {
-                    CardSection("Appare in") {
-                        ReleaseCovers(page.appearsOn, onOpenItem, showArtist = true)
-                        Spacer(Modifier.height(12.dp))
-                    }
-                }
+                mediaShelf("appears", "Appare in") { ReleaseCovers(page.appearsOn, onOpenItem, showArtist = true) }
             }
         }
     }
@@ -199,15 +182,15 @@ private fun DiscographyScreen(page: SpArtistPage, loading: Boolean, onBack: () -
         )
         LazyColumn(
             Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(bottom = 120.dp),
         ) {
             if (groups.size > 1) item(key = "chips") {
-                LazyRow(contentPadding = PaddingValues(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item { CanvasChip(selected = only == null, onClick = { only = null }, label = "Tutto") }
                     items(groups) { g -> CanvasChip(selected = only == g, onClick = { only = g }, label = g.label) }
                 }
             }
-            // Una card per anno, come i mesi del Calendario (1.563): dentro le uscite di quell'anno, dalla più nuova.
+            // Un gruppo per anno sullo sfondo, come i mesi del Calendario (1.563, giro 2 senza card): dentro le uscite di quell'anno, dalla più nuova.
             SpotifyArtist.byYear(rows) { (item, _) -> page.released[item.id]?.year }.forEach { (year, list) ->
                 mediaGroup(
                     key = "y$year",
