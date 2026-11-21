@@ -241,3 +241,24 @@ internal fun MoreToggle(open: Boolean, onToggle: () -> Unit) {
         modifier = Modifier.clip(MaterialTheme.shapes.small).clickable { haptic(Haptic.TICK); onToggle() }.padding(horizontal = 6.dp, vertical = 4.dp),
     )
 }
+
+/**
+ * La cronologia per giorno (1.563, come il Calendario): una card per giorno, dal più recente; il nome del giorno è
+ * "Oggi", "Ieri", poi "Mar 18 nov" (con l'anno se non è quest'anno). Funzione pura, provata nei test.
+ */
+internal object HistoryDays {
+    private val days = listOf("Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom")
+    private val months = listOf("gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic")
+
+    fun label(day: java.time.LocalDate, today: java.time.LocalDate): String = when (day) {
+        today -> "Oggi"
+        today.minusDays(1) -> "Ieri"
+        else -> days[day.dayOfWeek.value - 1] + " ${day.dayOfMonth} " + months[day.monthValue - 1] +
+            if (day.year != today.year) " ${day.year}" else ""
+    }
+
+    fun <T> group(items: List<T>, at: (T) -> Long, zone: java.time.ZoneId, today: java.time.LocalDate): List<Pair<String, List<T>>> =
+        items.sortedByDescending(at)
+            .groupBy { java.time.Instant.ofEpochMilli(at(it)).atZone(zone).toLocalDate() }
+            .map { (day, list) -> label(day, today) to list }
+}

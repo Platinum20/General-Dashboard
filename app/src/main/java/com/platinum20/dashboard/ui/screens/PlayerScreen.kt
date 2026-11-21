@@ -56,6 +56,16 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Sensors
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.GraphicEq
 import androidx.compose.material.icons.outlined.Headphones
@@ -176,28 +186,6 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
     val w = constraints.maxWidth.toFloat().coerceAtLeast(1f)
     val h = constraints.maxHeight.toFloat().coerceAtLeast(1f)
-    // Il punto del giorno non ha copertina da sfocare: dietro, i colori della sua.
-    if (now?.source == PlaySource.SPEECH) {
-        Box(
-            Modifier.fillMaxWidth().fillMaxHeight(0.7f).background(
-                Brush.verticalGradient(listOf(Color(0xFF3550E8).copy(alpha = 0.35f), MaterialTheme.colorScheme.background))
-            )
-        )
-    }
-    // Dietro a tutto la copertina sfocata, che sfuma nello sfondo: il player prende i colori di quello che suona.
-    now?.artwork?.takeIf { it.isNotBlank() }?.let { art ->
-        AsyncImage(
-            model = art,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.7f).blur(72.dp).alpha(0.55f),
-        )
-        Box(
-            Modifier.fillMaxWidth().fillMaxHeight(0.7f).background(
-                Brush.verticalGradient(listOf(Color.Transparent, MaterialTheme.colorScheme.background))
-            )
-        )
-    }
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
@@ -246,6 +234,57 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
         // di lato oltre metà si chiude. Su e di lato insieme, si decide solo lasciandola.
         val down = (drag.value.y / h).coerceIn(0f, 1f)
         val side = (kotlin.math.abs(drag.value.x) / w).coerceIn(0f, 1f)
+        val pageDrag = Modifier.pointerInput(w, h) {
+            val tracker = VelocityTracker()
+            var total = Offset.Zero
+            var travelled = Offset.Zero
+            var armed = false
+            detectDragGestures(
+                onDragStart = {
+                    tracker.resetTracking()
+                    total = drag.value
+                    travelled = Offset.Zero
+                    armed = false
+                },
+                onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) } },
+                onDragEnd = {
+                    val v = tracker.calculateVelocity()
+                    when (playerRelease(total, Offset(v.x, v.y), w, h)) {
+                        PlayerRelease.CLOSE -> {
+                            view.haptic(Haptic.CONFIRM)
+                            scope.launch {
+                                drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), Motion.fling(w * 1.2f - kotlin.math.abs(total.x), v.x))
+                                Playback.stop()
+                                onBack()
+                            }
+                        }
+                        PlayerRelease.MINI -> {
+                            view.haptic(Haptic.SNAP)
+                            onBack()
+                        }
+                        PlayerRelease.QUEUE -> {
+                            view.haptic(Haptic.SNAP)
+                            scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) }
+                            onOpenQueue()
+                        }
+                        PlayerRelease.STAY -> scope.launch { drag.animateTo(Offset.Zero, Motion.gesture(), initialVelocity = v.let { Offset(it.x, it.y) }) }
+                    }
+                },
+            ) { change, amount ->
+                change.consume()
+                travelled += amount
+                tracker.addPosition(change.uptimeMillis, travelled)
+                // In su resiste, e lasciandola apre la coda.
+                total = Offset(total.x + amount.x, (total.y + amount.y).coerceAtLeast(-h * 0.05f))
+                val over = kotlin.math.abs(total.x) > w * 0.5f
+                if (over != armed) {
+                    armed = over
+                    view.haptic(if (over) Haptic.THRESHOLD else Haptic.TICK)
+                }
+                val target = total
+                scope.launch { drag.snapTo(target) }
+            }
+        }
         Column(
             Modifier
                 .fillMaxSize()
@@ -258,64 +297,14 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
                     scaleY = sc
                     alpha = 1f - 0.6f * side
                 }
-                .pointerInput(w, h) {
-                    val tracker = VelocityTracker()
-                    var total = Offset.Zero
-                    var travelled = Offset.Zero
-                    var armed = false
-                    detectDragGestures(
-                        onDragStart = {
-                            tracker.resetTracking()
-                            total = drag.value
-                            travelled = Offset.Zero
-                            armed = false
-                        },
-                        onDragCancel = { scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) } },
-                        onDragEnd = {
-                            val v = tracker.calculateVelocity()
-                            when (playerRelease(total, Offset(v.x, v.y), w, h)) {
-                                PlayerRelease.CLOSE -> {
-                                    view.haptic(Haptic.CONFIRM)
-                                    scope.launch {
-                                        drag.animateTo(Offset(kotlin.math.sign(total.x) * w * 1.2f, total.y), Motion.fling(w * 1.2f - kotlin.math.abs(total.x), v.x))
-                                        Playback.stop()
-                                        onBack()
-                                    }
-                                }
-                                PlayerRelease.MINI -> {
-                                    view.haptic(Haptic.SNAP)
-                                    onBack()
-                                }
-                                PlayerRelease.QUEUE -> {
-                                    view.haptic(Haptic.SNAP)
-                                    scope.launch { drag.animateTo(Offset.Zero, Motion.gesture()) }
-                                    onOpenQueue()
-                                }
-                                PlayerRelease.STAY -> scope.launch { drag.animateTo(Offset.Zero, Motion.gesture(), initialVelocity = v.let { Offset(it.x, it.y) }) }
-                            }
-                        },
-                    ) { change, amount ->
-                        change.consume()
-                        travelled += amount
-                        tracker.addPosition(change.uptimeMillis, travelled)
-                        // In su resiste, e lasciandola apre la coda.
-                        total = Offset(total.x + amount.x, (total.y + amount.y).coerceAtLeast(-h * 0.05f))
-                        val over = kotlin.math.abs(total.x) > w * 0.5f
-                        if (over != armed) {
-                            armed = over
-                            view.haptic(if (over) Haptic.THRESHOLD else Haptic.TICK)
-                        }
-                        val target = total
-                        scope.launch { drag.snapTo(target) }
-                    }
-                }
-                .padding(horizontal = 24.dp, vertical = 8.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // La maniglia in alto dice che la pagina si trascina giù.
+            // La maniglia in alto dice che il blocco colorato si trascina giù.
             Box(
                 Modifier
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 8.dp)
                     .size(width = 36.dp, height = 4.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
@@ -326,56 +315,166 @@ private fun AudioPlayer(onBack: () -> Unit, onOpenQueue: () -> Unit) {
             remember { com.platinum20.dashboard.media.MediaVolume.init(context) }
             val muted by com.platinum20.dashboard.media.MediaVolume.muted.collectAsState()
             LaunchedEffect(muted, lyrics != null) { if (lyrics != null) showLyrics = muted }
-            Artwork(
-                current, Modifier.weight(1f, fill = false),
-                lyrics = lyrics?.takeIf { showLyrics },
-                onTap = if (lyrics != null) ({ showLyrics = !showLyrics }) else null,
-            )
-            Spacer(Modifier.height(24.dp))
-            Column(Modifier.fillMaxWidth().widthIn(max = 420.dp)) {
-                SourcePill(current.source)
-                Spacer(Modifier.height(8.dp))
-                Text(current.title, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (showPlayerSubtitle(current.live, current.subtitle)) Text(
-                    current.subtitle,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (current.error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(16.dp))
-                TimeBar(current)
-                Spacer(Modifier.height(8.dp))
-                Controls(current)
-                Spacer(Modifier.height(8.dp))
-                // La coda unica (cosa viene dopo, di qualunque fonte): anche trascinando la pagina in su.
-                val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
-                Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CanvasButton(
-                        if (queue.upcoming.isEmpty()) "Coda" else "Coda · ${queue.upcoming.size} dopo",
-                        onClick = onOpenQueue,
-                        icon = Icons.Outlined.QueueMusic,
+            val item = remember(current.title, current.subtitle) { Playback.currentAsItem() }
+            val seed = remember(item?.key) { item?.let(com.platinum20.dashboard.media.spotify.MadeStore::seedOf) }
+            // Il blocco colorato (1.563, player A): tutto quello che serve sta qui, e si trascina come la pagina di prima.
+            CanvasCard(
+                modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp).then(pageDrag),
+                shape = MaterialTheme.shapes.extraLarge,
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Artwork(
+                        current, Modifier.fillMaxWidth(0.82f),
+                        lyrics = lyrics?.takeIf { showLyrics },
+                        onTap = if (lyrics != null) ({ showLyrics = !showLyrics }) else null,
                     )
-                    if (lyrics != null) CanvasButton(
-                        if (showLyrics) "Copertina" else "Testo",
-                        onClick = { showLyrics = !showLyrics },
-                        icon = Icons.AutoMirrored.Outlined.Notes,
+                    Spacer(Modifier.height(20.dp))
+                    PlayerTitle(current, item, seed)
+                    Spacer(Modifier.height(12.dp))
+                    TimeBar(current)
+                    Spacer(Modifier.height(4.dp))
+                    Controls(current)
+                    Spacer(Modifier.height(8.dp))
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(LocalContentColor.current.copy(alpha = 0.12f)))
+                    Spacer(Modifier.height(8.dp))
+                    PlayerTools(
+                        current, seed,
+                        lyrics = lyrics != null, showLyrics = showLyrics,
+                        onLyrics = { showLyrics = !showLyrics },
+                        onOpenQueue = onOpenQueue,
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                if (current.source == PlaySource.SPEECH) SpeechChapters()
-                // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
-                if (current.source == PlaySource.MUSIC) {
-                    YtPlayer.now.value?.link?.let { link ->
-                        CanvasButton("Guarda il video", onClick = { YtPlayer.play(context, link) }, icon = Icons.Outlined.OndemandVideo)
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
             }
+            Spacer(Modifier.height(12.dp))
+            Column(Modifier.fillMaxWidth().widthIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (current.source == PlaySource.SPEECH) SpeechChapters()
+                NextCard(onOpenQueue)
+            }
+            Spacer(Modifier.height(24.dp))
         }
     }
     }
 }
+
+/** Titolo, chi la canta (toccandolo si va all'artista o al canale) e il cuore dei Mi piace di Spotify. */
+@Composable
+private fun PlayerTitle(now: Playing, item: ResumeItem?, seed: com.platinum20.dashboard.media.spotify.SpItem?) {
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    val scope = rememberCoroutineScope()
+    val view = LocalView.current
+    val toCreator = item?.takeIf { inApp != null && goToCreatorLabel(it) != null }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.weight(1f).pointerInput(item?.key) {
+                // Tenendo premuto il titolo: il solito fumetto, come tenendo premuta la copertina.
+                detectTapGestures(onLongPress = { item?.let { SavedLinks.offer(SavedLink.Media(it)) } })
+            },
+        ) {
+            Text(now.title, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (showPlayerSubtitle(now.live, now.subtitle)) Text(
+                if (toCreator != null) "${now.subtitle} ›" else now.subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (now.error != null) MaterialTheme.colorScheme.error else LocalContentColor.current.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (toCreator != null) Modifier.clickable { goToCreator(context, toCreator, inApp!!.openRoute) } else Modifier,
+            )
+        }
+        if (seed != null) {
+            LaunchedEffect(seed.id) { com.platinum20.dashboard.media.spotify.SpotifyStore.checkLiked(seed.id) }
+            val likes by com.platinum20.dashboard.media.spotify.SpotifyStore.likes.collectAsState()
+            val liked = likes[seed.id] == true
+            IconButton(onClick = {
+                view.haptic(Haptic.CONFIRM)
+                scope.launch {
+                    com.platinum20.dashboard.media.spotify.SpotifyStore.toggleLiked(seed.id)?.let { CaptureFeedback.tell(context, it) }
+                }
+            }) {
+                Icon(
+                    if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (liked) "Togli dai Mi piace" else "Mi piace",
+                    tint = if (liked) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                )
+            }
+        }
+    }
+}
+
+/** La fila di scorciatoie sotto i comandi: playlist, coda, testo, radio del brano, video, condividi. */
+@Composable
+private fun PlayerTools(
+    now: Playing,
+    seed: com.platinum20.dashboard.media.spotify.SpItem?,
+    lyrics: Boolean,
+    showLyrics: Boolean,
+    onLyrics: () -> Unit,
+    onOpenQueue: () -> Unit,
+) {
+    val context = LocalContext.current
+    val ytLink = if (now.source == PlaySource.MUSIC) YtPlayer.now.value?.link else null
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        if (seed != null) PlayerTool(Icons.AutoMirrored.Outlined.PlaylistAdd, "Playlist") { PlaylistPicker.open(context, seed) }
+        PlayerTool(Icons.Outlined.QueueMusic, "Coda", onClick = onOpenQueue)
+        if (lyrics) PlayerTool(Icons.AutoMirrored.Outlined.Notes, if (showLyrics) "Copertina" else "Testo", on = showLyrics, onClick = onLyrics)
+        if (seed != null) PlayerTool(Icons.Outlined.Sensors, "Radio") {
+            com.platinum20.dashboard.media.spotify.MadeStore.startRadio(context, seed) { CaptureFeedback.tell(context, it) }
+        }
+        // La musica di YouTube suona in solo audio: da qui si passa al video, dallo stesso punto.
+        ytLink?.let { link -> PlayerTool(Icons.Outlined.OndemandVideo, "Video") { YtPlayer.play(context, link) } }
+        if (!now.live) PlayerTool(Icons.Outlined.Share, "Condividi") {
+            shareText(context, seed?.webUrl ?: listOf(now.title, now.subtitle).filter { it.isNotBlank() }.joinToString(" · "))
+        }
+    }
+}
+
+@Composable
+private fun PlayerTool(icon: ImageVector, label: String, on: Boolean = false, onClick: () -> Unit) {
+    val tint = if (on) MaterialTheme.colorScheme.primary else LocalContentColor.current
+    Column(
+        Modifier.clip(MaterialTheme.shapes.medium).clickable(onClick = onClick).padding(horizontal = 6.dp, vertical = 6.dp).widthIn(min = 52.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = tint, maxLines = 1)
+    }
+}
+
+/** "DOPO ›": i prossimi della coda; il titolo apre la coda intera, una riga salta lì. */
+@Composable
+private fun NextCard(onOpenQueue: () -> Unit) {
+    val queue by com.platinum20.dashboard.media.CanvasPlayer.queue.collectAsState()
+    val next = queue.upcoming
+    if (next.isEmpty()) return
+    val shown = next.take(NEXT_ROWS)
+    CardSection(
+        "Dopo",
+        onClick = onOpenQueue,
+        trailing = {
+            if (next.size > shown.size) Text("altri ${next.size - shown.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
+    ) {
+        Column(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
+            shown.forEach { entry ->
+                MediaRow(
+                    title = entry.item.title,
+                    line = entry.item.subtitle,
+                    image = entry.item.image,
+                    trailing = entry.item.durationMs.takeIf { it > 0 }?.let(com.platinum20.dashboard.media.spotify.SpotifyPlaylists::clock),
+                    click = Modifier.clickable { com.platinum20.dashboard.media.CanvasPlayer.jump(entry.id) },
+                )
+            }
+        }
+    }
+}
+
+/** Quanti brani della coda si vedono sotto il player: il resto è nella coda. */
+private const val NEXT_ROWS = 3
 
 /** "In diretta" lo dice già la riga del tempo, sotto il titolo: non due volte. */
 internal fun showPlayerSubtitle(live: Boolean, subtitle: String): Boolean =
@@ -549,6 +648,14 @@ private fun Controls(now: Playing) {
                 Icon(Icons.Filled.Replay10, contentDescription = "Indietro di 10 secondi", modifier = Modifier.size(26.dp))
             }
         }
+        // Casuale e Ripeti (1.563) come su Spotify: valgono per la coda, quindi non per radio e lettura.
+        val modes = !podcast && !now.live && now.source != PlaySource.SPEECH
+        if (modes) {
+            val shuffle by com.platinum20.dashboard.media.CanvasPlayer.shuffle.collectAsState()
+            ModeButton(Icons.Filled.Shuffle, if (shuffle) "Casuale attivo" else "Casuale", on = shuffle) {
+                com.platinum20.dashboard.media.CanvasPlayer.toggleShuffle()
+            }
+        }
         IconButton(onClick = { Playback.previous() }, modifier = Modifier.size(56.dp)) {
             Icon(Icons.Filled.SkipPrevious, contentDescription = "Indietro", modifier = Modifier.size(32.dp))
         }
@@ -566,10 +673,35 @@ private fun Controls(now: Playing) {
         IconButton(onClick = { Playback.next() }, modifier = Modifier.size(56.dp)) {
             Icon(Icons.Filled.SkipNext, contentDescription = "Avanti", modifier = Modifier.size(32.dp))
         }
+        if (modes) {
+            val repeat by com.platinum20.dashboard.media.CanvasPlayer.repeat.collectAsState()
+            ModeButton(
+                if (repeat == com.platinum20.dashboard.media.Repeat.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                when (repeat) {
+                    com.platinum20.dashboard.media.Repeat.OFF -> "Ripeti"
+                    com.platinum20.dashboard.media.Repeat.ALL -> "Ripeti tutta la coda"
+                    com.platinum20.dashboard.media.Repeat.ONE -> "Ripeti questo brano"
+                },
+                on = repeat != com.platinum20.dashboard.media.Repeat.OFF,
+            ) { com.platinum20.dashboard.media.CanvasPlayer.cycleRepeat() }
+        }
         if (podcast) {
             IconButton(onClick = { Playback.seekBy(30_000) }, modifier = Modifier.size(48.dp)) {
                 Icon(Icons.Filled.Forward30, contentDescription = "Avanti di 30 secondi", modifier = Modifier.size(26.dp))
             }
+        }
+    }
+}
+
+/** Casuale o Ripeti: acceso = colore di "adesso" e un puntino sotto, come su Spotify. */
+@Composable
+private fun ModeButton(icon: ImageVector, label: String, on: Boolean, onClick: () -> Unit) {
+    val view = LocalView.current
+    val tint = if (on) MaterialTheme.colorScheme.primary else LocalContentColor.current.copy(alpha = 0.8f)
+    IconButton(onClick = { view.haptic(Haptic.TICK); onClick() }, modifier = Modifier.size(48.dp)) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(24.dp))
+            if (on) Box(Modifier.offset(y = 16.dp).size(4.dp).clip(CircleShape).background(tint))
         }
     }
 }
