@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.559.0
+**Cerchi e pallini rotondi nelle note**
+- I cerchi delle voci da spuntare e i pallini degli elenchi sono di nuovo tondi, non più barrette strette
+- Aprendo la tastiera, titolo e foto della nota restano in vista invece di scappare in alto
+
 ## 1.558.0
 **Liste nelle note più compatte**
 - Le voci da spuntare e gli elenchi puntati stanno vicini come in una lista normale, senza righe vuote in mezzo
