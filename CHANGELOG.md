@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.557.0
+**I video salvati si scaricano in Full HD**
+- I video di YouTube che salvi adesso si scaricano in Full HD (1080p): video e audio arrivano separati e il telefono li unisce in un file solo
+- In Impostazioni › Media, sotto "Scarica i salvati", c'è "Qualità dei video": Full HD, HD (720p) o Leggera (360p). Un'ora in Full HD pesa circa 1,4 GB, cinque volte la Leggera
+- Se un video non c'è in Full HD si prende la qualità migliore che c'è; se non ci sta nei 2 GB si scende di qualità invece di saltarlo
+- Alzando la qualità, i video già scaricati si riscaricano meglio; quelli vecchi restano finché il nuovo non è pronto
+
 ## 1.556.0
 **Copertine per tutti i salvati**
 - I video di YouTube salvati senza immagine prendono la miniatura del video
