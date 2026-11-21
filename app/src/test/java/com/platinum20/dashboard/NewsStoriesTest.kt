@@ -128,4 +128,21 @@ class NewsStoriesTest {
         assertEquals("https://x.it/v.mp4", ArticleVideos.playable(ReaderBlock.Video("https://x.it/v.mp4", false, null)))
         assertNull(ArticleVideos.playable(ReaderBlock.Video("https://player.vimeo.com/video/1", true, null)))
     }
+
+    @Test fun laCardInHomeMostraLeNonLetteEPoiLeLette() {
+        val stories = NewsStories.group(sciopero + meteo + vecchia)
+        // Niente aperto: tutte da leggere, anche dopo una visita alle News.
+        assertEquals(3, NewsStories.unread(stories, emptySet()).size)
+        assertEquals("3 da leggere", NewsStories.unreadLine(3))
+        // Aperto l'articolo del maltempo: quella storia scende in fondo, le altre restano non lette.
+        val read = setOf("https://example.org/m1")
+        assertEquals(2, NewsStories.unread(stories, read).size)
+        val home = NewsStories.forHome(stories, read)
+        assertEquals(3, home.size)
+        assertTrue(home.last().items.any { it.link in read })
+        // Tutto letto: la card resta con le ultime.
+        val all = stories.flatMap { s -> s.items.map { it.link } }.toSet()
+        assertEquals(3, NewsStories.forHome(stories, all).size)
+        assertEquals("Tutte lette", NewsStories.unreadLine(0))
+    }
 }

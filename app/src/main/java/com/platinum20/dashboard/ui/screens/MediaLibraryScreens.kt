@@ -552,7 +552,7 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
                         click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) },
                     ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                 }
-                // "Nuova playlist" tolta da qui nella 1.560 (Antonio): si crea da "Aggiungi a una playlist".
+                // "Nuova playlist" tolta da qui nella 1.561 (Antonio): si crea da "Aggiungi a una playlist".
                 items(entries, key = { it.key }) { e ->
                     when (e) {
                         is PerTe.Mix -> MediaLine(

@@ -4,7 +4,7 @@ package com.platinum20.dashboard.media.spotify
  * Cosa fare quando Spotify rifiuta l'accesso (401 o "authentication_error" del riproduttore).
  * Quasi sempre è solo il token di un'ora scaduto, o letto senza rete al risveglio del telefono:
  * si rinnova e si riprova da soli, più volte e senza dire niente. "Ricollega" si chiede solo quando
- * Spotify ha davvero buttato il collegamento ([connected] falso). Dalla 1.560 (Antonio: "mi esce
+ * Spotify ha davvero buttato il collegamento ([connected] falso). Dalla 1.561 (Antonio: "mi esce
  * spesso") il secondo intoppo entro 10 minuti non mostra più "riprova tra poco": si riprova ancora
  * con calma, senza rete si aspetta che torni, e il messaggio esce solo se stai ascoltando e Spotify
  * rifiuta anche dopo tutti i tentativi.

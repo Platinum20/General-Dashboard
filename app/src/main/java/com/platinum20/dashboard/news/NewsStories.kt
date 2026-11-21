@@ -76,6 +76,27 @@ object NewsStories {
         return listOf(top) + (fresh - top)
     }
 
+    /**
+     * Le storie non lette per la card News in Home: nessun loro articolo aperto (o segnato come letto).
+     * Entrare nella scheda News non conta come lettura (Antonio, 2026-11-21): solo aprire la notizia.
+     */
+    fun unread(stories: List<NewsStory>, read: Set<String>): List<NewsStory> =
+        lead(stories.sortedByDescending { it.newest ?: Instant.EPOCH }.filter { s -> s.items.none { it.link in read } })
+
+    /** Le righe della card: prima le non lette, poi le ultime già lette a riempire, così la card non sparisce. */
+    fun forHome(stories: List<NewsStory>, read: Set<String>, n: Int = 3): List<NewsStory> {
+        val unread = unread(stories, read)
+        val rest = stories.sortedByDescending { it.newest ?: Instant.EPOCH } - unread.toSet()
+        return (unread + rest).take(n)
+    }
+
+    /** "5 da leggere" in cima alla card; "Tutte lette" quando hai aperto tutto. */
+    fun unreadLine(count: Int): String = when (count) {
+        0 -> "Tutte lette"
+        1 -> "1 da leggere"
+        else -> "$count da leggere"
+    }
+
     /** Le storie del widget e della notifica del mattino: le nuove, o se non ce ne sono le più riprese. */
     fun forWidget(feed: NewsFeed): List<NewsStory> =
         feed.fresh.ifEmpty { feed.all.sortedByDescending { it.sourceCount } }.take(3)

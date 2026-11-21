@@ -6,6 +6,10 @@
 - Senza rete aspetta che torni e poi riparte da sola
 - Il messaggio esce solo se stai ascoltando e Spotify rifiuta anche dopo tutti i tentativi
 - Nella pagina Musica non c'è più la riga "Nuova playlist": la crei da "Aggiungi a una playlist" tenendo premuto un brano
+**La card News resta sempre in Home e conta solo quello che apri**
+- Aprire la sezione News non segna più niente come letto: una notizia è letta solo quando la apri
+- La card in Home mostra in cima le notizie che non hai ancora aperto, con "N da leggere" sulla riga del titolo
+- Quando le hai aperte tutte la card non sparisce: mostra le ultime, un po' più chiare, e dice "Tutte lette"
 
 ## 1.559.0
 **Cerchi e pallini rotondi nelle note**
