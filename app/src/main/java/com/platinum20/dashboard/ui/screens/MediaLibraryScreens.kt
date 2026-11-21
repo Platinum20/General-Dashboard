@@ -582,112 +582,49 @@ private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode)
 /** In Scopri dei video uno ogni tanti è in grande (1.563), così la card non è un muro di righe. */
 private const val DISCOVER_BIG_EVERY = 6
 
-/** Quante righe mostra ogni card della pagina Musica prima di "Altri" (1.563). */
-private const val MUSIC_CARD_ROWS = 3
-
 /**
- * La fila Musica per intero, in verticale (1.492, Antonio: "cliccando sul titolo ... la versione completa che scorre
- * verticalmente"): le stesse voci nello stesso ordine, senza il limite della fila, tutte con la stessa riga `MediaLine`.
+ * La cronologia della musica (1.569, Antonio: "vorrei solo gli ascoltati di recente, cioè una cronologia
+ * semplicemente"): i brani ascoltati su Spotify, dal più recente, per giorno come la Cronologia dei video. Niente
+ * libreria, mix o playlist: quelli stanno nella fila Musica.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
-    val saved = rememberSavedMedia(video = false)
-    val (entries, podcasts) = rememberPerTe()
+fun MusicAllScreen(onBack: () -> Unit, @Suppress("UNUSED_PARAMETER") onOpenRoute: (String) -> Unit) {
     val context = LocalContext.current
     val played by SpotifyStore.played.collectAsState()
-    LaunchedEffect(Unit) { SpotifyStore.refreshListened() }
+    val listened by SpotifyStore.listened.collectAsState()
+    LaunchedEffect(Unit) { SpotifyStore.refreshListened(force = true) }
     val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    val openPodcast: (com.platinum20.dashboard.media.podcast.Podcast?) -> Unit = {
-        PodcastOpen.set(it)
-        onOpenRoute(com.platinum20.dashboard.Routes.PODCAST)
-    }
+    val playingKey = rememberPlayingKey()
+    val today = remember { java.time.LocalDate.now() }
+    val zone = remember { java.time.ZoneId.systemDefault() }
+    val state = Loadable(
+        data = if (played.isEmpty() && listened.data == null) null else played,
+        loading = listened.loading,
+        error = if (played.isEmpty()) listened.error else null,
+    )
     Scaffold(
         modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
-        topBar = { TopLevelBar(title = "Musica", subtitle = "Dall'ultima che hai ascoltato", scrollBehavior = bar, onBack = onBack) },
+        topBar = { TopLevelBar(title = "Cronologia", subtitle = "Ascoltati di recente", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            // Una card per tipo (1.563, Antonio strada A), dall'ultimo ascoltato come la fila; ognuna mostra le prime e
-            // "Altri" la apre tutta, come Popolari dell'artista.
-            var open by rememberSaveable { mutableStateOf(setOf<String>()) }
-            val playingKey = rememberPlayingKey()
-            fun <T> LazyListScope.typeCard(key: String, title: String, list: List<T>, itemKey: (T) -> Any, row: @Composable (T) -> Unit) {
-                if (list.isEmpty()) return
-                val isOpen = key in open
-                mediaGroup(
-                    key = key,
-                    title = title,
-                    items = if (isOpen) list else list.take(MUSIC_CARD_ROWS),
-                    itemKey = itemKey,
-                    trailing = {
-                        if (list.size > MUSIC_CARD_ROWS) MoreToggle(isOpen) { open = if (isOpen) open - key else open + key }
-                        else Text("${list.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { _, e -> row(e) }
-            }
-            val openItem: (PerTe) -> Unit = { e ->
-                when (e) {
-                    is PerTe.Mix -> onOpenRoute(com.platinum20.dashboard.Routes.mix(e.mix.id))
-                    is PerTe.Item -> onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.item))
-                    is PerTe.Artist -> onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.artist))
-                    is PerTe.Show -> openPodcast(e.podcast)
-                    is PerTe.Liked -> onOpenRoute(com.platinum20.dashboard.Routes.LIKED_TRACKS)
-                }
-            }
-            val savedLink: (PerTe) -> com.platinum20.dashboard.capture.SavedLink? = { e ->
-                when (e) {
-                    is PerTe.Mix -> com.platinum20.dashboard.capture.SavedLinks.mix(e.mix.id, e.mix.title, e.mix.subtitle, e.mix.image)
-                    is PerTe.Item -> com.platinum20.dashboard.capture.SavedLinks.spotify(e.item)
-                    is PerTe.Artist -> com.platinum20.dashboard.capture.SavedLinks.spotify(e.artist)
-                    else -> null
-                }
-            }
-            val perTeRow: @Composable (PerTe) -> Unit = { e ->
-                when (e) {
-                    is PerTe.Mix -> MediaRow(title = e.mix.title, line = e.mix.subtitle, image = e.mix.image, click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) })
-                    is PerTe.Item -> MediaRow(
-                        title = e.item.title, line = e.item.subtitle.substringBefore(" · "), image = e.item.image, mark = MediaMarks.of(e.item),
-                        click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) },
-                    )
-                    is PerTe.Artist -> MediaRow(title = e.artist.title, line = "Artista", image = e.artist.image, round = true, click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) })
-                    is PerTe.Show -> MediaRow(
-                        title = e.podcast.title, line = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" },
-                        image = e.podcast.artwork, mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { openItem(e) },
-                    )
-                    is PerTe.Liked -> MediaRow(title = "Brani che ti piacciono", line = "${e.count} brani", image = e.image, click = Modifier.clickable { openItem(e) })
-                }
-            }
-            FeedList(Loadable(data = Unit), empty = "", spacing = 0.dp, edge = 0.dp) {
-                // La libreria: quello che è tuo e non cambia (salvati, Mi piace, podcast, radio).
-                val library = buildList<Pair<String, @Composable () -> Unit>> {
-                    if (saved.isNotEmpty()) add("saved" to {
-                        MediaRow(title = "Salvati", line = "${saved.size} da ascoltare dopo", image = "", click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) })
-                    })
-                    entries.filterIsInstance<PerTe.Liked>().firstOrNull()?.let { liked -> add("liked" to { perTeRow(liked) }) }
-                    add("podcasts" to {
-                        MediaRow(
-                            title = "I tuoi podcast", line = if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno",
-                            image = podcasts.firstOrNull()?.artwork.orEmpty(), mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { openPodcast(null) },
-                        )
-                    })
-                    add("radio" to {
-                        MediaRow(
-                            title = "Radio", line = "Preferite e più ascoltate", image = "", mark = MediaMark(MediaType.RADIO),
-                            click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.RADIO) },
-                        )
-                    })
-                }
-                mediaGroup(key = "library", title = "La tua libreria", items = library, itemKey = { it.first }) { _, (_, row) -> row() }
-                typeCard("mixes", "Mix per te", entries.filterIsInstance<PerTe.Mix>(), { it.key }) { perTeRow(it) }
-                typeCard("lists", "Playlist e album", entries.filterIsInstance<PerTe.Item>(), { it.key }) { perTeRow(it) }
-                typeCard("artists", "Artisti", entries.filterIsInstance<PerTe.Artist>(), { it.key }) { perTeRow(it) }
-                typeCard("shows", "Podcast", entries.filterIsInstance<PerTe.Show>(), { it.key }) { perTeRow(it) }
-                // I brani ascoltati stanno qui, nella cronologia della musica, non nella fila (1.496, Antonio).
-                typeCard("played", "Ascoltati di recente", played, { (t, at) -> "p-" + t.uri + at.toEpochMilli() }) { (track, _) ->
-                    MediaRow(
-                        title = track.title, line = track.subtitle, image = track.image, now = track.uri == playingKey,
-                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(track) }) { playTracks(context, played.map { it.first }, track) },
-                    )
+            FeedList(state, empty = "Ancora niente ascoltato", spacing = 0.dp, edge = 0.dp) {
+                // La linea del tempo della Cronologia dei video: "Oggi ——— ●", poi i brani con l'ora.
+                HistoryDays.group(played, { it.second.toEpochMilli() }, zone, today).forEach { (day, list) ->
+                    item(key = "dh$day") { DayLineHeader(day, now = day == "Oggi") }
+                    list.forEach { (track, at) ->
+                        item(key = "p-" + track.uri + at.toEpochMilli()) {
+                            val time = at.atZone(zone).toLocalTime()
+                            MediaRow(
+                                title = track.title,
+                                line = listOf(track.subtitle, "%d:%02d".format(time.hour, time.minute)).filter { it.isNotBlank() }.joinToString(" · "),
+                                image = track.image, now = track.uri == playingKey,
+                                click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(track) }) {
+                                    playTracks(context, played.map { it.first }, track)
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
