@@ -97,6 +97,35 @@ object ShiftPay {
     }
 
     /**
+     * La forma del dettaglio busta paga senza i dati delle persone (2026-11-21): per ogni turno i numeri, le date e
+     * i sì/no, e delle liste solo quante sono e i nomi dei campi. Serve a capire dal file dei dati letti dove
+     * Creators Pro mette il venduto mentre il turno è in corso, senza salvare i nomi dei fan.
+     */
+    fun shape(body: String): String {
+        val list = runCatching { JSONObject(body).optJSONObject("data")?.optJSONArray("shifts") }.getOrNull() ?: return ""
+        val personal = Regex("(?i)name|fan|user|email|nick|avatar|photo|message")
+        return (0 until list.length()).mapNotNull { list.optJSONObject(it) }.joinToString("\n") { s ->
+            s.keys().asSequence().filterNot { personal.containsMatchIn(it) }.mapNotNull { k ->
+                when (val v = s.opt(k)) {
+                    is Number, is Boolean -> "$k=$v"
+                    is String -> if (v.length <= 40) "$k=$v" else null
+                    is org.json.JSONArray -> {
+                        val first = (0 until v.length()).firstNotNullOfOrNull { v.optJSONObject(it) }
+                        val fields = first?.keys()?.asSequence()?.toList()?.joinToString(",").orEmpty()
+                        // Per le liste di numeri (soglie, vendite) anche la somma dei campi numerici: niente nomi.
+                        val sums = first?.keys()?.asSequence()?.filter { f -> first.opt(f) is Number }?.map { f ->
+                            "$f:" + (0 until v.length()).sumOf { v.optJSONObject(it)?.optDouble(f)?.takeIf { d -> !d.isNaN() } ?: 0.0 }
+                        }?.joinToString(",").orEmpty()
+                        "$k[${v.length()}]{$fields}" + if (sums.isNotEmpty()) "($sums)" else ""
+                    }
+                    is JSONObject -> "$k{" + v.keys().asSequence().toList().joinToString(",") + "}"
+                    else -> null
+                }
+            }.joinToString(" ")
+        }
+    }
+
+    /**
      * La busta paga di un turno del calendario: stesso id, altrimenti l'inizio entro un'ora e mezza
      * (la timeline e la busta paga potrebbero chiamarlo in modo diverso).
      */

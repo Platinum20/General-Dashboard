@@ -5,6 +5,8 @@ import com.platinum20.dashboard.shifts.Shift
 import com.platinum20.dashboard.shifts.ShiftPay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -76,5 +78,17 @@ class ShiftPayTest {
         val months = ShiftPay.months(list, listUrl)!!
         assertEquals(months, ShiftPay.monthsFromJson(ShiftPay.monthsToJson(months)))
         assertEquals(pay, ShiftPay.mergeShifts(pay.take(1), pay))
+    }
+
+    @Test
+    fun laFormaDelDettaglioSenzaNomi() {
+        val body = """{"data":{"shifts":[{"id":"x1","isCurrent":true,"totalAttributed":0,"memberName":"Antonio Nesca",
+            "sales":[{"amount":40.5,"fanName":"Mario"},{"amount":56.5,"fanName":"Luigi"}]}]}}"""
+        val shape = ShiftPay.shape(body)
+        assertTrue(shape.contains("isCurrent=true"))
+        assertTrue(shape.contains("totalAttributed=0"))
+        assertTrue(shape.contains("sales[2]{amount,fanName}(amount:97.0)"))
+        assertFalse(shape.contains("Mario"))
+        assertFalse(shape.contains("Antonio"))
     }
 }

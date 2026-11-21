@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.566.0
+**Il venduto del turno dice sempre la stessa cosa**
+- La notifica e la pagina del turno mostrano gli stessi numeri: se Creators Pro segna $0, lo dicono tutte e due
+- Se i numeri non sono freschi, sotto c'è "letto alle 18:20", così sai che sono vecchi
+- Il file "Salva i dati letti dei turni" ora dice quando Canvas ha riletto Creators Pro e dove tiene il venduto del turno in corso (senza nomi dei fan), per capire perché non arriva
+
 ## 1.565.0
 **I soldi del turno mentre lavori**
 - Durante il turno Canvas rilegge Creators Pro ogni 15 minuti invece che una volta all'ora, così il venduto finora arriva prima
