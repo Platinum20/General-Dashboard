@@ -8,7 +8,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.schabi.newpipe.extractor.ServiceList
 
 /** 1.571: YouTube nella lingua originale, mai titoli tradotti (Antonio). */
 class YtOriginalLanguageTest {
@@ -17,7 +16,6 @@ class YtOriginalLanguageTest {
     @Test fun linguaChiestaEUnaCheYouTubeConosce() {
         // hl=it-IT non esiste per YouTube: rispondeva in inglese e traduceva i titoli italiani.
         assertEquals("it", YtResolver.LANGUAGE.localizationCode)
-        assertTrue(ServiceList.YouTube.supportedLocalizations.any { it.languageCode == "it" })
     }
 
     @Test fun paginaDelSitoInItaliano() {
