@@ -5,22 +5,22 @@ import com.platinum20.dashboard.ui.screens.MiniDock
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** Il video chiuso vola proprio sulla miniatura del mini player, in alto o in basso. */
+/** Il video chiuso vola proprio sul riquadro del mini player, nel suo angolo. */
 class MiniDockTest {
     private val frame = Rect(48f, 100f, 1032f, 2000f)
 
+    /** 1.546: il video riempie il riquadro 200 × 113, nell'angolo dove sta; in alto sotto il titolo. */
     @Test
-    fun thumbSitsInsideTheBarAtTheBottomOrTop() {
-        val bottom = MiniDock.thumb(frame, barHeight = 210f, atTop = false, density = 3f)
-        assertEquals(Rect(72f, 1814f, 324f, 1958f), bottom)
-        val top = MiniDock.thumb(frame, barHeight = 210f, atTop = true, density = 3f)
-        assertEquals(Rect(72f, 124f, 324f, 268f), top)
+    fun thumbIsTheWholeBoxInItsCorner() {
+        assertEquals(Rect(432f, 1661f, 1032f, 2000f), MiniDock.thumb(frame, atTop = false, atRight = true, density = 3f))
+        assertEquals(Rect(48f, 388f, 648f, 727f), MiniDock.thumb(frame, atTop = true, atRight = false, density = 3f))
     }
 
     @Test
-    fun unknownBarUsesAnEstimate() {
-        val thumb = MiniDock.thumb(frame, barHeight = 0f, atTop = false, density = 3f)
-        assertEquals(2000f - 210f + 24f, thumb.top, 0.01f)
+    fun shortScreenKeepsTheTopBoxInside() {
+        val short = Rect(0f, 0f, 1000f, 500f)
+        val top = MiniDock.thumb(short, atTop = true, atRight = true, density = 3f)
+        assertEquals(500f - 339f, top.top, 0.01f)
     }
 
     @Test
@@ -51,7 +51,7 @@ class MiniDockTest {
     /** Beta 1.271: in Aggiornamenti il mini player in basso copriva "Controlla e aggiorna". */
     @Test
     fun fixedBottomBarLeavesRoomForTheMiniPlayer() {
-        assertEquals(76f, MiniDock.bottomReserveDp(playing = true, atTop = false), 0f)
+        assertEquals(119f, MiniDock.bottomReserveDp(playing = true, atTop = false), 0f)
         assertEquals(0f, MiniDock.bottomReserveDp(playing = true, atTop = true), 0f)
         assertEquals(0f, MiniDock.bottomReserveDp(playing = false, atTop = false), 0f)
     }
@@ -59,7 +59,7 @@ class MiniDockTest {
     @Test
     fun editorLeavesRoomOnlyForABottomMiniPlayer() {
         assertEquals(76f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 210f, density = 3f), 0.01f)
-        assertEquals(76f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 0f, density = 3f), 0.01f)
+        assertEquals(119f, MiniDock.bottomRoom(playing = true, atTop = false, barHeight = 0f, density = 3f), 0.01f)
         assertEquals(0f, MiniDock.bottomRoom(playing = true, atTop = true, barHeight = 210f, density = 3f), 0.01f)
         assertEquals(0f, MiniDock.bottomRoom(playing = false, atTop = false, barHeight = 210f, density = 3f), 0.01f)
     }
