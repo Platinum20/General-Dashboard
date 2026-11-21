@@ -202,6 +202,26 @@ object YouTubeApi {
         return text("title") to text("description")
     }
 
+    /** I titoli originali (`snippet.title`, mai `localized`) di fino a 50 video in una chiamata: 1 unità di quota. */
+    suspend fun originalTitles(token: String, ids: List<String>): Map<String, String> {
+        if (ids.isEmpty()) return emptyMap()
+        val items = get(token, "videos", mapOf("part" to "snippet", "id" to ids.take(50).joinToString(","), "maxResults" to "50"))
+            .optJSONArray("items") ?: return emptyMap()
+        return (0 until items.length()).mapNotNull { i ->
+            val item = items.optJSONObject(i) ?: return@mapNotNull null
+            val title = item.optJSONObject("snippet")?.optString("title")?.trim().orEmpty()
+            item.optString("id").takeIf { it.isNotBlank() && title.isNotBlank() }?.let { it to title }
+        }.toMap()
+    }
+
+    /** Nome e descrizione del canale come li ha scritti l'autore (`snippet`, non le traduzioni). */
+    suspend fun originalChannel(token: String, id: String): Pair<String?, String?>? {
+        val item = get(token, "channels", mapOf("part" to "snippet", "id" to id)).optJSONArray("items")?.optJSONObject(0)
+        val snippet = item?.optJSONObject("snippet") ?: return null
+        val text = { key: String -> snippet.optString(key).trim().takeIf { it.isNotBlank() } }
+        return text("title") to text("description")
+    }
+
     /**
      * Il titolo originale senza account: l'oEmbed pubblico, chiesto senza lingua, non passa per la
      * traduzione automatica dei titoli di YouTube.

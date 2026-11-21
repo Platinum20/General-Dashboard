@@ -110,8 +110,15 @@ object YouTubeWeb {
     suspend fun search(context: Context, query: String): List<YtVideo> =
         page(context, "/results?search_query=" + URLEncoder.encode(query, "UTF-8"), requireLogin = false).videos
 
+    /**
+     * Ogni pagina si apre con hl=it: senza, YouTube usa la lingua del telefono o dell'account e con l'inglese
+     * traduce da solo i titoli italiani (Antonio, 1.571). Con l'italiano i video italiani restano come sono.
+     */
+    internal fun inItalian(url: String): String =
+        if (Regex("""[?&]hl=""").containsMatchIn(url)) url else url + (if ('?' in url) "&" else "?") + "hl=it&gl=IT"
+
     private suspend fun page(context: Context, path: String, requireLogin: Boolean): Page = lock.withLock {
-        val raw = withTimeoutOrNull(30_000) { withContext(Dispatchers.Main) { load(context.applicationContext, SITE + path) } }
+        val raw = withTimeoutOrNull(30_000) { withContext(Dispatchers.Main) { load(context.applicationContext, inItalian(SITE + path)) } }
             ?: throw IOException("YouTube non risponde, riprova")
         val page = withContext(Dispatchers.Default) { parse(raw) }
         if (requireLogin && !page.loggedIn) throw NotLoggedIn()
@@ -232,7 +239,7 @@ object YouTubeWeb {
 
     /** Apre la pagina del tuo account e la chiude alla fine di [block]; errore se non hai fatto l'accesso. */
     suspend fun <T> withAccount(context: Context, block: suspend (AccountPage) -> T): T = lock.withLock {
-        val webView = withTimeoutOrNull(40_000) { withContext(Dispatchers.Main) { open(context.applicationContext, "$SITE/feed/playlists") } }
+        val webView = withTimeoutOrNull(40_000) { withContext(Dispatchers.Main) { open(context.applicationContext, inItalian("$SITE/feed/playlists")) } }
             ?: throw IOException("YouTube non risponde, riprova")
         try {
             val page = AccountPage(webView)

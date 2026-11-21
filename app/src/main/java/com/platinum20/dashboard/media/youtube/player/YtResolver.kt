@@ -177,11 +177,17 @@ object YtResolver {
     private const val MAX_HEIGHT = 1080
     @Volatile private var ready = false
 
+    /**
+     * Lingua chiesta a YouTube: "it" e basta. Con Localization("it", "IT") NewPipe mandava hl=it-IT, che YouTube
+     * non conosce: rispondeva in inglese e traduceva da solo titoli e testi italiani (canali compresi, 1.571).
+     */
+    internal val LANGUAGE = Localization("it")
+
     private fun init() {
         if (ready) return
         synchronized(this) {
             if (!ready) {
-                NewPipe.init(NewPipeDownloader(), Localization("it", "IT"), ContentCountry("IT"))
+                NewPipe.init(NewPipeDownloader(), LANGUAGE, ContentCountry("IT"))
                 ready = true
             }
         }
