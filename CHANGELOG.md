@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.549.0
+**Media salvati: copertine, Appunti e download**
+- Lo zaino del treno non c'è più: niente si scarica più da solo prima dei viaggi
+- Quando salvi un video di YouTube o un episodio di podcast, si scarica sul telefono; con "Scarica solo col Wi-Fi" acceso aspetta il Wi-Fi. Togliendolo dai salvati il file si cancella
+- I brani di Spotify restano in streaming: sono protetti e non si possono scaricare fuori dall'app Spotify
+- In Media ogni cosa salvata ha la sua tessera con la copertina vera, in testa alla fila Musica o Video
+- Video, brani e podcast salvati compaiono anche nella card Appunti della Home
+- Impostazioni › Media: "Scarica i salvati" dice quanti sono pronti senza rete e quanto pesano
+
 ## 1.548.0
 **Notifica del treno più essenziale**
 - Il ritardo torna nella prima riga, accanto a "parte tra" o "arriva tra": "+12 min · parte tra 33 min", senza l'ora dell'ultima lettura, anche nella notifica ridotta

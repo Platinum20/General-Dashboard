@@ -425,6 +425,45 @@ internal fun SavedTile(height: androidx.compose.ui.unit.Dp, saved: List<com.plat
     }
 }
 
+/** Quanti salvati si vedono uno per uno in testa alla fila; oltre, la tessera "Salvati · N" apre l'elenco. */
+internal const val SAVED_IN_ROW = 6
+
+/** I salvati da mostrare uno per uno in testa alla fila, e se serve ancora la tessera dell'elenco intero. */
+internal fun savedRow(saved: List<com.platinum20.dashboard.capture.SavedLinks.Later>): Pair<List<com.platinum20.dashboard.capture.SavedLinks.Later>, Boolean> =
+    saved.take(SAVED_IN_ROW) to (saved.size > SAVED_IN_ROW)
+
+/**
+ * Un media salvato, con la sua copertina vera (2026-11-21, Antonio: prima stavano tutti dentro un'unica tessera
+ * "Salvati"). In alto a sinistra il segnalibro; un tocco lo apre fermo, tenendo premuto le sue azioni.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+internal fun SavedItemTile(height: androidx.compose.ui.unit.Dp, later: com.platinum20.dashboard.capture.SavedLinks.Later, wide: Boolean) {
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    val route: (String) -> Unit = { inApp?.openRoute?.invoke(it) }
+    val item = later.item
+    MediaTile(
+        height, wide = wide, image = item.coverImage(), title = item.title, author = LaterText.subtitle(item), date = null,
+        mark = MediaMarks.of(item.kind, item.durationMs), round = item.kind == ResumeKind.RADIO,
+        click = Modifier.combinedClickable(
+            onClick = { com.platinum20.dashboard.capture.SavedLinks.open(context, SavedLink.Media(item), route) },
+            onLongClick = { savedMediaActions(context, later, route) },
+        ),
+    ) {
+        Box(
+            Modifier.align(Alignment.TopEnd).padding(6.dp).size(22.dp)
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.66f), androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = "Salvato",
+                tint = androidx.compose.ui.graphics.Color.White, modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+}
+
 /** Le copertine utili per la tessera Salvati: senza vuote e senza doppioni, nell'ordine dei salvati. */
 internal fun savedArt(images: List<String>): List<String> = images.filter { it.isNotBlank() }.distinct()
 

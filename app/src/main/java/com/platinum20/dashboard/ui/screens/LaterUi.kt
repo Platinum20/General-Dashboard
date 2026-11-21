@@ -62,8 +62,8 @@ import com.platinum20.dashboard.notes.NotesStore
 /**
  * Le cose senza scadenza (Antonio, 2026-11-12; 1.532 divise in "Da fare" e "Appunti", i pacchi senza data in OGGI) stanno
  * nelle card della Home (1.490: prima erano in fondo al Calendario e sembravano un pezzo staccato), non nei giorni.
- * Quello salvato per dopo sta nella sua sezione: video, brani, radio e podcast in Media, articoli in News ("Salvati"). Le cose salvate restano note: la sincronia con "Guarda più tardi" di YouTube e lo
- * Zaino del treno le leggono da lì.
+ * Quello salvato per dopo sta nella sua sezione: video, brani, radio e podcast in Media (e da 2026-11-21 anche in Appunti),
+ * articoli in News ("Salvati"). Le cose salvate restano note: la sincronia con "Guarda più tardi" e i download le leggono da lì.
  */
 internal object LaterText {
     /** La riga sotto il titolo: chi lo pubblica, altrimenti che cos'è. */
@@ -110,6 +110,7 @@ internal fun LaterCard(
     val count = items.size + habits.count { !it.isDone(today) }
     val haptic = rememberHaptic()
     val rowActions = rememberRowActions()
+    val (savedOpen, savedLong) = rememberSavedTaps()
     // Toccando la card, fuori dalle righe, si apre la sua pagina intera: attive e vecchie insieme (1.539).
     CanvasCard(Modifier.fillMaxWidth().captureTarget(kind.mode), onClick = onOpen) {
         CardTitle(kind.title, opens = true, trailing = {
@@ -131,14 +132,14 @@ internal fun LaterCard(
             items.forEach { item ->
                 val onClick = {
                     haptic(Haptic.TICK)
-                    item.row?.let(open)
+                    item.saved?.let(savedOpen) ?: item.row?.let(open)
                     Unit
                 }
                 LooseRow(
                     item,
                     onClick = onClick,
                     // Tenendo premuto: il fumetto con le sue azioni, come nel Calendario (Antonio, 2026-11-12).
-                    onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
+                    onLongClick = { item.saved?.let { haptic(Haptic.LONG_PRESS); savedLong(it) } ?: item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } ?: onClick() },
                     onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
                 )
             }
@@ -286,8 +287,23 @@ internal val HabitFlameIcon: androidx.compose.ui.graphics.vector.ImageVector by 
     }.build()
 }
 
+/** Tocco e pressione lunga di un media salvato in Appunti: si apre fermo come in Media, e ha le stesse azioni. */
+@Composable
+private fun rememberSavedTaps(): Pair<(SavedLinks.Later) -> Unit, (SavedLinks.Later) -> Unit> {
+    val context = LocalContext.current
+    val inApp = LocalInAppNav.current
+    val route: (String) -> Unit = { inApp?.openRoute?.invoke(it) }
+    return remember(context, inApp) {
+        Pair(
+            { l: SavedLinks.Later -> SavedLinks.open(context, com.platinum20.dashboard.capture.SavedLink.Media(l.item), route) },
+            { l: SavedLinks.Later -> savedMediaActions(context, l, route) },
+        )
+    }
+}
+
 private fun looseIcon(item: LooseItem) = when (item.kind) {
     LooseKind.PARCEL -> Icons.Outlined.Inventory2
+    LooseKind.SAVED -> Icons.Rounded.PlayArrow
     else -> Icons.AutoMirrored.Outlined.StickyNote2
 }
 
@@ -316,6 +332,7 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
     val open = rememberDueOpen()
     val openItem = rememberOpenItem()
     val rowActions = rememberRowActions()
+    val (savedOpen, savedLong) = rememberSavedTaps()
     val haptic = rememberHaptic()
     // Si apre sulla linea ADESSO: sopra c'è il passato, come nel Calendario.
     val marker = groups.sumOf { it.items.size + 1 }
@@ -360,8 +377,8 @@ fun LaterArchiveScreen(kind: LooseCardKind = LooseCardKind.TODO, onBack: () -> U
                 item(key = item.key) {
                     LooseRow(
                         item,
-                        onClick = { haptic(Haptic.TICK); item.row?.let(open) },
-                        onLongClick = { item.row?.let { haptic(Haptic.LONG_PRESS); rowActions(it) } },
+                        onClick = { haptic(Haptic.TICK); item.saved?.let(savedOpen) ?: item.row?.let(open) },
+                        onLongClick = { haptic(Haptic.LONG_PRESS); item.saved?.let(savedLong) ?: item.row?.let(rowActions) },
                         onTick = item.row?.task?.let { task -> { haptic(Haptic.TICK); NotesStore.toggleTask(task.id) } },
                     )
                 }

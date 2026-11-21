@@ -397,9 +397,9 @@ object CanvasPlayer {
                     ResumeKind.PODCAST -> {
                         PodcastStore.init(context)
                         val from = startMs ?: PodcastStore.resumeMs(item.key, item.durationMs)
-                        // Nello zaino del treno: dal file, senza rete.
-                        com.platinum20.dashboard.trips.TrainPackStore.init(context)
-                        val source = com.platinum20.dashboard.trips.TrainPackStore.localPodcast(item.key)?.toString() ?: item.link
+                        // Salvato e già scaricato: dal file, senza rete.
+                        SavedDownloads.init(context)
+                        val source = SavedDownloads.localPodcast(item.key)?.toString() ?: item.link
                         set(p, source, MediaMetadata.Builder().setTitle(item.title).setArtist(item.subtitle).artwork(item.image), from, autoplay)
                     }
                     ResumeKind.VIDEO -> set(p, item.key, MediaMetadata.Builder().setTitle(item.title).artwork(item.image), startMs ?: 0, autoplay)

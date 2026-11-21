@@ -7,7 +7,6 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Unarchive
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Luggage
 import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalShipping
@@ -75,12 +74,11 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
         },
     )
     /**
-     * Le stesse azioni della scheda dell'evento (Biglietto, zaino, Condividi, Modifica, Elimina), senza entrarci.
+     * Le stesse azioni della scheda dell'evento (Biglietto, Condividi, Modifica, Elimina), senza entrarci.
      * Se il calendario non si può scrivere (o manca il permesso) Modifica ed Elimina aprono la scheda, che lo chiede.
      */
     fun eventActions(e: CalendarEvent): List<BubbleAction> {
         val tickets = if (e.eventId > 0) com.platinum20.dashboard.tickets.TicketQrStore.cached(context, e.eventId) else emptyList()
-        val pack = com.platinum20.dashboard.trips.TrainPackStore.files.value.filter { it.eventId == e.eventId }
         fun withWritable(action: () -> Unit) {
             scope.launch {
                 val detail = CalendarRepository.event(context, e.eventId)
@@ -93,12 +91,6 @@ internal fun rememberRowActions(onOpenEvent: ((CalendarEvent) -> Unit)? = null):
                 BubbleAction(Icons.Outlined.QrCode2, "Biglietto") {
                     runCatching { context.startActivity(com.platinum20.dashboard.tickets.TicketActivity.intent(context, e.eventId)) }
                 }
-            },
-            pack.takeIf { it.isNotEmpty() }?.let { files ->
-                BubbleAction(
-                    Icons.Outlined.Luggage, "Ascolta lo zaino",
-                    detail = com.platinum20.dashboard.trips.TrainPack.readyLine(files.sumOf { it.sec }).orEmpty(),
-                ) { com.platinum20.dashboard.media.CanvasPlayer.playList(context, files.map { it.item }) }
             },
             BubbleAction(Icons.Outlined.Share, "Condividi") { share(eventShareText(e)) },
             // I turni e le cose finte del calendario (id negativi) non si cambiano da qui.

@@ -84,6 +84,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Umbrella
 import androidx.compose.material.icons.outlined.Train
+import androidx.compose.material.icons.outlined.DownloadForOffline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -396,7 +397,7 @@ fun SettingsPageScreen(
                             RowDivider()
                             AutoplaySetting()
                             RowDivider()
-                            TrainPackSetting()
+                            SavedDownloadSetting()
                         }
                     }
                     item {
@@ -1235,16 +1236,22 @@ private fun voiceLine(voice: ReadingVoice, state: VoiceStatus): String = when (s
     VoiceStatus.Ready -> "${voice.description} · tocca per sentirla"
 }
 
-/** Download pesanti solo col Wi-Fi: vale per le voci e per gli aggiornamenti dell'app. */
+/** Download pesanti solo col Wi-Fi: voci, aggiornamenti dell'app e media salvati. */
 @Composable
 private fun WifiOnlySetting() {
     val enabled by AppSettings.wifiOnlyDownloads.collectAsState()
-    val toggle = { AppSettings.setWifiOnlyDownloads(!enabled) }
+    val context = LocalContext.current
+    val toggle = {
+        AppSettings.setWifiOnlyDownloads(!enabled)
+        // I download dei salvati prendono subito la rete giusta.
+        com.platinum20.dashboard.work.SavedDownloadWorker.schedule(context)
+        com.platinum20.dashboard.work.SavedDownloadWorker.now(context)
+    }
     SettingsItem(
         icon = Icons.Outlined.Wifi,
         accent = TileAccent.BLUE,
         title = "Scarica solo col Wi-Fi",
-        subtitle = if (enabled) "Voci e aggiornamenti aspettano il Wi-Fi" else "Voci e aggiornamenti scaricano con qualunque rete",
+        subtitle = if (enabled) "Voci, aggiornamenti e salvati aspettano il Wi-Fi" else "Voci, aggiornamenti e salvati con qualunque rete",
         onClick = toggle,
         trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { toggle() }) },
     )
@@ -1286,25 +1293,34 @@ private fun RainAlertSetting() {
     )
 }
 
-/** Lo zaino del treno: prima del viaggio, solo col Wi-Fi, podcast e video pronti senza rete. */
+/**
+ * I media salvati sul telefono (2026-11-21, Antonio: al posto dello zaino del treno): video di YouTube ed episodi si
+ * scaricano quando li salvi, col Wi-Fi se "Scarica solo col Wi-Fi" è acceso. I brani di Spotify no: sono protetti.
+ */
 @Composable
-private fun TrainPackSetting() {
-    val enabled by AppSettings.trainPack.collectAsState()
-    val files by com.platinum20.dashboard.trips.TrainPackStore.files.collectAsState()
+private fun SavedDownloadSetting() {
+    val enabled by AppSettings.downloadSaved.collectAsState()
+    val wifiOnly by AppSettings.wifiOnlyDownloads.collectAsState()
+    val files by com.platinum20.dashboard.media.SavedDownloads.files.collectAsState()
     val context = LocalContext.current
-    remember { com.platinum20.dashboard.trips.TrainPackStore.init(context) }
-    val ready = files.sumOf { it.sec }
+    remember { com.platinum20.dashboard.media.SavedDownloads.init(context) }
+    val ready = remember(files) { com.platinum20.dashboard.media.SavedDownloadPlan.readyLine(files.size, com.platinum20.dashboard.media.SavedDownloads.bytes()) }
+    fun set(on: Boolean) {
+        AppSettings.setDownloadSaved(on)
+        com.platinum20.dashboard.work.SavedDownloadWorker.now(context)
+    }
     SettingsItem(
-        icon = Icons.Outlined.Train,
+        icon = Icons.Outlined.DownloadForOffline,
         accent = TileAccent.BLUE,
-        title = "Zaino del treno",
+        title = "Scarica i salvati",
         subtitle = when {
-            !enabled -> "Prima del viaggio, col Wi-Fi, podcast e video per il treno"
-            ready > 0 -> com.platinum20.dashboard.trips.TrainPack.readyLine(ready)!!
-            else -> "Si prepara col Wi-Fi il giorno prima di un treno"
+            !enabled -> "Video e podcast salvati solo in streaming"
+            ready != null -> ready
+            wifiOnly -> "Video e podcast salvati, appena c'è il Wi-Fi"
+            else -> "Video e podcast salvati, appena li salvi"
         },
-        onClick = { AppSettings.setTrainPack(!enabled) },
-        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { AppSettings.setTrainPack(it) }) },
+        onClick = { set(!enabled) },
+        trailing = { Switch(checked = enabled, onCheckedChange = hapticToggle { set(it) }) },
     )
 }
 
