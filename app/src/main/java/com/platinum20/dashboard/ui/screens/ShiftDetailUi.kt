@@ -55,7 +55,14 @@ internal fun ShiftPayCards(shift: Shift) {
     val months by ShiftStore.payMonths.collectAsStateWithLifecycle()
     val earning = ShiftPay.of(shift, pay)?.takeIf(ShiftPay::worked)
     val month = ShiftPay.monthOf(shift.start, months)
+    val readAt by ShiftStore.readAt.collectAsStateWithLifecycle()
     earning?.let { ShiftEarningCard(it) }
+    // Turno iniziato ma Creators Pro non ha ancora i numeri: lo diciamo, con l'ora dell'ultima lettura (2026-11-21).
+    if (earning == null && shift.start <= System.currentTimeMillis()) {
+        CanvasCard(Modifier.fillMaxWidth()) {
+            PayLine("Venduto", com.platinum20.dashboard.trips.ShiftLive.missing(readAt).removePrefix("Venduto: ").replaceFirstChar { it.uppercase() })
+        }
+    }
     month?.let { ShiftMonthCard(it) }
 }
 

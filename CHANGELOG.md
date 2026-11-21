@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.565.0
+**I soldi del turno mentre lavori**
+- Durante il turno Canvas rilegge Creators Pro ogni 15 minuti invece che una volta all'ora, così il venduto finora arriva prima
+- Finché Creators Pro non ha ancora i numeri, la notifica e la pagina del turno lo dicono: "non ancora segnato · letto alle 18:05"
+- Se il turno è appena iniziato e il venduto è a zero, lo vedi comunque
+
 ## 1.564.0
 **Spotify e YouTube con lo stesso aspetto del resto dell'app**
 - Album, playlist, artista, mix e "Musica" sono fatti di card come la Home: in cima una card con la copertina piccola, Riproduci · Casuale · Altro, poi le card con il titolo in maiuscolo

@@ -20,6 +20,8 @@ enum class ShiftPhase { SOON, WORKING, DONE }
 object ShiftLive {
     /** Il tempo di prepararsi e uscire. */
     const val LEAD_MS = 45 * 60_000L
+    /** Mentre lavori i numeri si rileggono più spesso della lettura oraria: il venduto cresce turno per turno. */
+    const val READ_EVERY_MS = 15 * 60_000L
     /** Quanto il riepilogo può ancora aggiornarsi col guadagno che Creators Pro segna dopo la fine. */
     const val DONE_MS = 12 * 60 * 60_000L
 
@@ -47,8 +49,9 @@ object ShiftLive {
     }
 
     /**
-     * La notifica adesso, o null se non è il momento. [earning] = la busta paga del turno, solo se ha già numeri
-     * ([ShiftPay.worked]); [month] = il mese, per il riepilogo.
+     * La notifica adesso, o null se non è il momento. [earning] = la busta paga del turno (mentre lavori anche a
+     * zero); [month] = il mese, per il riepilogo; [readAt] = l'ultima lettura di Creators Pro, detta quando i numeri
+     * mancano ancora (lo stato dice la verità, 2026-11-21: Antonio non vedeva i soldi e non sapeva perché).
      */
     fun card(
         event: CalendarEvent,
@@ -56,18 +59,20 @@ object ShiftLive {
         earning: ShiftEarning?,
         month: PayMonth?,
         zone: ZoneId = ZoneId.systemDefault(),
+        readAt: Long = 0L,
     ): LiveCard? {
         val phase = phase(event, now) ?: return null
         val start = at(event.begin, zone)
         val end = at(event.end, zone)
         val company = event.mates.takeIf { it.isNotEmpty() }?.let { ShiftParse.company(it.map(ShiftParse::firstName)) }
         val span = listOfNotNull("$start → $end", company?.replaceFirstChar { it.lowercase() }).joinToString(" · ")
-        val money = earning?.takeIf(ShiftPay::worked)
+        val money = earning?.takeIf { ShiftPay.worked(it) || phase == ShiftPhase.WORKING }
         // Mentre lavori il guadagno è sempre "finora"; a turno finito lo resta solo finché Creators Pro non chiude il conto.
         val earned = money?.let { ShiftPay.money(it.earned) + if (phase == ShiftPhase.WORKING || it.current) " finora" else "" }
         val sold = money?.let { "Venduto ${ShiftPay.money(it.sold)} · ${ShiftPay.percent(it.percent)} → $earned" }
         val lines = buildList {
             if (phase != ShiftPhase.SOON && sold != null) add(sold)
+            if (phase != ShiftPhase.SOON && sold == null) add(missing(readAt, zone))
             if (phase == ShiftPhase.DONE && month != null) add("${ShiftPay.monthName(month, zone)}: ${ShiftPay.money(month.total)} in ${if (month.shifts == 1) "1 turno" else "${month.shifts} turni"}")
         }
         val text = when {
@@ -77,6 +82,7 @@ object ShiftLive {
         }
         val marks = buildList {
             if (earned != null && lines.isNotEmpty() && phase != ShiftPhase.SOON) add(LiveMark(0, earned, MarkKind.NOW))
+            if (sold == null && lines.isNotEmpty()) add(LiveMark(0, lines[0], MarkKind.SOFT))
             if (lines.size > 1) add(LiveMark(1, lines[1], MarkKind.SOFT))
         }
         return LiveCard(
@@ -99,6 +105,10 @@ object ShiftLive {
             done = phase == ShiftPhase.DONE,
         )
     }
+
+    /** "Venduto: non ancora segnato · letto alle 18:05": Creators Pro non ha ancora i numeri di questo turno. */
+    fun missing(readAt: Long, zone: ZoneId = ZoneId.systemDefault()): String =
+        "Venduto: non ancora segnato" + if (readAt > 0) " · letto alle ${at(readAt, zone)}" else ""
 
     private fun at(ms: Long, zone: ZoneId) = Instant.ofEpochMilli(ms).atZone(zone).format(hour)
 }
