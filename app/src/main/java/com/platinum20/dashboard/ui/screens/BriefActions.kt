@@ -159,11 +159,12 @@ internal fun habitActions(h: Habit, today: java.time.LocalDate, open: (Habit) ->
 }
 
 /**
- * Le abitudini in cima a "Da fare" (1.535, Antonio 2026-11-20): la serie a destra, "🔥 5" (giorni di fila, settimane
- * per quelle "N volte a settimana"); niente se la serie è a zero.
+ * Le abitudini in cima a "Da fare" (1.535, Antonio 2026-11-20): la serie a destra, fiamma disegnata + "5" (giorni di
+ * fila, settimane per quelle "N volte a settimana"); null se la serie è a zero. Dal 1.545 niente emoji: la fiamma è
+ * [HabitFlameIcon], disegnata nello stile delle icone Canvas (Antonio).
  */
-internal fun habitFlame(h: Habit, today: java.time.LocalDate): String? =
-    (if (h.weekly) h.weekStreak(today) else h.streak(today)).takeIf { it > 0 }?.let { "🔥 $it" }
+internal fun habitFlame(h: Habit, today: java.time.LocalDate): Int? =
+    (if (h.weekly) h.weekStreak(today) else h.streak(today)).takeIf { it > 0 }
 
 /**
  * La riga sotto il nome in "Da fare": fatta = spenta fino a domani; dalle 17 "Manca oggi" (arancione, come in Adesso);

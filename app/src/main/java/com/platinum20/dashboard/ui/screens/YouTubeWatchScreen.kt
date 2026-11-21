@@ -219,7 +219,7 @@ fun YouTubeWatchScreen(
     fun videoNow(start: androidx.compose.ui.geometry.Rect): androidx.compose.ui.geometry.Rect {
         // Il mini player non ancora misurato: si punta comunque in basso a sinistra.
         val target = MiniDock.target(density)
-            ?: MiniDock.thumb(androidx.compose.ui.geometry.Rect(0f, 0f, start.right, screenHeight.toFloat()), 0f, false, density)
+            ?: MiniDock.thumb(androidx.compose.ui.geometry.Rect(0f, 0f, start.right, screenHeight.toFloat()), false, true, density)
         return flyFrom?.let { MiniDock.fly(it, target, dock.value) }
             ?: MiniDock.dragged(start, target, dismiss.value, screenHeight.toFloat())
     }

@@ -1,12 +1,25 @@
 # Changelog
 
-## 1.545.0
-**Notifica del treno ripulita**
-- L'intestazione non si taglia più: solo ritardo e minuti ("+12 min · arriva tra 44 min"); "letto 35 min fa" ha una riga sua, grigia
+## 1.547.0
+**Notifica del treno compatta**
+- Sotto "Treno per …" la prossima fermata, poi una riga sola con binario, treno, carrozza e posto: "Bin. 14 · FR 9541 · carr. 8 · posto 11D"
+- Il ritardo è l'ultima riga, sotto gli orari: "+12 min · letto 3 min fa" (arancio solo il ritardo); in orario dice "In orario"
+- L'intestazione dice solo "parte tra" o "arriva tra" e non si taglia più
 - La stazione d'arrivo sta prima dell'orario ("Bologna 0:08 0:20"): gli orari sono ai due bordi, sotto i pallini
-- Prima di partire "Parte dal binario 14", a bordo "Prossima: …": la stessa riga nello stesso posto
-- Treno, carrozza e posto nella seconda riga, sotto "Treno per …" e prima della linea, in grigio; testi un po' più piccoli come nel disegno
+- Nell'evento del treno il binario sta a sinistra del treno: "Binario 14 · Frecciarossa 9541 · Carrozza 8 · Posto 11D"
 - La prova della notifica dice "Prova" nel titolo
+
+## 1.546.0
+**Mini player a riquadro: video grande il doppio, uguale per YouTube e Spotify**
+- Il mini player è un riquadro con dentro il video (circa il doppio di prima) o la copertina, e i tasti indietro, pausa e avanti sempre nello stesso punto
+- Col video i tasti compaiono quando tocchi e spariscono dopo 3 secondi (restano se è in pausa); con Spotify, radio e podcast c'è la copertina su sé stessa sfocata, col titolo e i tasti sempre in vista
+- Si aggancia ai quattro angoli: in basso a destra o a sinistra sopra la barra, in alto sotto il titolo della pagina
+- Lanciato verso il bordo diventa una linguetta alta quanto lui; tirala verso il centro (senti una piccola vibrazione) o toccala per farlo uscire. Giù sulla X rossa si chiude, come prima
+
+## 1.545.0
+**Card Calendario più ariosa, fiamma delle abitudini disegnata**
+- Nella card Calendario della Home c'è il triplo dello spazio vuoto sotto la linea del tempo; la linea resta com'era
+- La serie delle abitudini in Da fare ha una fiamma disegnata nello stile di Canvas al posto dell'emoji 🔥
 
 ## 1.544.0
 **Spotify non chiede più di ricollegarsi senza motivo**

@@ -50,7 +50,7 @@ class HabitsBubbleTest {
     @Test
     fun serieAccantoInDaFare() {
         val h = Habit(4, "Leggere", done = setOf(today, today.minusDays(1), today.minusDays(2)))
-        assertEquals("🔥 3", habitFlame(h, today))
+        assertEquals(3, habitFlame(h, today))
         assertNull(habitFlame(Habit(5, "Correre"), today))
     }
 
