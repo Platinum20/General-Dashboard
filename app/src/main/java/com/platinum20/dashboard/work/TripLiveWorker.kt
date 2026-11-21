@@ -109,22 +109,8 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val id = notificationId(event.eventId)
             val accent = if (card.late) LATE_COLOR else CANVAS_BLUE
             val text = marked(card.text, LiveCard.TEXT, card)
-            val showStops = card.stops.isNotEmpty() &&
-                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
-            // Aperta: in fondo la riga del ritardo o, col tasto "Fermate", l'elenco delle fermate.
-            val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
-                // In ritardo come partenza e arrivo: l'orario del biglietto barrato, quello vero in arancio.
-                val planned = stop.planned?.let { "$it " }.orEmpty()
-                val line = "$planned${stop.time}  ${stop.name}"
-                android.text.SpannableString(line).apply {
-                    val span = android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    if (planned.isNotEmpty()) {
-                        setSpan(android.text.style.StrikethroughSpan(), 0, planned.length - 1, span)
-                        if (!stop.passed) setSpan(android.text.style.ForegroundColorSpan(LATE_TEXT), planned.length, planned.length + stop.time.length, span)
-                    }
-                    if (stop.passed) setSpan(android.text.style.ForegroundColorSpan(PASSED_TEXT), 0, line.length, span)
-                }
-            } else card.lines.mapIndexed { i, line -> marked(line, i, card) }
+            // Niente elenco delle fermate né tasto "Fermate" (Antonio, 2026-11-21): la notifica dice solo l'essenziale.
+            val body: List<CharSequence> = card.lines.mapIndexed { i, line -> marked(line, i, card) }
             // Disegnata da noi, come la proposta A (Antonio, 2026-11-20): la ProgressStyle di One UI non sa fare pallini
             // tondi, orari sotto la linea, barrato né più di due righe. Il sistema tiene icona, nome e "arriva tra".
             val small = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_small).apply {
@@ -171,11 +157,6 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 if (TicketQrStore.cached(context, event.eventId).isNotEmpty()) {
                     builder.addAction(0, "Biglietto", TicketActivity.pending(context, event.eventId))
                 }
-            }
-            if (card.stops.isNotEmpty()) {
-                val toggle = Intent(context, TripStopsReceiver::class.java).putExtra(TripStopsReceiver.EXTRA_EVENT, event.eventId)
-                builder.addAction(0, if (showStops) "Nascondi fermate" else "Fermate",
-                    PendingIntent.getBroadcast(context, id, toggle, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             }
             NotificationManagerCompat.from(context).notify(id, builder.build())
         }

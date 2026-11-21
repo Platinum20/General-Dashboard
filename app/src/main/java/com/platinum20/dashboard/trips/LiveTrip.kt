@@ -160,19 +160,14 @@ object LiveTrip {
         val leave = event.begin + delay
         val end = event.end + delay
         val marks = mutableListOf<LiveMark>()
-        // Una lettura vecchia resta valida (gli orari restano spostati) ma dice quanto è vecchia (regola 4).
+        // Una lettura vecchia resta valida (gli orari restano spostati); "in orario" solo se fresca.
         val old = status != null && !TrainLive.isFresh(status, now)
-        // Proposta A del riordino (Antonio, 2026-11-20): il ritardo sta nell'intestazione, accanto a "arriva tra",
-        // così si vede anche a notifica chiusa; l'ora della lettura solo se è vecchia ("letto 35 min fa").
         val plus = if (late) "+${TrainLive.shiftMinutes(status)} min" else null
-        val ago = status?.takeIf { old }?.let { "letto ${TrainLive.ago(now - it.readAt)}" }
-        // Versione compatta 1 (Antonio, 2026-11-21): l'intestazione dice solo "parte tra / arriva tra" (prima si
-        // tagliava), il ritardo è l'ultima riga: "+12 min · letto 3 min fa", arancio solo "+12 min".
-        fun head(rest: String): String = rest
-        val liveLine = when {
-            status == null && checked -> "Ritardo non disponibile"
-            status == null -> null
-            else -> listOfNotNull(plus ?: "In orario", ago).joinToString(" · ")
+        // Antonio, 2026-11-21 (provata sul telefono): il ritardo torna nella prima riga accanto a "parte tra",
+        // senza l'ora della lettura; nessuna riga in fondo.
+        fun head(rest: String): String {
+            if (plus != null) marks += LiveMark(LiveCard.HEADER, plus, MarkKind.LATE)
+            return listOfNotNull(plus, rest).joinToString(" · ")
         }
         // La notifica chiusa (proposta A, Antonio 2026-11-20): la stessa riga dell'intestazione più binario o prossima
         // fermata; arancio solo il ritardo.
@@ -180,7 +175,7 @@ object LiveTrip {
             if (plus != null) marks += LiveMark(LiveCard.TEXT, plus, MarkKind.LATE)
             val missing = if (status == null && checked) "ritardo non disponibile" else null
             val onTime = if (status != null && !late && !old) "in orario" else null
-            return listOfNotNull(plus, onTime, rest, extra, ago, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
+            return listOfNotNull(plus, onTime, rest, extra, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
         }
         // Con il ritardo l'orario del biglietto resta, barrato, davanti a quello vero: "18:27 19:59".
         fun time(planned: Long, real: Long, line: Int): String {
@@ -195,13 +190,7 @@ object LiveTrip {
         val stops = TrainLive.between(status?.stops.orEmpty(), trip.from, trip.to)
         val points = stops.map { it.at + delay }.filter { it in (leave + 1) until end }
         val stopList = stops.map { LiveStop(at(it.at + delay, zone), TrainLive.pretty(it.name), it.at + delay <= now, at(it.at, zone).takeIf { late }) }
-        val lines = listOfNotNull(liveLine)
-        liveLine?.let { line ->
-            if (plus != null) marks += LiveMark(0, plus, MarkKind.LATE)
-            ago?.let { marks += LiveMark(0, if (plus != null) " · $it" else it, MarkKind.SOFT) }
-            if (status == null) marks += LiveMark(0, line, MarkKind.SOFT)
-        }
-        fun nextLine(stop: TrainStop?) = stop?.let { "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
+        val lines = emptyList<String>()
         val track = LiveTrack(leave, end, points)
         return when (phase) {
             LivePhase.SOON -> {
@@ -222,15 +211,12 @@ object LiveTrip {
                     arrive = arrive,
                     stops = stopList,
                     sub = seat,
-                    next = nextLine(stops.firstOrNull { it.at + delay > leave }),
                 )
             }
             LivePhase.ON_BOARD -> {
                 val progress = (((now - leave).toDouble() / (end - leave)) * 100).toInt().coerceIn(0, 100)
                 val arrived = now >= end
-                val next = if (arrived) null else stops.firstOrNull { it.at + delay > now }
-                val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}",
-                    next?.let { "prossima ${TrainLive.pretty(it.name)}" })
+                val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}", null)
                 LiveCard(
                     phase, title = title, text = text,
                     chip = at(end, zone),
@@ -245,7 +231,6 @@ object LiveTrip {
                     arrive = arrive,
                     stops = stopList,
                     sub = seat,
-                    next = nextLine(next),
                 )
             }
         }
