@@ -18,6 +18,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Feed di YouTube dell'utente, tenuti in memoria finché l'app è aperta. */
 object YouTubeStore {
     private val scope = MainScope()
+    @Volatile private var appContext: Context? = null
+
+    /** Per i titoli e i nomi originali anche delle pagine che non passano un Context (canali). */
+    @Synchronized
+    fun init(context: Context) {
+        if (appContext != null) return
+        appContext = context.applicationContext
+        YtOriginals.init(context)
+        watchOriginals()
+    }
     private const val MAX_AGE = 15 * 60_000L
     /** Tempo per i feed RSS dei canali e per tutta la lettura delle iscrizioni (due pagine del sito + i feed). */
     private const val RSS_BUDGET = 30_000L
@@ -167,13 +177,29 @@ object YouTubeStore {
         _channelInfo.update { it + (channel.id to Loadable(loading = true)) }
         scope.launch {
             val result = try {
-                Loadable(data = YtResolver.channelInfo(channel.id), loadedAt = System.currentTimeMillis())
+                Loadable(data = originalChannel(YtResolver.channelInfo(channel.id)), loadedAt = System.currentTimeMillis())
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 Loadable(error = e.userMessage("Il canale non risponde, riprova tra poco."))
             }
             _channelInfo.update { it + (channel.id to result) }
         }
+    }
+
+    /**
+     * Nome e descrizione del canale come li ha scritti l'autore (1.571): con l'API collegata si prendono da `snippet`,
+     * che non è mai tradotto; senza, restano quelli di YouTube in italiano.
+     */
+    private suspend fun originalChannel(info: com.platinum20.dashboard.media.youtube.player.YtChannelInfo): com.platinum20.dashboard.media.youtube.player.YtChannelInfo {
+        val context = appContext ?: return info
+        YouTubeAuth.init(context)
+        if (!YouTubeAuth.connected.value) return info
+        val token = runCatching { YouTubeAuth.token(context) }.getOrNull() ?: return info
+        val (name, description) = runCatching { YouTubeApi.originalChannel(token, info.id) }.getOrNull() ?: return info
+        return com.platinum20.dashboard.media.youtube.player.YtChannelInfo(
+            id = info.id, name = name ?: info.name, avatar = info.avatar, banner = info.banner, subscribers = info.subscribers,
+            description = description ?: info.description, verified = info.verified, tabs = info.tabs,
+        )
     }
 
     private val _channelTabs = MutableStateFlow<Map<String, Loadable<com.platinum20.dashboard.media.youtube.player.YtChannelTabItems>>>(emptyMap())
@@ -341,6 +367,65 @@ object YouTubeStore {
         _subscriptions.value = Loadable(data = subscriptions, loadedAt = now)
     }
 
+    /**
+     * Titoli originali (1.571): ogni lista letta dal sito o da NewPipe chiede a [YtOriginals] i titoli veri e li mette
+     * al posto di quelli tradotti da YouTube, anche quando arrivano dopo. Le Iscrizioni no: vengono dai feed RSS, che
+     * hanno già i titoli originali. Parte con [init], non alla prima lettura dell'oggetto (i test JVM non hanno Main).
+     */
+    private fun watchOriginals() {
+        val lists = listOf(_liked, _search, _watchLater, _home, _history)
+        lists.forEach { flow -> scope.launch { flow.collect { YtOriginals.want(it.data); relabel(flow, YtOriginals.titles.value) } } }
+        scope.launch { _subsMore.collect { YtOriginals.want(it); relabelList(_subsMore, YtOriginals.titles.value) } }
+        listOf(_channelVideos, _playlistItems).forEach { flow ->
+            scope.launch { flow.collect { all -> all.values.forEach { YtOriginals.want(it.data) }; relabelMap(flow, YtOriginals.titles.value) } }
+        }
+        scope.launch { _channelTabs.collect { all -> all.values.forEach { YtOriginals.want(it.data?.videos) }; relabelTabs(YtOriginals.titles.value) } }
+        scope.launch {
+            YtOriginals.titles.collect { titles ->
+                lists.forEach { relabel(it, titles) }
+                relabelList(_subsMore, titles)
+                relabelMap(_channelVideos, titles)
+                relabelMap(_playlistItems, titles)
+                relabelTabs(titles)
+            }
+        }
+    }
+
+    private fun relabel(flow: MutableStateFlow<Loadable<List<YtVideo>>>, titles: Map<String, String>) {
+        if (titles.isEmpty()) return
+        flow.update { l -> l.data?.let { d -> YtOriginals.apply(d, titles).takeIf { it !== d } }?.let { l.copy(data = it) } ?: l }
+    }
+
+    private fun relabelList(flow: MutableStateFlow<List<YtVideo>>, titles: Map<String, String>) {
+        if (titles.isNotEmpty()) flow.update { YtOriginals.apply(it, titles) }
+    }
+
+    private fun relabelMap(flow: MutableStateFlow<Map<String, Loadable<List<YtVideo>>>>, titles: Map<String, String>) {
+        if (titles.isEmpty()) return
+        flow.update { all ->
+            var changed = false
+            val out = all.mapValues { (_, l) ->
+                val d = l.data ?: return@mapValues l
+                val fixed = YtOriginals.apply(d, titles)
+                if (fixed !== d) { changed = true; l.copy(data = fixed) } else l
+            }
+            if (changed) out else all
+        }
+    }
+
+    private fun relabelTabs(titles: Map<String, String>) {
+        if (titles.isEmpty()) return
+        _channelTabs.update { all ->
+            var changed = false
+            val out = all.mapValues { (_, l) ->
+                val d = l.data ?: return@mapValues l
+                val fixed = YtOriginals.apply(d.videos, titles)
+                if (fixed !== d.videos) { changed = true; l.copy(data = d.copy(videos = fixed)) } else l
+            }
+            if (changed) out else all
+        }
+    }
+
     private fun fresh(state: Loadable<*>) = state.data != null && System.currentTimeMillis() - state.loadedAt < MAX_AGE
 
     private fun <T> load(
@@ -380,6 +465,7 @@ object YouTubeStore {
      */
     private suspend fun <T> call(context: Context, web: suspend (Context) -> T, timeoutMs: Long = 60_000, api: (suspend (String) -> T)?): Loadable<T> {
         val app = context.applicationContext
+        init(app)
         return try {
             val token = if (api != null && YouTubeAuth.connected.value) YouTubeAuth.token(app) else null
             val data = when {

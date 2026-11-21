@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.571.0
+**YouTube sempre nella lingua originale**
+- I canali, la Home, la Cronologia, la ricerca e le playlist non mostrano più i video italiani tradotti in inglese: Canvas chiedeva a YouTube una lingua che non conosce e YouTube rispondeva in inglese
+- I titoli tradotti da YouTube vengono sostituiti con quelli scritti dall'autore, in qualunque lingua (anche i video inglesi restano in inglese)
+- Con YouTube collegato anche nome e descrizione del canale sono quelli originali
+
 ## 1.570.0
 **Venduto del turno: la lettura non si interrompe più a metà**
 - La rilettura di Creators Pro va avanti anche se cambi pagina: prima si fermava dopo i turni e prima della busta paga, così il venduto restava fermo
