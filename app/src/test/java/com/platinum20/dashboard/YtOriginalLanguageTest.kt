@@ -17,7 +17,7 @@ class YtOriginalLanguageTest {
     @Test fun linguaChiestaEUnaCheYouTubeConosce() {
         // hl=it-IT non esiste per YouTube: rispondeva in inglese e traduceva i titoli italiani.
         assertEquals("it", YtResolver.LANGUAGE.localizationCode)
-        assertTrue(ServiceList.YouTube.supportedLocalizations.any { it.localizationCode == "it" })
+        assertTrue(ServiceList.YouTube.supportedLocalizations.any { it.languageCode == "it" })
     }
 
     @Test fun paginaDelSitoInItaliano() {
