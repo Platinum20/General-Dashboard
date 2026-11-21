@@ -855,7 +855,13 @@ fun canvasFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
  * angoli in alto, l'ultima in basso, in mezzo un separatore come [RowDivider]. Le righe vanno messe senza spazio fra loro.
  */
 @Composable
-fun Modifier.cardGroupItem(first: Boolean, last: Boolean, container: Color = MaterialTheme.colorScheme.card): Modifier {
+fun Modifier.cardGroupItem(
+    first: Boolean,
+    last: Boolean,
+    container: Color = MaterialTheme.colorScheme.card,
+    /** Le liste di Media non hanno separatori (Antonio li ha tolti dalle copertine, 1.461). */
+    divider: Boolean = true,
+): Modifier {
     val border = MaterialTheme.colorScheme.outlineVariant
     val radius = 18.dp
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(
@@ -876,7 +882,7 @@ fun Modifier.cardGroupItem(first: Boolean, last: Boolean, container: Color = Mat
         )
         val path = androidx.compose.ui.graphics.Path().apply { addRoundRect(rect) }
         drawPath(path, border, style = androidx.compose.ui.graphics.drawscope.Stroke(sw))
-        if (!first) drawLine(border, Offset(16.dp.toPx(), sw / 2), Offset(size.width - 16.dp.toPx(), sw / 2), sw)
+        if (!first && divider) drawLine(border, Offset(16.dp.toPx(), sw / 2), Offset(size.width - 16.dp.toPx(), sw / 2), sw)
     }
 }
 

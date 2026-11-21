@@ -636,69 +636,47 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
     }
     // Con i dati (anche vuoti) l'avviso va sotto il titolo, così "Riproduci" resta lì sopra.
     val note = state.error?.takeIf { state.data != null }
-    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState) {
-        // La testata (1.528, Antonio scelta B): copertina quadrata al centro, titolo e una riga sotto, poi
-        // Casuale · Riproduci · Altro in fila al centro.
+    val playingKey = rememberPlayingKey()
+    val inApp = LocalInAppNav.current
+    val toArtist = parent.kind == SpKind.ALBUM && inApp != null && parent.uri.isNotBlank()
+    val playable = tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }
+    FeedList(if (note != null) state.copy(error = null) else state, empty = if (note != null) "" else "Vuoto", listState = listState, spacing = 0.dp) {
+        // La prima card (1.563, Antonio strada A: "come il resto dell'app"): copertina piccola a sinistra, di un album
+        // l'artista che si tocca ("Madame ›"), di una playlist di chi è; sotto quanti brani, poi Riproduci · Casuale · Altro.
         item(key = "header") {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Cover(parent.image, if (parent.kind == SpKind.ARTIST) CircleShape else MaterialTheme.shapes.large, 200.dp, MediaMarks.of(parent))
-                Spacer(Modifier.height(14.dp))
-                Text(
-                    if (isPlaylist) PlaylistManage.title(parent) else parent.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-                // Di un album l'artista si tocca e apre la sua pagina (scelta B: "Madame ›"), come "Vai all'artista".
-                val inApp = LocalInAppNav.current
-                val toArtist = parent.kind == SpKind.ALBUM && inApp != null && parent.uri.isNotBlank()
-                val line = SpotifyPlaylists.headerLine(parent.subtitle, tracks.count { it.kind == SpKind.TRACK || it.kind == SpKind.EPISODE }, tracks.sumOf { it.durationMs })
-                Text(
-                    if (toArtist) line.replaceFirst(" · ", " › · ").let { if (" · " in line) it else "$line ›" } else line,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = if (toArtist) Modifier.clip(MaterialTheme.shapes.small).clickable {
-                        view.haptic(Haptic.TICK)
-                        SavedLinks.spotify(parent)?.let { goToCreator(context, (it as com.platinum20.dashboard.capture.SavedLink.Media).item, inApp!!.openRoute) }
-                    }.padding(horizontal = 6.dp, vertical = 2.dp) else Modifier,
-                )
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (arranging) {
-                        CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true)
-                    } else if (parent.kind != SpKind.ARTIST) {
-                        RoundIconButton(Icons.Rounded.Shuffle, "Casuale") {
-                            view.haptic(Haptic.CONFIRM)
-                            playTracks(context, tracks.shuffled(), null, link = parent.uri)
-                        }
-                        CanvasButton("Riproduci", onClick = { onPlay(parent) }, icon = Icons.Rounded.PlayArrow, primary = true)
-                        if (isPlaylist && info != null) {
-                            RoundIconButton(Icons.Rounded.MoreHoriz, "Altro") {
-                                view.haptic(Haptic.CONFIRM)
-                                PlaylistManage.openMenu(context, parent, onGone)
-                            }
-                        }
-                    }
-                }
-            }
+            MediaHeadCard(
+                image = parent.image,
+                round = parent.kind == SpKind.ARTIST,
+                mark = MediaMarks.of(parent),
+                line = if (isPlaylist && info != null) {
+                    SpotifyPlaylists.ownerLine(PlaylistManage.infos[parent.id]?.second == true, info.public, info.collaborative, parent.subtitle.substringBefore(" · "))
+                } else parent.subtitle.substringBefore(" · "),
+                onLine = if (toArtist) ({
+                    SavedLinks.spotify(parent)?.let { goToCreator(context, (it as com.platinum20.dashboard.capture.SavedLink.Media).item, inApp!!.openRoute) }
+                }) else null,
+                detail = SpotifyPlaylists.headerLine("", playable, tracks.sumOf { it.durationMs }),
+                description = info?.description.orEmpty(),
+                onPlay = if (!arranging && parent.kind != SpKind.ARTIST) ({ onPlay(parent) }) else null,
+                onShuffle = if (!arranging && parent.kind != SpKind.ARTIST) ({ playTracks(context, tracks.shuffled(), null, link = parent.uri) }) else null,
+                // "Altro" = le stesse azioni della pressione lunga (regola 1.513): le tue playlist hanno Modifica/Riordina/Elimina.
+                onMore = if (arranging) null else ({
+                    if (isPlaylist && info != null) PlaylistManage.openMenu(context, parent, onGone)
+                    else SavedLinks.spotify(parent)?.let(SavedLinks::offer)
+                }),
+                buttons = { if (arranging) CanvasButton("Fine", onClick = { PlaylistManage.arranging.remove(parent.id) }, primary = true) },
+            )
         }
-        info?.description?.takeIf { it.isNotBlank() }?.let { text ->
-            item(key = "description") {
-                Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            }
-        }
+        mediaGap("header-gap")
         if (arranging) item(key = "arrange-hint") {
             Text(
                 "Trascina un brano dalla maniglia per spostarlo; toccalo per toglierlo o portarlo in cima.",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = MediaPage.GAP),
             )
         }
         note?.let { message ->
             item(key = "note") {
-                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = MediaPage.GAP))
             }
         }
         if (arranging) {
@@ -707,59 +685,37 @@ private fun ChildrenList(parent: SpItem, onGone: () -> Unit, onOpen: (SpItem) ->
                 val key = keys[i]
                 ArrangeRow(
                     child,
-                    modifier = (if (reorder.isDragging(key)) Modifier else Modifier.animateItem()).reorderItem(reorder, key),
+                    modifier = (if (reorder.isDragging(key)) Modifier else Modifier.animateItem()).reorderItem(reorder, key).padding(vertical = 4.dp),
                     handle = Modifier.reorderHandle(reorder, key) { view.haptic(Haptic.GRAB) },
                     onClick = { PlaylistManage.trackMenu(context, parent, child, i, shown.size) },
                 )
             }
-        } else {
-            items(shown.size, key = { keys[it] }) { i ->
-                val child = shown[i]
-                // Un album ha una copertina sola: le righe hanno il numero a sinistra e la durata a destra (1.528).
-                if (parent.kind == SpKind.ALBUM && child.kind == SpKind.TRACK) NumberedTrackRow(i + 1, child, onClick = { onPlayFrom(child) })
-                else ItemRow(child, onClick = {
-                    if (child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE) {
-                        onPlayFrom(child)
-                    } else {
-                        onOpen(child)
-                    }
-                })
+        } else if (shown.isNotEmpty()) {
+            mediaGroup(
+                key = "tracks",
+                title = if (parent.kind == SpKind.SHOW) "Episodi" else "Brani",
+                items = shown.indices.toList(),
+                itemKey = { keys[it] },
+                trailing = {
+                    if (playable > 0) Text("$playable", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                },
+            ) { i, index ->
+                val child = shown[index]
+                val isTrack = child.kind == SpKind.TRACK || child.kind == SpKind.EPISODE
+                // Un album ha una copertina sola: le righe hanno il numero a sinistra (1.528); le playlist la copertina.
+                val numbered = parent.kind == SpKind.ALBUM && child.kind == SpKind.TRACK
+                MediaRow(
+                    title = child.title,
+                    line = child.subtitle,
+                    number = if (numbered) i + 1 else null,
+                    image = if (numbered) null else child.image,
+                    round = child.kind == SpKind.ARTIST,
+                    mark = if (isTrack) null else MediaMarks.of(child),
+                    trailing = child.durationMs.takeIf { it > 0 }?.let(SpotifyPlaylists::clock),
+                    now = isTrack && child.uri == playingKey,
+                    click = Modifier.tapOrSave({ SavedLinks.spotify(child) }) { if (isTrack) onPlayFrom(child) else onOpen(child) },
+                )
             }
-        }
-    }
-}
-
-/** Un brano di un album (1.528): numero a sinistra, nome e artista, durata a destra; la riga Canvas, senza card. */
-@Composable
-private fun NumberedTrackRow(number: Int, item: SpItem, onClick: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .bouncyPress(0.98f)
-            .clip(MaterialTheme.shapes.medium)
-            .tapOrSave({ SavedLinks.spotify(item) }, onClick)
-            .padding(horizontal = 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            "$number",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.width(32.dp),
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(Modifier.weight(1f)) {
-            Text(item.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        if (item.durationMs > 0) {
-            Spacer(Modifier.width(8.dp))
-            Text(
-                SpotifyPlaylists.clock(item.durationMs),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

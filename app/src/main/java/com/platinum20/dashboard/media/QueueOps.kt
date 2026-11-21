@@ -3,6 +3,13 @@ package com.platinum20.dashboard.media
 /** Una voce della coda: [id] resta lo stesso anche se la voce si sposta, così la lista anima bene. */
 data class QueueEntry(val id: Long, val item: ResumeItem)
 
+/** "Ripeti" del player (1.563): spento, tutta la coda, solo questo brano. Un tocco passa al successivo. */
+enum class Repeat {
+    OFF, ALL, ONE;
+
+    fun next(): Repeat = values()[(ordinal + 1) % values().size]
+}
+
 /** La coda in un momento: le voci e quella che suona (-1 se nessuna). */
 data class QueueState(val entries: List<QueueEntry> = emptyList(), val current: Int = -1) {
     val now: QueueEntry? get() = entries.getOrNull(current)
@@ -85,6 +92,31 @@ object QueueOps {
             else -> state.current
         }
         return QueueState(list, current)
+    }
+
+    /** "Casuale" acceso (1.563): quelle che vengono dopo si mescolano, quella che suona e le passate restano dove sono. */
+    fun shuffleUpcoming(state: QueueState, random: kotlin.random.Random): QueueState {
+        val keep = state.current + 1
+        if (state.entries.size - keep < 2) return state
+        return state.copy(entries = state.entries.take(keep) + state.entries.drop(keep).shuffled(random))
+    }
+
+    /**
+     * "Casuale" spento: quelle che vengono dopo tornano nell'ordine di prima ([order] = gli id com'erano), le voci
+     * arrivate nel frattempo restano in fondo nell'ordine in cui sono.
+     */
+    fun unshuffle(state: QueueState, order: List<Long>): QueueState {
+        val keep = state.current + 1
+        val rank = order.withIndex().associate { (i, id) -> id to i }
+        val upcoming = state.entries.drop(keep).sortedBy { rank[it.id] ?: Int.MAX_VALUE }
+        return state.copy(entries = state.entries.take(keep) + upcoming)
+    }
+
+    /** Dove si va con "avanti" (1.563): la successiva; a coda finita con "ripeti tutto" si ricomincia dalla prima. */
+    fun nextIndex(state: QueueState, repeat: Repeat): Int? = when {
+        state.hasNext -> state.current + 1
+        repeat == Repeat.ALL && state.entries.isNotEmpty() -> 0
+        else -> null
     }
 
     fun jump(state: QueueState, id: Long): QueueState {

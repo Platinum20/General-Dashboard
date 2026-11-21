@@ -373,6 +373,34 @@ object SpotifyStore {
         return null
     }
 
+    private val _likes = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    /** Il cuore del player (1.563): id del brano → ha il tuo "Mi piace". Si chiede una volta per brano. */
+    val likes: StateFlow<Map<String, Boolean>> = _likes.asStateFlow()
+
+    /** Sa se il brano [trackId] ti piace: prima dalla libreria già letta, se no una domanda sola a Spotify. */
+    suspend fun checkLiked(trackId: String) {
+        if (trackId.isBlank() || trackId in _likes.value) return
+        if (_library.value.data?.liked?.any { it.id == trackId } == true) {
+            _likes.update { it + (trackId to true) }
+            return
+        }
+        modifyCall { token -> SpotifyApi.isLiked(token, trackId) }.data?.let { liked -> _likes.update { it + (trackId to liked) } }
+    }
+
+    /** Mette o toglie il "Mi piace": il cuore cambia subito e torna com'era se Spotify dice di no. Null = fatto. */
+    suspend fun toggleLiked(trackId: String): String? {
+        val before = _likes.value[trackId] == true
+        _likes.update { it + (trackId to !before) }
+        val result = modifyCall { token -> SpotifyApi.setLiked(token, trackId, !before) }
+        if (result.error != null) {
+            _likes.update { it + (trackId to before) }
+            return result.error
+        }
+        // Tolto: sparisce subito da "Brani che ti piacciono"; messo: arriva al prossimo giro della libreria.
+        if (before) _library.update { l -> l.copy(data = l.data?.let { d -> d.copy(liked = d.liked.filterNot { it.id == trackId }) }) }
+        return null
+    }
+
     /** Toglie la playlist dalla tua libreria: per Spotify è "eliminare". Null = fatto. */
     suspend fun deletePlaylist(playlist: SpItem): String? {
         val result = modifyCall { token -> SpotifyApi.unfollowPlaylist(token, playlist.id) }

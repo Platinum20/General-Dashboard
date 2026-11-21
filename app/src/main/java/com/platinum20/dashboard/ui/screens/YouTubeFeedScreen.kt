@@ -56,6 +56,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -245,9 +246,9 @@ internal fun channelLines(channels: List<YtChannel>, recent: List<YtVideo>): Lis
 }
 
 /**
- * La pagina di un canale come su YouTube (1.481, Antonio: "esattamente come YouTube", non solo gli ultimi video):
- * copertina, foto, nome, iscritti, descrizione, Iscriviti, poi le schede Video, Shorts, Live e Playlist che il canale
- * ha. Ci si arriva dalle storie di Media, dal canale sotto ogni video e dalla pagina del video.
+ * La pagina di un canale (1.481 com'era su YouTube; dal 1.563 come il resto di Canvas, strada A): titolo grande,
+ * la prima card con foto, iscritti, descrizione e Iscritto, poi una card per ogni cosa che il canale ha (Video, Shorts,
+ * Live, Playlist) al posto delle schede. Ci si arriva dalle storie di Media, dal canale sotto ogni video e dalla pagina del video.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -274,132 +275,126 @@ fun YouTubeChannelScreen(
     val subscribed = YtRatings.isSubscribed(channel.id, changedSubs, channels.data)
     val info = infos[channel.id]?.data
     val tabs = remember(info) { channelTabs(info?.tabs?.keys) }
-    var tab by rememberSaveable { mutableStateOf(org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS) }
-    LaunchedEffect(tab, info != null) {
-        if (tab != org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS) YouTubeStore.loadChannelTab(channel, tab)
+    val shortsTab = org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.SHORTS
+    val liveTab = org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.LIVESTREAMS
+    val listsTab = org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.PLAYLISTS
+    // Niente schede (1.563, strada A): ogni scheda che il canale ha diventa una card, caricate insieme.
+    LaunchedEffect(tabs) {
+        tabs.map { it.first }.filter { it != org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS }.forEach { YouTubeStore.loadChannelTab(channel, it) }
     }
-    var descriptionOpen by rememberSaveable { mutableStateOf(false) }
+    var allVideos by rememberSaveable { mutableStateOf(false) }
     val videos = videosAll[channel.id] ?: Loadable(loading = true)
     val pick = pickFeed(videos.data.orEmpty(), hideShorts = true, hideLive = hideLive, hideMembers = hideMembers)
-    val other = tabsState[channel.id + "/" + tab]
     val name = info?.name?.ifBlank { null } ?: channel.title
     val avatar = info?.avatar?.ifBlank { null } ?: channel.thumbnail
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val playingKey = rememberPlayingKey()
+    val bar = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        TopLevelBar(title = name, subtitle = "Canale YouTube", onBack = onBack, scrollBehavior = bar)
         LazyColumn(
-            contentPadding = PaddingValues(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.statusBarsPadding(),
+            Modifier.fillMaxSize().nestedScroll(bar.nestedScrollConnection),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
         ) {
-            item(key = "top") { Spacer(Modifier.height(48.dp)) }
-            if (!info?.banner.isNullOrBlank()) item(key = "banner") {
-                AsyncImage(
-                    model = info!!.banner,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth().aspectRatio(6.2f / 1f).clip(MaterialTheme.shapes.large)
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                )
-            }
+            // La prima card: foto, iscritti, la descrizione in due righe e Iscritto/Iscriviti. Niente copertina in alto.
             item(key = "head") {
-                Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    ChannelAvatar(avatar, name, 72)
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            name,
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                MediaHeadCard(
+                    image = avatar,
+                    line = channelLine(info?.subscribers ?: -1, info?.verified == true).ifBlank { "Canale" },
+                    detail = videos.data?.size?.takeIf { it > 0 }?.let { if (channel.id in more) "più di $it video" else "$it video" }.orEmpty(),
+                    description = info?.description.orEmpty(),
+                    picture = { ChannelAvatar(avatar, name, 72) },
+                    buttons = {
+                        CanvasButton(
+                            if (subscribed) "Iscritto" else "Iscriviti",
+                            onClick = {
+                                val ok = YtRatings.toggleSubscribe(context, channel.id, subscribed) {
+                                    CaptureFeedback.tell(context, "YouTube non ha preso l'iscrizione, riprova")
+                                }
+                                if (!ok) CaptureFeedback.tell(context, "Accedi a YouTube in Impostazioni › Account")
+                            },
+                            primary = !subscribed,
                         )
-                        val line = channelLine(info?.subscribers ?: -1, info?.verified == true)
-                        if (line.isNotBlank()) {
-                            Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                        }
-                    }
-                }
-            }
-            info?.description?.takeIf { it.isNotBlank() }?.let { text ->
-                item(key = "about") {
-                    Text(
-                        text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = if (descriptionOpen) Int.MAX_VALUE else 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 16.dp).clickable { descriptionOpen = !descriptionOpen },
-                    )
-                }
-            }
-            item(key = "subscribe") {
-                CanvasButton(
-                    if (subscribed) "Iscritto" else "Iscriviti",
-                    onClick = {
-                        val ok = YtRatings.toggleSubscribe(context, channel.id, subscribed) {
-                            CaptureFeedback.tell(context, "YouTube non ha preso l'iscrizione, riprova")
-                        }
-                        if (!ok) CaptureFeedback.tell(context, "Accedi a YouTube in Impostazioni › Account")
                     },
-                    primary = !subscribed,
-                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
                 )
             }
-            if (tabs.size > 1) item(key = "tabs") {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    tabs.forEach { (filter, label) ->
-                        CanvasTabChip(selected = tab == filter, onClick = { tab = filter }, label = label, modifier = Modifier.weight(1f))
-                    }
-                }
+            mediaGap("head-gap")
+            if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(rows = 3, label = "Carico i video") }
+            videos.error?.takeIf { videos.data == null }?.let { e -> item(key = "v-error") { ChannelNote(e) } }
+            // VIDEO: il più nuovo in grande, poi righe; "Altri" li apre tutti e arrivando in fondo carica i successivi.
+            val shownVideos = if (allVideos) pick.videos else pick.videos.take(CHANNEL_CARD_ROWS)
+            if (shownVideos.isNotEmpty()) mediaGroup(
+                key = "videos",
+                title = "Video",
+                items = shownVideos,
+                itemKey = { it.id },
+                trailing = { if (pick.videos.size > CHANNEL_CARD_ROWS || channel.id in more) MoreToggle(allVideos) { allVideos = !allVideos } },
+                footer = if (allVideos && channel.id in more) ({
+                    LaunchedEffect(pick.videos.size) { YouTubeStore.loadMoreChannel(channel) }
+                    Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+                }) else null,
+            ) { i, v ->
+                if (i == 0) Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
+                else MediaRow(
+                    title = v.title, line = channelVideoLine(v), image = v.thumbnail, wide = true, mark = videoMark(v),
+                    now = v.id == playingKey,
+                    click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
+                )
             }
-            when (tab) {
-                org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.VIDEOS -> {
-                    if (videos.data == null && videos.loading) item(key = "v-loading") { PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico i video") }
-                    videos.error?.takeIf { videos.data == null }?.let { e -> item(key = "v-error") { ChannelNote(e) } }
-                    itemsIndexed(pick.videos, key = { _, v -> "v-" + v.id }) { i, v ->
-                        Box(Modifier.padding(horizontal = 16.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }, first = i == 0) }
-                    }
-                    if (channel.id in more) item(key = "v-more") {
-                        LaunchedEffect(pick.videos.size) { YouTubeStore.loadMoreChannel(channel) }
-                        Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
-                    }
-                }
-                else -> {
-                    if (other == null || (other.data == null && other.loading)) item(key = "t-loading") {
-                        PlaceholderList(Modifier.padding(horizontal = 16.dp), rows = 3, label = "Carico")
-                    }
-                    other?.error?.let { e -> item(key = "t-error") { ChannelNote(e) } }
-                    val data = other?.data
-                    if (data != null && data.videos.isEmpty() && data.playlists.isEmpty()) item(key = "t-empty") { ChannelNote("Niente qui") }
-                    if (tab == org.schabi.newpipe.extractor.channel.tabs.ChannelTabs.SHORTS) {
-                        // Gli Short in griglia da tre, verticali, come sul canale in YouTube.
-                        items(data?.videos.orEmpty().chunked(3), key = { row -> "s-" + row.first().id }) { row ->
-                            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                row.forEach { short ->
-                                    AsyncImage(
-                                        model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
-                                        contentDescription = short.title,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.weight(1f).aspectRatio(9f / 16f).clip(MaterialTheme.shapes.medium)
-                                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                                            .bouncyPress(0.96f).clickable { onPlay(short.watchUrl) },
-                                    )
-                                }
-                                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            // SHORTS: una fila di copertine verticali.
+            val shorts = tabsState[channel.id + "/" + shortsTab]?.data?.videos.orEmpty()
+            if (shorts.isNotEmpty()) {
+                item(key = "shorts") {
+                    CardSection("Shorts", trailing = { Text("${shorts.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }) {
+                        LazyRow(
+                            state = rememberRowAtStart(),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 14.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(shorts, key = { "s-" + it.id }) { short ->
+                                AsyncImage(
+                                    model = "https://i.ytimg.com/vi/${short.id}/hqdefault.jpg",
+                                    contentDescription = short.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.width(96.dp).aspectRatio(9f / 16f).clip(MaterialTheme.shapes.medium)
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .bouncyPress(0.96f).clickable { onPlay(short.watchUrl) },
+                                )
                             }
                         }
-                    } else {
-                        items(data?.videos.orEmpty(), key = { "t-" + it.id }) { v ->
-                            Box(Modifier.padding(horizontal = 16.dp)) { VideoCard(v, onClick = { onPlay(v.watchUrl) }) }
-                        }
                     }
-                    items(data?.playlists.orEmpty(), key = { "p-" + it.id }) { p -> PlaylistLine(p, onClick = { onOpenPlaylist(p) }) }
                 }
+                mediaGap("shorts-gap")
             }
-        }
-        Box(Modifier.statusBarsPadding().padding(8.dp)) {
-            RoundIconButton(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Indietro", onClick = onBack)
+            // LIVE e PLAYLIST: righe Canvas, le prime e poi "Altri".
+            val lives = tabsState[channel.id + "/" + liveTab]?.data?.videos.orEmpty()
+            if (lives.isNotEmpty()) mediaGroup(key = "lives", title = "Live", items = lives.take(CHANNEL_CARD_ROWS), itemKey = { it.id }) { _, v ->
+                MediaRow(
+                    title = v.title, line = channelVideoLine(v), image = v.thumbnail, wide = true, mark = videoMark(v),
+                    click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
+                )
+            }
+            val lists = tabsState[channel.id + "/" + listsTab]?.data?.playlists.orEmpty()
+            if (lists.isNotEmpty()) mediaGroup(
+                key = "lists", title = "Playlist", items = lists, itemKey = { it.id },
+                trailing = { Text("${lists.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            ) { _, p ->
+                MediaRow(
+                    title = p.title, line = if (p.count > 0) "${p.count} video" else "Playlist", image = p.thumbnail, wide = true,
+                    mark = MediaMark(MediaType.VIDEO), click = Modifier.clickable { onOpenPlaylist(p) },
+                )
+            }
         }
     }
 }
+
+/** Quante voci mostrano le card del canale prima di "Altri" (1.563). */
+private const val CHANNEL_CARD_ROWS = 5
+
+/** "3 giorni fa · 412.000 visualizzazioni": la riga sotto un video del canale (il canale lo dice già il titolo). */
+internal fun channelVideoLine(v: YtVideo): String = listOf(
+    v.published?.let(::relativeTime) ?: v.uploadedText,
+    if (v.views >= 0) "${compactCount(v.views)} visualizzazioni" else "",
+).filter { it.isNotBlank() }.joinToString(" · ")
 
 /** Le schede del canale, nell'ordine di YouTube; Video c'è sempre. */
 internal fun channelTabs(available: Set<String>?): List<Pair<String, String>> {
@@ -498,6 +493,8 @@ fun <T> FeedList(
     state: Loadable<T>,
     empty: String,
     listState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
+    /** Le pagine a card (1.563) mettono le righe attaccate e lo spazio solo fra una card e l'altra. */
+    spacing: androidx.compose.ui.unit.Dp = 16.dp,
     content: LazyListScope.() -> Unit,
 ) {
     val isEmpty = (state.data as? List<*>)?.isEmpty() ?: (state.data == null)
@@ -509,7 +506,7 @@ fun <T> FeedList(
         else -> LazyColumn(
             state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing),
         ) {
             if (state.loading) item { PlaceholderList(rows = 3, label = "Carico i video") }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
@@ -755,29 +752,44 @@ private fun HistoryTab(onPlay: (String) -> Unit) {
                 }) { Text("Annulla") }
             }
         }
-        FeedList(state, empty = "Ancora nessun video guardato") {
-            if (recent.isNotEmpty()) {
-                item(key = "local-h") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) { SectionHeader("Di recente") }
-                        if (watched.isNotEmpty()) DangerButton(onClick = { confirmClear = true }) { Text("Svuota") }
-                    }
-                }
-                items(recent, key = { (e, _) -> "l" + (e as YtWatched).id }) { (e, _) ->
-                    run {
-                        val w = e as YtWatched
-                        val video = YtVideo(
-                            id = w.id, title = w.title, channel = w.channel, channelId = w.channelId, published = null,
-                            durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
-                            uploadedText = "visto " + relativeTime(java.time.Instant.ofEpochMilli(w.watchedAt)),
-                        )
-                        VideoLine(video, onClick = { onPlay(video.watchUrl) })
-                    }
+        val playingKey = rememberPlayingKey()
+        val today = remember { java.time.LocalDate.now() }
+        FeedList(state, empty = "Ancora nessun video guardato", spacing = 0.dp) {
+            // Una card per giorno come il Calendario (1.563, strada A): Oggi, Ieri, Mar 18 nov…
+            HistoryDays.group(watched, { it.watchedAt }, java.time.ZoneId.systemDefault(), today).forEach { (day, list) ->
+                mediaGroup(
+                    key = "d$day",
+                    title = day,
+                    items = list,
+                    itemKey = { "l" + it.id },
+                    trailing = { Text("${list.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { _, w ->
+                    val video = YtVideo(
+                        id = w.id, title = w.title, channel = w.channel, channelId = w.channelId, published = null,
+                        durationSec = (w.durationMs / 1000).toInt(), channelAvatar = w.channelAvatar,
+                    )
+                    val time = java.time.Instant.ofEpochMilli(w.watchedAt).atZone(java.time.ZoneId.systemDefault()).toLocalTime()
+                    MediaRow(
+                        title = w.title,
+                        line = listOf(w.channel, "%d:%02d".format(time.hour, time.minute)).filter { it.isNotBlank() }.joinToString(" · "),
+                        image = video.thumbnail, wide = true, mark = videoMark(video), now = w.id == playingKey,
+                        click = Modifier.tapOrSave({ SavedLinks.youtube(video) }) { onPlay(video.watchUrl) },
+                    )
                 }
             }
-            if (fromYouTube.isNotEmpty()) {
-                item(key = "web-h") { SectionHeader("Dalla tua cronologia di YouTube") }
-                items(fromYouTube, key = { "w" + it.id }) { VideoLine(it, onClick = { onPlay(it.watchUrl) }) }
+            if (fromYouTube.isNotEmpty()) mediaGroup(
+                key = "web", title = "Dalla tua cronologia di YouTube", items = fromYouTube, itemKey = { "w" + it.id },
+            ) { _, v ->
+                MediaRow(
+                    title = v.title, line = v.channel, image = v.thumbnail, wide = true, mark = videoMark(v),
+                    click = Modifier.tapOrSave({ SavedLinks.youtube(v) }) { onPlay(v.watchUrl) },
+                )
+            }
+            // Svuotare sta in fondo, in rosso (prima era un tasto nell'intestazione: niente tasti nelle intestazioni).
+            if (watched.isNotEmpty()) item(key = "clear") {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    DangerButton(onClick = { confirmClear = true }) { Text("Svuota la cronologia") }
+                }
             }
         }
     }

@@ -138,7 +138,10 @@ object SpotifyApi {
                 )
             }
             // Alcuni comandi (pausa, avanti) rispondono "ok" con un testo che non è JSON: non è un errore.
-            if (text.isBlank()) null else runCatching { JSONObject(text) }.getOrNull()
+            // "contains" risponde con un elenco ([true]): lo si tiene sotto "array" (1.563).
+            if (text.isBlank()) null else runCatching {
+                if (text.trimStart().startsWith("[")) JSONObject().put("array", org.json.JSONArray(text)) else JSONObject(text)
+            }.getOrNull()
         } finally {
             conn.disconnect()
         }
@@ -285,6 +288,23 @@ object SpotifyApi {
             second()
         }
     }
+
+    /** Il brano ha il tuo "Mi piace"? Prima il vecchio indirizzo, poi quello del 2026 (1.563, cuore del player). */
+    suspend fun isLiked(token: String, trackId: String): Boolean {
+        val json = try {
+            request(token, "me/tracks/contains?ids=$trackId")
+        } catch (e: SpotifyApiException) {
+            if (e.code != 404 && e.code != 405 && e.code != 410) throw e
+            request(token, "me/library/contains?uris=" + URLEncoder.encode("spotify:track:$trackId", "UTF-8"))
+        }
+        return json?.optJSONArray("array")?.optBoolean(0) == true
+    }
+
+    /** Mette o toglie il "Mi piace" (serve il permesso user-library-modify, chiesto dal 1.563). */
+    suspend fun setLiked(token: String, trackId: String, liked: Boolean) = withNewPath(
+        { request(token, "me/tracks?ids=$trackId", if (liked) "PUT" else "DELETE") },
+        { request(token, "me/library?uris=" + URLEncoder.encode("spotify:track:$trackId", "UTF-8"), if (liked) "PUT" else "DELETE") },
+    )
 
     suspend fun likedTracks(token: String): List<SpItem> =
         request(token, "me/tracks?limit=50")?.optJSONArray("items").objects().mapNotNull { it.optJSONObject("track")?.toItem() }

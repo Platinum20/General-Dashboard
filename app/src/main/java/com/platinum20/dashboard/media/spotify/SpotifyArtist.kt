@@ -189,4 +189,15 @@ object SpotifyArtist {
 
     private fun JSONArray?.strings(): List<String> =
         if (this == null) emptyList() else (0 until length()).mapNotNull { optString(it).takeIf { s -> s.isNotBlank() } }
+
+    /**
+     * La discografia per anno (1.563, come i mesi del Calendario): una card per anno, dal più nuovo come arrivano;
+     * le uscite senza data vanno in fondo, in "Senza anno".
+     */
+    fun <T> byYear(rows: List<T>, yearOf: (T) -> Int?): List<Pair<String, List<T>>> {
+        val dated = rows.filter { yearOf(it) != null }.groupBy { yearOf(it)!! }.toList().sortedByDescending { it.first }
+            .map { (year, list) -> year.toString() to list }
+        val undated = rows.filter { yearOf(it) == null }
+        return if (undated.isEmpty()) dated else dated + ("Senza anno" to undated)
+    }
 }

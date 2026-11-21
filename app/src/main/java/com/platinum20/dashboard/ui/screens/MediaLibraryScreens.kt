@@ -30,6 +30,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -130,17 +134,35 @@ fun MediaLikedScreen(videosOnly: Boolean, onBack: () -> Unit, onPlayVideo: (Stri
         },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace") {
+            val playingKey = rememberPlayingKey()
+            FeedList(state, empty = if (videosOnly) "Nessun video con il Mi piace" else "Nessun brano che ti piace", spacing = 0.dp) {
                 if (entries.isNotEmpty()) item(key = "play") {
                     CanvasButton("Riproduci tutto", onClick = {
                         val now = System.currentTimeMillis()
                         CanvasPlayer.playList(context, entries.map { it.resume(now).let { r -> if (videosOnly) r else r.copy(link = LIKED_LINK) } })
                     }, primary = true)
                 }
-                items(entries, key = { it.key }) { entry ->
+                if (entries.isNotEmpty()) mediaGap("play-gap")
+                // Una card con le righe Canvas (1.563, strada A), come i brani di album e playlist.
+                if (entries.isNotEmpty()) mediaGroup(
+                    key = "liked",
+                    title = if (videosOnly) "Video" else "Brani",
+                    items = entries,
+                    itemKey = { it.key },
+                    trailing = { Text("${entries.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { _, entry ->
                     when (entry) {
-                        is MixedEntry.Track -> TrackLine(entry.item, onClick = { playTracks(context, tracks, entry.item, LIKED_LINK) })
-                        is MixedEntry.Video -> VideoLine(entry.video, onClick = { onPlayVideo(entry.video.watchUrl) })
+                        is MixedEntry.Track -> MediaRow(
+                            title = entry.item.title, line = entry.item.subtitle, image = entry.item.image,
+                            trailing = entry.item.durationMs.takeIf { it > 0 }?.let(com.platinum20.dashboard.media.spotify.SpotifyPlaylists::clock),
+                            now = entry.item.uri == playingKey,
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(entry.item) }) { playTracks(context, tracks, entry.item, LIKED_LINK) },
+                        )
+                        is MixedEntry.Video -> MediaRow(
+                            title = entry.video.title, line = entry.video.channel, image = entry.video.thumbnail, wide = true,
+                            now = entry.video.id == playingKey,
+                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.youtube(entry.video) }) { onPlayVideo(entry.video.watchUrl) },
+                        )
                     }
                 }
             }
@@ -172,8 +194,17 @@ fun MediaPlaylistsScreen(onBack: () -> Unit, onOpenSpotify: (SpItem) -> Unit) {
         topBar = { TopLevelBar(title = "Playlist", subtitle = "Playlist e album salvati", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Nessuna playlist") {
-                items(entries, key = { "s-" + it.uri }) { e -> TrackLine(e, onClick = { onOpenSpotify(e) }) }
+            FeedList(state, empty = "Nessuna playlist", spacing = 0.dp) {
+                // Una card sola con le righe Canvas (1.563, strada A).
+                if (entries.isNotEmpty()) mediaGroup(
+                    key = "lists", title = "Dall'ultima ascoltata", items = entries, itemKey = { it.uri },
+                    trailing = { Text("${entries.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { _, e ->
+                    MediaRow(
+                        title = e.title, line = e.subtitle.substringBefore(" · "), image = e.image, mark = MediaMarks.of(e),
+                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e) }) { onOpenSpotify(e) },
+                    )
+                }
             }
         }
     }
@@ -218,19 +249,39 @@ fun MixScreen(mixId: String, onBack: () -> Unit) {
     ) { inner ->
         val state = Loadable(data = tracks.takeIf { mix != null }, loading = home.loading || library.loading, error = home.error)
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(state, empty = "Questo mix oggi non c'è più") {
+            val playingKey = rememberPlayingKey()
+            FeedList(state, empty = "Questo mix oggi non c'è più", spacing = 0.dp) {
+                // Come album e playlist (1.563, strada A): la prima card con la copertina del mix e i tasti, poi i brani.
                 if (mix != null) item(key = "head") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Cover(mix.image, MaterialTheme.shapes.medium, 96.dp, MediaMark(MediaType.MUSIC))
-                        Spacer(Modifier.width(16.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(mix.subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-                            Spacer(Modifier.height(8.dp))
-                            CanvasButton("Riproduci", onClick = { playTracks(context, tracks, null, mix?.let(::mixLink).orEmpty()) }, primary = true)
-                        }
-                    }
+                    MediaHeadCard(
+                        image = mix.image,
+                        mark = MediaMark(MediaType.MUSIC),
+                        line = mix.badge,
+                        detail = mix.subtitle,
+                        onPlay = { playTracks(context, tracks, null, mixLink(mix)) },
+                        onShuffle = { playTracks(context, tracks.shuffled(), null, mixLink(mix)) },
+                        onMore = { com.platinum20.dashboard.capture.SavedLinks.offer(com.platinum20.dashboard.capture.SavedLinks.mix(mix.id, mix.title, mix.subtitle, mix.image)) },
+                    )
                 }
-                items(tracks, key = { "t-" + it.uri }) { track -> ItemRow(track, onClick = { playTracks(context, tracks, track, mix?.let(::mixLink).orEmpty()) }) }
+                if (mix != null) mediaGap("head-gap")
+                if (tracks.isNotEmpty()) mediaGroup(
+                    key = "tracks",
+                    title = "Brani",
+                    items = tracks,
+                    itemKey = { it.uri },
+                    trailing = { Text("${tracks.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { _, track ->
+                    MediaRow(
+                        title = track.title,
+                        line = track.subtitle,
+                        image = track.image,
+                        trailing = track.durationMs.takeIf { it > 0 }?.let(com.platinum20.dashboard.media.spotify.SpotifyPlaylists::clock),
+                        now = track.uri == playingKey,
+                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(track) }) {
+                            playTracks(context, tracks, track, mix?.let(::mixLink).orEmpty())
+                        },
+                    )
+                }
             }
         }
     }
@@ -259,12 +310,27 @@ fun MediaNewsScreen(onBack: () -> Unit, onPlayVideo: (String) -> Unit) {
     ) { inner ->
         val count = tips.size
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora") {
-                items(tips, key = { "t-" + it.id }) { v -> VideoCard(v, onClick = { onPlayVideo(v.watchUrl) }) }
-                if (!ended && home.data != null) item(key = "more") {
-                    // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
-                    LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
-                    androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+            val playingKey = rememberPlayingKey()
+            FeedList(Loadable(data = tips, loading = home.loading && count == 0, error = home.error.takeIf { count == 0 }), empty = "Niente da scoprire per ora", spacing = 0.dp) {
+                // Una card sola come le altre pagine (1.563, strada A): un video in grande ogni sei, gli altri in righe.
+                if (tips.isNotEmpty()) mediaGroup(
+                    key = "tips",
+                    title = "Per te",
+                    items = tips,
+                    itemKey = { it.id },
+                    trailing = { Text("dalla tua Home di YouTube", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    footer = if (!ended && home.data != null) ({
+                        // Composto solo vicino al fondo: lì arrivano altri consigliati, come scorrendo la Home di YouTube.
+                        LaunchedEffect(count) { YouTubeStore.loadMoreHome(context) }
+                        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) { LoadingPulse() }
+                    }) else null,
+                ) { i, v ->
+                    if (i % DISCOVER_BIG_EVERY == 0) androidx.compose.foundation.layout.Box(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                        VideoCard(v, onClick = { onPlayVideo(v.watchUrl) })
+                    } else MediaRow(
+                        title = v.title, line = v.channel, image = v.thumbnail, wide = true, mark = videoMark(v), now = v.id == playingKey,
+                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.youtube(v) }) { onPlayVideo(v.watchUrl) },
+                    )
                 }
             }
         }
@@ -523,6 +589,12 @@ private fun EpisodeLine(episode: com.platinum20.dashboard.media.podcast.Episode)
     }
 }
 
+/** In Scopri dei video uno ogni tanti è in grande (1.563), così la card non è un muro di righe. */
+private const val DISCOVER_BIG_EVERY = 6
+
+/** Quante righe mostra ogni card della pagina Musica prima di "Altri" (1.563). */
+private const val MUSIC_CARD_ROWS = 3
+
 /**
  * La fila Musica per intero, in verticale (1.492, Antonio: "cliccando sul titolo ... la versione completa che scorre
  * verticalmente"): le stesse voci nello stesso ordine, senza il limite della fila, tutte con la stessa riga `MediaLine`.
@@ -545,68 +617,87 @@ fun MusicAllScreen(onBack: () -> Unit, onOpenRoute: (String) -> Unit) {
         topBar = { TopLevelBar(title = "Musica", subtitle = "Dall'ultima che hai ascoltato", scrollBehavior = bar, onBack = onBack) },
     ) { inner ->
         Column(Modifier.fillMaxSize().padding(inner)) {
-            FeedList(Loadable(data = Unit), empty = "") {
-                if (saved.isNotEmpty()) item(key = "saved") {
-                    MediaLine(
-                        wide = false, image = "", title = "Salvati", author = "${saved.size} da ascoltare dopo", mark = null,
-                        click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) },
-                    ) { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.Bookmark, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+            // Una card per tipo (1.563, Antonio strada A), dall'ultimo ascoltato come la fila; ognuna mostra le prime e
+            // "Altri" la apre tutta, come Popolari dell'artista.
+            var open by rememberSaveable { mutableStateOf(setOf<String>()) }
+            val playingKey = rememberPlayingKey()
+            fun <T> LazyListScope.typeCard(key: String, title: String, list: List<T>, itemKey: (T) -> Any, row: @Composable (T) -> Unit) {
+                if (list.isEmpty()) return
+                val isOpen = key in open
+                mediaGroup(
+                    key = key,
+                    title = title,
+                    items = if (isOpen) list else list.take(MUSIC_CARD_ROWS),
+                    itemKey = itemKey,
+                    trailing = {
+                        if (list.size > MUSIC_CARD_ROWS) MoreToggle(isOpen) { open = if (isOpen) open - key else open + key }
+                        else Text("${list.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { _, e -> row(e) }
+            }
+            val openItem: (PerTe) -> Unit = { e ->
+                when (e) {
+                    is PerTe.Mix -> onOpenRoute(com.platinum20.dashboard.Routes.mix(e.mix.id))
+                    is PerTe.Item -> onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.item))
+                    is PerTe.Artist -> onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.artist))
+                    is PerTe.Show -> openPodcast(e.podcast)
+                    is PerTe.Liked -> onOpenRoute(com.platinum20.dashboard.Routes.LIKED_TRACKS)
                 }
-                // "Nuova playlist" tolta da qui nella 1.561 (Antonio): si crea da "Aggiungi a una playlist".
-                items(entries, key = { it.key }) { e ->
-                    when (e) {
-                        is PerTe.Mix -> MediaLine(
-                            wide = false, image = e.mix.image, title = e.mix.title, author = "Mix · " + e.mix.subtitle, mark = MediaMark(MediaType.MUSIC),
-                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.mix(e.mix.id, e.mix.title, e.mix.subtitle, e.mix.image) }) {
-                                onOpenRoute(com.platinum20.dashboard.Routes.mix(e.mix.id))
-                            },
-                        )
-                        is PerTe.Item -> MediaLine(
-                            wide = false, image = e.item.image, title = e.item.title, author = e.item.subtitle.substringBefore(" · "), mark = MediaMarks.of(e.item),
-                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.item) }) {
-                                onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.item))
-                            },
-                        )
-                        is PerTe.Liked -> MediaLine(
-                            wide = false, image = "", title = "Brani che ti piacciono", author = "${e.count} brani", mark = null,
-                            click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.LIKED_TRACKS) },
-                        ) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.material.icons.Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        is PerTe.Artist -> MediaLine(
-                            wide = false, image = e.artist.image, title = e.artist.title, author = "Artista", mark = null, round = true,
-                            click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(e.artist) }) {
-                                onOpenRoute(com.platinum20.dashboard.Routes.spotifyItem(e.artist))
-                            },
-                        )
-                        is PerTe.Show -> MediaLine(
-                            wide = false, image = e.podcast.artwork, title = e.podcast.title,
-                            author = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" }, mark = MediaMark(MediaType.PODCAST),
-                            click = Modifier.clickable { openPodcast(e.podcast) },
-                        )
-                    }
+            }
+            val savedLink: (PerTe) -> com.platinum20.dashboard.capture.SavedLink? = { e ->
+                when (e) {
+                    is PerTe.Mix -> com.platinum20.dashboard.capture.SavedLinks.mix(e.mix.id, e.mix.title, e.mix.subtitle, e.mix.image)
+                    is PerTe.Item -> com.platinum20.dashboard.capture.SavedLinks.spotify(e.item)
+                    is PerTe.Artist -> com.platinum20.dashboard.capture.SavedLinks.spotify(e.artist)
+                    else -> null
                 }
-                item(key = "podcast-all") {
-                    MediaLine(
-                        wide = false, image = "", title = "I tuoi podcast",
-                        author = if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno", mark = MediaMark(MediaType.PODCAST),
-                        click = Modifier.clickable { openPodcast(null) },
+            }
+            val perTeRow: @Composable (PerTe) -> Unit = { e ->
+                when (e) {
+                    is PerTe.Mix -> MediaRow(title = e.mix.title, line = e.mix.subtitle, image = e.mix.image, click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) })
+                    is PerTe.Item -> MediaRow(
+                        title = e.item.title, line = e.item.subtitle.substringBefore(" · "), image = e.item.image, mark = MediaMarks.of(e.item),
+                        click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) },
                     )
-                }
-                item(key = "radio-all") {
-                    MediaLine(
-                        wide = false, image = "", title = "Radio", author = "Preferite e più ascoltate", mark = MediaMark(MediaType.RADIO),
-                        click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.RADIO) },
+                    is PerTe.Artist -> MediaRow(title = e.artist.title, line = "Artista", image = e.artist.image, round = true, click = Modifier.tapOrSave({ savedLink(e) }) { openItem(e) })
+                    is PerTe.Show -> MediaRow(
+                        title = e.podcast.title, line = e.podcast.author.ifBlank { if (e.podcast.fromSpotify) "Spotify" else "Podcast" },
+                        image = e.podcast.artwork, mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { openItem(e) },
                     )
+                    is PerTe.Liked -> MediaRow(title = "Brani che ti piacciono", line = "${e.count} brani", image = e.image, click = Modifier.clickable { openItem(e) })
                 }
+            }
+            FeedList(Loadable(data = Unit), empty = "", spacing = 0.dp) {
+                // La libreria: quello che è tuo e non cambia (salvati, Mi piace, podcast, radio).
+                val library = buildList<Pair<String, @Composable () -> Unit>> {
+                    if (saved.isNotEmpty()) add("saved" to {
+                        MediaRow(title = "Salvati", line = "${saved.size} da ascoltare dopo", image = "", click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.savedMedia(video = false)) })
+                    })
+                    entries.filterIsInstance<PerTe.Liked>().firstOrNull()?.let { liked -> add("liked" to { perTeRow(liked) }) }
+                    add("podcasts" to {
+                        MediaRow(
+                            title = "I tuoi podcast", line = if (podcasts.isNotEmpty()) "${podcasts.size} che segui" else "Scegline qualcuno",
+                            image = podcasts.firstOrNull()?.artwork.orEmpty(), mark = MediaMark(MediaType.PODCAST), click = Modifier.clickable { openPodcast(null) },
+                        )
+                    })
+                    add("radio" to {
+                        MediaRow(
+                            title = "Radio", line = "Preferite e più ascoltate", image = "", mark = MediaMark(MediaType.RADIO),
+                            click = Modifier.clickable { onOpenRoute(com.platinum20.dashboard.Routes.RADIO) },
+                        )
+                    })
+                }
+                mediaGroup(key = "library", title = "La tua libreria", items = library, itemKey = { it.first }) { _, (_, row) -> row() }
+                typeCard("mixes", "Mix per te", entries.filterIsInstance<PerTe.Mix>(), { it.key }) { perTeRow(it) }
+                typeCard("lists", "Playlist e album", entries.filterIsInstance<PerTe.Item>(), { it.key }) { perTeRow(it) }
+                typeCard("artists", "Artisti", entries.filterIsInstance<PerTe.Artist>(), { it.key }) { perTeRow(it) }
+                typeCard("shows", "Podcast", entries.filterIsInstance<PerTe.Show>(), { it.key }) { perTeRow(it) }
                 // I brani ascoltati stanno qui, nella cronologia della musica, non nella fila (1.496, Antonio).
-                if (played.isNotEmpty()) {
-                    item(key = "played-h") { SectionHeader("Ascoltati di recente") }
-                    items(played, key = { (t, at) -> "p-" + t.uri + at.toEpochMilli() }) { (track, _) ->
-                        TrackLine(track, onClick = { playTracks(context, played.map { it.first }, track) })
-                    }
+                typeCard("played", "Ascoltati di recente", played, { (t, at) -> "p-" + t.uri + at.toEpochMilli() }) { (track, _) ->
+                    MediaRow(
+                        title = track.title, line = track.subtitle, image = track.image, now = track.uri == playingKey,
+                        click = Modifier.tapOrSave({ com.platinum20.dashboard.capture.SavedLinks.spotify(track) }) { playTracks(context, played.map { it.first }, track) },
+                    )
                 }
             }
         }
