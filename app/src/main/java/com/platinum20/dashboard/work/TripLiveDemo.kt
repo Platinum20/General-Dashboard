@@ -32,7 +32,8 @@ object TripLiveDemo {
                 for (frame in LiveDemo.frames(base)) {
                     LiveTrip.card(event, frame.now, frame.status, checked = true)
                         // L'ora finta in testa: senza, "parte tra 38 min" non tornava con l'orologio vero (2026-11-20).
-                        ?.let { it.copy(header = it.header?.let { h -> LiveDemo.header(h, frame.now) }) }
+                        // "Prova" nel titolo, non nell'intestazione: lì tagliava il conto alla rovescia (2026-11-20).
+                        ?.let { it.copy(title = LiveDemo.title(it.title)) }
                         ?.let { TripLiveWorker.post(app, event, it, frame.now) }
                     delay(LiveDemo.FRAME_MS)
                 }

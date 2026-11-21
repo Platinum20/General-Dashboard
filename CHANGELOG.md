@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.547.0
+**Notifica del treno compatta**
+- Sotto "Treno per …" la prossima fermata, poi una riga sola con binario, treno, carrozza e posto: "Bin. 14 · FR 9541 · carr. 8 · posto 11D"
+- Il ritardo è l'ultima riga, sotto gli orari: "+12 min · letto 3 min fa" (arancio solo il ritardo); in orario dice "In orario"
+- L'intestazione dice solo "parte tra" o "arriva tra" e non si taglia più
+- La stazione d'arrivo sta prima dell'orario ("Bologna 0:08 0:20"): gli orari sono ai due bordi, sotto i pallini
+- Nell'evento del treno il binario sta a sinistra del treno: "Binario 14 · Frecciarossa 9541 · Carrozza 8 · Posto 11D"
+- La prova della notifica dice "Prova" nel titolo
+
 ## 1.546.0
 **Mini player a riquadro: video grande il doppio, uguale per YouTube e Spotify**
 - Il mini player è un riquadro con dentro il video (circa il doppio di prima) o la copertina, e i tasti indietro, pausa e avanti sempre nello stesso punto

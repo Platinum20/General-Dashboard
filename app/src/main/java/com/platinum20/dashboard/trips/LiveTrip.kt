@@ -9,7 +9,8 @@ import java.time.format.DateTimeFormatter
 enum class LivePhase { SOON, ON_BOARD }
 
 /** Come segnare un pezzo di testo: arancio (in ritardo) o barrato (l'orario del biglietto superato dal ritardo). */
-enum class MarkKind { LATE, STRUCK }
+/** LATE = arancio, STRUCK = barrato, SOFT = grigio (le righe di contorno, come nella proposta A). */
+enum class MarkKind { LATE, STRUCK, SOFT }
 
 /** Un pezzo di testo da segnare nella riga [line] di [LiveCard.lines] (-1 = nel [LiveCard.text]). */
 data class LiveMark(val line: Int, val text: String, val kind: MarkKind)
@@ -62,6 +63,10 @@ data class LiveCard(
     val arrive: String? = null,
     /** Le fermate fra partenza e arrivo, per il tasto "Fermate". */
     val stops: List<LiveStop> = emptyList(),
+    /** Sotto il titolo, prima della linea (versione compatta 1, Antonio 2026-11-21): "Bin. 14 · FR 9541 · carr. 8 · posto 11D". */
+    val sub: String? = null,
+    /** Fra titolo e [sub]: "Prossima: Reggio Emilia Av 23:56". */
+    val next: String? = null,
 ) {
     companion object {
         const val TEXT = -1
@@ -139,7 +144,7 @@ object LiveTrip {
             )
         }
         val title = com.platinum20.dashboard.ui.screens.RowText.event(event)
-        val seat = SeatText.line(trip)
+        val seat = SeatText.line(trip, status?.platform)
         if (status?.cancelled == true && now < event.begin) {
             val text = listOfNotNull(trip.train, "Soppresso").joinToString(" · ")
             return LiveCard(
@@ -161,18 +166,21 @@ object LiveTrip {
         // così si vede anche a notifica chiusa; l'ora della lettura solo se è vecchia ("letto 35 min fa").
         val plus = if (late) "+${TrainLive.shiftMinutes(status)} min" else null
         val ago = status?.takeIf { old }?.let { "letto ${TrainLive.ago(now - it.readAt)}" }
-        fun head(rest: String): String {
-            if (plus != null) marks += LiveMark(LiveCard.HEADER, plus, MarkKind.LATE)
-            return listOfNotNull(plus, ago, rest).joinToString(" · ")
+        // Versione compatta 1 (Antonio, 2026-11-21): l'intestazione dice solo "parte tra / arriva tra" (prima si
+        // tagliava), il ritardo è l'ultima riga: "+12 min · letto 3 min fa", arancio solo "+12 min".
+        fun head(rest: String): String = rest
+        val liveLine = when {
+            status == null && checked -> "Ritardo non disponibile"
+            status == null -> null
+            else -> listOfNotNull(plus ?: "In orario", ago).joinToString(" · ")
         }
-        val liveLine = if (status == null && checked) "Ritardo non disponibile" else null
         // La notifica chiusa (proposta A, Antonio 2026-11-20): la stessa riga dell'intestazione più binario o prossima
         // fermata; arancio solo il ritardo.
         fun closed(rest: String, extra: String?): String {
             if (plus != null) marks += LiveMark(LiveCard.TEXT, plus, MarkKind.LATE)
-            val missing = liveLine?.lowercase()
+            val missing = if (status == null && checked) "ritardo non disponibile" else null
             val onTime = if (status != null && !late && !old) "in orario" else null
-            return listOfNotNull(plus, onTime, ago, rest, extra, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
+            return listOfNotNull(plus, onTime, rest, extra, ago, missing).joinToString(" · ").replaceFirstChar { it.uppercase() }
         }
         // Con il ritardo l'orario del biglietto resta, barrato, davanti a quello vero: "18:27 19:59".
         fun time(planned: Long, real: Long, line: Int): String {
@@ -182,18 +190,21 @@ object LiveTrip {
             return "${at(planned, zone)} ${at(real, zone)}"
         }
         val depart = "${time(event.begin, leave, LiveCard.DEPART)} ${short(trip.from) ?: trip.from.orEmpty()}".trim()
-        val arrive = "${time(event.end, end, LiveCard.ARRIVE)} ${short(trip.to) ?: trip.to}"
+        // La stazione d'arrivo prima dell'orario (Antonio, 2026-11-20): gli orari stanno ai due bordi, sotto i pallini.
+        val arrive = "${short(trip.to) ?: trip.to} ${time(event.end, end, LiveCard.ARRIVE)}"
         val stops = TrainLive.between(status?.stops.orEmpty(), trip.from, trip.to)
         val points = stops.map { it.at + delay }.filter { it in (leave + 1) until end }
         val stopList = stops.map { LiveStop(at(it.at + delay, zone), TrainLive.pretty(it.name), it.at + delay <= now, at(it.at, zone).takeIf { late }) }
-        val lines = mutableListOf<String>()
-        liveLine?.let { lines += it }
+        val lines = listOfNotNull(liveLine)
+        liveLine?.let { line ->
+            if (plus != null) marks += LiveMark(0, plus, MarkKind.LATE)
+            ago?.let { marks += LiveMark(0, if (plus != null) " · $it" else it, MarkKind.SOFT) }
+            if (status == null) marks += LiveMark(0, line, MarkKind.SOFT)
+        }
+        fun nextLine(stop: TrainStop?) = stop?.let { "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
         val track = LiveTrack(leave, end, points)
         return when (phase) {
             LivePhase.SOON -> {
-                // Prima di partire il binario al posto della prossima fermata.
-                status?.platform?.let { lines += "Binario $it" }
-                seat?.let { lines += it }
                 val platform = status?.platform?.let { "binario $it" }
                 val waited = (((now - (leave - LEAD_MS)).toDouble() / LEAD_MS) * 100).toInt().coerceIn(0, 100)
                 val text = closed("parte ${inText(leave - now)}", platform)
@@ -210,14 +221,14 @@ object LiveTrip {
                     depart = depart,
                     arrive = arrive,
                     stops = stopList,
+                    sub = seat,
+                    next = nextLine(stops.firstOrNull { it.at + delay > leave }),
                 )
             }
             LivePhase.ON_BOARD -> {
                 val progress = (((now - leave).toDouble() / (end - leave)) * 100).toInt().coerceIn(0, 100)
                 val arrived = now >= end
                 val next = if (arrived) null else stops.firstOrNull { it.at + delay > now }
-                next?.let { lines += "Prossima: ${TrainLive.pretty(it.name)} ${at(it.at + delay, zone)}" }
-                seat?.let { lines += it }
                 val text = closed(if (arrived) "arrivato a ${short(trip.to) ?: trip.to}" else "arriva ${inText(end - now)}",
                     next?.let { "prossima ${TrainLive.pretty(it.name)}" })
                 LiveCard(
@@ -233,6 +244,8 @@ object LiveTrip {
                     depart = depart,
                     arrive = arrive,
                     stops = stopList,
+                    sub = seat,
+                    next = nextLine(next),
                 )
             }
         }
@@ -249,13 +262,27 @@ object LiveTrip {
     private fun at(ms: Long, zone: ZoneId) = Instant.ofEpochMilli(ms).atZone(zone).format(hour)
 }
 
-/** Treno, carrozza e posto in breve, per la notifica: "Intercity 612 · carr. 8, posto 11D". */
-private object SeatText {
-    fun line(trip: com.platinum20.dashboard.calendar.Trip): String? =
-        listOfNotNull(trip.train, short(trip)).joinToString(" · ").ifEmpty { null }
-
-    fun short(trip: com.platinum20.dashboard.calendar.Trip): String? = listOfNotNull(
+/**
+ * Binario, treno, carrozza e posto in una riga sola, accorciati perché ci stiano (versione compatta 1, Antonio
+ * 2026-11-21): "Bin. 14 · FR 9541 · carr. 8 · posto 11D".
+ */
+object SeatText {
+    fun line(trip: com.platinum20.dashboard.calendar.Trip, platform: String? = null): String? = listOfNotNull(
+        platform?.let { "Bin. $it" },
+        trip.train?.let(::train),
         trip.coach?.let { "carr. $it" },
         trip.seat?.let { "posto $it" },
-    ).joinToString(", ").takeIf { it.isNotEmpty() }
+    ).joinToString(" · ").ifEmpty { null }
+
+    private val kinds = listOf(
+        "Frecciarossa" to "FR", "Frecciargento" to "FA", "Frecciabianca" to "FB",
+        "Intercity Notte" to "ICN", "Intercity" to "IC", "Regionale Veloce" to "RV", "Regionale" to "R",
+    )
+
+    /** "Frecciarossa 9541" → "FR 9541"; i nomi che non conosce (Italo) restano come sono. */
+    fun train(name: String): String {
+        val n = name.trim()
+        val hit = kinds.firstOrNull { n.startsWith(it.first, ignoreCase = true) } ?: return n
+        return hit.second + n.substring(hit.first.length)
+    }
 }

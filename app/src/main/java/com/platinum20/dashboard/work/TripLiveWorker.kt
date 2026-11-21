@@ -111,7 +111,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val text = marked(card.text, LiveCard.TEXT, card)
             val showStops = card.stops.isNotEmpty() &&
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(stopsKey(event.eventId), false)
-            // Aperta: una cosa per riga (ritardo, prossima fermata, posto) o, col tasto "Fermate", l'elenco delle fermate.
+            // Aperta: in fondo la riga del ritardo o, col tasto "Fermate", l'elenco delle fermate.
             val body: List<CharSequence> = if (showStops) card.stops.map { stop ->
                 // In ritardo come partenza e arrivo: l'orario del biglietto barrato, quello vero in arancio.
                 val planned = stop.planned?.let { "$it " }.orEmpty()
@@ -133,6 +133,10 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
             }
             val big = android.widget.RemoteViews(context.packageName, R.layout.notif_trip_big).apply {
                 setTextViewText(R.id.trip_title, card.title)
+                setTextViewText(R.id.trip_next, card.next ?: "")
+                setViewVisibility(R.id.trip_next, if (card.next == null) android.view.View.GONE else android.view.View.VISIBLE)
+                setTextViewText(R.id.trip_sub, card.sub ?: "")
+                setViewVisibility(R.id.trip_sub, if (card.sub == null) android.view.View.GONE else android.view.View.VISIBLE)
                 card.track?.let { track ->
                     val arrived = card.phase == LivePhase.ON_BOARD && now >= track.end
                     runCatching { setImageViewBitmap(R.id.trip_track, TrackArt.draw(context, track.steps(now), accent, arrived)) }
@@ -194,6 +198,7 @@ class TripLiveWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val span: Any = when (m.kind) {
                     com.platinum20.dashboard.trips.MarkKind.LATE -> android.text.style.ForegroundColorSpan(LATE_TEXT)
                     com.platinum20.dashboard.trips.MarkKind.STRUCK -> android.text.style.StrikethroughSpan()
+                    com.platinum20.dashboard.trips.MarkKind.SOFT -> android.text.style.ForegroundColorSpan(PASSED_TEXT)
                 }
                 out.setSpan(span, at, at + m.text.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                 from = at + m.text.length

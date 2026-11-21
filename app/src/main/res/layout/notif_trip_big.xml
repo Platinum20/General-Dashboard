@@ -2,7 +2,7 @@
 <!--
   Notifica del treno aperta, come la proposta A (Antonio, 2026-11-20): titolo, la linea del viaggio con un
   pallino per fermata e il treno che avanza (disegnata da TrackArt), sotto partenza a sinistra e arrivo a destra,
-  poi una cosa per riga: ritardo, prossima fermata, posto. Con "Fermate" le righe diventano l'elenco delle fermate.
+  sotto il titolo la prossima fermata e binario · treno · carrozza · posto, in fondo il ritardo (versione compatta 1, 2026-11-21). Con "Fermate" le righe diventano l'elenco delle fermate.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -15,11 +15,28 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:singleLine="true" />
+    <TextView
+        android:id="@+id/trip_next"
+        style="@style/TextAppearance.Compat.Notification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:ellipsize="end"
+        android:singleLine="true" />
+    <TextView
+        android:id="@+id/trip_sub"
+        style="@style/TextAppearance.Compat.Notification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#FF8A8A8A"
+        android:ellipsize="end"
+        android:singleLine="true" />
     <ImageView
         android:id="@+id/trip_track"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="8dp"
         android:adjustViewBounds="true"
         android:importantForAccessibility="no"
         android:scaleType="fitStart" />
@@ -31,6 +48,7 @@
         <TextView
             android:id="@+id/trip_depart"
             style="@style/TextAppearance.Compat.Notification"
+            android:textSize="13sp"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -39,6 +57,7 @@
         <TextView
             android:id="@+id/trip_arrive"
             style="@style/TextAppearance.Compat.Notification"
+            android:textSize="13sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -48,9 +67,10 @@
     <TextView
         android:id="@+id/trip_lines"
         style="@style/TextAppearance.Compat.Notification"
+        android:textSize="14sp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:lineSpacingExtra="3dp"
+        android:layout_marginTop="6dp"
+        android:lineSpacingExtra="4dp"
         android:maxLines="8" />
 </LinearLayout>

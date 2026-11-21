@@ -65,10 +65,11 @@ object Trips {
     fun seat(text: String): String? = seatRegex.find(text)?.groupValues?.get(1)?.uppercase()?.replace(Regex("""\s+"""), "")
 
     /**
-     * La riga sotto la durata (Antonio): "Intercity 612 · Carrozza 5 · Posto 42D", con quello che c'è.
-     * Null se del biglietto non si sa niente.
+     * La riga sotto la durata (Antonio): "Binario 14 · Intercity 612 · Carrozza 5 · Posto 42D", con quello che c'è;
+     * il binario (letto dal viaggio vivo) a sinistra del treno (Antonio, 2026-11-21). Null se non si sa niente.
      */
-    fun ticketLine(trip: Trip): String? = listOfNotNull(
+    fun ticketLine(trip: Trip, platform: String? = null): String? = listOfNotNull(
+        platform?.let { "Binario $it" },
         trip.train,
         trip.coach?.let { "Carrozza $it" },
         trip.seat?.let { (if ('-' in it) "Posti " else "Posto ") + it },
