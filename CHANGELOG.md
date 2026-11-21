@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.562.0
+**Scrivere nelle liste delle note**
+- Su una voce da spuntare vuota il cursore sta dopo il cerchio, dove scrivi, e non più sopra il cerchio
+- Andando a capo la pagina segue il cursore: la riga nuova resta sopra la barra e la tastiera
+- Un po' di spazio tra la riga in alto e il testo della nota quando scorri
+
 ## 1.561.0
 **Spotify smette di dire "non ha accettato l'accesso"**
 - Quando Spotify rifiuta l'accesso (di solito al risveglio del telefono, con la rete non ancora pronta) l'app rinnova e riprova da sola più volte, con calma, senza dirti niente

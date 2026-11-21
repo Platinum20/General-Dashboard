@@ -41,6 +41,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -154,6 +159,20 @@ internal fun RichNoteField(
         VisualTransformation { input -> richText(input.text, value.selection, focused, mark, faded) }
     }
 
+    // Il cursore resta sempre in vista sopra la barra e la tastiera, anche quando Invio fa una riga nuova (1.562):
+    // da solo il campo lo porta in vista prima che la riga nuova esista, e finiva sotto la tastiera.
+    val follow = remember { BringIntoViewRequester() }
+    val room = with(LocalDensity.current) { 32.dp.toPx() }
+    LaunchedEffect(value.text, value.selection, focused) {
+        if (!focused || readOnly) return@LaunchedEffect
+        withFrameNanos { }
+        val l = layout ?: return@LaunchedEffect
+        val at = transformation.filter(AnnotatedString(value.text)).offsetMapping.originalToTransformed(value.selection.end)
+        if (at > l.layoutInput.text.length) return@LaunchedEffect
+        val cursor = l.getCursorRect(at)
+        follow.bringIntoView(Rect(cursor.left, cursor.top - room / 2, cursor.right, cursor.bottom + room))
+    }
+
     Box(modifier) {
         BasicTextField(
             value = value,
@@ -172,6 +191,7 @@ internal fun RichNoteField(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .bringIntoViewRequester(follow)
                 .heightIn(min = minHeight)
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                 .onFocusChanged {
