@@ -210,8 +210,12 @@ object NoteLines {
         return body.lineSequence().map { plainLine(it) }.firstOrNull { it.isNotEmpty() }
     }
 
-    /** Al posto del segno di una voce si disegna un solo spazio sottile: sopra ci va il cerchio o il pallino. */
-    const val PLACE = "\u2009"
+    /**
+     * Al posto del segno di una voce: uno spazio sottile (allargato dall'editor, sopra ci va il cerchio o il pallino) e
+     * uno spazio di larghezza zero. Così il posto non è mai l'ultimo carattere della riga e su una voce vuota il cursore
+     * sta dopo il cerchio, non in mezzo (1.562).
+     */
+    const val PLACE = "\u2009\u200B"
 
     /**
      * Il testo come lo disegna l'editor: i segni dei formati [hidden] (da [NoteFormat.hidden]) spariscono, il segno di

@@ -395,7 +395,7 @@ fun NoteEditorScreen(noteId: Long?, onBack: () -> Unit) {
                         color = if (dictation.listening) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(start = 20.dp, top = 4.dp),
+                        modifier = Modifier.padding(start = 20.dp, top = 4.dp, bottom = 10.dp),
                     )
                 }
             },
